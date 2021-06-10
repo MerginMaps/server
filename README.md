@@ -13,17 +13,17 @@
 <img src="https://img.shields.io/badge/license-AGPL-blue">
 </p>
 
-# About
+## About
 
 TODO
 
 https://public.cloudmergin.com/
 
-# Screenshots
+## Screenshots
 
 TODO
 
-# Features
+## Features
 
 - 🌍 **Store data** - GeoPackages, QGIS project files, GeoTIFFs, pictures or any other data easily
 - 📱 **Phones and tables** - Great for working on field surveys, thanks to [Input app]() based on QGIS, for iPhone, iPad and Android
@@ -40,21 +40,21 @@ TODO
 - 👷‍♀️ **Work packages** - Split main database to smaller chunks for teams using [mergin-work-packages](https://github.com/lutraconsulting/mergin-work-packages) tool
 
 
-# Quick start
+## Quick start
 
 TODO: running with docker
 
-# Documentation
+## Documentation
 
 TODO
 
-# Get in touch
+## Get in touch
 
 TODO
 
-# License
+## License
 
-TODO
+Mergin is open source and licensed under the terms of AGPL licence.
 
 ---
 
