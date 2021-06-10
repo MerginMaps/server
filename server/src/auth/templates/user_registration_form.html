@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% from "_formhelpers.html" import render_field %}
+
+{% block header %}
+  <title>Activate account</title>
+{% endblock %}
+
+{% block extrastyle %}
+<style>
+{% include 'form.css' %}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2>{{ title }}</h2>
+
+  <p class="note">Please complete the registration form:</p>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+    {{ render_field(form.username) }}
+    {{ render_field(form.email) }}
+    {{ render_field(form.password) }}
+    {{ render_field(form.confirm) }}
+
+  <br>
+  <small>
+    By registering you agree to the <a href="/assets/EULA.pdf">Mergin Terms of Service</a>.
+  </small>
+
+    <p class="center">
+      <input
+        class="md-button md-raised md-primary"
+        type="submit"
+        value="Create Account" />
+    </p>
+  </form>
+
+
+
+  {% if error %}
+  <p class="error">{{ error }}</p>
+  {% endif %}
+
+  {% if msg %}
+  <p>{{ msg }}</p>
+  {% endif %}
+
+</div>
+{% endblock %}

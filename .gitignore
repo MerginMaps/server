@@ -1,0 +1,9 @@
+# demo data
+logs/
+projects/
+
+*.log
+.DS_Store
+.idea
+
+.mergin.env

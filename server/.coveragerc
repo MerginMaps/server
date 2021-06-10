@@ -1,0 +1,18 @@
+# .coveragerc to control coverage.py
+[run]
+omit =
+    # omit auto-generated files
+    src/models/base_model_.py
+    src/encoder.py
+    src/util.py
+    src/auth/commands.py
+    # omit test dir
+    src/test/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+
+[html]
+directory = coverage_html_report

@@ -1,0 +1,5 @@
+{% extends "email/components/content.html" %}
+{% block html %}
+  <p>Dear {{ user.username }},</p> <br>
+  <p>Your access to the Mergin project <b>{{ project.namespace }}/{{ project.name }}</b> has been removed.</p>
+{% endblock %}
