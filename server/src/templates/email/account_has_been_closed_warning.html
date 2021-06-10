@@ -1,0 +1,8 @@
+{% extends "email/components/content.html" %}
+{% block html %}
+  <p>Dear {{ account_name }},</p> <br>
+  <p>{% if account_type == "user" %} We're sorry you're leaving us. {% endif %} Your account has now been deactivated and will be permanently deleted in {{ days }} days.
+    Should you change your mind in the meantime, please contact us at <a href="mailto:{{ contact_email  }}">{{ contact_email  }} </a> and we can reactivate your account for you.
+    After {{ days }} days your account will have been deleted and will not be recoverable.</p>
+
+{% endblock %}

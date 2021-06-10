@@ -1,0 +1,15 @@
+{% extends "email/components/content.html" %}
+{% block html %}
+    <p>Dear {{ username }},</p>
+    <br>
+    <p>You have been invited to join the organisation <b>{{ invitation.org_name }}</b> as
+    {% if invitation.role in ['owner', 'admin'] %}
+      an {{ invitation.role }}.
+    {% else %}
+      a {{ invitation.role }}.
+    {% endif %}
+
+      The invitation will expire on {{ invitation.expire.strftime('%Y-%m-%d %H:%M') }}.
+      You can manage your invitations <a href="{{ link }}">here</a>.
+    </p>
+{% endblock %}

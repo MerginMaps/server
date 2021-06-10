@@ -1,0 +1,6 @@
+{% extends "email/components/content.html" %}
+{% block html %}
+  <p>Dear {{ user.username }}, </p> <br>
+  <p>To verify your email address please follow this link:</p>
+  <p><a href="{{ confirm_url }}">{{ confirm_url }}</a></p>
+{% endblock %}

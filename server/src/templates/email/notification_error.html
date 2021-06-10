@@ -1,0 +1,18 @@
+{% extends "email/components/content.html" %}
+{% block html %}
+  <p>Inconsistent webhook event detected.</p>
+  <p>Event ID: {{ event.id }}
+  <p>Event type: {{ event.type }}
+  <p>Status: {{ event.status }}
+  <p>Reason: {{ event.msg }}
+  <p>Account: {{ account }}</p>
+
+  <br>
+  {% if event.source == 'stripe' %}
+    <p>Please check both Stripe and Mergin dashboards to resolve the issue.</p>
+  {% else %}
+    <p> Receipt original transaction id: {{ original_id }} </p>
+    <p>Please check the Mergin dashboard and contact the user to resolve the issue.</p>
+  {% endif %}
+{% endblock %}
+

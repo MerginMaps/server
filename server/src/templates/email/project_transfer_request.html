@@ -1,0 +1,7 @@
+{% extends "email/components/content.html" %}
+{% block html %}
+  <p>Dear {{ username }},</p> <br>
+  <p>A request has been made to transfer the project <b>{{ project_name }}</b> from namespace {{ namespace_from }} to namespace {{ namescape_to }}.
+  This project transfer request will expire on {{ expire.strftime('%Y-%m-%d %H:%M') }}. You can manage your projects transfers <a href="{{ link }}">here</a>.
+  </p>
+{% endblock %}

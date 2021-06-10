@@ -1,0 +1,35 @@
+version: "3.7"
+
+services:
+  db:
+    image: postgres:10
+    container_name: mergin-db
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+
+  server:
+    image: mergin:${TAG}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mergin-server
+    volumes:
+      - ./projects:/data  # map data dir to host
+    env_file:
+      - mergin.env
+    environment:
+      - VERSION=${TAG}
+    ports:
+      - 5000:5000
+    depends_on:
+      - db
+    links:
+      - db
+  redis:
+    image: redis
+    container_name: mergin-redis
+    ports:
+      - 6379:6379
