@@ -1,9 +1,63 @@
 
-![mergin](mergin_logo.png)
+<p align="center">
+<a href="https://public.cloudmergin.com/" target="_blank">
+<img src="mergin_logo.png" alt="Mergin" width="400">
+</a>
+</p>
+
+<p align="center">
+	<b>Store and track changes to your geo-data</b>
+</p>
+
+<p align="center">
+<img src="https://img.shields.io/badge/license-AGPL-blue">
+</p>
+
+# About
+
+TODO
 
 https://public.cloudmergin.com/
 
-Store and track changes to your geo-data
+# Screenshots
+
+TODO
+
+# Features
+
+- 🌍 **Store data** - GeoPackages, QGIS project files, GeoTIFFs, pictures or any other data easily
+- 📱 **Phones and tables** - Great for working on field surveys, thanks to [Input app]() based on QGIS, for iPhone, iPad and Android
+- 🌟 **QGIS integration** - [Mergin plugin](https://github.com/lutraconsulting/qgis-mergin-plugin) is available to help with project setup and seamless syncing within QGIS
+- 👥 **Multi-user editing** - Changes to vector/attribute data from multiple users are automatically merged
+- 📖 **Data versioning** - Keeping history of all changes, allowing to go back if needed
+- 🔌 **Offline editing** - Clients do not need to be online all the time - only when syncing changes
+- 🌱 **Sharing with collaborators** - Projects can be shared with other team members
+- 🏰 **Granular permissions** - Decide who can read, write or manage projects
+- 🌈 **Web interface** - Simple user interface to view and manage projects
+- ⚡️ **Fast** - Efficient sync protocol transfering data between clients and server
+- 🧑‍💻 **Developer friendly** - Mergin is open platform. CLI tools and client libraries available for [Python](https://github.com/lutraconsulting/mergin-py-client) and [C++](https://github.com/lutraconsulting/mergin-cpp-client)
+- 💽 **Sync with database** - Supporting two-way sync of data with PostGIS using [mergin-db-sync](https://github.com/lutraconsulting/mergin-db-sync) tool
+- 👷‍♀️ **Work packages** - Split main database to smaller chunks for teams using [mergin-work-packages](https://github.com/lutraconsulting/mergin-work-packages) tool
+
+
+# Quick start
+
+TODO: running with docker
+
+# Documentation
+
+TODO
+
+# Get in touch
+
+TODO
+
+# License
+
+TODO
+
+---
+
 
 ## Running with Docker
 Adjust configuration, e.g. replace 'fixme' entries:
