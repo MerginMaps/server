@@ -15,9 +15,9 @@
 
 ## About
 
-TODO
+Mergin is a web service to store and track changes to spatial data. Spatial data can be edited on the client side, using [Input app](https://inputapp.io), [QGIS](www.qgis.org) or various APIs. Mergin handles the changes from the clients on the webserver.
 
-https://public.cloudmergin.com/
+In addition, Mergin also manages users and permissions. For more information about the full workflow, visit our blog post: https://www.lutraconsulting.co.uk/blog/2021/05/11/how-mergin-sync-works/
 
 ## Screenshots
 
