@@ -11,17 +11,42 @@ services:
       - POSTGRES_PASSWORD=postgres
 
   server:
-    image: mergin:${TAG}
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: lutraconsulting/mergin
     container_name: mergin-server
     volumes:
       - ./projects:/data  # map data dir to host
-    env_file:
-      - mergin.env
     environment:
-      - VERSION=${TAG}
+      - VERSION=2021.6.1
+      - SWAGGER_UI=0
+      - SECRET_KEY=fixme
+      - SECURITY_PASSWORD_SALT=fixme
+      - LOCAL_PROJECTS=/data
+      - MAINTENANCE_FILE=/data/MAINTENANCE
+      - USER_SELF_REGISTRATION=1
+      - USE_X_ACCEL=0
+      - GEODIFF_LOGGER_LEVEL=2
+      - TEMP_DIR=/data/tmp
+      - MERGIN_TESTING=0
+      - MAX_CHUNK_SIZE=10485760  # 10 MB
+      - TEMP_EXPIRATION=7
+      - DELETED_PROJECT_EXPIRATION=7
+      - CLOSED_ACCOUNT_EXPIRATION=1
+      - DEFAULT_STORAGE_SIZE=104857600 # 100 MB
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=172.17.0.1
+      - DB_PORT=5433
+      - DB_APPLICATION_NAME=mergin
+      - MAIL_SUPPRESS_SEND=1  # set to 0 in production
+      - MAIL_SERVER=fixme
+      - MAIL_DEFAULT_SENDER=fixme
+      - MAIL_USERNAME=fixme
+      - MERGIN_BASE_URL=your-server-url # for email templates
+      - MERGIN_LOGO_URL=""
+      - CONTACT_EMAIL=fixme
+      - SLACK_HOOK_URL=fixme
+      - CELERY_BROKER_URL=redis://172.17.0.1:6379/0
+      - CELERY_RESULT_BACKEND=redis://172.17.0.1:6379/0
     ports:
       - 5000:5000
     depends_on:

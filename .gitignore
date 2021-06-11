@@ -5,5 +5,3 @@ projects/
 *.log
 .DS_Store
 .idea
-
-mergin.env

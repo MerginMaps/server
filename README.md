@@ -82,14 +82,8 @@ Mergin is open source and licensed under the terms of AGPL licence.
 
 
 ## Running with Docker
-Adjust configuration, e.g. replace 'fixme' entries:
+Adjust configuration in [docker-compose.yml](docker-compose.yml), e.g. replace 'fixme' entries and run with docker compose:
 ```shell
-$ cp mergin.env.template mergin.env
-```
-
-Run with docker compose:
-```shell
-$ export TAG=2021.6  # specify version
 $ docker-compose up
 $ docker exec -it mergin-server flask init-db
 $ docker exec -it mergin-server flask add-user admin topsecret --is-admin --email admin@example.com
