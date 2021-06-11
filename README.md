@@ -37,7 +37,7 @@ https://public.cloudmergin.com/
 
 <p align="center">
 <b>Mergin in <a href="https://inputapp.io/">Input app</a></b><br>
-<img src="app_projects.jpg" height=300> <img src="app_map.jpg" height=300>
+<img src="input.jpg" height=300>
 </p>
 
 <p align="center">
