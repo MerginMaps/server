@@ -15,9 +15,23 @@
 
 ## About
 
-TODO
+Mergin is a web platform for storage and synchronisation of geospatial projects across multiple users and devices (desktop and mobile).
+The platform is especially useful when you need:
 
-https://public.cloudmergin.com/
+- **Mobile data collection.** If you need to capture location of assets (and their attributes) or update an existing database.
+
+- **Data sharing data.** No complicated setup of access by IT admins to get your data to colleagues or clients. Set up permissions and send invites with few clicks.
+
+- **Offline access.** Work with data with no interruption even without constant Internet connection - sync any changes when you are back online.
+
+- **Collaborative editing.** No more problems dealing with multiple copies of the same dataset in different versions - all changes are automatically consolidated in one place.
+
+- **Audit changes.** Knowing who has changed what and when in a database is often important - Mergin keeps track of the history and allows to go back if needed.
+
+- **No coding required.** Everything can be set up with no knowledge of programming.
+
+Mergin organises all data in projects. A project in Mergin is a directory containing various data files - GeoPackages,
+QGIS project files, documents, pictures and more. As soon as a project is uploaded to Mergin, it can be easily accessed directly from the web, from QGIS or from iOS/Android via [Input app](https://inputapp.io/).
 
 ## Screenshots
 
@@ -61,8 +75,16 @@ https://public.cloudmergin.com/
 - 💽 **Sync with database** - Supporting two-way sync of data with PostGIS using [mergin-db-sync](https://github.com/lutraconsulting/mergin-db-sync) tool
 - 👷‍♀️ **Work packages** - Split main database to smaller chunks for teams using [mergin-work-packages](https://github.com/lutraconsulting/mergin-work-packages) tool
 
+Mergin offers a unique combination of features that other tools do not provide out of the box:
+
+- relational databases (such as PostGIS or Oracle) are great for keeping a central repository of spatial data, but offline access, versioning and sharing outside of a single organisation are complicated to set up.
+
+- traditional storage products (like Dropbox or Google Drive) are great for storage of large amounts of data (pictures/videos) and offering offline access, but concurrent access to data (e.g. a single vector layer) is not going to work well.
+
 
 ## Quick start
+
+Try Mergin at https://public.cloudmergin.com/ - the SaaS service run by Lutra Consulting, the makers of Mergin.
 
 TODO: running with docker
 
