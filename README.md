@@ -21,8 +21,20 @@ https://public.cloudmergin.com/
 
 ## Screenshots
 
-TODO
+Mergin on web:
+<p align="center">
+<img src="web_dashboard.jpg" width=350> <img src="web_files.jpg" width=350> <img src="web_history.jpg" width=350> <img src="web_settings.jpg" width=350>
+</p>
 
+Mergin through [Input app](https://inputapp.io):
+<p align="center">
+<img src="app_projects.jpg" width=200> <img src="app_map.jpg" width=200>
+</p>
+
+Mergin in QGIS using plugin:
+<p align="center">
+<img src="qgis_browser.jpg" width=300> 
+</p>
 ## Features
 
 - 🌍 **Store data** - GeoPackages, QGIS project files, GeoTIFFs, pictures or any other data easily
