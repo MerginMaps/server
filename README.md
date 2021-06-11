@@ -86,7 +86,18 @@ Mergin offers a unique combination of features that other tools do not provide o
 
 Try Mergin at https://public.cloudmergin.com/ - the SaaS service run by Lutra Consulting, the makers of Mergin.
 
-TODO: running with docker
+### Running with Docker
+
+Run Mergin locally is easy. Adjust configuration in [docker-compose.yml](docker-compose.yml), e.g. replace 'fixme' entries
+and run with `docker-compose`:
+```shell
+$ docker-compose up
+$ docker exec -it mergin-server flask init-db
+$ docker exec -it mergin-server flask add-user admin topsecret --is-admin --email admin@example.com
+$ sudo chown -R  901:999 ./projects/
+$ sudo chmod g+s ./projects/
+```
+Projects are saved locally in `./projects` folder.
 
 ## Documentation
 
@@ -97,59 +108,12 @@ If you'd like to contribute and improve the documentation visit https://github.c
 
 If you need support, a custom deployment, extending the service capabilities and new features do not hesitate to contact us on info@lutraconsulting.co.uk
 
+## Developers
+
+Contributions are welcome!
+
+More information for developers can be found in the dedicated [development](development.md) page.
+
 ## License
 
 Mergin is open source and licensed under the terms of AGPL licence.
-
----
-
-
-## Running with Docker
-Adjust configuration in [docker-compose.yml](docker-compose.yml), e.g. replace 'fixme' entries and run with docker compose:
-```shell
-$ docker-compose up
-$ docker exec -it mergin-server flask init-db
-$ docker exec -it mergin-server flask add-user admin topsecret --is-admin --email admin@example.com
-$ sudo chown -R  901:999 ./projects/
-$ sudo chmod g+s ./projects/
-```
-Projects are saved locally in `./projects` folder.
-
-## Running locally (for dev)
-Install dependencies and run services:
-
-```shell
-$ docker run -d --rm --name mergin_db -p 5002:5432 -e POSTGRES_PASSWORD=postgres postgres:10
-$ docker run -d --rm --name redis -p 6379:6379 redis
-```
-
-### Server
-```shell
-$ pip3 install pipenv
-$ cd server
-$ pipenv install --dev --three
-$ pipenv run flask init-db
-$ pipenv run flask add-user admin topsecret --is-admin --email admin@example.com
-$ pipenv run celery worker -A src.run_celery.celery --loglevel=info &
-$ pipenv run flask run # run dev server on port 5000
-```
-
-### Web app
-```shell
-$ sudo apt install nodejs
-$ cd web-app
-$ npm install
-$ npm run serve
-```
-and open your browser to here:
-```
-http://localhost:8080
-```
-
-## Running tests
-To launch the unit tests run:
-```shell
-$ docker run -d --rm --name testing_pg -p 5435:5432 -e POSTGRES_PASSWORD=postgres postgres:10
-$ cd server
-$ pipenv run pytest --cov-report html --cov=src test
-```
