@@ -68,11 +68,12 @@ TODO: running with docker
 
 ## Documentation
 
-TODO
+For user help and documentation, visit https://help.cloudmergin.com/
+If you'd like to contribute and improve the documentation visit https://github.com/lutraconsulting/mergin-docs
 
 ## Get in touch
 
-TODO
+If you need support, a custom deployment, extending the service capabilities and new features do not hesitate to contact us on info@lutraconsulting.co.uk
 
 ## License
 
