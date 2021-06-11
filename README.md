@@ -104,6 +104,8 @@ Projects are saved locally in `./projects` folder.
 For user help and documentation, visit https://help.cloudmergin.com/
 If you'd like to contribute and improve the documentation visit https://github.com/lutraconsulting/mergin-docs
 
+For the Input mobile app, visit https://inputapp.io/ - with more documentation at https://help.inputapp.io/
+
 ## Get in touch
 
 If you need support, a custom deployment, extending the service capabilities and new features do not hesitate to contact us on info@lutraconsulting.co.uk
@@ -113,6 +115,14 @@ If you need support, a custom deployment, extending the service capabilities and
 Contributions are welcome!
 
 More information for developers can be found in the dedicated [development](development.md) page.
+
+Client side modules:
+- [Python](https://github.com/lutraconsulting/mergin-py-client) client library + CLI
+- [C++](https://github.com/lutraconsulting/mergin-cpp-client) client library + CLI
+
+More related tools:
+- [mergin-db-sync](https://github.com/lutraconsulting/mergin-db-sync) - set up two-way sync between Mergin and PostGIS database
+- [mergin-work-packages](https://github.com/lutraconsulting/mergin-work-packages) - split data for teams to work packages
 
 ## License
 
