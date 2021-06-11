@@ -62,7 +62,7 @@ QGIS project files, documents, pictures and more. As soon as a project is upload
 ## Features
 
 - 🌍 **Store data** - GeoPackages, QGIS project files, GeoTIFFs, pictures or any other data easily
-- 📱 **Phones and tables** - Great for working on field surveys, thanks to [Input app]() based on QGIS, for iPhone, iPad and Android
+- 📱 **Mobile devices** - Great for working on field surveys, thanks to [Input app]() based on QGIS, for iOS and Android
 - 🌟 **QGIS integration** - [Mergin plugin](https://github.com/lutraconsulting/qgis-mergin-plugin) is available to help with project setup and seamless syncing within QGIS
 - 👥 **Multi-user editing** - Changes to vector/attribute data from multiple users are automatically merged
 - 📖 **Data versioning** - Keeping history of all changes, allowing to go back if needed
