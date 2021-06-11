@@ -42,7 +42,7 @@ https://public.cloudmergin.com/
 
 <p align="center">
 <b>Mergin in QGIS</b><br>
-<img src="qgis_browser.jpg" width=250> 
+<img src="qgis_browser.jpg" width=600>
 </p>
 
 ## Features
