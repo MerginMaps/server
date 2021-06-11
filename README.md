@@ -124,6 +124,8 @@ More related tools:
 - [mergin-db-sync](https://github.com/lutraconsulting/mergin-db-sync) - set up two-way sync between Mergin and PostGIS database
 - [mergin-work-packages](https://github.com/lutraconsulting/mergin-work-packages) - split data for teams to work packages
 
+Learn more about [geodiff](https://github.com/lutraconsulting/geodiff) - the low-level library providing seamless merging of changes from multiple sources.
+
 ## License
 
 Mergin is open source and licensed under the terms of AGPL licence.
