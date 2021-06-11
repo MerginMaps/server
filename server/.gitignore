@@ -74,7 +74,6 @@ src/templates/app.html
 pygeodiff
 
 # related to local deployment
-src/version.py
 deployment/grafana-database/
 celerybeat-schedule
 celerybeat.pid
