@@ -39,24 +39,24 @@ QGIS project files, documents, pictures and more. As soon as a project is upload
 <b>Mergin web</b><br>
 <table align="center">
 <tr>
-	<td align="center"><img src="web_dashboard.jpg" width=300><br>Dashboard</td>
-	<td align="center"><img src="web_files.jpg" width=300><br>Project files</td>
+	<td align="center"><img src="doc/web_dashboard.jpg" width=300><br>Dashboard</td>
+	<td align="center"><img src="doc/web_files.jpg" width=300><br>Project files</td>
 </tr>
 <tr>
-	<td align="center"><img src="web_history.jpg" width=300><br>Project version history</td>
-	<td align="center"><img src="web_settings.jpg" width=300><br>Project settings</td>
+	<td align="center"><img src="doc/web_history.jpg" width=300><br>Project version history</td>
+	<td align="center"><img src="doc/web_settings.jpg" width=300><br>Project settings</td>
 </tr>
 </table>
 </p>
 
 <p align="center">
 <b>Mergin in <a href="https://inputapp.io/">Input app</a></b><br>
-<img src="input.jpg" height=300>
+<img src="doc/input.jpg" alt="Input app" height=300>
 </p>
 
 <p align="center">
 <b>Mergin in QGIS</b><br>
-<img src="qgis_browser.jpg" width=600>
+<img src="doc/qgis_browser.jpg" alt="Mergin in QGIS" width=600>
 </p>
 
 ## Features
