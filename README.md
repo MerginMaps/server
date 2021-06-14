@@ -20,7 +20,7 @@ The platform is especially useful when you need:
 
 - **Mobile data collection.** If you need to capture location of assets (and their attributes) or update an existing database.
 
-- **Data sharing data.** No complicated setup of access by IT admins to get your data to colleagues or clients. Set up permissions and send invites with few clicks.
+- **Data sharing.** No complicated setup of access by IT admins to get your data to colleagues or clients. Set up permissions and send invites with few clicks.
 
 - **Offline access.** Work with data with no interruption even without constant Internet connection - sync any changes when you are back online.
 
