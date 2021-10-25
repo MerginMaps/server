@@ -99,6 +99,8 @@ $ sudo chmod g+s ./projects/
 ```
 Projects are saved locally in `./projects` folder.
 
+Admin users can additionally enter the admin interface available at `/admin` URL which provides management of users, projects and other bits of the Mergin instance.
+
 ## Documentation
 
 For user help and documentation, visit https://help.cloudmergin.com/
