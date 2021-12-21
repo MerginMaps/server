@@ -72,7 +72,7 @@ QGIS project files, documents, pictures and more. As soon as a project is upload
 - 🌈 **Web interface** - Simple user interface to view and manage projects
 - ⚡️ **Fast** - Efficient sync protocol transfering data between clients and server
 - 🧑‍💻 **Developer friendly** - Mergin is open platform. CLI tools and client libraries available for [Python](https://github.com/lutraconsulting/mergin-py-client) and [C++](https://github.com/lutraconsulting/mergin-cpp-client)
-- :camera: **Sync images** - Supporting synchronisation of photos with common online cloud storage using [mergin-media-sync](https://github.com/lutraconsulting/mergin-media-sync) tool
+- :camera: **Sync images** - Supporting sync of photos with common cloud storage using [mergin-media-sync](https://github.com/lutraconsulting/mergin-media-sync) tool
 - 💽 **Sync with database** - Supporting two-way sync of data with PostGIS using [mergin-db-sync](https://github.com/lutraconsulting/mergin-db-sync) tool
 - 👷‍♀️ **Work packages** - Split main database to smaller chunks for teams using [mergin-work-packages](https://github.com/lutraconsulting/mergin-work-packages) tool
 
