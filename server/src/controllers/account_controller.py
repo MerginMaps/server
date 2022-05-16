@@ -1,5 +1,5 @@
 # Copyright (C) 2021 Lutra Consulting Limited. All rights reserved.
-# Do not distribute without the express permission of the author.
+# GNU Affero General Public License v3.0 - see licence.txt for more details.
 
 from datetime import datetime
 from operator import and_

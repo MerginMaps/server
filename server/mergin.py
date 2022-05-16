@@ -1,5 +1,5 @@
 # Copyright (C) 2018 Lutra Consulting Limited. All rights reserved.
-# Do not distribute without the express permission of the author.
+# GNU Affero General Public License v3.0 - see licence.txt for more details.
 
 # we need to monkey patch before app is loaded resolve this:
 # "gunicorn/workers/ggevent.py:65: MonkeyPatchWarning: Monkey-patching ssl after ssl has already been imported may lead

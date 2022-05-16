@@ -1,5 +1,5 @@
 # Copyright (C) 2020 Lutra Consulting Limited. All rights reserved.
-# Do not distribute without the express permission of the author.
+# GNU Affero General Public License v3.0 - see licence.txt for more details.
 
 from flask import Blueprint, jsonify, request, abort, render_template, current_app
 from flask_login import current_user
