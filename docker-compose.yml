@@ -4,8 +4,6 @@ services:
   db:
     image: postgres:10
     container_name: mergin-db
-    ports:
-      - 5433:5432
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -34,8 +32,8 @@ services:
       - DEFAULT_STORAGE_SIZE=104857600 # 100 MB
       - DB_USER=postgres
       - DB_PASSWORD=postgres
-      - DB_HOST=172.17.0.1
-      - DB_PORT=5433
+      - DB_HOST=mergin-db
+      - DB_PORT=5432
       - DB_APPLICATION_NAME=mergin
       - MAIL_SUPPRESS_SEND=1  # set to 0 in production
       - MAIL_SERVER=fixme
@@ -45,8 +43,8 @@ services:
       - MERGIN_LOGO_URL=""
       - CONTACT_EMAIL=fixme
       - SLACK_HOOK_URL=fixme
-      - CELERY_BROKER_URL=redis://172.17.0.1:6379/0
-      - CELERY_RESULT_BACKEND=redis://172.17.0.1:6379/0
+      - CELERY_BROKER_URL=redis://mergin-redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://mergin-redis:6379/0
     ports:
       - 5000:5000
     depends_on:
@@ -56,5 +54,3 @@ services:
   redis:
     image: redis
     container_name: mergin-redis
-    ports:
-      - 6379:6379
