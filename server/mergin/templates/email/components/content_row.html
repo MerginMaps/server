@@ -1,0 +1,15 @@
+<!--
+Copyright (C) Lutra Consulting Limited
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+-->
+
+{% macro content() -%}
+<tr>
+  <td align="left" style="font-size:0px;padding:15px 15px 15px 15px;word-break:break-word;">
+    <div style="font-family:Ubuntu, Helvetica, Arial, sans-serif;font-size:13px;line-height:1.5;text-align:left;">
+      {{ caller() }}
+    </div>
+  </td>
+</tr>
+{%- endmacro %}

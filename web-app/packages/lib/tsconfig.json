@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "esnext",
+    // setting strict to false
+    "strict": false,
+    "jsx": "preserve",
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "useDefineForClassFields": true,
+    "sourceMap": true,
+    "baseUrl": "src",
+    "types": ["webpack-env", "node"],
+    "rootDir": "src",
+    "paths": {
+      "@/*": ["*"]
+    },
+    "lib": ["esnext", "dom", "dom.iterable", "scripthost"],
+
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "composite": true,
+    "declarationDir": "types",
+    // just something for tsc-alias
+    "outDir": "types",
+
+    "resolveJsonModule": true,
+    // Ensure that Babel can safely transpile files in the TypeScript project
+    "isolatedModules": true
+  },
+  "include": [
+    "src/assets/**/*",
+    "src/**/*.js",
+    "src/**/*.jsx",
+    "src/**/*.json",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "tests/**/*.ts",
+    "tests/**/*.tsx"
+  ],
+  "exclude": ["node_modules"]
+}

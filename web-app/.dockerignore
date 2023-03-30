@@ -1,0 +1,9 @@
+
+# exclude unnecessary dirs/files
+node_modules
+packages/*/node_modules
+packages/*/dist
+
+.git
+README.md
+Dockerfile

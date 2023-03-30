@@ -1,0 +1,25 @@
+* text=auto eol=lf
+
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.vue text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+
+*.pbxproj -text
+
+# Denote all files that are truly binary and should not be modified.
+*.png binary
+*.jpg binary
+*.gif binary
+*.bmp binary
+*.tiff binary
+*.mp3 binary
+*.ttf binary
+*.zip binary
+*.qgz binary
+*.tar binary
+*.gpkg binary

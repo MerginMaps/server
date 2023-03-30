@@ -1,0 +1,41 @@
+{
+  "name": "@mergin/lib",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/lib.umd.js",
+  "types": "types/main.d.ts",
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build:watch": "npm-run-all -p build:lib:watch build:types:watch",
+    "build:lib": "yarn clean:types:temp && vue-cli-service build --mode development --target lib --name lib ./src/main.ts",
+    "build:lib:prod": "yarn clean:types:temp && vue-cli-service build --target lib --name lib ./src/main.ts",
+    "build:lib:watch": "yarn clean:types:temp && vue-cli-service build --mode development --target lib --name lib --watch ./src/main.ts",
+    "build:lib:all": "yarn build:lib && yarn build:types",
+    "build:lib:all:prod": "yarn build:lib:prod && yarn build:types",
+    "build:types": "yarn clean:types && tsc --declaration --emitDeclarationOnly && vue-typegen gen -s src -o types && tsc-alias && yarn clean:types:temp",
+    "build:types:watch": "yarn clean:types && tsc --declaration --emitDeclarationOnly --watch && vue-typegen gen -s src -o types && tsc-alias && yarn clean:types:temp",
+    "clean": "yarn clean:lib && yarn clean:types",
+    "clean:lib": "rimraf ./dist",
+    "clean:types:temp": "rimraf ./**/*.vue.ts",
+    "clean:types": "rimraf ./types ./tsconfig.tsbuildinfo && yarn clean:types:temp",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "axios": "^0.26.1",
+    "axios-retry": "^3.2.4",
+    "core-js": "^3.8.3",
+    "date-fns": "^2.28.0",
+    "lodash": "^4.17.21",
+    "vue-pdf": "^4.3.0",
+    "vue-tabler-icons": "~1.13.0",
+    "universal-cookie": "^4.0.4"
+  },
+  "peerDependencies": {
+    "portal-vue": "2.x",
+    "vue": "2.x",
+    "vuetify": "2.x"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-typescript": "~5.0.0"
+  }
+}

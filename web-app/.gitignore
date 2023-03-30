@@ -1,7 +1,7 @@
 .DS_Store
 node_modules
-/dist
-package-lock.json
+dist/
+types/
 
 # local env files
 .env.local
@@ -21,3 +21,14 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw*
+
+# cypress
+packages/saas-app/cypress/videos
+packages/saas-app/cypress/snapshots/**/__diff_output__
+packages/saas-app/cypress/snapshots/All Integration Specs
+packages/saas-app/cypress/fixtures/test_dir
+packages/saas-app/cypress/downloads
+packages/saas-app/cypress/screenshots
+
+# TypeScript cache
+*.tsbuildinfo

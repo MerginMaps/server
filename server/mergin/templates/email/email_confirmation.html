@@ -1,0 +1,13 @@
+<!--
+Copyright (C) Lutra Consulting Limited
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+-->
+
+{% set base_url = config['MERGIN_BASE_URL'] %}
+{% extends "email/components/content.html" %}
+{% block html %}
+  <p>Dear {{ user.username }}, </p> <br>
+  <p>To verify your email address please follow this link:</p>
+  <p><a href="{{ base_url }}/{{ confirm_url }}">{{ base_url }}/{{ confirm_url }}</a></p>
+{% endblock %}

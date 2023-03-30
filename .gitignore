@@ -1,7 +1,20 @@
 # demo data
-logs/
 projects/
+mergin_db
 
 *.log
 .DS_Store
+*.stackdump
+
+# dependencies
+deps/
 .idea
+*.iml
+
+venv/
+.vscode
+
+
+# generated documentation
+gen
+
