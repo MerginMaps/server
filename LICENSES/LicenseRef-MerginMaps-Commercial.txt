@@ -2,4 +2,4 @@ Licensee holding a valid commercial licence may use this software in
 accordance with the terms contained in an agreement between
 you and Lutra Consulting Limited.
 
-For the latest licensing terms and conditions, see https://merginmaps.com/licensing.
+For the latest licensing terms and conditions, see https://merginmaps.com/licenses.
