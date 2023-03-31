@@ -1,8 +1,0 @@
-{% extends "email/components/base.html" %}
-{% import "email/components/content_row.html" as content_row with context %}
-
-{% block content %}
-  {% call content_row.content() %}
-    {% block html %} {% endblock %}
-  {% endcall %}
-{% endblock %}

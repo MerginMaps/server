@@ -1,0 +1,14 @@
+# ignore everything except what is need to run mergin
+*
+!mergin
+!migrations
+!config.py
+!gunicorn-logging.conf
+!entrypoint.sh
+!application.py
+!Pipfile
+!Pipfile.lock
+
+mergin/tests
+mergin/__pycache__
+mergin/*/__pycache__

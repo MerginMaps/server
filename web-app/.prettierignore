@@ -1,0 +1,25 @@
+# build files
+build
+dist
+
+# npm
+node_modules
+.npmrc
+.yarnrc
+package-lock.json
+yarn.lock
+
+# project files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw*
+
+# cypress
+packages/saas-app/cypress/videos
+
+README.md
+doc

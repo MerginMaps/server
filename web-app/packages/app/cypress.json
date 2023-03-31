@@ -1,0 +1,14 @@
+{
+  "env": {
+    "MERGIN_URL": "http://localhost:5005",
+    "MERGIN_CLIENT": "~/.local/bin/mergin"
+  },
+  "viewportWidth": 1280,
+  "viewportHeight": 720,
+  "chromeWebSecurity": false,
+  "video": false,
+  "retries": {
+    "runMode": 1,
+    "openMode": 0
+  }
+}

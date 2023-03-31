@@ -1,0 +1,3 @@
+recursive-include mergin/ *.yaml
+recursive-include mergin/templates *.html
+graft mergin/tests/test_projects

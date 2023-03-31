@@ -1,0 +1,839 @@
+openapi: 3.0.3
+info:
+  title: Mergin auth API
+  description: Mergin auth API
+  version: 0.6.0
+servers:
+  - url: /app/auth
+tags:
+  - name: user
+    description: Mergin user
+  - name: admin
+    description: For mergin admin
+paths:
+  /app/auth/user/search:
+    get:
+      tags:
+        - user
+      summary: Find users specified by query parameters
+      description: "Find active users in namespace by ids, usernames or with ilike pattern using attribute (username/email).
+      Results are returned in order:
+      1.) exact match - ordered by username
+      2.) match is on start of the string - ordered by username
+      3.) match is on start of words - ordered by username
+      4.) match is anywhere - ordered by username"
+      operationId: mergin.auth.controller.search_users
+      parameters:
+        - name: id
+          in: query
+          description: Comma separated list of users' ids
+          schema:
+            type: string
+          example: 1,2,3,4
+        - name: names
+          in: query
+          description: Comma separated list of usernames
+          schema:
+            type: string
+            example: john.doe,jane.doe
+        - name: like
+          in: query
+          description: Search pattern for ilike query
+          schema:
+            type: string
+          example: doe
+        - name: namespace
+          in: query
+          required: true
+          description: Namespace to limit search in
+          schema:
+            type: string
+            example: company
+      responses:
+        "200":
+          description: List of users in namespace
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 10
+                items:
+                  allOf:
+                    - $ref: "#/components/schemas/UserSearch"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+  /app/auth/user/profile:
+    post:
+      tags:
+        - user
+      summary: Update profile of user in sesssion
+      description: Update profile of user in sesssion
+      operationId: mergin.auth.controller.update_user_profile
+      requestBody:
+        description: Updated profile
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                receive_notifications:
+                  type: boolean
+                  example: true
+                first_name:
+                  type: string
+                  nullable: true
+                  example: John
+                last_name:
+                  type: string
+                  nullable: true
+                  example: Doe
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+      responses:
+        "200":
+          description: OK
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+  /app/auth/refresh/csrf:
+    get:
+      summary: Get refreshed csrf token
+      description: Get refreshed csrf token
+      operationId: mergin.auth.controller.refresh_csrf_token
+      responses:
+        "200":
+          description: csrf token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  csrf:
+                    type: string
+                    example: true
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+  /app/auth/user:
+    get:
+      tags:
+        - user
+        - admin
+      summary: List of paginated users based on filters
+      description: List of paginated users with optional filters and sort
+      operationId: mergin.auth.controller.get_paginated_users
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          description: Results per page
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: order_by
+          in: query
+          description: Column to order by
+          required: false
+          schema:
+            type: string
+            example: name
+        - name: descending
+          in: query
+          description: Sort results desceding
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: like
+          in: query
+          description: Ilike search string for users name/email
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 10
+                  users:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+    post:
+      tags:
+        - user
+        - admin
+      summary: Create new user
+      description: Create new user
+      operationId: mergin.auth.controller.register_user
+      requestBody:
+        description: New user details
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+                - confirm
+              properties:
+                username:
+                  type: string
+                  example: john.doe
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                password:
+                  type: string
+                  example: test1234#
+                confirm:
+                  type: string
+                  example: test1234#
+      responses:
+        "201":
+          description: User info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /app/auth/user/{username}:
+    parameters:
+      - name: username
+        in: path
+        description: Username
+        required: true
+        schema:
+          type: string
+          example: john.doe
+    get:
+      tags:
+        - user
+        - admin
+      summary: Get user specified by username
+      description: Get user specified by username
+      operationId: mergin.auth.controller.get_user
+      responses:
+        "200":
+          description: Complete user info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+    patch:
+      tags:
+        - user
+        - admin
+      summary: Update user specified by username
+      description: Update user specified by username
+      operationId: mergin.auth.controller.update_user
+      requestBody:
+        description: Updated user
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                is_admin:
+                  type: boolean
+                  example: false
+                active:
+                  type: boolean
+                  example: true
+      responses:
+        "200":
+          description: OK  - TODO do we need to return object
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+    delete:
+      tags:
+        - user
+        - admin
+      summary: Delete user specified by username
+      description: Delete user specified by username
+      operationId: mergin.auth.controller.delete_user
+      responses:
+        "200":
+          description: OK
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+  /app/auth/login:
+    post:
+      summary: Login
+      description: Login
+      operationId: mergin.auth.controller.login
+      requestBody:
+        description: Login credentials
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                  example: john.doe
+                password:
+                  type: string
+                  format: password
+                  example: topsecret
+      responses:
+        "200":
+          description: OK
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+  /app/auth/logout:
+    get:
+      summary: Logout
+      description: Logout
+      operationId: mergin.auth.controller.logout
+      responses:
+        "200":
+          description: OK
+  /app/auth/change-password:
+    post:
+      summary: Change password
+      description: Change password
+      operationId: mergin.auth.controller.change_password
+      requestBody:
+        description: Old and new passwords
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                old_password:
+                  type: string
+                  example: notsecret
+                password:
+                  type: string
+                  format: password
+                  example: topsecret
+                confirm:
+                  type: string
+                  format: password
+                  example: topsecret
+      responses:
+        "200":
+          description: OK
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+  /app/auth/resend-confirm-email:
+    get:
+      summary: Resend email reset confirmation email
+      description: Resend email reset confirmation email
+      operationId: mergin.auth.controller.resend_confirm_email
+      responses:
+        "200":
+          description: OK
+  /app/auth/reset-password:
+    post:
+      summary: Ask for email reset confirmation email
+      description: Ask for email reset confirmation email
+      operationId: mergin.auth.controller.password_reset
+      requestBody:
+        description: Email to send password reset link
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: john.doe@example.com
+      responses:
+        "200":
+          description: OK
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+  /app/auth/reset-password/{token}:
+    post:
+      summary: Confirm reset password
+      description: Confirm reset password for user encoded in token
+      operationId: mergin.auth.controller.confirm_new_password
+      parameters:
+        - name: token
+          in: path
+          description: User token for password verification
+          required: true
+          schema:
+            type: string
+            example: InRlc3RAbHV0cmFjb25zdWx0aW5nLmNvLnVrIg.YN2KRg.Vj1LSzSvQx9DcNnQFgZ0baS7LPU
+      requestBody:
+        description: New password
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  format: password
+                  example: topsecret
+                confirm:
+                  type: string
+                  format: password
+                  example: topsecret
+      responses:
+        "200":
+          description: OK
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+  /app/auth/confirm-email/{token}:
+    post:
+      summary: Email verified
+      description: Email verified
+      operationId: mergin.auth.controller.confirm_email
+      parameters:
+        - name: token
+          in: path
+          description: User token for email verification
+          required: true
+          schema:
+            type: string
+            example: InRlc3RAbHV0cmFjb25zdWx0aW5nLmNvLnVrIg.YN2KRg.Vj1LSzSvQx9DcNnQFgZ0baS7LPU
+      responses:
+        "200":
+          description: OK
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+  /v1/user:
+    delete:
+      tags:
+        - user
+      summary: Close current user account
+      operationId: close_user_account
+      responses:
+        "200":
+          description: Success
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+      x-openapi-router-controller: mergin.auth.controller
+  /v1/user/{username}:
+    get:
+      tags:
+        - user
+      summary: User profile info of logged user
+      operationId: get_user_public
+      deprecated: true
+      parameters:
+        - name: username
+          description: Username (ignored)
+          deprecated: true
+          required: true
+          in: path
+          schema:
+            type: string
+            example: john.doe
+      responses:
+        "200":
+          description: User info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                    example: johnny
+                  email:
+                    type: string
+                    format: email
+                    example: john.doe@example.com
+                  disk_usage:
+                    type: integer
+                    example: 0
+                  storage:
+                    type: integer
+                    example: 1000000
+                  storage_limit:
+                    type: integer
+                    example: 1000000
+                  organisations:
+                    type: object
+                    nullable: true
+                    additionalProperties:
+                      type: string
+                      enum:
+                        - owner
+                        - admin
+                        - writer
+                        - reader
+                        - guest
+                    example: { myWorkspace: owner }
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+      x-openapi-router-controller: mergin.auth.controller
+  /v1/user/profile:
+    get:
+      tags:
+        - user
+      summary: User info of logged user
+      operationId: get_user_info
+      responses:
+        "200":
+          description: User info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserInfo"
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+      x-openapi-router-controller: mergin.auth.controller
+  /v1/auth/login:
+    post:
+      summary: Login user.
+      description: Returns session token, expiration time and user profile info
+      operationId: login_public
+      requestBody:
+        description: User credentials
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - login
+                - password
+              properties:
+                login:
+                  type: string
+                  example: john.doe
+                password:
+                  type: string
+                  example: pass123
+      responses:
+        "200":
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+      x-openapi-router-controller: mergin.auth.controller
+  /app/admin/login:
+    post:
+      summary: Login to admin interface
+      operationId: mergin.auth.controller.admin_login
+      requestBody:
+        description: Login credentials
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                  example: john.doe
+                password:
+                  type: string
+                  format: password
+                  example: topsecret
+      responses:
+        "200":
+          description: OK
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+components:
+  responses:
+    UnauthorizedError:
+      description: Authentication information is missing or invalid.
+    NotFoundResp:
+      description: Project not found.
+    BadStatusResp:
+      description: Invalid request.
+    InvalidDataResp:
+      description: Invalid/unprocessable data.
+    Success:
+      description: Success.
+    Forbidden:
+      description: Access is denied.
+    UnsupportedMediaType:
+      description: Payload format is in an unsupported format.
+    ConflictResp:
+      description: Request could not be processed becuase of conflict in resources
+    UnprocessableEntity:
+      description: Request was correct and yet server could not process it
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: john.doe
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        verified_email:
+          type: boolean
+          example: true
+        active:
+          type: boolean
+          example: true
+        is_admin:
+          type: boolean
+          example: false
+        profile:
+          $ref: "#/components/schemas/UserProfile"
+    PaginatedUsers:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            allOf:
+              - $ref: "#/components/schemas/User"
+        count:
+          type: integer
+    UserProfile:
+      type: object
+      properties:
+        receive_notifications:
+          type: boolean
+          example: true
+        first_name:
+          type: string
+          nullable: true
+          example: John
+        last_name:
+          type: string
+          nullable: true
+          example: Doe
+        registration_date:
+          type: string
+          nullable: true
+          format: date-time
+          example: 2018-11-30T08:47:58Z
+        name:
+          type: string
+          nullable: true
+          example: John Doe
+        # TODO: maybe remove altogether?
+        storage:
+          nullable: true
+          type: integer
+          example: 1073741824
+        disk_usage:
+          nullable: true
+          type: integer
+          example: 1024
+        has_project:
+          type: boolean
+          example: true
+    UserSearch:
+     type: object
+     properties:
+       id:
+         type: integer
+         example: 1
+       username:
+         type: string
+         example: john.doe
+       email:
+         type: string
+         format: email
+         example: john.doe@mergin.com
+       profile:
+        type: object
+        properties:
+          first_name:
+            type: string
+            nullable: true
+            example: John
+          last_name:
+            type: string
+            nullable: true
+            example: Doe
+    UserDetail:
+      allOf:
+        - $ref: "#/components/schemas/UserProfile"
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            username:
+              type: string
+              example: johnny
+            email:
+              type: string
+              format: email
+              example: john.doe@example.com
+            verified_email:
+              type: boolean
+              example: true
+    UserInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: johnny
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        verified_email:
+          type: boolean
+          example: true
+        receive_notifications:
+          type: boolean
+          example: true
+        first_name:
+          type: string
+          nullable: true
+          example: John
+        last_name:
+          type: string
+          nullable: true
+          example: Doe
+        name:
+          type: string
+          nullable: true
+          example: John Doe
+        registration_date:
+          type: string
+          nullable: true
+          format: date-time
+          example: 2018-11-30T08:47:58Z
+        workspaces:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+                example: my-workspace
+              role:
+                type: string
+                example: reader
+        preferred_workspace:
+          type: integer
+          nullable: true
+          example: 1
+        invitations:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              uuid:
+                type: string
+                example: 9e7da83a-4gds-4ce4-a282-3cc2ecbc8df2
+              workspace:
+                type: string
+                example: my-workspace
+              role:
+                type: string
+                example: reader
+    LoginResponse:
+      allOf:
+        - $ref: "#/components/schemas/UserDetail"
+        - type: object
+          properties:
+            token:
+              type: string
+              example: .eJyrVkrNTczMUbJSyk0sSk7NccgpLSlKTM7PKy7NKcnMS9dLztcrzVbSUSotTi2Kz0xRsjKCsPMSc1PhupRqAbKNGXw.XMvndw.XeJ1F7ch2zQvNVEz_zvIPgj4iWY
+            expire:
+              type: string
+              format: date-time
+              example: 2019-05-04T14:21:56.695035Z

@@ -1,0 +1,53 @@
+openapi: 3.0.0
+info:
+  description: Statistics Mergin Maps API
+  version: "0.1"
+  title: Statistics Mergin Maps API
+servers:
+  - url: /
+paths:
+  /v1/latest-version:
+    get:
+      summary: Fetch latest available server version
+      operationId: get_latest_version
+      responses:
+        "200":
+          description: Latest version info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerVersion"
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+      x-openapi-router-controller: mergin.stats.controller
+components:
+  responses:
+    UnauthorizedError:
+      description: Authentication information is missing or invalid.
+    NotFoundResp:
+      description: Project not found.
+    BadStatusResp:
+      description: Invalid request.
+  schemas:
+    ServerVersion:
+      type: object
+      properties:
+        version:
+          type: string
+          example: 2023.1.1
+        major:
+          type: integer
+          example: 2023
+        minor:
+          type: integer
+          example: 1
+        fix:
+          nullable: true
+          type: integer
+          example: 1
+        info_url:
+          nullable: true
+          type: string
+          example: "https://github.com/MerginMaps/mergin/releases/tag/2023.1"

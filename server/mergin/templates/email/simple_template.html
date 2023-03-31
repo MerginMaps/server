@@ -1,0 +1,11 @@
+<!--
+Copyright (C) Lutra Consulting Limited
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+-->
+
+{% extends "email/components/content.html" %}
+{% block html %}
+  <p>Dear {{ username }},</p> <br>
+  <p>{{ message }}</p>
+{% endblock %}
