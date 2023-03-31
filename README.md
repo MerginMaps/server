@@ -35,7 +35,7 @@ QGIS project files, documents, pictures and more. As soon as a project is upload
 
 You are currently browsing repository for Mergin Maps web server and web client. Our mobile app, QGIS plugin and integrations have standalone GitHub repositories, you can [find them here](https://github.com/MerginMaps).
 
-## Screenshots TODO
+## Screenshots
 
 <p align="center">
 <b>Mergin Maps web</b><br>
