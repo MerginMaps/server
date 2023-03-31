@@ -31,7 +31,7 @@ The platform is especially useful when you need:
 - **No coding required.** Everything can be set up with no knowledge of programming.
 
 Mergin Maps organises all data in projects. A project in Mergin Maps is a directory containing various data files - GeoPackages,
-QGIS project files, documents, pictures and more. As soon as a project is uploaded to Mergin, it can be easily accessed directly from the web, from QGIS or from iOS/Android via our [mobile app](https://merginmaps.com/start-for-free).
+QGIS project files, documents, pictures and more. As soon as a project is uploaded to Mergin Maps, it can be easily accessed directly from the web, from QGIS or from iOS/Android via our [mobile app](https://merginmaps.com/start-for-free).
 
 You are currently browsing repository for Mergin Maps web server and web client. Our mobile app, QGIS plugin and integrations have standalone GitHub repositories, you can [find them here](https://github.com/MerginMaps).
 
@@ -58,7 +58,7 @@ You are currently browsing repository for Mergin Maps web server and web client.
 
 <p align="center">
 <b>Mergin Maps QGIS plugin</b><br>
-<img src="doc/qgis_browser.jpg" alt="Mergin in QGIS" width=600>
+<img src="doc/qgis_browser.jpg" alt="Mergin Maps in QGIS" width=600>
 </p>
 
 ## Features
@@ -93,13 +93,13 @@ Try Mergin Maps at https://merginmaps.com/ - the SaaS service run by Lutra Consu
 
 A step-by-step guide how to run local Mergin Maps instance can be found in our [documentation](https://merginmaps.com/docs/dev/mergince/). 
 
+### Manage Mergin Maps
+
+Admin users can enter the admin interface available at `/admin` URL which provides management of users, projects and other bits of the Mergin Maps instance.
+
 ### Contributing
 
 Contributions are welcomed! You can set up development environment by following a guide in [development.md](./development.md). Before you create your first pull request, we kindly ask you to sign the CLA with your GitHub user name and date [here](LICENSES/CLA-signed-list.md).
-
-## Manage Mergin Maps
-
-Admin users can enter the admin interface available at `/admin` URL which provides management of users, projects and other bits of the Mergin Maps instance.
 
 ## Documentation
 
