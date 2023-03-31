@@ -41,12 +41,12 @@ You are currently browsing repository for Mergin Maps web server and web client.
 <b>Mergin Maps web</b><br>
 <table align="center">
 <tr>
-	<td align="center"><img src="doc/web-dashboard.png" width=300><br>Dashboard</td>
-	<td align="center"><img src="doc/web-project-detail.png" width=300><br>Project detail</td>
+	<td align="center"><img src="doc/web-dashboard.png" width=350><br>Dashboard</td>
+	<td align="center"><img src="doc/web-project-detail.png" width=350><br>Project detail</td>
 </tr>
 <tr>
-	<td align="center"><img src="doc/web-project-history.png" width=300><br>Project version history</td>
-	<td align="center"><img src="doc/web-admin.png" width=300><br>Admin interface</td>
+	<td align="center"><img src="doc/web-project-history.png" width=350><br>Project version history</td>
+	<td align="center"><img src="doc/web-admin.png" width=350><br>Admin interface</td>
 </tr>
 </table>
 </p>
@@ -66,7 +66,7 @@ You are currently browsing repository for Mergin Maps web server and web client.
 
 <p align="center">
 <b>Mergin Maps QGIS plugin</b><br>
-<img src="doc/qgis-project.png" alt="Mergin Maps in QGIS" width=600>
+<img src="doc/qgis-project.png" alt="Mergin Maps in QGIS" width=800>
 </p>
 
 ## Features
