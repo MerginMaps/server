@@ -11,4 +11,4 @@ B/ I have read and agree with entity CLA for my company: https://merginmaps.com/
 C/ My company has custom contribution contract with Lutra Consulting Ltd. or I am employee or have personal development contract with Lutra Consulting Ltd.
 
 PeterPetrik, 31st March 2023
-
+tomasMizera, 31st March 2023
