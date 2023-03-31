@@ -1,0 +1,17 @@
+name: CLA-Check
+on: push
+
+jobs:
+  check-cla-sign:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Check CLA signature
+      run: |
+        if grep -q ${{ github.actor }} "${{ github.workspace }}/LICENSES/CLA-signed-list.md"; then
+          echo "CLA signed OK for ${{ github.actor }}!"
+        else 
+          echo "CLA is not signed for ${{ github.actor }}, please agree with CLA and add your username to ${{ github.workspace }}/LICENSES/CLA-signed-list.md"
+          exit 1;
+        fi
