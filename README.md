@@ -41,24 +41,32 @@ You are currently browsing repository for Mergin Maps web server and web client.
 <b>Mergin Maps web</b><br>
 <table align="center">
 <tr>
-	<td align="center"><img src="doc/web_dashboard.jpg" width=300><br>Dashboard</td>
-	<td align="center"><img src="doc/web_files.jpg" width=300><br>Project files</td>
+	<td align="center"><img src="doc/web-dashboard.png" width=300><br>Dashboard</td>
+	<td align="center"><img src="doc/web-project-detail.png" width=300><br>Project detail</td>
 </tr>
 <tr>
-	<td align="center"><img src="doc/web_history.jpg" width=300><br>Project version history</td>
-	<td align="center"><img src="doc/web_settings.jpg" width=300><br>Project settings</td>
+	<td align="center"><img src="doc/web-project-history.png" width=300><br>Project version history</td>
+	<td align="center"><img src="doc/web-admin.png" width=300><br>Admin interface</td>
 </tr>
 </table>
 </p>
 
 <p align="center">
 <b>Mergin Maps mobile app</b><br>
-<img src="doc/input.jpg" alt="Input app" height=300>
+
+
+<table align="center">
+<tr>
+	<td align="center"><img src="doc/mobile-map.png" alt="Input app" height=300><br>QGIS map on mobile</td>
+	<td align="center"><img src="doc/mobile-form.png" alt="Input app" height=300><br>Feature form</td>
+</tr>
+</table>
+
 </p>
 
 <p align="center">
 <b>Mergin Maps QGIS plugin</b><br>
-<img src="doc/qgis_browser.jpg" alt="Mergin Maps in QGIS" width=600>
+<img src="doc/qgis-project.png" alt="Mergin Maps in QGIS" width=600>
 </p>
 
 ## Features
