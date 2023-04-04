@@ -26,13 +26,45 @@ paths:
           required: true
           schema:
             type: string
+        - name: page
+          in: query
+          description: page number
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            example: 1
+        - name: per_page
+          in: query
+          description: Number of results per page
+          required: true
+          schema:
+            type: integer
+            maximum: 50
+            example: 20
+        - name: order_params
+          in: query
+          description: Sorting fields e.g. expire DESC
+          required: false
+          schema:
+            type: string
+            example: expire ASC
       responses:
         "200":
           description: List of project access requests
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProjectRequestAccessList"
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    description: Total number of all project requests
+                    example: 20
+                  project-requests:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ProjectRequestAccessListItem"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "404":
@@ -445,6 +477,29 @@ components:
           requested_by:
             type: string
             example: jane.doe
+    ProjectRequestAccessListItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        project_id:
+          type: string
+          format: uuid
+          example: 'd4ecda97-0595-40af-892c-e7522de70bd2'
+        project_name:
+          type: string
+          example: survey
+        namespace:
+          type: string
+          example: john.doe
+        expire:
+          type: string
+          format: date-time
+          example: 2018-11-30T08:47:58Z
+        requested_by:
+          type: string
+          example: jane.doe
     ProjectListItem:
       type: object
       properties:

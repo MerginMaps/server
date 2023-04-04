@@ -98,7 +98,7 @@ def test_project_access_request(client):
     Configuration.GLOBAL_ADMIN = False
     assert (
         client.get(
-            f"/app/project/access-request/{test_workspace.name}", headers=json_headers
+            f"/app/project/access-request/{test_workspace.name}?page=1&per_page=10", headers=json_headers
         ).status_code
         == 403
     )
@@ -115,11 +115,12 @@ def test_project_access_request(client):
     # login as workspace admin to list incoming request and accept it
     login(client, "mergin", "ilovemergin")
     resp = client.get(
-        f"/app/project/access-request/{test_workspace.name}", headers=json_headers
+        f"/app/project/access-request/{test_workspace.name}?page=1&per_page=10", headers=json_headers
     )
     assert resp.status_code == 200
-    assert resp.json[0]["requested_by"] == "test_user"
-    assert resp.json[0]["namespace"] == test_workspace.name
+    access_requests = resp.json.get("access_requests")
+    assert access_requests[0]["requested_by"] == "test_user"
+    assert access_requests[0]["namespace"] == test_workspace.name
 
     resp = client.post(
         f"/app/project/access-request/accept/{access_request.id}",
@@ -179,10 +180,10 @@ def test_project_access_request(client):
 
     login(client, "mergin", "ilovemergin")
     resp = client.get(
-        f"/app/project/access-request/{test_workspace.name}", headers=json_headers
+        f"/app/project/access-request/{test_workspace.name}?page=1&per_page=10", headers=json_headers
     )
     assert resp.status_code == 200
-    assert len(resp.json) == 0
+    assert resp.json.get("count") == 0
 
     data = {"permissions": "write"}
     resp = client.post(
@@ -192,6 +193,35 @@ def test_project_access_request(client):
     )
     assert resp.status_code == 404
 
+
+def test_list_namespace_project_access_requests(client):
+    """Test project access requests pagination"""
+    user = User.query.filter(User.username == "mergin").first()
+    test_workspace = create_workspace()
+    p = create_project("test_project", test_workspace, user)
+    for i in range(10):
+        user = add_user("test_user" + str(i), "ilovemergin")
+        login(client, user.username, "ilovemergin")
+        resp = client.post(
+            f"/app/project/access-request/{test_workspace.name}/{p.name}",
+            headers=json_headers,
+        )
+        assert resp.status_code == 200
+    login(client, "mergin", "ilovemergin")
+    resp = client.get(f"/app/project/access-request/{test_workspace.name}?page=1&per_page=5")
+    assert resp.status_code == 200
+    assert resp.json.get("count") == 10
+    project_requests = resp.json.get("access_requests")
+    assert len(project_requests) == 5
+    resp = client.get(f"/app/project/access-request/{test_workspace.name}?page=2&per_page=5")
+    project_requests = resp.json.get("access_requests")
+    assert resp.status_code == 200
+    assert len(project_requests) == 5
+    #test order params
+    resp = client.get(
+        f"/app/project/access-request/{test_workspace.name}?page=1&per_page=15&order_params=expire DESC"
+    )
+    assert resp.json["access_requests"][0]["id"] == 10
 
 def test_template_projects(client):
     u = add_user("TEMPLATES", "ilovemergin")
