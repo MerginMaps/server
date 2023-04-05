@@ -1,8 +1,12 @@
 
 <p align="center">
-<a href="https://merginmaps.com/" target="_blank">
-<img src="doc/mm_logo_bgnd.jpg" alt="Mergin" width="400">
-</a>
+	<a href="https://merginmaps.com/" target="_blank">
+		<picture>
+			<source media="(prefers-color-scheme: dark)" srcset="./doc/mm_logo_bgnd_neg.png" width=350>
+			<source media="(prefers-color-scheme: light)" srcset="./doc/mm_logo_bgnd_pos.jpg" width=350>
+			<img alt="Mergin Maps logo" src="./doc/mm_logo_bgnd_pos.jpg" width=350>
+		</picture>
+	</a>
 </p>
 
 <p align="center">
@@ -57,8 +61,8 @@ You are currently browsing repository for Mergin Maps web server and web client.
 
 <table align="center">
 <tr>
-	<td align="center"><img src="doc/mobile-map.png" alt="Input app" height=300><br>QGIS map on mobile</td>
-	<td align="center"><img src="doc/mobile-form.png" alt="Input app" height=300><br>Feature form</td>
+	<td align="center"><img src="doc/mobile-map.png" alt="Input app"  width=150 height=auto><br>QGIS map on mobile</td>
+	<td align="center"><img src="doc/mobile-form.png" alt="Input app"  width=150 heigh=auto><br>Feature form</td>
 </tr>
 </table>
 
