@@ -1004,6 +1004,11 @@ def _get_changes_with_diff(project_dir):
     changes["updated"].append(diff_meta)
     return changes
 
+def _get_changes_with_diff_0_size(project_dir):
+    changes = _get_changes_with_diff(project_dir)
+    # tweak file size
+    changes["updated"][1]["size"] = 0
+    return changes
 
 test_push_data = [
     (
@@ -1014,6 +1019,10 @@ test_push_data = [
         {"version": "v1", "changes": _get_changes_with_diff(test_project_dir)},
         200,
     ),  # with diff, success
+    (
+        {"version": "v1", "changes": _get_changes_with_diff_0_size(test_project_dir)},
+        400,
+    ),  # broken .gpkg file
     (
         {"version": "v1", "changes": _get_changes(test_project_dir)},
         400,
@@ -1513,6 +1522,12 @@ def test_push_diff_finish(client):
     assert resp.status_code == 422
     assert resp.json["detail"] == error
 
+    # fail if diff file is not valid
+    changes = _get_changes_with_diff_0_size(test_project_dir)
+    upload, upload_dir = create_transaction("mergin", changes, 3)
+    upload_chunks(upload_dir, upload.changes)
+    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    assert resp.status_code == 422
 
 def test_push_no_diff_finish(client):
     working_dir = os.path.join(TMP_DIR, "test_push_no_diff_finish")
