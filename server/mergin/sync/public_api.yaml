@@ -593,7 +593,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFoundResp"
         "422":
-          $ref: "#/components/responses/UnprocessableEntity"
+          $ref: "#/components/responses/TrialExpired"
       x-openapi-router-controller: mergin.sync.public_api_controller
   #not implemented in connexion, going directly to flask endpoint
   #  /project/push/chunk/{transaction_id}/{chunk_id}:
@@ -923,6 +923,15 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ProjectsLimitHit'
+    TrialExpired:
+      description: Request was correct and yet server could not process it
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CustomError'
+          example:
+            code: TrialExpired
+            detail: Failed to push changes. Ask the project workspace owner to log in to their Mergin Maps dashboard
   parameters:
     namespace:
       name: namespace
