@@ -9,7 +9,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { AxiosError } from 'axios'
 import Vue from 'vue'
 import { mapActions } from 'vuex'
 
@@ -30,16 +29,21 @@ export default Vue.extend({
       project: string,
       namespace: string,
       data: CloneProjectParams,
-      cbSuccess: () => void,
-      cbError: (err: AxiosError) => void
+      cbSuccess: () => void
     ) {
-      await this.cloneProject({
-        namespace,
-        project,
-        data,
-        cbSuccess,
-        cbError
-      })
+      try {
+        await this.cloneProject({
+          namespace,
+          project,
+          data,
+          cbSuccess: async () => {
+            cbSuccess()
+            this.$emit('success', data)
+          }
+        })
+      } catch (err) {
+        this.$emit('error', err, data)
+      }
     }
   }
 })

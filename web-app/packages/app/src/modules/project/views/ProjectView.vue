@@ -45,6 +45,8 @@ export default {
     const { isGlobalWorkspaceAdmin } = useGetters('userModule', [
       'isGlobalWorkspaceAdmin'
     ])
+    const { handleError } = useActions('formModule', ['handleError'])
+
     const canCreateProject = computed(() => isGlobalWorkspaceAdmin?.value)
 
     function openCloneDialog() {
@@ -53,10 +55,20 @@ export default {
         project: props.projectName
       }
       const dialog = { maxWidth: 580, persistent: true }
+      const listeners = {
+        error: (error, data) => {
+          handleError({
+            componentId: data.merginComponentUuid,
+            error,
+            generalMessage: 'Failed to clone project'
+          })
+        }
+      }
       show({
         component: CloneDialog,
         params: {
           props: dialogProps,
+          listeners,
           dialog
         }
       })

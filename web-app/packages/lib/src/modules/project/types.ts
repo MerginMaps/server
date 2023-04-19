@@ -157,6 +157,7 @@ export interface ProjectsPayload {
 export interface CloneProjectParams {
   project: string
   namespace: string
+  merginComponentUuid: string
 }
 
 export interface ProjectParams {

@@ -239,17 +239,17 @@ const ProjectStore: Module<ProjectState, RootState> = {
             projectName: payload.data.name
           }
         })
-      } catch (_err) {
+      } catch (err) {
         await dispatch(
           'formModule/handleError',
           {
             componentId: payload.componentId,
-            error: _err,
+            error: err,
             generalMessage: 'Failed to create project.'
           },
           { root: true }
         )
-        throw new Error('Failed')
+        throw err
       } finally {
         waitCursor(false)
       }
@@ -408,7 +408,7 @@ const ProjectStore: Module<ProjectState, RootState> = {
     },
 
     async cloneProject({ commit }, payload) {
-      const { namespace, project, data, cbSuccess, cbError } = payload
+      const { namespace, project, data, cbSuccess } = payload
       try {
         waitCursor(true)
         await ProjectApi.cloneProject(namespace, project, data)
@@ -422,9 +422,9 @@ const ProjectStore: Module<ProjectState, RootState> = {
             projectName: data.project
           }
         })
-      } catch (e) {
-        cbError(e)
+      } catch (err) {
         waitCursor(false)
+        throw err
       }
     },
 

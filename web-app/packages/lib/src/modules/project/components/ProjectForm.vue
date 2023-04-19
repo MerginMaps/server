@@ -72,8 +72,9 @@ export default Vue.extend({
           namespace: this.currentNamespace
         })
         await this.close()
-      } catch (_error) {
-        // do not close
+        this.$emit('success')
+      } catch (err) {
+        this.$emit('error', err)
       }
     }
   }
