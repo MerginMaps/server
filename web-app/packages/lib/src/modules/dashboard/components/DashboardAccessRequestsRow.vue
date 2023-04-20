@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <v-card class="bubble mt-3">
       <h3>Project access requests</h3>
       <v-card-text>
-        <project-access-request-table :namespace="currentNamespace" />
+        <slot name="table" :namespace="currentNamespace"></slot>
       </v-card-text>
     </v-card>
   </v-row>
@@ -25,11 +25,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import Vue from 'vue'
 import { mapActions, mapState } from 'vuex'
 
-import ProjectAccessRequestTable from '@/modules/project/components/ProjectAccessRequestTable.vue'
-
 export default Vue.extend({
   name: 'DashboardAccessRequestsRow',
-  components: { ProjectAccessRequestTable },
   computed: {
     ...mapState('projectModule', [
       'namespaceAccessRequests',
