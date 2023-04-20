@@ -185,6 +185,8 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         "409":
           $ref: "#/components/responses/ConflictResp"
+        "422":
+          $ref: "#/components/responses/ProjectsLimitHitResp"
       x-openapi-router-controller: mergin.sync.public_api_controller
   /project/{namespace}/{project_name}:
     parameters:
@@ -634,7 +636,7 @@ paths:
       summary: Clone project.
       description: Clone project. Only recent version is copied over
         and history is lost. Destination namespace and project name are
-        optionally set in query parameters othewise request user is used with
+        optionally set in query parameters otherwise request user is used with
         the same project name as cloned project.
       operationId: clone_project
       parameters:
@@ -665,7 +667,7 @@ paths:
         "409":
           $ref: "#/components/responses/ConflictResp"
         "422":
-          $ref: "#/components/responses/UnprocessableEntity"
+          $ref: "#/components/responses/ProjectsLimitHitResp"
       x-openapi-router-controller: mergin.sync.public_api_controller
   /project/push/finish/{transaction_id}:
     post:
@@ -915,6 +917,12 @@ components:
       description: Request could not be processed becuase of conflict in resources
     UnprocessableEntity:
       description: Request was correct and yet server could not process it
+    ProjectsLimitHitResp:
+      description: Projects limit hit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProjectsLimitHit'
   parameters:
     namespace:
       name: namespace
@@ -933,6 +941,27 @@ components:
         type: string
         example: survey
   schemas:
+    CustomError:
+      type: object
+      properties:
+        code:
+          type: string
+        detail:
+          type: string
+      required:
+        - code
+        - detail
+    ProjectsLimitHit:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      type: object
+      properties:
+        projects_quota:
+          type: integer
+      example:
+        code: ProjectsLimitHit
+        detail: Maximum number of projects is reached. Please upgrade your subscription to create new projects (ProjectsLimitHit)
+        projects_quota: 2
     Project:
       type: object
       required:
