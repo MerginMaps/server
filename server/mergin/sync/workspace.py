@@ -3,14 +3,15 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 from datetime import datetime, timedelta
-
+from typing import Dict, Tuple, Optional, Set
 from flask_login import current_user
 from sqlalchemy import or_, and_, Column, literal
 from sqlalchemy.orm import joinedload
 
+from .errors import UpdateProjectAccessError
 from .models import Project, ProjectAccess
 from .permissions import projects_query, ProjectPermissions
-from .utils import workspace_ids
+from .public_api_controller import parse_project_access_update_request
 from .. import db
 from ..auth.models import User
 from ..config import Configuration
@@ -248,3 +249,19 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
         if workspace:
             query = query.filter(literal(ws.name).ilike(f"%{workspace}%"))
         return query
+
+    @staticmethod
+    def update_project_members(
+        project: Project, access: Dict
+    ) -> Tuple[Set[int], Optional[UpdateProjectAccessError]]:
+        """Update project members doing bulk access update"""
+        error = None
+        parsed_access = parse_project_access_update_request(access)
+        id_diffs = project.access.bulk_update(parsed_access)
+        db.session.add(project)
+        db.session.commit()
+        if parsed_access.get("invalid_usernames") or parsed_access.get("invalid_ids"):
+            error = UpdateProjectAccessError(
+                parsed_access["invalid_usernames"], parsed_access["invalid_ids"]
+            )
+        return id_diffs, error

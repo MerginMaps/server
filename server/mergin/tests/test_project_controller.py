@@ -636,10 +636,45 @@ def test_update_project(client):
     )
     assert resp.status_code == 400
 
-    # login as project writer and check permissions
+    # try to add non-existing user
+    readers = [
+        user.username
+        for user in User.query.filter(User.id.in_(project.access.readers)).all()
+    ]
+    data = {"access": {"readersnames": readers + ["not-found-user"]}}
+    resp = client.put(
+        f"/v1/project/{test_workspace_name}/{test_project}",
+        data=json.dumps(data),
+        headers=json_headers,
+    )
+    assert resp.status_code == 422
+    assert resp.json["code"] == "UpdateProjectAccessError"
+    assert resp.json["invalid_usernames"] == ["not-found-user"]
+
+    # try to add non-existing user plus make some valid update -> only partial success
+    readers = [
+        user.username
+        for user in User.query.filter(User.id.in_(project.access.readers)).all()
+    ]
+    data = {
+        "access": {
+            "readersnames": readers + ["not-found-user"],
+            "writersnames": readers,
+            "ownersnames": readers,
+        }
+    }
+    resp = client.put(
+        f"/v1/project/{test_workspace_name}/{test_project}",
+        data=json.dumps(data),
+        headers=json_headers,
+    )
+    assert resp.status_code == 207
+    assert resp.json["code"] == "UpdateProjectAccessError"
+
+    # login as a new project owner and check permissions
     login(client, test_user.username, "tester")
     resp = client.get(f"/v1/project/{test_workspace_name}/{test_project}")
-    assert resp.json["role"] == "writer"
+    assert resp.json["role"] == "owner"
 
 
 test_download_proj_data = [
