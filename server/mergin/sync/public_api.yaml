@@ -593,7 +593,13 @@ paths:
         "404":
           $ref: "#/components/responses/NotFoundResp"
         "422":
-          $ref: "#/components/responses/UnprocessableEntity"
+          description: Request could not be processed by server
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/UnprocessableEntityError"
+                  - $ref: "#/components/schemas/TrialExpired"
       x-openapi-router-controller: mergin.sync.public_api_controller
   #not implemented in connexion, going directly to flask endpoint
   #  /project/push/chunk/{transaction_id}/{chunk_id}:
@@ -941,6 +947,14 @@ components:
         type: string
         example: survey
   schemas:
+    UnprocessableEntityError:
+      description: Generic unprocessable request error
+    TrialExpired:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      example:
+        code: TrialExpired
+        detail: Failed to push changes. Ask the project workspace owner to log in to their Mergin Maps dashboard
     CustomError:
       type: object
       properties:
