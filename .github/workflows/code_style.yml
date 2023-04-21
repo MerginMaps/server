@@ -22,6 +22,6 @@ jobs:
       - uses: actions/setup-node@v3
       - name: Check JS
         run: |
-            npm install eslint
+            npm install --save-dev eslint eslint-plugin-vue
             cd web-app
             npx eslint ./packages/** --config .eslintrc.js --ext .js,.vue --ignore-path .gitignore
