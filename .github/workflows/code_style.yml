@@ -1,0 +1,27 @@
+name: Code Layout
+
+on: push
+
+jobs:
+  code_style_python:
+    name: Python code convention check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: psf/black@stable
+        with:
+          options: "--check --verbose --diff"
+          src: "./server"
+
+  code_style_js:
+    name: JavaScript code convention check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - name: Check JS
+        run: |
+            cd web-app
+            yarn install
+            npx eslint ./packages/** --config .eslintrc.js --ext .js,.vue --ignore-path .gitignore

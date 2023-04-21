@@ -14,7 +14,8 @@
 </p>
 
 <p align="center">
-<img src="https://img.shields.io/badge/License-Dual AGPL3 and MM Commercial licence-blue">
+<img src="https://img.shields.io/badge/License-Dual AGPL3 and MM Commercial licence-blue"> <br />
+[![Code Layout](https://github.com/MerginMaps/mergin/actions/workflows/code_style.yml/badge.svg)](https://github.com/MerginMaps/mergin/actions/workflows/code_style.yml)
 </p>
 
 ## About
