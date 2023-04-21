@@ -132,6 +132,12 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFoundResp"
+        "422":
+          description: Reached user limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsersLimitHit"
   /project/access-requests:
     get:
       tags:
@@ -387,6 +393,33 @@ components:
     ConflictResp:
       description: Request could not be processed becuase of conflict in resources
   schemas:
+    CustomError:
+      type: object
+      properties:
+        code:
+          type: string
+        detail:
+          type: string
+      required:
+        - code
+        - detail
+    UsersLimitHit:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      type: object
+      properties:
+        rejected_emails:
+          nullable: true
+          type: array
+          items:
+            type: string
+        users_quota:
+          type: integer
+      example:
+        code: UsersLimitHit
+        detail: Maximum number of people in this workspace is reached. Please upgrade your subscription to add more people (UsersLimitHit)
+        rejected_emails: [ rejected@example.com ]
+        users_quota: 6
     ProjectRequestAccessList:
       type: array
       items:
