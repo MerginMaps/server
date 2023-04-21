@@ -102,7 +102,10 @@ export const ProjectApi = {
       `/v1/project/${namespace}/${projectName}`,
       data,
       {
-        ...(withRetry ? getDefaultRetryOptions() : {})
+        ...(withRetry ? getDefaultRetryOptions() : {}),
+        // Remove status 207 from success
+        validateStatus: (status: number) =>
+          (status >= 200 && status < 207) || (status > 207 && status < 300)
       }
     )
   },
