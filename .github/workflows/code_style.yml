@@ -1,0 +1,15 @@
+name: Code Layout
+
+on: push
+
+jobs:
+  code_style_python:
+    name: Python code convention check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout input
+        uses: actions/checkout@v3
+      - uses: psf/black@stable
+        with:
+          options: "--check --verbose --diff -l 120"
+          src: "./server"
