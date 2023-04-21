@@ -239,17 +239,6 @@ const ProjectStore: Module<ProjectState, RootState> = {
             projectName: payload.data.name
           }
         })
-      } catch (err) {
-        await dispatch(
-          'formModule/handleError',
-          {
-            componentId: payload.componentId,
-            error: err,
-            generalMessage: 'Failed to create project.'
-          },
-          { root: true }
-        )
-        throw err
       } finally {
         waitCursor(false)
       }

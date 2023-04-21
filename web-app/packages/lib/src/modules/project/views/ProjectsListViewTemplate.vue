@@ -106,7 +106,7 @@ export default Vue.extend({
         component: ProjectForm,
         params: {
           listeners: {
-            error: (err) => this.$emit('new-project-error', err)
+            error: (err, data) => this.$emit('new-project-error', err, data)
           },
           dialog
         }

@@ -8,6 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <projects-list-view-template
     :namespace="namespace"
     :can-create-project="canCreateProject"
+    @new-project-error="onNewProjectError"
   >
     <template #projects="{ onlyPublic }">
       <projects-table-data-loader
@@ -38,9 +39,24 @@ export default {
     const { isGlobalWorkspaceAdmin } = useGetters('userModule', [
       'isGlobalWorkspaceAdmin'
     ])
+    const { handleError } = useActions('formModule', ['handleError'])
+    
     const canCreateProject = computed(() => isGlobalWorkspaceAdmin?.value)
+
+    /**
+     * Error handler for create new project from $emit in Template
+     * */
+    function onNewProjectError(err, data) {
+      handleError({
+        componentId: data.componentId,
+        error: err,
+        generalMessage: 'Failed to create project.'
+      })
+    }
+
     return {
-      canCreateProject
+      canCreateProject,
+      onNewProjectError
     }
   }
 }
