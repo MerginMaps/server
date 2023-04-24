@@ -4,7 +4,7 @@
 
 import { AxiosResponse, CancelToken } from 'axios'
 
-import { getDefaultRetryOptions } from '@/common/http'
+import { getDefaultRetryOptions, validateStatus } from '@/common/http'
 import { ProjectModule } from '@/modules/project/module'
 import {
   AcceptProjectAccessRequestData,
@@ -103,9 +103,7 @@ export const ProjectApi = {
       data,
       {
         ...(withRetry ? getDefaultRetryOptions() : {}),
-        // Remove status 207 from success
-        validateStatus: (status: number) =>
-          (status >= 200 && status < 207) || (status > 207 && status < 300)
+        validateStatus
       }
     )
   },

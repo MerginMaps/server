@@ -162,7 +162,7 @@ export default Vue.extend({
           namespace: this.namespace
         })
       } catch (err) {
-        this.$emit('accept-access-reuquest-error', err)
+        this.$emit('accept-access-request-error', err)
       }
     },
     changeSort(column) {

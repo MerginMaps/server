@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <project-access-request-table-template
     :namespace="namespace"
-    @accept-access-reuquest-error="onAcceptAccessRequestError"
+    @accept-access-request-error="onAcceptAccessRequestError"
   />
 </template>
 
