@@ -4,7 +4,7 @@
 
 import { AxiosResponse, CancelToken } from 'axios'
 
-import { getDefaultRetryOptions } from '@/common/http'
+import { getDefaultRetryOptions, validateStatus } from '@/common/http'
 import { ProjectModule } from '@/modules/project/module'
 import {
   AcceptProjectAccessRequestData,
@@ -102,7 +102,8 @@ export const ProjectApi = {
       `/v1/project/${namespace}/${projectName}`,
       data,
       {
-        ...(withRetry ? getDefaultRetryOptions() : {})
+        ...(withRetry ? getDefaultRetryOptions() : {}),
+        validateStatus
       }
     )
   },
