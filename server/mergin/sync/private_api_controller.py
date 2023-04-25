@@ -285,5 +285,6 @@ def update_project_access(id: str):
         project.access.unset_role(user_id)
     else:
         project.access.set_role(user_id, ProjectRole(request.json["role"]))
+        project_access_granted.send(project, user_id=user_id)
     db.session.commit()
     return NoContent, 200
