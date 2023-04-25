@@ -276,15 +276,15 @@ def update_project_access(id: str):
     :rtype: None
     """
     project = require_project_by_uuid(id, ProjectPermissions.Update)
-    user_id = request.json["user_id"]
+    user = User.query.filter_by(id=request.json["user_id"], active=True).first_or_404("User does not exist")
     # prevent to remove ownership of project creator
-    if user_id == project.creator_id:
+    if user.id == project.creator_id:
         abort(400, "Ownership of project creator cannot be removed")
 
     if request.json["role"] == "none":
-        project.access.unset_role(user_id)
+        project.access.unset_role(user.id)
     else:
-        project.access.set_role(user_id, ProjectRole(request.json["role"]))
-        project_access_granted.send(project, user_id=user_id)
+        project.access.set_role(user.id, ProjectRole(request.json["role"]))
+        project_access_granted.send(project, user_id=user.id)
     db.session.commit()
     return NoContent, 200

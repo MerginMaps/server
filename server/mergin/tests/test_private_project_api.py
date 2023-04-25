@@ -254,6 +254,12 @@ def test_update_project_access(client, diff_project):
     )
     assert resp.status_code == 400
 
+    # try to grant access to inaccessible user
+    data = {"user_id": 100, "role": "reader"}
+    # nothing happens
+    resp = client.patch(url, headers=json_headers, data=json.dumps(data))
+    assert resp.status_code == 404
+
 
 def test_restore_project(client, diff_project):
     """Test delete project by user and restore by admin"""
