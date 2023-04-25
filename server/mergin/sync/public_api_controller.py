@@ -637,8 +637,8 @@ def update_project(namespace, project_name):  # noqa: E501  # pylint: disable=W0
         # nothing was done but there are errors
         return jsonify(error.to_dict()), 422
 
-    if "public" in request.json:
-        project.access.public = request.json["public"]
+    if "public" in request.json["access"]:
+        project.access.public = request.json["access"]["public"]
         db.session.add(project)
         db.session.commit()
 
