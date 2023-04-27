@@ -25,12 +25,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   </custom-page>
 </template>
 
-<script>
-import CustomPage from '@/common/components/CustomPage'
+<script lang="ts">
+import { defineComponent } from 'vue'
+
+import CustomPage from '@/common/components/CustomPage.vue'
 import { UserApi } from '@/modules/user/userApi'
 
 // TODO: deprecated?
-export default {
+export default defineComponent({
   name: 'VerifyEmailView',
   components: { CustomPage },
   data() {
@@ -51,7 +53,7 @@ export default {
       this.verified = false
     }
   }
-}
+})
 </script>
 
 <style scoped></style>

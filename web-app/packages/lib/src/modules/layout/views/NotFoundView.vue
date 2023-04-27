@@ -27,12 +27,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapState } from 'vuex'
 
 import CustomPage from '@/common/components/CustomPage.vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'NotFoundView',
   components: { CustomPage },
   computed: {

@@ -36,7 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <v-layout class="stats-line">
         <label>Upload data size:</label>
         <v-spacer />
-        <span>{{ uploadSize | filesize }}</span>
+        <span>{{ $filters.filesize(uploadSize) }}</span>
       </v-layout>
     </v-card-text>
     <v-card-text v-else-if="upload.diff">
@@ -78,14 +78,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import axios from 'axios'
 import pick from 'lodash/pick'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { CloudUploadIcon } from 'vue-tabler-icons'
 import { mapActions, mapMutations, mapState } from 'vuex'
 
 import ActionButton from '@/common/components/ActionButton.vue'
 import { CHUNK_SIZE, isVersionedFile } from '@/common/mergin_utils'
 
-export default Vue.extend({
+export default defineComponent({
   data() {
     return {
       source: null

@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             v-model="searchByName"
             @input="resetPaging"
           >
-            <template v-if="$vuetify.breakpoint.mdAndUp" v-slot:prepend-inner>
+            <template v-if="$vuetify.display.mdAndUp" v-slot:prepend-inner>
               <v-icon elevation="1">mdi-magnify</v-icon>
             </template>
             <template v-slot:append>
@@ -72,9 +72,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <span>
           <v-tooltip bottom>
             <template v-slot:activator="{ on }">
-              <span v-on="on">{{ item.received | timediff }}</span>
+              <span v-on="on">{{ $filters.timediff(item.received) }}</span>
             </template>
-            <span>{{ item.received | datetime }}</span>
+            <span>{{ $filters.datetime(item.received) }}</span>
           </v-tooltip>
         </span>
       </template>
@@ -103,13 +103,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import { PaginatedUsersParams } from '@mergin/lib'
 import debounce from 'lodash/debounce'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
 import CreateUserForm from '@/modules/admin/components/CreateUserForm.vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'AccountView',
   components: {
     AdminLayout

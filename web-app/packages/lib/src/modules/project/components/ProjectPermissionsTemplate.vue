@@ -97,14 +97,14 @@ import pick from 'lodash/pick'
 import sortBy from 'lodash/sortBy'
 import toLower from 'lodash/toLower'
 import union from 'lodash/union'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapGetters, mapState } from 'vuex'
 
 import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
 import { UserSearchParams } from '@/modules/user/types'
 import { UserApi } from '@/modules/user/userApi'
 
-export default Vue.extend({
+export default defineComponent({
   props: {
     value: Object
   },
@@ -330,7 +330,7 @@ label {
   font-weight: 500;
 }
 
-::v-deep {
+:deep(*) {
   .v-data-table__overflow {
     margin: 0.5em 0;
     border: 1px solid #ddd;
@@ -345,7 +345,7 @@ label {
 }
 
 .v-list {
-  ::v-deep .v-list-item {
+  :deep(.v-list-item) {
     min-height: unset;
   }
 }

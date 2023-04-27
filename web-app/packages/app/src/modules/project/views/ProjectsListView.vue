@@ -22,10 +22,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script>
 import { ProjectsListViewTemplate, ProjectsTableDataLoader } from '@mergin/lib'
-import { computed } from '@vue/composition-api'
+import { computed, defineComponent } from 'vue'
 import { useGetters } from 'vuex-composition-helpers'
 
-export default {
+export default defineComponent({
   name: 'ProjectsListView',
   components: {
     ProjectsListViewTemplate,
@@ -43,5 +43,5 @@ export default {
       canCreateProject
     }
   }
-}
+})
 </script>

@@ -26,11 +26,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { MessageIcon } from 'vue-tabler-icons'
 import { mapState } from 'vuex'
 
-export default Vue.extend({
+export default defineComponent({
   components: { MessageIcon },
   computed: {
     ...mapState('instanceModule', ['configData']),
@@ -40,7 +40,7 @@ export default Vue.extend({
       }`
     },
     slackLink() {
-      return process.env.VUE_APP_JOIN_COMMUNITY_LINK
+      return import.meta.env.VITE_VUE_APP_JOIN_COMMUNITY_LINK
     }
   }
 })
@@ -56,7 +56,7 @@ export default Vue.extend({
   font-size: 12px;
 }
 
-::v-deep .main-content {
+:deep(.main-content) {
   width: 800px;
   margin: 0 1em;
   @media (max-width: 1264px) {

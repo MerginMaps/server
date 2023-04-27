@@ -36,12 +36,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import { AxiosError } from 'axios'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapActions, mapGetters } from 'vuex'
 
 import { CloneProjectParams } from '@/modules/project/types'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'clone-dialog-template',
   props: {
     namespace: String,

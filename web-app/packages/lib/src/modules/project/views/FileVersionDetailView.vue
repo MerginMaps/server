@@ -44,12 +44,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import groupBy from 'lodash/groupBy'
 import isArray from 'lodash/isArray'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapState } from 'vuex'
 
 import { waitCursor } from '@/common/html_utils'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'FileVersionDetailView',
   props: {
     namespace: String,
@@ -167,7 +167,7 @@ export default Vue.extend({
 })
 </script>
 <style lang="scss" scoped>
-::v-deep .v-data-table__wrapper {
+:deep(.v-data-table__wrapper) {
   td.text-start {
     max-width: 250px;
   }

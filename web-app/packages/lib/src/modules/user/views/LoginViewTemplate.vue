@@ -188,7 +188,7 @@ export default {
     flex: 0 0 auto;
   }
 
-  ::v-deep .v-card {
+  :deep(.v-card) {
     min-width: 300px;
     max-width: 400px;
     flex: 1;
@@ -254,7 +254,7 @@ export default {
     }
   }
 
-  ::v-deep .v-btn {
+  :deep(.v-btn) {
     text-transform: none;
 
     &.reset {

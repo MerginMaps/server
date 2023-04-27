@@ -4,12 +4,11 @@
 
 import isObject from 'lodash/isObject'
 import Cookies from 'universal-cookie'
-import Vue from 'vue'
+// import { isNavigationFailure, NavigationFailureType } from 'vue-router'
 import { Module } from 'vuex'
 
 import { waitCursor } from '@/common/html_utils'
 import { isAtLeastRole, UserRole } from '@/common/permission_utils'
-import { Router } from '@/common/router_without_navigation_failure'
 import { RootState } from '@/modules/types'
 import { UserModule } from '@/modules/user/module'
 import {
@@ -24,8 +23,6 @@ import {
   SetWorkspaceIdPayload
 } from '@/modules/user/types'
 import { UserApi } from '@/modules/user/userApi'
-
-const { isNavigationFailure, NavigationFailureType } = Router
 
 export interface UserState {
   loggedUser?: UserDetailResponse
@@ -105,7 +102,7 @@ const UserStore: Module<UserState, RootState> = {
       state.loggedUser = payload.loggedUser
     },
     updateVerifiedEmail(state, payload) {
-      Vue.set(state.loggedUser, 'verified_email', payload.verifiedEmail)
+      state.loggedUser.verified_email = payload.verifiedEmail
     },
     setWorkspaces(state, payload) {
       state.workspaces = payload.workspaces
@@ -134,7 +131,7 @@ const UserStore: Module<UserState, RootState> = {
           'formModule/handleError',
           {
             componentId: payload.componentId,
-            error: error,
+            error,
             generalMessage: 'Failed to change profile'
           },
           { root: true }
@@ -210,35 +207,38 @@ const UserStore: Module<UserState, RootState> = {
       try {
         UserModule.routerService
           .push(payload.currentRoute.query.redirect)
+          // TODO: V3_UPGRADE - probably not needed anymore in vue-router v4 - check needed
           .catch((e) => {
-            if (!isNavigationFailure(e, NavigationFailureType.redirected)) {
-              Promise.reject(e)
-            }
+            //   if (!isNavigationFailure(e, NavigationFailureType.redirected)) {
+            Promise.reject(e)
+            //   }
           })
       } catch (e) {
-        if (isNavigationFailure(e, NavigationFailureType.redirected)) {
-          // expected redirect
-          //   https://router.vuejs.org/guide/advanced/navigation-failures.html#detecting-navigation-failures
-        } else {
-          await dispatch(
-            'notificationModule/error',
-            {
-              text: e
-            },
-            {
-              root: true
-            }
-          )
-        }
+        // TODO: V3_UPGRADE - probably not needed anymore in vue-router v4 - check needed
+        // if (isNavigationFailure(e, NavigationFailureType.redirected)) {
+        //   // expected redirect
+        //   //   https://router.vuejs.org/guide/advanced/navigation-failures.html#detecting-navigation-failures
+        // } else {
+        await dispatch(
+          'notificationModule/error',
+          {
+            text: e
+          },
+          {
+            root: true
+          }
+        )
+        // }
       }
     },
 
     async redirectFromLoginAfterLogin(_, payload) {
       if (payload.currentRoute.path === '/login') {
         UserModule.routerService.push({ path: '/' }).catch((e) => {
-          if (!isNavigationFailure(e, NavigationFailureType.redirected)) {
-            Promise.reject(e)
-          }
+          // TODO: V3_UPGRADE - probably not needed anymore in vue-router v4 - check needed
+          // if (!isNavigationFailure(e, NavigationFailureType.redirected)) {
+          Promise.reject(e)
+          // }
         })
       }
     },
@@ -252,7 +252,7 @@ const UserStore: Module<UserState, RootState> = {
           'formModule/handleError',
           {
             componentId: payload.componentId,
-            error: error,
+            error,
             generalMessage: 'Failed to login'
           },
           { root: true }
@@ -278,7 +278,7 @@ const UserStore: Module<UserState, RootState> = {
           'formModule/handleError',
           {
             componentId: payload.componentId,
-            error: error,
+            error,
             generalMessage: 'Failed to send confirmation email'
           },
           { root: true }
@@ -349,7 +349,7 @@ const UserStore: Module<UserState, RootState> = {
           'formModule/handleError',
           {
             componentId: payload.componentId,
-            error: error,
+            error,
             generalMessage: 'Failed to change password'
           },
           { root: true }

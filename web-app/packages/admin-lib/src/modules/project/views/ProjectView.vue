@@ -19,12 +19,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import { CloneDialog, ProjectViewTemplate } from '@mergin/lib'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { useActions } from 'vuex-composition-helpers'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProjectView',
   components: {
     AdminLayout,

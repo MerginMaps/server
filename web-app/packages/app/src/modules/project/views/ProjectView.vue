@@ -17,12 +17,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   />
 </template>
 
-<script>
+<script lang="ts">
 import { CloneDialog, ProjectViewTemplate } from '@mergin/lib'
-import { computed } from '@vue/composition-api'
+import { computed, defineComponent } from 'vue'
 import { useActions, useGetters } from 'vuex-composition-helpers'
 
-export default {
+export default defineComponent({
   name: 'ProjectView',
   components: {
     ProjectViewTemplate
@@ -68,5 +68,5 @@ export default {
       openCloneDialog
     }
   }
-}
+})
 </script>

@@ -1,7 +1,7 @@
 module.exports = {
   root: true,
   env: {
-    node: true
+    es2021: true
   },
   extends: [
     'plugin:vue/essential',
@@ -43,8 +43,5 @@ module.exports = {
         allowModifiers: true
       }
     ]
-  },
-  parserOptions: {
-    parser: '@babel/eslint-parser'
   }
 }

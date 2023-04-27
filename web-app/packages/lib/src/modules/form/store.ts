@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import Vue from 'vue'
 import { Module } from 'vuex'
 
 import {
@@ -31,10 +30,12 @@ const FormStore: Module<FormState, RootState> = {
   },
   mutations: {
     setFormErrors(state, payload: SetFormErrorPayload) {
-      Vue.set(state.errors, payload.componentId, payload.errors)
+      // TODO: V3_UPGRADE [MERGIN-EXT] - Vue.set(a, b, c) -> a[b] = c
+      state.errors[payload.componentId] = payload.errors
     },
     resetFormErrors(state, payload: MerginComponentUuidPayload) {
-      Vue.delete(state.errors, payload.componentId)
+      // TODO: V3_UPGRADE [MERGIN-EXT] - Vue.delete(a, b) -> delete a[b]
+      delete state.errors[payload.componentId]
     }
   },
   actions: {

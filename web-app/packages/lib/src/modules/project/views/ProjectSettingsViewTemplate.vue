@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <v-layout class="settings column">
     <slot
       name="permissions"
-      :settings-access="settings.access"
+      :settings="settings"
       :key-prop="key"
       :save-project="saveProject"
     ></slot>
@@ -64,12 +64,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import debounce from 'lodash/debounce'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
 
 import ProjectAccessRequests from '@/modules/project/components/ProjectAccessRequest.vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProjectSettingsViewTemplate',
   components: {
     ProjectAccessRequests

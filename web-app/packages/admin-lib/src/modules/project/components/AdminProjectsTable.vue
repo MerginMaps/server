@@ -94,22 +94,22 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <template #item.updated="{ value }">
         <v-tooltip bottom>
           <template v-slot:activator="{ on }">
-            <span v-on="on">{{ value | timediff }}</span>
+            <span v-on="on">{{ $filters.timediff(value) }}</span>
           </template>
-          <span>{{ value | datetime }}</span>
+          <span>{{ $filters.datetime(value) }}</span>
         </v-tooltip>
       </template>
 
       <template #item.meta.size="{ item }">
-        {{ item.disk_usage | filesize('MB') }}
+        {{ $filters.filesize(item.disk_usage, 'MB') }}
       </template>
 
       <template #item.removed_at="{ value }">
         <v-tooltip bottom>
           <template v-slot:activator="{ on }">
-            <span v-on="on">{{ value | timediff }}</span>
+            <span v-on="on">{{ $filters.timediff(value) }}</span>
           </template>
-          <span>{{ value | datetime }}</span>
+          <span>{{ $filters.datetime(value) }}</span>
         </v-tooltip>
       </template>
 
@@ -151,9 +151,9 @@ import {
   ProjectApi
 } from '@mergin/lib'
 import debounce from 'lodash/debounce'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'projects-table',
   props: {
     showNamespace: Boolean,

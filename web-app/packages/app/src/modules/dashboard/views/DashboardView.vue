@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   </dashboard-view-template>
 </template>
 
-<script>
+<script lang="ts">
 import {
   DashboardViewTemplate,
   DashboardProjectsRow,
@@ -36,10 +36,10 @@ import {
   ProjectsTableDataLoader,
   DashboardUsageInfoRow
 } from '@mergin/lib'
-import { computed, ref, onMounted } from '@vue/composition-api'
+import { defineComponent, computed, ref, onMounted } from 'vue'
 import { useActions, useGetters } from 'vuex-composition-helpers'
 
-export default {
+export default defineComponent({
   name: 'DashboardView',
   components: {
     DashboardViewTemplate,
@@ -76,5 +76,5 @@ export default {
       canCreateProject
     }
   }
-}
+})
 </script>

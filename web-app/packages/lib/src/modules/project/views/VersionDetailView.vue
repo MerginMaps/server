@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-list-item-content>
           <v-list-item-title>Project Size</v-list-item-title>
           <v-list-item-subtitle
-            >{{ version.project_size | filesize }}
+            >{{ $filters.filesize(version.project_size) }}
           </v-list-item-subtitle>
         </v-list-item-content>
       </v-list-item>
@@ -41,7 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-list-item-content>
           <v-list-item-title>Created</v-list-item-title>
           <v-list-item-subtitle
-            >{{ version.created | datetime }}
+            >{{ $filters.datetime(version.created) }}
           </v-list-item-subtitle>
         </v-list-item-content>
       </v-list-item>
@@ -83,9 +83,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <div :class="colors[key]">
             {{ item.path }}:
             {{
-              version.changesets[item.path]
-                ? version.changesets[item.path]['size']
-                : item.size | filesize
+              $filters.filesize(
+                version.changesets[item.path]
+                  ? version.changesets[item.path]['size']
+                  : item.size
+              )
             }}
             <template v-if="version.changesets[item.path]">
               <div v-if="!version.changesets[item.path].error">
@@ -121,7 +123,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapState } from 'vuex'
 
 import FileChangesetSummaryTable from '@/modules/project/components/FileChangesetSummaryTable.vue'
@@ -133,7 +135,7 @@ const Colors = {
   updated: 'orange--text'
 }
 
-export default Vue.extend({
+export default defineComponent({
   name: 'VersionDetailView',
   components: { FileChangesetSummaryTable },
   props: {
@@ -230,7 +232,7 @@ export default Vue.extend({
 }
 
 .v-list {
-  ::v-deep .v-list-item {
+  :deep(.v-list-item) {
     font-size: 14px;
     color: #444;
 
@@ -240,7 +242,7 @@ export default Vue.extend({
   }
 
   &.files {
-    ::v-deep .v-list-group__items {
+    :deep(.v-list-group__items) {
       .v-list-item {
         padding-left: 20px;
       }

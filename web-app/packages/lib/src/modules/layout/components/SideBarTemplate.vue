@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     id="core-navigation-drawer-user"
     v-model="drawer"
     :expand-on-hover="expandOnHover"
-    :right="$vuetify.rtl"
+    :right="$vuetify.locale.isRtl"
     mobile-breakpoint="960"
     :dark="barColor !== 'rgba(228, 226, 226, 1), rgba(255, 255, 255, 0.7)'"
     app
@@ -49,13 +49,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { UserIcon } from 'vue-tabler-icons'
 import { mapState } from 'vuex'
 
 import SideBarItem from '@/modules/layout/components/SideBarItem.vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'SideBarTemplate',
   components: {
     SideBarItem,
@@ -96,8 +96,6 @@ export default Vue.extend({
 </script>
 
 <style lang="scss" scoped>
-@import 'vuetify/src/styles/tools/rtl';
-
 .theme--dark.v-navigation-drawer {
   background-color: #eaebef !important;
 }

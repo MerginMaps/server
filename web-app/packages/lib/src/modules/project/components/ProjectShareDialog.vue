@@ -73,7 +73,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import isEqual from 'lodash/isEqual'
 import omit from 'lodash/omit'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapActions, mapGetters, mapState } from 'vuex'
 
 import AccountAutocomplete from './AccountAutocomplete.vue'
@@ -86,7 +86,7 @@ interface Data {
   isPending: boolean
 }
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProjectShareDialog',
   components: { PermissionInfo, UserSearchChip, AccountAutocomplete },
   props: {

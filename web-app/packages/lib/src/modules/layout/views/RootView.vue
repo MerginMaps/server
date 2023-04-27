@@ -11,16 +11,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       drawer ? 260 : 20
     }px; overflow-y: auto; padding-right:20px; margin-right: 0px;`"
   >
-    <router-view></router-view>
+    <router-view />
   </page-view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
 import { mapState } from 'vuex'
 
-import PageView from '@/modules/layout/components/PageView'
+import PageView from '@/modules/layout/components/PageView.vue'
 
-export default {
+export default defineComponent({
   name: 'RootView',
   components: {
     PageView
@@ -32,5 +33,5 @@ export default {
       return this.$route.params.name
     }
   }
-}
+})
 </script>

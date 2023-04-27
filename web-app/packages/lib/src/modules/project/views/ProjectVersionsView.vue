@@ -68,9 +68,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <span>
           <v-tooltip bottom>
             <template v-slot:activator="{ on }">
-              <span v-on="on">{{ item.created | timediff }}</span>
+              <span v-on="on">{{ $filters.timediff(item.created) }}</span>
             </template>
-            <span>{{ item.created | datetime }}</span>
+            <span>{{ $filters.datetime(item.created) }}</span>
           </v-tooltip>
         </span>
       </template>
@@ -102,7 +102,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </span>
       </template>
       <template v-slot:item.project_size="{ item }">
-        {{ item.project_size | filesize }}
+        {{ $filters.filesize(item.project_size) }}
       </template>
       <template v-slot:item.archived="{ item }">
         <v-tooltip top>
@@ -145,12 +145,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
 
 import MerginAPIMixin from '@/common/mixins/MerginAPIMixin'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProjectVersionsView',
   mixins: [MerginAPIMixin],
   props: {

@@ -2,18 +2,20 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-const SizeUnits = {
-  GB: (value: number) => (value / 1073741824).toFixed(2),
-  MB: (value: number) => (value / 1048576).toFixed(2),
-  kB: (value: number) => (value / 1024).toFixed(0),
-  B: (value: number) => `${Math.round(value)}`
+export type SizeUnit = 'GB' | 'MB' | 'kB' | 'B'
+
+const SizeUnits: Record<SizeUnit, (value: number) => string> = {
+  GB: (value) => (value / 1073741824).toFixed(2),
+  MB: (value) => (value / 1048576).toFixed(2),
+  kB: (value) => (value / 1024).toFixed(0),
+  B: (value) => `${Math.round(value)}`
 }
 
 export function formatFileSize(
   value,
-  unit?: keyof typeof SizeUnits,
+  unit?: SizeUnit,
   digits = 2,
-  minUnit: keyof typeof SizeUnits = 'B'
+  minUnit: SizeUnit = 'B'
 ) {
   if (!value) {
     return `${value} MB`
@@ -37,7 +39,7 @@ export function formatFileSize(
 export function formatToCurrency(value: number, currency: string): string {
   return value.toLocaleString('en-UK', {
     style: 'currency',
-    currency: currency,
+    currency,
     currencySign: 'accounting'
   })
 }

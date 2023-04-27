@@ -69,7 +69,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { PlusIcon, SearchIcon } from 'vue-tabler-icons'
 import { mapState } from 'vuex'
 
@@ -77,7 +77,7 @@ import ActionButton from '@/common/components/ActionButton.vue'
 import PageView from '@/modules/layout/components/PageView.vue'
 import ProjectForm from '@/modules/project/components/ProjectForm.vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProjectsListView',
   components: { ActionButton, PageView, PlusIcon, SearchIcon },
   props: {

@@ -4,16 +4,18 @@ Copyright (C) Lutra Consulting Limited
 SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
+
 import BaseItem from '@/common/components/base/BaseItem.vue'
 
-export default {
+export default defineComponent({
   props: {
     item: Object,
     idx: Number
   },
   components: { BaseItem }
-}
+})
 </script>
 
 <template>
@@ -51,7 +53,7 @@ export default {
   padding: 5px 0 5px 0 !important;
 }
 
-::v-deep .v-list-item {
+:deep(.v-list-item) {
   font-size: 14px;
   color: #444;
   min-height: 32px;

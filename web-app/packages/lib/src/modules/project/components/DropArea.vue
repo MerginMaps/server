@@ -39,12 +39,12 @@ import debounce from 'lodash/debounce'
 import keyBy from 'lodash/keyBy'
 import pickBy from 'lodash/pickBy'
 import Path from 'path'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapMutations, mapState } from 'vuex'
 
 import { getFiles, checksum } from '@/common/mergin_utils'
 
-export default Vue.extend({
+export default defineComponent({
   props: ['location'],
   data() {
     return {

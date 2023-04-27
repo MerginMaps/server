@@ -8,11 +8,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <login-view-template @userLogin="handleUserLogin" />
 </template>
 
-<script>
+<script lang="ts">
 import { LoginViewTemplate } from '@mergin/lib'
+import { defineComponent } from 'vue'
 import { mapActions } from 'vuex'
 
-export default {
+export default defineComponent({
   name: 'LoginView',
   components: {
     LoginViewTemplate
@@ -38,5 +39,5 @@ export default {
       } catch {}
     }
   }
-}
+})
 </script>

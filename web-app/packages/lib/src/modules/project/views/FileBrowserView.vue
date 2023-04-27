@@ -52,20 +52,20 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <template v-slot:activator="{ on }">
               <span v-on="on">
                 <template v-if="value">
-                  {{ value | timediff }}
+                  {{ $filters.timediff(value) }}
                 </template>
               </span>
             </template>
             <span>
               <template v-if="value">
-                {{ value | datetime }}
+                {{ $filters.datetime(value) }}
               </template>
             </span>
           </v-tooltip>
         </template>
         <template #item.size="{ value }">
           <template v-if="value !== undefined">
-            {{ value | filesize }}
+            {{ $filters.filesize(value) }}
           </template>
         </template>
       </v-data-table>
@@ -102,7 +102,7 @@ import max from 'lodash/max'
 import orderBy from 'lodash/orderBy'
 import union from 'lodash/union'
 import Path from 'path'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapState } from 'vuex'
 
 import { formatDateTime } from '@/common/date_utils'
@@ -112,7 +112,7 @@ import FileIcon from '@/modules/project/components/FileIcon.vue'
 import FileMenu from '@/modules/project/components/FileMenu.vue'
 import FolderDiff from '@/modules/project/components/FolderDiff.vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'FileBrowserView',
   components: { FileIcon, FolderDiff, FileMenu },
   props: {
@@ -394,7 +394,7 @@ export default Vue.extend({
   }
 }
 
-::v-deep .v-data-table {
+:deep(.v-data-table) {
   tr {
     color: #555;
 
@@ -460,7 +460,7 @@ export default Vue.extend({
 }
 
 .v-data-table {
-  ::v-deep .v-data-footer__select {
+  :deep(.v-data-footer__select) {
     display: none;
   }
 }

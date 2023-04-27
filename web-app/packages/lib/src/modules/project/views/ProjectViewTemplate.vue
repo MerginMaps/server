@@ -193,7 +193,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { CopyIcon, DownloadIcon, SquareMinusIcon } from 'vue-tabler-icons'
 import { mapActions, mapGetters, mapMutations, mapState } from 'vuex'
 
@@ -207,7 +207,7 @@ import ProjectShareButton from '@/modules/project/components/ProjectShareButton.
 import UploadPanel from '@/modules/project/components/UploadPanel.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProjectViewTemplate',
   mixins: [MerginAPIMixin],
   components: {
@@ -442,7 +442,7 @@ export default Vue.extend({
   border: solid #eee;
   border-width: 1px 0;
 
-  ::v-deep {
+  :deep(*) {
     .v-text-field {
       padding-top: 0;
       margin-top: 0;

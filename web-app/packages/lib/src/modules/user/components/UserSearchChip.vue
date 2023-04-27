@@ -15,12 +15,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue, { PropType } from 'vue'
+import { defineComponent, PropType } from 'vue'
 import { SendIcon, UserIcon } from 'vue-tabler-icons'
 
 import { UserSearchInvite, UserSearch } from '@/modules/user/types'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'UserSearchChip',
   components: { SendIcon, UserIcon },
   props: {

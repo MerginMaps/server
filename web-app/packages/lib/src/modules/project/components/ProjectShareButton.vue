@@ -9,12 +9,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapGetters, mapState } from 'vuex'
 
 import ProjectShareButtonTemplate from './ProjectShareButtonTemplate.vue'
 
-export default Vue.extend({
+export default defineComponent({
   components: { ProjectShareButtonTemplate },
   computed: {
     ...mapGetters('userModule', ['currentWorkspace']),

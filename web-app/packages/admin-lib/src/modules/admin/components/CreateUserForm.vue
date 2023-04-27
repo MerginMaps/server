@@ -79,10 +79,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import { postRetryCond, htmlUtils } from '@mergin/lib'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapActions } from 'vuex'
 
-export default Vue.extend({
+export default defineComponent({
   data() {
     return {
       isValid: null,

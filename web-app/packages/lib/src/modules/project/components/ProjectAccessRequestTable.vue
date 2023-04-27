@@ -19,9 +19,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <template #item.expire="{ value }">
         <v-tooltip bottom>
           <template v-slot:activator="{ on }">
-            <span v-on="on">{{ value | remainingtime }}</span>
+            <span v-on="on">{{ $filters.remainingtime(value) }}</span>
           </template>
-          <span>{{ value | datetime }}</span>
+          <span>{{ $filters.datetime(value) }}</span>
         </v-tooltip>
       </template>
       <template #item.permission="{ item }">
@@ -81,10 +81,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProjectAccessRequestTable',
   props: {
     namespace: {
@@ -204,7 +204,7 @@ export default Vue.extend({
     margin-right: 0.5em;
     height: 1.6em;
 
-    ::v-deep .v-chip__content {
+    :deep(.v-chip__content) {
       cursor: pointer;
       padding: 0 0.5em;
       font-size: 85%;

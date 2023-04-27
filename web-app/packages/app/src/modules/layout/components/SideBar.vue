@@ -6,12 +6,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import { SideBarItem, SideBarTemplate } from '@mergin/lib'
-import { ref } from '@vue/composition-api'
-import Vue from 'vue'
+import { defineComponent, ref } from 'vue'
 import { HomeIcon, MapIcon } from 'vue-tabler-icons'
 import { useState } from 'vuex-composition-helpers'
 
-export default Vue.extend({
+export default defineComponent({
   props: {
     expandOnHover: {
       type: Boolean,
@@ -45,8 +44,8 @@ export default Vue.extend({
   <SideBarTemplate>
     <template #items>
       <v-list nav flat data-cy="side-bar-main-list">
-        <template v-for="(item, i) in mainItems">
-          <side-bar-item :item="item" :id="`item-${i}`" :key="`item-${i}`">
+        <template v-for="(item, i) in mainItems" :key="`item-${i}`">
+          <side-bar-item :item="item" :id="`item-${i}`">
             <template #icon>
               <component :is="item.tablerIcon"></component>
             </template>

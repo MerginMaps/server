@@ -23,8 +23,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           xs12
           px-4
           :class="{
-            'justify-center': $vuetify.breakpoint.xs,
-            'justify-end': $vuetify.breakpoint.smAndUp
+            'justify-center': $vuetify.display.xs,
+            'justify-end': $vuetify.display.smAndUp
           }"
         >
           <a class="icon" href="https://github.com/lutraconsulting/">
@@ -45,10 +45,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   </section>
 </template>
 
-<script>
-export default {
+<script lang="ts">
+import { defineComponent } from 'vue'
+
+export default defineComponent({
   name: 'Footer'
-}
+})
 </script>
 
 <style lang="scss" scoped>

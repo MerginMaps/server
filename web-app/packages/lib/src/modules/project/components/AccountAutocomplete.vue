@@ -88,7 +88,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import debounce from 'lodash/debounce'
 import isEmpty from 'lodash/isEmpty'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { SendIcon, UserIcon } from 'vue-tabler-icons'
 import { mapState } from 'vuex'
 
@@ -98,7 +98,7 @@ import { EMPTY_INVITE_ITEM } from '@/modules/user/constants'
 import { UserSearchParams } from '@/modules/user/types'
 import { UserApi } from '@/modules/user/userApi'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'AccountAutocomplete',
   components: { UserSearchChip, SendIcon, UserIcon },
   props: {

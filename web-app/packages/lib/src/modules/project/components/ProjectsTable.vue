@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             data-cy="project-table-search-bar"
           >
           </v-text-field>
-          <template v-if="$vuetify.breakpoint.smAndUp">
+          <template v-if="$vuetify.display.smAndUp">
             <v-select
               v-model="options.sortBy[0]"
               @change="paginating(options)"
@@ -151,7 +151,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                       style="margin-right: 20px"
                       data-cy="project-form-project-size"
                       ><v-icon class="icon" size="20">folder</v-icon
-                      >{{ item.disk_usage | filesize('MB', 1) }}</span
+                      >{{ $filters.filesize(item.disk_usage, 'MB', 1) }}</span
                     >
                   </template>
                   <span>project size</span>
@@ -162,10 +162,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                       v-on="on"
                       style="margin-right: 20px"
                       data-cy="project-form-updated"
-                      >Updated {{ item.updated | timediff }}</span
+                      >Updated {{ $filters.timediff(item.updated) }}</span
                     >
                   </template>
-                  <span>{{ item.updated | datetime }}</span>
+                  <span>{{ $filters.datetime(item.updated) }}</span>
                 </v-tooltip>
                 <v-tooltip bottom>
                   <template v-slot:activator="{ on }">
@@ -218,13 +218,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import debounce from 'lodash/debounce'
-import Vue, { PropType } from 'vue'
+import { defineComponent, PropType } from 'vue'
 
 import { PaginatedGridOptions } from '@/common'
 import { formatToTitle } from '@/common/text_utils'
 import { ProjectListItem } from '@/modules/project/types'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'projects-table',
   props: {
     showNamespace: {
@@ -375,7 +375,7 @@ export default Vue.extend({
     margin-right: 0.5em;
     height: 1.3em;
 
-    ::v-deep .v-chip__content {
+    :deep(.v-chip__content) {
       padding: 0 0.2em;
       font-size: 85%;
     }
@@ -397,7 +397,7 @@ export default Vue.extend({
 }
 
 .v-toolbar {
-  ::v-deep .v-toolbar__content {
+  :deep(.v-toolbar__content) {
     padding-left: 0;
   }
 }

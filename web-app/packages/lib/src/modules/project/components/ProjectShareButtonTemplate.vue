@@ -14,14 +14,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { PlusIcon } from 'vue-tabler-icons'
 import { mapActions, mapState } from 'vuex'
 
 import ActionButton from '@/common/components/ActionButton.vue'
 import ProjectShareDialog from '@/modules/project/components/ProjectShareDialog.vue'
 
-export default Vue.extend({
+export default defineComponent({
   props: {
     allowInvite: Boolean
   },

@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     v-model="drawer"
     :dark="false"
     :expand-on-hover="expandOnHover"
-    :right="$vuetify.rtl"
+    :right="$vuetify.locale.isRtl"
     :src="barImage"
     mobile-breakpoint="960"
     app
@@ -37,7 +37,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           size="45"
         >
           <v-img
-            :src="require('@/assets/mm-icon-white-large-no-transparency.png')"
+            :src="getImageUrl('mm-icon-white-large-no-transparency.png')"
             max-height="45"
           />
         </v-list-item-avatar>
@@ -61,14 +61,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <!-- https://github.com/vuetifyjs/vuetify/pull/8574 -->
       <div />
 
-      <template v-for="(item, i) in computedItems">
+      <template v-for="(item, i) in computedItems" :key="`item-${i}`">
         <!--   TODO: handle item children (it is only in admin apps now)     -->
         <!--        <base-item-group v-if="item.children" :key="`group-${i}`" :item="item">-->
         <!--          &lt;!&ndash;  &ndash;&gt;-->
         <!--        </base-item-group>-->
         <!---->
         <!--        <base-item v-else :key="`item-${i}`" :item="item" />-->
-        <base-item :key="`item-${i}`" :item="item" color="black" />
+        <base-item :item="item" color="black" />
       </template>
 
       <!-- Style cascading bug  -->
@@ -81,10 +81,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 // Utilities
 import { BaseItem } from '@mergin/lib'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapState } from 'vuex'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'DashboardCoreDrawer',
 
   components: { BaseItem },
@@ -100,6 +100,7 @@ export default Vue.extend({
     ...mapState(['barColor', 'barImage']),
     ...mapState('layoutModule', { drawerState: 'drawer' }),
     ...mapState('userModule', ['loggedUser']),
+
     drawer: {
       get() {
         return this.drawerState
@@ -147,6 +148,9 @@ export default Vue.extend({
   },
 
   methods: {
+    getImageUrl (name) {
+      return new URL(`../../../assets/${name}`, import.meta.url).href
+    },
     mapItem(item) {
       return {
         ...item,
@@ -159,7 +163,7 @@ export default Vue.extend({
 </script>
 
 <style lang="sass">
-@import 'vuetify/src/styles/tools/rtl'
+@use 'vuetify/tools'
 
 #core-navigation-drawer .theme--dark.v-navigation-drawer
   background-color: #eaebef
@@ -175,11 +179,11 @@ export default Vue.extend({
       text-align: center
       width: 20px
 
-      +ltr()
+      +tools.ltr()
         margin-right: 24px
         margin-left: 12px !important
 
-      +rtl()
+      +tools.rtl()
         margin-left: 24px
         margin-right: 12px !important
 
@@ -191,17 +195,17 @@ export default Vue.extend({
 
   .v-list-group--sub-group
     .v-list-item
-      +ltr()
+      +tools.ltr()
         padding-left: 8px
 
-      +rtl()
+      +tools.rtl()
         padding-right: 8px
 
     .v-list-group__header
-      +ltr()
+      +tools.ltr()
         padding-right: 0
 
-      +rtl()
+      +tools.rtl()
         padding-right: 0
 
       .v-list-item__icon--text
@@ -211,9 +215,9 @@ export default Vue.extend({
       .v-list-group__header__prepend-icon
         order: 2
 
-        +ltr()
+        +tools.ltr()
           margin-right: 8px
 
-        +rtl()
+        +tools.rtl()
           margin-left: 8px
 </style>

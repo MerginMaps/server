@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import { RouteConfig } from 'vue-router'
+import { RouteRecordRaw } from 'vue-router'
 
 import { Module, ModuleService, RouteOverrides } from '@/common/types'
 
@@ -17,33 +17,34 @@ export const initializeAppModule = <S, R>(
   }
 }
 
-function elevateToRouteConfig(
-  route: Partial<RouteConfig>
-): route is RouteConfig {
+function elevateToRouteRecordRaw(
+  route: Partial<RouteRecordRaw>
+): route is RouteRecordRaw {
   return true
 }
 
 export function applyRouteOverride(
-  route: Partial<RouteConfig>,
+  route: Partial<RouteRecordRaw>,
   routeOverrides?: RouteOverrides
-): Partial<RouteConfig> {
+): Partial<RouteRecordRaw> {
   let overridenRoute = route
+  const routeName: string = route.name as unknown as string
   if (overridenRoute.children) {
     overridenRoute.children = route.children.map((child) => {
       const overridenChild = applyRouteOverride(child, routeOverrides)
       let result = child
-      // ALWAYS true - this is just hack to cast Partial<RouteConfig> to RouteConfig to get rid of TS error
-      if (elevateToRouteConfig(overridenChild)) {
+      // ALWAYS true - this is just hack to cast Partial<RouteRecordRaw> to RouteRecordRaw to get rid of TS error
+      if (elevateToRouteRecordRaw(overridenChild)) {
         result = overridenChild
       }
       return result
     })
-  } else if (routeOverrides && routeOverrides[route.name]) {
-    overridenRoute = { ...overridenRoute, ...routeOverrides[route.name] }
+  } else if (routeOverrides && routeOverrides[routeName]) {
+    overridenRoute = { ...overridenRoute, ...routeOverrides[routeName] }
   }
 
-  if (routeOverrides && routeOverrides[route.name]) {
-    overridenRoute = { ...overridenRoute, ...routeOverrides[route.name] }
+  if (routeOverrides && routeOverrides[routeName]) {
+    overridenRoute = { ...overridenRoute, ...routeOverrides[routeName] }
   }
   return overridenRoute
 }

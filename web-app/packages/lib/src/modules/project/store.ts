@@ -5,7 +5,6 @@
 import FileSaver from 'file-saver'
 import keyBy from 'lodash/keyBy'
 import omit from 'lodash/omit'
-import Vue from 'vue'
 import { Module } from 'vuex'
 
 import { CustomError } from '@/common/errors'
@@ -100,20 +99,17 @@ const ProjectStore: Module<ProjectState, RootState> = {
         diff: null,
         analysingFiles: []
       }
-      Vue.set(state.uploads, state.project.path, upload)
+      state.uploads[state.project.path] = upload
     },
     analysingFiles(state, payload) {
       const upload = state.uploads[state.project.path]
-      Vue.set(upload, 'analysingFiles', payload.files)
+      upload.analysingFiles = payload.files
     },
     finishFileAnalysis(state, payload) {
       const upload = state.uploads[state.project.path]
       if (upload.analysingFiles) {
-        // upload.analysingFiles = upload.analysingFiles.filter(p => p !== path)
-        Vue.set(
-          upload,
-          'analysingFiles',
-          upload.analysingFiles.filter((p) => p !== payload.path)
+        upload.analysingFiles = upload.analysingFiles.filter(
+          (p) => p !== payload.path
         )
       }
     },
@@ -132,10 +128,10 @@ const ProjectStore: Module<ProjectState, RootState> = {
         loaded: 0,
         total: chunks
       }
-      Vue.set(state.uploads, state.project.path, upload)
+      state.uploads[state.project.path] = upload
     },
     discardUpload(state, payload) {
-      Vue.delete(state.uploads, payload.projectPath)
+      delete state.uploads[payload.projectPath]
     },
     startUpload(state) {
       const upload = state.uploads[state.project.path]
@@ -167,12 +163,12 @@ const ProjectStore: Module<ProjectState, RootState> = {
           files: { ...state.project.files },
           diff: filesDiff({}, {})
         }
-        Vue.set(state.uploads, state.project.path, upload)
+        state.uploads[state.project.path] = upload
       }
 
       payload.files.forEach((path) => {
         if (upload.files[path]) {
-          Vue.delete(upload.files, path)
+          delete upload.files[path]
         } else {
           // should be folder
           const dirPrefix = path + '/'

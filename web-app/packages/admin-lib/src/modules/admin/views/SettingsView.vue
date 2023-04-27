@@ -12,13 +12,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 
 import CheckForUpdatesCard from '@/modules/admin/components/CheckForUpdatesCard.vue'
 import UsageInformationCard from '@/modules/admin/components/UsageInformationCard.vue'
 import SettingsViewTemplate from '@/modules/admin/views/SettingsViewTemplate.vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'SettingsView',
   components: {
     CheckForUpdatesCard,

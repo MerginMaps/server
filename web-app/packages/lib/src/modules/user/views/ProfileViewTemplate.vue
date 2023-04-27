@@ -88,7 +88,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                             </li>
                             <li cy-data="profile-registered">
                               <b> Registered: </b
-                              >{{ loggedUser.registration_date | date }}
+                              >{{ $filters.date(loggedUser.registration_date) }}
                             </li>
                           </ul>
                           <br />
@@ -158,14 +158,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapState, mapActions } from 'vuex'
 
 import PageView from '@/modules/layout/components/PageView.vue'
 import ChangePasswordForm from '@/modules/user/components/ChangePasswordForm.vue'
 import EditProfileForm from '@/modules/user/components/EditProfileForm.vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProfileViewTemplate',
   props: {
     name: String

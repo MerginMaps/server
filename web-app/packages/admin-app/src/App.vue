@@ -9,12 +9,23 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <check-for-updates />
     <dialog-windows />
     <v-layout column fill-height>
-      <transition name="fade">
-        <router-view name="header" />
-      </transition>
-      <transition name="fade">
-        <router-view :key="$route.fullPath" name="sidebar" />
-      </transition>
+      <!-- TODO: V3_UPGRADE - check this https://router.vuejs.org/guide/migration/#router-view-keep-alive-and-transition     -->
+      <!--      <transition name="fade">-->
+      <!--        <router-view name="header" />-->
+      <!--      </transition>-->
+      <!--      <transition name="fade">-->
+      <!--        <router-view :key="$route.fullPath" name="sidebar" />-->
+      <!--      </transition>-->
+      <router-view name="header" v-slot="{ Component }">
+        <transition name="fade">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+      <router-view name="sidebar" v-slot="{ Component }" :key="$route.fullPath">
+        <transition name="fade">
+          <component :is="Component" />
+        </transition>
+      </router-view>
       <v-card
         v-if="pingData && pingData.maintenance"
         outlined
@@ -34,9 +45,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         style="margin: auto"
       ></global-warning>
       <v-layout column fill-height class="app-content">
-        <transition name="fade">
-          <router-view class="page" />
-        </transition>
+        <router-view class="page" v-slot="{ Component }">
+          <transition name="fade">
+            <component :is="Component" />
+          </transition>
+        </router-view>
       </v-layout>
     </v-layout>
     <!--    <upload-progress />-->
@@ -44,7 +57,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   </v-app>
 </template>
 
-<script>
+<script lang="ts">
 import { CheckForUpdates } from '@mergin/admin-lib'
 import {
   DialogWindows,
@@ -54,9 +67,10 @@ import {
   Notifications
   // UploadProgress
 } from '@mergin/lib'
+import { defineComponent } from 'vue'
 import { mapActions, mapMutations, mapState } from 'vuex'
 
-export default {
+export default defineComponent({
   name: 'app',
   components: {
     /* UploadProgress, */ Notifications,
@@ -128,7 +142,7 @@ export default {
     ...mapActions('userModule', ['checkCurrentWorkspace']),
     ...mapMutations('userModule', ['updateLoggedUser'])
   }
-}
+})
 </script>
 
 <style lang="scss">
@@ -170,7 +184,7 @@ h3 {
   transition: opacity 0.25s;
 }
 
-.fade-enter,
+.fade-enter-from,
 .fade-leave-to {
   opacity: 0;
 }

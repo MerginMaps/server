@@ -35,10 +35,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import debounce from 'lodash/debounce'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapState } from 'vuex'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'upload-progress',
   data() {
     return {
@@ -66,7 +66,7 @@ export default Vue.extend({
 </script>
 
 <style lang="scss" scoped>
-::v-deep {
+:deep(*) {
   .v-snack__content {
     padding: 0.75em 1em;
   }

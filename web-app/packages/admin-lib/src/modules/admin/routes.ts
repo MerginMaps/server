@@ -10,7 +10,7 @@ import {
   VersionDetailView,
   merginUtils
 } from '@mergin/lib'
-import { RouteConfig } from 'vue-router'
+import { RouteRecordRaw } from 'vue-router'
 import { Store } from 'vuex'
 
 import AccountsView from '@/modules/admin/views/AccountsView.vue'
@@ -21,7 +21,7 @@ import ProjectsView from '@/modules/project/views/ProjectsView.vue'
 import ProjectView from '@/modules/project/views/ProjectView.vue'
 import LoginView from '@/modules/user/views/LoginView.vue'
 
-export default (rootStore: Store<any>): RouteConfig[] => [
+export default (rootStore: Store<any>): RouteRecordRaw[] => [
   {
     beforeEnter: (to, from, next) => {
       if (rootStore.getters['userModule/isSuperUser']) {

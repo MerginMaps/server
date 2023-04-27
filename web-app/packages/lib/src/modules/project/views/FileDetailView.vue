@@ -42,9 +42,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-list-item-content>
           <v-list-item-title>Size</v-list-item-title>
           <v-list-item-subtitle>
-            {{ file.size | filesize }}
+            {{ $filters.filesize(file.size) }}
             <span v-if="state === 'updated'"
-              >(new: {{ upload.files[file.path].size | filesize }})</span
+              >(new:
+              {{ $filters.filesize(upload.files[file.path].size) }})</span
             >
           </v-list-item-subtitle>
         </v-list-item-content>
@@ -53,7 +54,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-list-item-content>
           <v-list-item-title>Last update</v-list-item-title>
           <v-list-item-subtitle
-            >{{ file.mtime | datetime }} ({{ file.mtime | timediff }})
+            >{{ $filters.datetime(file.mtime) }} ({{
+              $filters.timediff(file.mtime)
+            }})
           </v-list-item-subtitle>
         </v-list-item-content>
       </v-list-item>
@@ -62,13 +65,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <!--     render only if file is smaller than 100MB-->
     <div class="container" v-if="mimetype && file.size < 104857600">
       <output>
-        <pdf
-          :src="downloadLink"
-          @num-pages="pageCount = $event"
-          @page-loaded="currentPage = $event"
-          v-if="mimetype.match('pdf')"
-        ></pdf>
-        <img :src="downloadLink" v-else-if="mimetype.match('image')" />
+<!--      TODO: V3_UPGRADE temporary disabled - vue-pdf has issue with require function  -->
+<!--        <pdf-->
+<!--          :src="downloadLink"-->
+<!--          @num-pages="pageCount = $event"-->
+<!--          @page-loaded="currentPage = $event"-->
+<!--          v-if="mimetype.match('pdf')"-->
+<!--        ></pdf>-->
+        <img :src="downloadLink" v-if="mimetype.match('image')" />
         <v-textarea
           v-else-if="mimetype.match('text')"
           :auto-grow="true"
@@ -85,8 +89,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import Path from 'path'
-import Vue from 'vue'
-import pdf from 'vue-pdf'
+import { defineComponent } from 'vue'
+// import pdf from 'vue-pdf'
 import { DownloadIcon, TrashIcon } from 'vue-tabler-icons'
 import { mapMutations, mapState } from 'vuex'
 
@@ -99,7 +103,7 @@ const Colors = {
   updated: 'orange'
 }
 
-export default Vue.extend({
+export default defineComponent({
   name: 'FileInfoView',
   props: {
     namespace: String,
@@ -110,7 +114,7 @@ export default Vue.extend({
     }
   },
   components: {
-    pdf,
+    // pdf,
     ActionButton,
     DownloadIcon,
     TrashIcon
@@ -222,7 +226,7 @@ export default Vue.extend({
 }
 
 .v-list {
-  ::v-deep .v-list__tile {
+  :deep(.v-list__tile) {
     font-size: 14px;
     color: #444;
 

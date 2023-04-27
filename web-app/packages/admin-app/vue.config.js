@@ -67,7 +67,7 @@ module.exports = {
 
     // to enable switch in development server
     if (process.env.NODE_ENV !== 'production') {
-      config.entry = './src/main.js'
+      config.entry = './src/main.ts'
     }
 
     config.resolve.fallback = {
@@ -93,9 +93,7 @@ module.exports = {
           },
           {
             from: path.join(
-              path.dirname(
-                require.resolve(`@mergin/admin-lib/package.json`)
-              ),
+              path.dirname(require.resolve(`@mergin/admin-lib/package.json`)),
               'dist',
               'img'
             ),

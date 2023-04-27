@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue, { PropType } from 'vue'
+import { defineComponent, PropType } from 'vue'
 import { mapActions } from 'vuex'
 
 import { PaginatedGridOptions } from '@/common'
@@ -25,7 +25,7 @@ import {
   ProjectGridState
 } from '@/modules/project/types'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'projects-table-data-loader',
   components: { ProjectsTable },
   props: {

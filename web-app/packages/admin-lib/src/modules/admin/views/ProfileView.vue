@@ -62,7 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                           </li>
                           <li>
                             <b> Registered: </b
-                            >{{ profile.registration_date | date }}
+                            >{{ $filters.date(profile.registration_date) }}
                           </li>
                         </ul>
                       </div>
@@ -125,12 +125,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import { ConfirmDialog, PageView } from '@mergin/lib'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProfileView',
   components: { PageView, AdminLayout },
   props: {

@@ -2,17 +2,34 @@
   "name": "@mergin/admin-lib",
   "version": "0.1.0",
   "private": true,
-  "main": "dist/admin-lib.umd.js",
+  "type": "module",
+  "files": ["dist", "types"],
+  "main": "dist/admin-lib.umd.cjs",
+  "module": "dist/lib.js",
   "types": "types/main.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/admin-lib.js",
+      "require": "./dist/admin-lib.umd.cjs"
+    },
+    "./dist/style.css": {
+      "import": "./dist/style.css",
+      "require": "./dist/style.css"
+    }
+  },
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build:lib": "yarn clean:types:temp && vue-cli-service build --mode development --target lib --name admin-lib ./src/main.ts",
-    "build:lib:prod": "yarn clean:types:temp && vue-cli-service build --target lib --name admin-lib ./src/main.ts",
-    "build:lib:watch": "yarn clean:types:temp && vue-cli-service build --mode development --target lib --name admin-lib --watch ./src/main.ts",
+    "dev": "vite",
+    "preview": "vite preview",
+    "build:watch": "npm-run-all -p build:lib:watch build:types:watch",
+    "build:lib": "yarn clean:types:temp && vite build --mode development",
+    "build:lib:prod": "yarn clean:types:temp && vite build",
+    "build:lib:watch": "yarn clean:types:temp && vite build --mode development --watch",
     "build:lib:all": "yarn build:lib && yarn build:types",
     "build:lib:all:prod": "yarn build:lib:prod && yarn build:types",
-    "build:types": "yarn clean:types && tsc --declaration --emitDeclarationOnly && vue-typegen gen -s src -o types && tsc-alias && yarn clean:types:temp",
-    "build:types:watch": "yarn clean:types && tsc --declaration --emitDeclarationOnly --watch && vue-typegen gen -s src -o types && tsc-alias && yarn clean:types:temp",
+    "build:types:old": "yarn clean:types && tsc --declaration --emitDeclarationOnly && vue-typegen gen -s src -o types && tsc-alias && yarn clean:types:temp",
+    "build:types": "yarn clean:types && (vue-tsc --declaration --emitDeclarationOnly || true) && tsc-alias",
+    "build:types:watch:old": "yarn clean:types && tsc --declaration --emitDeclarationOnly --watch && vue-typegen gen -s src -o types && tsc-alias && yarn clean:types:temp",
+    "build:types:watch": "yarn clean:types && vue-tsc --declaration --emitDeclarationOnly --watch && tsc-alias",
     "clean": "yarn clean:lib && yarn clean:types",
     "clean:lib": "rimraf ./dist",
     "clean:types:temp": "rimraf ./**/*.vue.ts",
@@ -20,7 +37,7 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
-    "@mergin/lib": "file:../lib",
+    "@mergin/lib": "0.1.0",
     "axios": "^0.26.1",
     "axios-retry": "^3.2.4",
     "core-js": "^3.8.3",
@@ -29,11 +46,8 @@
     "universal-cookie": "^4.0.4"
   },
   "peerDependencies": {
-    "portal-vue": "2.x",
-    "vue": "2.x",
-    "vuetify": "2.x"
-  },
-  "devDependencies": {
-    "@vue/cli-plugin-typescript": "~5.0.0"
+    "portal-vue": ">=3.x",
+    "vue": "2.x || 3.x",
+    "vuetify": "2.x || 3.x"
   }
 }
