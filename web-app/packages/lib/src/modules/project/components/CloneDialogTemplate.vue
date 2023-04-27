@@ -35,7 +35,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { AxiosError } from 'axios'
 import { defineComponent } from 'vue'
 import { mapActions, mapGetters } from 'vuex'
 
@@ -72,27 +71,20 @@ export default defineComponent({
     successCloneCallback() {
       this.close()
     },
-    errorCloneCallback(error: AxiosError) {
-      this.handleError({
-        componentId: this.merginComponentUuid,
-        error,
-        generalMessage: 'Failed to clone project'
-      })
-    },
 
     onCloneProject() {
       this.clearErrors({ componentId: this.merginComponentUuid })
       const data: CloneProjectParams = {
         project: this.newProjectName,
-        namespace: this.namespace
+        namespace: this.namespace,
+        merginComponentUuid: this.merginComponentUuid
       }
       this.$emit(
         'on-clone-project',
         this.project,
         this.namespace,
         data,
-        this.successCloneCallback,
-        this.errorCloneCallback
+        this.successCloneCallback
       )
     }
   }

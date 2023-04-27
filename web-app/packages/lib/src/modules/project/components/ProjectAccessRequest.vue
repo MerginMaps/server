@@ -198,6 +198,7 @@ export default defineComponent({
       'cancelProjectAccessRequest',
       'acceptProjectAccessRequest'
     ]),
+    ...mapActions('notificationModule', ['error']),
 
     canAcceptAccessRequest(userId: number, expire: string) {
       return (
@@ -213,19 +214,26 @@ export default defineComponent({
       )
     },
     async acceptRequest(request) {
-      const el = this.$refs['hidden-btn']
-      el.value = this.permissions[request.id]
-      el.dispatchEvent(new Event('click', {}))
-      const data = {
-        permissions: this.permissions[request.id]
+      try {
+        const el = this.$refs['hidden-btn']
+        el.value = this.permissions[request.id]
+        el.dispatchEvent(new Event('click', {}))
+        const data = {
+          permissions: this.permissions[request.id]
+        }
+        await this.acceptProjectAccessRequest({
+          data,
+          itemId: request.id,
+          refetchGlobalAccessRequests: false,
+          namespace: this.project.namespace,
+          projectName: this.project.name
+        })
+      } catch (err) {
+        const msg = err.response
+          ? err.response.data?.detail
+          : 'Failed to accept access request'
+        this.error({ text: msg })
       }
-      await this.acceptProjectAccessRequest({
-        data,
-        itemId: request.id,
-        refetchGlobalAccessRequests: false,
-        namespace: this.project.namespace,
-        projectName: this.project.name
-      })
     },
     expired(expire) {
       return Date.parse(expire) < Date.now()

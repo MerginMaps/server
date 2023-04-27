@@ -120,6 +120,7 @@ export default defineComponent({
   methods: {
     ...mapActions('projectModule', ['deleteProject', 'saveProjectSettings']),
     ...mapActions('dialogModule', ['prompt']),
+    ...mapActions('notificationModule', ['error']),
 
     saveProject(newSettingsAccessValues) {
       const newSettings = {
@@ -132,11 +133,17 @@ export default defineComponent({
       this.saveSettings(newSettings)
     },
     saveSettings: debounce(function (newSettings) {
-      this.saveProjectSettings({
-        namespace: this.namespace,
-        newSettings,
-        projectName: this.projectName
-      })
+      try {
+        this.saveProjectSettings({
+          namespace: this.namespace,
+          newSettings,
+          projectName: this.projectName
+        })
+      } catch (err) {
+        this.error({
+          text: err.response.data?.detail || 'Failed to save project settings'
+        })
+      }
     }, 2000),
     togglePublicPrivate() {
       this.settings.access.public = !this.settings.access.public

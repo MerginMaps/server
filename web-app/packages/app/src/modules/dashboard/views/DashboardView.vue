@@ -10,7 +10,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <dashboard-usage-info-row />
     </template>
     <template #content>
-      <dashboard-access-requests-row v-if="isGlobalWorkspaceAdmin" />
+      <dashboard-access-requests-row v-if="isGlobalWorkspaceAdmin">
+        <template v-slot:table="{ namespace }">
+          <project-access-request-table :namespace="namespace" />
+        </template>
+      </dashboard-access-requests-row>
       <dashboard-projects-row>
         <template #projects>
           <projects-table-data-loader
@@ -34,7 +38,8 @@ import {
   DashboardProjectsRow,
   DashboardAccessRequestsRow,
   ProjectsTableDataLoader,
-  DashboardUsageInfoRow
+  DashboardUsageInfoRow,
+  ProjectAccessRequestTable
 } from '@mergin/lib'
 import { defineComponent, computed, ref, onMounted } from 'vue'
 import { useActions, useGetters } from 'vuex-composition-helpers'
@@ -46,7 +51,8 @@ export default defineComponent({
     DashboardProjectsRow,
     DashboardAccessRequestsRow,
     ProjectsTableDataLoader,
-    DashboardUsageInfoRow
+    DashboardUsageInfoRow,
+    ProjectAccessRequestTable
   },
   setup() {
     const initialOptions = ref({

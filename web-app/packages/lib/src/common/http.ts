@@ -137,3 +137,10 @@ function restartRequest(request) {
   request.data = request.data ? JSON.parse(request.data) : request.data
   return HTTP.request(request)
 }
+
+/**
+ * Axios default status codes overwrite for 207
+ */
+export function validateStatus(status: number): boolean {
+  return (status >= 200 && status < 207) || (status > 207 && status < 300)
+}

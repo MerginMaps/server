@@ -44,6 +44,7 @@ export default defineComponent({
   },
   setup(props) {
     const { show } = useActions('dialogModule', ['show'])
+    const { handleError } = useActions('formModule', ['handleError'])
 
     function openCloneDialog() {
       const dialogProps = {
@@ -51,10 +52,20 @@ export default defineComponent({
         project: props.projectName
       }
       const dialog = { maxWidth: 580, persistent: true }
+      const listeners = {
+        error: (error, data) => {
+          handleError({
+            componentId: data.merginComponentUuid,
+            error,
+            generalMessage: 'Failed to clone project'
+          })
+        }
+      }
       show({
         component: CloneDialog,
         params: {
           props: dialogProps,
+          listeners,
           dialog
         }
       })

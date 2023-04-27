@@ -61,7 +61,9 @@ export default defineComponent({
     ...mapActions('projectModule', { createProjectAction: 'createProject' }),
 
     async createProject() {
-      await this.clearErrors({ componentId: this.merginComponentUuid })
+      // TODO: add types
+      const dialogData = { componentId: this.merginComponentUuid }
+      await this.clearErrors(dialogData)
       try {
         const data = {
           name: this.name.trim(),
@@ -72,8 +74,9 @@ export default defineComponent({
           namespace: this.currentNamespace
         })
         await this.close()
-      } catch (_error) {
-        // do not close
+        this.$emit('success')
+      } catch (err) {
+        this.$emit('error', err, dialogData)
       }
     }
   }

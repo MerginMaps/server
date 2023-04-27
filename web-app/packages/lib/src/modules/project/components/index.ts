@@ -21,3 +21,4 @@ export { default as ProjectShareButtonTemplate } from './ProjectShareButtonTempl
 export { default as ProjectsTable } from './ProjectsTable.vue'
 export { default as ProjectsTableDataLoader } from './ProjectsTableDataLoader.vue'
 export { default as UploadPanel } from './UploadPanel.vue'
+export { default as ProjectAccessRequestTableTemplate } from './ProjectAccessRequestTableTemplate.vue'

@@ -110,16 +110,15 @@ def create_app(public_keys: List[str] = None) -> Flask:
     from .config import Configuration
     from .auth import auth_required, decode_token
     from .auth.models import User
-    #from .celery import celery
+
+    # from .celery import celery
     from .sync.db_events import register_events
     from .sync.workspace import GlobalWorkspaceHandler
     from .sync.config import Configuration as SyncConfig
     from .sync.commands import add_commands
     from .auth import register as register_auth
 
-    app = connexion.FlaskApp(
-        __name__, specification_dir=os.path.join(this_dir)
-    )
+    app = connexion.FlaskApp(__name__, specification_dir=os.path.join(this_dir))
     app.app.json_encoder = FlaskJSONEncoder
 
     app.add_api(
@@ -218,7 +217,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
         return data
 
     # update celery config with flask app config
-    #celery.conf.update(app.app.config)
+    # celery.conf.update(app.app.config)
 
     @app.route("/alive", methods=["POST"])
     @csrf.exempt
@@ -424,3 +423,13 @@ def parse_version_string(version: str) -> Optional[Dict]:
 def is_server_configured():
     """Validate server is configured correctly for deployment"""
     return current_app.config.get("MERGIN_BASE_URL", "") != ""
+
+
+class ResponseError:
+    """Base class for custom error messages"""
+
+    code = "BaseError"
+    detail = "Request failed"
+
+    def to_dict(self) -> Dict:
+        return dict(code=self.code, detail=self.detail + f" ({self.code})")

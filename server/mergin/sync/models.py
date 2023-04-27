@@ -7,7 +7,7 @@ import os
 import uuid
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, Dict, Set
 
 from pygeodiff import GeoDiff
 from sqlalchemy import text
@@ -357,6 +357,22 @@ class ProjectAccess(db.Model):
                 ids.remove(user_id)
                 setattr(self, attr, ids)
                 flag_modified(self, attr)
+
+    def bulk_update(self, new_access: Dict) -> Set[int]:
+        """From new access lists do bulk update and return ids with any change applied"""
+        diff = set()
+        for key in ("owners", "writers", "readers"):
+            new_value = new_access.get(key, None)
+            if not new_value:
+                continue
+            old_value = set(getattr(self, key))
+            diff = diff.union(set(new_value).symmetric_difference(old_value))
+            setattr(self, key, list(new_value))
+
+        # make sure lists are consistent (they inherit from each other)
+        self.writers = list(set(self.writers).union(set(self.owners)))
+        self.readers = list(set(self.readers).union(set(self.writers)))
+        return diff
 
 
 class ProjectVersion(db.Model):

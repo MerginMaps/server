@@ -7,7 +7,6 @@ import keyBy from 'lodash/keyBy'
 import omit from 'lodash/omit'
 import { Module } from 'vuex'
 
-import { CustomError } from '@/common/errors'
 import { waitCursor } from '@/common/html_utils'
 import { filesDiff } from '@/common/mergin_utils'
 import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
@@ -27,6 +26,7 @@ import {
   ReloadProjectAccessRequestPayload
 } from '@/modules/project/types'
 import { RootState } from '@/modules/types'
+import { AxiosResponse } from 'axios'
 
 interface File {
   chunks: any
@@ -235,17 +235,6 @@ const ProjectStore: Module<ProjectState, RootState> = {
             projectName: payload.data.name
           }
         })
-      } catch (_err) {
-        await dispatch(
-          'formModule/handleError',
-          {
-            componentId: payload.componentId,
-            error: _err,
-            generalMessage: 'Failed to create project.'
-          },
-          { root: true }
-        )
-        throw new Error('Failed')
       } finally {
         waitCursor(false)
       }
@@ -387,24 +376,13 @@ const ProjectStore: Module<ProjectState, RootState> = {
           true
         )
         await dispatch('reloadProjectAccessRequests', payload)
-      } catch (err) {
-        const msg = err.response
-          ? err.response.data?.detail
-          : 'Failed to accept access request'
-        await dispatch(
-          'notificationModule/error',
-          { text: msg },
-          {
-            root: true
-          }
-        )
       } finally {
         waitCursor(false)
       }
     },
 
     async cloneProject({ commit }, payload) {
-      const { namespace, project, data, cbSuccess, cbError } = payload
+      const { namespace, project, data, cbSuccess } = payload
       try {
         waitCursor(true)
         await ProjectApi.cloneProject(namespace, project, data)
@@ -418,9 +396,9 @@ const ProjectStore: Module<ProjectState, RootState> = {
             projectName: data.project
           }
         })
-      } catch (e) {
-        cbError(e)
+      } catch (err) {
         waitCursor(false)
+        throw err
       }
     },
 
@@ -531,7 +509,10 @@ const ProjectStore: Module<ProjectState, RootState> = {
       }
     },
 
-    async saveProjectSettings({ commit, dispatch }, payload) {
+    async saveProjectSettings(
+      { commit },
+      payload
+    ): Promise<AxiosResponse<ProjectDetail>> {
       const { namespace, newSettings, projectName } = payload
 
       try {
@@ -546,16 +527,8 @@ const ProjectStore: Module<ProjectState, RootState> = {
         commit('setProject', { project: saveProjectSettingsResponse.data })
         waitCursor(false)
         return saveProjectSettingsResponse
-      } catch (err) {
-        await dispatch(
-          'notificationModule/error',
-          {
-            text: err.response.data?.detail || 'Failed to save project settings'
-          },
-          { root: true }
-        )
+      } finally {
         waitCursor(false)
-        return new CustomError('Failed to save project settings', err?.response)
       }
     },
 
