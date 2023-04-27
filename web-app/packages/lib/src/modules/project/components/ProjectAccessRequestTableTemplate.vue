@@ -19,9 +19,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <template #item.expire="{ value }">
         <v-tooltip bottom>
           <template v-slot:activator="{ on }">
-            <span v-on="on">{{ value | remainingtime }}</span>
+            <span v-on="on">{{ $filters.remainingtime(value) }}</span>
           </template>
-          <span>{{ value | datetime }}</span>
+          <span>{{ $filters.datetime(value) }}</span>
         </v-tooltip>
       </template>
       <template #item.permission="{ item }">
@@ -81,7 +81,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import {defineComponent} from 'vue'
+import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
 
 export default defineComponent({

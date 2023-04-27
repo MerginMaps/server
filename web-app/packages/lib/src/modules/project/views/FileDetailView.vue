@@ -65,13 +65,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <!--     render only if file is smaller than 100MB-->
     <div class="container" v-if="mimetype && file.size < 104857600">
       <output>
-<!--      TODO: V3_UPGRADE temporary disabled - vue-pdf has issue with require function  -->
-<!--        <pdf-->
-<!--          :src="downloadLink"-->
-<!--          @num-pages="pageCount = $event"-->
-<!--          @page-loaded="currentPage = $event"-->
-<!--          v-if="mimetype.match('pdf')"-->
-<!--        ></pdf>-->
+        <!--      TODO: V3_UPGRADE temporary disabled - vue-pdf has issue with require function  -->
+        <!--        <pdf-->
+        <!--          :src="downloadLink"-->
+        <!--          @num-pages="pageCount = $event"-->
+        <!--          @page-loaded="currentPage = $event"-->
+        <!--          v-if="mimetype.match('pdf')"-->
+        <!--        ></pdf>-->
         <img :src="downloadLink" v-if="mimetype.match('image')" />
         <v-textarea
           v-else-if="mimetype.match('text')"

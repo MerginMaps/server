@@ -40,7 +40,7 @@ export default defineComponent({
       'isGlobalWorkspaceAdmin'
     ])
     const { handleError } = useActions('formModule', ['handleError'])
-    
+
     const canCreateProject = computed(() => isGlobalWorkspaceAdmin?.value)
 
     /**

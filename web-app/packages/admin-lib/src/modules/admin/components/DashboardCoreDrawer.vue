@@ -148,7 +148,7 @@ export default defineComponent({
   },
 
   methods: {
-    getImageUrl (name) {
+    getImageUrl(name) {
       return new URL(`../../../assets/${name}`, import.meta.url).href
     },
     mapItem(item) {
