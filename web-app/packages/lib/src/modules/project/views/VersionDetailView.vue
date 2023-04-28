@@ -155,7 +155,7 @@ export default Vue.extend({
     this.getVersion()
   },
   computed: {
-    ...mapState('projectModule', ['project']),
+    ...mapState('projectModule', ['project', 'versions']),
     colors() {
       return Colors
     },
@@ -182,7 +182,7 @@ export default Vue.extend({
   },
   methods: {
     getVersion() {
-      if (!this.project.versions) {
+      if (!this.versions?.length) {
         ProjectApi.getProjectVersion(
           this.project.namespace,
           this.project.name,
@@ -203,9 +203,7 @@ export default Vue.extend({
             this.$store.dispatch('notificationModule/error', { text: msg })
           })
       } else {
-        this.version = this.project.versions.find(
-          (v) => v.name === this.version_id
-        )
+        this.version = this.versions.find((v) => v.name === this.version_id)
       }
     }
   }

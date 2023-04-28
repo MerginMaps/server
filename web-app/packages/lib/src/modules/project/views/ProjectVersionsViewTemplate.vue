@@ -11,10 +11,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </v-layout>
     <div class="text-center">
       <v-pagination
-        v-if="options && versionsCount > options.itemsPerPage"
+        v-if="showPagination && options && versionsCount > options.itemsPerPage"
         v-model="options.page"
         :length="Math.ceil(versionsCount / options.itemsPerPage)"
-        :total-visible="7"
+        :total-visible="2"
         circle
         color="primary"
         @input="fetchPage"
@@ -89,7 +89,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 ? ''
                 : {
                     name: 'project-versions-detail',
-                    params: { version_id: item.name, version: item }
+                    params: { version_id: item.name }
                   }
             "
           >
@@ -152,7 +152,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </v-data-table>
     <div class="text-center">
       <v-pagination
-        v-if="options && versionsCount > options.itemsPerPage"
+        v-if="showPagination && options && versionsCount > options.itemsPerPage"
         v-model="options.page"
         :length="Math.ceil(versionsCount / options.itemsPerPage)"
         :total-visible="7"
@@ -161,6 +161,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         @input="fetchPage"
       ></v-pagination>
     </div>
+    <slot name="table-footer"></slot>
   </div>
 </template>
 
@@ -188,7 +189,9 @@ export default Vue.extend({
     /** Default items per page */
     defaultItemsPerPage: Number as PropType<number>,
     /** Disabled keys (name attribute of rows in vuetify table are keys for items) */
-    disabledKeys: { type: Array as PropType<string[]>, default: () => [] }
+    disabledKeys: { type: Array as PropType<string[]>, default: () => [] },
+    /** Show pagination */
+    showPagination: { type: Boolean, default: true }
   },
   data() {
     return {
