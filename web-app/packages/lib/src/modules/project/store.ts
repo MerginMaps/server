@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import { AxiosResponse } from 'axios'
 import FileSaver from 'file-saver'
 import keyBy from 'lodash/keyBy'
 import omit from 'lodash/omit'
@@ -24,10 +25,12 @@ import {
   ProjectDetail,
   ProjectParams,
   EnhancedProjectDetail,
-  ReloadProjectAccessRequestPayload
+  ReloadProjectAccessRequestPayload,
+  FetchProjectVersionsPayload,
+  ProjectVersion,
+  ProjectVersionsPayload
 } from '@/modules/project/types'
 import { RootState } from '@/modules/types'
-import { AxiosError, AxiosResponse } from 'axios'
 
 interface File {
   chunks: any
@@ -45,6 +48,9 @@ export interface ProjectState {
   projectsCount: number
   uploads: any
   currentNamespace: string
+  versions: ProjectVersion[]
+  versionsCount: number
+  versionsLoading: boolean
 }
 
 const ProjectStore: Module<ProjectState, RootState> = {
@@ -56,7 +62,10 @@ const ProjectStore: Module<ProjectState, RootState> = {
     projectsCount: 0,
     projects: undefined,
     uploads: {},
-    currentNamespace: null
+    currentNamespace: null,
+    versions: [],
+    versionsCount: 0,
+    versionsLoading: false
   },
 
   mutations: {
@@ -90,8 +99,12 @@ const ProjectStore: Module<ProjectState, RootState> = {
       state.projects = payload.projects
       state.projectsCount = payload.count
     },
-    projectVersions(state, payload) {
-      state.project.versions = payload.versions
+    projectVersions(state, payload: ProjectVersionsPayload) {
+      state.versions = payload.versions
+      state.versionsCount = payload.count
+    },
+    projectVersionsLoading(state, loading: boolean) {
+      state.versionsLoading = loading
     },
 
     initUpload(state, payload) {
@@ -493,15 +506,21 @@ const ProjectStore: Module<ProjectState, RootState> = {
       }
     },
 
-    async fetchProjectVersions({ commit, dispatch }, payload) {
+    async fetchProjectVersions(
+      { commit, dispatch },
+      payload: FetchProjectVersionsPayload
+    ) {
       try {
-        const versionsResponse = await ProjectApi.fetchProjectVersions(
+        commit('projectVersionsLoading', true)
+        const response = await ProjectApi.fetchProjectVersions(
           payload.namespace,
           payload.projectName,
           payload.params
         )
-        payload.cbSuccess(versionsResponse.data)
-        commit('projectVersions', { versions: versionsResponse.data?.versions })
+        commit('projectVersions', {
+          versions: response?.data?.versions,
+          count: response?.data?.count
+        })
       } catch (e) {
         await dispatch(
           'notificationModule/error',
@@ -510,6 +529,8 @@ const ProjectStore: Module<ProjectState, RootState> = {
           },
           { root: true }
         )
+      } finally {
+        commit('projectVersionsLoading', false)
       }
     },
 
