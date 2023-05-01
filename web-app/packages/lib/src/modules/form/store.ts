@@ -49,7 +49,11 @@ const FormStore: Module<FormState, RootState> = {
       let errorMessage
       if (typeof payload.error?.response?.data === 'object') {
         // two types of error responses
-        if (typeof payload.error.response.data.status === 'number') {
+        // TODO: Get data from HTTP status code, handle formError not standard error with detail
+        if (
+          typeof payload.error.response.data.status === 'number' ||
+          payload.error.response.data.detail
+        ) {
           errorMessage = payload.error.response.data.detail
         } else {
           commit('setFormErrors', {

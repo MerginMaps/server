@@ -129,6 +129,7 @@ export default Vue.extend({
   methods: {
     ...mapActions('dialogModule', ['close']),
     ...mapActions('projectModule', ['saveProjectSettings']),
+    ...mapActions('notificationModule', ['error']),
 
     onAutocompleteUpdate(event) {
       this.addedUsers = event
@@ -174,13 +175,20 @@ export default Vue.extend({
           if (
             this.hasAccessChanged(newProjectAccess.access, this.projectAccess)
           ) {
-            // save only if access has changed
-            await this.saveProjectSettings({
-              namespace: this.currentNamespace,
-              newSettings: newProjectAccess,
-              projectName: this.project.name
-            })
-            this.close()
+            try {
+              // save only if access has changed
+              await this.saveProjectSettings({
+                namespace: this.currentNamespace,
+                newSettings: newProjectAccess,
+                projectName: this.project.name
+              })
+              this.close()
+            } catch (err) {
+              this.error({
+                text:
+                  err.response.data?.detail || 'Failed to save project settings'
+              })
+            }
           }
           this.addedUsers = []
         }

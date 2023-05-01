@@ -118,16 +118,16 @@ module.exports = {
     },
     proxy: {
       '/v1': {
-        target: `http://localhost:${serverPort}`
+        target: `http://127.0.0.1:${serverPort}`
       },
       '/app': {
-        target: `http://localhost:${serverPort}`
+        target: `http://127.0.0.1:${serverPort}`
       },
       '/ping': {
-        target: `http://localhost:${serverPort}`
+        target: `http://127.0.0.1:${serverPort}`
       },
       '/config': {
-        target: `http://localhost:${serverPort}`
+        target: `http://127.0.0.1:${serverPort}`
       }
     }
   },

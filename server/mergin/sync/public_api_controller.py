@@ -8,6 +8,7 @@ import json
 import mimetypes
 import os
 import logging
+from typing import Dict
 from urllib.parse import quote
 import uuid
 from time import time
@@ -85,6 +86,53 @@ def _project_version_files(project, version=None):
         ).first_or_404("Project version does not exist")
         return pv.files
     return project.files
+
+
+def parse_project_access_update_request(access: Dict) -> Dict:
+    """Parse raw project access update request and filter out invalid entries.
+    New access can be specified either by list of usernames or ids -> convert only to ids fur further processing.
+
+    :Example:
+
+        >>> parse_project_access_update_request({"writersnames": ["john"], "readersnames": ["john, jack, bob.inactive"]})
+        {"writers": [1], "readers": [1,2], "invalid_usernames": ["bob.inactive"], "invalid_ids":[]}
+        >>> parse_project_access_update_request({"writers": [1], "readers": [1,2,3]})
+        {"writers": [1], "readers": [1,2], "invalid_usernames": [], "invalid_ids":[3]"}
+    """
+    parsed_access = {}
+    names = set(
+        access.get("ownersnames", [])
+        + access.get("writersnames", [])
+        + access.get("readersnames", [])
+    )
+    ids = set(
+        access.get("owners", []) + access.get("writers", []) + access.get("readers", [])
+    )
+    # get only valid user entries from database
+    valid_users = (
+        db.session.query(User.id, User.username)
+        .filter(User.username.in_(list(names)) | User.id.in_(list(ids)))
+        .filter(User.active.is_(True))
+        .all()
+    )
+    valid_users_map = {u.username: u.id for u in valid_users}
+    valid_usernames = valid_users_map.keys()
+    valid_ids = valid_users_map.values()
+
+    for key in ("owners", "writers", "readers"):
+        # transform usernames from client request to ids, which has precedence over ids in request
+        if key + "names" in access:
+            parsed_access[key] = [
+                valid_users_map[username]
+                for username in access.get(key + "names")
+                if username in valid_usernames
+            ]
+        # use legacy option
+        elif key in access:
+            parsed_access[key] = [id for id in access.get(key) if id in valid_ids]
+    parsed_access["invalid_usernames"] = list(names.difference(valid_usernames))
+    parsed_access["invalid_ids"] = list(ids.difference(valid_ids))
+    return parsed_access
 
 
 @auth_required
@@ -577,51 +625,34 @@ def update_project(namespace, project_name):  # noqa: E501  # pylint: disable=W0
     """
     project = require_project(namespace, project_name, ProjectPermissions.Update)
     access = request.json.get("access", {})
-    id_diffs = []
-
-    # transform usernames from client to ids
-    if "ownersnames" in access:
-        owners = (
-            User.query.with_entities(User.id)
-            .filter(User.username.in_(access["ownersnames"]))
-            .all()
-        )
-        access["owners"] = [w.id for w in owners]
-    if "readersnames" in access:
-        readers = (
-            User.query.with_entities(User.id)
-            .filter(User.username.in_(access["readersnames"]))
-            .all()
-        )
-        access["readers"] = [w.id for w in readers]
-    if "writersnames" in access:
-        writers = (
-            User.query.with_entities(User.id)
-            .filter(User.username.in_(access["writersnames"]))
-            .all()
-        )
-        access["writers"] = [w.id for w in writers]
 
     # prevent to remove ownership of project creator
     if access.get("owners", []):
         if project.creator_id and project.creator_id not in access["owners"]:
             abort(400, str("Ownership of project creator cannot be removed."))
 
-    for key, value in access.items():
-        if not hasattr(project.access, key):
-            continue
-        if isinstance(value, list):
-            id_diffs.append(set(value) ^ set(getattr(project.access, key)))
-        setattr(project.access, key, value)
+    id_diffs, error = current_app.ws_handler.update_project_members(project, access)
 
-    db.session.add(project)
-    db.session.commit()
+    if not id_diffs and error:
+        # nothing was done but there are errors
+        return jsonify(error.to_dict()), 422
 
-    users_ids = set().union(*id_diffs)
-    user_profiles = UserProfile.query.filter(UserProfile.user_id.in_(users_ids)).all()
+    if "public" in request.json["access"]:
+        project.access.public = request.json["access"]["public"]
+        db.session.add(project)
+        db.session.commit()
+
+    # send email notifications about changes to users
+    user_profiles = UserProfile.query.filter(
+        UserProfile.user_id.in_(list(id_diffs))
+    ).all()
     project_path = "/".join([namespace, project.name])
     web_link = f"{request.url_root.strip('/')}/projects/{project_path}"
     for user_profile in user_profiles:
+        if not (
+            user_profile.receive_notifications and user_profile.user.verified_email
+        ):
+            continue
         privileges = []
         if user_profile.user.id in project.access.owners:
             privileges += ["edit", "remove"]
@@ -647,10 +678,6 @@ def update_project(namespace, project_name):  # noqa: E501  # pylint: disable=W0
                 user=user_profile.user,
             )
 
-        if not (
-            user_profile.receive_notifications and user_profile.user.verified_email
-        ):
-            continue
         email_data = {
             "subject": f"Access to mergin project {project_path} has been modified",
             "html": html,
@@ -658,6 +685,9 @@ def update_project(namespace, project_name):  # noqa: E501  # pylint: disable=W0
             "sender": current_app.config["MAIL_DEFAULT_SENDER"],
         }
         send_email_async.delay(**email_data)
+    # partial success
+    if error:
+        return jsonify(**error.to_dict(), project=ProjectSchema().dump(project)), 207
     return ProjectSchema().dump(project), 200
 
 
@@ -678,7 +708,9 @@ def catch_sync_failure(f):
             # determine the stage of push transaction where failure occurred from the endpoint name
             if request.endpoint == "/v1.mergin_sync_public_api_controller_project_push":
                 error_type = "push_start"
-            elif request.endpoint == "/v1.mergin_sync_public_api_controller_push_finish":
+            elif (
+                request.endpoint == "/v1.mergin_sync_public_api_controller_push_finish"
+            ):
                 error_type = "push_finish"
             elif request.endpoint == "chunk_upload":
                 error_type = "chunk_upload"
