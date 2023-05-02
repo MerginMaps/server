@@ -195,18 +195,24 @@ def file_info(project_dir, path, chunk_size=1024):
     }
 
 
-def push_project_file_add(workspace, project, data, client):
-    """ Push added file - start, upload, finish """
+def upload_file_to_project(project, filename, client):
+    """ Add test file to project - start, upload and finish push process """
+    file = os.path.join(test_project_dir, filename)
+    assert os.path.exists(file)
+    changes = {
+        "added": [file_info(test_project_dir, filename)],
+        "updated": [],
+        "removed": [],
+    }
+    data = {"version": project.latest_version, "changes": changes}
     resp = client.post(
-        f"/v1/project/push/{workspace.name}/{project.name}",
+        f"/v1/project/push/{project.workspace.name}/{project.name}",
         data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
         headers=json_headers,
     )
     upload_id = resp.json["transaction"]
     changes = data["changes"]
     file_meta = changes["added"][0]
-    file_name = file_meta["path"]
-    file = os.path.join(test_project_dir, file_name)
     for chunk_id in file_meta["chunks"]:
         url = f"/v1/project/push/chunk/{upload_id}/{chunk_id}"
         with open(file, "rb") as f:
