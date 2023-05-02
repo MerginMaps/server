@@ -115,6 +115,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <slot name="map.tab" v-if="loggedUser" />
               <v-tab
                 key="history"
+                v-if="loggedUser && showHistory"
                 :to="{
                   name: `project-versions`,
                   params: { namespace: namespace, projectName: project.name }
@@ -123,11 +124,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               </v-tab>
               <v-tab
                 key="settings"
+                v-if="loggedUser && showSettings"
                 :to="{
                   name: `project-settings`,
                   params: { namespace: namespace, projectName: project.name }
                 }"
-                v-if="loggedUser && showSettings"
                 >Settings
               </v-tab>
             </v-tabs>
@@ -193,7 +194,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import Vue, { PropType } from 'vue'
 import { CopyIcon, DownloadIcon, SquareMinusIcon } from 'vue-tabler-icons'
 import { mapActions, mapGetters, mapMutations, mapState } from 'vuex'
 
@@ -238,7 +239,8 @@ export default Vue.extend({
       type: String,
       default: ''
     },
-    showSettings: Boolean,
+    showSettings: Boolean as PropType<boolean>,
+    showHistory: { type: Boolean as PropType<boolean>, default: true },
     hideCloneButton: {
       type: Boolean,
       default: false

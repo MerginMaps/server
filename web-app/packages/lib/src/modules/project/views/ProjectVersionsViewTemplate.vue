@@ -130,6 +130,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               icon
               v-on="on"
               :disabled="item.disabled"
+              :style="[disabledRow(item)]"
               data-cy="project-versions-download-btn"
               @click="
                 downloadArchive(
@@ -262,7 +263,7 @@ export default Vue.extend({
       this.fetchVersions()
     },
     disabledRow(item: ProjectVersionsItem) {
-      return item.disabled && { opacity: 0.5 }
+      return item.disabled && { opacity: 0.5, cursor: 'not-allowed' }
     },
     async fetchVersions() {
       const params: FetchProjectVersionsParams = {
