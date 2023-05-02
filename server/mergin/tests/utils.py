@@ -193,3 +193,26 @@ def file_info(project_dir, path, chunk_size=1024):
         "mtime": datetime.fromtimestamp(os.path.getmtime(abs_path), tzlocal()),
         "chunks": [str(uuid.uuid4()) for i in range(math.ceil(f_size / chunk_size))],
     }
+
+
+def push_project_file_add(workspace, project, data, client):
+    """ Push added file - start, upload, finish """
+    resp = client.post(
+        f"/v1/project/push/{workspace.name}/{project.name}",
+        data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
+        headers=json_headers,
+    )
+    upload_id = resp.json["transaction"]
+    changes = data["changes"]
+    file_meta = changes["added"][0]
+    file_name = file_meta["path"]
+    file = os.path.join(test_project_dir, file_name)
+    for chunk_id in file_meta["chunks"]:
+        url = f"/v1/project/push/chunk/{upload_id}/{chunk_id}"
+        with open(file, "rb") as f:
+            f_data = f.read(1024)
+        client.post(
+            url, data=f_data, headers={"Content-Type": "application/octet-stream"}
+        )
+    assert client.post(f"/v1/project/push/finish/{upload_id}").status_code == 200
+
