@@ -1,10 +1,12 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+import datetime
 
+from .. import db
 from ..config import Configuration
 from ..sync.workspace import GlobalWorkspaceHandler
-from .utils import add_user, login
+from .utils import add_user, login, create_project
 
 
 def test_workspace_implementation(client):
@@ -36,6 +38,24 @@ def test_workspace_implementation(client):
     assert ws.user_has_permissions(user, "read")
     assert not ws.user_has_permissions(user, "admin")
     assert not ws.user_has_permissions(user, "owner")
+
+    Configuration.GLOBAL_ADMIN = True
+    # create project with dummy file to count for workspace usage
+    project = create_project("test_permissions", ws, user)
+    project.files = [{
+        "path": "some_file.txt",
+        "location": "v1/some_file.txt",
+        "size": 1024,
+        "checksum": "89469a6482267de394c7c7270cb7ffafe694ea76",
+    }]
+    project.disk_usage = 1024
+    db.session.commit()
+    assert ws.disk_usage() == 1024
+    # mark project for removal
+    project.removed_at = datetime.datetime.utcnow()
+    project.removed_by = user.username
+    db.session.commit()
+    assert ws.disk_usage() == 0
 
 
 def test_workspace(client):
