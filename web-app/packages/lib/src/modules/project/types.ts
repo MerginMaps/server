@@ -301,4 +301,6 @@ export interface ProjectVersionsPayload {
   count: number
 }
 
-export type ProjectVersionsItem = ProjectVersion & { disabled: boolean }
+export interface ProjectVersionsItem extends ProjectVersion {
+  disabled: boolean
+}
