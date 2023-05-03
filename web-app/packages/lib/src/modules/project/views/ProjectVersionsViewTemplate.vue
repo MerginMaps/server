@@ -69,7 +69,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <span>
           <v-tooltip bottom>
             <template v-slot:activator="{ on }">
-              <span :style="[disabledRow(item)]" v-on="on">{{
+              <span :style="[rowStyle(item)]" v-on="on">{{
                 item.created | timediff
               }}</span>
             </template>
@@ -78,12 +78,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </span>
       </template>
       <template v-slot:item.author="{ item }"
-        ><span :style="[disabledRow(item)]">{{ item.author }}</span></template
+        ><span :style="[rowStyle(item)]">{{ item.author }}</span></template
       >
       <template v-slot:item.name="{ item }">
         <span data-cy="project-versions-version">
           <router-link
-            :style="[disabledRow(item)]"
+            :style="[rowStyle(item)]"
             :to="
               item.disabled
                 ? ''
@@ -99,27 +99,27 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </template>
       <template v-slot:item.changes.added="{ item }">
         <span>
-          <span :style="[disabledRow(item)]" class="green--text">{{
+          <span :style="[rowStyle(item)]" class="green--text">{{
             item.changes.added.length
           }}</span>
         </span>
       </template>
       <template v-slot:item.changes.removed="{ item }">
         <span>
-          <span :style="[disabledRow(item)]" class="red--text">{{
+          <span :style="[rowStyle(item)]" class="red--text">{{
             item.changes.removed.length
           }}</span>
         </span>
       </template>
       <template v-slot:item.changes.updated="{ item }">
         <span>
-          <span :style="[disabledRow(item)]" class="orange--text">{{
+          <span :style="[rowStyle(item)]" class="orange--text">{{
             item.changes.updated.length
           }}</span>
         </span>
       </template>
       <template v-slot:item.project_size="{ item }">
-        <span :style="[disabledRow(item)]">{{
+        <span :style="[rowStyle(item)]">{{
           item.project_size | filesize
         }}</span>
       </template>
@@ -130,7 +130,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               icon
               v-on="on"
               :disabled="item.disabled"
-              :style="[disabledRow(item)]"
+              :style="[rowStyle(item)]"
               data-cy="project-versions-download-btn"
               @click="
                 downloadArchive(
@@ -262,7 +262,7 @@ export default Vue.extend({
       this.options.page = number
       this.fetchVersions()
     },
-    disabledRow(item: ProjectVersionsItem) {
+    rowStyle(item: ProjectVersionsItem) {
       return item.disabled && { opacity: 0.5, cursor: 'not-allowed' }
     },
     async fetchVersions() {
