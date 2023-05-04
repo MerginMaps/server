@@ -186,15 +186,15 @@ export default Vue.extend({
         const currentVersion = this.versions?.find(
           (v) => v.name === this.version_id
         )
-        if (!currentVersion) {
-          const response = await ProjectApi.getProjectVersion(
-            this.project.id,
-            this.version_id
-          )
-          this.version = response.data
+        if (currentVersion) {
+          this.version = currentVersion
           return
         }
-        this.version = currentVersion
+        const response = await ProjectApi.getProjectVersion(
+          this.project.id,
+          this.version_id
+        )
+        this.version = response.data
       } catch (err) {
         const msg = err.response
           ? err.response.data?.detail
