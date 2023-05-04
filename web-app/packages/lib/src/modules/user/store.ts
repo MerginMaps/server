@@ -97,7 +97,9 @@ const UserStore: Module<UserState, RootState> = {
       return state.workspaces.find(
         (workspace) => workspace.name === payload.name
       )
-    }
+    },
+    isWorkspaceUser: (state) => (payload: WorkspaceIdPayload) =>
+      state.workspaces.some((workspace) => workspace.id === payload.id)
   },
 
   mutations: {
