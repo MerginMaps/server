@@ -8,6 +8,7 @@ from typing import Optional
 from flask import abort, current_app
 from flask_login import current_user
 
+from .utils import is_valid_uuid
 from ..auth.models import User
 from .models import ProjectAccess, Project, Upload
 
@@ -138,6 +139,9 @@ def require_project(ws, project_name, permission):
 
 
 def require_project_by_uuid(uuid, permission):
+    if not is_valid_uuid(uuid):
+        abort(404)
+
     project = (
         Project.query.filter_by(id=uuid)
         .filter(Project.removed_at.is_(None))

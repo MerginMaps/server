@@ -1335,3 +1335,12 @@ def get_workspace_by_id(id):
     ctx = {"user": current_user}
     data = UserWorkspaceSchema(context=ctx).dump(ws)
     return data, 200
+
+
+@auth_required
+def get_project_version(project_id: str, version: str):
+    """ Get project version by its name (e.g. v3) """
+    project = require_project_by_uuid(project_id, ProjectPermissions.Read)
+    pv = ProjectVersion.query.filter_by(project_id=project.id, name=version).first_or_404()
+    data = ProjectVersionSchema(exclude=["files"]).dump(pv)
+    return data, 200

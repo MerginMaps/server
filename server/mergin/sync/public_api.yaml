@@ -460,6 +460,41 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundResp'
       x-openapi-router-controller: mergin.sync.public_api_controller
+  '/project/version/{project_id}/{version}':
+    get:
+      tags:
+        - project
+      summary: Get project version by its name (e.g. v3)
+      operationId: get_project_version
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: ac70181b5-7143-491b-91a6-4f533021c9a2
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: string
+            example: v3
+      responses:
+        '200':
+          description: Project version detail
+          content:
+            application/json:
+              schema:
+                  $ref: "#/components/schemas/ProjectVersion"
+        '400':
+          $ref: '#/components/responses/BadStatusResp'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFoundResp'
+      x-openapi-router-controller: mergin.sync.public_api_controller
   /project/download/{namespace}/{project_name}:
     get:
       tags:

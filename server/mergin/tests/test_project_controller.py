@@ -2378,3 +2378,27 @@ def test_inactive_project(client, diff_project):
     )
     assert resp.status_code == 409
     assert "Project with the same name is scheduled for deletion" in resp.json["detail"]
+
+
+def test_get_project_version(client, diff_project):
+    # success - latest version
+    resp = client.get(f"/v1/project/version/{str(diff_project.id)}/{diff_project.latest_version}")
+    assert resp.status_code == 200
+    assert resp.json["name"] == diff_project.latest_version
+
+    # success any older version
+    resp = client.get(f"/v1/project/version/{str(diff_project.id)}/v1")
+    assert resp.status_code == 200
+    assert resp.json["name"] == "v1"
+
+    # not existing version
+    resp = client.get(f"/v1/project/version/{str(diff_project.id)}/v100")
+    assert resp.status_code == 404
+
+    # invalid version identifier
+    resp = client.get(f"/v1/project/version/{str(diff_project.id)}/500")
+    assert resp.status_code == 404
+
+    # invalid project identifier
+    resp = client.get(f"/v1/project/version/1234/v10")
+    assert resp.status_code == 404
