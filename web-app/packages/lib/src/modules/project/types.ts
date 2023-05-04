@@ -285,10 +285,22 @@ export interface ProjectTemplate {
 export type EnhancedProjectDetail = ProjectDetail & {
   files: Record<string, ProjectListItemFiles>
   path: string
-  versions?: ProjectVersion[]
 }
 
 export interface UpdateProjectAccessParams {
   user_id: number
   role: ProjectRoleName
+}
+
+export interface FetchProjectVersionsPayload extends ProjectParams {
+  params: FetchProjectVersionsParams
+}
+
+export interface ProjectVersionsPayload {
+  versions: ProjectVersion[]
+  count: number
+}
+
+export interface ProjectVersionsItem extends ProjectVersion {
+  disabled: boolean
 }

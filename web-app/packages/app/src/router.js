@@ -159,15 +159,13 @@ const router = new Router({
           path: 'history',
           name: 'project-versions',
           component: ProjectVersionsView,
-          props: true,
-          meta: { public: true }
+          props: true
         },
         {
           path: 'history/:version_id',
           name: 'project-versions-detail',
           component: VersionDetailView,
-          props: true,
-          meta: { public: true }
+          props: true
         },
         {
           path: 'history/:version_id/:path',
