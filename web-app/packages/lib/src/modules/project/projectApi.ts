@@ -253,12 +253,11 @@ export const ProjectApi = {
   },
 
   async getProjectVersion(
-    namespace: string,
-    projectName: string,
-    versionId: string
+    projectId: string,
+    versionName: string
   ): Promise<AxiosResponse<string>> {
     return ProjectModule.httpService.get(
-      `/v1/project/version/${namespace}/${projectName}?version_id=${versionId}`
+      `/v1/project/version/${projectId}/${versionName}`
     )
   },
 
