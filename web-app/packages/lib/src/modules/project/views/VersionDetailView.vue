@@ -155,7 +155,7 @@ export default Vue.extend({
     this.getVersion()
   },
   computed: {
-    ...mapState('projectModule', ['project']),
+    ...mapState('projectModule', ['project', 'versions']),
     colors() {
       return Colors
     },
@@ -167,7 +167,7 @@ export default Vue.extend({
       ]
     },
     changes() {
-      return this.version && this.version.changes
+      return this.version?.changes
     },
     downloadUrl() {
       return ProjectApi.constructDownloadProjectVersionUrl(
@@ -181,31 +181,25 @@ export default Vue.extend({
     $route: 'getVersion'
   },
   methods: {
-    getVersion() {
-      if (!this.project.versions) {
-        ProjectApi.getProjectVersion(
-          this.project.namespace,
-          this.project.name,
-          this.version_id
-        )
-          // TODO: types
-          .then((resp: any) => {
-            if (resp.data.length) {
-              const version = resp.data[0]
-              version.changes = resp.data[0].changes
-              this.version = version
-            }
-          })
-          .catch((err) => {
-            const msg = err.response
-              ? err.response.data?.detail
-              : 'Failed to fetch project version'
-            this.$store.dispatch('notificationModule/error', { text: msg })
-          })
-      } else {
-        this.version = this.project.versions.find(
+    async getVersion() {
+      try {
+        const currentVersion = this.versions?.find(
           (v) => v.name === this.version_id
         )
+        if (!currentVersion) {
+          const response = await ProjectApi.getProjectVersion(
+            this.project.id,
+            this.version_id
+          )
+          this.version = response.data
+          return
+        }
+        this.version = currentVersion
+      } catch (err) {
+        const msg = err.response
+          ? err.response.data?.detail
+          : 'Failed to fetch project version'
+        this.$store.dispatch('notificationModule/error', { text: msg })
       }
     }
   }
