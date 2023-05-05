@@ -212,7 +212,7 @@ export default Vue.extend({
     SquareMinusIcon
   },
   props: {
-    /** Show label in header o page */
+    /**  Show namespace (ws) label in breadcrumb of page */
     showNamespace: {
       type: Boolean as PropType<boolean>,
       default: true
