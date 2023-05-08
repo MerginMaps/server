@@ -74,7 +74,7 @@ export interface AdminProjectListItem extends Project {
 
 export interface ProjectListItem extends Project {
   access: ProjectAccess
-  creator: number
+  creator: number | null
   disk_usage: number
   has_conflict: boolean
   id: string

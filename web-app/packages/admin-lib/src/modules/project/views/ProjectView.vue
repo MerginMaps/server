@@ -12,6 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :asAdmin="asAdmin"
       :location="location"
       :show-settings="true"
+      :show-namespace="false"
       @open-clone-dialog="openCloneDialog"
     />
   </admin-layout>
