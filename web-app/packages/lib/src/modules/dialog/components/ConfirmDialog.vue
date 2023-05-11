@@ -28,8 +28,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapActions } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapActions } from 'vuex'
+
+import { useDialogStore } from '@/modules/dialog/store'
 
 export default defineComponent({
   name: 'confirm-dialog',
@@ -62,7 +64,7 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapActions('dialogModule', ['close']),
+    ...mapActions(useDialogStore, ['close']),
 
     confirm() {
       this.close()

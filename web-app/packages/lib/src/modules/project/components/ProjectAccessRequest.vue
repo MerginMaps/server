@@ -135,10 +135,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapActions, mapState } from 'vuex'
 
 import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
+import { useNotificationStore } from '@/modules/notification/store'
+import { useProjectStore } from '@/modules/project/store'
+import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   data() {
@@ -185,8 +188,8 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('projectModule', ['project']),
-    ...mapState('userModule', ['loggedUser'])
+    ...mapState(useProjectStore, ['project']),
+    ...mapState(useUserStore, ['loggedUser'])
   },
   created() {
     this.project.access_requests.forEach((request) => {
@@ -194,11 +197,11 @@ export default defineComponent({
     })
   },
   methods: {
-    ...mapActions('projectModule', [
+    ...mapActions(useProjectStore, [
       'cancelProjectAccessRequest',
       'acceptProjectAccessRequest'
     ]),
-    ...mapActions('notificationModule', ['error']),
+    ...mapActions(useNotificationStore, ['error']),
 
     canAcceptAccessRequest(userId: number, expire: string) {
       return (

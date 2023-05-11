@@ -44,10 +44,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import groupBy from 'lodash/groupBy'
 import isArray from 'lodash/isArray'
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapState } from 'vuex'
 
 import { waitCursor } from '@/common/html_utils'
+import { useNotificationStore } from '@/modules'
+import { useInstanceStore } from '@/modules/instance/store'
 
 export default defineComponent({
   name: 'FileVersionDetailView',
@@ -73,7 +75,7 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('instanceModule', ['configData']),
+    ...mapState(useInstanceStore, ['configData']),
     docsLinkManageSynchronisation() {
       return `${this.configData?.docs_url ?? ''}/manage/synchronisation`
     }
@@ -83,6 +85,8 @@ export default defineComponent({
   },
 
   methods: {
+    ...mapActions(useNotificationStore, ['error']),
+
     // TODO: refactor to vuex action
     getChangeset() {
       waitCursor(true)
@@ -156,7 +160,7 @@ export default defineComponent({
           const msg = err.response
             ? err.response.data?.detail
             : 'Failed to display changeset of file'
-          this.$store.dispatch('notificationModule/error', { text: msg })
+          this.error({ text: msg })
         })
         .finally(() => {
           this.loading = false

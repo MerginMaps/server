@@ -30,12 +30,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapMutations, mapState } from 'vuex'
+
+import { useNotificationStore } from '@/modules/notification/store'
 
 export default defineComponent({
   computed: {
-    ...mapState('notificationModule', ['isOpen', 'params', 'text']),
+    ...mapState(useNotificationStore, ['isOpen', 'params', 'text']),
 
     buttonColor() {
       return this.params?.buttonColor ?? 'yellow'
@@ -45,7 +47,7 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapMutations('notificationModule', ['closeNotification'])
+    ...mapActions(useNotificationStore, ['closeNotification'])
   }
 })
 </script>

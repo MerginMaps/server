@@ -15,11 +15,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapActions } from 'pinia'
 import { defineComponent, PropType } from 'vue'
-import { mapActions } from 'vuex'
 
 import { PaginatedGridOptions } from '@/common'
+import { useNotificationStore } from '@/modules/notification/store'
 import ProjectsTable from '@/modules/project/components/ProjectsTable.vue'
+import { useProjectStore } from '@/modules/project/store'
 import {
   PaginatedProjectsParams,
   ProjectGridState
@@ -72,8 +74,8 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapActions('projectModule', ['getProjects']),
-    ...mapActions('notificationModule', ['error']),
+    ...mapActions(useProjectStore, ['getProjects']),
+    ...mapActions(useNotificationStore, ['error']),
     async fetchProjects(
       projectGridState: ProjectGridState,
       gridOptions: PaginatedGridOptions,

@@ -95,9 +95,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapActions, mapState, mapGetters } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapState, mapMutations, mapGetters } from 'vuex'
 
+import { useLayoutStore } from '@/modules/layout/store'
+import { useProjectStore } from '@/modules/project/store'
+import { useUserStore } from '@/modules/user/store'
 import { UserApi } from '@/modules/user/userApi'
 
 export default defineComponent({
@@ -113,10 +116,10 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('layoutModule', ['drawer']),
-    ...mapState('userModule', ['loggedUser']),
-    ...mapGetters('userModule', ['getUserFullName']),
-    ...mapState('projectModule', ['currentNamespace']),
+    ...mapState(useLayoutStore, ['drawer']),
+    ...mapState(useUserStore, ['loggedUser']),
+    ...mapGetters(useUserStore, ['getUserFullName']),
+    ...mapState(useProjectStore, ['currentNamespace']),
     profileUrl() {
       return {
         name: 'user',
@@ -125,7 +128,8 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapMutations('layoutModule', ['setDrawer']),
+    ...mapActions(useLayoutStore, ['setDrawer']),
+
     async logout() {
       try {
         await UserApi.logout()

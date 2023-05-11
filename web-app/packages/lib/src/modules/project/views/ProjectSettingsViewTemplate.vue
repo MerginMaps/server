@@ -64,10 +64,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import debounce from 'lodash/debounce'
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapActions, mapState } from 'vuex'
 
+import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
+import { useDialogStore } from '@/modules/dialog/store'
+import { useNotificationStore } from '@/modules/notification/store'
 import ProjectAccessRequests from '@/modules/project/components/ProjectAccessRequest.vue'
+import { useProjectStore } from '@/modules/project/store'
+import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   name: 'ProjectSettingsViewTemplate',
@@ -90,8 +95,8 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('userModule', ['loggedUser']),
-    ...mapState('projectModule', ['project'])
+    ...mapState(useUserStore, ['loggedUser']),
+    ...mapState(useProjectStore, ['project'])
   },
   watch: {
     project: {
@@ -118,9 +123,9 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapActions('projectModule', ['deleteProject', 'saveProjectSettings']),
-    ...mapActions('dialogModule', ['prompt']),
-    ...mapActions('notificationModule', ['error']),
+    ...mapActions(useProjectStore, ['deleteProject', 'saveProjectSettings']),
+    ...mapActions(useDialogStore, ['prompt']),
+    ...mapActions(useNotificationStore, ['error']),
 
     saveProject(newSettingsAccessValues) {
       const newSettings = {
@@ -161,6 +166,7 @@ export default defineComponent({
         confirm: () => this.onDeleteProject()
       }
       this.prompt({
+        component: ConfirmDialog,
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
     },
@@ -175,6 +181,7 @@ export default defineComponent({
         confirm: () => this.togglePublicPrivate()
       }
       this.prompt({
+        component: ConfirmDialog,
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
     },

@@ -52,9 +52,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { UserApi } from '@mergin/lib'
+import { useInstanceStore, useLayoutStore, UserApi } from '@mergin/lib'
+import { mapState, mapGetters, mapActions } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapState, mapMutations, mapGetters, mapActions } from 'vuex'
+
+import { useAdminStore } from '@/modules/admin/store'
 
 export default defineComponent({
   name: 'DashboardCoreAppBar',
@@ -71,15 +73,15 @@ export default defineComponent({
   }),
 
   computed: {
-    ...mapState('layoutModule', ['drawer']),
-    ...mapState('instanceModule', ['configData']),
-    ...mapState('adminModule', ['info_url']),
-    ...mapGetters('adminModule', ['displayUpdateAvailable'])
+    ...mapState(useLayoutStore, ['drawer']),
+    ...mapState(useInstanceStore, ['configData']),
+    ...mapState(useAdminStore, ['info_url']),
+    ...mapGetters(useAdminStore, ['displayUpdateAvailable'])
   },
 
   methods: {
-    ...mapMutations('layoutModule', ['setDrawer']),
-    ...mapActions('adminModule', ['removeServerConfiguredCookies']),
+    ...mapActions(useLayoutStore, ['setDrawer']),
+    ...mapActions(useAdminStore, ['removeServerConfiguredCookies']),
     async logout() {
       try {
         await UserApi.logout()

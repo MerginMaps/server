@@ -145,14 +145,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapActions, mapState } from 'vuex'
 
-import MerginAPIMixin from '@/common/mixins/MerginAPIMixin'
+import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
   name: 'ProjectVersionsView',
-  mixins: [MerginAPIMixin],
   props: {
     projectName: String,
     namespace: String,
@@ -175,7 +174,7 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('projectModule', ['project']),
+    ...mapState(useProjectStore, ['project']),
     headers() {
       return [
         { text: 'Version', value: 'name' },
@@ -211,7 +210,7 @@ export default defineComponent({
     $route: 'fetchVersions'
   },
   methods: {
-    ...mapActions('projectModule', ['fetchProjectVersions']),
+    ...mapActions(useProjectStore, ['fetchProjectVersions', 'downloadArchive']),
     paginating(options) {
       this.options = options
       this.fetchVersions()

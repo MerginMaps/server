@@ -26,14 +26,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapState } from 'pinia'
 import { defineComponent } from 'vue'
 import { MessageIcon } from 'vue-tabler-icons'
-import { mapState } from 'vuex'
+
+import { useInstanceStore } from '@/modules/instance/store'
 
 export default defineComponent({
   components: { MessageIcon },
   computed: {
-    ...mapState('instanceModule', ['configData']),
+    ...mapState(useInstanceStore, ['configData']),
     version() {
       return `${this.configData?.server_type?.toUpperCase()} ${
         this.configData?.version

@@ -193,23 +193,26 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapActions, mapGetters, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 import { CopyIcon, DownloadIcon, SquareMinusIcon } from 'vue-tabler-icons'
-import { mapActions, mapGetters, mapMutations, mapState } from 'vuex'
 
 import ActionButton from '@/common/components/ActionButton.vue'
 import { waitCursor } from '@/common/html_utils'
-import MerginAPIMixin from '@/common/mixins/MerginAPIMixin'
 import { USER_ROLE_NAME_BY_ROLE, UserRole } from '@/common/permission_utils'
+import { useNotificationStore } from '@/modules'
+import { useDialogStore } from '@/modules/dialog/store'
 import PageView from '@/modules/layout/components/PageView.vue'
+import { useLayoutStore } from '@/modules/layout/store'
 import DropArea from '@/modules/project/components/DropArea.vue'
 import ProjectShareButton from '@/modules/project/components/ProjectShareButton.vue'
 import UploadPanel from '@/modules/project/components/UploadPanel.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
+import { useProjectStore } from '@/modules/project/store'
+import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   name: 'ProjectViewTemplate',
-  mixins: [MerginAPIMixin],
   components: {
     ActionButton,
     ProjectShareButton,
@@ -251,11 +254,11 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('layoutModule', ['drawer']),
-    ...mapState('projectModule', ['project', 'uploads']),
-    ...mapState('userModule', ['loggedUser']),
-    ...mapGetters('projectModule', ['isProjectOwner']),
-    ...mapGetters('userModule', ['currentWorkspace', 'isLoggedIn']),
+    ...mapState(useLayoutStore, ['drawer']),
+    ...mapState(useProjectStore, ['project', 'uploads']),
+    ...mapState(useUserStore, ['loggedUser']),
+    ...mapGetters(useProjectStore, ['isProjectOwner']),
+    ...mapGetters(useUserStore, ['currentWorkspace', 'isLoggedIn']),
 
     canCloneProject() {
       return this.isLoggedIn && !this.hideCloneButton
@@ -315,12 +318,14 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapActions('projectModule', [
+    ...mapActions(useProjectStore, [
+      'downloadArchive',
       'fetchProjectDetail',
       'unsubscribeProject'
     ]),
-    ...mapMutations('projectModule', ['setProject']),
-    ...mapActions('dialogModule', ['show']),
+    ...mapActions(useProjectStore, ['setProject']),
+    ...mapActions(useDialogStore, ['prompt']),
+    ...mapActions(useNotificationStore, ['error', 'show']),
 
     setFetchProjectResponseStatus(status) {
       this.fetchProjectsResponseStatus = status
@@ -349,7 +354,7 @@ export default defineComponent({
       )
         .then(() => {
           waitCursor(false)
-          this.$store.dispatch('notificationModule/show', {
+          this.show({
             text: 'Access has been requested'
           })
           this.$router.push({
@@ -357,7 +362,7 @@ export default defineComponent({
           })
         })
         .catch(() => {
-          this.$store.dispatch('notificationModule/error', {
+          this.error({
             text: 'Failed to request'
           })
           waitCursor(false)
@@ -378,7 +383,7 @@ export default defineComponent({
           }
         }
       }
-      this.$store.dispatch('dialogModule/prompt', {
+      this.prompt({
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
     }

@@ -8,7 +8,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { SideBarItem, SideBarTemplate } from '@mergin/lib'
 import { defineComponent, ref } from 'vue'
 import { HomeIcon, MapIcon } from 'vue-tabler-icons'
-import { useState } from 'vuex-composition-helpers'
 
 export default defineComponent({
   props: {
@@ -31,9 +30,8 @@ export default defineComponent({
         tablerIcon: 'map-icon'
       }
     ])
-    const { loggedUser } = useState('userModule', ['loggedUser'])
+
     return {
-      loggedUser,
       mainItems
     }
   }

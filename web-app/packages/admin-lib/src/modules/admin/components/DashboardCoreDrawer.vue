@@ -80,9 +80,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 // Utilities
-import { BaseItem } from '@mergin/lib'
+import { BaseItem, useLayoutStore, useUserStore } from '@mergin/lib'
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapState } from 'vuex'
 
 export default defineComponent({
   name: 'DashboardCoreDrawer',
@@ -97,16 +97,19 @@ export default defineComponent({
   },
 
   computed: {
-    ...mapState(['barColor', 'barImage']),
-    ...mapState('layoutModule', { drawerState: 'drawer' }),
-    ...mapState('userModule', ['loggedUser']),
+    ...mapState(useLayoutStore, {
+      drawerState: 'drawer',
+      barColor: 'barColor',
+      barImage: 'barImage'
+    }),
+    ...mapState(useUserStore, ['loggedUser']),
 
     drawer: {
       get() {
         return this.drawerState
       },
       set(val) {
-        this.$store.commit('layoutModule/setDrawer', { drawer: val })
+        this.setDrawer({ drawer: val })
       }
     },
     items() {
@@ -148,6 +151,8 @@ export default defineComponent({
   },
 
   methods: {
+    ...mapActions(useLayoutStore, ['setDrawer']),
+
     getImageUrl(name) {
       return new URL(`../../../assets/${name}`, import.meta.url).href
     },

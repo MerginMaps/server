@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "files": ["dist", "types"],
-  "main": "dist/admin-lib.umd.cjs",
-  "module": "dist/lib.js",
+  "files": [
+    "dist",
+    "types"
+  ],
+  "main": "dist/admin-lib.js",
+  "module": "dist/admin-lib.js",
   "types": "types/main.d.ts",
   "exports": {
     ".": {
@@ -46,6 +49,7 @@
     "universal-cookie": "^4.0.4"
   },
   "peerDependencies": {
+    "pinia": ">=2.x",
     "portal-vue": ">=3.x",
     "vue": "2.x || 3.x",
     "vuetify": "2.x || 3.x"

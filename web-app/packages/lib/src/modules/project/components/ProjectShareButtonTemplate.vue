@@ -14,12 +14,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 import { PlusIcon } from 'vue-tabler-icons'
-import { mapActions, mapState } from 'vuex'
 
 import ActionButton from '@/common/components/ActionButton.vue'
+import { useDialogStore } from '@/modules/dialog/store'
 import ProjectShareDialog from '@/modules/project/components/ProjectShareDialog.vue'
+import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   props: {
@@ -27,10 +29,10 @@ export default defineComponent({
   },
   components: { ActionButton, PlusIcon },
   computed: {
-    ...mapState('userModule', ['loggedUser'])
+    ...mapState(useUserStore, ['loggedUser'])
   },
   methods: {
-    ...mapActions('dialogModule', ['show']),
+    ...mapActions(useDialogStore, ['show']),
 
     onShareProject() {
       const dialogProps = { allowInvite: this.allowInvite }

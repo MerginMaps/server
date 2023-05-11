@@ -29,13 +29,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { useInstanceStore } from '@mergin/lib'
+import { mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapState } from 'vuex'
 
 export default defineComponent({
   name: 'UsageInformationCard',
   computed: {
-    ...mapState('instanceModule', ['configData']),
+    ...mapState(useInstanceStore, ['configData']),
     usageStatus() {
       return this.configData?.collect_statistics
     },

@@ -5,14 +5,15 @@
 import { moduleUtils, Module } from '@mergin/lib'
 
 import getRoutes from './routes'
-import store, { AdminState } from './store'
+
+// import store, { AdminState } from './store'
 import { CeAdminLibRootState } from '@/modules/types'
 
-export const AdminModule: Module<AdminState, CeAdminLibRootState> = {
+export const AdminModule: Module<any, CeAdminLibRootState> = {
   name: 'adminModule',
   routerService: undefined,
   httpService: undefined,
-  moduleStore: store,
+  moduleStore: undefined,
   _addRoutes: (router, rootStore, routeOverrides) => {
     // add routes to router
     getRoutes(rootStore).forEach((route) => {

@@ -22,13 +22,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapActions, mapState } from 'vuex'
+
+import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
   name: 'DashboardAccessRequestsRow',
   computed: {
-    ...mapState('projectModule', [
+    ...mapState(useProjectStore, [
       'namespaceAccessRequests',
       'currentNamespace'
     ])
@@ -46,7 +48,7 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapActions('projectModule', ['initNamespaceAccessRequests'])
+    ...mapActions(useProjectStore, ['initNamespaceAccessRequests'])
   }
 })
 </script>

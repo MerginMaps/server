@@ -26,13 +26,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapActions, mapState } from 'vuex'
+
+import { useAdminStore } from '@/modules/admin/store'
 
 export default defineComponent({
   name: 'CheckForUpdatesCard',
   computed: {
-    ...mapState('adminModule', ['checkForUpdates'])
+    ...mapState(useAdminStore, ['checkForUpdates'])
   },
   data() {
     return {
@@ -48,7 +50,7 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapActions('adminModule', ['setCheckUpdatesToCookies']),
+    ...mapActions(useAdminStore, ['setCheckUpdatesToCookies']),
     onChangeSwitch(value) {
       this.setCheckUpdatesToCookies({ value })
     }

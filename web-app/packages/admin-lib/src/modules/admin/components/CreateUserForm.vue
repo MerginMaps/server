@@ -78,9 +78,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { postRetryCond, htmlUtils } from '@mergin/lib'
+import {
+  postRetryCond,
+  htmlUtils,
+  useDialogStore,
+  useNotificationStore
+} from '@mergin/lib'
+import { mapActions } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapActions } from 'vuex'
 
 export default defineComponent({
   data() {
@@ -100,7 +105,9 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapActions('dialogModule', ['close']),
+    ...mapActions(useDialogStore, ['close']),
+    ...mapActions(useNotificationStore, ['error', 'show']),
+
     validateInput(data) {
       return ['username', 'email', 'password'].some((k) => data[k] === '')
     },
@@ -123,7 +130,7 @@ export default defineComponent({
         .then(() => {
           this.close()
           this.$emit('success')
-          this.$store.dispatch('notificationModule/show', {
+          this.show({
             text: 'User created'
           })
         })
@@ -133,9 +140,7 @@ export default defineComponent({
             err.response.data && err.response.data.detail
               ? err.response.data.detail
               : 'Failed to create user'
-          this.$store.dispatch('notificationModule/error', {
-            text: msg
-          })
+          this.error({ text: msg })
         })
         .finally(() => htmlUtils.waitCursor(false))
     }

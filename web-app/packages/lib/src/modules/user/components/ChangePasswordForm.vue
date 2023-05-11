@@ -98,10 +98,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapActions, mapGetters } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapActions, mapGetters } from 'vuex'
 
 import { waitCursor } from '@/common/html_utils'
+import { useDialogStore } from '@/modules/dialog/store'
+import { useFormStore } from '@/modules/form/store'
+import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   data() {
@@ -113,7 +116,7 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapGetters('formModule', ['getErrorByComponentId']),
+    ...mapGetters(useFormStore, ['getErrorByComponentId']),
     errors() {
       return this.getErrorByComponentId(this.merginComponentUuid) ?? {}
     }
@@ -125,9 +128,9 @@ export default defineComponent({
     })
   },
   methods: {
-    ...mapActions('formModule', ['clearErrors']),
-    ...mapActions('dialogModule', ['close']),
-    ...mapActions('userModule', {
+    ...mapActions(useFormStore, ['clearErrors']),
+    ...mapActions(useDialogStore, ['close']),
+    ...mapActions(useUserStore, {
       changePasswordAction: 'changePassword'
     }),
     changePassword() {

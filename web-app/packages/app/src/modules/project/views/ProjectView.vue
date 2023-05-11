@@ -11,16 +11,22 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :projectName="projectName"
     :asAdmin="asAdmin"
     :location="location"
-    :show-settings="isProjectOwner"
+    :show-settings="projectStore.isProjectOwner"
     :hide-clone-button="!canCreateProject"
     @open-clone-dialog="openCloneDialog"
   />
 </template>
 
 <script lang="ts">
-import { CloneDialog, ProjectViewTemplate } from '@mergin/lib'
+import {
+  CloneDialog,
+  ProjectViewTemplate,
+  useDialogStore,
+  useFormStore,
+  useProjectStore,
+  useUserStore
+} from '@mergin/lib'
 import { computed, defineComponent } from 'vue'
-import { useActions, useGetters } from 'vuex-composition-helpers'
 
 export default defineComponent({
   name: 'ProjectView',
@@ -40,14 +46,14 @@ export default defineComponent({
     }
   },
   setup(props) {
-    const { show } = useActions('dialogModule', ['show'])
-    const { isProjectOwner } = useGetters('projectModule', ['isProjectOwner'])
-    const { isGlobalWorkspaceAdmin } = useGetters('userModule', [
-      'isGlobalWorkspaceAdmin'
-    ])
-    const { handleError } = useActions('formModule', ['handleError'])
+    const userStore = useUserStore()
+    const projectStore = useProjectStore()
+    const dialogStore = useDialogStore()
+    const formStore = useFormStore()
 
-    const canCreateProject = computed(() => isGlobalWorkspaceAdmin?.value)
+    const canCreateProject = computed(
+      () => userStore.isGlobalWorkspaceAdmin?.value
+    )
 
     function openCloneDialog() {
       const dialogProps = {
@@ -57,14 +63,14 @@ export default defineComponent({
       const dialog = { maxWidth: 580, persistent: true }
       const listeners = {
         error: (error, data) => {
-          handleError({
+          formStore.handleError({
             componentId: data.merginComponentUuid,
             error,
             generalMessage: 'Failed to clone project'
           })
         }
       }
-      show({
+      dialogStore.show({
         component: CloneDialog,
         params: {
           props: dialogProps,
@@ -76,7 +82,7 @@ export default defineComponent({
 
     return {
       canCreateProject,
-      isProjectOwner,
+      projectStore,
       openCloneDialog
     }
   }

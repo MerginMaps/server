@@ -81,8 +81,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapActions, mapState } from 'vuex'
+
+import { useNotificationStore } from '@/modules/notification/store'
+import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
   name: 'ProjectAccessRequestTableTemplate',
@@ -102,8 +105,7 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState(['transfers']),
-    ...mapState('projectModule', ['accessRequests', 'namespaceAccessRequests']),
+    ...mapState(useProjectStore, ['accessRequests', 'namespaceAccessRequests']),
     accessRequestsData() {
       return this.namespace == null
         ? this.accessRequests
@@ -139,12 +141,12 @@ export default defineComponent({
     })
   },
   methods: {
-    ...mapActions('projectModule', [
+    ...mapActions(useProjectStore, [
       'cancelProjectAccessRequest',
       'acceptProjectAccessRequest',
       'reloadProjectAccessRequests'
     ]),
-    ...mapActions('notificationModule', ['error']),
+    ...mapActions(useNotificationStore, ['error']),
 
     async acceptRequest(request) {
       try {

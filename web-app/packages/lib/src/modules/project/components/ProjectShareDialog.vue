@@ -73,13 +73,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import isEqual from 'lodash/isEqual'
 import omit from 'lodash/omit'
+import { mapActions, mapGetters, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapActions, mapGetters, mapState } from 'vuex'
 
 import AccountAutocomplete from './AccountAutocomplete.vue'
 import PermissionInfo from './PermissionInfo.vue'
-import { UserSearch, UserSearchInvite } from '@/modules'
+
+import { useDialogStore } from '@/modules/dialog/store'
+import { useNotificationStore } from '@/modules/notification/store'
+import { useProjectStore } from '@/modules/project/store'
 import UserSearchChip from '@/modules/user/components/UserSearchChip.vue'
+import { UserSearch, UserSearchInvite } from '@/modules/user/types'
 
 interface Data {
   addedUsers: (UserSearchInvite | UserSearch)[]
@@ -102,8 +106,8 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('projectModule', ['currentNamespace', 'project']),
-    ...mapGetters('projectModule', ['isProjectOwner']),
+    ...mapState(useProjectStore, ['currentNamespace', 'project']),
+    ...mapGetters(useProjectStore, ['isProjectOwner']),
 
     projectAccess() {
       return this.project?.access
@@ -127,9 +131,9 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions('dialogModule', ['close']),
-    ...mapActions('projectModule', ['saveProjectSettings']),
-    ...mapActions('notificationModule', ['error']),
+    ...mapActions(useDialogStore, ['close']),
+    ...mapActions(useProjectStore, ['saveProjectSettings']),
+    ...mapActions(useNotificationStore, ['error']),
 
     onAutocompleteUpdate(event) {
       this.addedUsers = event

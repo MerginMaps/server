@@ -148,9 +148,12 @@ import {
   ApiRequestSuccessInfo,
   htmlUtils,
   PaginatedAdminProjectsParams,
-  ProjectApi
+  ProjectApi,
+  useDialogStore,
+  useNotificationStore
 } from '@mergin/lib'
 import debounce from 'lodash/debounce'
+import { mapActions } from 'pinia'
 import { defineComponent } from 'vue'
 
 export default defineComponent({
@@ -217,6 +220,9 @@ export default defineComponent({
     this.filterData = debounce(this.filterData, 3000)
   },
   methods: {
+    ...mapActions(useDialogStore, ['prompt']),
+    ...mapActions(useNotificationStore, ['error', 'show']),
+
     paginating(options) {
       this.options = options
       this.fetchProjects()
@@ -264,7 +270,7 @@ export default defineComponent({
         })
         .catch((e) => {
           console.warn('Failed to fetch list of projects', e)
-          this.$store.dispatch('notificationModule/error', {
+          this.error({
             text: 'Failed to fetch list of projects'
           })
         })
@@ -299,11 +305,11 @@ export default defineComponent({
       if (result.success) {
         const index = this.projects.findIndex((i) => i.id === id)
         this.projects.splice(index, 1)
-        await this.$store.dispatch('notificationModule/show', {
+        await this.show({
           text: 'Project removed successfully'
         })
       } else {
-        await this.$store.dispatch('notificationModule/error', {
+        await this.error({
           text: result.message
         })
       }
@@ -332,18 +338,18 @@ export default defineComponent({
           if (result.success) {
             const index = this.projects.findIndex((i) => i.id === item.id)
             this.projects.splice(index, 1)
-            await this.$store.dispatch('notificationModule/show', {
+            await this.show({
               text: 'Project restored successfully'
             })
           } else {
-            await this.$store.dispatch('notificationModule/show', {
+            await this.show({
               text: result.message
             })
           }
           htmlUtils.waitCursor(false)
         }
       }
-      this.$store.dispatch('dialogModule/prompt', {
+      this.prompt({
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
     },
@@ -359,7 +365,7 @@ export default defineComponent({
           this.deleteProject(item.id)
         }
       }
-      this.$store.dispatch('dialogModule/prompt', {
+      this.prompt({
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
     }

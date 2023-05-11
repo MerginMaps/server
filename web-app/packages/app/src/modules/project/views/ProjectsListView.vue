@@ -22,9 +22,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script>
-import { ProjectsListViewTemplate, ProjectsTableDataLoader } from '@mergin/lib'
+import {
+  ProjectsListViewTemplate,
+  ProjectsTableDataLoader,
+  useFormStore,
+  useUserStore
+} from '@mergin/lib'
 import { computed, defineComponent } from 'vue'
-import { useActions, useGetters } from 'vuex-composition-helpers'
 
 export default defineComponent({
   name: 'ProjectsListView',
@@ -36,18 +40,18 @@ export default defineComponent({
     namespace: String
   },
   setup() {
-    const { isGlobalWorkspaceAdmin } = useGetters('userModule', [
-      'isGlobalWorkspaceAdmin'
-    ])
-    const { handleError } = useActions('formModule', ['handleError'])
+    const userStore = useUserStore()
+    const formStore = useFormStore()
 
-    const canCreateProject = computed(() => isGlobalWorkspaceAdmin?.value)
+    const canCreateProject = computed(
+      () => userStore.isGlobalWorkspaceAdmin?.value
+    )
 
     /**
      * Error handler for create new project from $emit in Template
      * */
     function onNewProjectError(err, data) {
-      handleError({
+      formStore.handleError({
         componentId: data.componentId,
         error: err,
         generalMessage: 'Failed to create project.'

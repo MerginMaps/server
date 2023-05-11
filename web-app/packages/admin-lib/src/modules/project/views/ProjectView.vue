@@ -18,9 +18,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { CloneDialog, ProjectViewTemplate } from '@mergin/lib'
+import {
+  CloneDialog,
+  ProjectViewTemplate,
+  useDialogStore,
+  useFormStore
+} from '@mergin/lib'
 import { defineComponent } from 'vue'
-import { useActions } from 'vuex-composition-helpers'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
 
@@ -43,8 +47,8 @@ export default defineComponent({
     }
   },
   setup(props) {
-    const { show } = useActions('dialogModule', ['show'])
-    const { handleError } = useActions('formModule', ['handleError'])
+    const dialogStore = useDialogStore()
+    const formStore = useFormStore()
 
     function openCloneDialog() {
       const dialogProps = {
@@ -54,14 +58,14 @@ export default defineComponent({
       const dialog = { maxWidth: 580, persistent: true }
       const listeners = {
         error: (error, data) => {
-          handleError({
+          formStore.handleError({
             componentId: data.merginComponentUuid,
             error,
             generalMessage: 'Failed to clone project'
           })
         }
       }
-      show({
+      dialogStore.show({
         component: CloneDialog,
         params: {
           props: dialogProps,

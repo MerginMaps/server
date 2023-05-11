@@ -158,12 +158,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapState, mapActions } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapState, mapActions } from 'vuex'
 
+import { useDialogStore } from '@/modules'
 import PageView from '@/modules/layout/components/PageView.vue'
+import { useLayoutStore } from '@/modules/layout/store'
 import ChangePasswordForm from '@/modules/user/components/ChangePasswordForm.vue'
 import EditProfileForm from '@/modules/user/components/EditProfileForm.vue'
+import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   name: 'ProfileViewTemplate',
@@ -177,8 +180,8 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('layoutModule', ['drawer']),
-    ...mapState('userModule', ['loggedUser']),
+    ...mapState(useLayoutStore, ['drawer']),
+    ...mapState(useUserStore, ['loggedUser']),
     usage() {
       return this.loggedUser?.disk_usage / this.loggedUser?.storage
     }
@@ -192,11 +195,13 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapActions('userModule', {
+    ...mapActions(useDialogStore, ['prompt', 'show']),
+    ...mapActions(useUserStore, {
       fetchUserProfile: 'fetchUserProfile',
       resendConfirmationEmailToUser: 'resendConfirmationEmail',
       closeUserProfile: 'closeUserProfile'
     }),
+
     resendConfirmationEmail() {
       this.resendConfirmationEmailToUser({ email: this.loggedUser?.email })
     },
@@ -208,7 +213,7 @@ export default defineComponent({
       const listeners = {
         confirm: () => this.resendConfirmationEmail()
       }
-      this.$store.dispatch('dialogModule/prompt', {
+      this.prompt({
         params: {
           props,
           listeners,
@@ -228,7 +233,7 @@ export default defineComponent({
       const listeners = {
         confirm: async () => await this.closeUserProfile()
       }
-      this.$store.dispatch('dialogModule/prompt', {
+      this.prompt({
         params: {
           props,
           listeners,
@@ -239,7 +244,7 @@ export default defineComponent({
     changePasswordDialog() {
       const props = {}
       const dialog = { maxWidth: 500, persistent: true }
-      this.$store.dispatch('dialogModule/show', {
+      this.show({
         component: ChangePasswordForm,
         params: {
           props,
@@ -250,7 +255,7 @@ export default defineComponent({
     editProfileDialog() {
       const props = { profile: this.loggedUser }
       const dialog = { maxWidth: 500, persistent: true }
-      this.$store.dispatch('dialogModule/show', {
+      this.show({
         component: EditProfileForm,
         params: {
           props,

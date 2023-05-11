@@ -123,11 +123,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapState } from 'vuex'
 
+import { useNotificationStore } from '@/modules/notification/store'
 import FileChangesetSummaryTable from '@/modules/project/components/FileChangesetSummaryTable.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
+import { useProjectStore } from '@/modules/project/store'
 
 const Colors = {
   added: 'green--text',
@@ -157,7 +159,7 @@ export default defineComponent({
     this.getVersion()
   },
   computed: {
-    ...mapState('projectModule', ['project']),
+    ...mapState(useProjectStore, ['project']),
     colors() {
       return Colors
     },
@@ -183,6 +185,8 @@ export default defineComponent({
     $route: 'getVersion'
   },
   methods: {
+    ...mapActions(useNotificationStore, ['error']),
+
     getVersion() {
       if (!this.project.versions) {
         ProjectApi.getProjectVersion(
@@ -202,7 +206,7 @@ export default defineComponent({
             const msg = err.response
               ? err.response.data?.detail
               : 'Failed to fetch project version'
-            this.$store.dispatch('notificationModule/error', { text: msg })
+            this.error({ text: msg })
           })
       } else {
         this.version = this.project.versions.find(

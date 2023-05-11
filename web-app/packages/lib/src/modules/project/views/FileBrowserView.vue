@@ -102,15 +102,17 @@ import max from 'lodash/max'
 import orderBy from 'lodash/orderBy'
 import union from 'lodash/union'
 import Path from 'path'
+import { mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapState } from 'vuex'
 
 import { formatDateTime } from '@/common/date_utils'
 import { dirname } from '@/common/path_utils'
 import { removeAccents } from '@/common/text_utils'
+import { useInstanceStore } from '@/modules/instance/store'
 import FileIcon from '@/modules/project/components/FileIcon.vue'
 import FileMenu from '@/modules/project/components/FileMenu.vue'
 import FolderDiff from '@/modules/project/components/FolderDiff.vue'
+import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
   name: 'FileBrowserView',
@@ -145,8 +147,8 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('instanceModule', ['configData']),
-    ...mapState('projectModule', ['project', 'uploads']),
+    ...mapState(useInstanceStore, ['configData']),
+    ...mapState(useProjectStore, ['project', 'uploads']),
     docsLinkManageCreateProject() {
       return `${this.configData?.docs_url ?? ''}/manage/create-project`
     },

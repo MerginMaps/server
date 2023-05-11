@@ -71,7 +71,7 @@ export default defineConfig(({ mode }) => ({
     }
   },
   optimizeDeps: {
-    exclude: ['vue'],
+    exclude: ['vue', '@mergin'],
     esbuildOptions: {
       define: {
         global: 'globalThis'
@@ -83,6 +83,11 @@ export default defineConfig(({ mode }) => ({
         }),
         NodeModulesPolyfillPlugin()
       ]
+    }
+  },
+  server: {
+    watch: {
+      ignored: ['!**/node_modules/@mergin/**']
     }
   }
 }))

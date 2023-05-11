@@ -92,10 +92,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapActions, mapGetters } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapActions, mapGetters } from 'vuex'
 
 import CustomPage from '@/common/components/CustomPage.vue'
+import { useFormStore } from '@/modules/form/store'
+import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   name: 'ChangePasswordView',
@@ -110,7 +112,7 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapGetters('formModule', ['getErrorByComponentId']),
+    ...mapGetters(useFormStore, ['getErrorByComponentId']),
     errors() {
       return this.getErrorByComponentId(this.merginComponentUuid) ?? {}
     },
@@ -127,10 +129,10 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions('userModule', {
+    ...mapActions(useUserStore, {
       changePasswordWithTokenAction: 'changePasswordWithToken'
     }),
-    ...mapActions('formModule', ['clearErrors', 'handleError']),
+    ...mapActions(useFormStore, ['clearErrors', 'handleError']),
     responseCallback(value) {
       this.success = value
     },

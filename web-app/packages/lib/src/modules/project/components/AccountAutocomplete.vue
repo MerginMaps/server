@@ -88,11 +88,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import debounce from 'lodash/debounce'
 import isEmpty from 'lodash/isEmpty'
+import { mapState } from 'pinia'
 import { defineComponent } from 'vue'
 import { SendIcon, UserIcon } from 'vue-tabler-icons'
-import { mapState } from 'vuex'
 
 import { isValidEmail } from '@/common/text_utils'
+import { useProjectStore } from '@/modules/project/store'
 import UserSearchChip from '@/modules/user/components/UserSearchChip.vue'
 import { EMPTY_INVITE_ITEM } from '@/modules/user/constants'
 import { UserSearchParams } from '@/modules/user/types'
@@ -115,7 +116,7 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('projectModule', ['currentNamespace']),
+    ...mapState(useProjectStore, ['currentNamespace']),
     items() {
       return this.searchResults.map((item) => {
         return { ...item }

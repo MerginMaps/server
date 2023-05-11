@@ -11,11 +11,10 @@ import {
   VersionDetailView,
   NotFoundView,
   VerifyEmailView,
-  routeUtils
+  routeUtils,
+  useUserStore
 } from '@mergin/lib'
 import { createRouter, createWebHistory } from 'vue-router'
-
-import store from './store'
 
 import DashboardView from '@/modules/dashboard/views/DashboardView.vue'
 import AppHeader from '@/modules/layout/components/AppHeader.vue'
@@ -34,7 +33,8 @@ const router = createRouter({
       name: 'home',
       meta: { public: true },
       beforeEnter: (to, from, next) => {
-        if (store.getters['userModule/isLoggedIn']) {
+        const userStore = useUserStore()
+        if (userStore.isLoggedIn) {
           next('/dashboard')
         } else {
           next('/login')
@@ -43,7 +43,8 @@ const router = createRouter({
     },
     {
       beforeEnter: (to, from, next) => {
-        if (store.getters['userModule/isLoggedIn']) {
+        const userStore = useUserStore()
+        if (userStore.isLoggedIn) {
           next('/dashboard')
         } else {
           next()
@@ -185,6 +186,6 @@ const router = createRouter({
 
 /** Handles redirect to /login when user is not authenticated. */
 router.beforeEach((to, from, next) =>
-  routeUtils.isAuthenticatedGuard(to, from, next, store)
+  routeUtils.isAuthenticatedGuard(to, from, next)
 )
 export default router

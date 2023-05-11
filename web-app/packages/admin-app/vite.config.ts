@@ -41,7 +41,7 @@ export default defineConfig(({ mode }) => ({
     }
   },
   optimizeDeps: {
-    exclude: ['vue'],
+    exclude: ['vue', '@mergin'],
     esbuildOptions: {
       define: {
         global: 'globalThis'
@@ -70,6 +70,9 @@ export default defineConfig(({ mode }) => ({
       '/config': {
         target: `http://127.0.0.1:${serverPort}`
       }
+    },
+    watch: {
+      ignored: ['!**/node_modules/@mergin/**']
     }
   }
 }))

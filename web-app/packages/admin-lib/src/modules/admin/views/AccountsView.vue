@@ -101,13 +101,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { PaginatedUsersParams } from '@mergin/lib'
+import { PaginatedUsersParams, useDialogStore } from '@mergin/lib'
 import debounce from 'lodash/debounce'
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapActions, mapState } from 'vuex'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
 import CreateUserForm from '@/modules/admin/components/CreateUserForm.vue'
+import { useAdminStore } from '@/modules/admin/store'
 
 export default defineComponent({
   name: 'AccountView',
@@ -136,13 +137,14 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('adminModule', ['users', 'loading'])
+    ...mapState(useAdminStore, ['users', 'loading'])
   },
   created() {
     this.resetPaging = debounce(this.resetPaging, 1000)
   },
   methods: {
-    ...mapActions('adminModule', ['fetchUsers']),
+    ...mapActions(useAdminStore, ['fetchUsers']),
+    ...mapActions(useDialogStore, ['show']),
 
     async resetPaging() {
       this.options.page = 1
@@ -175,7 +177,7 @@ export default defineComponent({
       const listeners = {
         success: async () => this.resetPaging()
       }
-      this.$store.dispatch('dialogModule/show', {
+      this.show({
         component: CreateUserForm,
         params: {
           listeners,

@@ -35,8 +35,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import debounce from 'lodash/debounce'
+import { mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapState } from 'vuex'
+
+import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
   name: 'upload-progress',
@@ -46,7 +48,7 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('projectModule', ['uploads']),
+    ...mapState(useProjectStore, ['uploads']),
     list() {
       return Object.values(this.uploads)
     },

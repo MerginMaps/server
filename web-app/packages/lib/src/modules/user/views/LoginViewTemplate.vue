@@ -84,10 +84,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { mapActions, mapGetters, mapMutations, mapState } from 'vuex'
+import { mapActions, mapGetters, mapState } from 'pinia'
 
 import CustomPage from '@/common/components/CustomPage.vue'
 import MerginLogoLight from '@/common/components/MerginLogoLight.vue'
+import { useFormStore } from '@/modules/form/store'
+import { useUserStore } from '@/modules/user/store'
 
 export default {
   name: 'LoginViewTemplate',
@@ -114,8 +116,8 @@ export default {
     this.updateLoggedUser({ loggedUser: null }) // clear current user to prevent commit to store (and thus reload)
   },
   computed: {
-    ...mapState('userModule', ['loggedUser']),
-    ...mapGetters('formModule', ['getErrorByComponentId']),
+    ...mapState(useUserStore, ['loggedUser']),
+    ...mapGetters(useFormStore, ['getErrorByComponentId']),
     errors() {
       return this.getErrorByComponentId(this.merginComponentUuid) ?? {}
     },
@@ -130,9 +132,12 @@ export default {
     })
   },
   methods: {
-    ...mapActions('formModule', ['clearErrors']),
-    ...mapMutations('userModule', ['updateLoggedUser']),
-    ...mapActions('userModule', ['userLogin', 'resetPassword']),
+    ...mapActions(useFormStore, ['clearErrors']),
+    ...mapActions(useUserStore, [
+      'updateLoggedUser',
+      'userLogin',
+      'resetPassword'
+    ]),
     loginUser() {
       this.clearErrors({ componentId: this.merginComponentUuid })
       const data = {

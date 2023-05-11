@@ -12,7 +12,7 @@ export const initializeAppModule = <S, R>(
   routeOverrides?: RouteOverrides
 ) => {
   if (services.store) {
-    services.store.registerModule(module.name, module.moduleStore)
+    // services.store.registerModule(module.name, module.moduleStore)
     module.init(services, routeOverrides)
   }
 }

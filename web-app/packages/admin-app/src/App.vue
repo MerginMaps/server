@@ -64,11 +64,15 @@ import {
   GlobalWarning,
   initRequestInterceptors,
   initResponseInterceptors,
-  Notifications
+  Notifications,
+  useAppStore,
+  useInstanceStore,
+  useNotificationStore,
+  useUserStore
   // UploadProgress
 } from '@mergin/lib'
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapActions, mapMutations, mapState } from 'vuex'
 
 export default defineComponent({
   name: 'app',
@@ -97,18 +101,19 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('instanceModule', ['pingData']),
-    ...mapState('userModule', ['loggedUser']),
+    ...mapState(useInstanceStore, ['pingData']),
+    ...mapState(useUserStore, ['loggedUser']),
+    ...mapState(useAppStore, ['serverError']),
 
     error() {
-      return this.$store.state.serverError
+      return this.serverError
     }
   },
   watch: {
     error() {
       if (!this.error) return
-      this.$store.dispatch('notificationModule/error', { text: this.error })
-      this.$store.commit('serverError', null) // reset error so it is displayed just once
+      this.notificationError({ text: this.error })
+      this.setServerError(null) // reset error so it is displayed just once
     },
     async loggedUser(value, oldValue) {
       if (value && value?.id !== oldValue?.id) {
@@ -138,9 +143,11 @@ export default defineComponent({
     initResponseInterceptors(resetUser)
   },
   methods: {
-    ...mapActions('instanceModule', ['fetchPing']),
-    ...mapActions('userModule', ['checkCurrentWorkspace']),
-    ...mapMutations('userModule', ['updateLoggedUser'])
+    ...mapActions(useInstanceStore, ['fetchPing']),
+    ...mapActions(useNotificationStore, { notificationError: 'error' }),
+    ...mapActions(useUserStore, ['checkCurrentWorkspace']),
+    ...mapActions(useUserStore, ['updateLoggedUser']),
+    ...mapActions(useAppStore, ['setServerError'])
   }
 })
 </script>

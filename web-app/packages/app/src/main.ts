@@ -12,12 +12,13 @@ import {
   initCsrfToken,
   ProjectModule,
   LayoutModule,
-  InstanceModule
+  InstanceModule,
+  useInstanceStore
 } from '@mergin/lib'
 
 import { createMerginApp } from './app'
 import router from './router'
-import store from './store'
+import store, { getPiniaInstance } from './store'
 
 // initialize modules
 moduleUtils.initializeAppModule(LayoutModule, {
@@ -47,9 +48,11 @@ moduleUtils.initializeAppModule(InstanceModule, {
   store
 })
 
+const app = createMerginApp()
+const instanceStore = useInstanceStore(getPiniaInstance())
 // App initialization
-store.dispatch('instanceModule/initApp').then(async (response) => {
+instanceStore.initApp().then(async (response) => {
   initCsrfToken(response)
-  await store.dispatch('instanceModule/fetchConfig')
-  createMerginApp().mount('#app')
+  await instanceStore.fetchConfig()
+  app.mount('#app')
 })

@@ -89,13 +89,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import Path from 'path'
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 // import pdf from 'vue-pdf'
 import { DownloadIcon, TrashIcon } from 'vue-tabler-icons'
-import { mapMutations, mapState } from 'vuex'
 
 import ActionButton from '@/common/components/ActionButton.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
+import { useProjectStore } from '@/modules/project/store'
 
 const Colors = {
   added: 'green',
@@ -120,7 +121,7 @@ export default defineComponent({
     TrashIcon
   },
   computed: {
-    ...mapState('projectModule', ['project', 'uploads']),
+    ...mapState(useProjectStore, ['project', 'uploads']),
     upload() {
       return this.uploads[this.project.path]
     },
@@ -187,7 +188,7 @@ export default defineComponent({
     this.txtPreview()
   },
   methods: {
-    ...mapMutations('projectModule', ['deleteFiles']),
+    ...mapActions(useProjectStore, ['deleteFiles']),
     txtPreview() {
       ProjectApi.getProjectFileByUrl(this.downloadLink).then((resp) => {
         this.mimetype = resp.headers['content-type']

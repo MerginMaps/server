@@ -88,11 +88,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapActions, mapState } from 'vuex'
 
+import { useDialogStore } from '@/modules'
 import PageView from '@/modules/layout/components/PageView.vue'
+import { useLayoutStore } from '@/modules/layout/store'
 import ProjectForm from '@/modules/project/components/ProjectForm.vue'
+import { useProjectStore } from '@/modules/project/store'
+import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   name: 'DashboardViewTemplate',
@@ -106,20 +110,22 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('layoutModule', ['drawer']),
-    ...mapState('userModule', ['loggedUser']),
-    ...mapState('projectModule', ['projectsCount'])
+    ...mapState(useLayoutStore, ['drawer']),
+    ...mapState(useUserStore, ['loggedUser']),
+    ...mapState(useProjectStore, ['projectsCount'])
   },
   async created() {
     await this.fetchAccessRequests()
   },
   methods: {
-    ...mapActions('projectModule', {
+    ...mapActions(useDialogStore, ['show']),
+    ...mapActions(useProjectStore, {
       fetchAccessRequests: 'fetchAccessRequests'
     }),
+
     newProjectDialog() {
       const dialog = { maxWidth: 500, persistent: true }
-      this.$store.dispatch('dialogModule/show', {
+      this.show({
         component: ProjectForm,
         params: {
           dialog

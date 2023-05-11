@@ -124,11 +124,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { ConfirmDialog, PageView } from '@mergin/lib'
+import { ConfirmDialog, PageView, useDialogStore } from '@mergin/lib'
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { mapActions, mapState } from 'vuex'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
+import { useAdminStore } from '@/modules/admin/store'
 
 export default defineComponent({
   name: 'ProfileView',
@@ -142,7 +143,7 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('adminModule', ['userAdminProfile']),
+    ...mapState(useAdminStore, ['userAdminProfile']),
     usage() {
       return this.profile.disk_usage / this.profile.storage
     },
@@ -155,7 +156,9 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapActions('adminModule', ['closeAccount', 'updateUser']),
+    ...mapActions(useAdminStore, ['closeAccount', 'updateUser']),
+    ...mapActions(useDialogStore, ['prompt', 'show']),
+
     changeStatusDialog() {
       const props = {
         text: this.userAdminProfile.active
@@ -173,7 +176,7 @@ export default defineComponent({
           })
         }
       }
-      this.$store.dispatch('dialogModule/show', {
+      this.show({
         component: ConfirmDialog,
         params: {
           props,
@@ -195,7 +198,7 @@ export default defineComponent({
         confirm: async () =>
           await this.closeAccount({ username: this.userAdminProfile.username })
       }
-      this.$store.dispatch('dialogModule/prompt', {
+      this.prompt({
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
     }

@@ -15,30 +15,33 @@ import {
   textUtils,
   numberUtils,
   http,
-  MerginComponentUuidMixin
+  MerginComponentUuidMixin,
+  useAppStore
 } from '@mergin/lib'
 import PortalVue from 'portal-vue'
 import { createApp } from 'vue'
-// import VueMeta from 'vue-meta'
 
 import App from './App.vue'
 import router from './router'
-import store from './store'
+import store, { getPiniaInstance } from './store'
 
 import i18n from '@/plugins/i18n/i18n'
 import vuetify from '@/plugins/vuetify/vuetify'
+// import VueMeta from 'vue-meta'
 
 // TODO: V3_UPGRADE - https://github.com/nuxt/vue-meta/issues/665#issuecomment-820927172
 // Vue.use(VueMeta)
 
 const createMerginApp = () => {
   router.onError((e) => {
-    store.commit('serverError', e.message)
+    const appStore = useAppStore()
+    appStore.setServerError(e.message)
   })
 
   const app = createApp(App)
     // global mixin - replace with composable after migration to Vue 3
     .mixin(MerginComponentUuidMixin)
+    .use(getPiniaInstance())
     .use(router)
     .use(store)
     .use(vuetify)
