@@ -231,7 +231,7 @@ export const useUserStore = defineStore('userModule', {
       }
     },
 
-    async redirectFromLoginAfterLogin(_, payload) {
+    async redirectFromLoginAfterLogin(payload) {
       if (payload.currentRoute.path === '/login') {
         UserModule.routerService.push({ path: '/' }).catch((e) => {
           // TODO: V3_UPGRADE - probably not needed anymore in vue-router v4 - check needed
