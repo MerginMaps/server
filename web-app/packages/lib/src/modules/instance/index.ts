@@ -5,3 +5,4 @@
 export * from './module'
 export * from './store'
 export * from './instanceApi'
+export * from './types'
