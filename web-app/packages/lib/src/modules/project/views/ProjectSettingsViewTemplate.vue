@@ -72,6 +72,7 @@ import { useDialogStore } from '@/modules/dialog/store'
 import { useNotificationStore } from '@/modules/notification/store'
 import ProjectAccessRequests from '@/modules/project/components/ProjectAccessRequest.vue'
 import { useProjectStore } from '@/modules/project/store'
+import { ProjectAccess } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
@@ -90,7 +91,9 @@ export default defineComponent({
   },
   data() {
     return {
-      settings: {},
+      settings: {
+        access: {} as ProjectAccess
+      },
       key: 0
     }
   },

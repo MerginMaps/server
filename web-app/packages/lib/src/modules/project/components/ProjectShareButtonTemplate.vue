@@ -37,8 +37,8 @@ export default defineComponent({
     onShareProject() {
       const dialogProps = { allowInvite: this.allowInvite }
       const listeners = {
-        ...(this.$listeners['on-invite']
-          ? { 'on-invite': this.$listeners['on-invite'] }
+        ...(this.$attrs['on-invite']
+          ? { 'on-invite': this.$attrs['on-invite'] }
           : {})
       }
       const dialog = {

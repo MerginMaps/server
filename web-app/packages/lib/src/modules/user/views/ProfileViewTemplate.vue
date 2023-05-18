@@ -122,7 +122,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                             <v-btn
                               @click="showConfirmationDialog"
                               class="primary--text"
-                              :disabled="loggedUser.verified_profile"
+                              :disabled="loggedUser.verified_email"
                               cy-data="profile-verify-email-btn"
                             >
                               <v-icon class="mr-2">edit</v-icon>

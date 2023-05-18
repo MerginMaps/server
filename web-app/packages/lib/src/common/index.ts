@@ -2,6 +2,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import {
+  formatDate,
+  formatDateTime,
+  formatRemainingTime,
+  formatTimeDiff
+} from '@/common/date_utils'
+import { formatFileSize, formatToCurrency } from '@/common/number_utils'
+import { formatToTitle } from '@/common/text_utils'
+
 export * from './components'
 export * from './errors'
 export * from './mixins'
@@ -18,3 +27,13 @@ export * as pathUtils from './path_utils'
 export * as permissionUtils from './permission_utils'
 export * as textUtils from './text_utils'
 export * as routeUtils from './route_utils'
+
+export interface ComponentCustomPropertyFilters {
+  filesize: typeof formatFileSize
+  datetime: typeof formatDateTime
+  date: typeof formatDate
+  timediff: typeof formatTimeDiff
+  remainingtime: typeof formatRemainingTime
+  totitle: typeof formatToTitle
+  currency: typeof formatToCurrency
+}

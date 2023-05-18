@@ -97,6 +97,12 @@ export interface UserSearchInvite extends UserSearch {
   isInvite: boolean
 }
 
+export function isUserSearchInvite(
+  user: UserSearch | UserSearchInvite
+): user is UserSearchInvite {
+  return (user as UserSearchInvite).isInvite
+}
+
 export interface ChangePasswordWithTokenParams {
   password: string
   confirm: string

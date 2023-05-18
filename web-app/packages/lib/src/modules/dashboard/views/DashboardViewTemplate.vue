@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               First create new project, add people to it or explore public
               project for more inspiration
             </p>
-            <v-btn color="orange" @click="newProjectDialog(loggedUser.email)"
+            <v-btn color="orange" @click="newProjectDialog()"
               ><span style="color: white">New project</span>
             </v-btn>
           </v-card>

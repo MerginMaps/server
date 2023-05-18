@@ -306,6 +306,7 @@ export default defineComponent({
   },
   created() {
     this.filterData = debounce(this.filterData, 3000)
+    console.log(this.$filters.filesize(5, 'MB', 1))
   },
   methods: {
     paginating(options) {
