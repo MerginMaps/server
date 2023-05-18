@@ -4,20 +4,16 @@
 
 import getRoutes from './routes'
 
-// import store, { UserState } from './store'
 import { applyRouteOverride } from '@/common/module_utils'
 import { Module } from '@/common/types'
-import { RootState } from '@/modules/types'
 
-export const UserModule: Module<any, RootState> = {
+export const UserModule: Module = {
   name: 'userModule',
   routerService: undefined,
   httpService: undefined,
-  moduleStore: undefined,
-  // moduleStore: store,
-  _addRoutes: (router, rootStore, routeOverrides) => {
+  _addRoutes: (router, routeOverrides) => {
     // add routes to router
-    getRoutes(rootStore).forEach((route) => {
+    getRoutes().forEach((route) => {
       router.addRoute(applyRouteOverride(route, routeOverrides))
     })
   },
@@ -30,13 +26,7 @@ export const UserModule: Module<any, RootState> = {
 
     if (services.routerService) {
       UserModule.routerService = services.routerService
-      if (services.store) {
-        UserModule._addRoutes(
-          services.routerService,
-          services.store,
-          routeOverrides
-        )
-      }
+      UserModule._addRoutes(services.routerService, routeOverrides)
     }
   }
 }

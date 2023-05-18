@@ -5,8 +5,6 @@
 import { NotFoundView, routeUtils } from '@mergin/lib'
 import { createRouter, createWebHistory } from 'vue-router'
 
-import store from './store'
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -19,7 +17,7 @@ const router = createRouter({
 
 /** Handles redirect to /login when user is not authenticated. */
 router.beforeEach((to, from, next) => {
-  routeUtils.isAuthenticatedGuard(to, from, next, store)
-  routeUtils.isSuperUser(to, from, next, store)
+  routeUtils.isAuthenticatedGuard(to, from, next)
+  routeUtils.isSuperUser(to, from, next)
 })
 export default router

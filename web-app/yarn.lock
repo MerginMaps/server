@@ -2562,7 +2562,7 @@
     "@vue/compiler-dom" "3.2.47"
     "@vue/shared" "3.2.47"
 
-"@vue/devtools-api@^6.0.0-beta.11", "@vue/devtools-api@^6.2.1", "@vue/devtools-api@^6.4.5", "@vue/devtools-api@^6.5.0":
+"@vue/devtools-api@^6.2.1", "@vue/devtools-api@^6.4.5", "@vue/devtools-api@^6.5.0":
   version "6.5.0"
   resolved "https://registry.yarnpkg.com/@vue/devtools-api/-/devtools-api-6.5.0.tgz#98b99425edee70b4c992692628fa1ea2c1e57d07"
   integrity sha512-o9KfBeaBmCKl10usN4crU53fYtC1r7jJwdGKjPT24t348rHxgfpZ0xL3Xm/gLUYnc0oTp8LAmrxOeLyu6tbk2Q==
@@ -10466,18 +10466,6 @@ vuetify@^3.1.10:
   version "3.1.10"
   resolved "https://registry.yarnpkg.com/vuetify/-/vuetify-3.1.10.tgz#95f5d88eb587fdda079970a4c6a0fa66b9387426"
   integrity sha512-TFugKhjYO+xktnexHcs/vdsqtq+MZk8MDLbSJX9vMsA58LPwO4atdBbWhQ1Pf8q1jPISpxDF6njjsZHPQQsHCA==
-
-vuex-composition-helpers@^2.0.3:
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/vuex-composition-helpers/-/vuex-composition-helpers-2.0.3.tgz#cfe854b0451e61a194206078716d2976324878c6"
-  integrity sha512-tIkGHfUqA3dzq8ePBXUXfZldqgZOXr6hb6TF6M5bhR/5ls2fsqhPJiOygC40UKZe4w6pP7cJ1HiLrZaYckz4nw==
-
-vuex@^4.1.0:
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/vuex/-/vuex-4.1.0.tgz#aa1b3ea5c7385812b074c86faeeec2217872e36c"
-  integrity sha512-hmV6UerDrPcgbSy9ORAtNXDr9M4wlNP4pEFKye4ujJF8oqgFFuxDCdOLS3eNoRTtq5O3hoBDh9Doj1bQMYHRbQ==
-  dependencies:
-    "@vue/devtools-api" "^6.0.0-beta.11"
 
 w3c-hr-time@^1.0.2:
   version "1.0.2"

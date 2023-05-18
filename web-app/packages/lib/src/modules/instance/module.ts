@@ -2,14 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-// import store, { InstanceState } from './store'
 import { Module } from '@/common/types'
-import { RootState } from '@/modules/types'
 
-export const InstanceModule: Module<any, RootState> = {
+export const InstanceModule: Module = {
   name: 'instanceModule',
   httpService: undefined,
-  moduleStore: undefined,
   init: (services) => {
     if (services.httpService) {
       InstanceModule.httpService = services.httpService

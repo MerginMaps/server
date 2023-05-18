@@ -87,7 +87,7 @@ export default defineComponent({
   methods: {
     ...mapActions(useNotificationStore, ['error']),
 
-    // TODO: refactor to vuex action
+    // TODO: refactor to pinia action
     getChangeset() {
       waitCursor(true)
       this.$http

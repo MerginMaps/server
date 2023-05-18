@@ -6,15 +6,12 @@ import { RouteRecordRaw } from 'vue-router'
 
 import { Module, ModuleService, RouteOverrides } from '@/common/types'
 
-export const initializeAppModule = <S, R>(
-  module: Module<S, R>,
+export const initializeAppModule = (
+  module: Module,
   services: ModuleService,
   routeOverrides?: RouteOverrides
 ) => {
-  if (services.store) {
-    // services.store.registerModule(module.name, module.moduleStore)
-    module.init(services, routeOverrides)
-  }
+  module.init(services, routeOverrides)
 }
 
 function elevateToRouteRecordRaw(

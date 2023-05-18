@@ -25,7 +25,7 @@ import { createApp } from 'vue'
 
 import App from './App.vue'
 import router from './router'
-import store, { getPiniaInstance } from './store'
+import { getPiniaInstance } from './store'
 
 import i18n from '@/plugins/i18n/i18n'
 import vuetify from '@/plugins/vuetify/vuetify'
@@ -44,7 +44,6 @@ const createMerginApp = () => {
     .mixin(MerginComponentUuidMixin)
     .use(getPiniaInstance())
     .use(router)
-    .use(store)
     .use(vuetify)
     .use(i18n)
     .use(PortalVue)

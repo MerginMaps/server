@@ -18,34 +18,23 @@ import {
 
 import { createMerginApp } from './app'
 import router from './router'
-import store, { getPiniaInstance } from './store'
+import { getPiniaInstance } from './store'
 
 // initialize modules
-moduleUtils.initializeAppModule(LayoutModule, {
-  store
-})
+moduleUtils.initializeAppModule(LayoutModule)
 moduleUtils.initializeAppModule(UserModule, {
   httpService: http,
-  routerService: router,
-  store
+  routerService: router
 })
-moduleUtils.initializeAppModule(NotificationModule, {
-  store
-})
-moduleUtils.initializeAppModule(DialogModule, {
-  store
-})
-moduleUtils.initializeAppModule(FormModule, {
-  store
-})
+moduleUtils.initializeAppModule(NotificationModule)
+moduleUtils.initializeAppModule(DialogModule)
+moduleUtils.initializeAppModule(FormModule)
 moduleUtils.initializeAppModule(ProjectModule, {
   httpService: http,
-  routerService: router,
-  store
+  routerService: router
 })
 moduleUtils.initializeAppModule(InstanceModule, {
-  httpService: http,
-  store
+  httpService: http
 })
 
 const app = createMerginApp()
