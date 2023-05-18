@@ -8,11 +8,12 @@ import {
   FileVersionDetailView,
   ProjectVersionsView,
   VersionDetailView,
-  merginUtils
+  merginUtils,
+  useUserStore
 } from '@mergin/lib'
 import { RouteRecordRaw } from 'vue-router'
-import { Store } from 'vuex'
 
+import { useAdminStore } from '@/modules'
 import AccountsView from '@/modules/admin/views/AccountsView.vue'
 import ProfileView from '@/modules/admin/views/ProfileView.vue'
 import SettingsView from '@/modules/admin/views/SettingsView.vue'
@@ -21,10 +22,11 @@ import ProjectsView from '@/modules/project/views/ProjectsView.vue'
 import ProjectView from '@/modules/project/views/ProjectView.vue'
 import LoginView from '@/modules/user/views/LoginView.vue'
 
-export default (rootStore: Store<any>): RouteRecordRaw[] => [
+export default (): RouteRecordRaw[] => [
   {
     beforeEnter: (to, from, next) => {
-      if (rootStore.getters['userModule/isSuperUser']) {
+      const userStore = useUserStore()
+      if (userStore.isSuperUser) {
         next('/dashboard')
       } else {
         next()
@@ -58,16 +60,17 @@ export default (rootStore: Store<any>): RouteRecordRaw[] => [
     name: 'profile',
     component: ProfileView,
     props: true,
-    beforeEnter: (to, from, next) => {
-      rootStore.commit('adminModule/userAdminProfile', null)
-      rootStore
-        .dispatch('adminModule/fetchUserProfileByName', {
+    beforeEnter: async (to, from, next) => {
+      const adminStore = useAdminStore()
+      adminStore.userAdminProfile(null)
+      try {
+        await adminStore.fetchUserProfileByName({
           username: to.params.username
         })
-        .then(() => next())
-        .catch((e) => {
-          next(Error(merginUtils.parseError(e, 'Failed to fetch user profile')))
-        })
+        next()
+      } catch (e) {
+        next(Error(merginUtils.parseError(e, 'Failed to fetch user profile')))
+      }
     }
   },
   {
