@@ -4,19 +4,24 @@
 
 import json
 import shutil
+import sqlite3
 import uuid
 import math
 from datetime import datetime
 from flask import url_for, current_app
 import os
 from dateutil.tz import tzlocal
+from pygeodiff import GeoDiff
+from sqlalchemy.orm.attributes import flag_modified
 
 from ..auth.models import User, UserProfile
-from ..sync.utils import generate_location, generate_checksum
+from ..sync.utils import generate_location, generate_checksum, resolve_tags
 from ..sync.models import Project, ProjectAccess, ProjectVersion
 from ..sync.workspace import GlobalWorkspace
 from .. import db
-from . import json_headers, DEFAULT_USER, test_project, test_project_dir
+from . import json_headers, DEFAULT_USER, test_project, test_project_dir, TMP_DIR
+
+CHUNK_SIZE = 1024
 
 
 def add_user(username, password, is_admin=False):
@@ -222,3 +227,123 @@ def upload_file_to_project(project, filename, client):
         )
     assert client.post(f"/v1/project/push/finish/{upload_id}").status_code == 200
 
+
+def gpkgs_are_equal(file1, file2):
+    """Check two geopackge files are equal by means there are no geodiff changes."""
+    changes = os.path.join(TMP_DIR, "changeset" + str(uuid.uuid4()))
+    geodiff = GeoDiff()
+    geodiff.create_changeset(file1, file2, changes)
+    return not geodiff.has_changes(changes)
+
+
+def execute_query(file, sql):
+    """Open connection to gpkg file and execute SQL query"""
+    gpkg_conn = sqlite3.connect(file)
+    gpkg_conn.enable_load_extension(True)
+    gpkg_cur = gpkg_conn.cursor()
+    gpkg_cur.execute('SELECT load_extension("mod_spatialite")')
+    gpkg_cur.execute(sql)
+    gpkg_conn.commit()
+    gpkg_conn.close()
+
+
+def create_blank_version(project):
+    """Helper to create dummy project version with no changes to increase count"""
+    changes = {"added": [], "updated": [], "removed": []}
+    pv = ProjectVersion(
+        project,
+        project.next_version(),
+        project.creator.username,
+        changes,
+        project.files,
+        "127.0.0.1",
+    )
+    db.session.add(pv)
+    project.latest_version = project.next_version()
+    flag_modified(project, "files")
+    db.session.commit()
+
+
+def push_change(project, action, path, src_dir):
+    """Helper to create ProjectVersion incl. files changes based on change metadata
+
+    :param project: project to push, Project
+    :param action: change action type, str
+    :param path: relative path of file inside project, str
+    :param src_dir: absolute path to directory with file upload, StrPath
+
+    :returns: new project version, ProjectVersion
+    """
+    current_files = project.files
+    new_version = project.next_version()
+    changes = {"added": [], "updated": [], "removed": []}
+    metadata = {**file_info(src_dir, path), "location": os.path.join(new_version, path)}
+
+    if action == "added":
+        new_file = os.path.join(project.storage.project_dir, metadata["location"])
+        os.makedirs(os.path.dirname(new_file), exist_ok=True)
+        shutil.copy(os.path.join(src_dir, metadata["path"]), new_file)
+        current_files.append(metadata)
+    elif action == "updated":
+        f_updated = next(f for f in current_files if f["path"] == path)
+        metadata = {
+            **file_info(src_dir, path),
+            "location": os.path.join(new_version, path),
+        }
+        patched_file = os.path.join(project.storage.project_dir, metadata["path"])
+        os.makedirs(os.path.dirname(patched_file), exist_ok=True)
+        if ".gpkg" in path:
+            diff_id = str(uuid.uuid4())
+            diff_name = path + "-diff-" + diff_id
+            basefile = os.path.join(project.storage.project_dir, f_updated["location"])
+            modfile = os.path.join(src_dir, path)
+            changeset = os.path.join(src_dir, diff_name)
+            project.storage.geodiff.create_changeset(basefile, modfile, changeset)
+            metadata["diff"] = {
+                "path": diff_name,
+                "checksum": generate_checksum(changeset),
+                "size": os.path.getsize(changeset),
+                "chunks": [
+                    str(uuid.uuid4())
+                    for i in range(
+                        math.ceil(file_info(src_dir, diff_name)["size"] / CHUNK_SIZE)
+                    )
+                ],
+                "location": os.path.join(new_version, diff_name),
+            }
+            diff_file = os.path.join(
+                project.storage.project_dir, metadata["diff"]["location"]
+            )
+            os.makedirs(os.path.dirname(diff_file), exist_ok=True)
+            shutil.copy(changeset, diff_file)
+
+        new_file = os.path.join(project.storage.project_dir, metadata["location"])
+        os.makedirs(os.path.dirname(new_file), exist_ok=True)
+        shutil.copy(os.path.join(src_dir, metadata["path"]), new_file)
+        f_updated.update(metadata)
+    elif action == "removed":
+        f_removed = next(f for f in current_files if f["path"] == path)
+        current_files.remove(f_removed)
+    else:
+        return
+
+    changes[action].append(metadata)
+    pv = ProjectVersion(
+        project,
+        new_version,
+        project.creator.username,
+        changes,
+        current_files,
+        "127.0.0.1",
+    )
+    db.session.add(pv)
+    db.session.commit()
+    assert pv.project_size == sum(file["size"] for file in pv.files)
+    project.files = current_files
+    project.disk_usage = sum(file["size"] for file in project.files)
+    project.tags = resolve_tags(pv.files)
+    project.latest_version = new_version
+    db.session.add(project)
+    flag_modified(project, "files")
+    db.session.commit()
+    return pv
