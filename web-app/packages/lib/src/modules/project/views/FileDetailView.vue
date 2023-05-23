@@ -180,7 +180,7 @@ export default defineComponent({
       pageCount: 0,
       currentPage: 0,
       content: null,
-      mimetype: null
+      mimetype: null as string
     }
   },
   created() {
