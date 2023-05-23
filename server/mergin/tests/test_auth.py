@@ -24,9 +24,10 @@ def client(app):
     return client
 
 
-# login tests: success, success with email login, invalid password, missing password, wrong headers
+# login tests: success, success with trailing space, success with email login, invalid password, missing password, wrong headers
 test_login_data = [
     ({"login": "mergin", "password": "ilovemergin"}, json_headers, 200),
+    ({"login": "mergin  ", "password": "ilovemergin"}, json_headers, 200),
     ({"login": "mergin@mergin.com", "password": "ilovemergin"}, json_headers, 200),
     ({"login": "mergin", "password": "ilovemergi"}, json_headers, 401),
     ({"login": "mergin"}, json_headers, 401),
