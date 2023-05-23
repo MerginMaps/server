@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               @keyup.enter="reset"
             />
             <v-btn
-              :dark="email !== ''"
+              :theme="email === '' ? 'light' : 'dark'"
               color="secondary"
               data-cy="reset-form-btn"
               :disabled="!email"
@@ -53,7 +53,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               @keyup.enter="loginUser"
             />
             <v-btn
-              :dark="Boolean(login && password)"
+              :theme="Boolean(login && password) ? 'light' : 'dark'"
               :disabled="!login || !password"
               data-cy="login-form-btn-login"
               color="secondary"

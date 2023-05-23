@@ -45,11 +45,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, PropType } from 'vue'
+
+import { SideBarItemModel } from '@/modules/layout/types'
 // import Themeable from 'vuetify/lib/mixins/themeable'
 
 export default defineComponent({
-  name: 'Item',
+  name: 'BaseItem',
 
   // mixins: [Themeable],
 
@@ -59,7 +61,7 @@ export default defineComponent({
       default: 'white'
     },
     item: {
-      type: Object,
+      type: Object as PropType<SideBarItemModel>,
       default: () => ({
         href: undefined,
         icon: undefined,

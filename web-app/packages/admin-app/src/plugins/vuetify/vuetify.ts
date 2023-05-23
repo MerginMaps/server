@@ -2,12 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import { useI18n } from 'vue-i18n'
 import { createVuetify } from 'vuetify'
+import { createVueI18nAdapter } from 'vuetify/locale/adapters/vue-i18n'
 
 import i18n from '@/plugins/i18n/i18n'
 // import '@/sass/overrides.sass'
 
-const theme = {
+const colors = {
   primary: '#2d052d',
   secondary: '#00a884',
   accent: '#9C27b0',
@@ -17,13 +19,13 @@ const theme = {
 }
 
 export default createVuetify({
-  lang: {
-    t: (key, ...params) => i18n.t(key, params)
+  locale: {
+    adapter: createVueI18nAdapter({ i18n, useI18n })
   },
   theme: {
     themes: {
-      dark: theme,
-      light: theme
+      dark: { colors },
+      light: { colors }
     }
   }
 })

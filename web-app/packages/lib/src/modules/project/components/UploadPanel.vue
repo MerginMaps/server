@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <v-card>
-    <v-toolbar dense text dark color="primary">
+    <v-toolbar dense text theme="dark" color="primary">
       <v-toolbar-title>Data Sync</v-toolbar-title>
       <v-spacer />
       <v-btn icon @click="resetUpload">

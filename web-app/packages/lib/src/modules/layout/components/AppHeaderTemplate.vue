@@ -43,7 +43,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <v-btn
             v-on="on"
             text
-            dark
+            theme="dark"
             :ripple="false"
             class="icon-btn"
             cy-data="app-header-btn"

@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <v-navigation-drawer
     id="core-navigation-drawer"
     v-model="drawer"
-    :dark="false"
+    theme="light"
     :expand-on-hover="expandOnHover"
     :right="$vuetify.locale.isRtl"
     :src="barImage"
@@ -160,7 +160,7 @@ export default defineComponent({
       return {
         ...item,
         children: item.children ? item.children.map(this.mapItem) : undefined
-        // title: this.$t(item.title)
+        // title: this.$tm(item.title)
       }
     }
   }

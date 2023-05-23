@@ -44,8 +44,8 @@ const createMerginApp = () => {
     .mixin(MerginComponentUuidMixin)
     .use(getPiniaInstance())
     .use(router)
-    .use(vuetify)
     .use(i18n)
+    .use(vuetify)
     .use(PortalVue)
 
   app.config.globalProperties.$http = http

@@ -12,7 +12,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :expand-on-hover="expandOnHover"
     :right="$vuetify.locale.isRtl"
     mobile-breakpoint="960"
-    :dark="barColor !== 'rgba(228, 226, 226, 1), rgba(255, 255, 255, 0.7)'"
+    :theme="
+      barColor === 'rgba(228, 226, 226, 1), rgba(255, 255, 255, 0.7)'
+        ? 'light'
+        : 'dark'
+    "
     app
     width="200"
     v-bind="$attrs"
@@ -55,6 +59,7 @@ import { UserIcon } from 'vue-tabler-icons'
 
 import SideBarItem from '@/modules/layout/components/SideBarItem.vue'
 import { useLayoutStore } from '@/modules/layout/store'
+import { SideBarItemModel } from '@/modules/layout/types'
 import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
@@ -75,7 +80,7 @@ export default defineComponent({
         title: 'User profile',
         to: '/profile',
         tablerIcon: 'user-icon'
-      }
+      } as SideBarItemModel
     }
   },
   computed: {

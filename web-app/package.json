@@ -87,7 +87,6 @@
     "vite-plugin-vuetify": "^1.0.2",
     "vue-tsc": "^1.2.0",
     "vue-typegen": "^0.2.0",
-    "vuetify-loader": "^1.7.3",
     "webpack-node-externals": "^3.0.0"
   },
   "version": "0.0.0"

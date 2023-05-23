@@ -5,13 +5,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, PropType } from 'vue'
 
 import BaseItem from '@/common/components/base/BaseItem.vue'
+import { SideBarItemModel } from '@/modules/layout/types'
 
 export default defineComponent({
   props: {
-    item: Object,
+    item: Object as PropType<SideBarItemModel>,
     idx: Number
   },
   components: { BaseItem }
