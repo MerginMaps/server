@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </router-view>
       <v-card
         v-if="pingData && pingData.maintenance"
-        outlined
+        variant="outlined"
         class="maintenance_warning"
       >
         <v-card-text>

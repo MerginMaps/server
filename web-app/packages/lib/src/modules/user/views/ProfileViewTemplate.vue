@@ -17,7 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <v-col cols="12" class="pa-0">
             <v-card
               v-if="!loggedUser.verified_email"
-              outlined
+              variant="outlined"
               class="bubble mt-3"
               style="
                 background-color: #ffc863;
@@ -40,7 +40,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <v-card flat>
               <v-card-text>
                 <div class="profile">
-                  <h1 class="primary--text">Profile</h1>
+                  <h1 class="text-primary">Profile</h1>
                   <br />
                   <v-divider />
                   <v-layout align-center>
@@ -58,14 +58,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                             <li cy-data="profile-email">
                               <b> Email: </b>{{ loggedUser.email }}
                               <v-tooltip
-                                top
+                                location="top"
                                 v-if="
                                   'project-versions' !== $route.name &&
                                   'project-versions-detail' !== $route.name
                                 "
                               >
-                                <template v-slot:activator="{ on }">
-                                  <span v-on="on">
+                                <template v-slot:activator="{ props }">
+                                  <span v-bind="props">
                                     <v-icon
                                       v-if="loggedUser.verified_email"
                                       color="green"
@@ -101,7 +101,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                           <div>
                             <v-btn
                               @click="changePasswordDialog"
-                              class="primary--text"
+                              class="text-primary"
                               cy-data="profile-change-password-btn"
                             >
                               <v-icon class="mr-2">edit</v-icon>
@@ -111,7 +111,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                           <div>
                             <v-btn
                               @click="editProfileDialog"
-                              class="primary--text"
+                              class="text-primary"
                               cy-data="profile-edit-btn"
                             >
                               <v-icon class="mr-2">edit</v-icon>
@@ -121,7 +121,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                           <div>
                             <v-btn
                               @click="showConfirmationDialog"
-                              class="primary--text"
+                              class="text-primary"
                               :disabled="loggedUser.verified_email"
                               cy-data="profile-verify-email-btn"
                             >

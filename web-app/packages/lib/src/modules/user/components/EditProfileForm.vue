@@ -43,7 +43,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-card-actions>
           <v-spacer />
           <v-btn
-            class="text--primary"
+            class="text-primary"
             @click="close"
             cy-data="profile-edit-close-btn"
           >

@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <v-layout class="no-shrink column">
-    <label class="mt-4 grey--text text--darken-1">Access requests:</label>
+    <label class="mt-4 text-grey-darken-1">Access requests:</label>
     <v-data-table
       :headers="tableHeaders"
       :items="project.access_requests"
@@ -14,9 +14,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :hide-default-footer="project.access_requests.length <= 10"
     >
       <template #header.user="{ header }">
-        <v-tooltip v-if="header.tooltip" top>
-          <template v-slot:activator="{ on }">
-            <span v-on="on">
+        <v-tooltip v-if="header.tooltip" location="top">
+          <template v-slot:activator="{ props }">
+            <span v-bind="props">
               {{ header.text }}
             </span>
           </template>
@@ -29,9 +29,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </span>
       </template>
       <template #header.expire="{ header }">
-        <v-tooltip v-if="header.tooltip" top>
-          <template v-slot:activator="{ on }">
-            <span v-on="on">
+        <v-tooltip v-if="header.tooltip" location="top">
+          <template v-slot:activator="{ props }">
+            <span v-bind="props">
               {{ header.text }}
             </span>
           </template>
@@ -51,8 +51,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             (value.profile.first_name || value.profile.last_name)
           "
         >
-          <template v-slot:activator="{ on }">
-            <b v-on="on">
+          <template v-slot:activator="{ props }">
+            <b v-bind="props">
               {{ value.username }}
             </b>
           </template>
@@ -70,9 +70,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </b>
       </template>
       <template #item.expire="{ value }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <span v-on="on">{{ $filters.remainingtime(value) }}</span>
+        <v-tooltip location="bottom">
+          <template v-slot:activator="{ props }">
+            <span v-bind="props">{{ $filters.remainingtime(value) }}</span>
           </template>
           <span>{{ $filters.datetime(value) }}</span>
         </v-tooltip>
@@ -87,9 +87,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </template>
       <template #item.confirm="{ item }">
         <div class="justify-center px-0">
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on }">
-              <span v-on="on">
+          <v-tooltip location="bottom">
+            <template v-slot:activator="{ props }">
+              <span v-bind="props">
                 <v-chip
                   :disabled="!canAcceptAccessRequest(item.user.id, item.expire)"
                   @click="acceptRequest(item)"
@@ -107,9 +107,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </template>
       <template #item.cancel="{ item }">
         <div class="justify-center">
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on }">
-              <span v-on="on">
+          <v-tooltip location="bottom">
+            <template v-slot:activator="{ props }">
+              <span v-bind="props">
                 <v-chip
                   :disabled="!canCancelAccessRequest(item.user.id)"
                   @click="cancelRequest(item)"

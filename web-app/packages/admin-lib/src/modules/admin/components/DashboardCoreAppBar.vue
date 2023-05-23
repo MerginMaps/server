@@ -10,19 +10,26 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-app-bar id="app-bar" absolute app color="transparent" text height="75">
+  <v-app-bar
+    id="app-bar"
+    position="absolute"
+    app
+    color="transparent"
+    text
+    height="75"
+  >
     <v-layout class="content">
       <v-btn
         class="mr-3 toggle-toolbar small-screen"
         elevation="1"
         fab
-        small
+        size="small"
         @click="setDrawer({ drawer: !drawer })"
       >
-        <v-icon v-if="drawer" class="primary--text">
+        <v-icon v-if="drawer" class="text-primary">
           fa-angle-double-left
         </v-icon>
-        <v-icon v-else class="primary--text"> fa-angle-double-right</v-icon>
+        <v-icon v-else class="text-primary"> fa-angle-double-right</v-icon>
       </v-btn>
       <h3 class="align-self-center" v-if="displayUpdateAvailable && info_url">
         <a class="secondary--text" :href="info_url" target="_blank">

@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :href="slackLink"
       target="_blank"
     >
-      <message-icon class="primary--text"></message-icon>
+      <message-icon class="text-primary"></message-icon>
     </a>
     <p class="version hidden-md-and-down">Version: {{ version }}</p>
   </v-layout>

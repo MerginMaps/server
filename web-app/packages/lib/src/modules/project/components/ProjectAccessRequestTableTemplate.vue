@@ -17,9 +17,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :options="options"
     >
       <template #item.expire="{ value }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <span v-on="on">{{ $filters.remainingtime(value) }}</span>
+        <v-tooltip location="bottom">
+          <template v-slot:activator="{ props }">
+            <span v-bind="props">{{ $filters.remainingtime(value) }}</span>
           </template>
           <span>{{ $filters.datetime(value) }}</span>
         </v-tooltip>
@@ -37,15 +37,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div class="justify-center">
           <div style="text-align: end">
             <v-tooltip bottom v-if="showAccept">
-              <template v-slot:activator="{ on }">
-                <span v-on="on">
+              <template v-slot:activator="{ props }">
+                <span v-bind="props">
                   <v-chip
                     :disabled="expired(item.expire)"
                     @click="acceptRequest(item)"
                     elevation="0"
                     color="green"
                     class="white--text"
-                    :value="permissions[item.id]"
+                    :model-value="permissions[item.id]"
                   >
                     accept
                   </v-chip>
@@ -53,9 +53,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               </template>
               <span>Accept request</span>
             </v-tooltip>
-            <v-tooltip bottom>
-              <template v-slot:activator="{ on }">
-                <span v-on="on">
+            <v-tooltip location="bottom">
+              <template v-slot:activator="{ props }">
+                <span v-bind="props">
                   <v-chip
                     @click="cancelRequest(item)"
                     elevation="0"

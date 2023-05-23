@@ -8,15 +8,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <div>
     <portal to="additional-action" class="xxx">
       <v-menu class="filter-menu" :close-on-content-click="false">
-        <template v-slot:activator="{ on: menu, attrs }">
-          <v-tooltip top>
-            <template v-slot:activator="{ on: tooltip }">
+        <template v-slot:activator="{ props: menuProps }">
+          <v-tooltip location="top">
+            <template v-slot:activator="{ props: tooltipProps }">
               <v-btn
                 :class="searchFilterByNamespace || searchFilterByProjectName"
-                v-bind="attrs"
-                v-on="{ ...tooltip, ...menu }"
+                v-bind="{ ...tooltipProps, ...menuProps }"
                 icon
-                small
+                size="small"
               >
                 Filter
                 <v-icon>filter_list</v-icon>
@@ -25,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <span>Filter data</span>
           </v-tooltip>
         </template>
-        <v-list dense>
+        <v-list density="compact">
           <v-list-item v-if="showNamespace">
             <v-list-item-title>Workspace</v-list-item-title>
             <v-list-item-action>
@@ -34,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 placeholder="Filter by workspace"
                 append-icon="search"
                 v-model="searchFilterByNamespace"
-                @input="filterData"
+                @update:model-value="filterData"
                 hide-details
               />
             </v-list-item-action>
@@ -47,7 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 placeholder="Filter by project name"
                 append-icon="search"
                 v-model="searchFilterByProjectName"
-                @input="filterData"
+                @update:model-value="filterData"
                 hide-details
               />
             </v-list-item-action>
@@ -92,9 +91,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </template>
 
       <template #item.updated="{ value }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <span v-on="on">{{ $filters.timediff(value) }}</span>
+        <v-tooltip location="bottom">
+          <template v-slot:activator="{ props }">
+            <span v-bind="props">{{ $filters.timediff(value) }}</span>
           </template>
           <span>{{ $filters.datetime(value) }}</span>
         </v-tooltip>
@@ -105,9 +104,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </template>
 
       <template #item.removed_at="{ value }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <span v-on="on">{{ $filters.timediff(value) }}</span>
+        <v-tooltip location="bottom">
+          <template v-slot:activator="{ props }">
+            <span v-bind="props">{{ $filters.timediff(value) }}</span>
           </template>
           <span>{{ $filters.datetime(value) }}</span>
         </v-tooltip>

@@ -7,9 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div v-if="version">
     <portal to="download-button">
-      <v-tooltip top>
-        <template v-slot:activator="{ on }">
-          <v-btn icon v-on="on" :href="downloadUrl">
+      <v-tooltip location="top">
+        <template v-slot:activator="{ props }">
+          <v-btn icon v-bind="props" :href="downloadUrl">
             <v-icon>archive</v-icon>
           </v-btn>
         </template>
@@ -68,7 +68,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <template v-slot:activator>
           <v-list-item-content>
             <v-list-item-title>
-              <v-icon small v-text="icon" class="mr-2" />
+              <v-icon size="small" v-text="icon" class="mr-2" />
               <span>{{ text }} ({{ changes[key].length }})</span>
             </v-list-item-title>
           </v-list-item-content>
@@ -111,7 +111,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   :changesets="version.changesets[item.path]['summary']"
                 />
               </div>
-              <div v-else class="text--primary">
+              <div v-else class="text-primary">
                 Details not available: {{ version.changesets[item.path].error }}
               </div>
             </template>

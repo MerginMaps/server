@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <v-layout class="no-shrink column">
-    <label class="mt-4 grey--text text--darken-1">Manage Access:</label>
+    <label class="mt-4 text-grey-darken-1">Manage Access:</label>
     <slot name="banner" />
     <v-data-table
       :headers="header"
@@ -15,9 +15,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :hide-default-footer="displayedValues.length <= 10"
     >
       <template #header.permissions="{ header }">
-        <v-tooltip v-if="header.tooltip" top>
-          <template v-slot:activator="{ on }">
-            <span v-on="on">
+        <v-tooltip v-if="header.tooltip" location="top">
+          <template v-slot:activator="{ props }">
+            <span v-bind="props">
               {{ header.text }}
             </span>
           </template>
@@ -32,11 +32,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
       <template #item.user="{ value }">
         <v-tooltip
-          top
+          location="top"
           v-if="value.profile.first_name || value.profile.last_name"
         >
-          <template v-slot:activator="{ on }">
-            <b v-on="on">
+          <template v-slot:activator="{ props }">
+            <b v-bind="props">
               {{ value.username }}
             </b>
           </template>
@@ -56,9 +56,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
       <template #item.permissions="{ item }">
         <v-select
-          :value="actualPermissions(item)"
+          :model-value="actualPermissions(item)"
           :items="permissionStates"
-          @input="(e) => valueChanged(item, e)"
+          @update:model-value="(e) => valueChanged(item, e)"
           :disabled="!isProjectOwner"
           hide-details
           label="reader"

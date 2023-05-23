@@ -47,7 +47,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               color="inputColor"
               v-model="password"
               :append-icon="passwordVisible ? 'visibility_off' : 'visibility'"
-              @click:append="passwordVisible = !passwordVisible"
+              @click:append-inner="passwordVisible = !passwordVisible"
               :type="passwordVisible ? 'text' : 'password'"
               :error-messages="errors.password"
               @keyup.enter="loginUser"
@@ -69,7 +69,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <v-btn
             v-if="!forgotPassword"
             text
-            small
+            size="small"
             data-cy="login-form-btn-reset"
             color="primary"
             class="reset"

@@ -6,9 +6,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <v-snackbar
-    :value="isOpen"
+    :model-value="isOpen"
     v-bind="params"
-    @input="closeNotification"
+    @update:model-value="closeNotification"
     :timeout="timeout"
     style="overflow-y: auto"
   >

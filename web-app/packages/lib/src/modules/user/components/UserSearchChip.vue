@@ -6,13 +6,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <v-chip v-bind="$attrs" label :ripple="false">
-    <v-avatar size="18" left>
+    <v-avatar size="18" start>
       <send-icon
         v-if="isUserSearchInvite(item)"
         size="18"
-        class="primary--text"
+        class="text-primary"
       />
-      <user-icon v-else size="18" class="primary--text" />
+      <user-icon v-else size="18" class="text-primary" />
     </v-avatar>
     {{ isUserSearchInvite(item) ? item.email : item.username }}
   </v-chip>

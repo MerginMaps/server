@@ -22,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           v-model="oldPassword"
           cy-data="user-change-password-old"
           :append-icon="passwordVisible ? 'visibility_off' : 'visibility'"
-          @click:append="passwordVisible = !passwordVisible"
+          @click:append-inner="passwordVisible = !passwordVisible"
           :type="passwordVisible ? 'text' : 'password'"
           :error-messages="errors.old_password"
         />
@@ -48,13 +48,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         />
         <v-layout row class="d-flex flex-row-reverse">
           <v-tooltip
-            top
+            location="top"
             color="orange"
             max-width="350"
             content-class="form-tooltip"
           >
-            <template v-slot:activator="{ on }">
-              <v-icon v-on="on" class="ml-1 mb-1" style="margin-right: 1rem"
+            <template v-slot:activator="{ props }">
+              <v-icon
+                v-bind="props"
+                class="ml-1 mb-1"
+                style="margin-right: 1rem"
                 >info
               </v-icon>
             </template>
@@ -77,14 +80,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-card-actions>
           <v-spacer />
           <v-btn
-            class="text--primary"
+            class="text-primary"
             @click="close"
             cy-data="user-change-password-close-btn"
           >
             Close
           </v-btn>
           <v-btn
-            class="primary text--white"
+            class="primary text-white"
             :disabled="!password || !oldPassword || !confirm"
             @click="changePassword"
             cy-data="user-change-password-change-btn"

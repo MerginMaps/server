@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <v-container>
         <slot name="usageInfo" />
         <v-row v-if="projectsCount === 0 && canCreateProject">
-          <v-card outlined class="bubble mt-3">
+          <v-card variant="outlined" class="bubble mt-3">
             <h3>Welcome {{ loggedUser.username }}, are you ready to start?</h3>
             <p>
               First create new project, add people to it or explore public
@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </v-row>
         <v-row>
           <v-col class="pa-0">
-            <v-card class="bubble mt-3" outlined>
+            <v-card class="bubble mt-3" variant="outlined">
               <h3>Download Mergin Maps Input app</h3>
               <p>
                 Capture geo-info easily through your mobile/tablet with the

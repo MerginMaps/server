@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   >
     <div slot="left" class="panel" />
     <v-layout class="column fill-height project-page main-content">
-      <v-card v-if="project" style="margin-bottom: 0" outlined>
+      <v-card v-if="project" style="margin-bottom: 0" variant="outlined">
         <!-- Toolbar -->
         <v-layout class="row align-center toolbar">
           <div class="breadcrumbs" style="font-size: 20px">
@@ -26,10 +26,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <!--              }"-->
             <!--              v-text="project.namespace"-->
             <!--            />-->
-            <span v-if="isNamespaceVisible" class="primary--text">{{
+            <span v-if="isNamespaceVisible" class="text-primary">{{
               project.namespace
             }}</span>
-            <span v-if="isNamespaceVisible" class="primary--text">/</span>
+            <span v-if="isNamespaceVisible" class="text-primary">/</span>
             <router-link
               :to="{
                 name: 'project',

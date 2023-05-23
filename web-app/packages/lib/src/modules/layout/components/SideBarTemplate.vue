@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     id="core-navigation-drawer-user"
     v-model="drawer"
     :expand-on-hover="expandOnHover"
-    :right="$vuetify.locale.isRtl"
+    :location="$vuetify.locale.isRtl ? 'right' : 'left'"
     mobile-breakpoint="960"
     :theme="
       barColor === 'rgba(228, 226, 226, 1), rgba(255, 255, 255, 0.7)'
@@ -29,9 +29,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         flat
         tile
         style="height: 100%; width: 200px"
-        :outlined="true"
+        variant="outlined"
       >
-        <v-card class="pa-2" tile :outlined="true" style="margin-top: 40px">
+        <v-card class="pa-2" tile variant="outlined" style="margin-top: 40px">
           <slot name="items"></slot>
           <v-divider style="width: 90%; margin: 5px 0 5px 0" />
           <v-list nav flat>

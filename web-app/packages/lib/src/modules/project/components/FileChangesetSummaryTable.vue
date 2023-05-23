@@ -14,9 +14,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     >
       <!-- headers -->
       <template v-slot:header.insert="{ header }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <v-icon v-on="on" small :color="header.color"
+        <v-tooltip location="bottom">
+          <template v-slot:activator="{ props }">
+            <v-icon v-bind="props" size="small" :color="header.color"
               >{{ header.icon }}
             </v-icon>
           </template>
@@ -24,9 +24,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </v-tooltip>
       </template>
       <template v-slot:header.delete="{ header }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <v-icon v-on="on" small :color="header.color"
+        <v-tooltip location="bottom">
+          <template v-slot:activator="{ props }">
+            <v-icon v-bind="props" size="small" :color="header.color"
               >{{ header.icon }}
             </v-icon>
           </template>
@@ -34,9 +34,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </v-tooltip>
       </template>
       <template v-slot:header.update="{ header }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <v-icon v-on="on" small :color="header.color"
+        <v-tooltip location="bottom">
+          <template v-slot:activator="{ props }">
+            <v-icon v-bind="props" size="small" :color="header.color"
               >{{ header.icon }}
             </v-icon>
           </template>

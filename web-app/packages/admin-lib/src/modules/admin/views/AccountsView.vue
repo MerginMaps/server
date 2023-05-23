@@ -6,13 +6,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <admin-layout>
-    <v-card color="transparent" outlined style="margin: 10px">
+    <v-card color="transparent" variant="outlined" style="margin: 10px">
       <v-card-text>
         <v-layout row style="padding: 5px">
           <v-btn
             class="ma-1"
             color="primary"
-            outlined
+            variant="outlined"
             rounded
             @click="createUserDialog"
           >
@@ -25,12 +25,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             hide-details
             style="max-width: 250px; padding-right: 10px"
             v-model="searchByName"
-            @input="resetPaging"
+            @update:model-value="resetPaging"
           >
             <template v-if="$vuetify.display.mdAndUp" v-slot:prepend-inner>
               <v-icon elevation="1">mdi-magnify</v-icon>
             </template>
-            <template v-slot:append>
+            <template v-slot:append-inner>
               <v-icon elevation="1" @click="resetSearch">cancel</v-icon>
             </template>
           </v-text-field>
@@ -70,9 +70,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </template>
       <template v-slot:item.received="{ item }">
         <span>
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on }">
-              <span v-on="on">{{ $filters.timediff(item.received) }}</span>
+          <v-tooltip location="bottom">
+            <template v-slot:activator="{ props }">
+              <span v-bind="props">{{ $filters.timediff(item.received) }}</span>
             </template>
             <span>{{ $filters.datetime(item.received) }}</span>
           </v-tooltip>
@@ -80,9 +80,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </template>
       <template v-slot:item.msg="{ item }">
         <span>
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on }">
-              <span v-on="on">{{ item.msg.substring(0, 9) }}</span>
+          <v-tooltip location="bottom">
+            <template v-slot:activator="{ props }">
+              <span v-bind="props">{{ item.msg.substring(0, 9) }}</span>
             </template>
             <span>{{ item.msg }}</span>
           </v-tooltip>

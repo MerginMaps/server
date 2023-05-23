@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     v-model="showMenu"
     :position-x="x"
     :position-y="y"
-    absolute
+    position="absolute"
     offset-y
     :min-width="150"
   >

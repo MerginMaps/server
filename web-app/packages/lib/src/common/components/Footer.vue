@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <section class="footer py-4">
     <v-layout row wrap align-center>
       <v-row>
-        <v-col xs12 sm6 px-4 text-xs-center text-sm-left>
+        <v-col xs12 sm6 px-4 text-xs-center text-sm-start>
           <span
             >&copy; 2019-{{ new Date().getFullYear() }}
             <a href="https://www.lutraconsulting.co.uk/"

@@ -30,26 +30,26 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     hide-details
     return-object
     data-cy="account-autocomplete-input"
-    @input="$emit('update', users)"
+    @update:model-value="$emit('update', users)"
   >
     <template v-slot:selection="data">
       <user-search-chip
         :item="data.item"
         v-bind="data.attrs"
-        :input-value="data.selected"
+        :model-value="data.selected"
         close
         @click="data.select"
         @click:close="removeItem(data.item)"
       />
     </template>
     <template v-slot:item="{ item }">
-      <v-list-item-avatar size="18" left>
+      <v-list-item-avatar size="18" start>
         <send-icon
           v-if="allowInvite && item.isInvite"
           size="18"
-          class="primary--text"
+          class="text-primary"
         />
-        <user-icon v-else size="18" class="primary--text" />
+        <user-icon v-else size="18" class="text-primary" />
       </v-list-item-avatar>
       <v-list-item-content
         style="padding-bottom: 6px; padding-top: 6px"
@@ -76,7 +76,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </v-list-item-content>
     </template>
     <template v-slot:append-item>
-      <div class="text-right text-caption grey--text text--darken-1">
+      <div class="text-right text-caption text-grey-darken-1">
         <span class="pr-1" v-if="items && items.some((item) => !item.isInvite)"
           >Not the right person? Try typing their email address instead!</span
         >

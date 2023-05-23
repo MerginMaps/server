@@ -7,11 +7,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <v-snackbar
     v-if="list.length"
-    bottom
-    right
+    location="bottom right"
     auto-height
     :timeout="-1"
-    :value="visible"
+    :model-value="visible"
   >
     <v-layout column>
       <v-layout
@@ -23,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-progress-circular
           :size="55"
           :width="8"
-          :value="(upload.loaded / upload.total) * 100"
+          :model-value="(upload.loaded / upload.total) * 100"
           color="teal"
         >
           {{ Math.floor((upload.loaded / upload.total) * 100) }}%

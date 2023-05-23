@@ -48,9 +48,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <folder-diff v-if="item.diffStats" v-bind="item.diffStats" />
         </template>
         <template #item.mtime="{ value }">
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on }">
-              <span v-on="on">
+          <v-tooltip location="bottom">
+            <template v-slot:activator="{ props }">
+              <span v-bind="props">
                 <template v-if="value">
                   {{ $filters.timediff(value) }}
                 </template>

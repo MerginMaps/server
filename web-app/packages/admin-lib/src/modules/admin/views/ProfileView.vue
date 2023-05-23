@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <v-card flat>
                 <v-card-text>
                   <div class="profile">
-                    <h1 class="primary--text">Profile</h1>
+                    <h1 class="text-primary">Profile</h1>
                     <br />
                     <v-divider />
                     <v-layout>
@@ -37,9 +37,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                           </li>
                           <li>
                             <b> Email: </b>{{ userAdminProfile.email }}
-                            <v-tooltip top>
-                              <template v-slot:activator="{ on }">
-                                <span v-on="on">
+                            <v-tooltip location="top">
+                              <template v-slot:activator="{ props }">
+                                <span v-bind="props">
                                   <v-icon
                                     v-if="userAdminProfile.verified_email"
                                     color="green"
@@ -70,12 +70,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                       <!-- actions -->
                       <div v-if="profile">
                         <div>
-                          <v-tooltip top>
-                            <template v-slot:activator="{ on }">
-                              <span v-on="on">
+                          <v-tooltip location="top">
+                            <template v-slot:activator="{ props }">
+                              <span v-bind="props">
                                 <v-btn
                                   @click="changeStatusDialog"
-                                  class="primary--text"
+                                  class="text-primary"
                                 >
                                   <v-icon class="mr-2">edit</v-icon>
                                   {{
@@ -93,9 +93,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                           </v-tooltip>
                         </div>
                         <div>
-                          <v-tooltip top>
-                            <template v-slot:activator="{ on }">
-                              <span v-on="on">
+                          <v-tooltip location="top">
+                            <template v-slot:activator="{ props }">
+                              <span v-bind="props">
                                 <v-btn
                                   @click="confirmDeleteUser"
                                   class="white--text"

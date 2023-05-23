@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             hide-details
             prepend-inner-icon="mdi-magnify"
             label="Search projects"
-            @input="filterData"
+            @update:model-value="filterData"
             style="margin-right: 8px"
             data-cy="project-table-search-bar"
           >
@@ -49,7 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               mandatory
             >
               <v-btn
-                large
+                size="large"
                 depressed
                 color="#ffffff"
                 :value="false"
@@ -58,7 +58,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 <v-icon>mdi-arrow-up</v-icon>
               </v-btn>
               <v-btn
-                large
+                size="large"
                 depressed
                 color="#ffffff"
                 :value="true"
@@ -71,12 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </v-toolbar>
       </template>
       <template v-slot:item="{ item }">
-        <v-card
-          :outlined="false"
-          class="mx-auto"
-          data-cy="project-table-card"
-          flat
-        >
+        <v-card class="mx-auto" data-cy="project-table-card" flat>
           <v-list-item three-line>
             <v-list-item-content>
               <v-list-item-title class="text-h5 mb-1">
@@ -107,10 +102,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 >{{ item.description }}
               </v-list-item-subtitle>
               <div style="font-size: smaller">
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on }">
+                <v-tooltip location="bottom">
+                  <template v-slot:activator="{ props }">
                     <span
-                      v-on="on"
+                      v-bind="props"
                       style="margin-right: 20px"
                       data-cy="project-form-collaborators"
                       ><v-icon class="icon" size="20">share</v-icon
@@ -119,10 +114,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   </template>
                   <span>collaborators</span>
                 </v-tooltip>
-                <v-tooltip bottom v-if="item.version">
-                  <template v-slot:activator="{ on }">
+                <v-tooltip location="bottom" v-if="item.version">
+                  <template v-slot:activator="{ props }">
                     <span
-                      v-on="on"
+                      v-bind="props"
                       style="margin-right: 20px"
                       data-cy="project-form-history"
                     >
@@ -144,10 +139,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   </template>
                   <span>versions</span>
                 </v-tooltip>
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on }">
+                <v-tooltip location="bottom">
+                  <template v-slot:activator="{ props }">
                     <span
-                      v-on="on"
+                      v-bind="props"
                       style="margin-right: 20px"
                       data-cy="project-form-project-size"
                       ><v-icon class="icon" size="20">folder</v-icon
@@ -156,10 +151,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   </template>
                   <span>project size</span>
                 </v-tooltip>
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on }">
+                <v-tooltip location="bottom">
+                  <template v-slot:activator="{ props }">
                     <span
-                      v-on="on"
+                      v-bind="props"
                       style="margin-right: 20px"
                       data-cy="project-form-updated"
                       >Updated {{ $filters.timediff(item.updated) }}</span
@@ -167,11 +162,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   </template>
                   <span>{{ $filters.datetime(item.updated) }}</span>
                 </v-tooltip>
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on }">
+                <v-tooltip location="bottom">
+                  <template v-slot:activator="{ props }">
                     <span
                       v-if="!item.tags.includes('valid_qgis')"
-                      v-on="on"
+                      v-bind="props"
                       style="margin-right: 20px"
                       data-cy="project-form-missing-project"
                       ><v-icon color="#fb8c0087" size="20"
@@ -181,11 +176,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   </template>
                   <span>Missing QGIS project file</span>
                 </v-tooltip>
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on }">
+                <v-tooltip location="bottom">
+                  <template v-slot:activator="{ props }">
                     <span
                       v-if="item.has_conflict"
-                      v-on="on"
+                      v-bind="props"
                       style="margin-right: 20px"
                       data-cy="project-form-conflict-file"
                       ><v-icon color="#fb8c0087" size="20">error</v-icon></span
@@ -208,7 +203,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             :total-visible="7"
             circle
             color="primary"
-            @input="fetchPage"
+            @update:model-value="fetchPage"
           ></v-pagination>
         </div>
       </template>

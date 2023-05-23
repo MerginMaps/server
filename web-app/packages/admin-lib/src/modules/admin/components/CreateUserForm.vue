@@ -36,13 +36,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             :type="passwordVisible ? 'text' : 'password'"
           />
           <v-tooltip
-            top
+            location="top"
             color="orange"
             max-width="350"
             content-class="form-tooltip"
           >
-            <template v-slot:activator="{ on }">
-              <v-icon v-on="on" class="ml-1 mb-1">info</v-icon>
+            <template v-slot:activator="{ props }">
+              <v-icon v-bind="props" class="ml-1 mb-1">info</v-icon>
             </template>
             <ul>
               <li>Password must be at least 8 characters long.</li>

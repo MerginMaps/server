@@ -19,29 +19,29 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           class="mr-3 toggle-toolbar small-screen"
           elevation="1"
           fab
-          small
+          size="small"
           @click="setDrawer({ drawer: !drawer })"
         >
-          <v-icon v-if="drawer" class="primary--text">
+          <v-icon v-if="drawer" class="text-primary">
             fa-angle-double-left
           </v-icon>
-          <v-icon v-else class="primary--text"> fa-angle-double-right</v-icon>
+          <v-icon v-else class="text-primary"> fa-angle-double-right</v-icon>
         </v-btn>
         <v-spacer />
       </slot>
       <v-menu
         v-if="loggedUser && loggedUser.email"
         :min-width="150"
-        bottom
-        left
+        location="bottom"
+        start
         offset-y
         origin="top right"
         transition="scale-transition"
         id="user-menu"
       >
-        <template v-slot:activator="{ on }">
+        <template v-slot:activator="{ props }">
           <v-btn
-            v-on="on"
+            v-bind="props"
             text
             theme="dark"
             :ripple="false"
@@ -57,7 +57,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 <span class="accountName font-weight-bold">
                   {{ getUserFullName }}
                 </span>
-                <v-icon small>keyboard_arrow_down</v-icon>
+                <v-icon size="small">keyboard_arrow_down</v-icon>
               </div>
               <div v-if="renderNamespace" class="namespace font-weight-bold">
                 {{ currentNamespace || 'no workspace' }}
@@ -66,7 +66,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </v-btn>
         </template>
 
-        <v-list dense>
+        <v-list density="compact">
           <v-list-item class="pb-1">
             <div class="user-name">
               <strong> {{ getUserFullName }} </strong>

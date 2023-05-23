@@ -77,9 +77,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           v-else-if="mimetype.match('text')"
           :auto-grow="true"
           :readonly="true"
-          :value="content"
-          filled
-          solo
+          :model-value="content"
+          variant="solo-filled"
         >
         </v-textarea>
       </output>

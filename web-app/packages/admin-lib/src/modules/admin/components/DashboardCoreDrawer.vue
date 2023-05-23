@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     v-model="drawer"
     theme="light"
     :expand-on-hover="expandOnHover"
-    :right="$vuetify.locale.isRtl"
+    :location="$vuetify.locale.isRtl ? 'right' : 'left'"
     :src="barImage"
     mobile-breakpoint="960"
     app
@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
     <v-divider class="mb-1" />
 
-    <v-list dense nav>
+    <v-list density="compact" nav>
       <v-list-item>
         <v-list-item-avatar
           class="align-self-center my-1"
@@ -61,14 +61,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <!-- https://github.com/vuetifyjs/vuetify/pull/8574 -->
       <div />
 
-      <template v-for="(item, i) in computedItems" :key="`item-${i}`">
+      <template v-for="(item, i) in computedItems">
         <!--   TODO: handle item children (it is only in admin apps now)     -->
         <!--        <base-item-group v-if="item.children" :key="`group-${i}`" :item="item">-->
         <!--          &lt;!&ndash;  &ndash;&gt;-->
         <!--        </base-item-group>-->
         <!---->
         <!--        <base-item v-else :key="`item-${i}`" :item="item" />-->
-        <base-item :item="item" color="black" />
+        <base-item :item="item" color="black" :key="`item-${i}`" />
       </template>
 
       <!-- Style cascading bug  -->

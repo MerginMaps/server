@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <v-card>
-    <v-toolbar dense text theme="dark" color="primary">
+    <v-toolbar density="compact" text theme="dark" color="primary">
       <v-toolbar-title>Data Sync</v-toolbar-title>
       <v-spacer />
       <v-btn icon @click="resetUpload">
@@ -19,19 +19,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <label>Removed files:</label>
         <v-spacer />
         <span class="red--text">{{ upload.diff.removed.length }}</span>
-        <v-icon small color="red">delete</v-icon>
+        <v-icon size="small" color="red">delete</v-icon>
       </v-layout>
       <v-layout class="stats-line">
         <label>Added files:</label>
         <v-spacer />
         <span class="green--text">{{ upload.diff.added.length }}</span>
-        <v-icon small color="green">add_circle</v-icon>
+        <v-icon size="small" color="green">add_circle</v-icon>
       </v-layout>
       <v-layout class="stats-line">
         <label>Modified files:</label>
         <v-spacer />
         <span class="orange--text">{{ upload.diff.updated.length }}</span>
-        <v-icon small color="orange">edit</v-icon>
+        <v-icon size="small" color="orange">edit</v-icon>
       </v-layout>
       <v-layout class="stats-line">
         <label>Upload data size:</label>

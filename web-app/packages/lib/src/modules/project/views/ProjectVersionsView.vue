@@ -17,7 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         :total-visible="7"
         circle
         color="primary"
-        @input="fetchPage"
+        @update:model-value="fetchPage"
       ></v-pagination>
     </div>
     <v-data-table
@@ -34,9 +34,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     >
       <!-- headers -->
       <template v-slot:header.changes.added="{ header }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <v-icon v-on="on" small :color="header.color"
+        <v-tooltip location="bottom">
+          <template v-slot:activator="{ props }">
+            <v-icon v-bind="props" size="small" :color="header.color"
               >{{ header.icon }}
             </v-icon>
           </template>
@@ -44,9 +44,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </v-tooltip>
       </template>
       <template v-slot:header.changes.removed="{ header }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <v-icon v-on="on" small :color="header.color"
+        <v-tooltip location="bottom">
+          <template v-slot:activator="{ props }">
+            <v-icon v-bind="props" size="small" :color="header.color"
               >{{ header.icon }}
             </v-icon>
           </template>
@@ -54,9 +54,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </v-tooltip>
       </template>
       <template v-slot:header.changes.updated="{ header }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <v-icon v-on="on" small :color="header.color"
+        <v-tooltip location="bottom">
+          <template v-slot:activator="{ props }">
+            <v-icon v-bind="props" size="small" :color="header.color"
               >{{ header.icon }}
             </v-icon>
           </template>
@@ -66,9 +66,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <!-- data -->
       <template v-slot:item.created="{ item }">
         <span>
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on }">
-              <span v-on="on">{{ $filters.timediff(item.created) }}</span>
+          <v-tooltip location="bottom">
+            <template v-slot:activator="{ props }">
+              <span v-bind="props">{{ $filters.timediff(item.created) }}</span>
             </template>
             <span>{{ $filters.datetime(item.created) }}</span>
           </v-tooltip>
@@ -105,11 +105,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         {{ $filters.filesize(item.project_size) }}
       </template>
       <template v-slot:item.archived="{ item }">
-        <v-tooltip top>
-          <template v-slot:activator="{ on }">
+        <v-tooltip location="top">
+          <template v-slot:activator="{ props }">
             <v-btn
               icon
-              v-on="on"
+              v-bind="props"
               data-cy="project-versions-download-btn"
               @click="
                 downloadArchive(
@@ -138,7 +138,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         :total-visible="7"
         circle
         color="primary"
-        @input="fetchPage"
+        @update:model-value="fetchPage"
       ></v-pagination>
     </div>
   </div>

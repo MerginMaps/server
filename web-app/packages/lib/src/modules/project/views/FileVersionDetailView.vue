@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <v-list-item v-bind:key="name" v-for="(value, name) in tables">
         <v-list-item-content>
           <v-list-item-title>
-            <h3 class="primary--text">{{ name }}</h3>
+            <h3 class="text-primary">{{ name }}</h3>
           </v-list-item-title>
           <br />
           <v-data-table
@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             style="overflow-x: auto"
           >
             <template #item.operationTypeHeader="{ value }">
-              <v-icon small :color="actions[value].color">{{
+              <v-icon size="small" :color="actions[value].color">{{
                 actions[value].icon
               }}</v-icon>
             </template>
@@ -32,7 +32,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </v-list-item-content>
       </v-list-item>
     </v-list>
-    <v-card v-else-if="!tables && !loading" class="bubble mt-3" outlined>
+    <v-card
+      v-else-if="!tables && !loading"
+      class="bubble mt-3"
+      variant="outlined"
+    >
       <h4>Changes cannot be calculated</h4>
       For details please check the
       <a :href="docsLinkManageSynchronisation" target="_blank">documentation</a
