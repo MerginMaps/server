@@ -56,7 +56,7 @@ class RegisterUserForm(FlaskForm):
         "Username",
         validators=[validators.Length(min=4, max=25), username_validation],
     )
-    email = StringField(
+    email = CustomStringField(
         "Email Address",
         validators=[DataRequired(), Email()],
     )
