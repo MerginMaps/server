@@ -18,6 +18,7 @@ from flask_migrate import Migrate
 from flask_mail import Mail
 from connexion.apps.flask_app import FlaskJSONEncoder
 from flask_wtf import FlaskForm
+from wtforms import StringField
 from pathlib import Path
 import sys
 import time
@@ -433,3 +434,14 @@ class ResponseError:
 
     def to_dict(self) -> Dict:
         return dict(code=self.code, detail=self.detail + f" ({self.code})")
+
+def whitespace_filter(obj):
+    return obj.strip() if isinstance(obj, str) else obj
+
+class CustomStringField(StringField):
+    """ Custom class for string form fields """
+    def __init__(self, *args, **kwargs):
+        filters = kwargs.get("filters")
+        # add whitespace filter
+        kwargs["filters"] = (*filters, whitespace_filter) if filters else (whitespace_filter, )
+        super().__init__(*args, **kwargs)

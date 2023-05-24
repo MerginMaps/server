@@ -16,11 +16,7 @@ from wtforms.validators import (
 )
 
 from .models import User
-from ..app import UpdateForm
-
-
-def whitespace_filter(obj):
-    return obj.strip() if isinstance(obj, str) else obj
+from ..app import UpdateForm, CustomStringField
 
 
 def username_validation(form, field):
@@ -51,20 +47,18 @@ class PasswordValidator:
 class LoginForm(FlaskForm):
     """Form with username and password fields for user to sign in."""
 
-    login = StringField(validators=[DataRequired(), Length(max=80)])
+    login = CustomStringField(validators=[DataRequired(), Length(max=80)])
     password = PasswordField(validators=[DataRequired()])
 
 
 class RegisterUserForm(FlaskForm):
-    username = StringField(
+    username = CustomStringField(
         "Username",
         validators=[validators.Length(min=4, max=25), username_validation],
-        filters=(whitespace_filter,),
     )
-    email = StringField(
+    email = CustomStringField(
         "Email Address",
         validators=[DataRequired(), Email()],
-        filters=(whitespace_filter,),
     )
 
     def validate(self):
@@ -85,8 +79,8 @@ class RegisterUserForm(FlaskForm):
 
 
 class ResetPasswordForm(FlaskForm):
-    email = StringField(
-        "Email Address", [DataRequired(), Email()], filters=(whitespace_filter,)
+    email = CustomStringField(
+        "Email Address", [DataRequired(), Email()],
     )
 
 
@@ -119,9 +113,9 @@ class UserProfileDataForm(UpdateForm):
     """This form is for user profile update"""
 
     receive_notifications = BooleanField("Receive notifications", [Optional()])
-    first_name = StringField("First Name", [Optional()], filters=(whitespace_filter,))
-    last_name = StringField("Last Name", [Optional()], filters=(whitespace_filter,))
-    email = StringField("Email", [Optional(), Email()], filters=(whitespace_filter,))
+    first_name = CustomStringField("First Name", [Optional()])
+    last_name = CustomStringField("Last Name", [Optional()])
+    email = CustomStringField("Email", [Optional(), Email()])
 
 
 class ApiLoginForm(LoginForm):
