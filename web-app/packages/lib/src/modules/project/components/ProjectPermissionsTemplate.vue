@@ -30,27 +30,27 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </span>
       </template>
 
-      <template #item.user="{ value }">
+      <template #item.user="{ modelValue }">
         <v-tooltip
           location="top"
-          v-if="value.profile.first_name || value.profile.last_name"
+          v-if="modelValue.profile.first_name || modelValue.profile.last_name"
         >
           <template v-slot:activator="{ props }">
             <b v-bind="props">
-              {{ value.username }}
+              {{ modelValue.username }}
             </b>
           </template>
           <span>
-            <span v-if="value.profile.first_name">{{
-              value.profile.first_name
+            <span v-if="modelValue.profile.first_name">{{
+              modelValue.profile.first_name
             }}</span>
-            <span v-if="value.profile.last_name">
-              {{ value.profile.last_name }}</span
+            <span v-if="modelValue.profile.last_name">
+              {{ modelValue.profile.last_name }}</span
             >
           </span>
         </v-tooltip>
         <b v-else>
-          {{ value.username }}
+          {{ modelValue.username }}
         </b>
       </template>
 
@@ -108,7 +108,7 @@ import { UserApi } from '@/modules/user/userApi'
 
 export default defineComponent({
   props: {
-    value: Object
+    modelValue: Object
   },
   data() {
     return {
@@ -150,7 +150,7 @@ export default defineComponent({
       return ['owner', 'writer', 'reader']
     },
     displayedValues() {
-      const { ownersnames, readersnames, writersnames } = this.value
+      const { ownersnames, readersnames, writersnames } = this.modelValue
       const users = this.users.map((user) => ({
         username: user.username,
         user,
@@ -166,16 +166,16 @@ export default defineComponent({
     }
   },
   created() {
-    this.originalValue = JSON.parse(JSON.stringify(this.value))
-    // this is just temporary solution for ESLint: Unexpected mutation of &quot;value&quot; prop. (vue/no-mutating-props)
-    this.clonedValue = JSON.parse(JSON.stringify(this.value))
+    this.originalValue = JSON.parse(JSON.stringify(this.modelValue))
+    // this is just temporary solution for ESLint: Unexpected mutation of &quot;modelValue&quot; prop. (vue/no-mutating-props)
+    this.clonedValue = JSON.parse(JSON.stringify(this.modelValue))
   },
   watch: {
-    value: {
+    modelValue: {
       deep: true,
       handler() {
-        // update local clonedValue if value is changed in parent
-        this.clonedValue = JSON.parse(JSON.stringify(this.value))
+        // update local clonedValue if modelValue is changed in parent
+        this.clonedValue = JSON.parse(JSON.stringify(this.modelValue))
         this.emit()
       }
     },
@@ -183,7 +183,7 @@ export default defineComponent({
       immediate: true,
       deep: true,
       handler(_access) {
-        const { ownersnames, readersnames, writersnames } = this.value
+        const { ownersnames, readersnames, writersnames } = this.modelValue
         const names = union(ownersnames, readersnames, writersnames)
         // server returns only 5 entries from db for single call
         const chunks = chunk(names, 5)
@@ -296,7 +296,7 @@ export default defineComponent({
         'readersnames'
       ])
       const current = {
-        ...pick(this.value, [
+        ...pick(this.modelValue, [
           'ownersnames',
           'writersnames',
           'readersnames',
@@ -316,7 +316,7 @@ export default defineComponent({
       }
       this.$emit('save-project', newValues)
       this.originalValue = JSON.parse(
-        JSON.stringify({ ...this.value, ...modifiedValues })
+        JSON.stringify({ ...this.modelValue, ...modifiedValues })
       )
     }
   }

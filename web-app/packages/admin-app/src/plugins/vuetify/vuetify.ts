@@ -7,6 +7,8 @@ import { createVuetify } from 'vuetify'
 import { createVueI18nAdapter } from 'vuetify/locale/adapters/vue-i18n'
 
 import i18n from '@/plugins/i18n/i18n'
+// TODO: saas overrides should be integrated differently,
+//  see https://vuetifyjs.com/en/features/sass-variables/
 // import '@/sass/overrides.sass'
 
 const colors = {

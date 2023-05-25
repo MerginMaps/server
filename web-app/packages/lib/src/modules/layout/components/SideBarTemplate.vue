@@ -105,6 +105,9 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
+// TODO: this color (and other overrides of vuetify classes) should be handled as override of vuetify saas variable ($navigation-drawer-background),
+//   see: https://vuetifyjs.com/en/features/sass-variables/
+//   see: https://vuetifyjs.com/en/api/v-navigation-drawer/#sass-navigation-drawer-background
 .theme--dark.v-navigation-drawer {
   background-color: #eaebef !important;
 }

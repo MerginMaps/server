@@ -15,14 +15,22 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <!--      <transition name="fade">-->
       <!--        <router-view :key="$route.fullPath" name="sidebar" />-->
       <!--      </transition>-->
-      <router-view name="header" v-slot="{ Component }">
+      <router-view name="header" v-slot="{ Component, route }">
         <transition name="fade">
-          <component :is="Component" />
+          <div :key="route.name">
+            <component :is="Component" />
+          </div>
         </transition>
       </router-view>
-      <router-view name="sidebar" v-slot="{ Component }" :key="$route.fullPath">
+      <router-view
+        name="sidebar"
+        v-slot="{ Component, route }"
+        :key="$route.fullPath"
+      >
         <transition name="fade">
-          <component :is="Component" />
+          <div :key="route.name">
+            <component :is="Component" />
+          </div>
         </transition>
       </router-view>
       <v-card
@@ -44,9 +52,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         style="margin: auto"
       ></global-warning>
       <v-layout column fill-height class="app-content">
-        <router-view class="page" v-slot="{ Component }">
+        <router-view class="page" v-slot="{ Component, route }">
           <transition name="fade">
-            <component :is="Component" />
+            <div :key="route.name">
+              <component :is="Component" />
+            </div>
           </transition>
         </router-view>
       </v-layout>
