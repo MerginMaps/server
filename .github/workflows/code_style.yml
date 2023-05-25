@@ -24,4 +24,4 @@ jobs:
         run: |
             cd web-app
             yarn install
-            npx eslint ./packages/** --config .eslintrc.js --ext .js,.vue --ignore-path .gitignore
+            yarn run lint:all
