@@ -17,7 +17,7 @@
     "clean:lib": "rimraf ./dist",
     "clean:types:temp": "rimraf ./**/*.vue.ts",
     "clean:types": "rimraf ./types ./tsconfig.tsbuildinfo && yarn clean:types:temp",
-    "lint": "eslint . --config .eslintrc.js --ext .js,.vue,.ts"
+    "lint": "eslint . --config .eslintrc.lint.js ../../.eslintrc.js --no-eslintrc --ext .js,.vue,.ts"
   },
   "dependencies": {
     "@mergin/lib": "file:../lib",
