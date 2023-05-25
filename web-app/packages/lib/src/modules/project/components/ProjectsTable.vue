@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <v-text-field
             v-model="searchFilterByProjectName"
             clearable
-            flat
+            variant="flat"
             hide-details
             prepend-inner-icon="mdi-magnify"
             label="Search projects"
@@ -46,11 +46,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <v-btn-toggle
               v-model="options.sortDesc[0]"
               @change="paginating(options)"
-              mandatory
+              mandatory="force"
             >
               <v-btn
                 size="large"
-                depressed
+                variant="flat"
                 color="#ffffff"
                 :value="false"
                 data-cy="project-table-sort-btn-up"
@@ -59,7 +59,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               </v-btn>
               <v-btn
                 size="large"
-                depressed
+                variant="flat"
                 color="#ffffff"
                 :value="true"
                 data-cy="project-table-sort-btn-down"
@@ -71,8 +71,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </v-toolbar>
       </template>
       <template v-slot:item="{ item }">
-        <v-card class="mx-auto" data-cy="project-table-card" flat>
-          <v-list-item three-line>
+        <v-card class="mx-auto" data-cy="project-table-card" variant="flat">
+          <v-list-item lines="three">
+            <!--            TODO: VUE 3 - remove v-list-item-content -->
             <v-list-item-content>
               <v-list-item-title class="text-h5 mb-1">
                 <router-link
@@ -92,7 +93,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   elevation="0"
                   v-if="item.access.public && !onlyPublic"
                   style="margin-left: 8px"
-                  outlined
+                  variant="outlined"
                   color="primary"
                 >
                   Public

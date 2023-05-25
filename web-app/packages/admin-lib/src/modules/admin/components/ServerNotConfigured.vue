@@ -24,7 +24,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           Read documentation
         </v-btn>
         <v-spacer />
-        <v-btn text class="orange--text buttonWrapper" @click="dismiss">
+        <v-btn
+          variant="text"
+          class="orange--text buttonWrapper"
+          @click="dismiss"
+        >
           Dismiss
         </v-btn>
       </v-card-actions>

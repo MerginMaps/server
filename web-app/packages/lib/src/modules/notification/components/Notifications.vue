@@ -22,7 +22,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       >
         {{ params.action.text }}
       </v-btn>
-      <v-btn v-else text :color="buttonColor" @click="closeNotification">
+      <v-btn
+        v-else
+        variant="text"
+        :color="buttonColor"
+        @click="closeNotification"
+      >
         Close</v-btn
       >
     </template>

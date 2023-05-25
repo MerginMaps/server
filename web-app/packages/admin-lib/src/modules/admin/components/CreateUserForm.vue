@@ -30,6 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             placeholder="Password"
             name="password"
             color="inputColor"
+            autocomplete="new-password"
             v-model="password"
             :append-icon="passwordVisible ? 'visibility_off' : 'visibility'"
             @click:append="passwordVisible = !passwordVisible"

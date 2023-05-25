@@ -15,10 +15,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </router-link>
 
       <slot name="menu">
+        <!-- TODO: `fab` prop was removed, check if `rounded` prop is enough here -->
         <v-btn
           class="mr-3 toggle-toolbar small-screen"
           elevation="1"
-          fab
+          rounded
           size="small"
           @click="setDrawer({ drawer: !drawer })"
         >
@@ -29,6 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </v-btn>
         <v-spacer />
       </slot>
+      <!--      TODO: VUE 3 - replace offset-y boolean with offset number|string-->
       <v-menu
         v-if="loggedUser && loggedUser.email"
         :min-width="150"

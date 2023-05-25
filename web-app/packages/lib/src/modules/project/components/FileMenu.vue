@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
+  <!--      TODO: VUE 3 - replace offset-y boolean with offset number|string-->
   <v-menu
     v-model="showMenu"
     :position-x="x"

@@ -17,30 +17,32 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :to="item.to"
     active-class="baseItemActiveColor"
   >
-    <v-list-item-icon
-      v-if="text"
-      class="v-list-item__icon--text"
-      v-text="computedText"
-      :class="`${color}--text`"
-    />
+    <!--  TODO: VUE 3 - problematic upgrade, check this   -->
+    <template #prepend>
+      <v-list-item
+        v-if="text"
+        class="v-list-item__icon--text"
+        v-text="computedText"
+        :class="`${color}--text`"
+        icon
+      />
 
-    <v-list-item-icon
-      v-else-if="item.icon || item.tablerIcon"
-      class="mr-2"
-      :class="`${color}--text`"
-    >
-      <v-icon v-if="item.icon" :class="`${color}--text`" v-text="item.icon" />
-      <slot v-if="item.tablerIcon" name="icon"></slot>
-    </v-list-item-icon>
+      <v-list-item
+        v-else-if="item.icon || item.tablerIcon"
+        class="mr-2"
+        :class="`${color}--text`"
+        icon
+      >
+        <v-icon v-if="item.icon" :class="`${color}--text`" v-text="item.icon" />
+        <slot v-if="item.tablerIcon" name="icon"></slot>
+      </v-list-item>
+    </template>
 
-    <v-list-item-content
-      v-if="item.title || item.subtitle"
-      :class="`${color}--text`"
-    >
+    <v-layout v-if="item.title || item.subtitle" :class="`${color}--text`">
       <v-list-item-title v-text="item.title" />
 
       <v-list-item-subtitle v-text="item.subtitle" />
-    </v-list-item-content>
+    </v-layout>
   </v-list-item>
 </template>
 

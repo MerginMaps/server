@@ -31,7 +31,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       Download File
     </action-button>
 
-    <v-list two-line subheader>
+    <v-list lines="two" subheader>
+      <!--            TODO: VUE 3 - remove v-list-item-content -->
       <v-list-item>
         <v-list-item-content>
           <v-list-item-title>Name</v-list-item-title>

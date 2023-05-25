@@ -41,7 +41,7 @@ export default defineComponent({
 <template>
   <SideBarTemplate>
     <template #items>
-      <v-list nav flat data-cy="side-bar-main-list">
+      <v-list nav variant="flat" data-cy="side-bar-main-list">
         <template v-for="(item, i) in mainItems" :key="`item-${i}`">
           <side-bar-item :item="item" :id="`item-${i}`">
             <template #icon>

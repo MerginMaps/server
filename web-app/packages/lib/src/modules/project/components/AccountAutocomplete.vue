@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
+  <!--    TODO: VUE 3 - cache-items prop has been removed, caching should be handled externally. -->
   <v-autocomplete
     ref="autocomplete"
     placeholder="Find user"
@@ -17,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     clearable
     hide-selected
     :filter="filterSelected"
-    item-text="email"
+    item-title="email"
     item-value="email"
     :no-data-text="
       !query || query.length <= 2
@@ -43,18 +44,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       />
     </template>
     <template v-slot:item="{ item }">
-      <v-list-item-avatar size="18" start>
-        <send-icon
-          v-if="allowInvite && item.isInvite"
-          size="18"
-          class="text-primary"
-        />
-        <user-icon v-else size="18" class="text-primary" />
-      </v-list-item-avatar>
-      <v-list-item-content
+      <v-list-item
         style="padding-bottom: 6px; padding-top: 6px"
         data-cy="account-autocomplete-list"
       >
+        <template #prepend>
+          <send-icon
+            v-if="allowInvite && item.isInvite"
+            size="18"
+            class="text-primary"
+          />
+          <user-icon v-else size="18" class="text-primary" />
+        </template>
         <v-list-item-title
           v-if="allowInvite && item.isInvite"
           v-html="`Invite \&quot;${item.email}\&quot; to your workspace`"
@@ -73,7 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           v-if="!allowInvite || !item.isInvite"
           v-html="emphasizeMatch(item.email, query)"
         ></v-list-item-subtitle>
-      </v-list-item-content>
+      </v-list-item>
     </template>
     <template v-slot:append-item>
       <div class="text-right text-caption text-grey-darken-1">

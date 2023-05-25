@@ -19,10 +19,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     height="75"
   >
     <v-layout class="content">
+      <!-- TODO: `fab` prop was removed, check if `rounded` prop is enough here -->
       <v-btn
         class="mr-3 toggle-toolbar small-screen"
         elevation="1"
-        fab
+        rounded
         size="small"
         @click="setDrawer({ drawer: !drawer })"
       >

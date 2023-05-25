@@ -6,8 +6,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div>
-    <v-list two-line subheader v-if="tables">
+    <v-list lines="two" subheader v-if="tables">
       <v-list-item v-bind:key="name" v-for="(value, name) in tables">
+        <!--            TODO: VUE 3 - remove v-list-item-content -->
         <v-list-item-content>
           <v-list-item-title>
             <h3 class="text-primary">{{ name }}</h3>

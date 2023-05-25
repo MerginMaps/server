@@ -34,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <v-btn
               @click="confirmPublicPrivate()"
               class="private-public-btn"
-              outlined
+              variant="outlined"
             >
               <span v-if="settings.access.public">Make private</span>
               <span v-else>Make public</span>

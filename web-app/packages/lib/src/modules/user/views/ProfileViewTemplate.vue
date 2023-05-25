@@ -37,7 +37,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </v-row>
         <v-row>
           <v-col cols="12" class="pa-0">
-            <v-card flat>
+            <v-card variant="flat">
               <v-card-text>
                 <div class="profile">
                   <h1 class="text-primary">Profile</h1>
@@ -133,7 +133,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                             <v-btn
                               @click="confirmDeleteUser"
                               class="white--text"
-                              depressed
+                              variant="flat"
                               color="red"
                               cy-data="profile-close-account-btn"
                             >

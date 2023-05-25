@@ -23,34 +23,26 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     v-bind="$attrs"
   >
     <template v-slot:img="props">
-      <v-img :gradient="`to bottom, ${barColor}`" v-bind="props" />
+      <v-img :gradient="`to bottom, ${barColor}`" v-bind="props" cover />
     </template>
 
     <v-divider class="mb-1" />
 
     <v-list density="compact" nav>
       <v-list-item>
-        <v-list-item-avatar
-          class="align-self-center my-1"
-          contain
-          tile
-          size="45"
+        <template #prepend>
+          <v-layout class="align-self-center my-1" contain tile size="45">
+            <v-img
+              :src="getImageUrl('mm-icon-white-large-no-transparency.png')"
+              max-height="45"
+              cover
+            />
+          </v-layout>
+        </template>
+        <v-list-item-subtitle class="font-weight-bold"
+          >Admin panel</v-list-item-subtitle
         >
-          <v-img
-            :src="getImageUrl('mm-icon-white-large-no-transparency.png')"
-            max-height="45"
-          />
-        </v-list-item-avatar>
-
-        <v-list-item-content>
-          <v-list-item-subtitle class="font-weight-bold"
-            >Admin panel</v-list-item-subtitle
-          >
-          <v-list-item-title
-            class="text-h6 font-weight-bold"
-            v-text="username"
-          />
-        </v-list-item-content>
+        <v-list-item-title class="text-h6 font-weight-bold" v-text="username" />
       </v-list-item>
     </v-list>
 

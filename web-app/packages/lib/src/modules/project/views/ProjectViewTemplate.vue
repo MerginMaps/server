@@ -100,10 +100,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </action-button>
         </v-layout>
 
-        <v-card class="layout column fill-height" flat>
+        <v-card class="layout column fill-height" variant="flat">
           <v-card-title>
-            <v-tabs left-active v-model="tab" show-arrows>
-              <v-tabs-slider color="primary"></v-tabs-slider>
+            <v-tabs
+              left-active
+              v-model="tab"
+              show-arrows
+              slider-color="primary"
+            >
               <v-tab
                 key="files"
                 :to="{

@@ -34,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-card class="pa-2" tile variant="outlined" style="margin-top: 40px">
           <slot name="items"></slot>
           <v-divider style="width: 90%; margin: 5px 0 5px 0" />
-          <v-list nav flat>
+          <v-list nav variant="flat">
             <side-bar-item
               id="item-userProfile"
               key="item-userProfile"

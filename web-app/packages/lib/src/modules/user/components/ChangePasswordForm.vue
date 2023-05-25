@@ -31,6 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           name="password"
           color="inputColor"
           v-model="password"
+          autocomplete="new-password"
           cy-data="user-change-password-new"
           :type="passwordVisible ? 'text' : 'password'"
           :error-messages="errors.password"

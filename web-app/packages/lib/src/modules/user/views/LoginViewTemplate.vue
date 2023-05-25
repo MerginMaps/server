@@ -37,6 +37,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               name="login"
               color="inputColor"
               v-model="login"
+              autocomplete="username"
               :error-messages="errors.login"
               @keyup.enter="loginUser"
             />
@@ -46,6 +47,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               name="password"
               color="inputColor"
               v-model="password"
+              autocomplete="current-password"
               :append-icon="passwordVisible ? 'visibility_off' : 'visibility'"
               @click:append-inner="passwordVisible = !passwordVisible"
               :type="passwordVisible ? 'text' : 'password'"

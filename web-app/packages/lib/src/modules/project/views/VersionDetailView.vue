@@ -16,7 +16,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <span>Download Project Version {{ version.name }} (ZIP)</span>
       </v-tooltip>
     </portal>
-    <v-list two-line subheader>
+    <v-list lines="two" subheader>
+      <!--            TODO: VUE 3 - remove v-list-item-content -->
       <v-list-item>
         <v-list-item-content>
           <v-list-item-title>Version</v-list-item-title>
