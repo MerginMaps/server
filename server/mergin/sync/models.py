@@ -214,7 +214,9 @@ class Project(db.Model):
                 if "diff" in meta:
                     # omit diff for target version as it would lead to previous version if reconstructed backward
                     diffs = [
-                        value["diff"] for key, value in reversed(history.items()) if key != v_x
+                        value["diff"]
+                        for key, value in reversed(history.items())
+                        if key != v_x
                     ]
                     base_meta = history[next(iter(history))]
                     base_meta["version"] = next(iter(history))
@@ -250,7 +252,9 @@ class Project(db.Model):
                     else:
                         diffs = [
                             value["diff"]
-                            for value in list(reversed(history.values()))[1:]  # basefile has no diff
+                            for value in list(reversed(history.values()))[
+                                1:
+                            ]  # basefile has no diff
                         ]
                 # file was removed (or renamed for backward compatibility)
                 else:
@@ -420,7 +424,7 @@ class ProjectVersion(db.Model):
 
     @property
     def int_name(self) -> int:
-        """ Parsed version name as integer (v5 -> 5)"""
+        """Parsed version name as integer (v5 -> 5)"""
         return int(self.name.replace("v", ""))
 
     def diff_summary(self):

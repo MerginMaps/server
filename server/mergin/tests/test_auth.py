@@ -38,7 +38,9 @@ test_login_data = [
 @pytest.mark.parametrize("data,headers,expected", test_login_data)
 def test_login(client, data, headers, expected):
     resp = client.post(
-        url_for("/.mergin_auth_controller_login"), data=json.dumps(data), headers=headers
+        url_for("/.mergin_auth_controller_login"),
+        data=json.dumps(data),
+        headers=headers,
     )
     assert resp.status_code == expected
     if expected == 200:

@@ -201,7 +201,7 @@ def file_info(project_dir, path, chunk_size=1024):
 
 
 def upload_file_to_project(project, filename, client):
-    """ Add test file to project - start, upload and finish push process """
+    """Add test file to project - start, upload and finish push process"""
     file = os.path.join(test_project_dir, filename)
     assert os.path.exists(file)
     changes = {

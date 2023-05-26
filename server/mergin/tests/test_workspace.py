@@ -42,12 +42,14 @@ def test_workspace_implementation(client):
     Configuration.GLOBAL_ADMIN = True
     # create project with dummy file to count for workspace usage
     project = create_project("test_permissions", ws, user)
-    project.files = [{
-        "path": "some_file.txt",
-        "location": "v1/some_file.txt",
-        "size": 1024,
-        "checksum": "89469a6482267de394c7c7270cb7ffafe694ea76",
-    }]
+    project.files = [
+        {
+            "path": "some_file.txt",
+            "location": "v1/some_file.txt",
+            "size": 1024,
+            "checksum": "89469a6482267de394c7c7270cb7ffafe694ea76",
+        }
+    ]
     project.disk_usage = 1024
     db.session.commit()
     assert ws.disk_usage() == 1024

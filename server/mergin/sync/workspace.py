@@ -58,7 +58,11 @@ class GlobalWorkspace(AbstractWorkspace):
         # get only what is necessary from db to calculate final usage
         from .models import Project
 
-        projects_usage_list = db.session.query(Project.disk_usage).filter(Project.removed_at.is_(None)).all()
+        projects_usage_list = (
+            db.session.query(Project.disk_usage)
+            .filter(Project.removed_at.is_(None))
+            .all()
+        )
         return sum(p.disk_usage for p in projects_usage_list)
 
     def user_has_permissions(self, user, permissions):
