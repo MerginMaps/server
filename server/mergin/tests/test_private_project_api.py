@@ -197,7 +197,9 @@ def test_template_projects(client):
     u = add_user("TEMPLATES", "ilovemergin")
     test_workspace = create_workspace()
     p = create_project("my_template", test_workspace, u)
-    resp = client.get(url_for("/app.mergin_sync_private_api_controller_template_projects"))
+    resp = client.get(
+        url_for("/app.mergin_sync_private_api_controller_template_projects")
+    )
     assert resp.status_code == 200
     assert len(resp.json) == 1
     assert (

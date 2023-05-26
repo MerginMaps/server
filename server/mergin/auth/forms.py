@@ -80,7 +80,8 @@ class RegisterUserForm(FlaskForm):
 
 class ResetPasswordForm(FlaskForm):
     email = CustomStringField(
-        "Email Address", [DataRequired(), Email()],
+        "Email Address",
+        [DataRequired(), Email()],
     )
 
 

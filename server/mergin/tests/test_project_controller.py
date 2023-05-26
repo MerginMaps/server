@@ -49,7 +49,7 @@ from .utils import (
     DateTimeEncoder,
     login,
     file_info,
-    login_as_admin
+    login_as_admin,
 )
 from ..config import Configuration
 from ..sync.config import Configuration as SyncConfiguration
@@ -1819,6 +1819,7 @@ def test_file_diffs_chain(diff_project):
     assert basefile["version"] == "v7"
     assert not diffs
 
+
 changeset_data = [
     ("v1", "test.gpkg", 404),
     ("v1", "test.txt", 404),
@@ -2126,7 +2127,9 @@ def test_inactive_project(client, diff_project):
 
 def test_get_project_version(client, diff_project):
     # success - latest version
-    resp = client.get(f"/v1/project/version/{str(diff_project.id)}/{diff_project.latest_version}")
+    resp = client.get(
+        f"/v1/project/version/{str(diff_project.id)}/{diff_project.latest_version}"
+    )
     assert resp.status_code == 200
     assert resp.json["name"] == diff_project.latest_version
 
