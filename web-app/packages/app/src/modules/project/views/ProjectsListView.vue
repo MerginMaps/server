@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script>
 import { ProjectsListViewTemplate, ProjectsTableDataLoader } from '@mergin/lib'
 import { computed } from '@vue/composition-api'
-import { useGetters } from 'vuex-composition-helpers'
+import { useGetters, useActions } from 'vuex-composition-helpers'
 
 export default {
   name: 'ProjectsListView',

@@ -26,13 +26,13 @@
     "build:admin:dev": "yarn workspace @mergin/admin-app build:dev",
     "clean:libs": "yarn workspace @mergin/lib clean && yarn workspace @mergin/admin-lib clean",
     "clean:libs:noadmin": "yarn workspace @mergin/lib clean",
-    "lint": "yarn workspace @mergin/app lint",
     "i18n:report": "yarn workspace @mergin/app 18n:report",
     "types:libs": "yarn workspaces run build:types",
     "types:lib": "yarn workspace @mergin/lib build:types",
     "types:admin-lib": "yarn workspace @mergin/admin-lib build:types",
     "watch:lib": "yarn workspace @mergin/lib build:lib:watch",
-    "watch:admin-lib": "yarn workspace @mergin/admin-lib build:lib:watch"
+    "watch:admin-lib": "yarn workspace @mergin/admin-lib build:lib:watch",
+    "lint:all": "yarn workspaces run lint"
   },
   "devDependencies": {
     "@babel/core": "^7.17.9",

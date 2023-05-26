@@ -276,7 +276,9 @@ def update_project_access(id: str):
     :rtype: None
     """
     project = require_project_by_uuid(id, ProjectPermissions.Update)
-    user = User.query.filter_by(id=request.json["user_id"], active=True).first_or_404("User does not exist")
+    user = User.query.filter_by(id=request.json["user_id"], active=True).first_or_404(
+        "User does not exist"
+    )
     # prevent to remove ownership of project creator
     if user.id == project.creator_id:
         abort(400, "Ownership of project creator cannot be removed")

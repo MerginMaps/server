@@ -18,7 +18,7 @@
     "clean:lib": "rimraf ./dist",
     "clean:types:temp": "rimraf ./**/*.vue.ts",
     "clean:types": "rimraf ./types ./tsconfig.tsbuildinfo && yarn clean:types:temp",
-    "lint": "vue-cli-service lint"
+    "lint": "eslint . -c ./.eslintrc.lint.js ../../.eslintrc.js --no-eslintrc --ext .js,.vue,.ts"
   },
   "dependencies": {
     "axios": "^0.26.1",
