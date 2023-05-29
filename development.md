@@ -39,5 +39,6 @@ To launch the unit tests run:
 ```shell
 $ docker run -d --rm --name testing_pg -p 5435:5432 -e POSTGRES_PASSWORD=postgres postgres:14
 $ cd server
+$ pipenv install --dev --three --sequential --verbose
 $ pipenv run pytest -v --cov=mergin mergin/tests
 ```
