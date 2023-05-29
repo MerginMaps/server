@@ -29,10 +29,10 @@ jobs:
       - name: Install deps
         run: |
           cd server
+          sudo apt-get -y install pipenv
           pipenv install --dev --three --sequential --verbose
 
       - name: Run tests
         run: |
           cd server
           pipenv run pytest -v --cov=mergin mergin/tests
-      
