@@ -6,11 +6,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <v-card
-    class="bubble mt-3"
+    class="mt-3"
     style="background-color: #ffc863; color: rgba(0, 0, 0, 0.87); padding: 10px"
     variant="outlined"
   >
-    <slot name="message"></slot>
+    <v-card-tex><slot name="message"></slot></v-card-tex>
   </v-card>
 </template>
 

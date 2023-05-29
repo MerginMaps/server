@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <v-container>
         <slot name="usageInfo" />
         <v-row v-if="projectsCount === 0 && canCreateProject">
-          <v-card variant="outlined" class="bubble mt-3">
+          <v-card variant="outlined" class="mt-3">
             <h3>Welcome {{ loggedUser.username }}, are you ready to start?</h3>
             <p>
               First create new project, add people to it or explore public
@@ -27,57 +27,60 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </v-row>
         <v-row>
           <v-col class="pa-0">
-            <v-card class="bubble mt-3" variant="outlined">
-              <h3>Download Mergin Maps Input app</h3>
-              <p>
-                Capture geo-info easily through your mobile/tablet with the
-                Mergin Maps Input app. Designed to be compatible with all mobile
-                devices - even those with small screens.
-              </p>
-              <v-row>
-                <v-col cols="7" md="3" sm="3">
-                  <div class="store-button">
-                    <a
-                      href="https://play.google.com/store/apps/details?id=uk.co.lutraconsulting&utm_source=mergin-website&utm_medium=banner&utm_campaign=input"
-                      target="_blank"
-                    >
-                      <img
-                        alt="Get it on Google Play"
-                        src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png"
-                        height="70px"
-                      />
-                    </a>
-                  </div>
-                </v-col>
-                <v-col cols="7" md="3" sm="3">
-                  <div class="store-button app-store-button">
-                    <a
-                      href="https://apps.apple.com/us/app/input/id1478603559?ls=1&utm_source=mergin-website&utm_medium=banner&utm_campaign=input"
-                      target="_blank"
-                    >
-                      <img
-                        alt="Get it on Apple store"
-                        src="@/assets/App_Store.svg"
-                        height="48px"
-                      />
-                    </a>
-                  </div>
-                </v-col>
-                <v-col cols="7" md="3" sm="3">
-                  <div class="store-button huawei-store-button">
-                    <a
-                      href="https://appgallery.huawei.com/app/C104422773"
-                      target="_blank"
-                    >
-                      <img
-                        alt="Explore it on AppGallery"
-                        src="@/assets/huawei.svg"
-                        height="48px"
-                      />
-                    </a>
-                  </div>
-                </v-col>
-              </v-row>
+            <v-card class="mt-3" variant="tonal">
+              <v-card-title
+                ><h3>Download Mergin Maps Input app</h3></v-card-title
+              >
+              <v-card-text
+                ><p>
+                  Capture geo-info easily through your mobile/tablet with the
+                  Mergin Maps Input app. Designed to be compatible with all
+                  mobile devices - even those with small screens.
+                </p>
+                <v-row>
+                  <v-col cols="7" md="3" sm="3">
+                    <div class="store-button">
+                      <a
+                        href="https://play.google.com/store/apps/details?id=uk.co.lutraconsulting&utm_source=mergin-website&utm_medium=banner&utm_campaign=input"
+                        target="_blank"
+                      >
+                        <img
+                          alt="Get it on Google Play"
+                          src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png"
+                          height="70"
+                        />
+                      </a>
+                    </div>
+                  </v-col>
+                  <v-col cols="7" md="3" sm="3">
+                    <div class="store-button app-store-button">
+                      <a
+                        href="https://apps.apple.com/us/app/input/id1478603559?ls=1&utm_source=mergin-website&utm_medium=banner&utm_campaign=input"
+                        target="_blank"
+                      >
+                        <img
+                          alt="Get it on Apple store"
+                          src="@/assets/App_Store.svg"
+                          height="48"
+                        />
+                      </a>
+                    </div>
+                  </v-col>
+                  <v-col cols="7" md="3" sm="3">
+                    <div class="store-button huawei-store-button">
+                      <a
+                        href="https://appgallery.huawei.com/app/C104422773"
+                        target="_blank"
+                      >
+                        <img
+                          alt="Explore it on AppGallery"
+                          src="@/assets/huawei.svg"
+                          height="48"
+                        />
+                      </a>
+                    </div>
+                  </v-col> </v-row
+              ></v-card-text>
             </v-card>
           </v-col>
         </v-row>
@@ -137,8 +140,6 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
-@import 'src/sass/dashboard';
-
 .v-navigation-drawer {
   -webkit-overflow-scrolling: touch;
   display: -webkit-box;
@@ -178,7 +179,8 @@ export default defineComponent({
 
 @media only screen and (max-width: 599px) {
   .store-button {
-    text-align: left;
+    text-align: right;
+
   }
 
   .app-store-button {

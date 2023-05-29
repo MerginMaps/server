@@ -33,15 +33,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </v-list-item-content>
       </v-list-item>
     </v-list>
-    <v-card
-      v-else-if="!tables && !loading"
-      class="bubble mt-3"
-      variant="outlined"
-    >
-      <h4>Changes cannot be calculated</h4>
-      For details please check the
-      <a :href="docsLinkManageSynchronisation" target="_blank">documentation</a
-      >.
+    <v-card v-else-if="!tables && !loading" class="mt-3" variant="tonal">
+      <v-card-title><h4>Changes cannot be calculated</h4></v-card-title>
+      <v-card-text
+        >For details please check the
+        <a :href="docsLinkManageSynchronisation" target="_blank"
+          >documentation</a
+        >.</v-card-text
+      >
     </v-card>
   </div>
 </template>

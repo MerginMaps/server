@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :items="projects"
       :server-items-length="numberOfItems"
       v-on:update:options="paginating"
-      item-key="updated"
+      item-key="name"
       :loading="loading"
       :hide-default-footer="true"
       style="background-color: #ffffff"
@@ -70,127 +70,129 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </template>
         </v-toolbar>
       </template>
-      <template v-slot:item="{ item }">
-        <v-card class="mx-auto" data-cy="project-table-card" variant="flat">
+      <template v-slot:default="{ items }">
+        <v-card
+          class="mx-auto"
+          data-cy="project-table-card"
+          variant="flat"
+          v-for="item in items"
+          :key="item.raw.name"
+        >
           <v-list-item lines="three">
-            <!--            TODO: VUE 3 - remove v-list-item-content -->
-            <v-list-item-content>
-              <v-list-item-title class="text-h5 mb-1">
-                <router-link
-                  :to="{
-                    name: 'project',
-                    params: {
-                      namespace: item.namespace,
-                      projectName: item.name
-                    }
-                  }"
-                  ><b>
-                    <span v-if="showNamespace">{{ item.namespace }} /</span>
-                    {{ item.name }}</b
-                  ></router-link
-                >
-                <v-chip
-                  elevation="0"
-                  v-if="item.access.public && !onlyPublic"
-                  style="margin-left: 8px"
-                  variant="outlined"
-                  color="primary"
-                >
-                  Public
-                </v-chip>
-              </v-list-item-title>
-              <v-list-item-subtitle
-                >{{ item.description }}
-              </v-list-item-subtitle>
-              <div style="font-size: smaller">
-                <v-tooltip location="bottom">
-                  <template v-slot:activator="{ props }">
-                    <span
-                      v-bind="props"
-                      style="margin-right: 20px"
-                      data-cy="project-form-collaborators"
-                      ><v-icon class="icon" size="20">share</v-icon
-                      >{{ item.access.readers.length }}</span
+            <v-list-item-title class="text-h5 mb-1">
+              <router-link
+                :to="{
+                  name: 'project',
+                  params: {
+                    namespace: item.raw.namespace,
+                    projectName: item.raw.name
+                  }
+                }"
+                ><b>
+                  <span v-if="showNamespace">{{ item.raw.namespace }} /</span>
+                  {{ item.raw.name }}</b
+                ></router-link
+              >
+              <v-chip
+                elevation="0"
+                v-if="item.raw.access.public && !onlyPublic"
+                style="margin-left: 8px"
+                variant="outlined"
+                color="primary"
+              >
+                Public
+              </v-chip>
+            </v-list-item-title>
+
+            <v-list-item-subtitle
+              >{{ item.raw.description }}
+            </v-list-item-subtitle>
+            <div style="font-size: smaller">
+              <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                  <span
+                    v-bind="props"
+                    style="margin-right: 20px"
+                    data-cy="project-form-collaborators"
+                    ><v-icon class="icon" size="20">share</v-icon
+                    >{{ item.raw.access.readers.length }}</span
+                  >
+                </template>
+                <span>collaborators</span>
+              </v-tooltip>
+              <v-tooltip location="bottom" v-if="item.raw.version">
+                <template v-slot:activator="{ props }">
+                  <span
+                    v-bind="props"
+                    style="margin-right: 20px"
+                    data-cy="project-form-history"
+                  >
+                    <router-link
+                      :to="{
+                        name: 'project-versions',
+                        params: {
+                          namespace: item.raw.namespace,
+                          projectName: item.raw.name
+                        }
+                      }"
                     >
-                  </template>
-                  <span>collaborators</span>
-                </v-tooltip>
-                <v-tooltip location="bottom" v-if="item.version">
-                  <template v-slot:activator="{ props }">
-                    <span
-                      v-bind="props"
-                      style="margin-right: 20px"
-                      data-cy="project-form-history"
-                    >
-                      <router-link
-                        :to="{
-                          name: 'project-versions',
-                          params: {
-                            namespace: item.namespace,
-                            projectName: item.name
-                          }
-                        }"
+                      <span style="font-size: smaller"
+                        ><v-icon class="icon" size="20">history</v-icon
+                        >{{ item.raw.version.substr(1) }}</span
                       >
-                        <span style="font-size: smaller"
-                          ><v-icon class="icon" size="20">history</v-icon
-                          >{{ item.version.substr(1) }}</span
-                        >
-                      </router-link>
-                    </span>
-                  </template>
-                  <span>versions</span>
-                </v-tooltip>
-                <v-tooltip location="bottom">
-                  <template v-slot:activator="{ props }">
-                    <span
-                      v-bind="props"
-                      style="margin-right: 20px"
-                      data-cy="project-form-project-size"
-                      ><v-icon class="icon" size="20">folder</v-icon
-                      >{{ $filters.filesize(item.disk_usage, 'MB', 1) }}</span
-                    >
-                  </template>
-                  <span>project size</span>
-                </v-tooltip>
-                <v-tooltip location="bottom">
-                  <template v-slot:activator="{ props }">
-                    <span
-                      v-bind="props"
-                      style="margin-right: 20px"
-                      data-cy="project-form-updated"
-                      >Updated {{ $filters.timediff(item.updated) }}</span
-                    >
-                  </template>
-                  <span>{{ $filters.datetime(item.updated) }}</span>
-                </v-tooltip>
-                <v-tooltip location="bottom">
-                  <template v-slot:activator="{ props }">
-                    <span
-                      v-if="!item.tags.includes('valid_qgis')"
-                      v-bind="props"
-                      style="margin-right: 20px"
-                      data-cy="project-form-missing-project"
-                      ><v-icon color="#fb8c0087" size="20"
-                        >warning</v-icon
-                      ></span
-                    >
-                  </template>
-                  <span>Missing QGIS project file</span>
-                </v-tooltip>
-                <v-tooltip location="bottom">
-                  <template v-slot:activator="{ props }">
-                    <span
-                      v-if="item.has_conflict"
-                      v-bind="props"
-                      style="margin-right: 20px"
-                      data-cy="project-form-conflict-file"
-                      ><v-icon color="#fb8c0087" size="20">error</v-icon></span
-                    >
-                  </template>
-                  <span>There is conflict file in project</span>
-                </v-tooltip>
-              </div>
-            </v-list-item-content>
+                    </router-link>
+                  </span>
+                </template>
+                <span>versions</span>
+              </v-tooltip>
+              <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                  <span
+                    v-bind="props"
+                    style="margin-right: 20px"
+                    data-cy="project-form-project-size"
+                    ><v-icon class="icon" size="20">folder</v-icon
+                    >{{ $filters.filesize(item.raw.disk_usage, 'MB', 1) }}</span
+                  >
+                </template>
+                <span>project size</span>
+              </v-tooltip>
+              <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                  <span
+                    v-bind="props"
+                    style="margin-right: 20px"
+                    data-cy="project-form-updated"
+                    >Updated {{ $filters.timediff(item.raw.updated) }}</span
+                  >
+                </template>
+                <span>{{ $filters.datetime(item.raw.updated) }}</span>
+              </v-tooltip>
+              <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                  <span
+                    v-if="!item.raw.tags.includes('valid_qgis')"
+                    v-bind="props"
+                    style="margin-right: 20px"
+                    data-cy="project-form-missing-project"
+                    ><v-icon color="#fb8c0087" size="20">warning</v-icon></span
+                  >
+                </template>
+                <span>Missing QGIS project file</span>
+              </v-tooltip>
+              <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                  <span
+                    v-if="item.raw.has_conflict"
+                    v-bind="props"
+                    style="margin-right: 20px"
+                    data-cy="project-form-conflict-file"
+                    ><v-icon color="#fb8c0087" size="20">error</v-icon></span
+                  >
+                </template>
+                <span>There is conflict file in project</span>
+              </v-tooltip>
+            </div>
           </v-list-item>
           <v-divider style="color: black" />
         </v-card>
@@ -208,6 +210,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           ></v-pagination>
         </div>
       </template>
+      <template #no-data>No projects found</template>
     </v-data-iterator>
   </div>
 </template>

@@ -18,20 +18,22 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <v-card
               v-if="!loggedUser.verified_email"
               variant="outlined"
-              class="bubble mt-3"
+              class="mt-3"
               style="
                 background-color: #ffc863;
                 color: rgba(0, 0, 0, 0.87);
                 overflow: hidden;
               "
             >
-              Your email hasn't been confirmed yet
-              <v-btn
-                color="#ecf3ff"
-                @click="resendConfirmationEmail"
-                style="float: right"
-                >Send confirmation email
-              </v-btn>
+              <v-card-text
+                >Your email hasn't been confirmed yet
+                <v-btn
+                  color="#ecf3ff"
+                  @click="resendConfirmationEmail"
+                  style="float: right"
+                  >Send confirmation email
+                </v-btn></v-card-text
+              >
             </v-card>
           </v-col>
         </v-row>
@@ -268,11 +270,6 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-@import 'src/sass/dashboard';
-
-.bubble {
-  width: 100%;
-}
 
 .main-content {
   overflow: unset;

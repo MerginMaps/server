@@ -12,8 +12,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       namespaceAccessRequests.length > 0
     "
   >
-    <v-card class="bubble mt-3">
-      <h3>Project access requests</h3>
+    <v-card variant="tonal" class="mt-3">
+      <v-card-title><h3>Project access requests</h3></v-card-title>
       <v-card-text>
         <slot name="table" :namespace="currentNamespace"></slot>
       </v-card-text>
@@ -54,5 +54,4 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
-@import 'src/sass/dashboard';
 </style>

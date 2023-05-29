@@ -41,6 +41,6 @@
     "vue-router": "^4.1.6",
     "vue-tabler-icons": "~2.20.0",
     "vue-tel-input": "~4.4.2",
-    "vuetify": "^3.3.0"
+    "vuetify": "^3.3.1"
   }
 }
