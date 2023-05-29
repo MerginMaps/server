@@ -29,7 +29,7 @@ jobs:
       - name: Install deps
         run: |
           cd server
-          sudo apt-get -y install pipenv
+          sudo apt-get -y install pipenv libsqlite3-mod-spatialite
           pipenv install --dev --three --sequential --verbose
 
       - name: Run tests
