@@ -32,20 +32,7 @@ export default defineConfig(({ mode }) => ({
     //   include: [/node_modules/],
     //   transformMixedEsModules: true
     // },
-    sourcemap: mode !== 'production',
-    rollupOptions: {
-      // make sure to externalize deps that shouldn't be bundled
-      // into your library
-      external: ['vue'],
-      output: {
-        exports: 'named',
-        // Provide global variables to use in the UMD build
-        // for externalized deps
-        globals: {
-          vue: 'Vue'
-        }
-      }
-    }
+    sourcemap: mode !== 'production'
   },
   optimizeDeps: {
     exclude: ['vue', '@mergin'],
