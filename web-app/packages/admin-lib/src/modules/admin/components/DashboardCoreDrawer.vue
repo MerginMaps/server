@@ -53,14 +53,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <!-- https://github.com/vuetifyjs/vuetify/pull/8574 -->
       <div />
 
-      <template v-for="(item, i) in computedItems">
+      <template v-for="(item, i) in computedItems" :key="`item-${i}`">
         <!--   TODO: handle item children (it is only in admin apps now)     -->
         <!--        <base-item-group v-if="item.children" :key="`group-${i}`" :item="item">-->
         <!--          &lt;!&ndash;  &ndash;&gt;-->
         <!--        </base-item-group>-->
         <!---->
         <!--        <base-item v-else :key="`item-${i}`" :item="item" />-->
-        <base-item :item="item" color="black" :key="`item-${i}`" />
+        <base-item :item="item" color="black" />
       </template>
 
       <!-- Style cascading bug  -->

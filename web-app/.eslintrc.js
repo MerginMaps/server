@@ -42,6 +42,9 @@ module.exports = {
       {
         allowModifiers: true
       }
-    ]
+    ],
+    // Vue 3 opt https://v3-migration.vuejs.org/breaking-changes/key-attribute.html#with-template-v-for
+    'vue/no-v-for-template-key-on-child': 'error',
+    'vue/no-v-for-template-key': 'off'
   }
 }
