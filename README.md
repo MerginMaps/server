@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-	<b>Store and track changes to your geo-data</b>
+	<b>Store and track changes to your geo-data</b> <br /> 
 	<img src="https://img.shields.io/badge/License-Dual AGPL3 and MM Commercial licence-blue">
 </p>
 
