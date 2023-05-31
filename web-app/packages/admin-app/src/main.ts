@@ -42,11 +42,11 @@ moduleUtils.initializeAppModule(AdminModule, {
   routerService: router
 })
 
-const app = createMerginApp()
 const instanceStore = useInstanceStore(getPiniaInstance())
 // App initialization
 instanceStore.initApp().then(async (response) => {
   initCsrfToken(response)
   await instanceStore.fetchConfig()
+  const app = createMerginApp()
   app.mount('#app')
 })
