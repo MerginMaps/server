@@ -399,3 +399,8 @@ def get_order_param(cls: Model, order_param: OrderParam) -> Optional[UnaryExpres
         return order_attr.asc()
     elif order_param.direction == "desc":
         return order_attr.desc()
+
+
+def is_valid_gpkg(file_meta):
+    """Check if diff file is valid"""
+    return file_meta["size"] != 0
