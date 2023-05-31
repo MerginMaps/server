@@ -1004,11 +1004,13 @@ def _get_changes_with_diff(project_dir):
     changes["updated"].append(diff_meta)
     return changes
 
+
 def _get_changes_with_diff_0_size(project_dir):
     changes = _get_changes_with_diff(project_dir)
     # tweak file size
     changes["updated"][1]["size"] = 0
     return changes
+
 
 test_push_data = [
     (
@@ -1528,6 +1530,7 @@ def test_push_diff_finish(client):
     upload_chunks(upload_dir, upload.changes)
     resp = client.post("/v1/project/push/finish/{}".format(upload.id))
     assert resp.status_code == 422
+
 
 def test_push_no_diff_finish(client):
     working_dir = os.path.join(TMP_DIR, "test_push_no_diff_finish")
