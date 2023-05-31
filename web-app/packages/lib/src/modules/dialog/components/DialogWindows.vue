@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   >
     <component
       v-if="params"
-      :is="params.component"
+      :is="component"
       v-bind="params.props"
       v-on="dialogListeners"
     />
@@ -27,7 +27,12 @@ import { useDialogStore } from '@/modules/dialog/store'
 
 export default defineComponent({
   computed: {
-    ...mapState(useDialogStore, ['isDialogOpen', 'params', 'dialogProps']),
+    ...mapState(useDialogStore, [
+      'isDialogOpen',
+      'params',
+      'dialogProps',
+      'component'
+    ]),
 
     dialogListeners() {
       return this.params?.listeners ?? {}

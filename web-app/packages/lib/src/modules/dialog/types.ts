@@ -4,13 +4,14 @@
 
 import { Component } from 'vue'
 
-export interface DialogParamsPayload {
+export interface DialogParams {
   dialog: Record<string, unknown>
   // TODO: clear unknown based on 'on-listener' in template
   listeners?: unknown | Record<string, (...args: unknown[]) => void>
   props?: Record<string, unknown>
 }
 
-export interface DialogParams extends DialogParamsPayload {
+export interface DialogPayload {
+  params: DialogParams
   component: Component
 }
