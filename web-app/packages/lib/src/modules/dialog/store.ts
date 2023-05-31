@@ -3,10 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import { defineStore } from 'pinia'
+import { Component } from 'vue'
+
+import { DialogParams, DialogParamsPayload } from './types'
+
+import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 
 export interface DialogState {
   isDialogOpen: boolean
-  params: Record<string, any>
+  params: DialogParams
 }
 
 export const useDialogStore = defineStore('dialogModule', {
@@ -22,24 +27,25 @@ export const useDialogStore = defineStore('dialogModule', {
   },
 
   actions: {
-    openDialog(payload) {
+    openDialog(payload: { params: DialogParams }) {
       this.isDialogOpen = true
-      this.params = payload.params
+      this.params = { ...payload.params }
     },
     closeDialog() {
       this.isDialogOpen = false
     },
-    changeParams(payload) {
+    changeParams(payload: { params: DialogParams }) {
       this.params = payload.params
     },
-    show(payload) {
+    show(payload: { params: DialogParamsPayload; component?: Component }) {
       this.openDialog({
         params: { ...payload.params, component: payload.component }
       })
     },
-    prompt(payload) {
+    prompt(payload: { params: DialogParamsPayload }) {
       this.show({
-        params: payload.params
+        params: payload.params,
+        component: ConfirmDialog
       })
     },
     close() {
