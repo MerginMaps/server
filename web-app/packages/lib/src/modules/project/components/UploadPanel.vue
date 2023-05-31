@@ -84,7 +84,7 @@ import { CloudUploadIcon } from 'vue-tabler-icons'
 
 import ActionButton from '@/common/components/ActionButton.vue'
 import { CHUNK_SIZE, isVersionedFile } from '@/common/mergin_utils'
-import { useDialogStore, useNotificationStore } from '@/modules'
+import { ConfirmDialog, useDialogStore, useNotificationStore } from '@/modules'
 import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
@@ -121,7 +121,7 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapActions(useDialogStore, ['prompt']),
+    ...mapActions(useDialogStore, { showDialog: 'show' }),
     ...mapActions(useNotificationStore, ['show']),
     ...mapActions(useProjectStore, [
       'setProject',
@@ -220,7 +220,8 @@ export default defineComponent({
       }
 
       if (this.upload.diff.updated.filter((i) => isVersionedFile(i)).length) {
-        this.prompt({
+        this.showDialog({
+          component: ConfirmDialog,
           params: { props, listeners, dialog: { maxWidth: 500 } }
         })
       } else {

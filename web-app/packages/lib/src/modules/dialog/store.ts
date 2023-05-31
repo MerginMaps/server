@@ -7,8 +7,6 @@ import { Component } from 'vue'
 
 import { DialogParams, DialogParamsPayload } from './types'
 
-import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
-
 export interface DialogState {
   isDialogOpen: boolean
   params: DialogParams
@@ -37,15 +35,9 @@ export const useDialogStore = defineStore('dialogModule', {
     changeParams(payload: { params: DialogParams }) {
       this.params = payload.params
     },
-    show(payload: { params: DialogParamsPayload; component?: Component }) {
+    show(payload: { params: DialogParamsPayload; component: Component }) {
       this.openDialog({
         params: { ...payload.params, component: payload.component }
-      })
-    },
-    prompt(payload: { params: DialogParamsPayload }) {
-      this.show({
-        params: payload.params,
-        component: ConfirmDialog
       })
     },
     close() {

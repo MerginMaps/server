@@ -77,6 +77,7 @@ import ProjectAccessRequests from '@/modules/project/components/ProjectAccessReq
 import { useProjectStore } from '@/modules/project/store'
 import { ProjectAccess } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
+import { ConfirmDialog } from '@/modules'
 
 export default defineComponent({
   name: 'ProjectSettingsViewTemplate',
@@ -130,7 +131,7 @@ export default defineComponent({
   },
   methods: {
     ...mapActions(useProjectStore, ['deleteProject', 'saveProjectSettings']),
-    ...mapActions(useDialogStore, ['prompt']),
+    ...mapActions(useDialogStore, ['show']),
     ...mapActions(useNotificationStore, ['error']),
 
     saveProject(newSettingsAccessValues) {
@@ -171,7 +172,8 @@ export default defineComponent({
       const listeners = {
         confirm: () => this.onDeleteProject()
       }
-      this.prompt({
+      this.show({
+        component: ConfirmDialog,
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
     },
@@ -185,7 +187,8 @@ export default defineComponent({
       const listeners = {
         confirm: () => this.togglePublicPrivate()
       }
-      this.prompt({
+      this.show({
+        component: ConfirmDialog,
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
     },

@@ -157,7 +157,7 @@ export default defineComponent({
   },
   methods: {
     ...mapActions(useAdminStore, ['closeAccount', 'updateUser']),
-    ...mapActions(useDialogStore, ['prompt', 'show']),
+    ...mapActions(useDialogStore, ['show']),
 
     changeStatusDialog() {
       const props = {
@@ -198,7 +198,8 @@ export default defineComponent({
         confirm: async () =>
           await this.closeAccount({ username: this.userAdminProfile.username })
       }
-      this.prompt({
+      this.show({
+        component: ConfirmDialog,
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
     }

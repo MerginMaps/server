@@ -27,7 +27,7 @@
     "build:lib": "yarn clean:types:temp && vite build --mode development",
     "build:cli:lib": "yarn clean:types:temp && vue-cli-service build --mode development --target lib --name lib ./src/main.ts",
     "build:lib:prod": "yarn clean:types:temp && vite build",
-    "build:lib:watch": "yarn clean:types:temp && vite build --watch",
+    "build:lib:watch": "yarn clean:types:temp && vite build --watch --mode development",
     "build:lib:all": "yarn build:lib && yarn build:types",
     "build:lib:all:prod": "yarn build:lib:prod && yarn build:types",
     "build:types:old": "yarn clean:types && tsc --declaration --emitDeclarationOnly && vue-typegen gen -s src -o types && tsc-alias && yarn clean:types:temp",

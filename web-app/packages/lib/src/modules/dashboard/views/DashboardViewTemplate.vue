@@ -180,7 +180,6 @@ export default defineComponent({
 @media only screen and (max-width: 599px) {
   .store-button {
     text-align: right;
-
   }
 
   .app-store-button {
