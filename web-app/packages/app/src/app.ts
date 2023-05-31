@@ -39,7 +39,7 @@ const createMerginApp = () => {
   })
 
   const app = createApp(App)
-    // global mixin - replace with composable after migration to Vue 3
+    // TODO: V3_UPGRADE global mixin - replace with composable after migration to Vue 3
     .mixin(MerginComponentUuidMixin)
     .use(getPiniaInstance())
     .use(router)

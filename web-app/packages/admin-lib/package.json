@@ -32,7 +32,7 @@
     "build:types:old": "yarn clean:types && tsc --declaration --emitDeclarationOnly && vue-typegen gen -s src -o types && tsc-alias && yarn clean:types:temp",
     "build:types": "yarn clean:types && (vue-tsc --declaration --emitDeclarationOnly || true) && tsc-alias",
     "build:types:watch:old": "yarn clean:types && tsc --declaration --emitDeclarationOnly --watch && vue-typegen gen -s src -o types && tsc-alias && yarn clean:types:temp",
-    "build:types:watch": "yarn clean:types && vue-tsc --declaration --emitDeclarationOnly --watch && tsc-alias",
+    "build:types:watch": "yarn build:types && (concurrently -r \"vue-tsc --watch\" \"tsc-alias -w\")",
     "clean": "yarn clean:lib && yarn clean:types",
     "clean:lib": "rimraf ./dist",
     "clean:types:temp": "rimraf ./**/*.vue.ts",
