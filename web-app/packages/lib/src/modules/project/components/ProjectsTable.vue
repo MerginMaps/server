@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <v-text-field
             v-model="searchFilterByProjectName"
             clearable
-            variant="flat"
+            flat
             hide-details
             prepend-inner-icon="mdi-magnify"
             label="Search projects"
@@ -305,7 +305,6 @@ export default defineComponent({
   },
   created() {
     this.filterData = debounce(this.filterData, 3000)
-    console.log(this.$filters.filesize(5, 'MB', 1))
   },
   methods: {
     paginating(options) {

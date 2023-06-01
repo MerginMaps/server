@@ -15,9 +15,9 @@
       "import": "./dist/admin-lib.js",
       "require": "./dist/admin-lib.umd.cjs"
     },
-    "./dist/style.css": {
-      "import": "./dist/style.css",
-      "require": "./dist/style.css"
+    "./dist/": {
+      "import": "./dist/",
+      "require": "./dist/"
     }
   },
   "scripts": {

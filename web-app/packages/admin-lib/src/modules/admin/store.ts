@@ -53,14 +53,14 @@ export const useAdminStore = defineStore('adminModule', {
   },
 
   actions: {
-    loading(value) {
+    setLoading(value) {
       this.loading = value
     },
-    users(data) {
+    setUsers(data) {
       this.users.count = data.total
       this.users.items = data.users
     },
-    userAdminProfile(userAdminProfile) {
+    setUserAdminProfile(userAdminProfile) {
       this.userAdminProfile = userAdminProfile
     },
     setCheckForUpdates(value) {
@@ -76,14 +76,14 @@ export const useAdminStore = defineStore('adminModule', {
     async fetchUsers(payload) {
       const notificationStore = useNotificationStore()
 
-      this.loading(true)
+      this.setLoading(true)
       try {
         const response = await AdminApi.fetchUsers(payload.params)
-        this.users(response.data)
+        this.setUsers(response.data)
       } catch (e) {
         notificationStore.error({ text: e.response.data?.detail || e.message })
       } finally {
-        this.loading(false)
+        this.setLoading(false)
       }
     },
     async fetchUserProfileByName(payload) {
@@ -92,7 +92,7 @@ export const useAdminStore = defineStore('adminModule', {
       htmlUtils.waitCursor(true)
       try {
         const response = await AdminApi.fetchUserProfileByName(payload.username)
-        this.userAdminProfile(response.data)
+        this.setUserAdminProfile(response.data)
       } catch {
         await notificationStore.error({ text: 'Failed to fetch user profile' })
       } finally {
@@ -129,7 +129,7 @@ export const useAdminStore = defineStore('adminModule', {
         )
         if (this.userAdminProfile?.id === response.data?.id) {
           // update stored user detail data
-          this.userAdminProfile(response.data)
+          this.setUserAdminProfile(response.data)
         }
         await AdminModule.routerService.push({ name: 'accounts' })
       } catch (err) {
