@@ -11,12 +11,7 @@ import packageJson from './package.json'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  plugins: [
-    vue(),
-    vuetify({
-      styles: { configFile: './src/assets/sass/settings.scss' }
-    }) /*, dts() */
-  ],
+  plugins: [vue(), vuetify() /*, dts() */],
   publicDir: './src/assets',
 
   resolve: {

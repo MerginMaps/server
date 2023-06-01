@@ -162,9 +162,6 @@ export default defineComponent({
 <style lang="sass">
 @use 'vuetify/tools'
 
-#core-navigation-drawer .theme--dark.v-navigation-drawer
-  background-color: #eaebef
-
 #core-navigation-drawer
   .v-list-group__header.v-list-item--active:before
     opacity: .24

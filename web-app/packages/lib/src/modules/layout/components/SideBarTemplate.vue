@@ -12,11 +12,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :expand-on-hover="expandOnHover"
     :location="$vuetify.locale.isRtl ? 'right' : 'left'"
     mobile-breakpoint="960"
-    :theme="
-      barColor === 'rgba(228, 226, 226, 1), rgba(255, 255, 255, 0.7)'
-        ? 'light'
-        : 'dark'
-    "
     app
     width="200"
     v-bind="$attrs"
@@ -105,21 +100,7 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-// TODO: this color (and other overrides of vuetify classes) should be handled as override of vuetify saas variable ($navigation-drawer-background),
-//   see: https://vuetifyjs.com/en/features/sass-variables/
-//   see: https://vuetifyjs.com/en/api/v-navigation-drawer/#sass-navigation-drawer-background
-.theme--dark.v-navigation-drawer {
-  background-color: #eaebef !important;
-}
-
-.theme--dark.v-navigation-drawer .v-divider {
-  border-color: #f3f4f8;
-}
-
-.theme--dark.v-card {
-  background-color: #eaebef !important;
-}
-
+// TODO: UPGRADE VUE 3 - rewrite this hard coded part (use sass variable if possible)
 .v-application .white--text {
   color: #2d4470 !important;
   caret-color: #2d4470 !important;

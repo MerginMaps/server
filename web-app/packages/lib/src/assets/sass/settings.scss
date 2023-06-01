@@ -1,4 +1,7 @@
 @use 'vuetify/settings' with (
+
+  // -----------------------------------------------------
+  // TODO: upgrade VUE 3 - following part is reused from vuetify 2 version of the application, check if it is still necessary
   $font-size-root: 99px,
   $sheet-border-radius: 4px,
   $list-item-title-font-size: 0.929rem,
@@ -11,9 +14,6 @@
   //$btn-letter-spacing: 0,
   //$btn-font-weight: 400,
   $card-text-font-size: 12px,
-
-  // TODO: VUE 3 - just for testing
-  $navigation-drawer-background: pink,
 
   $typography: (
     //'h1': (
@@ -34,7 +34,17 @@
     //),
     //'h5': ( 'size': 1.0625rem ),
     //'h6': ( 'size': .75rem ),
-          'text-subtitle-2': ('size': 1rem),
-          'text-overline': ('letter-spacing': 0)
-  )
+    'text-subtitle-2': ('size': 1rem),
+    'text-overline': ('letter-spacing': 0)
+  ),
+  // -----------------------------------------------------
+
+  // VNavigationDrawer
+  $navigation-drawer-background: #eaebef,
+
+  // VDivider
+  $divider-border-color: #eaebef,
+
+  // VCard
+  $card-background: #eaebef,
 );
