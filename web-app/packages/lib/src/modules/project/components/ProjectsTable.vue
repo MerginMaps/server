@@ -9,16 +9,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <v-data-iterator
       :page="options.page"
       :items-per-page="options.itemsPerPage"
-      :sort-by="
-        options.sortBy.map((key, i) => ({ key, order: options.sortDesc[i] }))
-      "
+      :sort-by="[{ key: options.sortBy, order: options.sortDesc }]"
       :items="projects"
       v-on:update:options="onUpdateOptions"
       item-key="name"
       :loading="loading"
-      style="background-color: #ffffff"
       variant="flat"
-      no-data-text="No projects found"
     >
       <template v-slot:header>
         <v-toolbar color="" class="mb-1" flat v-if="showHeader">
@@ -36,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </v-text-field>
           <template v-if="$vuetify.display.smAndUp">
             <v-select
-              v-model="options.sortBy[0]"
+              v-model="options.sortBy"
               @change="paginating(options)"
               variant="underlined"
               hide-details
@@ -46,16 +42,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ></v-select>
             <v-spacer></v-spacer>
             <v-btn-toggle
-              v-model="options.sortDesc[0]"
-              @change="paginating(options)"
+              v-model="options.sortDesc"
+              @update:model-value="paginating(options)"
               mandatory="force"
             >
               <v-btn
                 size="large"
                 variant="flat"
                 color="#ffffff"
-                :value="false"
                 data-cy="project-table-sort-btn-up"
+                :value="false"
               >
                 <v-icon>mdi-arrow-up</v-icon>
               </v-btn>
@@ -63,8 +59,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 size="large"
                 variant="flat"
                 color="#ffffff"
-                :value="true"
                 data-cy="project-table-sort-btn-down"
+                :value="true"
               >
                 <v-icon>mdi-arrow-down</v-icon>
               </v-btn>
@@ -309,15 +305,17 @@ export default defineComponent({
   },
   methods: {
     paginating(options: PaginatedGridOptions) {
+      console.log(options)
       this.options = options
-      this.fetchProjects()
+      // this.fetchProjects()
     },
     onUpdateOptions(options: VDataIteratorOptions) {
+      console.log("update options", options)
       this.options = {
         itemsPerPage: options.itemsPerPage,
         page: options.page,
-        sortDesc: options.sortBy?.map((d) => !!d.order),
-        sortBy: options.sortBy?.map((d) => d.key)
+        sortDesc: options.sortBy[0].order as boolean,
+        sortBy: options.sortBy[0].key
       }
       this.fetchProjects()
     },

@@ -28,8 +28,8 @@ export interface BaseModule {
 export interface Module extends BaseModule, ModuleService {}
 
 export interface PaginatedGridOptions {
-  sortBy: string[]
-  sortDesc: boolean[]
+  sortBy: string
+  sortDesc: boolean
   itemsPerPage: number
   page: number
 }
