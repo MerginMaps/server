@@ -7,7 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <v-app :class="`${loggedUser ? 'appFont' : ''}`">
     <dialog-windows />
-    <v-layout column fill-height>
+    <!-- TODO: V3_UPGRADE v-layout has cleaned whole API (need-change: fill-height -> full-height) -->
+    <v-layout full-height>
       <!-- TODO: V3_UPGRADE - check this https://router.vuejs.org/guide/migration/#router-view-keep-alive-and-transition     -->
       <!--      <transition name="fade">-->
       <!--        <router-view name="header" />-->

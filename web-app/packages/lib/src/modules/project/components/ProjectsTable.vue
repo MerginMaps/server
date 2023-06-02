@@ -7,23 +7,21 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div>
     <v-data-iterator
-      :options="options"
+      :page="options.page"
+      :items-per-page="options.itemsPerPage"
+      :sort-by="[{ key: options.sortBy, order: options.sortDesc }]"
       :items="projects"
-      :server-items-length="numberOfItems"
-      v-on:update:options="paginating"
+      v-on:update:options="onUpdateOptions"
       item-key="name"
       :loading="loading"
-      :hide-default-footer="true"
-      style="background-color: #ffffff"
-      flat
-      no-data-text="No projects found"
+      variant="flat"
     >
       <template v-slot:header>
         <v-toolbar color="" class="mb-1" flat v-if="showHeader">
           <v-text-field
             v-model="searchFilterByProjectName"
             clearable
-            flat
+            variant="underlined"
             hide-details
             prepend-inner-icon="mdi-magnify"
             label="Search projects"
@@ -34,9 +32,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </v-text-field>
           <template v-if="$vuetify.display.smAndUp">
             <v-select
-              v-model="options.sortBy[0]"
-              @change="paginating(options)"
-              flat
+              v-model="options.sortBy"
+              @update:model-value="paginating(options)"
+              variant="underlined"
               hide-details
               :items="selectKeys"
               prepend-inner-icon="sort_by_alpha"
@@ -44,16 +42,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ></v-select>
             <v-spacer></v-spacer>
             <v-btn-toggle
-              v-model="options.sortDesc[0]"
-              @change="paginating(options)"
+              v-model="options.sortDesc"
+              @update:model-value="paginating(options)"
               mandatory="force"
             >
               <v-btn
                 size="large"
                 variant="flat"
                 color="#ffffff"
-                :value="false"
                 data-cy="project-table-sort-btn-up"
+                :value="false"
               >
                 <v-icon>mdi-arrow-up</v-icon>
               </v-btn>
@@ -61,8 +59,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 size="large"
                 variant="flat"
                 color="#ffffff"
-                :value="true"
                 data-cy="project-table-sort-btn-down"
+                :value="true"
               >
                 <v-icon>mdi-arrow-down</v-icon>
               </v-btn>
@@ -197,14 +195,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <v-divider style="color: black" />
         </v-card>
       </template>
-      <template v-slot:footer="{ options }">
+      <template v-slot:footer>
         <div class="text-center">
           <v-pagination
             v-if="showFooter && numberOfItems > options.itemsPerPage"
             v-model="options.page"
             :length="Math.ceil(numberOfItems / options.itemsPerPage)"
             :total-visible="7"
-            circle
+            rounded="circle"
             color="primary"
             @update:model-value="fetchPage"
           ></v-pagination>
@@ -221,7 +219,7 @@ import { defineComponent, PropType } from 'vue'
 
 import { PaginatedGridOptions } from '@/common'
 import { formatToTitle } from '@/common/text_utils'
-import { ProjectListItem } from '@/modules/project/types'
+import { ProjectListItem, VDataIteratorOptions } from '@/modules/project/types'
 
 export default defineComponent({
   name: 'projects-table',
@@ -264,13 +262,12 @@ export default defineComponent({
   },
   data() {
     return {
-      options: Object.assign({}, this.initialOptions),
+      options: { ...this.initialOptions },
       searchFilterByProjectName: '',
       searchFilterByNamespace: '',
       searchFilterByDay: '',
       loading: false,
-      keys: ['name', 'updated', 'disk_usage'],
-      sortBy: ''
+      keys: ['name', 'updated', 'disk_usage']
     }
   },
   computed: {
@@ -293,7 +290,7 @@ export default defineComponent({
     },
     selectKeys() {
       return this.keys.map((i) => {
-        return { text: formatToTitle(i), value: i }
+        return { title: formatToTitle(i), value: i }
       })
     }
   },
@@ -307,12 +304,20 @@ export default defineComponent({
     this.filterData = debounce(this.filterData, 3000)
   },
   methods: {
-    paginating(options) {
+    paginating(options: PaginatedGridOptions) {
       this.options = options
+    },
+    onUpdateOptions(options: VDataIteratorOptions) {
+      this.options = {
+        itemsPerPage: options.itemsPerPage,
+        page: options.page,
+        sortDesc: options.sortBy[0].order as boolean,
+        sortBy: options.sortBy[0].key
+      }
       this.fetchProjects()
     },
-    fetchPage(number) {
-      this.options.page = number
+    fetchPage(page: number) {
+      this.options.page = page
       this.fetchProjects()
     },
     changedRoute() {
@@ -334,14 +339,6 @@ export default defineComponent({
           this.loading = false
         }
       )
-    },
-    changeSort(column) {
-      if (this.pagination.sortBy === column) {
-        this.pagination.descending = !this.pagination.descending
-      } else {
-        this.pagination.sortBy = column
-        this.pagination.descending = false
-      }
     },
     filterData() {
       this.options.page = 1
