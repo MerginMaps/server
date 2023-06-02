@@ -5,19 +5,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-layout
-    class="row shrink align-end justify-center header"
+  <v-app-bar
+    flat
+    class="header"
     v-bind:class="{ primary: isPrimary }"
+    theme="dark"
   >
-    <v-layout class="content">
-      <router-link class="logo" :to="{ name: 'home' }">
-        <img src="@/assets/MM_logo_HORIZ_NEG_color.svg" alt="Mergin logo" />
-      </router-link>
-
-      <slot name="menu">
+    <template #prepend
+      ><slot name="menu">
         <!-- TODO: `fab` prop was removed, check if `rounded` prop is enough here -->
         <v-btn
-          class="mr-3 toggle-toolbar small-screen"
+          class="toggle-toolbar small-screen"
           elevation="1"
           rounded
           size="small"
@@ -28,15 +26,24 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </v-icon>
           <v-icon v-else class="text-primary"> fa-angle-double-right</v-icon>
         </v-btn>
-        <v-spacer />
       </slot>
-      <!--      TODO: VUE 3 - replace offset-y boolean with offset number|string-->
-      <v-menu
+      <router-link class="logo" :to="{ name: 'home' }">
+        <img
+          src="@/assets/MM_logo_HORIZ_NEG_color.svg"
+          alt="Mergin logo"
+          :style="{ height: '63px' }"
+        />
+      </router-link>
+    </template>
+
+    <template #title></template>
+
+    <template #append
+      ><v-menu
         v-if="loggedUser && loggedUser.email"
         :min-width="150"
         location="bottom"
         start
-        offset-y
         origin="top right"
         transition="scale-transition"
         id="user-menu"
@@ -72,7 +79,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <v-list-item class="pb-1">
             <div class="user-name">
               <strong> {{ getUserFullName }} </strong>
-              <span class="caption"> {{ this.loggedUser.email }} </span>
+              <span class="caption"> {{ loggedUser.email }} </span>
             </div>
           </v-list-item>
           <v-divider class="mx-4 my-1"></v-divider>
@@ -90,10 +97,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <span class="menuItem"> Sign Out </span>
           </v-list-item>
           <slot name="menuItems"></slot>
-        </v-list>
-      </v-menu>
-    </v-layout>
-  </v-layout>
+        </v-list> </v-menu
+    ></template>
+  </v-app-bar>
 </template>
 
 <script lang="ts">
@@ -150,12 +156,6 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .header {
-  padding: 0 0.5em;
-  position: relative;
-  min-height: 63px;
-  flex-shrink: 0;
-  z-index: 7;
-
   .content {
     height: 63px;
     align-items: center;
@@ -197,29 +197,10 @@ export default defineComponent({
   }
 
   a {
-    color: #fff;
-    min-width: 2em;
-    margin: 0.35em 0.25em;
-    padding: 0.35em 0.75em;
     text-decoration: none;
-    font-weight: 500;
-    /*font-size: 110%;*/
-    font-size: 15.4px;
-
-    &.active {
-      color: orange;
-    }
-
     &.logo {
-      padding: 0;
-      margin: 0 1em;
-      height: inherit;
-      position: relative;
-
       img {
-        height: inherit;
         width: auto;
-        padding: 0.25em 0;
       }
     }
   }
@@ -238,6 +219,7 @@ export default defineComponent({
 
 .v-btn {
   text-transform: none;
+  margin: 0;
 }
 
 .menu-sub-title {

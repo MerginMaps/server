@@ -128,7 +128,6 @@ export default defineComponent({
       try {
         const response = await this.getProjects({ params })
         this.projects = response.data?.projects
-        debugger
         this.numberOfItems = response.data?.count
         if (onFinish) {
           onFinish()

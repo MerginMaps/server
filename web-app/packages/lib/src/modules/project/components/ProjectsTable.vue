@@ -72,9 +72,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-card
           class="mx-auto"
           data-cy="project-table-card"
-          variant="flat"
           v-for="item in items"
           :key="item.raw.name"
+          variant="flat"
         >
           <v-list-item lines="three">
             <v-list-item-title class="text-h5 mb-1">

@@ -140,30 +140,6 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
-.v-navigation-drawer {
-  -webkit-overflow-scrolling: touch;
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-  -webkit-box-orient: vertical;
-  -webkit-box-direction: normal;
-  -ms-flex-direction: column;
-  flex-direction: column;
-  left: 0;
-  max-width: 100%;
-  overflow: hidden;
-  pointer-events: auto;
-  top: 0;
-  -webkit-transition-duration: 0.2s;
-  transition-duration: 0.2s;
-  -webkit-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-  -webkit-transition-property: width, -webkit-transform;
-  transition-property: width, -webkit-transform;
-  transition-property: transform, width;
-  transition-property: transform, width, -webkit-transform;
-}
 
 .store-button {
   text-align: center;
@@ -175,21 +151,6 @@ export default defineComponent({
 
 .huawei-store-button {
   padding-top: 10px;
-}
-
-@media only screen and (max-width: 599px) {
-  .store-button {
-    text-align: right;
-  }
-
-  .app-store-button {
-    padding-left: 12px;
-    padding-top: 0;
-  }
-  .huawei-store-button {
-    padding-left: 12px;
-    padding-top: 0;
-  }
 }
 
 @media only screen and (min-width: 600px) and (max-width: 960px) {
