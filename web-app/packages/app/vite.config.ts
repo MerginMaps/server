@@ -9,7 +9,12 @@ const serverPort = process.env.FLASK_RUN_PORT ?? 5000
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  plugins: [vue(), vuetify()],
+  plugins: [
+    vue(),
+    vuetify({
+      styles: { configFile: './src/sass/settings.scss' }
+    })
+  ],
 
   resolve: {
     alias: {

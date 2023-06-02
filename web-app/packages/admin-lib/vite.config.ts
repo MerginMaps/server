@@ -1,9 +1,7 @@
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
 // import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
 import vue from '@vitejs/plugin-vue'
-// import { copy } from '@web/rollup-plugin-copy'
-import { join, resolve } from 'path'
-import copy from 'rollup-plugin-copy'
+import { resolve } from 'path'
 import { defineConfig } from 'vite'
 import vuetify from 'vite-plugin-vuetify'
 
@@ -46,21 +44,7 @@ export default defineConfig(({ mode }) => ({
         globals: {
           vue: 'Vue'
         }
-      },
-      plugins: [
-        // copy({
-        //   targets: [
-        //     {
-        //       src: join(__dirname, 'src/assets'),
-        //       dest: join(__dirname, 'src/assets')
-        //     },
-        //     {
-        //       src: join(__dirname, 'src/saas'),
-        //       dest: join(__dirname, 'src/saas')
-        //     }
-        //   ]
-        // })
-      ]
+      }
     }
   },
   optimizeDeps: {

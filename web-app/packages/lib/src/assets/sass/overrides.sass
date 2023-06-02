@@ -12,22 +12,21 @@
 // * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 // Creative Tim refine style code
-@import ./vuetify-material/sidebar
-@import ./vuetify-material/appbar
-@import ./vuetify-material/buttons
-@import ./vuetify-material/pagination
-@import ./vuetify-material/footer
-@import ./vuetify-material/view
-@import ./vuetify-material/settings
-@import ./vuetify-material/card
-@import ./vuetify-material/table
-@import ./vuetify-material/tab
-@import ./vuetify-material/notification
-@import ./vuetify-material/modal
-@import ./vuetify-material/map
-@import ./vuetify-material/chip
-@import 'variables'
-
+@use './vuetify-material/sidebar'
+@use './vuetify-material/appbar'
+@use './vuetify-material/buttons'
+@use './vuetify-material/pagination'
+@use './vuetify-material/footer'
+@use './vuetify-material/view'
+@use './vuetify-material/settings'
+@use './vuetify-material/card'
+@use './vuetify-material/table'
+@use './vuetify-material/tab'
+@use './vuetify-material/notification'
+@use './vuetify-material/modal'
+@use './vuetify-material/map'
+@use './vuetify-material/chip'
+@use './variables'
 
 //.v-btn.v-size--default,
 //.v-btn.v-size--large
@@ -43,7 +42,7 @@
 
 .v-label.v-label,
 .v-alert.v-alert
-  font-size: $font-size-root
+  font-size: variables.$font-size-root
 
 .theme--light .v-main
   background-color: #eee

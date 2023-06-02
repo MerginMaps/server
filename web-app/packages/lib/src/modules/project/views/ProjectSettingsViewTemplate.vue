@@ -71,13 +71,13 @@ import debounce from 'lodash/debounce'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import { ConfirmDialog } from '@/modules/dialog/components'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useNotificationStore } from '@/modules/notification/store'
 import ProjectAccessRequests from '@/modules/project/components/ProjectAccessRequest.vue'
 import { useProjectStore } from '@/modules/project/store'
 import { ProjectAccess } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
-import { ConfirmDialog } from '@/modules'
 
 export default defineComponent({
   name: 'ProjectSettingsViewTemplate',
@@ -203,7 +203,7 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-@import 'src/sass/project';
+@import '@/assets/sass/project';
 
 .settings {
   display: flex;

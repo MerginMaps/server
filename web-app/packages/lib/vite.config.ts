@@ -1,8 +1,7 @@
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
 import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
 import vue from '@vitejs/plugin-vue'
-import { join, resolve } from 'path'
-import copy from 'rollup-plugin-copy'
+import { resolve } from 'path'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
 import { defineConfig } from 'vite'
 // import dts from 'vite-plugin-dts'
@@ -56,19 +55,6 @@ export default defineConfig(({ mode }) => ({
         // Enable rollup polyfills plugin
         // used during production bundling
         rollupNodePolyFill()
-        // TODO: Check on EE and production build (occuring images)
-        // copy({
-        //   targets: [
-        //     {
-        //       src: join(__dirname, 'src/assets'),
-        //       dest: join(__dirname, 'src/assets')
-        //     },
-        //     {
-        //       src: join(__dirname, 'src/saas'),
-        //       dest: join(__dirname, 'src/saas')
-        //     }
-        //   ]
-        // })
       ]
     }
   },

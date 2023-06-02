@@ -104,7 +104,7 @@ export const useProjectStore = defineStore('projectModule', {
       this.projectsCount = payload.count
     },
 
-    projectVersions(payload) {
+    setProjectVersions(payload) {
       this.project.versions = payload.versions
     },
 
@@ -487,7 +487,7 @@ export const useProjectStore = defineStore('projectModule', {
           payload.params
         )
         payload.cbSuccess(versionsResponse.data)
-        this.projectVersions({ versions: versionsResponse.data?.versions })
+        this.setProjectVersions({ versions: versionsResponse.data?.versions })
       } catch (e) {
         await notificationStore.error({
           text: 'Failed to fetch project versions'

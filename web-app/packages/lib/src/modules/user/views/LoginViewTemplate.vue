@@ -87,13 +87,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import { mapActions, mapGetters, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
 import CustomPage from '@/common/components/CustomPage.vue'
 import MerginLogoLight from '@/common/components/MerginLogoLight.vue'
 import { useFormStore } from '@/modules/form/store'
 import { useUserStore } from '@/modules/user/store'
 
-export default {
+export default defineComponent({
   name: 'LoginViewTemplate',
   components: { MerginLogoLight, CustomPage },
   props: {
@@ -163,7 +164,7 @@ export default {
       this.$router.push('/')
     }
   }
-}
+})
 </script>
 
 <style lang="scss" scoped>
