@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <template v-if="$vuetify.display.smAndUp">
             <v-select
               v-model="options.sortBy"
-              @change="paginating(options)"
+              @update:model-value="paginating(options)"
               variant="underlined"
               hide-details
               :items="selectKeys"
@@ -305,12 +305,9 @@ export default defineComponent({
   },
   methods: {
     paginating(options: PaginatedGridOptions) {
-      console.log(options)
       this.options = options
-      // this.fetchProjects()
     },
     onUpdateOptions(options: VDataIteratorOptions) {
-      console.log("update options", options)
       this.options = {
         itemsPerPage: options.itemsPerPage,
         page: options.page,
