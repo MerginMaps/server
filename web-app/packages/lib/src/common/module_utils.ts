@@ -8,7 +8,7 @@ import { Module, ModuleService, RouteOverrides } from '@/common/types'
 
 export const initializeAppModule = (
   module: Module,
-  services: ModuleService,
+  services?: ModuleService,
   routeOverrides?: RouteOverrides
 ) => {
   module.init(services, routeOverrides)

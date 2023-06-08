@@ -1,8 +1,7 @@
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
 import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
 import vue from '@vitejs/plugin-vue'
-import { join, resolve } from 'path'
-import copy from 'rollup-plugin-copy'
+import { resolve } from 'path'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
 import { defineConfig } from 'vite'
 // import dts from 'vite-plugin-dts'
@@ -13,6 +12,7 @@ import packageJson from './package.json'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [vue(), vuetify() /*, dts() */],
+  publicDir: './src/assets',
 
   resolve: {
     alias: {
@@ -54,19 +54,7 @@ export default defineConfig(({ mode }) => ({
       plugins: [
         // Enable rollup polyfills plugin
         // used during production bundling
-        rollupNodePolyFill(),
-        copy({
-          targets: [
-            {
-              src: join(__dirname, 'src/assets'),
-              dest: join(__dirname, 'src/assets')
-            },
-            {
-              src: join(__dirname, 'src/saas'),
-              dest: join(__dirname, 'src/saas')
-            }
-          ]
-        })
+        rollupNodePolyFill()
       ]
     }
   },

@@ -43,9 +43,7 @@ export default defineComponent({
     const userStore = useUserStore()
     const formStore = useFormStore()
 
-    const canCreateProject = computed(
-      () => userStore.isGlobalWorkspaceAdmin?.value
-    )
+    const canCreateProject = computed(() => userStore.isGlobalWorkspaceAdmin)
 
     /**
      * Error handler for create new project from $emit in Template

@@ -4,6 +4,7 @@
     "module": "ESNext",
     // setting strict to false
     "strict": false,
+    "noImplicitThis": true,
     "jsx": "preserve",
     "moduleResolution": "Node",
     "skipLibCheck": true,

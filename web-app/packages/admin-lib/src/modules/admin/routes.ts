@@ -62,7 +62,7 @@ export default (): RouteRecordRaw[] => [
     props: true,
     beforeEnter: async (to, from, next) => {
       const adminStore = useAdminStore()
-      adminStore.userAdminProfile(null)
+      adminStore.setUserAdminProfile(null)
       try {
         await adminStore.fetchUserProfileByName({
           username: to.params.username

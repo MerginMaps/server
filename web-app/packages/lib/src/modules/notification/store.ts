@@ -15,7 +15,13 @@ const SNACK_BAR_WARN_DEFAULT_PARAMS = {
 export interface NotificationState {
   isOpen: boolean
   text: string
-  params: Record<string, unknown>
+  params: {
+    action?: {
+      text: string
+      handler: () => void
+    }
+    timeout?: number
+  }
 }
 
 export const useNotificationStore = defineStore('notificationModule', {
