@@ -8,32 +8,33 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <v-app :class="`${loggedUser ? 'appFont' : ''}`">
     <dialog-windows />
     <!-- TODO: V3_UPGRADE v-layout has cleaned whole API (need-change: fill-height -> full-height) -->
-    <v-layout full-height>
-      <!-- TODO: V3_UPGRADE - check this https://router.vuejs.org/guide/migration/#router-view-keep-alive-and-transition     -->
-      <!--      <transition name="fade">-->
-      <!--        <router-view name="header" />-->
-      <!--      </transition>-->
-      <!--      <transition name="fade">-->
-      <!--        <router-view :key="$route.fullPath" name="sidebar" />-->
-      <!--      </transition>-->
-      <router-view name="header" v-slot="{ Component, route }">
-        <transition name="fade">
-          <div :key="route.name">
-            <component :is="Component" />
-          </div>
-        </transition>
-      </router-view>
-      <router-view
-        name="sidebar"
-        v-slot="{ Component, route }"
-        :key="$route.fullPath"
-      >
-        <transition name="fade">
-          <div :key="route.name">
-            <component :is="Component" />
-          </div>
-        </transition>
-      </router-view>
+    <!-- TODO: V3_UPGRADE - check this https://router.vuejs.org/guide/migration/#router-view-keep-alive-and-transition     -->
+    <!--      <transition name="fade">-->
+    <!--        <router-view name="header" />-->
+    <!--      </transition>-->
+    <!--      <transition name="fade">-->
+    <!--        <router-view :key="$route.fullPath" name="sidebar" />-->
+    <!--      </transition>-->
+    <router-view name="header" v-slot="{ Component, route }">
+      <transition name="fade">
+        <div :key="route.name">
+          <component :is="Component" />
+        </div>
+      </transition>
+    </router-view>
+    <router-view
+      name="sidebar"
+      v-slot="{ Component, route }"
+      :key="$route.fullPath"
+    >
+      <transition name="fade">
+        <div :key="route.name">
+          <component :is="Component" />
+        </div>
+      </transition>
+    </router-view>
+
+    <v-main>
       <v-card
         v-if="pingData && pingData.maintenance"
         variant="outlined"
@@ -47,21 +48,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           >
         </v-card-text>
       </v-card>
-      <global-warning
-        v-if="loggedUser"
-        class="white--text"
-        style="margin: auto"
-      ></global-warning>
-      <v-layout column fill-height class="app-content">
-        <router-view class="page" v-slot="{ Component, route }">
-          <transition name="fade">
-            <div :key="route.name">
-              <component :is="Component" />
-            </div>
-          </transition>
-        </router-view>
-      </v-layout>
-    </v-layout>
+      <router-view class="page" v-slot="{ Component, route }">
+        <transition name="fade">
+          <div :key="route.name">
+            <component :is="Component" />
+          </div>
+        </transition>
+      </router-view>
+    </v-main>
     <upload-progress />
     <notifications />
   </v-app>
@@ -136,7 +130,7 @@ export default defineComponent({
 
     const pingDataResponse = await this.fetchPing()
     const getIsMaintenance = () => {
-      return pingDataResponse && pingDataResponse.maintenance
+      return pingDataResponse.data?.maintenance
     }
 
     const resetUser = () => {
@@ -165,17 +159,11 @@ export default defineComponent({
 html,
 body,
 .v-application {
-  height: 100%;
-  overflow: hidden !important;
   font-size: 14px;
 }
 
 .appFont {
   font-family: Inter, sans-serif;
-}
-
-.app-content {
-  position: relative;
 }
 
 a {

@@ -48,7 +48,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <br />
         <v-divider />
       </v-layout>
-      <v-card class="table" style="-webkit-box-shadow: none; box-shadow: none">
+      <v-card class="table" variant="flat">
         <v-card-text>
           <slot name="projects" :onlyPublic="onlyPublic"></slot>
         </v-card-text>
