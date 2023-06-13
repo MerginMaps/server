@@ -89,7 +89,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import Vue from 'vue'
-import { mapActions, mapState } from 'vuex'
+import { mapState } from 'vuex'
 
 import PageView from '@/modules/layout/components/PageView.vue'
 import ProjectForm from '@/modules/project/components/ProjectForm.vue'
@@ -110,13 +110,7 @@ export default Vue.extend({
     ...mapState('userModule', ['loggedUser']),
     ...mapState('projectModule', ['projectsCount'])
   },
-  async created() {
-    await this.fetchAccessRequests()
-  },
   methods: {
-    ...mapActions('projectModule', {
-      fetchAccessRequests: 'fetchAccessRequests'
-    }),
     newProjectDialog() {
       const dialog = { maxWidth: 500, persistent: true }
       this.$store.dispatch('dialogModule/show', {
