@@ -7,14 +7,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div>
     <v-data-table
+      :loading="loading"
       :headers="header"
-      :items="accessRequestsData"
+      :items="accessRequests"
+      :server-items-length="accessRequestsCount"
       ref="table"
       no-data-text="No access requests"
       color="primary"
       :footer-props="{ 'items-per-page-options': [10, 25, 50] }"
-      :hide-default-footer="accessRequestsData.length <= 10"
+      :hide-default-footer="accessRequestsCount <= 10"
       :options="options"
+      v-on:update:options="onUpdateOptions"
     >
       <template #item.expire="{ value }">
         <v-tooltip bottom>
@@ -84,6 +87,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import Vue from 'vue'
 import { mapActions, mapState } from 'vuex'
 
+import {
+  ProjectAccessRequest,
+  GetProjectAccessRequestsPayload
+} from '@/modules/project/types'
+
 export default Vue.extend({
   name: 'ProjectAccessRequestTableTemplate',
   props: {
@@ -94,21 +102,21 @@ export default Vue.extend({
   },
   data() {
     return {
+      loading: false,
       options: {
-        'sort-by': 'name'
+        // Default is order_params=expire ASC
+        sortBy: ['expire'],
+        sortDesc: [false],
+        itemsPerPage: 10,
+        page: 1
       },
-      projectAccessRequests: [],
+      projectAccessRequests: [] as ProjectAccessRequest[],
       permissions: {}
     }
   },
   computed: {
     ...mapState(['transfers']),
-    ...mapState('projectModule', ['accessRequests', 'namespaceAccessRequests']),
-    accessRequestsData() {
-      return this.namespace == null
-        ? this.accessRequests
-        : this.namespaceAccessRequests
-    },
+    ...mapState('projectModule', ['accessRequests', 'accessRequestsCount']),
     showAccept() {
       return this.namespace != null
     },
@@ -129,23 +137,26 @@ export default Vue.extend({
       ]
     }
   },
-  async created() {
-    await this.reloadProjectAccessRequests({
-      refetchGlobalAccessRequests: true,
-      namespace: this.namespace
-    })
-    this.accessRequestsData.forEach((request) => {
-      this.permissions[request.id] = 'read'
-    })
-  },
   methods: {
     ...mapActions('projectModule', [
       'cancelProjectAccessRequest',
       'acceptProjectAccessRequest',
-      'reloadProjectAccessRequests'
+      'getProjectAccessRequests'
     ]),
     ...mapActions('notificationModule', ['error']),
 
+    onUpdateOptions(options) {
+      this.options = options
+      this.fetchItems()
+    },
+    /** Update pagination in case of last accepting / canceling feature */
+    async updatePaginationOrFetch() {
+      if (this.accessRequests.length === 1 && this.options.page > 1) {
+        this.options.page -= 1
+        return
+      }
+      await this.fetchItems()
+    },
     async acceptRequest(request) {
       try {
         const el = this.$refs['hidden-btn']
@@ -158,19 +169,11 @@ export default Vue.extend({
         await this.acceptProjectAccessRequest({
           data,
           itemId: request.id,
-          refetchGlobalAccessRequests: true,
           namespace: this.namespace
         })
+        await this.updatePaginationOrFetch()
       } catch (err) {
         this.$emit('accept-access-request-error', err)
-      }
-    },
-    changeSort(column) {
-      if (this.options.sortBy === column) {
-        this.options.descending = !this.options.descending
-      } else {
-        this.options.sortBy = column
-        this.options.descending = false
       }
     },
     expired(expire) {
@@ -179,9 +182,32 @@ export default Vue.extend({
     async cancelRequest(request) {
       await this.cancelProjectAccessRequest({
         itemId: request.id,
-        refetchGlobalAccessRequests: true,
         namespace: this.namespace
       })
+      await this.updatePaginationOrFetch()
+    },
+    async fetchItems() {
+      this.loading = true
+      try {
+        const payload: GetProjectAccessRequestsPayload = {
+          namespace: this.namespace,
+          params: {
+            page: this.options.page,
+            per_page: this.options.itemsPerPage,
+            order_params:
+              this.options.sortBy[0] &&
+              `${this.options.sortBy[0]} ${
+                this.options.sortDesc[0] ? 'DESC' : 'ASC'
+              }`
+          }
+        }
+        await this.getProjectAccessRequests(payload)
+        this.accessRequests.forEach((request) => {
+          this.permissions[request.id] = 'read'
+        })
+      } finally {
+        this.loading = false
+      }
     }
   }
 })

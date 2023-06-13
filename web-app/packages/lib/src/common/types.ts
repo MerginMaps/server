@@ -40,6 +40,10 @@ export interface PaginatedGridOptions {
 }
 
 /* eslint-disable camelcase */
+/**
+ * Request parameters for paginated endpoints
+ * TODO: remove legacy order_by and descending in components
+ */
 export interface PaginatedRequestParams {
   order_by?: string
   order_params?: string
@@ -48,10 +52,20 @@ export interface PaginatedRequestParams {
   page: number
 }
 
+/** Stable current request params for paginating endpoints */
+export type PaginatedRequestParamsApi = Omit<
+  PaginatedRequestParams,
+  'order_by' | 'descending'
+>
+
 export interface PaginatedResponseDefaults {
   count: number
 }
 /* eslint-enable camelcase */
+
+export interface PaginatedResponse<T> extends PaginatedResponseDefaults {
+  items: readonly T[]
+}
 
 export interface ApiRequestSuccessInfo<T = any> {
   success: boolean

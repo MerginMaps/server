@@ -17,18 +17,20 @@ import { ProjectApi } from '@/modules/project/projectApi'
 import {
   AcceptProjectAccessRequestPayload,
   CancelProjectAccessRequestPayload,
-  NamespaceAccessRequestsPayload,
+  GetNamespaceAccessRequestsPayload,
   ProjectListItem,
   PaginatedProjectsPayload,
-  ProjectAccessRequestResponse,
   ProjectsPayload,
   ProjectDetail,
   ProjectParams,
   EnhancedProjectDetail,
-  ReloadProjectAccessRequestPayload,
   FetchProjectVersionsPayload,
   ProjectVersion,
-  ProjectVersionsPayload
+  ProjectVersionsPayload,
+  ProjectAccessRequest,
+  GetUserAccessRequestsPayload,
+  AccessRequestsPayload,
+  GetProjectAccessRequestsPayload
 } from '@/modules/project/types'
 import { RootState } from '@/modules/types'
 
@@ -41,8 +43,8 @@ interface UploadFilesPayload {
 }
 
 export interface ProjectState {
-  accessRequests: ProjectAccessRequestResponse[] | undefined
-  namespaceAccessRequests: ProjectAccessRequestResponse[] | undefined
+  accessRequests: ProjectAccessRequest[]
+  accessRequestsCount: number
   project: EnhancedProjectDetail
   projects: ProjectListItem[]
   projectsCount: number
@@ -56,8 +58,8 @@ export interface ProjectState {
 const ProjectStore: Module<ProjectState, RootState> = {
   namespaced: true,
   state: {
-    accessRequests: undefined,
-    namespaceAccessRequests: undefined,
+    accessRequests: [],
+    accessRequestsCount: 0,
     project: null,
     projectsCount: 0,
     projects: undefined,
@@ -69,11 +71,9 @@ const ProjectStore: Module<ProjectState, RootState> = {
   },
 
   mutations: {
-    setAccessRequests(state, payload) {
+    setAccessRequests(state, payload: AccessRequestsPayload) {
       state.accessRequests = payload.accessRequests
-    },
-    setNamespaceAccessRequests(state, payload) {
-      state.namespaceAccessRequests = payload.accessRequests
+      state.accessRequestsCount = payload.count
     },
     setProject(state, payload: { project: ProjectDetail }) {
       let enhancedProject: EnhancedProjectDetail = null
@@ -240,7 +240,7 @@ const ProjectStore: Module<ProjectState, RootState> = {
       commit('setProject', { project: null })
     },
 
-    async createProject({ commit, dispatch }, payload) {
+    async createProject({ commit }, payload) {
       waitCursor(true)
       try {
         await ProjectApi.createProject(payload.namespace, payload.data, true)
@@ -277,17 +277,31 @@ const ProjectStore: Module<ProjectState, RootState> = {
         waitCursor(false)
       }
     },
-    async initAccessRequests({ dispatch, state }) {
-      if (!(state.accessRequests?.length > 0)) {
-        await dispatch('fetchAccessRequests')
-      }
+    async initUserAccessRequests(
+      { dispatch },
+      payload?: GetUserAccessRequestsPayload
+    ) {
+      await dispatch('fetchUserAccessRequests', {
+        params: {
+          page: 1,
+          per_page: 10,
+          order_params: 'expire DESC',
+          ...payload.params
+        }
+      })
     },
 
-    async fetchAccessRequests({ commit, dispatch }) {
+    async fetchUserAccessRequests(
+      { commit, dispatch },
+      payload: GetUserAccessRequestsPayload
+    ) {
       try {
-        const accessRequestResponse = await ProjectApi.fetchAccessRequests()
+        const accessRequestResponse = await ProjectApi.fetchAccessRequests(
+          payload.params
+        )
         commit('setAccessRequests', {
-          accessRequests: accessRequestResponse.data
+          accessRequests: accessRequestResponse.data?.items,
+          count: accessRequestResponse.data?.count
         })
       } catch {
         await dispatch(
@@ -301,23 +315,33 @@ const ProjectStore: Module<ProjectState, RootState> = {
     },
 
     async initNamespaceAccessRequests(
-      { dispatch, state },
-      payload: NamespaceAccessRequestsPayload
+      { dispatch },
+      payload: GetNamespaceAccessRequestsPayload
     ) {
-      if (!(state.namespaceAccessRequests?.length > 0)) {
-        await dispatch('fetchNamespaceAccessRequests', payload)
-      }
+      await dispatch('fetchNamespaceAccessRequests', {
+        ...payload,
+        params: {
+          page: 1,
+          per_page: 10,
+          order_params: 'expire DESC',
+          ...payload.params
+        }
+      })
     },
 
     async fetchNamespaceAccessRequests(
       { commit, dispatch },
-      payload: NamespaceAccessRequestsPayload
+      payload: GetNamespaceAccessRequestsPayload
     ) {
       try {
         const accessRequestResponse =
-          await ProjectApi.fetchNamespaceAccessRequests(payload.namespace)
-        commit('setNamespaceAccessRequests', {
-          accessRequests: accessRequestResponse.data
+          await ProjectApi.fetchNamespaceAccessRequests(
+            payload.namespace,
+            payload.params
+          )
+        commit('setAccessRequests', {
+          accessRequests: accessRequestResponse.data?.items,
+          count: accessRequestResponse.data?.count
         })
       } catch {
         await dispatch(
@@ -330,30 +354,14 @@ const ProjectStore: Module<ProjectState, RootState> = {
       }
     },
 
-    async reloadProjectAccessRequests(
+    async getProjectAccessRequests(
       { dispatch },
-      payload: ReloadProjectAccessRequestPayload
+      payload: GetProjectAccessRequestsPayload
     ) {
-      if (payload.refetchGlobalAccessRequests) {
-        if (payload.namespace) {
-          await dispatch('fetchNamespaceAccessRequests', {
-            namespace: payload.namespace
-          })
-        } else {
-          await dispatch('fetchAccessRequests')
-        }
+      if (payload.namespace) {
+        await dispatch('fetchNamespaceAccessRequests', payload)
       } else {
-        if (payload.namespace && payload.projectName) {
-          // refetch project to update project access requests
-          await dispatch('fetchProject', {
-            projectName: payload.projectName,
-            namespace: payload.namespace
-          })
-        } else {
-          console.warn(
-            'Cannot reload project access requests. Missing namespace or projectName.'
-          )
-        }
+        await dispatch('fetchUserAccessRequests', payload)
       }
     },
 
@@ -364,7 +372,6 @@ const ProjectStore: Module<ProjectState, RootState> = {
       waitCursor(true)
       try {
         await ProjectApi.cancelProjectAccessRequest(payload.itemId, true)
-        await dispatch('reloadProjectAccessRequests', payload)
       } catch (err) {
         const msg = err.response
           ? err.response.data?.detail
@@ -382,7 +389,7 @@ const ProjectStore: Module<ProjectState, RootState> = {
     },
 
     async acceptProjectAccessRequest(
-      { dispatch },
+      state,
       payload: AcceptProjectAccessRequestPayload
     ) {
       waitCursor(true)
@@ -392,7 +399,6 @@ const ProjectStore: Module<ProjectState, RootState> = {
           payload.data,
           true
         )
-        await dispatch('reloadProjectAccessRequests', payload)
       } finally {
         waitCursor(false)
       }
@@ -482,9 +488,13 @@ const ProjectStore: Module<ProjectState, RootState> = {
             `/login?redirect=/projects/${namespace}/${projectName}`
           )
         } else if (e.response.status === 403) {
-          ProjectApi.fetchAccessRequests()
+          ProjectApi.fetchAccessRequests({
+            // TODO: Add searching based on project_name to this endpoint
+            page: 1,
+            per_page: 100
+          })
             .then((resp) => {
-              for (const ar of resp.data) {
+              for (const ar of resp.data?.items) {
                 if (
                   ar.namespace === namespace &&
                   ar.project_name === projectName

@@ -24,6 +24,7 @@ import {
   SaveProjectSettings,
   UpdateProjectAccessParams
 } from '@/modules/project/types'
+import { PaginatedRequestParams } from '@/common'
 
 export const ProjectApi = {
   async fetchProject(
@@ -119,16 +120,26 @@ export const ProjectApi = {
     )
   },
 
-  async fetchAccessRequests(): Promise<
-    AxiosResponse<ProjectAccessRequestResponse[]>
-  > {
-    return ProjectModule.httpService('/app/project/access-requests')
+  /**
+   * List of project access requests initiated by current user in session
+   */
+  async fetchAccessRequests(
+    params: PaginatedRequestParams
+  ): Promise<AxiosResponse<ProjectAccessRequestResponse>> {
+    return ProjectModule.httpService('/app/project/access-requests', { params })
   },
 
+  /**
+   * Paginated list of incoming project access requests to workspace
+   */
   async fetchNamespaceAccessRequests(
-    namespace: string
-  ): Promise<AxiosResponse<ProjectAccessRequestResponse[]>> {
-    return ProjectModule.httpService(`/app/project/access-request/${namespace}`)
+    namespace: string,
+    params: PaginatedRequestParams
+  ): Promise<AxiosResponse<ProjectAccessRequestResponse>> {
+    return ProjectModule.httpService(
+      `/app/project/access-request/${namespace}`,
+      { params }
+    )
   },
 
   async acceptProjectAccessRequest(

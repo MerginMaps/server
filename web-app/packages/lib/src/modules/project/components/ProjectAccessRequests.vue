@@ -196,7 +196,8 @@ export default Vue.extend({
   methods: {
     ...mapActions('projectModule', [
       'cancelProjectAccessRequest',
-      'acceptProjectAccessRequest'
+      'acceptProjectAccessRequest',
+      'fetchProject'
     ]),
     ...mapActions('notificationModule', ['error']),
 
@@ -224,7 +225,10 @@ export default Vue.extend({
         await this.acceptProjectAccessRequest({
           data,
           itemId: request.id,
-          refetchGlobalAccessRequests: false,
+          namespace: this.project.namespace,
+          projectName: this.project.name
+        })
+        await this.fetchProject({
           namespace: this.project.namespace,
           projectName: this.project.name
         })
@@ -241,7 +245,10 @@ export default Vue.extend({
     async cancelRequest(request) {
       await this.cancelProjectAccessRequest({
         itemId: request.id,
-        refetchGlobalAccessRequests: false,
+        namespace: this.project.namespace,
+        projectName: this.project.name
+      })
+      await this.fetchProject({
         namespace: this.project.namespace,
         projectName: this.project.name
       })
