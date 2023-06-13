@@ -17,7 +17,7 @@ paths:
     get:
       tags:
         - project
-      summary: List of incoming project access requests to namespace
+      summary: Paginated list of incoming project access requests to workspace
       operationId: mergin.sync.private_api_controller.list_namespace_project_access_requests
       parameters:
         - name: namespace
@@ -61,10 +61,10 @@ paths:
                     type: integer
                     description: Total number of all project requests
                     example: 20
-                  project-requests:
+                  items:
                     type: array
                     items:
-                      $ref: "#/components/schemas/ProjectRequestAccessListItem"
+                      $ref: "#/components/schemas/ProjectAccessRequestItem"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "404":
@@ -182,7 +182,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProjectRequestAccessList"
+                $ref: "#/components/schemas/ProjectAccessRequestList"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
   /admin/projects:
@@ -452,32 +452,11 @@ components:
         detail: Maximum number of people in this workspace is reached. Please upgrade your subscription to add more people (UsersLimitHit)
         rejected_emails: [ rejected@example.com ]
         users_quota: 6
-    ProjectRequestAccessList:
+    ProjectAccessRequestList:
       type: array
       items:
-        type: object
-        properties:
-          id:
-            type: integer
-            example: 1
-          project_id:
-            type: string
-            format: uuid
-            example: 'd4ecda97-0595-40af-892c-e7522de70bd2'
-          project_name:
-            type: string
-            example: survey
-          namespace:
-            type: string
-            example: john.doe
-          expire:
-            type: string
-            format: date-time
-            example: 2018-11-30T08:47:58Z
-          requested_by:
-            type: string
-            example: jane.doe
-    ProjectRequestAccessListItem:
+        $ref: "#/components/schemas/ProjectAccessRequestItem"
+    ProjectAccessRequestItem:
       type: object
       properties:
         id:

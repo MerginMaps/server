@@ -98,7 +98,8 @@ def test_project_access_request(client):
     Configuration.GLOBAL_ADMIN = False
     assert (
         client.get(
-            f"/app/project/access-request/{test_workspace.name}?page=1&per_page=10", headers=json_headers
+            f"/app/project/access-request/{test_workspace.name}?page=1&per_page=10",
+            headers=json_headers,
         ).status_code
         == 403
     )
@@ -115,10 +116,11 @@ def test_project_access_request(client):
     # login as workspace admin to list incoming request and accept it
     login(client, "mergin", "ilovemergin")
     resp = client.get(
-        f"/app/project/access-request/{test_workspace.name}?page=1&per_page=10", headers=json_headers
+        f"/app/project/access-request/{test_workspace.name}?page=1&per_page=10",
+        headers=json_headers,
     )
     assert resp.status_code == 200
-    access_requests = resp.json.get("access_requests")
+    access_requests = resp.json.get("items")
     assert access_requests[0]["requested_by"] == "test_user"
     assert access_requests[0]["namespace"] == test_workspace.name
 
@@ -180,7 +182,8 @@ def test_project_access_request(client):
 
     login(client, "mergin", "ilovemergin")
     resp = client.get(
-        f"/app/project/access-request/{test_workspace.name}?page=1&per_page=10", headers=json_headers
+        f"/app/project/access-request/{test_workspace.name}?page=1&per_page=10",
+        headers=json_headers,
     )
     assert resp.status_code == 200
     assert resp.json.get("count") == 0
@@ -208,20 +211,25 @@ def test_list_namespace_project_access_requests(client):
         )
         assert resp.status_code == 200
     login(client, "mergin", "ilovemergin")
-    resp = client.get(f"/app/project/access-request/{test_workspace.name}?page=1&per_page=5")
+    resp = client.get(
+        f"/app/project/access-request/{test_workspace.name}?page=1&per_page=5"
+    )
     assert resp.status_code == 200
     assert resp.json.get("count") == 10
-    project_requests = resp.json.get("access_requests")
+    project_requests = resp.json.get("items")
     assert len(project_requests) == 5
-    resp = client.get(f"/app/project/access-request/{test_workspace.name}?page=2&per_page=5")
-    project_requests = resp.json.get("access_requests")
+    resp = client.get(
+        f"/app/project/access-request/{test_workspace.name}?page=2&per_page=5"
+    )
+    project_requests = resp.json.get("items")
     assert resp.status_code == 200
     assert len(project_requests) == 5
-    #test order params
+    # test order params
     resp = client.get(
         f"/app/project/access-request/{test_workspace.name}?page=1&per_page=15&order_params=expire DESC"
     )
-    assert resp.json["access_requests"][0]["id"] == 10
+    assert resp.json["items"][0]["id"] == 10
+
 
 def test_template_projects(client):
     u = add_user("TEMPLATES", "ilovemergin")

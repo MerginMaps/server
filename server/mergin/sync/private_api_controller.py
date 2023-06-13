@@ -20,7 +20,12 @@ from .permissions import (
     ProjectPermissions,
     check_workspace_permissions,
 )
-from .utils import get_project_path, split_order_param, get_order_param, parse_order_params
+from .utils import (
+    get_project_path,
+    split_order_param,
+    get_order_param,
+    parse_order_params,
+)
 
 project_access_granted = signal("project_access_granted")
 
@@ -127,14 +132,15 @@ def get_project_access_requests():
 
 
 @auth_required
-def list_namespace_project_access_requests(namespace, page, per_page, order_params=None):
+def list_namespace_project_access_requests(
+    namespace, page, per_page, order_params=None
+):
     """Paginated list of incoming project access requests to workspace"""
     if not check_workspace_permissions(namespace, current_user, "admin"):
         abort(403, "You don't have permissions to list project access requests")
     ws = current_app.ws_handler.get_by_name(namespace)
-    access_requests = (
-        AccessRequest.query.join(AccessRequest.project)
-        .filter(Project.workspace_id == ws.id, Project.removed_at.is_(None))
+    access_requests = AccessRequest.query.join(AccessRequest.project).filter(
+        Project.workspace_id == ws.id, Project.removed_at.is_(None)
     )
     if order_params:
         order_by_params = parse_order_params(AccessRequest, order_params)
@@ -143,7 +149,7 @@ def list_namespace_project_access_requests(namespace, page, per_page, order_para
     result = access_requests.paginate(page, per_page).items
     total = access_requests.paginate(page, per_page).total
     data = ProjectAccessRequestSchema(many=True).dump(result)
-    data = {"access_requests": data, "count": total}
+    data = {"items": data, "count": total}
     return data, 200
 
 
