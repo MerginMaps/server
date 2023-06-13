@@ -65,6 +65,8 @@ from .utils import (
     is_valid_uuid,
     gpkg_wkb_to_wkt,
     format_time_delta,
+    is_versioned_file,
+    is_valid_gpkg,
 )
 from .utils import (
     is_name_allowed,
@@ -768,6 +770,10 @@ def project_push(namespace, project_name):
     blacklisted_files = []
     for change in changes.values():
         for f in change:
+            # check if .gpkg file is valid
+            if is_versioned_file(f["path"]):
+                if not is_valid_gpkg(f):
+                    abort(400, "File {} is not valid".format(f["path"]))
             if is_file_name_blacklisted(f["path"], current_app.config["BLACKLIST"]):
                 blacklisted_files.append(f)
             # all file need to be unique after sanitized
@@ -992,6 +998,10 @@ def push_finish(transaction_id):
                 % (f["path"], project_path),
                 exc_info=True,
             )
+            # check if .gpkg file is valid
+            if is_versioned_file(dest_file):
+                if not is_valid_gpkg(f):
+                    corrupted_files.append(f["path"])
             corrupted_files.append(f["path"])
 
     if corrupted_files:
