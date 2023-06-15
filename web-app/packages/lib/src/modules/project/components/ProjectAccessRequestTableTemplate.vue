@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div>
     <v-data-table
-      :headers="header"
+      :headers="headers"
       :items="accessRequestsData"
       ref="table"
       no-data-text="No access requests"
@@ -112,13 +112,13 @@ export default Vue.extend({
     showAccept() {
       return this.namespace != null
     },
-    header() {
+    headers() {
       return [
         ...(this.namespace == null
           ? []
           : [{ text: 'Requester', value: 'requested_by', sortable: true }]),
         { text: 'Project name', value: 'project_name', sortable: true },
-        { text: 'Expire in', value: 'expire', sortable: true },
+        { text: 'Expires in', value: 'expire', sortable: true },
         {
           text: 'Permissions',
           value: 'permission',
