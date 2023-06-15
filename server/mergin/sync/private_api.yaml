@@ -26,45 +26,20 @@ paths:
           required: true
           schema:
             type: string
-        - name: page
-          in: query
-          description: page number
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-            example: 1
-        - name: per_page
-          in: query
-          description: Number of results per page
-          required: true
-          schema:
-            type: integer
-            maximum: 50
-            example: 20
-        - name: order_params
-          in: query
-          description: Sorting fields e.g. expire DESC
-          required: false
-          schema:
-            type: string
-            example: expire ASC
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/OrderParams"
       responses:
         "200":
           description: List of project access requests
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  count:
-                    type: integer
-                    description: Total number of all project requests
-                    example: 20
-                  items:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/ProjectAccessRequestItem"
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedList"
+                  - properties:
+                      items:
+                        $ref: "#/components/schemas/ProjectAccessRequestList"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "404":
@@ -174,15 +149,24 @@ paths:
     get:
       tags:
         - project
-      summary: List of project access requests initiated by current user in session (non-paginated)
+      summary: Paginated list of project access requests initiated by current user in session
       operationId: mergin.sync.private_api_controller.get_project_access_requests
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/OrderParams"
+        - $ref: "#/components/parameters/ProjectName"
       responses:
         "200":
           description: List of project access requests
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProjectAccessRequestList"
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedList"
+                  - properties:
+                      items:
+                        $ref: "#/components/schemas/ProjectAccessRequestList"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
   /admin/projects:
@@ -194,29 +178,9 @@ paths:
       description: Paginate over all projects with optional filter by name/workspace and sorting
       operationId: mergin.sync.private_api_controller.list_projects
       parameters:
-        - name: page
-          in: query
-          description: page number
-          required: true
-          schema:
-            type: integer
-            minimum: 1
-            example: 1
-        - name: per_page
-          in: query
-          description: Number of results per page
-          required: true
-          schema:
-            type: integer
-            maximum: 100
-            example: 50
-        - name: order_params
-          in: query
-          description: Sorting fields e.g. name ASC,disk_usage DESC
-          required: false
-          schema:
-            type: string
-            example: name ASC,disk_usage DESC
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/OrderParams"
         - name: name
           in: query
           description: Filter projects by name with ilike pattern
@@ -424,6 +388,41 @@ components:
       description: Payload format is in an unsupported format.
     ConflictResp:
       description: Request could not be processed becuase of conflict in resources
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: page number
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+        example: 1
+    PerPage:
+      name: per_page
+      in: query
+      description: Number of results per page
+      required: true
+      schema:
+        type: integer
+        maximum: 100
+        example: 50
+    OrderParams:
+      name: order_params
+      in: query
+      description: Sorting fields
+      required: false
+      schema:
+        type: string
+        example: name ASC, expire DESC, disk_usage DESC
+    ProjectName:
+      name: project_name
+      in: query
+      description: Filter by project name
+      required: false
+      schema:
+        type: string
+        example: project_1
   schemas:
     CustomError:
       type: object
@@ -514,3 +513,15 @@ components:
           nullable: true
           type: string
           example: john.doe
+    PaginatedList:
+      type: object
+      properties:
+        count:
+          type: integer
+          description: Total number of all items in list
+          example: 20
+        items:
+          type: array
+          items:
+            type: object
+            example: 1

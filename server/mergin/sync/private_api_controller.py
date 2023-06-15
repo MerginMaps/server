@@ -7,6 +7,7 @@ from connexion import NoContent
 from flask import render_template, request, current_app, jsonify, abort
 from flask_login import current_user
 from sqlalchemy.orm import defer
+from sqlalchemy.sql import literal, select, label
 from sqlalchemy import text
 
 from .. import db
@@ -121,14 +122,26 @@ def accept_project_access_request(request_id):
 
 
 @auth_required
-def get_project_access_requests():
-    """List of project access requests initiated by current user in session"""
+def get_project_access_requests(page, per_page, order_params=None, project_name=None):
+    """Paginated list of project access requests initiated by current user in session"""
     access_requests = (
         AccessRequest.query.join(AccessRequest.project)
         .filter(AccessRequest.user_id == current_user.id, Project.removed_at.is_(None))
-        .all()
     )
-    return jsonify(ProjectAccessRequestSchema(many=True).dump(access_requests)), 200
+
+    if project_name:
+        access_requests = access_requests.filter(Project.name == project_name)
+
+    if order_params:
+        order_by_params = parse_order_params(AccessRequest, order_params)
+        access_requests = access_requests.order_by(*order_by_params)
+
+
+    result = access_requests.paginate(page, per_page).items
+    total = access_requests.paginate(page, per_page).total
+    data = ProjectAccessRequestSchema(many=True).dump(result)
+    data = {"items": data, "count": total}
+    return data, 200
 
 
 @auth_required
