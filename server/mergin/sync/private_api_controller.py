@@ -124,9 +124,8 @@ def accept_project_access_request(request_id):
 @auth_required
 def get_project_access_requests(page, per_page, order_params=None, project_name=None):
     """Paginated list of project access requests initiated by current user in session"""
-    access_requests = (
-        AccessRequest.query.join(AccessRequest.project)
-        .filter(AccessRequest.user_id == current_user.id, Project.removed_at.is_(None))
+    access_requests = AccessRequest.query.join(AccessRequest.project).filter(
+        AccessRequest.user_id == current_user.id, Project.removed_at.is_(None)
     )
 
     if project_name:
@@ -135,7 +134,6 @@ def get_project_access_requests(page, per_page, order_params=None, project_name=
     if order_params:
         order_by_params = parse_order_params(AccessRequest, order_params)
         access_requests = access_requests.order_by(*order_by_params)
-
 
     result = access_requests.paginate(page, per_page).items
     total = access_requests.paginate(page, per_page).total
@@ -146,7 +144,7 @@ def get_project_access_requests(page, per_page, order_params=None, project_name=
 
 @auth_required
 def list_namespace_project_access_requests(
-    namespace, page, per_page, order_params=None
+    namespace, page, per_page, order_params=None, project_name=None
 ):
     """Paginated list of incoming project access requests to workspace"""
     if not check_workspace_permissions(namespace, current_user, "admin"):
@@ -155,6 +153,10 @@ def list_namespace_project_access_requests(
     access_requests = AccessRequest.query.join(AccessRequest.project).filter(
         Project.workspace_id == ws.id, Project.removed_at.is_(None)
     )
+
+    if project_name:
+        access_requests = access_requests.filter(Project.name == project_name)
+
     if order_params:
         order_by_params = parse_order_params(AccessRequest, order_params)
         access_requests = access_requests.order_by(*order_by_params)

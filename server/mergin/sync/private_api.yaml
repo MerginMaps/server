@@ -29,6 +29,7 @@ paths:
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/PerPage"
         - $ref: "#/components/parameters/OrderParams"
+        - $ref: "#/components/parameters/ProjectName"
       responses:
         "200":
           description: List of project access requests

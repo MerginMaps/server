@@ -206,6 +206,7 @@ def test_project_access_request(client):
     )
     assert resp.status_code == 404
 
+
 def test_get_project_access_requests(client):
     """Test paginated list of project access requests initiated by current user in session"""
     user = User.query.filter(User.username == "mergin").first()
@@ -237,15 +238,18 @@ def test_get_project_access_requests(client):
     assert resp.json["items"][0]["id"] == 12
 
     # search params
-    resp = client.get("/app/project/access-requests?page=1&per_page=10&project_name=test_project_5")
+    resp = client.get(
+        "/app/project/access-requests?page=1&per_page=10&project_name=test_project_5"
+    )
     assert resp.json.get("count") == 1
     assert resp.json["items"][0]["project_name"] == "test_project_5"
 
+
 def test_list_namespace_project_access_requests(client):
     """Test project access requests pagination incoming to workspace"""
-    user = User.query.filter(User.username == "mergin").first()
+    owner = User.query.filter(User.username == "mergin").first()
     test_workspace = create_workspace()
-    p = create_project("test_project", test_workspace, user)
+    p = create_project("test_project", test_workspace, owner)
     for i in range(10):
         user = add_user("test_user" + str(i), "ilovemergin")
         login(client, user.username, "ilovemergin")
@@ -274,6 +278,28 @@ def test_list_namespace_project_access_requests(client):
         f"/app/project/access-request/{test_workspace.name}?page=1&per_page=15&order_params=expire DESC"
     )
     assert resp.json["items"][0]["id"] == 10
+
+    # test search param
+    # create second project in the workspace and make access request to that project from a test user
+    p2 = create_project("test_project_2", test_workspace, owner)
+    login(client, "test_user1", "ilovemergin")
+    resp = client.post(
+        f"/app/project/access-request/{test_workspace.name}/{p2.name}",
+        headers=json_headers,
+    )
+    assert resp.status_code == 200
+    # there is new request coming to the workspace
+    login(client, "mergin", "ilovemergin")
+    resp = client.get(
+        f"/app/project/access-request/{test_workspace.name}?page=1&per_page=15"
+    )
+    assert resp.json.get("count") == 11
+    # to the second project there is only one request
+    resp = client.get(
+        f"/app/project/access-request/{test_workspace.name}?page=1&per_page=15&project_name={p2.name}"
+    )
+    assert resp.status_code == 200
+    assert resp.json.get("count") == 1
 
 
 def test_template_projects(client):
