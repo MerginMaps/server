@@ -179,17 +179,21 @@ export interface ProjectAccessRequest {
 export type ProjectAccessRequestResponse =
   PaginatedResponse<ProjectAccessRequest>
 
+export interface ProjectAccessRequestParams extends PaginatedRequestParamsApi {
+  project_name?: string
+}
+
 export interface AccessRequestsPayload extends PaginatedResponseDefaults {
   accessRequests: ProjectAccessRequest[]
 }
 
 export interface GetUserAccessRequestsPayload {
-  params: PaginatedRequestParamsApi
+  params: ProjectAccessRequestParams
 }
 
 export interface GetNamespaceAccessRequestsPayload {
   namespace: string
-  params: PaginatedRequestParamsApi
+  params: ProjectAccessRequestParams
 }
 
 export interface AcceptProjectAccessRequestData {

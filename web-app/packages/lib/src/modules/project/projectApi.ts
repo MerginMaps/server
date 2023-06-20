@@ -17,6 +17,7 @@ import {
   PaginatedProjectsResponse,
   PaginatedProjectVersionsResponse,
   ProjectAccessRequestResponse,
+  ProjectAccessRequestParams,
   ProjectDetail,
   ProjectTemplate,
   PushProjectChangesParams,
@@ -24,7 +25,6 @@ import {
   SaveProjectSettings,
   UpdateProjectAccessParams
 } from '@/modules/project/types'
-import { PaginatedRequestParams } from '@/common'
 
 export const ProjectApi = {
   async fetchProject(
@@ -124,7 +124,7 @@ export const ProjectApi = {
    * List of project access requests initiated by current user in session
    */
   async fetchAccessRequests(
-    params: PaginatedRequestParams
+    params: ProjectAccessRequestParams
   ): Promise<AxiosResponse<ProjectAccessRequestResponse>> {
     return ProjectModule.httpService('/app/project/access-requests', { params })
   },
@@ -134,7 +134,7 @@ export const ProjectApi = {
    */
   async fetchNamespaceAccessRequests(
     namespace: string,
-    params: PaginatedRequestParams
+    params: ProjectAccessRequestParams
   ): Promise<AxiosResponse<ProjectAccessRequestResponse>> {
     return ProjectModule.httpService(
       `/app/project/access-request/${namespace}`,

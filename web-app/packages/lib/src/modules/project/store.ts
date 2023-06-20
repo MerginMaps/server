@@ -286,7 +286,7 @@ const ProjectStore: Module<ProjectState, RootState> = {
           page: 1,
           per_page: 10,
           order_params: 'expire DESC',
-          ...payload.params
+          ...payload?.params
         }
       })
     },
@@ -491,16 +491,12 @@ const ProjectStore: Module<ProjectState, RootState> = {
           ProjectApi.fetchAccessRequests({
             // TODO: Add searching based on project_name to this endpoint
             page: 1,
-            per_page: 100
+            per_page: 1,
+            project_name: payload.projectName
           })
             .then((resp) => {
-              for (const ar of resp.data?.items) {
-                if (
-                  ar.namespace === namespace &&
-                  ar.project_name === projectName
-                ) {
-                  callbackStatus(409)
-                }
+              if (resp.data.count) {
+                callbackStatus(409)
               }
             })
             .catch(() => {
