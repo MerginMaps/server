@@ -71,10 +71,10 @@ def test_project_access_request(client):
     assert resp.status_code == 409
 
     # user can check outgoing access requests
-    resp = client.get("/app/project/access-requests")
+    resp = client.get("/app/project/access-requests?page=1&per_page=10")
     assert resp.status_code == 200
     resp_data = json.loads(resp.data)
-    assert resp_data[0]["requested_by"] == "test_user"
+    assert resp_data["items"][0]["requested_by"] == "test_user"
 
     # remove access request
     resp = client.delete(
@@ -113,17 +113,19 @@ def test_project_access_request(client):
     )
     assert resp.status_code == 403
 
-    # login as workspace admin to list incoming request and accept it
+    # login as workspace admin to list incoming requests
     login(client, "mergin", "ilovemergin")
     resp = client.get(
         f"/app/project/access-request/{test_workspace.name}?page=1&per_page=10",
         headers=json_headers,
     )
     assert resp.status_code == 200
+    assert resp.json.get("count") == 1
     access_requests = resp.json.get("items")
     assert access_requests[0]["requested_by"] == "test_user"
     assert access_requests[0]["namespace"] == test_workspace.name
 
+    # accept request
     resp = client.post(
         f"/app/project/access-request/accept/{access_request.id}",
         headers=json_headers,
@@ -137,6 +139,13 @@ def test_project_access_request(client):
     assert user2.id in project.access.readers
     assert user2.id in project.access.writers
     assert user2.id not in project.access.owners
+
+    # no request listed
+    resp = client.get(
+        f"/app/project/access-request/{test_workspace.name}?page=1&per_page=10",
+        headers=json_headers,
+    )
+    assert resp.json.get("count") == 0
 
     # try to create access request again - user was already granted access
     login(client, "test_user", "ilovemergin")
@@ -165,16 +174,17 @@ def test_project_access_request(client):
         headers=json_headers,
     )
     assert resp.status_code == 200
+    resp = client.get("/app/project/access-requests?page=1&per_page=10")
+    assert resp.json.get("count") == 1
     rp.removed_at = datetime.datetime.utcnow()
     db.session.commit()
     access_request = AccessRequest.query.filter(
         AccessRequest.project_id == rp.id
     ).first()
 
-    resp = client.get("/app/project/access-requests")
-    assert resp.status_code == 200
-    assert len(resp.json) == 0
-
+    # requests to removed project are not listed (outgoing nor incoming) and cannot be deleted
+    resp = client.get("/app/project/access-requests?page=1&per_page=10")
+    assert resp.json.get("count") == 0
     resp = client.delete(
         f"/app/project/access-request/{access_request.id}", headers=json_headers
     )
@@ -197,11 +207,49 @@ def test_project_access_request(client):
     assert resp.status_code == 404
 
 
-def test_list_namespace_project_access_requests(client):
-    """Test project access requests pagination"""
+def test_get_project_access_requests(client):
+    """Test paginated list of project access requests initiated by current user in session"""
     user = User.query.filter(User.username == "mergin").first()
     test_workspace = create_workspace()
-    p = create_project("test_project", test_workspace, user)
+    add_user("test_user", "ilovemergin")
+    login(client, "test_user", "ilovemergin")
+
+    # create 10 projects ("user" as an owner) and requests to them from "test_user"
+    for i in range(12):
+        project = create_project("test_project_" + str(i), test_workspace, user)
+        resp = client.post(
+            f"/app/project/access-request/{test_workspace.name}/{project.name}",
+            headers=json_headers,
+        )
+        assert resp.status_code == 200
+
+    # paginated list
+    resp = client.get("/app/project/access-requests?page=2&per_page=5")
+    assert resp.status_code == 200
+    assert resp.json.get("count") == 12
+    assert len(resp.json.get("items")) == 5
+
+    # order params
+    resp = client.get("/app/project/access-requests?page=1&per_page=10")
+    assert resp.json["items"][0]["id"] == 1
+    resp = client.get(
+        "/app/project/access-requests?page=1&per_page=10&order_params=expire DESC"
+    )
+    assert resp.json["items"][0]["id"] == 12
+
+    # search params
+    resp = client.get(
+        "/app/project/access-requests?page=1&per_page=10&project_name=test_project_5"
+    )
+    assert resp.json.get("count") == 1
+    assert resp.json["items"][0]["project_name"] == "test_project_5"
+
+
+def test_list_namespace_project_access_requests(client):
+    """Test project access requests pagination incoming to workspace"""
+    owner = User.query.filter(User.username == "mergin").first()
+    test_workspace = create_workspace()
+    p = create_project("test_project", test_workspace, owner)
     for i in range(10):
         user = add_user("test_user" + str(i), "ilovemergin")
         login(client, user.username, "ilovemergin")
@@ -224,11 +272,34 @@ def test_list_namespace_project_access_requests(client):
     project_requests = resp.json.get("items")
     assert resp.status_code == 200
     assert len(project_requests) == 5
+
     # test order params
     resp = client.get(
         f"/app/project/access-request/{test_workspace.name}?page=1&per_page=15&order_params=expire DESC"
     )
     assert resp.json["items"][0]["id"] == 10
+
+    # test search param
+    # create second project in the workspace and make access request to that project from a test user
+    p2 = create_project("test_project_2", test_workspace, owner)
+    login(client, "test_user1", "ilovemergin")
+    resp = client.post(
+        f"/app/project/access-request/{test_workspace.name}/{p2.name}",
+        headers=json_headers,
+    )
+    assert resp.status_code == 200
+    # there is new request coming to the workspace
+    login(client, "mergin", "ilovemergin")
+    resp = client.get(
+        f"/app/project/access-request/{test_workspace.name}?page=1&per_page=15"
+    )
+    assert resp.json.get("count") == 11
+    # to the second project there is only one request
+    resp = client.get(
+        f"/app/project/access-request/{test_workspace.name}?page=1&per_page=15&project_name={p2.name}"
+    )
+    assert resp.status_code == 200
+    assert resp.json.get("count") == 1
 
 
 def test_template_projects(client):
