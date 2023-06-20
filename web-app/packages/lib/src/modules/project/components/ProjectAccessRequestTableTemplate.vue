@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div>
     <v-data-table
-      :headers="header"
+      :headers="headers"
       :items="accessRequestsData"
       ref="table"
       no-data-text="No access requests"
@@ -84,6 +84,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import Vue from 'vue'
 import { mapActions, mapState } from 'vuex'
 
+import { TableDataHeader } from '../types'
+
 export default Vue.extend({
   name: 'ProjectAccessRequestTableTemplate',
   props: {
@@ -112,19 +114,25 @@ export default Vue.extend({
     showAccept() {
       return this.namespace != null
     },
-    header() {
-      return [
-        ...(this.namespace == null
-          ? []
-          : [{ text: 'Requester', value: 'requested_by', sortable: true }]),
+    headers() {
+      let headers: TableDataHeader[] = [
         { text: 'Project name', value: 'project_name', sortable: true },
-        { text: 'Expire in', value: 'expire', sortable: true },
-        {
-          text: 'Permissions',
-          value: 'permission',
-          width: 120,
-          sortable: false
-        },
+        { text: 'Expires in', value: 'expire', sortable: true }
+      ]
+      if (this.namespace) {
+        headers = [
+          { text: 'Requester', value: 'requested_by', sortable: true },
+          ...headers,
+          {
+            text: 'Permissions',
+            value: 'permission',
+            width: 120,
+            sortable: false
+          }
+        ]
+      }
+      return [
+        ...headers,
         { text: '', value: 'buttons', width: 190, sortable: false }
       ]
     }
