@@ -15,6 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { AxiosError } from 'axios'
 import Vue from 'vue'
 import { mapActions } from 'vuex'
+
 import ProjectAccessRequestTableTemplate from './ProjectAccessRequestTableTemplate.vue'
 
 export default Vue.extend({

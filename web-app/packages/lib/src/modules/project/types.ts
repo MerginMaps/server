@@ -319,3 +319,10 @@ export interface ProjectVersionsPayload extends PaginatedResponseDefaults {
 export interface ProjectVersionsItem extends ProjectVersion {
   disabled: boolean
 }
+
+export interface TableDataHeader {
+  text: string
+  value: string
+  sortable?: boolean
+  width?: number
+}
