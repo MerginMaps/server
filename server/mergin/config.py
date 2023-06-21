@@ -91,3 +91,4 @@ class Configuration(object):
     GLOBAL_ADMIN = config("GLOBAL_ADMIN", default=False, cast=bool)
 
     SERVER_TYPE = config("SERVER_TYPE", default="")
+    REGISTRATION_ALLOWED = config("REGISTRATION_ALLOWED", default=False)

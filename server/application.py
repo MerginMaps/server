@@ -27,7 +27,10 @@ from mergin.stats.tasks import send_statistics
 from mergin.stats.app import register as register_stats
 
 Configuration.SERVER_TYPE = "ce"
-application = create_app(["DOCS_URL", "SERVER_TYPE", "COLLECT_STATISTICS"])
+Configuration.REGISTRATION_ALLOWED = False
+application = create_app(
+    ["DOCS_URL", "SERVER_TYPE", "COLLECT_STATISTICS", "REGISTRATION_ALLOWED"]
+)
 register_stats(application)
 # patch celery object with application settings and attach flask context to it
 configure_celery(celery, application, ["mergin.auth", "mergin.sync", "mergin.stats"])
