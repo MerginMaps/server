@@ -575,7 +575,7 @@ def test_get_project_at_version(client, diff_project):
     )
     for key, value in latest_project.items():
         # skip updated column as that one would differ slightly due to delay between project and version object update
-        if key == "updated" or key == "access_requests" or "latest_version":
+        if key == "updated" or "latest_version":
             continue
         assert value == resp3.json[key]
 
