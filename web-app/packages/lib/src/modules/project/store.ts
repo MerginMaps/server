@@ -489,7 +489,6 @@ const ProjectStore: Module<ProjectState, RootState> = {
           )
         } else if (e.response.status === 403) {
           ProjectApi.fetchAccessRequests({
-            // TODO: Add searching based on project_name to this endpoint
             page: 1,
             per_page: 1,
             project_name: payload.projectName
