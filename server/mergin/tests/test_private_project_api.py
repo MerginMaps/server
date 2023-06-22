@@ -214,7 +214,7 @@ def test_get_project_access_requests(client):
     add_user("test_user", "ilovemergin")
     login(client, "test_user", "ilovemergin")
 
-    # create 10 projects ("user" as an owner) and requests to them from "test_user"
+    # create 12 projects ("user" as an owner) and requests to them from "test_user"
     for i in range(12):
         project = create_project("test_project_" + str(i), test_workspace, user)
         resp = client.post(

@@ -24,9 +24,10 @@ from .permissions import (
 from .utils import (
     get_project_path,
     split_order_param,
-    get_order_param,
-    parse_order_params,
+    get_order_param
 )
+
+from ..utils import parse_order_params
 
 project_access_granted = signal("project_access_granted")
 
