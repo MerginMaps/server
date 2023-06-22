@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             data-cy="project-table-search-bar"
           >
           </v-text-field>
-          <template v-if="$vuetify.display.smAndUp">
+          <template v-if="$vuetify.breakpoint.smAndUp">
             <v-select
               v-model="options.sortBy[0]"
               @change="paginating(options)"
@@ -151,7 +151,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                       style="margin-right: 20px"
                       data-cy="project-form-project-size"
                       ><v-icon class="icon" size="20">folder</v-icon
-                      >{{ $filters.filesize(item.disk_usage, 'MB', 1) }}</span
+                      >{{ item.disk_usage | filesize('MB', 1) }}</span
                     >
                   </template>
                   <span>project size</span>
@@ -162,10 +162,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                       v-on="on"
                       style="margin-right: 20px"
                       data-cy="project-form-updated"
-                      >Updated {{ $filters.timediff(item.updated) }}</span
+                      >Updated {{ item.updated | timediff }}</span
                     >
                   </template>
-                  <span>{{ $filters.datetime(item.updated) }}</span>
+                  <span>{{ item.updated | datetime }}</span>
                 </v-tooltip>
                 <v-tooltip bottom>
                   <template v-slot:activator="{ on }">

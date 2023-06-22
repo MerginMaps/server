@@ -5,14 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-snackbar
-    v-if="list.length"
-    bottom
-    right
-    auto-height
-    :timeout="-1"
-    :value="visible"
-  >
+  <v-snackbar v-if="list.length" bottom right :timeout="-1" :value="visible">
     <v-layout column>
       <v-layout
         class="py-1 row align-center justify-space-between"

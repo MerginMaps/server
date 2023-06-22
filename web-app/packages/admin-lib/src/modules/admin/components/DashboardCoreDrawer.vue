@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     v-model="drawer"
     :dark="false"
     :expand-on-hover="expandOnHover"
-    :right="$vuetify.locale.isRtl"
+    :right="$vuetify.rtl"
     :src="barImage"
     mobile-breakpoint="960"
     app
@@ -168,7 +168,7 @@ export default defineComponent({
 </script>
 
 <style lang="sass">
-@use 'vuetify/tools'
+@import 'vuetify/src/styles/tools/rtl'
 
 #core-navigation-drawer .theme--dark.v-navigation-drawer
   background-color: #eaebef
@@ -184,11 +184,11 @@ export default defineComponent({
       text-align: center
       width: 20px
 
-      +tools.ltr()
+      +ltr()
         margin-right: 24px
         margin-left: 12px !important
 
-      +tools.rtl()
+      +rtl()
         margin-left: 24px
         margin-right: 12px !important
 
@@ -200,17 +200,17 @@ export default defineComponent({
 
   .v-list-group--sub-group
     .v-list-item
-      +tools.ltr()
+      +ltr()
         padding-left: 8px
 
-      +tools.rtl()
+      +rtl()
         padding-right: 8px
 
     .v-list-group__header
-      +tools.ltr()
+      +ltr()
         padding-right: 0
 
-      +tools.rtl()
+      +rtl()
         padding-right: 0
 
       .v-list-item__icon--text
@@ -220,9 +220,9 @@ export default defineComponent({
       .v-list-group__header__prepend-icon
         order: 2
 
-        +tools.ltr()
+        +ltr()
           margin-right: 8px
 
-        +tools.rtl()
+        +rtl()
           margin-left: 8px
 </style>

@@ -7,6 +7,7 @@ import FileSaver from 'file-saver'
 import keyBy from 'lodash/keyBy'
 import omit from 'lodash/omit'
 import { defineStore } from 'pinia'
+import Vue from 'vue'
 
 import { ProjectModule } from './module'
 
@@ -114,19 +115,21 @@ export const useProjectStore = defineStore('projectModule', {
         diff: null,
         analysingFiles: []
       }
-      this.uploads[this.project.path] = upload
+      Vue.set(this.uploads, this.project.path, upload)
     },
 
     analysingFiles(payload) {
       const upload = this.uploads[this.project.path]
-      upload.analysingFiles = payload.files
+      Vue.set(upload, 'analysingFiles', payload.files)
     },
 
     finishFileAnalysis(payload) {
       const upload = this.uploads[this.project.path]
       if (upload.analysingFiles) {
-        upload.analysingFiles = upload.analysingFiles.filter(
-          (p) => p !== payload.path
+        Vue.set(
+          upload,
+          'analysingFiles',
+          upload.analysingFiles.filter((p) => p !== payload.path)
         )
       }
     },
@@ -146,11 +149,11 @@ export const useProjectStore = defineStore('projectModule', {
         loaded: 0,
         total: chunks
       }
-      this.uploads[this.project.path] = upload
+      Vue.set(this.uploads, this.project.path, upload)
     },
 
     discardUpload(payload) {
-      delete this.uploads[payload.projectPath]
+      Vue.delete(this.uploads, payload.projectPath)
     },
 
     startUpload() {
@@ -186,12 +189,12 @@ export const useProjectStore = defineStore('projectModule', {
           files: { ...this.project.files },
           diff: filesDiff({}, {})
         }
-        this.uploads[this.project.path] = upload
+        Vue.set(this.uploads, this.project.path, upload)
       }
 
       payload.files.forEach((path) => {
         if (upload.files[path]) {
-          delete upload.files[path]
+          Vue.delete(upload.files, path)
         } else {
           // should be folder
           const dirPrefix = path + '/'

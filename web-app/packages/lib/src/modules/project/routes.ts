@@ -2,6 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import { RouteRecordRaw } from 'vue-router'
+import { RouteRecord } from 'vue-router'
 
-export default (): RouteRecordRaw[] => []
+export default (): RouteRecord[] => []

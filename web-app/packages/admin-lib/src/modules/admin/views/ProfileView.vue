@@ -62,7 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                           </li>
                           <li>
                             <b> Registered: </b
-                            >{{ $filters.date(profile.registration_date) }}
+                            >{{ profile.registration_date | date }}
                           </li>
                         </ul>
                       </div>

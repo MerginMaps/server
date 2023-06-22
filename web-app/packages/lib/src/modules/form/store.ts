@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import { defineStore } from 'pinia'
+import Vue from 'vue'
 
 import {
   ClearErrorsPayload,
@@ -31,12 +32,10 @@ export const useFormStore = defineStore('formModule', {
 
   actions: {
     setFormErrors(payload: SetFormErrorPayload) {
-      // TODO: V3_UPGRADE [MERGIN-EXT] - Vue.set(a, b, c) -> a[b] = c
-      this.errors[payload.componentId] = payload.errors
+      Vue.set(this.errors, payload.componentId, payload.errors)
     },
     resetFormErrors(payload: MerginComponentUuidPayload) {
-      // TODO: V3_UPGRADE [MERGIN-EXT] - Vue.delete(a, b) -> delete a[b]
-      delete this.errors[payload.componentId]
+      Vue.delete(this.errors, payload.componentId)
     },
     clearErrors(payload: ClearErrorsPayload) {
       const notificationStore = useNotificationStore()

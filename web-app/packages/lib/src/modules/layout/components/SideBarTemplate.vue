@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     id="core-navigation-drawer-user"
     v-model="drawer"
     :expand-on-hover="expandOnHover"
-    :right="$vuetify.locale.isRtl"
+    :right="$vuetify.rtl"
     mobile-breakpoint="960"
     :dark="barColor !== 'rgba(228, 226, 226, 1), rgba(255, 255, 255, 0.7)'"
     app

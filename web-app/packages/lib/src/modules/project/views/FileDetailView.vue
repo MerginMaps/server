@@ -42,10 +42,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-list-item-content>
           <v-list-item-title>Size</v-list-item-title>
           <v-list-item-subtitle>
-            {{ $filters.filesize(file.size) }}
+            {{ file.size | filesize }}
             <span v-if="state === 'updated'"
-              >(new:
-              {{ $filters.filesize(upload.files[file.path].size) }})</span
+              >(new: {{ upload.files[file.path].size | filesize }})</span
             >
           </v-list-item-subtitle>
         </v-list-item-content>
@@ -54,9 +53,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-list-item-content>
           <v-list-item-title>Last update</v-list-item-title>
           <v-list-item-subtitle
-            >{{ $filters.datetime(file.mtime) }} ({{
-              $filters.timediff(file.mtime)
-            }})
+            >{{ file.mtime | datetime }} ({{ file.mtime | timediff }})
           </v-list-item-subtitle>
         </v-list-item-content>
       </v-list-item>

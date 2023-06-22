@@ -6,6 +6,7 @@ import isObject from 'lodash/isObject'
 import { defineStore } from 'pinia'
 import Cookies from 'universal-cookie'
 // import { isNavigationFailure, NavigationFailureType } from 'vue-router'
+import Vue from 'vue'
 
 import { UserModule } from './module'
 
@@ -116,7 +117,7 @@ export const useUserStore = defineStore('userModule', {
     },
 
     updateVerifiedEmail(payload) {
-      this.loggedUser.verified_email = payload.verifiedEmail
+      Vue.set(this.loggedUser, 'verified_email', payload.verifiedEmail)
     },
 
     setWorkspaces(payload) {

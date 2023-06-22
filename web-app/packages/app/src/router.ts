@@ -12,9 +12,10 @@ import {
   NotFoundView,
   VerifyEmailView,
   routeUtils,
+  Router,
   useUserStore
 } from '@mergin/lib'
-import { createRouter, createWebHistory } from 'vue-router'
+import Vue from 'vue'
 
 import DashboardView from '@/modules/dashboard/views/DashboardView.vue'
 import AppHeader from '@/modules/layout/components/AppHeader.vue'
@@ -25,8 +26,10 @@ import ProjectView from '@/modules/project/views/ProjectView.vue'
 import LoginView from '@/modules/user/views/LoginView.vue'
 import ProfileView from '@/modules/user/views/ProfileView.vue'
 
-const router = createRouter({
-  history: createWebHistory(),
+Vue.use(Router)
+
+const router = new Router({
+  mode: 'history',
   routes: [
     {
       path: '/',
@@ -178,7 +181,7 @@ const router = createRouter({
       ]
     },
     {
-      path: '/:pathMatch(.*)*',
+      path: '*',
       component: NotFoundView
     }
   ]

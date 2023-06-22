@@ -172,6 +172,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         v-if="
           project &&
           $route.name === 'project-tree' &&
+          project.permissions &&
           project.permissions.upload
         "
         class="drop-area"

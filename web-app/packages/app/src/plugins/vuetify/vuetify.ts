@@ -2,10 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import { createVuetify } from 'vuetify'
+import Vue from 'vue'
+import Vuetify from 'vuetify/lib'
 
 import i18n from '@/plugins/i18n/i18n'
 // import '@/sass/overrides.sass'
+
+Vue.use(Vuetify)
 
 const theme = {
   primary: '#2d052d',
@@ -16,7 +19,7 @@ const theme = {
   inputColor: '#2d052d'
 }
 
-export default createVuetify({
+export default new Vuetify({
   lang: {
     t: (key, ...params) => i18n.t(key, params)
   },

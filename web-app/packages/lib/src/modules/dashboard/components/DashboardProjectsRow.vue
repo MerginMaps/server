@@ -26,5 +26,5 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
-@import 'src/sass/dashboard';
+@use '@/sass/dashboard';
 </style>

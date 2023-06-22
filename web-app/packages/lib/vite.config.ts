@@ -1,17 +1,24 @@
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
 import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
-import vue from '@vitejs/plugin-vue'
+import vue from '@vitejs/plugin-vue2'
 import { resolve } from 'path'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
+import { VuetifyResolver } from 'unplugin-vue-components/resolvers'
+import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 // import dts from 'vite-plugin-dts'
-import vuetify from 'vite-plugin-vuetify'
+// import vuetify from 'vite-plugin-vuetify'
 
 import packageJson from './package.json'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  plugins: [vue(), vuetify() /*, dts() */],
+  plugins: [
+    vue(),
+    Components({
+      resolvers: [VuetifyResolver()]
+    }) /*, vuetify() */ /*, dts() */
+  ],
   publicDir: './src/assets',
 
   resolve: {

@@ -43,5 +43,5 @@ instanceStore.initApp().then(async (response) => {
   initCsrfToken(response)
   await instanceStore.fetchConfig()
   const app = createMerginApp()
-  app.mount('#app')
+  app.$mount('#app')
 })

@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-list-item-content>
           <v-list-item-title>Project Size</v-list-item-title>
           <v-list-item-subtitle
-            >{{ $filters.filesize(version.project_size) }}
+            >{{ version.project_size | filesize }}
           </v-list-item-subtitle>
         </v-list-item-content>
       </v-list-item>
@@ -41,7 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-list-item-content>
           <v-list-item-title>Created</v-list-item-title>
           <v-list-item-subtitle
-            >{{ $filters.datetime(version.created) }}
+            >{{ version.created | datetime }}
           </v-list-item-subtitle>
         </v-list-item-content>
       </v-list-item>
@@ -83,11 +83,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <div :class="colors[key]">
             {{ item.path }}:
             {{
-              $filters.filesize(
-                version.changesets[item.path]
-                  ? version.changesets[item.path]['size']
-                  : item.size
-              )
+              version.changesets[item.path]
+                ? version.changesets[item.path]['size']
+                : item.size | filesize
             }}
             <template v-if="version.changesets[item.path]">
               <div v-if="!version.changesets[item.path].error">

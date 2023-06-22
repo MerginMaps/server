@@ -1,20 +1,27 @@
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
 // import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
-import vue from '@vitejs/plugin-vue'
+import vue from '@vitejs/plugin-vue2'
 import { resolve } from 'path'
+import { VuetifyResolver } from 'unplugin-vue-components/resolvers'
+import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
-import vuetify from 'vite-plugin-vuetify'
+// import vuetify from 'vite-plugin-vuetify'
 
 const serverPort = process.env.FLASK_RUN_PORT ?? 5000
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  plugins: [vue(), vuetify()],
+  plugins: [
+    vue(),
+    Components({
+      resolvers: [VuetifyResolver()]
+    }) /*, vuetify() */
+  ],
 
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
-      'vue-i18n': 'vue-i18n/dist/vue-i18n.cjs.js',
+      // 'vue-i18n': 'vue-i18n/dist/vue-i18n.cjs.js',
       // buffer: 'buffer/',
       events: 'events',
       https: 'agent-base',

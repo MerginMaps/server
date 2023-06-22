@@ -15,9 +15,9 @@
       "import": "./dist/admin-lib.js",
       "require": "./dist/admin-lib.umd.cjs"
     },
-    "./dist/style.css": {
-      "import": "./dist/style.css",
-      "require": "./dist/style.css"
+    "./dist/": {
+      "import": "./dist/",
+      "require": "./dist/"
     }
   },
   "scripts": {
@@ -50,8 +50,8 @@
   },
   "peerDependencies": {
     "pinia": ">=2.x",
-    "portal-vue": ">=3.x",
-    "vue": "2.x || 3.x",
-    "vuetify": "2.x || 3.x"
+    "portal-vue": "2.x",
+    "vue": "2.x",
+    "vuetify": "2.x"
   }
 }

@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-row>
           <v-col cols="12" class="pa-0">
             <v-card
-              v-if="!loggedUser.verified_email"
+              v-if="!loggedUser?.verified_email"
               outlined
               class="bubble mt-3"
               style="
@@ -88,7 +88,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                             </li>
                             <li cy-data="profile-registered">
                               <b> Registered: </b
-                              >{{ $filters.date(loggedUser.registration_date) }}
+                              >{{ loggedUser.registration_date | date }}
                             </li>
                           </ul>
                           <br />
@@ -122,7 +122,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                             <v-btn
                               @click="showConfirmationDialog"
                               class="primary--text"
-                              :disabled="loggedUser.verified_profile"
+                              :disabled="loggedUser?.verified_profile"
                               cy-data="profile-verify-email-btn"
                             >
                               <v-icon class="mr-2">edit</v-icon>
@@ -268,7 +268,7 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-@import 'src/sass/dashboard';
+@use '@/sass/dashboard';
 
 .bubble {
   width: 100%;

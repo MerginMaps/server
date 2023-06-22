@@ -68,9 +68,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <span>
           <v-tooltip bottom>
             <template v-slot:activator="{ on }">
-              <span v-on="on">{{ $filters.timediff(item.created) }}</span>
+              <span v-on="on">{{ item.created | timediff }}</span>
             </template>
-            <span>{{ $filters.datetime(item.created) }}</span>
+            <span>{{ item.created | datetime }}</span>
           </v-tooltip>
         </span>
       </template>
@@ -102,7 +102,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </span>
       </template>
       <template v-slot:item.project_size="{ item }">
-        {{ $filters.filesize(item.project_size) }}
+        {{ item.project_size | filesize }}
       </template>
       <template v-slot:item.archived="{ item }">
         <v-tooltip top>

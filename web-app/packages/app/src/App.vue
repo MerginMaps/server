@@ -8,23 +8,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <v-app :class="`${loggedUser ? 'appFont' : ''}`">
     <dialog-windows />
     <v-layout column fill-height>
-      <!-- TODO: V3_UPGRADE - check this https://router.vuejs.org/guide/migration/#router-view-keep-alive-and-transition     -->
-      <!--      <transition name="fade">-->
-      <!--        <router-view name="header" />-->
-      <!--      </transition>-->
-      <!--      <transition name="fade">-->
-      <!--        <router-view :key="$route.fullPath" name="sidebar" />-->
-      <!--      </transition>-->
-      <router-view name="header" v-slot="{ Component }">
-        <transition name="fade">
-          <component :is="Component" />
-        </transition>
-      </router-view>
-      <router-view name="sidebar" v-slot="{ Component }" :key="$route.fullPath">
-        <transition name="fade">
-          <component :is="Component" />
-        </transition>
-      </router-view>
+      <transition name="fade">
+        <router-view name="header" />
+      </transition>
+      <transition name="fade">
+        <router-view :key="$route.fullPath" name="sidebar" />
+      </transition>
       <v-card
         v-if="pingData && pingData.maintenance"
         outlined
@@ -44,11 +33,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         style="margin: auto"
       ></global-warning>
       <v-layout column fill-height class="app-content">
-        <router-view class="page" v-slot="{ Component }">
-          <transition name="fade">
-            <component :is="Component" />
-          </transition>
-        </router-view>
+        <transition name="fade">
+          <router-view class="page" />
+        </transition>
       </v-layout>
     </v-layout>
     <upload-progress />

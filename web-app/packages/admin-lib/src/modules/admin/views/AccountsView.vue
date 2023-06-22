@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             v-model="searchByName"
             @input="resetPaging"
           >
-            <template v-if="$vuetify.display.mdAndUp" v-slot:prepend-inner>
+            <template v-if="$vuetify.breakpoint.mdAndUp" v-slot:prepend-inner>
               <v-icon elevation="1">mdi-magnify</v-icon>
             </template>
             <template v-slot:append>
@@ -72,9 +72,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <span>
           <v-tooltip bottom>
             <template v-slot:activator="{ on }">
-              <span v-on="on">{{ $filters.timediff(item.received) }}</span>
+              <span v-on="on">{{ item.received | timediff }}</span>
             </template>
-            <span>{{ $filters.datetime(item.received) }}</span>
+            <span>{{ item.received | datetime }}</span>
           </v-tooltip>
         </span>
       </template>

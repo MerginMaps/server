@@ -94,22 +94,22 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <template #item.updated="{ value }">
         <v-tooltip bottom>
           <template v-slot:activator="{ on }">
-            <span v-on="on">{{ $filters.timediff(value) }}</span>
+            <span v-on="on">{{ value | timediff }}</span>
           </template>
-          <span>{{ $filters.datetime(value) }}</span>
+          <span>{{ value | datetime }}</span>
         </v-tooltip>
       </template>
 
       <template #item.meta.size="{ item }">
-        {{ $filters.filesize(item.disk_usage, 'MB') }}
+        {{ item.disk_usage | filesize('MB') }}
       </template>
 
       <template #item.removed_at="{ value }">
         <v-tooltip bottom>
           <template v-slot:activator="{ on }">
-            <span v-on="on">{{ $filters.timediff(value) }}</span>
+            <span v-on="on">{{ value | timediff }}</span>
           </template>
-          <span>{{ $filters.datetime(value) }}</span>
+          <span>{{ value | datetime }}</span>
         </v-tooltip>
       </template>
 

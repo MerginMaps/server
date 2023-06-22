@@ -36,7 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <v-layout class="stats-line">
         <label>Upload data size:</label>
         <v-spacer />
-        <span>{{ $filters.filesize(uploadSize) }}</span>
+        <span>{{ uploadSize | filesize }}</span>
       </v-layout>
     </v-card-text>
     <v-card-text v-else-if="upload.diff">

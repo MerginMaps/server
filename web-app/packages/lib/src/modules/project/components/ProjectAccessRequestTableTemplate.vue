@@ -19,9 +19,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <template #item.expire="{ value }">
         <v-tooltip bottom>
           <template v-slot:activator="{ on }">
-            <span v-on="on">{{ $filters.remainingtime(value) }}</span>
+            <span v-on="on">{{ value | remainingtime }}</span>
           </template>
-          <span>{{ $filters.datetime(value) }}</span>
+          <span>{{ value | datetime }}</span>
         </v-tooltip>
       </template>
       <template #item.permission="{ item }">

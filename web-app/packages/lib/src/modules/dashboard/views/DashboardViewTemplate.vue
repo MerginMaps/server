@@ -137,7 +137,7 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
-@import 'src/sass/dashboard';
+@use '@/sass/dashboard';
 
 .v-navigation-drawer {
   -webkit-overflow-scrolling: touch;

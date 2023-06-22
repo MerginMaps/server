@@ -23,8 +23,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           xs12
           px-4
           :class="{
-            'justify-center': $vuetify.display.xs,
-            'justify-end': $vuetify.display.smAndUp
+            'justify-center': $vuetify.breakpoint.xs,
+            'justify-end': $vuetify.breakpoint.smAndUp
           }"
         >
           <a class="icon" href="https://github.com/lutraconsulting/">

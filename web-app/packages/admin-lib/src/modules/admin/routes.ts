@@ -11,7 +11,7 @@ import {
   merginUtils,
   useUserStore
 } from '@mergin/lib'
-import { RouteRecordRaw } from 'vue-router'
+import { RouteRecord } from 'vue-router'
 
 import { useAdminStore } from '@/modules'
 import AccountsView from '@/modules/admin/views/AccountsView.vue'
@@ -22,7 +22,7 @@ import ProjectsView from '@/modules/project/views/ProjectsView.vue'
 import ProjectView from '@/modules/project/views/ProjectView.vue'
 import LoginView from '@/modules/user/views/LoginView.vue'
 
-export default (): RouteRecordRaw[] => [
+export default (): RouteRecord[] => [
   {
     beforeEnter: (to, from, next) => {
       const userStore = useUserStore()

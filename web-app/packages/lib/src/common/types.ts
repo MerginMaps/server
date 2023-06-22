@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import { RouteRecordRaw, Router } from 'vue-router'
+import VueRouter, { RouteRecord } from 'vue-router'
 
 import { HttpService } from '@/common/http'
 
@@ -10,12 +10,12 @@ export type RouteName = string
 export type RouteOverrides = Record<
   RouteName,
   // do not allow to override children
-  Partial<Omit<RouteRecordRaw, 'children'>>
+  Partial<Omit<RouteRecord, 'children'>>
 >
 
 export interface ModuleService {
   httpService?: HttpService
-  routerService?: Router
+  routerService?: VueRouter
   [key: string]: any
 }
 

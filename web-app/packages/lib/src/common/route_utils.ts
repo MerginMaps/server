@@ -4,7 +4,7 @@
 
 import isEqual from 'lodash/isEqual'
 import pick from 'lodash/pick'
-import { RouteLocationNormalized, NavigationGuardNext } from 'vue-router'
+import { Route, NavigationGuardNext } from 'vue-router'
 
 import { useUserStore } from '@/modules/user/store'
 
@@ -12,23 +12,20 @@ export type IsAuthenticatedGuardOptions = {
   notAuthenticatedRedirectPath?: string
 }
 
-export function isTheSameRoute(
-  from: RouteLocationNormalized,
-  to: RouteLocationNormalized
-) {
+export function isTheSameRoute(from: Route, to: Route) {
   const properties = ['name', 'path', 'hash', 'params', 'query']
   return isEqual(pick(from, properties), pick(to, properties))
 }
 
-export function getTagsFromQuery(route: RouteLocationNormalized) {
+export function getTagsFromQuery(route: Route) {
   const tags = route.query.tags
   return tags ? (typeof tags === 'string' ? tags.split(',') : tags) : []
 }
 
 /** Handles redirect to /login when user is not authenticated. */
 export function isAuthenticatedGuard(
-  to: RouteLocationNormalized,
-  from: RouteLocationNormalized,
+  to: Route,
+  from: Route,
   next: NavigationGuardNext,
   options?: IsAuthenticatedGuardOptions
 ) {
@@ -50,11 +47,7 @@ export function isAuthenticatedGuard(
 }
 
 /** Handles redirect to /login when user is not superUser. */
-export function isSuperUser(
-  to: RouteLocationNormalized,
-  from: RouteLocationNormalized,
-  next: NavigationGuardNext
-) {
+export function isSuperUser(to: Route, from: Route, next: NavigationGuardNext) {
   const userStore = useUserStore()
   if (userStore.isSuperUser) {
     next()

@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :projectName="projectName"
     :asAdmin="asAdmin"
     :location="location"
-    :show-settings="projectStore.isProjectOwner"
+    :show-settings="isProjectOwner"
     :hide-clone-button="!canCreateProject"
     @open-clone-dialog="openCloneDialog"
   />
@@ -82,7 +82,7 @@ export default defineComponent({
 
     return {
       canCreateProject,
-      projectStore,
+      isProjectOwner: projectStore.isProjectOwner,
       openCloneDialog
     }
   }
