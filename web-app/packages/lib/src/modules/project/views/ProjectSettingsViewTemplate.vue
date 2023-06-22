@@ -67,6 +67,7 @@ import debounce from 'lodash/debounce'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import { ConfirmDialog } from '@/modules'
 import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useNotificationStore } from '@/modules/notification/store'
@@ -124,7 +125,7 @@ export default defineComponent({
   },
   methods: {
     ...mapActions(useProjectStore, ['deleteProject', 'saveProjectSettings']),
-    ...mapActions(useDialogStore, ['prompt']),
+    ...mapActions(useDialogStore, ['show']),
     ...mapActions(useNotificationStore, ['error']),
 
     saveProject(newSettingsAccessValues) {
@@ -165,7 +166,7 @@ export default defineComponent({
       const listeners = {
         confirm: () => this.onDeleteProject()
       }
-      this.prompt({
+      this.show({
         component: ConfirmDialog,
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
@@ -180,7 +181,7 @@ export default defineComponent({
       const listeners = {
         confirm: () => this.togglePublicPrivate()
       }
-      this.prompt({
+      this.show({
         component: ConfirmDialog,
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })

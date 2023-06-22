@@ -146,6 +146,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import {
   ApiRequestSuccessInfo,
+  ConfirmDialog,
   htmlUtils,
   PaginatedAdminProjectsParams,
   ProjectApi,
@@ -220,7 +221,7 @@ export default defineComponent({
     this.filterData = debounce(this.filterData, 3000)
   },
   methods: {
-    ...mapActions(useDialogStore, ['prompt']),
+    ...mapActions(useDialogStore, ['show']),
     ...mapActions(useNotificationStore, ['error', 'show']),
 
     paginating(options) {
@@ -349,7 +350,8 @@ export default defineComponent({
           htmlUtils.waitCursor(false)
         }
       }
-      this.prompt({
+      this.show({
+        component: ConfirmDialog,
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
     },
@@ -365,7 +367,8 @@ export default defineComponent({
           this.deleteProject(item.id)
         }
       }
-      this.prompt({
+      this.show({
+        component: ConfirmDialog,
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
     }

@@ -6,11 +6,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <v-dialog :value="isDialogOpen" v-bind="dialogProps" @input="close">
-    <div
+    <component
       v-if="params"
-      :is="params.component"
+      :is="component"
       v-bind="params.props"
-      v-on="params.listeners"
+      v-on="dialogListeners"
     />
   </v-dialog>
 </template>
@@ -23,8 +23,12 @@ import { useDialogStore } from '@/modules/dialog/store'
 
 export default defineComponent({
   computed: {
-    ...mapState(useDialogStore, ['isDialogOpen', 'params']),
-    ...mapGetters(useDialogStore, ['dialogProps'])
+    ...mapState(useDialogStore, ['isDialogOpen', 'params', 'component']),
+    ...mapGetters(useDialogStore, ['dialogProps']),
+
+    dialogListeners() {
+      return this.params?.listeners ?? {}
+    }
   },
   methods: {
     ...mapActions(useDialogStore, ['close'])

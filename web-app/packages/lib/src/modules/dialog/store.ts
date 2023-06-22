@@ -3,16 +3,21 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import { defineStore } from 'pinia'
+import { Component, markRaw } from 'vue'
+
+import { DialogParams, DialogPayload } from './types'
 
 export interface DialogState {
   isDialogOpen: boolean
-  params: Record<string, any>
+  params: DialogParams
+  component: Component
 }
 
 export const useDialogStore = defineStore('dialogModule', {
   state: (): DialogState => ({
     isDialogOpen: false,
-    params: null
+    params: null,
+    component: null
   }),
 
   getters: {
@@ -22,24 +27,22 @@ export const useDialogStore = defineStore('dialogModule', {
   },
 
   actions: {
-    openDialog(payload) {
+    openDialog(payload: DialogPayload) {
       this.isDialogOpen = true
-      this.params = payload.params
+      this.params = { ...payload.params }
+      this.component = markRaw(payload.component)
     },
     closeDialog() {
       this.isDialogOpen = false
+      this.component = null
     },
-    changeParams(payload) {
+    changeParams(payload: { params: DialogParams }) {
       this.params = payload.params
     },
-    show(payload) {
+    show(payload: DialogPayload) {
       this.openDialog({
-        params: { ...payload.params, component: payload.component }
-      })
-    },
-    prompt(payload) {
-      this.show({
-        params: payload.params
+        params: { ...payload.params },
+        component: payload.component
       })
     },
     close() {

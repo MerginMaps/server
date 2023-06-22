@@ -161,7 +161,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapState, mapActions } from 'pinia'
 import { defineComponent } from 'vue'
 
-import { useDialogStore } from '@/modules'
+import { ConfirmDialog, useDialogStore } from '@/modules'
 import PageView from '@/modules/layout/components/PageView.vue'
 import { useLayoutStore } from '@/modules/layout/store'
 import ChangePasswordForm from '@/modules/user/components/ChangePasswordForm.vue'
@@ -195,7 +195,7 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapActions(useDialogStore, ['prompt', 'show']),
+    ...mapActions(useDialogStore, ['show']),
     ...mapActions(useUserStore, {
       fetchUserProfile: 'fetchUserProfile',
       resendConfirmationEmailToUser: 'resendConfirmationEmail',
@@ -213,7 +213,8 @@ export default defineComponent({
       const listeners = {
         confirm: () => this.resendConfirmationEmail()
       }
-      this.prompt({
+      this.show({
+        component: ConfirmDialog,
         params: {
           props,
           listeners,
@@ -233,7 +234,8 @@ export default defineComponent({
       const listeners = {
         confirm: async () => await this.closeUserProfile()
       }
-      this.prompt({
+      this.show({
+        component: ConfirmDialog,
         params: {
           props,
           listeners,

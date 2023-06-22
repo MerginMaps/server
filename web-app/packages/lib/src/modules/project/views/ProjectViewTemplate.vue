@@ -201,10 +201,11 @@ import { CopyIcon, DownloadIcon, SquareMinusIcon } from 'vue-tabler-icons'
 import ActionButton from '@/common/components/ActionButton.vue'
 import { waitCursor } from '@/common/html_utils'
 import { USER_ROLE_NAME_BY_ROLE, UserRole } from '@/common/permission_utils'
-import { useNotificationStore } from '@/modules'
+import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 import { useDialogStore } from '@/modules/dialog/store'
 import PageView from '@/modules/layout/components/PageView.vue'
 import { useLayoutStore } from '@/modules/layout/store'
+import { useNotificationStore } from '@/modules/notification/store'
 import DropArea from '@/modules/project/components/DropArea.vue'
 import ProjectShareButton from '@/modules/project/components/ProjectShareButton.vue'
 import UploadPanel from '@/modules/project/components/UploadPanel.vue'
@@ -325,7 +326,7 @@ export default defineComponent({
       'unsubscribeProject'
     ]),
     ...mapActions(useProjectStore, ['setProject']),
-    ...mapActions(useDialogStore, ['prompt']),
+    ...mapActions(useDialogStore, { showDialog: 'show' }),
     ...mapActions(useNotificationStore, ['error', 'show']),
 
     setFetchProjectResponseStatus(status) {
@@ -384,7 +385,8 @@ export default defineComponent({
           }
         }
       }
-      this.prompt({
+      this.showDialog({
+        component: ConfirmDialog,
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
     }
