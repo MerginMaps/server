@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 from sqlalchemy import Column
 
+
 def parse_order_params(cls, order_params):
     """Parse order parameters in query string
 
