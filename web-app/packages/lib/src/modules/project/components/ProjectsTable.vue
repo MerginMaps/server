@@ -336,14 +336,6 @@ export default Vue.extend({
         }
       )
     },
-    changeSort(column) {
-      if (this.pagination.sortBy === column) {
-        this.pagination.descending = !this.pagination.descending
-      } else {
-        this.pagination.sortBy = column
-        this.pagination.descending = false
-      }
-    },
     filterData() {
       this.options.page = 1
       this.fetchProjects()

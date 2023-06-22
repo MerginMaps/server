@@ -7,6 +7,7 @@ from connexion import NoContent
 from flask import render_template, request, current_app, jsonify, abort
 from flask_login import current_user
 from sqlalchemy.orm import defer
+from sqlalchemy.sql import literal, select, label
 from sqlalchemy import text
 
 from .. import db
@@ -21,6 +22,8 @@ from .permissions import (
     check_workspace_permissions,
 )
 from .utils import get_project_path, split_order_param, get_order_param
+
+from ..utils import parse_order_params
 
 project_access_granted = signal("project_access_granted")
 
@@ -116,28 +119,50 @@ def accept_project_access_request(request_id):
 
 
 @auth_required
-def get_project_access_requests():
-    """List of project access requests initiated by current user in session"""
-    access_requests = (
-        AccessRequest.query.join(AccessRequest.project)
-        .filter(AccessRequest.user_id == current_user.id, Project.removed_at.is_(None))
-        .all()
+def get_project_access_requests(page, per_page, order_params=None, project_name=None):
+    """Paginated list of project access requests initiated by current user in session"""
+    access_requests = AccessRequest.query.join(AccessRequest.project).filter(
+        AccessRequest.user_id == current_user.id, Project.removed_at.is_(None)
     )
-    return jsonify(ProjectAccessRequestSchema(many=True).dump(access_requests)), 200
+
+    if project_name:
+        access_requests = access_requests.filter(Project.name == project_name)
+
+    if order_params:
+        order_by_params = parse_order_params(AccessRequest, order_params)
+        access_requests = access_requests.order_by(*order_by_params)
+
+    result = access_requests.paginate(page, per_page).items
+    total = access_requests.paginate(page, per_page).total
+    data = ProjectAccessRequestSchema(many=True).dump(result)
+    data = {"items": data, "count": total}
+    return data, 200
 
 
 @auth_required
-def list_namespace_project_access_requests(namespace):
-    """List of incoming project access requests to workspace"""
+def list_namespace_project_access_requests(
+    namespace, page, per_page, order_params=None, project_name=None
+):
+    """Paginated list of incoming project access requests to workspace"""
     if not check_workspace_permissions(namespace, current_user, "admin"):
         abort(403, "You don't have permissions to list project access requests")
     ws = current_app.ws_handler.get_by_name(namespace)
-    access_requests = (
-        AccessRequest.query.join(AccessRequest.project)
-        .filter(Project.workspace_id == ws.id, Project.removed_at.is_(None))
-        .all()
+    access_requests = AccessRequest.query.join(AccessRequest.project).filter(
+        Project.workspace_id == ws.id, Project.removed_at.is_(None)
     )
-    return jsonify(ProjectAccessRequestSchema(many=True).dump(access_requests)), 200
+
+    if project_name:
+        access_requests = access_requests.filter(Project.name == project_name)
+
+    if order_params:
+        order_by_params = parse_order_params(AccessRequest, order_params)
+        access_requests = access_requests.order_by(*order_by_params)
+
+    result = access_requests.paginate(page, per_page).items
+    total = access_requests.paginate(page, per_page).total
+    data = ProjectAccessRequestSchema(many=True).dump(result)
+    data = {"items": data, "count": total}
+    return data, 200
 
 
 @auth_required(permissions=["admin"])

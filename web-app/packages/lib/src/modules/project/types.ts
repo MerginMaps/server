@@ -9,6 +9,8 @@ import {
 } from '@/common/permission_utils'
 import {
   PaginatedRequestParams,
+  PaginatedRequestParamsApi,
+  PaginatedResponse,
   PaginatedResponseDefaults
 } from '@/common/types'
 import { UserSearch } from '@/modules/user/types'
@@ -149,9 +151,8 @@ export interface PaginatedProjectsPayload {
   params: PaginatedProjectsParams
 }
 
-export interface ProjectsPayload {
+export interface ProjectsPayload extends PaginatedResponseDefaults {
   projects: ProjectListItem[]
-  count: number
 }
 
 export interface CloneProjectParams {
@@ -165,11 +166,7 @@ export interface ProjectParams {
   namespace: string
 }
 
-export interface NamespaceAccessRequestsPayload {
-  namespace: string
-}
-
-export interface ProjectAccessRequestResponse {
+export interface ProjectAccessRequest {
   expire: string
   id: number
   namespace: string
@@ -179,25 +176,44 @@ export interface ProjectAccessRequestResponse {
   user: UserSearch
 }
 
+export type ProjectAccessRequestResponse =
+  PaginatedResponse<ProjectAccessRequest>
+
+export interface ProjectAccessRequestParams extends PaginatedRequestParamsApi {
+  project_name?: string
+}
+
+export interface AccessRequestsPayload extends PaginatedResponseDefaults {
+  accessRequests: ProjectAccessRequest[]
+}
+
+export interface GetUserAccessRequestsPayload {
+  params: ProjectAccessRequestParams
+}
+
+export interface GetNamespaceAccessRequestsPayload {
+  namespace: string
+  params: ProjectAccessRequestParams
+}
+
 export interface AcceptProjectAccessRequestData {
   permissions: ProjectPermissionName
 }
 
-export interface ReloadProjectAccessRequestPayload {
-  refetchGlobalAccessRequests: boolean
+export interface GetProjectAccessRequestsPayload
+  extends GetUserAccessRequestsPayload {
   namespace?: string
-  projectName?: string
 }
 
-export interface AcceptProjectAccessRequestPayload
-  extends ReloadProjectAccessRequestPayload {
+export interface AcceptProjectAccessRequestPayload {
   itemId: number
   data: AcceptProjectAccessRequestData
+  namespace?: string
 }
 
-export interface CancelProjectAccessRequestPayload
-  extends ReloadProjectAccessRequestPayload {
+export interface CancelProjectAccessRequestPayload {
   itemId: number
+  namespace: string
 }
 
 export interface CreateProjectParams {
@@ -255,9 +271,9 @@ export interface ProjectVersion {
   changesets: ChangesetSuccess | ChangesetError
 }
 
-export interface PaginatedProjectVersionsResponse {
+export interface PaginatedProjectVersionsResponse
+  extends PaginatedResponseDefaults {
   versions: ProjectVersion[]
-  count: number
 }
 
 export interface PushProjectChangesParams {
@@ -296,9 +312,8 @@ export interface FetchProjectVersionsPayload extends ProjectParams {
   params: FetchProjectVersionsParams
 }
 
-export interface ProjectVersionsPayload {
+export interface ProjectVersionsPayload extends PaginatedResponseDefaults {
   versions: ProjectVersion[]
-  count: number
 }
 
 export interface ProjectVersionsItem extends ProjectVersion {

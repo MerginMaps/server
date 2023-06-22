@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-card class="table" v-if="accessRequests && accessRequests.length > 0" flat>
+  <v-card class="table" v-if="accessRequests && accessRequestsCount > 0" flat>
     <v-card-text>
       <h3>You requested access to this projects</h3>
       <project-access-request-table />
@@ -23,13 +23,13 @@ export default Vue.extend({
   name: 'ProfileAccessRequestsRow',
   components: { ProjectAccessRequestTable },
   computed: {
-    ...mapState('projectModule', ['accessRequests'])
+    ...mapState('projectModule', ['accessRequests', 'accessRequestsCount'])
   },
   async created() {
-    await this.initAccessRequests()
+    await this.initUserAccessRequests()
   },
   methods: {
-    ...mapActions('projectModule', ['initAccessRequests'])
+    ...mapActions('projectModule', ['initUserAccessRequests'])
   }
 })
 </script>
