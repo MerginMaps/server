@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 from collections import namedtuple
+from enum import Enum
 from flask_sqlalchemy import Model
 from sqlalchemy import Column, JSON
 from sqlalchemy.sql.elements import UnaryExpression
@@ -12,14 +13,19 @@ from typing import Optional
 OrderParam = namedtuple("OrderParam", "name direction")
 
 
+class OrderDirection(Enum):
+    ASC = "asc"
+    DESC = "desc"
+
+
 def split_order_param(order_param: str) -> Optional[OrderParam]:
     """Split db query order parameter"""
     try:
         col, order = order_param.strip().split(" ")
+        direction = OrderDirection(order.lower())
     except ValueError:
         return
-    if order.lower() in ["asc", "desc"]:
-        return OrderParam(col, order.lower())
+    return OrderParam(col, direction)
 
 
 def get_order_param(
@@ -64,9 +70,9 @@ def get_order_param(
         else:
             order_attr = order_attr[attr].as_string()
 
-    if order_param.direction == "asc":
+    if order_param.direction is OrderDirection.ASC:
         return order_attr.asc()
-    elif order_param.direction == "desc":
+    elif order_param.direction is OrderDirection.DESC:
         return order_attr.desc()
 
 

@@ -182,7 +182,9 @@ def list_projects(
             if not order_param:
                 continue
             if order_param.name == "workspace":
-                order_by_params.append(text(f"workspace_name {order_param.direction}"))
+                order_by_params.append(
+                    text(f"workspace_name {order_param.direction.value}")
+                )
             else:
                 order_by_params.append(get_order_param(Project, order_param))
         projects = projects.order_by(*order_by_params)
