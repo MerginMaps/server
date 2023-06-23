@@ -7,19 +7,13 @@ import os
 import hashlib
 import re
 import secrets
-from collections import namedtuple
 from threading import Timer
-from typing import Optional
 from uuid import UUID
 from datetime import timedelta
-
-from flask_sqlalchemy import Model
 from pathvalidate import sanitize_filename
 from shapely import wkb
 from shapely.errors import WKBReadingError
 from gevent import sleep
-from sqlalchemy import Column
-from sqlalchemy.sql.elements import UnaryExpression
 
 
 def generate_checksum(file, chunk_size=4096):
@@ -375,30 +369,6 @@ def format_time_delta(delta: timedelta) -> str:
         else:
             difference = "N/A"
     return difference
-
-
-OrderParam = namedtuple("OrderParam", "name direction")
-
-
-def split_order_param(order_param: str) -> Optional[OrderParam]:
-    """Split db query order parameter"""
-    try:
-        col, order = order_param.strip().split(" ")
-    except ValueError:
-        return
-    if order.lower() in ["asc", "desc"]:
-        return OrderParam(col, order.lower())
-
-
-def get_order_param(cls: Model, order_param: OrderParam) -> Optional[UnaryExpression]:
-    """Return order by clause parameter for SQL query"""
-    order_attr = cls.__table__.c.get(order_param.name, None)
-    if not isinstance(order_attr, Column):
-        return
-    if order_param.direction == "asc":
-        return order_attr.asc()
-    elif order_param.direction == "desc":
-        return order_attr.desc()
 
 
 def is_valid_gpkg(file_meta):

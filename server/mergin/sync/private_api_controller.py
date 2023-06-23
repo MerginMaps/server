@@ -21,9 +21,8 @@ from .permissions import (
     ProjectPermissions,
     check_workspace_permissions,
 )
-from .utils import get_project_path, split_order_param, get_order_param
-
-from ..utils import parse_order_params
+from .utils import get_project_path
+from ..utils import parse_order_params, split_order_param, get_order_param
 
 project_access_granted = signal("project_access_granted")
 
