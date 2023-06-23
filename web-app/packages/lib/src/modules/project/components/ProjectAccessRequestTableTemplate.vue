@@ -89,11 +89,7 @@ import { mapActions, mapState } from 'vuex'
 
 import { TableDataHeader } from '../types'
 
-import {
-  ProjectAccessRequest,
-  GetProjectAccessRequestsPayload
-} from '@/modules/project/types'
-
+import { GetProjectAccessRequestsPayload } from '@/modules/project/types'
 
 export default Vue.extend({
   name: 'ProjectAccessRequestTableTemplate',
@@ -113,7 +109,6 @@ export default Vue.extend({
         itemsPerPage: 10,
         page: 1
       },
-      projectAccessRequests: [] as ProjectAccessRequest[],
       permissions: {}
     }
   },

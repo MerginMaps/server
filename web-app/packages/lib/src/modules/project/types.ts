@@ -22,8 +22,7 @@ export interface ProjectGridState {
   searchFilterByDay: number
 }
 
-export interface PaginatedProjectsParams extends PaginatedRequestParams {
-  descending?: boolean
+export interface PaginatedProjectsParams extends PaginatedRequestParamsApi {
   namespace?: string
   only_namespace?: string
   name?: string

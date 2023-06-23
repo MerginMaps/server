@@ -527,11 +527,7 @@ class AccessRequest(db.Model):
 
     user = db.relationship("User", uselist=False)
 
-    project = db.relationship(
-        "Project",
-        uselist=False,
-        backref=db.backref("access_requests", single_parent=True, cascade="all,delete"),
-    )
+    project = db.relationship("Project", uselist=False)
 
     def __init__(self, project, user_id):
         self.project_id = project.id

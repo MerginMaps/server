@@ -172,7 +172,6 @@ class ProjectSchema(ma.SQLAlchemyAutoSchema):
     id = fields.UUID()
     files = fields.Nested(FileInfoSchema(), many=True)
     access = fields.Nested(ProjectAccessSchema())
-    access_requests = fields.Nested(ProjectAccessRequestSchema(), many=True)
     permissions = fields.Function(project_user_permissions)
     version = fields.String(attribute="latest_version")
     namespace = fields.Function(lambda obj: obj.workspace.name)
@@ -283,7 +282,6 @@ class ProjectSchemaForDelete(ma.SQLAlchemyAutoSchema):
         model = Project
         exclude = [
             "uploads",
-            "access_requests",
             "access",
             "creator",
         ]  # these fields will be lost
