@@ -21,9 +21,8 @@ from .permissions import (
     ProjectPermissions,
     check_workspace_permissions,
 )
-from .utils import get_project_path, split_order_param, get_order_param
-
-from ..utils import parse_order_params
+from .utils import get_project_path
+from ..utils import parse_order_params, split_order_param, get_order_param
 
 project_access_granted = signal("project_access_granted")
 
@@ -183,7 +182,9 @@ def list_projects(
             if not order_param:
                 continue
             if order_param.name == "workspace":
-                order_by_params.append(text(f"workspace_name {order_param.direction}"))
+                order_by_params.append(
+                    text(f"workspace_name {order_param.direction.value}")
+                )
             else:
                 order_by_params.append(get_order_param(Project, order_param))
         projects = projects.order_by(*order_by_params)
