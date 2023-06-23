@@ -22,7 +22,9 @@ def split_order_param(order_param: str) -> Optional[OrderParam]:
         return OrderParam(col, order.lower())
 
 
-def get_order_param(cls: Model, order_param: OrderParam, json_sort: dict = None) -> Optional[UnaryExpression]:
+def get_order_param(
+    cls: Model, order_param: OrderParam, json_sort: dict = None
+) -> Optional[UnaryExpression]:
     """Return order by clause parameter for SQL query
 
     :param cls: Db model class
