@@ -91,4 +91,5 @@ class Configuration(object):
     GLOBAL_ADMIN = config("GLOBAL_ADMIN", default=False, cast=bool)
 
     SERVER_TYPE = config("SERVER_TYPE", default="")
+    # registration_allowed - used for user self-registration
     REGISTRATION_ALLOWED = config("REGISTRATION_ALLOWED", default=False)

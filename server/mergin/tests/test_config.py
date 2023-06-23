@@ -19,6 +19,7 @@ def test_config(client):
         "fix",
         "major",
         "minor",
+        "registration_allowed",
     }
     resp = client.get("/config")
     assert resp.status_code == 200
