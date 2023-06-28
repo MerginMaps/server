@@ -292,3 +292,7 @@ export interface UpdateProjectAccessParams {
   user_id: number
   role: ProjectRoleName
 }
+
+export interface DownloadPayload {
+  url: string
+}

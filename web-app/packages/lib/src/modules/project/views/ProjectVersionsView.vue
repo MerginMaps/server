@@ -112,15 +112,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               v-on="on"
               data-cy="project-versions-download-btn"
               @click="
-                downloadArchive(
-                  '/v1/project/download/' +
+                downloadArchive({
+                  url:
+                    '/v1/project/download/' +
                     namespace +
                     '/' +
                     projectName +
                     '?version=' +
                     item.name +
                     '&format=zip'
-                )
+                })
               "
             >
               <v-icon>archive</v-icon>

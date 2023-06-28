@@ -27,7 +27,8 @@ import {
   ProjectDetail,
   ProjectParams,
   EnhancedProjectDetail,
-  ReloadProjectAccessRequestPayload
+  ReloadProjectAccessRequestPayload,
+  DownloadPayload
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
 
@@ -576,7 +577,7 @@ export const useProjectStore = defineStore('projectModule', {
       waitCursor(false)
     },
 
-    async downloadArchive(payload) {
+    async downloadArchive(payload: DownloadPayload) {
       const notificationStore = useNotificationStore()
 
       try {
