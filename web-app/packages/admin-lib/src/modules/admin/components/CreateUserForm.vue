@@ -18,12 +18,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           name="username"
           color="inputColor"
           v-model="username"
+          :error-messages="errors.username"
         />
         <v-text-field
           placeholder="Email"
           name="email"
           color="inputColor"
           v-model="email"
+          :error-messages="errors.email"
         />
         <v-layout align-center>
           <v-text-field
@@ -34,6 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             :append-icon="passwordVisible ? 'visibility_off' : 'visibility'"
             @click:append="passwordVisible = !passwordVisible"
             :type="passwordVisible ? 'text' : 'password'"
+            :error-messages="errors.password"
           />
           <v-tooltip
             top
@@ -82,9 +85,10 @@ import {
   postRetryCond,
   htmlUtils,
   useDialogStore,
-  useNotificationStore
+  useNotificationStore,
+  useFormStore
 } from '@mergin/lib'
-import { mapActions } from 'pinia'
+import { mapActions, mapGetters } from 'pinia'
 import { defineComponent } from 'vue'
 
 export default defineComponent({
@@ -98,15 +102,28 @@ export default defineComponent({
     }
   },
   computed: {
+    ...mapGetters(useFormStore, ['getErrorByComponentId']),
+
     invalidInput() {
       return this.isValid === null
         ? this.validateInput(this.$data)
         : !this.isValid
+    },
+    errors() {
+      return this.getErrorByComponentId(this.merginComponentUuid) ?? {}
     }
   },
+  beforeDestroy() {
+    this.clearErrors({
+      componentId: this.merginComponentUuid,
+      keepNotification: true
+    })
+  },
+
   methods: {
     ...mapActions(useDialogStore, ['close']),
-    ...mapActions(useNotificationStore, ['error', 'show']),
+    ...mapActions(useNotificationStore, ['show']),
+    ...mapActions(useFormStore, ['clearErrors', 'handleError']),
 
     validateInput(data) {
       return ['username', 'email', 'password'].some((k) => data[k] === '')
@@ -119,6 +136,7 @@ export default defineComponent({
         confirm: this.password
       }
       htmlUtils.waitCursor(true)
+      this.clearErrors({ componentId: this.merginComponentUuid })
       // TODO: JM - move to user api (and store action)
       this.$http
         .post('/app/auth/user', data, {
@@ -140,7 +158,11 @@ export default defineComponent({
             err.response.data && err.response.data.detail
               ? err.response.data.detail
               : 'Failed to create user'
-          this.error({ text: msg })
+          this.handleError({
+            componentId: this.merginComponentUuid,
+            error: err,
+            generalMessage: msg
+          })
         })
         .finally(() => htmlUtils.waitCursor(false))
     }
