@@ -450,7 +450,7 @@ export default defineComponent({
   border: solid #eee;
   border-width: 1px 0;
 
-  :deep(*) {
+  ::v-deep(*) {
     .v-text-field {
       padding-top: 0;
       margin-top: 0;

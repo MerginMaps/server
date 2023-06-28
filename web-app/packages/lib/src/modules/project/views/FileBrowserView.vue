@@ -398,7 +398,7 @@ export default defineComponent({
   }
 }
 
-:deep(.v-data-table) {
+::v-deep(.v-data-table) {
   tr {
     color: #555;
 
@@ -464,7 +464,7 @@ export default defineComponent({
 }
 
 .v-data-table {
-  :deep(.v-data-footer__select) {
+  ::v-deep(.v-data-footer__select) {
     display: none;
   }
 }

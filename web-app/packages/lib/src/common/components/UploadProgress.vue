@@ -61,7 +61,7 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-:deep(*) {
+::v-deep(*) {
   .v-snack__content {
     padding: 0.75em 1em;
   }

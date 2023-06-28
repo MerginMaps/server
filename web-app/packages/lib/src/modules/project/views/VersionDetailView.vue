@@ -234,7 +234,7 @@ export default defineComponent({
 }
 
 .v-list {
-  :deep(.v-list-item) {
+  ::v-deep(.v-list-item) {
     font-size: 14px;
     color: #444;
 
@@ -244,7 +244,7 @@ export default defineComponent({
   }
 
   &.files {
-    :deep(.v-list-group__items) {
+    ::v-deep(.v-list-group__items) {
       .v-list-item {
         padding-left: 20px;
       }

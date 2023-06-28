@@ -332,7 +332,7 @@ label {
   font-weight: 500;
 }
 
-:deep(*) {
+::v-deep(*) {
   .v-data-table__overflow {
     margin: 0.5em 0;
     border: 1px solid #ddd;
@@ -347,7 +347,7 @@ label {
 }
 
 .v-list {
-  :deep(.v-list-item) {
+  ::v-deep(.v-list-item) {
     min-height: unset;
   }
 }

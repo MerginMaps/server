@@ -262,7 +262,7 @@ label {
   font-weight: 500;
 }
 
-:deep(*) {
+::v-deep(*) {
   .v-data-table__overflow {
     margin: 0.5em 0;
     border: 1px solid #ddd;

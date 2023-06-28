@@ -40,7 +40,7 @@ export default defineComponent({
 })
 </script>
 <style lang="scss" scoped>
-:deep(.v-application--wrap) {
+::v-deep(.v-application--wrap) {
   overflow-y: auto;
 }
 </style>

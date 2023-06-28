@@ -224,7 +224,7 @@ export default defineComponent({
 }
 
 .v-list {
-  :deep(.v-list__tile) {
+  ::v-deep(.v-list__tile) {
     font-size: 14px;
     color: #444;
 

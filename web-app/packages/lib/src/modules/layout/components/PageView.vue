@@ -58,7 +58,7 @@ export default defineComponent({
   font-size: 12px;
 }
 
-:deep(.main-content) {
+::v-deep(.main-content) {
   width: 800px;
   margin: 0 1em;
   @media (max-width: 1264px) {

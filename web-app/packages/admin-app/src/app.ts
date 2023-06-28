@@ -20,8 +20,8 @@ import {
   useAppStore
 } from '@mergin/lib'
 import PortalVue from 'portal-vue'
-import { createApp } from 'vue'
-// import VueMeta from 'vue-meta'
+import Vue from 'vue'
+import VueMeta from 'vue-meta'
 
 import App from './App.vue'
 import router from './router'
@@ -30,8 +30,23 @@ import { getPiniaInstance } from './store'
 import i18n from '@/plugins/i18n/i18n'
 import vuetify from '@/plugins/vuetify/vuetify'
 
-// TODO: V3_UPGRADE - https://github.com/nuxt/vue-meta/issues/665#issuecomment-820927172
-// Vue.use(VueMeta)
+Vue.config.productionTip = false
+Vue.use(PortalVue)
+Vue.use(VueMeta)
+Vue.prototype.$http = http
+
+Vue.filter('filesize', (value, unit, digits = 2, minUnit = 'B') => {
+  return numberUtils.formatFileSize(value, unit, digits, minUnit)
+})
+Vue.filter('datetime', dateUtils.formatDateTime)
+Vue.filter('date', dateUtils.formatDate)
+Vue.filter('timediff', dateUtils.formatTimeDiff)
+Vue.filter('remainingtime', dateUtils.formatRemainingTime)
+Vue.filter('totitle', textUtils.formatToTitle)
+Vue.filter('currency', numberUtils.formatToCurrency)
+
+// global mixin - replace with composable after migration to Vue 3
+Vue.mixin(MerginComponentUuidMixin)
 
 const createMerginApp = () => {
   router.onError((e) => {
@@ -39,28 +54,13 @@ const createMerginApp = () => {
     appStore.setServerError(e.message)
   })
 
-  const app = createApp(App)
-    // global mixin - replace with composable after migration to Vue 3
-    .mixin(MerginComponentUuidMixin)
-    .use(getPiniaInstance())
-    .use(router)
-    .use(vuetify)
-    .use(i18n)
-    .use(PortalVue)
-
-  app.config.globalProperties.$http = http
-  app.config.globalProperties.$filters = {
-    filesize: (value, unit, digits = 2, minUnit: numberUtils.SizeUnit = 'B') =>
-      numberUtils.formatFileSize(value, unit, digits, minUnit),
-    datetime: dateUtils.formatDateTime,
-    date: dateUtils.formatDate,
-    timediff: dateUtils.formatTimeDiff,
-    remainingtime: dateUtils.formatRemainingTime,
-    totitle: textUtils.formatToTitle,
-    currency: numberUtils.formatToCurrency
-  }
-
-  return app
+  return new Vue({
+    router,
+    pinia: getPiniaInstance(),
+    vuetify,
+    i18n,
+    render: (h) => h(App)
+  })
 }
 
 export { createMerginApp }

@@ -171,7 +171,7 @@ export default defineComponent({
 })
 </script>
 <style lang="scss" scoped>
-:deep(.v-data-table__wrapper) {
+::v-deep(.v-data-table__wrapper) {
   td.text-start {
     max-width: 250px;
   }

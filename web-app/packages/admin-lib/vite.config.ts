@@ -2,6 +2,8 @@ import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfil
 // import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
 import vue from '@vitejs/plugin-vue2'
 import { resolve } from 'path'
+import { VuetifyResolver } from 'unplugin-vue-components/resolvers'
+import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 // import vuetify from 'vite-plugin-vuetify'
 
@@ -9,7 +11,12 @@ import packageJson from './package.json'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  plugins: [vue() /*, vuetify() */],
+  plugins: [
+    vue(),
+    Components({
+      resolvers: [VuetifyResolver()]
+    }) /*, vuetify() */
+  ],
   publicDir: './src/assets',
 
   resolve: {

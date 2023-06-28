@@ -375,7 +375,7 @@ export default defineComponent({
     margin-right: 0.5em;
     height: 1.3em;
 
-    :deep(.v-chip__content) {
+    ::v-deep(.v-chip__content) {
       padding: 0 0.2em;
       font-size: 85%;
     }
@@ -397,7 +397,7 @@ export default defineComponent({
 }
 
 .v-toolbar {
-  :deep(.v-toolbar__content) {
+  ::v-deep(.v-toolbar__content) {
     padding-left: 0;
   }
 }

@@ -2,14 +2,17 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import { NotFoundView, routeUtils } from '@mergin/lib'
-import { createRouter, createWebHistory } from 'vue-router'
+import { NotFoundView, routeUtils, Router } from '@mergin/lib'
+import Vue from 'vue'
 
-const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+Vue.use(Router)
+
+const router = new Router({
+  mode: 'history',
+  base: import.meta.env.BASE_URL,
   routes: [
     {
-      path: '/:pathMatch(.*)*',
+      path: '*',
       component: NotFoundView
     }
   ]

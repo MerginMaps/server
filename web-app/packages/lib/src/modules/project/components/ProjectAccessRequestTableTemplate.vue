@@ -211,7 +211,7 @@ export default defineComponent({
     margin-right: 0.5em;
     height: 1.6em;
 
-    :deep .v-chip__content {
+    ::v-deep .v-chip__content {
       cursor: pointer;
       padding: 0 0.5em;
       font-size: 85%;
