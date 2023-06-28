@@ -19,7 +19,7 @@ def test_config(client):
         "fix",
         "major",
         "minor",
-        "registration_allowed",
+        "user_self_registration",
     }
     resp = client.get("/config")
     assert resp.status_code == 200
@@ -35,3 +35,4 @@ def test_config(client):
     client.application.config["MERGIN_BASE_URL"] = "http://localhost:5000"
     resp = client.get("/config")
     assert resp.json["server_configured"] is True
+    assert resp.json["user_self_registration"] is False

@@ -27,9 +27,9 @@ from mergin.stats.tasks import send_statistics
 from mergin.stats.app import register as register_stats
 
 Configuration.SERVER_TYPE = "ce"
-Configuration.REGISTRATION_ALLOWED = False
+Configuration.USER_SELF_REGISTRATION = False
 application = create_app(
-    ["DOCS_URL", "SERVER_TYPE", "COLLECT_STATISTICS", "REGISTRATION_ALLOWED"]
+    ["DOCS_URL", "SERVER_TYPE", "COLLECT_STATISTICS", "USER_SELF_REGISTRATION"]
 )
 register_stats(application)
 # patch celery object with application settings and attach flask context to it
