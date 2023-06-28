@@ -153,7 +153,6 @@ export default defineComponent({
           })
         })
         .catch((err) => {
-          // TODO process backend form errors
           const msg =
             err.response.data && err.response.data.detail
               ? err.response.data.detail
