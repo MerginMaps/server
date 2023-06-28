@@ -29,7 +29,9 @@ def flask_app(request):
     """Flask app with fresh db and initialized empty tables"""
     from ..sync.db_events import remove_events
 
-    application = create_app(["SERVER_TYPE", "DOCS_URL", "COLLECT_STATISTICS", "USER_SELF_REGISTRATION"])
+    application = create_app(
+        ["SERVER_TYPE", "DOCS_URL", "COLLECT_STATISTICS", "USER_SELF_REGISTRATION"]
+    )
     register(application)
     application.config["TEST_DIR"] = os.path.join(thisdir, "test_projects")
     application.config["SERVER_NAME"] = "localhost.localdomain"
