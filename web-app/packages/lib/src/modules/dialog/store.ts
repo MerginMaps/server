@@ -3,14 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import { defineStore } from 'pinia'
-import { Component, markRaw } from 'vue'
+import { markRaw } from 'vue'
 
 import { DialogParams, DialogPayload } from './types'
 
 export interface DialogState {
   isDialogOpen: boolean
   params: DialogParams
-  component: Component
+  // VUE3_UPGRADE add import { Component } from 'vue' as type
+  component: any
 }
 
 export const useDialogStore = defineStore('dialogModule', {

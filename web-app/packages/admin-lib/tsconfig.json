@@ -3,8 +3,9 @@
     "target": "ES5",
     "module": "ESNext",
     // setting strict to false
-    "strict": false,
-    "noImplicitThis": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
     "jsx": "preserve",
     "moduleResolution": "Node",
     "skipLibCheck": true,
