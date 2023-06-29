@@ -97,7 +97,7 @@ import pick from 'lodash/pick'
 import sortBy from 'lodash/sortBy'
 import toLower from 'lodash/toLower'
 import union from 'lodash/union'
-import { mapGetters, mapState } from 'pinia'
+import { mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
 import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
@@ -138,13 +138,17 @@ export default defineComponent({
           width: 60
         }
       ],
-      originalValue: null
+      originalValue: null,
+      clonedValue: null
     }
   },
   computed: {
     ...mapState(useUserStore, ['loggedUser']),
-    ...mapState(useProjectStore, ['currentNamespace', 'project']),
-    ...mapGetters(useProjectStore, ['isProjectOwner']),
+    ...mapState(useProjectStore, [
+      'currentNamespace',
+      'project',
+      'isProjectOwner'
+    ]),
 
     permissionStates() {
       return ['owner', 'writer', 'reader']

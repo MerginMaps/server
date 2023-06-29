@@ -73,8 +73,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import isEqual from 'lodash/isEqual'
 import omit from 'lodash/omit'
-import { mapActions, mapGetters, mapState } from 'pinia'
-import { defineComponent } from 'vue'
+import { mapActions, mapState } from 'pinia'
+import { PropType, defineComponent } from 'vue'
 
 import AccountAutocomplete from './AccountAutocomplete.vue'
 import PermissionInfo from './PermissionInfo.vue'
@@ -86,7 +86,7 @@ import UserSearchChip from '@/modules/user/components/UserSearchChip.vue'
 import { UserSearch, UserSearchInvite } from '@/modules/user/types'
 
 interface Data {
-  addedUsers: (UserSearchInvite | UserSearch)[]
+  addedUsers: Array<UserSearchInvite | UserSearch>
   isPending: boolean
 }
 
@@ -95,7 +95,7 @@ export default defineComponent({
   components: { PermissionInfo, UserSearchChip, AccountAutocomplete },
   props: {
     allowInvite: Boolean,
-    inputUsers: Array,
+    inputUsers: Array as PropType<Data['addedUsers']>,
     readonly: Boolean,
     name: String
   },
@@ -106,8 +106,11 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState(useProjectStore, ['currentNamespace', 'project']),
-    ...mapGetters(useProjectStore, ['isProjectOwner']),
+    ...mapState(useProjectStore, [
+      'currentNamespace',
+      'project',
+      'isProjectOwner'
+    ]),
 
     projectAccess() {
       return this.project?.access

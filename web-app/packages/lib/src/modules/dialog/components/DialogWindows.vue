@@ -16,15 +16,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { mapState, mapGetters, mapActions } from 'pinia'
+import { mapState, mapActions } from 'pinia'
 import { defineComponent } from 'vue'
 
 import { useDialogStore } from '@/modules/dialog/store'
 
 export default defineComponent({
   computed: {
-    ...mapState(useDialogStore, ['isDialogOpen', 'params', 'component']),
-    ...mapGetters(useDialogStore, ['dialogProps']),
+    ...mapState(useDialogStore, [
+      'isDialogOpen',
+      'params',
+      'component',
+      'dialogProps'
+    ]),
 
     dialogListeners() {
       return this.params?.listeners ?? {}

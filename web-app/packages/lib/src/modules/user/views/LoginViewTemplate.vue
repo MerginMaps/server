@@ -84,7 +84,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { mapActions, mapGetters, mapState } from 'pinia'
+import { mapActions, mapState } from 'pinia'
 
 import CustomPage from '@/common/components/CustomPage.vue'
 import MerginLogoLight from '@/common/components/MerginLogoLight.vue'
@@ -117,7 +117,7 @@ export default {
   },
   computed: {
     ...mapState(useUserStore, ['loggedUser']),
-    ...mapGetters(useFormStore, ['getErrorByComponentId']),
+    ...mapState(useFormStore, ['getErrorByComponentId']),
     errors() {
       return this.getErrorByComponentId(this.merginComponentUuid) ?? {}
     },

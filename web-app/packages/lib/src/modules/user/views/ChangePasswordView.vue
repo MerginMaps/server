@@ -92,7 +92,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { mapActions, mapGetters } from 'pinia'
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
 import CustomPage from '@/common/components/CustomPage.vue'
@@ -112,7 +112,7 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapGetters(useFormStore, ['getErrorByComponentId']),
+    ...mapState(useFormStore, ['getErrorByComponentId']),
     errors() {
       return this.getErrorByComponentId(this.merginComponentUuid) ?? {}
     },

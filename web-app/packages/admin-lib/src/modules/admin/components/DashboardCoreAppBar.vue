@@ -53,7 +53,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import { useInstanceStore, useLayoutStore, UserApi } from '@mergin/lib'
-import { mapState, mapGetters, mapActions } from 'pinia'
+import { mapState, mapActions } from 'pinia'
 import { defineComponent } from 'vue'
 
 import { useAdminStore } from '@/modules/admin/store'
@@ -75,8 +75,7 @@ export default defineComponent({
   computed: {
     ...mapState(useLayoutStore, ['drawer']),
     ...mapState(useInstanceStore, ['configData']),
-    ...mapState(useAdminStore, ['info_url']),
-    ...mapGetters(useAdminStore, ['displayUpdateAvailable'])
+    ...mapState(useAdminStore, ['info_url', 'displayUpdateAvailable'])
   },
 
   methods: {

@@ -88,7 +88,7 @@ import {
   useNotificationStore,
   useFormStore
 } from '@mergin/lib'
-import { mapActions, mapGetters } from 'pinia'
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
 export default defineComponent({
@@ -102,7 +102,7 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapGetters(useFormStore, ['getErrorByComponentId']),
+    ...mapState(useFormStore, ['getErrorByComponentId']),
 
     invalidInput() {
       return this.isValid === null

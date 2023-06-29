@@ -194,7 +194,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { mapActions, mapGetters, mapState } from 'pinia'
+import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 import { CopyIcon, DownloadIcon, SquareMinusIcon } from 'vue-tabler-icons'
 
@@ -259,8 +259,8 @@ export default defineComponent({
     ...mapState(useLayoutStore, ['drawer']),
     ...mapState(useProjectStore, ['project', 'uploads']),
     ...mapState(useUserStore, ['loggedUser']),
-    ...mapGetters(useProjectStore, ['isProjectOwner']),
-    ...mapGetters(useUserStore, ['currentWorkspace', 'isLoggedIn']),
+    ...mapState(useProjectStore, ['isProjectOwner']),
+    ...mapState(useUserStore, ['currentWorkspace', 'isLoggedIn']),
 
     canCloneProject() {
       return this.isLoggedIn && !this.hideCloneButton
