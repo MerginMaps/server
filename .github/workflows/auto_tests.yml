@@ -1,0 +1,43 @@
+name: Auto Tests
+
+on: push
+
+jobs:
+  server_tests:
+    runs-on: ubuntu-20.04
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_DB: postgres        
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5435:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+ 
+      - name: Install deps
+        run: |
+          cd server
+          sudo apt-get -y install pipenv libsqlite3-mod-spatialite
+          pipenv install --dev --three --sequential --verbose
+
+      - name: Run tests
+        run: |
+          cd server
+          pipenv run pytest -v --cov=mergin mergin/tests
+          
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          base-path: server

@@ -8,10 +8,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <v-layout class="no-shrink column">
     <label class="mt-4 grey--text text--darken-1">Access requests:</label>
     <v-data-table
+      :loading="loading"
       :headers="tableHeaders"
-      :items="project.access_requests"
+      :items="accessRequests"
+      :server-items-length="accessRequestsCount"
       no-data-text="No access requests"
-      :hide-default-footer="project.access_requests.length <= 10"
+      :footer-props="{ 'items-per-page-options': [10, 25, 50] }"
+      :hide-default-footer="accessRequestsCount <= 10"
+      :options="options"
+      v-on:update:options="onUpdateOptions"
     >
       <template #header.user="{ header }">
         <v-tooltip v-if="header.tooltip" top>
@@ -139,6 +144,7 @@ import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
 import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
+import { GetProjectAccessRequestsPayload } from '@/modules'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
@@ -146,6 +152,14 @@ import { useUserStore } from '@/modules/user/store'
 export default defineComponent({
   data() {
     return {
+      loading: false,
+      options: {
+        // Default is order_params=expire ASC
+        sortBy: ['expire'],
+        sortDesc: [false],
+        itemsPerPage: 10,
+        page: 1
+      },
       permissions: {},
       tableHeaders: [
         {
@@ -188,21 +202,33 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState(useProjectStore, ['project']),
+    ...mapState(useProjectStore, [
+      'project',
+      'accessRequests',
+      'accessRequestsCount'
+    ]),
     ...mapState(useUserStore, ['loggedUser'])
-  },
-  created() {
-    this.project.access_requests.forEach((request) => {
-      this.permissions[request.id] = 'read'
-    })
   },
   methods: {
     ...mapActions(useProjectStore, [
       'cancelProjectAccessRequest',
-      'acceptProjectAccessRequest'
+      'acceptProjectAccessRequest',
+      'getProjectAccessRequests'
     ]),
     ...mapActions(useNotificationStore, ['error']),
 
+    onUpdateOptions(options) {
+      this.options = options
+      this.fetchItems()
+    },
+    /** Update pagination in case of last accepting / canceling feature */
+    async updatePaginationOrFetch() {
+      if (this.accessRequests.length === 1 && this.options.page > 1) {
+        this.options.page -= 1
+        return
+      }
+      await this.fetchItems()
+    },
     canAcceptAccessRequest(userId: number, expire: string) {
       return (
         !this.expired(expire) &&
@@ -227,10 +253,9 @@ export default defineComponent({
         await this.acceptProjectAccessRequest({
           data,
           itemId: request.id,
-          refetchGlobalAccessRequests: false,
           namespace: this.project.namespace,
-          projectName: this.project.name
         })
+        await this.updatePaginationOrFetch()
       } catch (err) {
         const msg = err.response
           ? err.response.data?.detail
@@ -244,10 +269,33 @@ export default defineComponent({
     async cancelRequest(request) {
       await this.cancelProjectAccessRequest({
         itemId: request.id,
-        refetchGlobalAccessRequests: false,
         namespace: this.project.namespace,
-        projectName: this.project.name
       })
+      await this.updatePaginationOrFetch()
+    },
+    async fetchItems() {
+      this.loading = true
+      try {
+        const payload: GetProjectAccessRequestsPayload = {
+          namespace: this.project.namespace,
+          params: {
+            page: this.options.page,
+            per_page: this.options.itemsPerPage,
+            order_params:
+              this.options.sortBy[0] &&
+              `${this.options.sortBy[0]} ${
+                this.options.sortDesc[0] ? 'DESC' : 'ASC'
+              }`,
+            project_name: this.project.name
+          }
+        }
+        await this.getProjectAccessRequests(payload)
+        this.accessRequests.forEach((request) => {
+          this.permissions[request.id] = 'read'
+        })
+      } finally {
+        this.loading = false
+      }
     }
   }
 })

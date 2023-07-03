@@ -65,6 +65,8 @@ from .utils import (
     is_valid_uuid,
     gpkg_wkb_to_wkt,
     format_time_delta,
+    is_versioned_file,
+    is_valid_gpkg,
 )
 from .utils import (
     is_name_allowed,
@@ -768,6 +770,10 @@ def project_push(namespace, project_name):
     blacklisted_files = []
     for change in changes.values():
         for f in change:
+            # check if .gpkg file is valid
+            if is_versioned_file(f["path"]):
+                if not is_valid_gpkg(f):
+                    abort(400, "File {} is not valid".format(f["path"]))
             if is_file_name_blacklisted(f["path"], current_app.config["BLACKLIST"]):
                 blacklisted_files.append(f)
             # all file need to be unique after sanitized
@@ -992,6 +998,10 @@ def push_finish(transaction_id):
                 % (f["path"], project_path),
                 exc_info=True,
             )
+            # check if .gpkg file is valid
+            if is_versioned_file(dest_file):
+                if not is_valid_gpkg(f):
+                    corrupted_files.append(f["path"])
             corrupted_files.append(f["path"])
 
     if corrupted_files:
@@ -1334,4 +1344,15 @@ def get_workspace_by_id(id):
 
     ctx = {"user": current_user}
     data = UserWorkspaceSchema(context=ctx).dump(ws)
+    return data, 200
+
+
+@auth_required
+def get_project_version(project_id: str, version: str):
+    """Get project version by its name (e.g. v3)"""
+    project = require_project_by_uuid(project_id, ProjectPermissions.Read)
+    pv = ProjectVersion.query.filter_by(
+        project_id=project.id, name=version
+    ).first_or_404()
+    data = ProjectVersionSchema(exclude=["files"]).dump(pv)
     return data, 200

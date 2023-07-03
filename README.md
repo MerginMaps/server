@@ -10,12 +10,13 @@
 </p>
 
 <p align="center">
-	<b>Store and track changes to your geo-data</b>
+	<b>Store and track changes to your geo-data</b> <br /> 
+	<img src="https://img.shields.io/badge/License-Dual AGPL3 and MM Commercial licence-blue">
 </p>
 
-<p align="center">
-<img src="https://img.shields.io/badge/License-Dual AGPL3 and MM Commercial licence-blue">
-</p>
+[![Code Layout](https://github.com/MerginMaps/mergin/actions/workflows/code_style.yml/badge.svg)](https://github.com/MerginMaps/mergin/actions/workflows/code_style.yml)
+[![Auto Tests](https://github.com/MerginMaps/mergin/actions/workflows/auto_tests.yml/badge.svg)](https://github.com/MerginMaps/mergin/actions/workflows/auto_tests.yml)
+[![Coverage Status](https://coveralls.io/repos/github/MerginMaps/mergin/badge.svg)](https://coveralls.io/github/MerginMaps/mergin)
 
 ## About
 

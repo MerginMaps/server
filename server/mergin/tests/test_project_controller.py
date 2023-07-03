@@ -30,8 +30,8 @@ from ..sync.models import (
     GeodiffActionHistory,
     ProjectRole,
 )
-from ..sync.schemas import ProjectSchema, ProjectListSchema
-from ..sync.utils import generate_checksum, is_versioned_file, resolve_tags
+from ..sync.schemas import ProjectListSchema
+from ..sync.utils import generate_checksum, is_versioned_file
 from ..auth.models import User, UserProfile
 
 from . import (
@@ -575,7 +575,7 @@ def test_get_project_at_version(client, diff_project):
     )
     for key, value in latest_project.items():
         # skip updated column as that one would differ slightly due to delay between project and version object update
-        if key == "updated" or key == "access_requests" or "latest_version":
+        if key == "updated" or "latest_version":
             continue
         assert value == resp3.json[key]
 
@@ -1005,6 +1005,13 @@ def _get_changes_with_diff(project_dir):
     return changes
 
 
+def _get_changes_with_diff_0_size(project_dir):
+    changes = _get_changes_with_diff(project_dir)
+    # tweak file size
+    changes["updated"][1]["size"] = 0
+    return changes
+
+
 test_push_data = [
     (
         {"version": "v1", "changes": _get_changes_without_added(test_project_dir)},
@@ -1014,6 +1021,10 @@ test_push_data = [
         {"version": "v1", "changes": _get_changes_with_diff(test_project_dir)},
         200,
     ),  # with diff, success
+    (
+        {"version": "v1", "changes": _get_changes_with_diff_0_size(test_project_dir)},
+        400,
+    ),  # broken .gpkg file
     (
         {"version": "v1", "changes": _get_changes(test_project_dir)},
         400,
@@ -1513,6 +1524,13 @@ def test_push_diff_finish(client):
     assert resp.status_code == 422
     assert resp.json["detail"] == error
 
+    # fail if diff file is not valid
+    changes = _get_changes_with_diff_0_size(test_project_dir)
+    upload, upload_dir = create_transaction("mergin", changes, 3)
+    upload_chunks(upload_dir, upload.changes)
+    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    assert resp.status_code == 422
+
 
 def test_push_no_diff_finish(client):
     working_dir = os.path.join(TMP_DIR, "test_push_no_diff_finish")
@@ -1820,81 +1838,6 @@ def test_file_diffs_chain(diff_project):
     assert not diffs
 
 
-def _gpkgs_are_equal(file1, file2):
-    """Check two geopackge files are equal by means there are no geodiff changes."""
-    changes = os.path.join(TMP_DIR, "changeset" + str(uuid.uuid4()))
-    geodiff = GeoDiff()
-    geodiff.create_changeset(file1, file2, changes)
-    return not geodiff.has_changes(changes)
-
-
-def test_version_file_restore(diff_project):
-    test_file = os.path.join(diff_project.storage.project_dir, "v4", "base.gpkg")
-    os.rename(test_file, test_file + "_backup")
-    diff_project.storage.restore_versioned_file("base.gpkg", "v4")
-    assert os.path.exists(test_file)
-    assert _gpkgs_are_equal(test_file, test_file + "_backup")
-
-    # we can restore version 7 (composed from multiple diffs from v6 and v7)
-    test_file = os.path.join(diff_project.storage.project_dir, "v7", "base.gpkg")
-    os.rename(test_file, test_file + "_backup")
-    diff_project.storage.restore_versioned_file("base.gpkg", "v7")
-    assert os.path.exists(test_file)
-    assert _gpkgs_are_equal(test_file, test_file + "_backup")
-    # check we track performance of reconstruction
-    gh = GeodiffActionHistory.query.filter_by(
-        project_id=diff_project.id, target_version="v7"
-    ).first()
-    assert gh.base_version == "v5"
-    assert gh.geodiff_time
-    assert gh.copy_time
-    assert gh.action == "restore_file"
-
-    # restore v6 from previous basefile v5
-    test_file = os.path.join(diff_project.storage.project_dir, "v6", "base.gpkg")
-    os.rename(test_file, test_file + "_backup")
-    diff_project.storage.restore_versioned_file("base.gpkg", "v6")
-    assert os.path.exists(test_file)
-    assert _gpkgs_are_equal(test_file, test_file + "_backup")
-
-    # remove v9 and v10 to mimic that project history end with existing file
-    pv_8 = ProjectVersion.query.filter_by(project_id=diff_project.id, name="v8").first()
-    pv_9 = ProjectVersion.query.filter_by(project_id=diff_project.id, name="v9").first()
-    pv_10 = ProjectVersion.query.filter_by(
-        project_id=diff_project.id, name="v10"
-    ).first()
-    diff_project.latest_version = "v8"
-    diff_project.files = pv_8.files
-    flag_modified(diff_project, "files")
-    db.session.delete(pv_9)
-    db.session.delete(pv_10)
-    db.session.commit()
-    # restore v6 backward, from the latest file (v7=v8)
-    test_file = os.path.join(diff_project.storage.project_dir, "v6", "base.gpkg")
-    if os.path.exists(test_file):
-        os.remove(test_file)
-    diff_project.storage.restore_versioned_file("base.gpkg", "v6")
-    assert os.path.exists(test_file)
-    assert _gpkgs_are_equal(test_file, test_file + "_backup")
-    gh = GeodiffActionHistory.query.filter_by(
-        project_id=diff_project.id, base_version="v7", target_version="v6"
-    ).first()
-    assert gh.geodiff_time
-    assert gh.copy_time
-
-    # basefile can not be restored
-    test_file = os.path.join(diff_project.storage.project_dir, "v5", "base.gpkg")
-    os.remove(test_file)
-    diff_project.storage.restore_versioned_file("base.gpkg", "v5")
-    assert not os.path.exists(test_file)
-
-    # no geodiff file can not be restored
-    test_file = os.path.join(diff_project.storage.project_dir, "v1", "test.txt")
-    os.remove(test_file)
-    diff_project.storage.restore_versioned_file("test.txt", "v1")
-    assert not os.path.exists(test_file)
-
-
 changeset_data = [
     ("v1", "test.gpkg", 404),
     ("v1", "test.txt", 404),
@@ -2038,186 +1981,6 @@ def test_project_conflict_files(diff_project, file):
         diff_project
     )
     assert project_info["has_conflict"]
-
-
-def _push_change(project, action, path, src_dir):
-    """Helper to create ProjectVersion incl. files changes based on change metadata
-
-    :param project: project to push, Project
-    :param action: change action type, str
-    :param path: relative path of file inside project, str
-    :param src_dir: absolute path to directory with file upload, StrPath
-
-    :returns: new project version, ProjectVersion
-    """
-    current_files = project.files
-    new_version = project.next_version()
-    changes = {"added": [], "updated": [], "removed": []}
-    metadata = {**file_info(src_dir, path), "location": os.path.join(new_version, path)}
-
-    if action == "added":
-        new_file = os.path.join(project.storage.project_dir, metadata["location"])
-        os.makedirs(os.path.dirname(new_file), exist_ok=True)
-        shutil.copy(os.path.join(src_dir, metadata["path"]), new_file)
-        current_files.append(metadata)
-    elif action == "updated":
-        f_updated = next(f for f in current_files if f["path"] == path)
-        metadata = {
-            **file_info(src_dir, path),
-            "location": os.path.join(new_version, path),
-        }
-        patched_file = os.path.join(project.storage.project_dir, metadata["path"])
-        os.makedirs(os.path.dirname(patched_file), exist_ok=True)
-        if ".gpkg" in path:
-            diff_id = str(uuid.uuid4())
-            diff_name = path + "-diff-" + diff_id
-            basefile = os.path.join(project.storage.project_dir, f_updated["location"])
-            modfile = os.path.join(src_dir, path)
-            changeset = os.path.join(src_dir, diff_name)
-            project.storage.geodiff.create_changeset(basefile, modfile, changeset)
-            metadata["diff"] = {
-                "path": diff_name,
-                "checksum": generate_checksum(changeset),
-                "size": os.path.getsize(changeset),
-                "chunks": [
-                    str(uuid.uuid4())
-                    for i in range(
-                        math.ceil(file_info(src_dir, diff_name)["size"] / CHUNK_SIZE)
-                    )
-                ],
-                "location": os.path.join(new_version, diff_name),
-            }
-            diff_file = os.path.join(
-                project.storage.project_dir, metadata["diff"]["location"]
-            )
-            os.makedirs(os.path.dirname(diff_file), exist_ok=True)
-            shutil.copy(changeset, diff_file)
-
-        new_file = os.path.join(project.storage.project_dir, metadata["location"])
-        os.makedirs(os.path.dirname(new_file), exist_ok=True)
-        shutil.copy(os.path.join(src_dir, metadata["path"]), new_file)
-        f_updated.update(metadata)
-    elif action == "removed":
-        f_removed = next(f for f in current_files if f["path"] == path)
-        current_files.remove(f_removed)
-    else:
-        return
-
-    changes[action].append(metadata)
-    pv = ProjectVersion(
-        project,
-        new_version,
-        project.creator.username,
-        changes,
-        current_files,
-        "127.0.0.1",
-    )
-    db.session.add(pv)
-    db.session.commit()
-    assert pv.project_size == sum(file["size"] for file in pv.files)
-    project.files = current_files
-    project.disk_usage = sum(file["size"] for file in project.files)
-    project.tags = resolve_tags(pv.files)
-    project.latest_version = new_version
-    db.session.add(project)
-    flag_modified(project, "files")
-    db.session.commit()
-    return pv
-
-
-def _execute_query(file, sql):
-    """Open connection to gpkg file and execute SQL query"""
-    gpkg_conn = sqlite3.connect(file)
-    gpkg_conn.enable_load_extension(True)
-    gpkg_cur = gpkg_conn.cursor()
-    gpkg_cur.execute('SELECT load_extension("mod_spatialite")')
-    gpkg_cur.execute(sql)
-    gpkg_conn.commit()
-    gpkg_conn.close()
-
-
-def _create_blank_version(project):
-    """Helper to create dummy project version with no changes to increase count"""
-    changes = {"added": [], "updated": [], "removed": []}
-    pv = ProjectVersion(
-        project,
-        project.next_version(),
-        project.creator.username,
-        changes,
-        project.files,
-        "127.0.0.1",
-    )
-    db.session.add(pv)
-    project.latest_version = project.next_version()
-    flag_modified(project, "files")
-    db.session.commit()
-
-
-@pytest.mark.parametrize("forward_check", [True, False])
-def test_crud_in_version_file_restore(app, forward_check):
-    """ " Test to restore gpkg file where feature went through CRUD operations in subsequent versions
-    Any version should be possible to restore from initial basefile or the latest file
-    """
-    user = User.query.filter_by(username="mergin").first()
-    test_workspace = create_workspace()
-    p = create_project("restore_test", test_workspace, user)
-    working_dir = os.path.join(TMP_DIR, "restore_diffs")
-    # cleanup
-    if os.path.exists(working_dir):
-        shutil.rmtree(working_dir)
-
-    # prepare: add insert/update/delete feature updates into base.gpkg file
-    os.makedirs(working_dir, exist_ok=True)
-    basefile = os.path.join(working_dir, "base.gpkg")
-    # add basefile
-    shutil.copy(os.path.join(test_project_dir, "base.gpkg"), basefile)
-    _push_change(p, "added", "base.gpkg", working_dir)
-    assert p.latest_version == "v1"
-    assert os.path.exists(os.path.join(p.storage.project_dir, "v1", "base.gpkg"))
-
-    # introduce dummy changes to project before making any updated to force restore lookup from the end
-    if not forward_check:
-        for _ in range(3):
-            _create_blank_version(p)
-
-    # insert new feature
-    sql = "INSERT INTO simple (geometry, name) VALUES (GeomFromText('POINT(24.5, 38.2)', 4326), 'insert_test')"
-    _execute_query(basefile, sql)
-    pv2 = _push_change(p, "updated", "base.gpkg", working_dir)
-    assert p.latest_version == pv2.name
-    assert os.path.exists(os.path.join(p.storage.project_dir, pv2.name, "base.gpkg"))
-    # update feature
-    sql = "UPDATE simple SET rating=100 WHERE name='insert_test'"
-    _execute_query(basefile, sql)
-    pv3 = _push_change(p, "updated", "base.gpkg", working_dir)
-    assert p.latest_version == pv3.name
-    assert os.path.exists(os.path.join(p.storage.project_dir, pv3.name, "base.gpkg"))
-    # delete feature
-    sql = "DELETE FROM simple WHERE name='insert_test'"
-    _execute_query(basefile, sql)
-    pv4 = _push_change(p, "updated", "base.gpkg", working_dir)
-    assert p.latest_version == pv4.name
-    assert os.path.exists(os.path.join(p.storage.project_dir, pv4.name, "base.gpkg"))
-
-    # introduce dummy changes before last project update to force restore lookup from beginning
-    if forward_check:
-        for _ in range(3):
-            _create_blank_version(p)
-
-    # create new version, latest is also 'basefile' from restore point of view
-    sql = "UPDATE simple SET rating=100 WHERE fid=1"
-    _execute_query(basefile, sql)
-    pv5 = _push_change(p, "updated", "base.gpkg", working_dir)
-    assert p.latest_version == pv5.name
-    assert os.path.exists(os.path.join(p.storage.project_dir, pv5.name, "base.gpkg"))
-
-    # tests we can restore anything between pv1 and pv5
-    for version in [pv2.name, pv3.name, pv4.name]:
-        test_file = os.path.join(p.storage.project_dir, version, "base.gpkg")
-        os.rename(test_file, test_file + "_backup")
-        p.storage.restore_versioned_file("base.gpkg", version)
-        assert os.path.exists(test_file)
-        assert _gpkgs_are_equal(test_file, test_file + "_backup")
 
 
 def test_orphan_project(client):
@@ -2378,3 +2141,29 @@ def test_inactive_project(client, diff_project):
     )
     assert resp.status_code == 409
     assert "Project with the same name is scheduled for deletion" in resp.json["detail"]
+
+
+def test_get_project_version(client, diff_project):
+    # success - latest version
+    resp = client.get(
+        f"/v1/project/version/{str(diff_project.id)}/{diff_project.latest_version}"
+    )
+    assert resp.status_code == 200
+    assert resp.json["name"] == diff_project.latest_version
+
+    # success any older version
+    resp = client.get(f"/v1/project/version/{str(diff_project.id)}/v1")
+    assert resp.status_code == 200
+    assert resp.json["name"] == "v1"
+
+    # not existing version
+    resp = client.get(f"/v1/project/version/{str(diff_project.id)}/v100")
+    assert resp.status_code == 404
+
+    # invalid version identifier
+    resp = client.get(f"/v1/project/version/{str(diff_project.id)}/500")
+    assert resp.status_code == 404
+
+    # invalid project identifier
+    resp = client.get(f"/v1/project/version/1234/v10")
+    assert resp.status_code == 404

@@ -26,7 +26,6 @@
     "build:admin:dev": "yarn workspace @mergin/admin-app build:dev",
     "clean:libs": "yarn workspace @mergin/lib clean && yarn workspace @mergin/admin-lib clean",
     "clean:libs:noadmin": "yarn workspace @mergin/lib clean",
-    "lint": "yarn workspace @mergin/app lint",
     "i18n:report": "yarn workspace @mergin/app 18n:report",
     "types:libs": "yarn workspaces run build:types",
     "types:lib": "yarn workspace @mergin/lib build:types",

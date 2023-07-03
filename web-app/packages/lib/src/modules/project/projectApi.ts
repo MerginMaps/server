@@ -17,6 +17,7 @@ import {
   PaginatedProjectsResponse,
   PaginatedProjectVersionsResponse,
   ProjectAccessRequestResponse,
+  ProjectAccessRequestParams,
   ProjectDetail,
   ProjectTemplate,
   PushProjectChangesParams,
@@ -119,16 +120,26 @@ export const ProjectApi = {
     )
   },
 
-  async fetchAccessRequests(): Promise<
-    AxiosResponse<ProjectAccessRequestResponse[]>
-  > {
-    return ProjectModule.httpService('/app/project/access-requests')
+  /**
+   * List of project access requests initiated by current user in session
+   */
+  async fetchAccessRequests(
+    params: ProjectAccessRequestParams
+  ): Promise<AxiosResponse<ProjectAccessRequestResponse>> {
+    return ProjectModule.httpService('/app/project/access-requests', { params })
   },
 
+  /**
+   * Paginated list of incoming project access requests to workspace
+   */
   async fetchNamespaceAccessRequests(
-    namespace: string
-  ): Promise<AxiosResponse<ProjectAccessRequestResponse[]>> {
-    return ProjectModule.httpService(`/app/project/access-request/${namespace}`)
+    namespace: string,
+    params: ProjectAccessRequestParams
+  ): Promise<AxiosResponse<ProjectAccessRequestResponse>> {
+    return ProjectModule.httpService(
+      `/app/project/access-request/${namespace}`,
+      { params }
+    )
   },
 
   async acceptProjectAccessRequest(
@@ -253,12 +264,11 @@ export const ProjectApi = {
   },
 
   async getProjectVersion(
-    namespace: string,
-    projectName: string,
-    versionId: string
+    projectId: string,
+    versionName: string
   ): Promise<AxiosResponse<string>> {
     return ProjectModule.httpService.get(
-      `/v1/project/version/${namespace}/${projectName}?version_id=${versionId}`
+      `/v1/project/version/${projectId}/${versionName}`
     )
   },
 

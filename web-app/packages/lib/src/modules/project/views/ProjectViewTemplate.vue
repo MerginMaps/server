@@ -17,19 +17,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-layout class="row align-center toolbar">
           <div class="breadcrumbs" style="font-size: 20px">
             <v-icon color="primary">map</v-icon>
-            <!--            TODO: router link is removed for now, replaced with plain text -->
-            <!--            <router-link-->
-            <!--              v-if="isNamespaceVisible"-->
-            <!--              :to="{-->
-            <!--                name: 'namespace-projects',-->
-            <!--                namespace: project.namespace-->
-            <!--              }"-->
-            <!--              v-text="project.namespace"-->
-            <!--            />-->
-            <span v-if="isNamespaceVisible" class="primary--text">{{
-              project.namespace
-            }}</span>
-            <span v-if="isNamespaceVisible" class="primary--text">/</span>
+            <span v-if="showNamespace" class="primary--text"
+              >{{ project.namespace }} /</span
+            >
             <router-link
               :to="{
                 name: 'project',
@@ -115,6 +105,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <slot name="map.tab" v-if="loggedUser" />
               <v-tab
                 key="history"
+                v-if="loggedUser && showHistory"
                 :to="{
                   name: `project-versions`,
                   params: { namespace: namespace, projectName: project.name }
@@ -123,11 +114,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               </v-tab>
               <v-tab
                 key="settings"
+                v-if="loggedUser && showSettings"
                 :to="{
                   name: `project-settings`,
                   params: { namespace: namespace, projectName: project.name }
                 }"
-                v-if="loggedUser && showSettings"
                 >Settings
               </v-tab>
             </v-tabs>
@@ -195,7 +186,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
-import { defineComponent } from 'vue'
+import { defineComponent, PropType } from 'vue'
 import { CopyIcon, DownloadIcon, SquareMinusIcon } from 'vue-tabler-icons'
 
 import ActionButton from '@/common/components/ActionButton.vue'
@@ -226,16 +217,10 @@ export default defineComponent({
     SquareMinusIcon
   },
   props: {
-    // forces to show namespace (also on non-public projects)
+    /**  Show namespace (ws) label in breadcrumb of page */
     showNamespace: {
-      type: Boolean,
-      default: false
-    },
-    // forces to hide namespace (also on public projects)
-    // if both hideNamespace and showNamespace is true, namespace is not shown
-    hideNamespace: {
-      type: Boolean,
-      default: false
+      type: Boolean as PropType<boolean>,
+      default: true
     },
     namespace: String,
     projectName: String,
@@ -243,7 +228,8 @@ export default defineComponent({
       type: String,
       default: ''
     },
-    showSettings: Boolean,
+    showSettings: Boolean as PropType<boolean>,
+    showHistory: { type: Boolean as PropType<boolean>, default: true },
     hideCloneButton: {
       type: Boolean,
       default: false
@@ -289,12 +275,6 @@ export default defineComponent({
           this.projectName
         )
       }
-    },
-    isPublic() {
-      return this.project?.access?.public
-    },
-    isNamespaceVisible() {
-      return !this.hideNamespace && (this.showNamespace || this.isPublic)
     }
   },
   async created() {

@@ -236,14 +236,10 @@ export default defineComponent({
 
     fetchProjects() {
       this.loading = true
-      const params = (
-        this.$route.name === 'shared_projects' ||
-        this.$route.name === 'my_projects'
-          ? { flag: this.$route.meta.flag }
-          : {}
-      ) as PaginatedAdminProjectsParams
-      params.page = this.options.page
-      params.per_page = this.options.itemsPerPage
+      const params: PaginatedAdminProjectsParams = {
+        page: this.options.page,
+        per_page: this.options.itemsPerPage
+      }
       if (this.options.sortBy[0]) {
         let orderParam = ''
         if (this.options.sortBy[0] === 'meta.size') {

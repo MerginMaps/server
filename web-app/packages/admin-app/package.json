@@ -13,7 +13,7 @@
     "build:lib:all:prod": "yarn build:lib:prod && yarn build:types",
     "build:types": "echo 'Not defined script'",
     "clean": "echo 'Nothing to clean.'",
-    "lint": "vue-cli-service lint --fix",
+    "lint": "eslint . --config .eslintrc.js --ext .js,.vue,.ts",
     "i18n:report": "vue-cli-service i18n:report --src './src/admin/**/*.?(js|vue)' --locales './src/admin/locales/**/*.json'"
   },
   "dependencies": {

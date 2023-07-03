@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <project-view-template
-    :hide-namespace="true"
+    :show-namespace="false"
     :namespace="namespace"
     :projectName="projectName"
     :asAdmin="asAdmin"

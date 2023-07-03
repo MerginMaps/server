@@ -108,6 +108,11 @@ export const useUserStore = defineStore('userModule', {
           (workspace) => workspace.name === payload.name
         )
       }
+    },
+    isWorkspaceUser: (state) => {
+      return (payload: WorkspaceIdPayload) => {
+        return state.workspaces.some((workspace) => workspace.id === payload.id)
+      }
     }
   },
 

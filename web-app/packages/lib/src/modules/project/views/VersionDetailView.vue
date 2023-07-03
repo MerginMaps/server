@@ -128,6 +128,7 @@ import { useNotificationStore } from '@/modules/notification/store'
 import FileChangesetSummaryTable from '@/modules/project/components/FileChangesetSummaryTable.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
 import { useProjectStore } from '@/modules/project/store'
+import axios from 'axios'
 
 const Colors = {
   added: 'green--text',
@@ -157,7 +158,7 @@ export default defineComponent({
     this.getVersion()
   },
   computed: {
-    ...mapState(useProjectStore, ['project']),
+    ...mapState(useProjectStore, ['project', 'versions']),
     colors() {
       return Colors
     },
@@ -169,7 +170,7 @@ export default defineComponent({
       ]
     },
     changes() {
-      return this.version && this.version.changes
+      return this.version?.changes
     },
     downloadUrl() {
       return ProjectApi.constructDownloadProjectVersionUrl(
@@ -184,32 +185,26 @@ export default defineComponent({
   },
   methods: {
     ...mapActions(useNotificationStore, ['error']),
-
-    getVersion() {
-      if (!this.project.versions) {
-        ProjectApi.getProjectVersion(
-          this.project.namespace,
-          this.project.name,
-          this.version_id
-        )
-          // TODO: types
-          .then((resp: any) => {
-            if (resp.data.length) {
-              const version = resp.data[0]
-              version.changes = resp.data[0].changes
-              this.version = version
-            }
-          })
-          .catch((err) => {
-            const msg = err.response
-              ? err.response.data?.detail
-              : 'Failed to fetch project version'
-            this.error({ text: msg })
-          })
-      } else {
-        this.version = this.project.versions.find(
+    async getVersion() {
+      try {
+        const currentVersion = this.versions?.find(
           (v) => v.name === this.version_id
         )
+        if (currentVersion) {
+          this.version = currentVersion
+          return
+        }
+        const response = await ProjectApi.getProjectVersion(
+          this.project.id,
+          this.version_id
+        )
+        this.version = response.data
+      } catch (err) {
+        const msg =
+          axios.isAxiosError(err) && err.response
+            ? err.response.data?.detail
+            : 'Failed to fetch project version'
+        this.error({ text: msg })
       }
     }
   }

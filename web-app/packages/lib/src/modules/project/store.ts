@@ -19,15 +19,20 @@ import { ProjectApi } from '@/modules/project/projectApi'
 import {
   AcceptProjectAccessRequestPayload,
   CancelProjectAccessRequestPayload,
-  NamespaceAccessRequestsPayload,
+  GetNamespaceAccessRequestsPayload,
   ProjectListItem,
   PaginatedProjectsPayload,
-  ProjectAccessRequestResponse,
   ProjectsPayload,
   ProjectDetail,
   ProjectParams,
   EnhancedProjectDetail,
-  ReloadProjectAccessRequestPayload,
+  FetchProjectVersionsPayload,
+  ProjectVersion,
+  ProjectVersionsPayload,
+  ProjectAccessRequest,
+  GetUserAccessRequestsPayload,
+  AccessRequestsPayload,
+  GetProjectAccessRequestsPayload,
   DownloadPayload
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
@@ -41,24 +46,30 @@ export interface UploadFilesPayload {
 }
 
 export interface ProjectState {
-  accessRequests: ProjectAccessRequestResponse[] | undefined
-  namespaceAccessRequests: ProjectAccessRequestResponse[] | undefined
+  accessRequests: ProjectAccessRequest[]
+  accessRequestsCount: number
   project: EnhancedProjectDetail
   projects: ProjectListItem[]
   projectsCount: number
   uploads: any
   currentNamespace: string
+  versions: ProjectVersion[]
+  versionsCount: number
+  versionsLoading: boolean
 }
 
 export const useProjectStore = defineStore('projectModule', {
   state: (): ProjectState => ({
-    accessRequests: undefined,
-    namespaceAccessRequests: undefined,
+    accessRequests: [],
+    accessRequestsCount: 0,
     project: null,
     projectsCount: 0,
     projects: undefined,
     uploads: {},
-    currentNamespace: null
+    currentNamespace: null,
+    versions: [],
+    versionsCount: 0,
+    versionsLoading: false
   }),
 
   getters: {
@@ -74,10 +85,7 @@ export const useProjectStore = defineStore('projectModule', {
   actions: {
     setAccessRequests(payload) {
       this.accessRequests = payload.accessRequests
-    },
-
-    setNamespaceAccessRequests(payload) {
-      this.namespaceAccessRequests = payload.accessRequests
+      this.accessRequestsCount = payload.count
     },
 
     setProject(payload: { project: ProjectDetail }) {
@@ -100,14 +108,16 @@ export const useProjectStore = defineStore('projectModule', {
       }
       this.project = enhancedProject
     },
-
     setProjects(payload: ProjectsPayload) {
       this.projects = payload.projects
       this.projectsCount = payload.count
     },
-
-    setProjectVersions(payload) {
-      this.project.versions = payload.versions
+    setProjectVersions(payload: ProjectVersionsPayload) {
+      this.versions = payload.versions
+      this.versionsCount = payload.count
+    },
+    projectVersionsLoading(loading: boolean) {
+      this.versionsLoading = loading
     },
 
     initUpload(payload) {
@@ -280,19 +290,27 @@ export const useProjectStore = defineStore('projectModule', {
         waitCursor(false)
       }
     },
-    async initAccessRequests() {
-      if (!(this.accessRequests?.length > 0)) {
-        await this.fetchAccessRequests()
-      }
+    async initUserAccessRequests(payload?: GetUserAccessRequestsPayload) {
+      await this.fetchUserAccessRequests({
+        params: {
+          page: 1,
+          per_page: 10,
+          order_params: 'expire DESC',
+          ...payload?.params
+        }
+      })
     },
 
-    async fetchAccessRequests() {
+    async fetchUserAccessRequests(payload: GetUserAccessRequestsPayload) {
       const notificationStore = useNotificationStore()
 
       try {
-        const accessRequestResponse = await ProjectApi.fetchAccessRequests()
+        const accessRequestResponse = await ProjectApi.fetchAccessRequests(
+          payload.params
+        )
         this.setAccessRequests({
-          accessRequests: accessRequestResponse.data
+          accessRequests: accessRequestResponse.data?.items,
+          count: accessRequestResponse.data?.count
         })
       } catch {
         await notificationStore.error({
@@ -301,22 +319,34 @@ export const useProjectStore = defineStore('projectModule', {
       }
     },
 
-    async initNamespaceAccessRequests(payload: NamespaceAccessRequestsPayload) {
-      if (!(this.namespaceAccessRequests?.length > 0)) {
-        await this.fetchNamespaceAccessRequests(payload)
-      }
+    async initNamespaceAccessRequests(
+      payload: GetNamespaceAccessRequestsPayload
+    ) {
+      await this.fetchNamespaceAccessRequests({
+        ...payload,
+        params: {
+          page: 1,
+          per_page: 10,
+          order_params: 'expire DESC',
+          ...payload.params
+        }
+      })
     },
 
     async fetchNamespaceAccessRequests(
-      payload: NamespaceAccessRequestsPayload
+      payload: GetNamespaceAccessRequestsPayload
     ) {
       const notificationStore = useNotificationStore()
 
       try {
         const accessRequestResponse =
-          await ProjectApi.fetchNamespaceAccessRequests(payload.namespace)
-        this.setNamespaceAccessRequests({
-          accessRequests: accessRequestResponse.data
+          await ProjectApi.fetchNamespaceAccessRequests(
+            payload.namespace,
+            payload.params
+          )
+        this.setAccessRequests({
+          accessRequests: accessRequestResponse.data?.items,
+          count: accessRequestResponse.data?.count
         })
       } catch {
         await notificationStore.error({
@@ -325,29 +355,14 @@ export const useProjectStore = defineStore('projectModule', {
       }
     },
 
-    async reloadProjectAccessRequests(
-      payload: ReloadProjectAccessRequestPayload
-    ) {
-      if (payload.refetchGlobalAccessRequests) {
-        if (payload.namespace) {
-          await this.fetchNamespaceAccessRequests({
-            namespace: payload.namespace
-          })
-        } else {
-          await this.fetchAccessRequests()
-        }
+    async getProjectAccessRequests(payload: GetProjectAccessRequestsPayload) {
+      if (payload.namespace) {
+        await this.fetchNamespaceAccessRequests({
+          namespace: payload.namespace,
+          ...payload
+        })
       } else {
-        if (payload.namespace && payload.projectName) {
-          // refetch project to update project access requests
-          await this.fetchProject({
-            projectName: payload.projectName,
-            namespace: payload.namespace
-          })
-        } else {
-          console.warn(
-            'Cannot reload project access requests. Missing namespace or projectName.'
-          )
-        }
+        await this.fetchUserAccessRequests(payload)
       }
     },
 
@@ -359,7 +374,6 @@ export const useProjectStore = defineStore('projectModule', {
       waitCursor(true)
       try {
         await ProjectApi.cancelProjectAccessRequest(payload.itemId, true)
-        await this.reloadProjectAccessRequests(payload)
       } catch (err) {
         const msg = err.response
           ? err.response.data?.detail
@@ -380,7 +394,6 @@ export const useProjectStore = defineStore('projectModule', {
           payload.data,
           true
         )
-        await this.reloadProjectAccessRequests(payload)
       } finally {
         waitCursor(false)
       }
@@ -461,15 +474,14 @@ export const useProjectStore = defineStore('projectModule', {
             `/login?redirect=/projects/${namespace}/${projectName}`
           )
         } else if (e.response.status === 403) {
-          ProjectApi.fetchAccessRequests()
+          ProjectApi.fetchAccessRequests({
+            page: 1,
+            per_page: 1,
+            project_name: payload.projectName
+          })
             .then((resp) => {
-              for (const ar of resp.data) {
-                if (
-                  ar.namespace === namespace &&
-                  ar.project_name === projectName
-                ) {
-                  callbackStatus(409)
-                }
+              if (resp.data.count) {
+                callbackStatus(409)
               }
             })
             .catch(() => {
@@ -481,21 +493,26 @@ export const useProjectStore = defineStore('projectModule', {
       }
     },
 
-    async fetchProjectVersions(payload) {
+    async fetchProjectVersions(payload: FetchProjectVersionsPayload) {
       const notificationStore = useNotificationStore()
 
       try {
-        const versionsResponse = await ProjectApi.fetchProjectVersions(
+        this.projectVersionsLoading(true)
+        const response = await ProjectApi.fetchProjectVersions(
           payload.namespace,
           payload.projectName,
           payload.params
         )
-        payload.cbSuccess(versionsResponse.data)
-        this.setProjectVersions({ versions: versionsResponse.data?.versions })
+        this.setProjectVersions({
+          versions: response.data?.versions,
+          count: response.data?.count
+        })
       } catch (e) {
         await notificationStore.error({
           text: 'Failed to fetch project versions'
         })
+      } finally {
+        this.projectVersionsLoading(false)
       }
     },
 

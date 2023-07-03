@@ -212,8 +212,11 @@ class Project(db.Model):
                 meta = history[history_end]
                 # we have either full history of changes or v_x = v_x+n => no basefile in way, it is 'diffable' from the end
                 if "diff" in meta:
+                    # omit diff for target version as it would lead to previous version if reconstructed backward
                     diffs = [
-                        value["diff"] for value in list(reversed(history.values()))[1:]
+                        value["diff"]
+                        for key, value in reversed(history.items())
+                        if key != v_x
                     ]
                     base_meta = history[next(iter(history))]
                     base_meta["version"] = next(iter(history))
@@ -249,7 +252,9 @@ class Project(db.Model):
                     else:
                         diffs = [
                             value["diff"]
-                            for value in list(reversed(history.values()))[1:]
+                            for value in list(reversed(history.values()))[
+                                1:
+                            ]  # basefile has no diff
                         ]
                 # file was removed (or renamed for backward compatibility)
                 else:
@@ -417,6 +422,11 @@ class ProjectVersion(db.Model):
             if "diff" in change:
                 change["diff"].pop("chunks", None)
 
+    @property
+    def int_name(self) -> int:
+        """Parsed version name as integer (v5 -> 5)"""
+        return int(self.name.replace("v", ""))
+
     def diff_summary(self):
         """Calculate diff summary for versioned files updated with geodiff
 
@@ -517,11 +527,7 @@ class AccessRequest(db.Model):
 
     user = db.relationship("User", uselist=False)
 
-    project = db.relationship(
-        "Project",
-        uselist=False,
-        backref=db.backref("access_requests", single_parent=True, cascade="all,delete"),
-    )
+    project = db.relationship("Project", uselist=False)
 
     def __init__(self, project, user_id):
         self.project_id = project.id

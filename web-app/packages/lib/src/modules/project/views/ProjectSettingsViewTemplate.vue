@@ -67,11 +67,10 @@ import debounce from 'lodash/debounce'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
-import { ConfirmDialog } from '@/modules'
 import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useNotificationStore } from '@/modules/notification/store'
-import ProjectAccessRequests from '@/modules/project/components/ProjectAccessRequest.vue'
+import ProjectAccessRequests from '@/modules/project/components/ProjectAccessRequests.vue'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
 
