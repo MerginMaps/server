@@ -49,7 +49,7 @@ import { defineComponent } from 'vue'
 // import Themeable from 'vuetify/lib/mixins/themeable'
 
 export default defineComponent({
-  name: 'Item',
+  name: 'BaseItem',
 
   // mixins: [Themeable],
 

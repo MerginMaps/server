@@ -66,9 +66,7 @@ export default defineComponent({
     const projectStore = useProjectStore()
     const userStore = useUserStore()
 
-    const canCreateProject = computed(
-      () => userStore.isGlobalWorkspaceAdmin?.value
-    )
+    const canCreateProject = computed(() => userStore.isGlobalWorkspaceAdmin)
 
     onMounted(async () => {
       await projectStore.initProjects({

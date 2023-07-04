@@ -42,6 +42,7 @@ module.exports = {
       {
         allowModifiers: true
       }
-    ]
+    ],
+    'vue/multi-word-component-names': 'off'
   }
 }

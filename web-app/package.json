@@ -33,15 +33,16 @@
     "watch:lib": "yarn workspace @mergin/lib build:lib:watch",
     "watch:lib:types": "yarn workspace @mergin/lib build:types:watch",
     "watch:admin-lib:types": "yarn workspace @mergin/admin-lib build:types:watch",
-    "watch:admin-lib": "yarn workspace @mergin/admin-lib build:lib:watch"
+    "watch:admin-lib": "yarn workspace @mergin/admin-lib build:lib:watch",
+    "lint:all": "yarn workspaces run lint"
   },
   "devDependencies": {
     "@babel/core": "^7.17.9",
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@fortawesome/fontawesome-free": "^6.1.1",
-    "@typescript-eslint/eslint-plugin": "^5.4.0",
-    "@typescript-eslint/parser": "^5.4.0",
+    "@typescript-eslint/eslint-plugin": "^5.61.0",
+    "@typescript-eslint/parser": "^5.61.0",
     "@vitejs/plugin-vue": "^4.2.3",
     "@vitejs/plugin-vue2": "^2.2.0",
     "@vue/eslint-config-standard": "^8.0.1",

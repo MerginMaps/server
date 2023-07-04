@@ -6,7 +6,6 @@ export * from './base'
 
 export { default as ActionButton } from './ActionButton.vue'
 export { default as CustomPage } from './CustomPage.vue'
-export { default as PageFooter } from './Footer.vue'
 export { default as FullStorageWarning } from './FullStorageWarning.vue'
 export { default as FullStorageWarningTemplate } from './FullStorageWarningTemplate.vue'
 export { default as GlobalWarning } from './GlobalWarning.vue'

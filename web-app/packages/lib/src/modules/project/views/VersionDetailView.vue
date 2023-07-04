@@ -121,6 +121,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import axios from 'axios'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
@@ -128,7 +129,6 @@ import { useNotificationStore } from '@/modules/notification/store'
 import FileChangesetSummaryTable from '@/modules/project/components/FileChangesetSummaryTable.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
 import { useProjectStore } from '@/modules/project/store'
-import axios from 'axios'
 
 const Colors = {
   added: 'green--text',

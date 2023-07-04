@@ -107,8 +107,8 @@ export function filesDiff(oldFiles, newFiles) {
   const removed = difference(oFilesPaths, nFilesPaths)
 
   const diff = {
-    added: added,
-    removed: removed,
+    added,
+    removed,
     updated
   }
   const changes = Object.values(diff).reduce(
