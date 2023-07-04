@@ -51,9 +51,7 @@ export default defineComponent({
     const dialogStore = useDialogStore()
     const formStore = useFormStore()
 
-    const canCreateProject = computed(
-      () => userStore.isGlobalWorkspaceAdmin?.value
-    )
+    const canCreateProject = computed(() => userStore.isGlobalWorkspaceAdmin)
 
     function openCloneDialog() {
       const dialogProps = {
