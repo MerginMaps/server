@@ -1209,11 +1209,14 @@ def test_exceed_data_limit(client):
         data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
         headers=json_headers,
     )
-    assert resp.status_code == 400
-    assert resp.json["detail"] == "You have reached a data limit"
+    assert resp.status_code == 422
+    assert resp.json["code"] == "StorageLimitHit"
+    assert resp.json["detail"] == "You have reached a data limit (StorageLimitHit)"
+    assert resp.json["current_usage"]
+    assert isinstance(resp.json["storage_limit"], int)
     failure = SyncFailuresHistory.query.filter_by(project_id=project.id).first()
     assert failure.error_type == "push_start"
-    assert failure.error_details == "You have reached a data limit"
+    assert failure.error_details == "You have reached a data limit (StorageLimitHit)"
 
     # try to make some space only by removing file
     changes["added"] = []
@@ -1241,8 +1244,8 @@ def test_exceed_data_limit(client):
         data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
         headers=json_headers,
     )
-    assert resp.status_code == 400
-    assert resp.json["detail"] == "You have reached a data limit"
+    assert resp.status_code == 422
+    assert resp.json["detail"] == "You have reached a data limit (StorageLimitHit)"
 
     # try to upload while removing some other files, test4.txt being larger than test2.txt
     changes["removed"] = [

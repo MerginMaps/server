@@ -75,6 +75,7 @@ from .utils import (
     get_project_path,
 )
 from ..celery import send_email_async
+from .errors import StorageLimitHit
 
 push_triggered = signal("push_triggered")
 project_version_created = signal("project_version_created")
@@ -717,6 +718,8 @@ def catch_sync_failure(f):
             elif request.endpoint == "chunk_upload":
                 error_type = "chunk_upload"
 
+            if not e.description: # custom error cases (e.g. StorageLimitHit)
+                e.description = e.response.json["detail"]
             if project:
                 project.sync_failed(user_agent, error_type, str(e.description))
             else:
@@ -821,8 +824,9 @@ def project_push(namespace, project_name):
     if not ws:
         abort(404)
 
-    if ws.disk_usage() + additional_disk_usage > ws.storage:
-        abort(400, "You have reached a data limit")
+    requested_storage = ws.disk_usage() + additional_disk_usage
+    if requested_storage > ws.storage:
+        abort(make_response(jsonify(StorageLimitHit(requested_storage, ws.storage).to_dict()), 422))
 
     upload = Upload(project, num_version, changes, current_user.id)
     db.session.add(upload)
