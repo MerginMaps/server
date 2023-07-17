@@ -21,7 +21,7 @@ from flask import current_app
 
 from .. import db
 from .storages import DiskStorage
-from .utils import int_version, is_versioned_file
+from .utils import int_version, is_versioned_file, format_time_delta
 
 Storages = {"local": DiskStorage}
 
@@ -272,6 +272,13 @@ class Project(db.Model):
         """Next project version in vx format"""
         ver = int(self.latest_version.replace("v", "")) + 1
         return "v" + str(ver)
+
+    @property
+    def expiration(self):
+        """Expiration of the deleted project i.e. when project which is marked for deletion will be removed from database
+        (and it will be possible to create a new one using the same name)"""
+        initial = timedelta(days=current_app.config["DELETED_PROJECT_EXPIRATION"])
+        return format_time_delta(initial - (datetime.utcnow() - self.removed_at))
 
 
 class ProjectRole(Enum):
