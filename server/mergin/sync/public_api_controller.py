@@ -64,7 +64,6 @@ from .utils import (
     generate_location,
     is_valid_uuid,
     gpkg_wkb_to_wkt,
-    format_time_delta,
     is_versioned_file,
     is_valid_gpkg,
 )
@@ -75,6 +74,7 @@ from .utils import (
     get_project_path,
 )
 from ..celery import send_email_async
+from ..utils import format_time_delta
 
 push_triggered = signal("push_triggered")
 project_version_created = signal("project_version_created")
