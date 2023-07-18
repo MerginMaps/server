@@ -279,7 +279,8 @@ class Project(db.Model):
         i.e. if a user deletes a project - in what time it will be removed from database
         It will be possible to create a new project using the same name and will not be possible to restore the old one after this time.
         This time should be used to remove all local copies of the file."""
-        return timedelta(days=current_app.config["DELETED_PROJECT_EXPIRATION"])
+        initial = timedelta(days=current_app.config["DELETED_PROJECT_EXPIRATION"])
+        return initial - (datetime.utcnow() - self.removed_at)
 
 
 class ProjectRole(Enum):
