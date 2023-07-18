@@ -273,6 +273,15 @@ class Project(db.Model):
         ver = int(self.latest_version.replace("v", "")) + 1
         return "v" + str(ver)
 
+    @property
+    def expiration(self) -> timedelta:
+        """Expiration of the project marked for removal
+        i.e. if a user deletes a project - in what time it will be removed from database
+        It will be possible to create a new project using the same name and will not be possible to restore the old one after this time.
+        This time should be used to remove all local copies of the file."""
+        initial = timedelta(days=current_app.config["DELETED_PROJECT_EXPIRATION"])
+        return initial - (datetime.utcnow() - self.removed_at)
+
 
 class ProjectRole(Enum):
     OWNER = "owner"

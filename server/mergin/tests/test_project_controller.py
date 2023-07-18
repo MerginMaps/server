@@ -2129,7 +2129,13 @@ def test_inactive_project(client, diff_project):
         headers=json_headers,
     )
     assert resp.status_code == 409
-    assert "Project with the same name is scheduled for deletion" in resp.json["detail"]
+    assert (
+        "Project with the same name is scheduled for deletion, "
+        "you can create a project with this name in "
+        + str(client.application.config["DELETED_PROJECT_EXPIRATION"])
+        + " days"
+        in resp.json["detail"]
+    )
 
     # clone with the name of inactive project
     p = create_project("proj_to_clone", diff_project.workspace, user)
@@ -2140,7 +2146,13 @@ def test_inactive_project(client, diff_project):
         headers=json_headers,
     )
     assert resp.status_code == 409
-    assert "Project with the same name is scheduled for deletion" in resp.json["detail"]
+    assert (
+        "Project with the same name is scheduled for deletion, "
+        "you can create a project with this name in "
+        + str(client.application.config["DELETED_PROJECT_EXPIRATION"])
+        + " days"
+        in resp.json["detail"]
+    )
 
 
 def test_get_project_version(client, diff_project):
