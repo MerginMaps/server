@@ -12,7 +12,7 @@ from typing import Dict
 from urllib.parse import quote
 import uuid
 from time import time
-from datetime import datetime, timedelta
+from datetime import datetime
 import psycopg2
 from blinker import signal
 from connexion import NoContent, request
@@ -176,9 +176,12 @@ def add_project(namespace):  # noqa: E501
         ).first()
         if proj:
             if proj.removed_at:
+                expiration_time = format_time_delta(
+                    proj.expiration - (datetime.utcnow() - proj.removed_at)
+                )
                 msg = (
                     f"Project with the same name is scheduled for deletion, "
-                    f"you can create a project with this name in {proj.expiration}"
+                    f"you can create a project with this name in {expiration_time}"
                 )
             else:
                 msg = "Project with the same name already exists"
@@ -1116,9 +1119,12 @@ def clone_project(namespace, project_name):  # noqa: E501
     _project = Project.query.filter_by(name=dest_project, workspace_id=ws.id).first()
     if _project:
         if _project.removed_at:
+            expiration_time = format_time_delta(
+                _project.expiration - (datetime.utcnow() - _project.removed_at)
+            )
             msg = (
                 f"Project with the same name is scheduled for deletion, "
-                f"you can create a project with this name in {_project.expiration}"
+                f"you can create a project with this name in {expiration_time}"
             )
         else:
             msg = "Project with the same name already exists"
