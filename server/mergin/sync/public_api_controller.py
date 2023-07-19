@@ -1135,6 +1135,17 @@ def clone_project(namespace, project_name):  # noqa: E501
             msg = "Project with the same name already exists"
         abort(409, msg)
 
+    # Check storage limit
+    latest_version = cloned_project.get_latest_version()
+    current_usage = ws.disk_usage()
+    requested_storage = current_usage + latest_version.project_size
+    if requested_storage > ws.storage:
+        abort(
+            make_response(
+                jsonify(StorageLimitHit(current_usage, ws.storage).to_dict()), 422
+            )
+        )
+
     p = Project(
         name=dest_project,
         storage_params={"type": "local", "location": generate_location()},

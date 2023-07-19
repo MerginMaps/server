@@ -1616,6 +1616,7 @@ clone_project_data = [
         "foo",
         404,
     ),  # project cloned to non-existing namespace
+    ({"project": "storage_limit_hit"}, "mergin", 422),  # StorageLimitHit
 ]
 
 
@@ -1642,9 +1643,19 @@ def test_clone_project(client, data, username, expected):
             data=json.dumps({"login": user.username, "password": "bar"}),
             headers=json_headers,
         )
-
+    # abort when there is not enough storage
+    if "project" in data and data["project"] == "storage_limit_hit":
+        project = Project.query.filter_by(
+            name=test_project, workspace_id=test_workspace_id
+        ).first()
+        user_disk_space = sum(p.disk_usage for p in project.creator.projects)
+        # set basic storage that it is fully used
+        Configuration.GLOBAL_STORAGE = user_disk_space
     resp = client.post(endpoint, data=json.dumps(data), headers=json_headers)
     assert resp.status_code == expected
+    if expected == 422:
+        assert resp.json["code"] == "StorageLimitHit"
+        assert resp.json["detail"] == "You have reached a data limit (StorageLimitHit)"
     if expected == 200:
         proj = data.get("project", test_project).strip()
         template = Project.query.filter_by(
