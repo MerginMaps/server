@@ -25,7 +25,7 @@ class StorageLimitHit(ResponseError):
     code = "StorageLimitHit"
     detail = "You have reached a data limit"
 
-    def __init__(self, current_usage: str, storage_limit: str):
+    def __init__(self, current_usage: int, storage_limit: int):
         self.current_usage = current_usage
         self.storage_limit = storage_limit
 

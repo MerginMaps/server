@@ -1212,7 +1212,7 @@ def test_exceed_data_limit(client):
     assert resp.status_code == 422
     assert resp.json["code"] == "StorageLimitHit"
     assert resp.json["detail"] == "You have reached a data limit (StorageLimitHit)"
-    assert resp.json["current_usage"]
+    assert "current_usage" in resp.json
     assert isinstance(resp.json["storage_limit"], int)
     failure = SyncFailuresHistory.query.filter_by(project_id=project.id).first()
     assert failure.error_type == "push_start"
