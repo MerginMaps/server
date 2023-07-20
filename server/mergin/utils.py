@@ -1,8 +1,9 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
-
+import math
 from collections import namedtuple
+from datetime import timedelta
 from enum import Enum
 from flask_sqlalchemy import Model
 from sqlalchemy import Column, JSON
@@ -97,3 +98,21 @@ def parse_order_params(cls: Model, order_params: str, json_sort: dict = None):
         if order_attr is not None:
             order_by_params.append(order_attr)
     return order_by_params
+
+
+def format_time_delta(delta: timedelta) -> str:
+    """Format timedelta difference approximately in days or hours"""
+    days = round(delta.total_seconds() / (24 * 3600))
+    if days > 1:
+        difference = f"{days} days"
+    elif delta.days > 0:
+        difference = "1 day"
+    else:
+        hours = delta.total_seconds() / 3600
+        if hours > 1:
+            difference = f"{math.ceil(hours)} hours"
+        elif hours > 0:
+            difference = "1 hour"
+        else:
+            difference = "N/A"
+    return difference

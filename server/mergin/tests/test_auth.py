@@ -5,7 +5,7 @@
 from datetime import datetime, timedelta
 import pytest
 import json
-from flask import url_for
+from flask import url_for, current_app
 from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy import desc
 from unittest.mock import patch
@@ -303,14 +303,15 @@ def test_change_password(client):
 
 
 def test_remove_user(client):
+    """Test force removal of user by admin"""
     login_as_admin(client)
     user = add_user("tests", "tests")
-    user_id = user.id
 
     resp = client.delete(
         url_for("/.mergin_auth_controller_delete_user", username=user.username)
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 204
+    # user object removed from db
     assert not User.query.filter_by(username="tests").count()
 
     resp = client.delete(
@@ -318,7 +319,7 @@ def test_remove_user(client):
     )
     assert resp.status_code == 404
 
-    # try relogin but should be not found
+    # try to login but user should not be found
     resp = client.post(
         url_for("/.mergin_auth_controller_login"),
         data=json.dumps({"login": "tests", "password": "tests"}),
@@ -552,15 +553,78 @@ def test_csrf_refresh_token(client):
 
 
 def test_close_user_account(client):
-    """Test closing user account via public API call"""
-    login(client, *DEFAULT_USER)
+    """Test closing user account via public API call and admin actions to enable/ban user"""
+    user = add_user("alice", "pwd")
+    login(client, user.username, "pwd")
+    # user closes account
+    resp = client.delete("/v1/user")
+    assert resp.status_code == 204
+    assert user.active is False
+    assert user.inactive_since
+    # login is not possible
+    assert (
+        client.post(
+            url_for("/.mergin_auth_controller_login"),
+            data=json.dumps({"login": user.username, "password": "pwd"}),
+            headers=json_headers,
+        ).status_code
+        == 401
+    )
+
+    login_as_admin(client)
+    # email is still occupied
+    data = {
+        "username": user.username + "_new",
+        "email": user.email,
+        "password": "Pwd123###",
+        "confirm": "Pwd123###",
+    }
+    assert (
+        client.post(
+            url_for("/.mergin_auth_controller_register_user"),
+            data=json.dumps(data),
+            headers=json_headers,
+        ).status_code
+        == 400
+    )
+
+    resp = client.get(
+        url_for("/.mergin_auth_controller_get_user", username=user.username)
+    )
+    assert resp.json["scheduled_removal"]
+
+    # admin can re-enable account
+    resp = client.patch(
+        url_for("/.mergin_auth_controller_update_user", username=user.username),
+        data=json.dumps({"active": True}),
+        headers=json_headers,
+    )
+    assert resp.status_code == 200
+    assert user.active is True
+    assert not user.inactive_since
+    # admin can ban user
+    resp = client.patch(
+        url_for("/.mergin_auth_controller_update_user", username=user.username),
+        data=json.dumps({"active": False}),
+        headers=json_headers,
+    )
+    assert resp.status_code == 200
+    assert user.active is False
+    assert not user.inactive_since
+    # admin can force delete user
+    resp = client.delete(
+        url_for("/.mergin_auth_controller_delete_user", username=user.username)
+    )
+    assert resp.status_code == 204
+    assert not User.query.filter_by(username=user.username).first()
+
     user = User.query.filter_by(username=DEFAULT_USER[0]).first()
     # check default project
     project = Project.query.filter_by(workspace_id=test_workspace_id).first()
     assert user.id in project.access.owners
 
     resp = client.delete("/v1/user")
-    assert resp.status_code == 200
+    assert resp.status_code == 204
     user = User.query.filter_by(username=DEFAULT_USER[0]).first()
     # tests only basic functionality - inactivate user and project
     # more complex testing is done in close mergin account tests case
@@ -599,7 +663,7 @@ def test_paginate_users(client):
     deleted_inactive.active = False
     db.session.commit()
     login(client, *DEFAULT_USER)
-    url = "/app/auth/user?page=1&per_page=10"
+    url = "/app/admin/users?page=1&per_page=10"
     # get 5 users (default + 5 new added - 1 deleted & inactive)
     resp = client.get(url)
     list_of_usernames = [user["username"] for user in resp.json["users"]]
@@ -624,7 +688,7 @@ def test_paginate_users(client):
     assert resp.json["total"] == 1
     assert resp.json["users"][0]["username"] == "alice"
     # invalid paging
-    assert client.get("/app/auth/user?page=2&per_page=10").status_code == 404
+    assert client.get("/app/admin/users?page=2&per_page=10").status_code == 404
 
 
 def test_user_info(client):

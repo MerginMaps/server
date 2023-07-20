@@ -1997,7 +1997,7 @@ def test_orphan_project(client):
     resp = client.delete(
         url_for("/.mergin_auth_controller_delete_user", username=user.username)
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 204
     assert not User.query.filter_by(id=user_id).count()
     # project still exists (it belongs to workspace)
     p = Project.query.filter_by(name="orphan").first()
