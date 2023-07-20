@@ -19,4 +19,4 @@ venv/
 gen
 
 # pyenv
-.python-version
+\.python-version
