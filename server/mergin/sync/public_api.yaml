@@ -652,7 +652,7 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
+                anyOf:
                   - $ref: "#/components/schemas/UnprocessableEntityError"
                   - $ref: "#/components/schemas/TrialExpired"
                   - $ref: "#/components/schemas/StorageLimitHit"

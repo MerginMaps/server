@@ -1136,9 +1136,9 @@ def clone_project(namespace, project_name):  # noqa: E501
         abort(409, msg)
 
     # Check storage limit
-    latest_version = cloned_project.get_latest_version()
+    additional_storage = cloned_project.disk_usage
     current_usage = ws.disk_usage()
-    requested_storage = current_usage + latest_version.project_size
+    requested_storage = current_usage + additional_storage
     if requested_storage > ws.storage:
         abort(
             make_response(
