@@ -166,7 +166,9 @@ def diff_project(app):
         for i, change in enumerate(changes):
             ver = "v{}".format(i + 2)
             if change["added"]:
-                meta = deepcopy(change["added"][0])  # during push we do not store 'location' in 'added' metadata
+                meta = deepcopy(
+                    change["added"][0]
+                )  # during push we do not store 'location' in 'added' metadata
                 meta["location"] = os.path.join(ver, meta["path"])
                 new_file = os.path.join(project.storage.project_dir, meta["location"])
                 os.makedirs(os.path.dirname(new_file), exist_ok=True)
