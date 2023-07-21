@@ -1848,24 +1848,32 @@ changeset_data = [
 
 @pytest.mark.parametrize("version, path, expected", changeset_data)
 def test_changeset_file(client, diff_project, version, path, expected):
+    pv = ProjectVersion.query.filter_by(
+        project_id=diff_project.id, name=version
+    ).first()
+
     url = "/v1/resource/changesets/{}/{}/{}?path={}".format(
         test_workspace_name, test_project, version, path
     )
     resp = client.get(url)
     assert resp.status_code == expected
 
+    if expected == 200 and is_versioned_file(path):
+        # remove gpkg file, so it is reconstructed on demand and request still works
+        f = pv.project.storage.file_path(os.path.join(version, path))
+        if os.path.exists(f):
+            os.remove(f)
+        assert client.get(url).status_code == 200
+
     if resp.status_code == 200:
-        version = ProjectVersion.query.filter_by(
-            project_id=diff_project.id, name=version
-        ).first()
-        file = next((f for f in version.files if f["path"] == path), None)
+        file = next((f for f in pv.files if f["path"] == path), None)
         changeset = os.path.join(
-            version.project.storage.project_dir, file["diff"]["location"]
+            pv.project.storage.project_dir, file["diff"]["location"]
         )
         json_file = "changeset"
 
         # create manually list changes
-        version.project.storage.geodiff.list_changes(changeset, json_file)
+        pv.project.storage.geodiff.list_changes(changeset, json_file)
         list_changes = json.loads(open(json_file, "r").read())
         os.remove(json_file)
 
