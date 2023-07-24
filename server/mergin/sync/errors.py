@@ -19,3 +19,18 @@ class UpdateProjectAccessError(ResponseError):
         data["invalid_usernames"] = self.invalid_usernames
         data["invalid_ids"] = self.invalid_ids
         return data
+
+
+class StorageLimitHit(ResponseError):
+    code = "StorageLimitHit"
+    detail = "You have reached a data limit"
+
+    def __init__(self, current_usage: int, storage_limit: int):
+        self.current_usage = current_usage
+        self.storage_limit = storage_limit
+
+    def to_dict(self) -> Dict:
+        data = super().to_dict()
+        data["current_usage"] = self.current_usage
+        data["storage_limit"] = self.storage_limit
+        return data
