@@ -26,14 +26,6 @@ export const UserApi = {
     return UserModule.httpService.get('/app/auth/user/search', { params })
   },
 
-  getAuthUserByUserName: (
-    userName: string
-  ): Promise<AxiosResponse<UserResponse>> => {
-    return UserModule.httpService.get(
-      `/app/auth/user/${userName}?random=${Math.random()}`
-    )
-  },
-
   editUserProfile: (
     data: EditUserProfileParams,
     withRetry?: boolean

@@ -22,6 +22,13 @@ export interface UpdateUserData {
   active: boolean
 }
 
+export interface CreateUserData {
+  username: string
+  email: string
+  password: string
+  confirm: string
+}
+
 export interface UpdateUserPayload {
   username: string
   data: UpdateUserData

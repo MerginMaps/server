@@ -104,7 +104,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                               class="primary--text"
                               cy-data="profile-change-password-btn"
                             >
-                              <v-icon class="mr-2">edit</v-icon>
+                              <v-icon small class="mr-2">lock</v-icon>
                               Change password
                             </v-btn>
                           </div>
@@ -114,7 +114,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                               class="primary--text"
                               cy-data="profile-edit-btn"
                             >
-                              <v-icon class="mr-2">edit</v-icon>
+                              <v-icon small class="mr-2">edit</v-icon>
                               Edit profile
                             </v-btn>
                           </div>
@@ -125,7 +125,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                               :disabled="loggedUser.verified_profile"
                               cy-data="profile-verify-email-btn"
                             >
-                              <v-icon class="mr-2">edit</v-icon>
+                              <v-icon small class="mr-2">send</v-icon>
                               Verify email
                             </v-btn>
                           </div>
@@ -137,7 +137,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                               color="red"
                               cy-data="profile-close-account-btn"
                             >
-                              <v-icon class="mr-2">remove_circle</v-icon>
+                              <v-icon small class="mr-2">remove_circle</v-icon>
                               Close my account
                             </v-btn>
                           </div>
@@ -219,7 +219,7 @@ export default Vue.extend({
     confirmDeleteUser() {
       const props = {
         text: 'Are you sure to close your account? <br>  <br> Type in username to confirm:',
-        confirmText: 'Delete',
+        confirmText: 'Submit',
         confirmField: {
           label: 'Username',
           expected: this.loggedUser?.username
@@ -295,10 +295,6 @@ export default Vue.extend({
     }
     @media (min-width: 771px) {
       width: 60%;
-    }
-
-    i {
-      font-size: 13px;
     }
   }
 

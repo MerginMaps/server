@@ -91,3 +91,5 @@ class Configuration(object):
     GLOBAL_ADMIN = config("GLOBAL_ADMIN", default=False, cast=bool)
 
     SERVER_TYPE = config("SERVER_TYPE", default="")
+    # can users create their own account or is it reserved for superuser only
+    USER_SELF_REGISTRATION = config("USER_SELF_REGISTRATION", default=False, cast=bool)

@@ -101,10 +101,10 @@ const AdminStore: Module<AdminState, CeAdminLibRootState> = {
       }
     },
 
-    async closeAccount({ dispatch }, payload) {
+    async deleteUser({ dispatch }, payload) {
       htmlUtils.waitCursor(true)
       try {
-        await AdminApi.closeAccount(payload.username)
+        await AdminApi.deleteUser(payload.username)
         await AdminModule.routerService.push({ name: 'accounts' })
       } catch (err) {
         const msg =

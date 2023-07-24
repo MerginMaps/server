@@ -64,6 +64,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                             <b> Registered: </b
                             >{{ profile.registration_date | date }}
                           </li>
+                          <li v-if="userAdminProfile.scheduled_removal">
+                            <b> Scheduled removal: </b
+                            >{{ userAdminProfile.scheduled_removal | date }}
+                          </li>
                         </ul>
                       </div>
                       <v-spacer />
@@ -77,12 +81,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                                   @click="changeStatusDialog"
                                   class="primary--text"
                                 >
-                                  <v-icon class="mr-2">edit</v-icon>
-                                  {{
-                                    userAdminProfile.active
-                                      ? 'deactivate account'
-                                      : 'activate account'
-                                  }}
+                                  <template v-if="userAdminProfile.active">
+                                    <v-icon small class="mr-2">block</v-icon>
+                                    deactivate account
+                                  </template>
+                                  <template v-else>
+                                    <v-icon small class="mr-2">check</v-icon>
+                                    activate account
+                                  </template>
                                 </v-btn>
                               </span>
                             </template>
@@ -102,12 +108,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                                   depressed
                                   color="red"
                                 >
-                                  <v-icon class="mr-2">remove_circle</v-icon>
-                                  close account
+                                  <v-icon small class="mr-2"
+                                    >delete_forever</v-icon
+                                  >
+                                  Delete account
                                 </v-btn>
                               </span>
                             </template>
-                            <span>Delete account</span>
+                            <span
+                              >Deleting this user will permanently remove them
+                              and all their data. This action cannot be
+                              undone.</span
+                            >
                           </v-tooltip>
                         </div>
                       </div>
@@ -155,7 +167,7 @@ export default Vue.extend({
     }
   },
   methods: {
-    ...mapActions('adminModule', ['closeAccount', 'updateUser']),
+    ...mapActions('adminModule', ['deleteUser', 'updateUser']),
     changeStatusDialog() {
       const props = {
         text: this.userAdminProfile.active
@@ -184,8 +196,10 @@ export default Vue.extend({
     },
     confirmDeleteUser() {
       const props = {
-        text: 'Are you sure to close account? All projects will be removed <br>  <br> Type in username to confirm:',
-        confirmText: 'Delete',
+        text: `<b>Are you sure you want to permanently delete this account?</b> Deleting this user will remove them
+          and all their data. This action cannot be
+          undone. <br>  <br> Type in username (${this.userAdminProfile.username}) to confirm:`,
+        confirmText: 'Delete permanently',
         confirmField: {
           label: 'Username',
           expected: this.userAdminProfile.username
@@ -193,7 +207,7 @@ export default Vue.extend({
       }
       const listeners = {
         confirm: async () =>
-          await this.closeAccount({ username: this.userAdminProfile.username })
+          await this.deleteUser({ username: this.userAdminProfile.username })
       }
       this.$store.dispatch('dialogModule/prompt', {
         params: { props, listeners, dialog: { maxWidth: 500 } }
@@ -221,10 +235,6 @@ export default Vue.extend({
     height: 35px;
     padding-right: 10px;
     width: 100%;
-
-    i {
-      font-size: 13px;
-    }
   }
 
   .align-center {

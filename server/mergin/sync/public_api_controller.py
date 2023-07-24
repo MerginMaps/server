@@ -64,7 +64,6 @@ from .utils import (
     generate_location,
     is_valid_uuid,
     gpkg_wkb_to_wkt,
-    format_time_delta,
     is_versioned_file,
     is_valid_gpkg,
 )
@@ -76,6 +75,7 @@ from .utils import (
 )
 from ..celery import send_email_async
 from .errors import StorageLimitHit
+from ..utils import format_time_delta
 
 push_triggered = signal("push_triggered")
 project_version_created = signal("project_version_created")
@@ -177,10 +177,9 @@ def add_project(namespace):  # noqa: E501
         ).first()
         if proj:
             if proj.removed_at:
-                expiration = format_time_delta(datetime.utcnow() - proj.removed_at)
                 msg = (
                     f"Project with the same name is scheduled for deletion, "
-                    f"you can create a project with this name in {expiration}"
+                    f"you can create a project with this name in {format_time_delta(proj.expiration)}"
                 )
             else:
                 msg = "Project with the same name already exists"
@@ -1126,10 +1125,9 @@ def clone_project(namespace, project_name):  # noqa: E501
     _project = Project.query.filter_by(name=dest_project, workspace_id=ws.id).first()
     if _project:
         if _project.removed_at:
-            expiration = format_time_delta(datetime.utcnow() - _project.removed_at)
             msg = (
                 f"Project with the same name is scheduled for deletion, "
-                f"you can create a project with this name in {expiration}"
+                f"you can create a project with this name in {format_time_delta(_project.expiration)}"
             )
         else:
             msg = "Project with the same name already exists"

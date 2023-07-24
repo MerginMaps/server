@@ -2011,7 +2011,7 @@ def test_orphan_project(client):
     resp = client.delete(
         url_for("/.mergin_auth_controller_delete_user", username=user.username)
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 204
     assert not User.query.filter_by(id=user_id).count()
     # project still exists (it belongs to workspace)
     p = Project.query.filter_by(name="orphan").first()
@@ -2143,7 +2143,13 @@ def test_inactive_project(client, diff_project):
         headers=json_headers,
     )
     assert resp.status_code == 409
-    assert "Project with the same name is scheduled for deletion" in resp.json["detail"]
+    assert (
+        "Project with the same name is scheduled for deletion, "
+        "you can create a project with this name in "
+        + str(client.application.config["DELETED_PROJECT_EXPIRATION"])
+        + " days"
+        in resp.json["detail"]
+    )
 
     # clone with the name of inactive project
     p = create_project("proj_to_clone", diff_project.workspace, user)
@@ -2154,7 +2160,13 @@ def test_inactive_project(client, diff_project):
         headers=json_headers,
     )
     assert resp.status_code == 409
-    assert "Project with the same name is scheduled for deletion" in resp.json["detail"]
+    assert (
+        "Project with the same name is scheduled for deletion, "
+        "you can create a project with this name in "
+        + str(client.application.config["DELETED_PROJECT_EXPIRATION"])
+        + " days"
+        in resp.json["detail"]
+    )
 
 
 def test_get_project_version(client, diff_project):

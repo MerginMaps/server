@@ -117,7 +117,7 @@ paths:
                     example: true
         "401":
           $ref: "#/components/responses/UnauthorizedError"
-  /app/auth/user:
+  /app/admin/users:
     get:
       tags:
         - user
@@ -183,6 +183,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFoundResp"
+  /app/admin/user:
     post:
       tags:
         - user
@@ -229,7 +230,7 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         "403":
           $ref: "#/components/responses/Forbidden"
-  /app/auth/user/{username}:
+  /app/admin/user/{username}:
     parameters:
       - name: username
         in: path
@@ -297,11 +298,11 @@ paths:
         - user
         - admin
       summary: Delete user specified by username
-      description: Delete user specified by username
+      description: User account is immediately and permanently removed
       operationId: mergin.auth.controller.delete_user
       responses:
-        "200":
-          description: OK
+        "204":
+          $ref: "#/components/responses/NoContent"
         "400":
           $ref: "#/components/responses/BadStatusResp"
         "401":
@@ -468,10 +469,11 @@ paths:
       tags:
         - user
       summary: Close current user account
+      description: User account is deactivated and marked for removal
       operationId: close_user_account
       responses:
-        "200":
-          description: Success
+        "204":
+          $ref: "#/components/responses/NoContent"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "404":
@@ -644,6 +646,8 @@ components:
       description: Request could not be processed becuase of conflict in resources
     UnprocessableEntity:
       description: Request was correct and yet server could not process it
+    NoContent:
+      description: Success. No content returned.
   schemas:
     User:
       type: object
@@ -667,6 +671,11 @@ components:
         is_admin:
           type: boolean
           example: false
+        scheduled_removal:
+          nullable: true
+          type: string
+          format: date-time
+          example: 2023-07-30T08:47:58Z
         profile:
           $ref: "#/components/schemas/UserProfile"
     PaginatedUsers:
