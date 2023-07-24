@@ -149,6 +149,11 @@ class Project(db.Model):
             # ('v1', 'added', {'checksum': '89469a6482267de394c7c7270cb7ffafe694ea76', 'location': 'v1/data/tests.gpkg',
             # 'mtime': '2019-07-18T07:52:38.770113Z', 'path': 'base.gpkg', 'size': 98304})
 
+            # make sure we have "location" in response (e.g. 'added' changes do not have it stored)
+            # which consists of version and file path
+            if "location" not in r.value:
+                r.value["location"] = os.path.join(r.name, r.value["path"])
+
             history[r.name] = {**r.value, "change": r.change}
             # end of file history
             if r.change in ["added", "removed"]:

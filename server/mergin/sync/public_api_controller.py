@@ -1270,6 +1270,8 @@ def get_resource_changeset(project_name, namespace, version_id, path):  # noqa: 
     project.storage.flush_geodiff_logger()  # clean geodiff logger
 
     try:
+        if not os.path.exists(basefile):
+            version.project.storage.restore_versioned_file(path, version_id)
         if not os.path.exists(json_file):
             version.project.storage.geodiff.list_changes(changeset, json_file)
         if not os.path.exists(schema_file):
