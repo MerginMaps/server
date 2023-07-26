@@ -73,7 +73,6 @@ from .utils import (
     get_path_from_files,
     get_project_path,
 )
-from ..celery import send_email_async
 from .errors import StorageLimitHit
 from ..utils import format_time_delta
 
@@ -662,31 +661,6 @@ def update_project(namespace, project_name):  # noqa: E501  # pylint: disable=W0
             privileges.append("upload")
         if user_profile.user.id in project.access.readers:
             privileges.append("download")
-        subject = "Project access modified"
-        if len(privileges):
-            html = render_template(
-                "email/modified_project_access.html",
-                subject=subject,
-                project=project,
-                user=user_profile.user,
-                privileges=privileges,
-                link=web_link,
-            )
-        else:
-            html = render_template(
-                "email/removed_project_access.html",
-                subject=subject,
-                project=project,
-                user=user_profile.user,
-            )
-
-        email_data = {
-            "subject": f"Access to mergin project {project_path} has been modified",
-            "html": html,
-            "recipients": [user_profile.user.email],
-            "sender": current_app.config["MAIL_DEFAULT_SENDER"],
-        }
-        send_email_async.delay(**email_data)
     # partial success
     if error:
         return jsonify(**error.to_dict(), project=ProjectSchema().dump(project)), 207

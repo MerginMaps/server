@@ -266,31 +266,6 @@ def unsubscribe_project(id):  # pylint: disable=W0612
     project.access.unset_role(current_user.id)
     db.session.add(project)
     db.session.commit()
-    # notify owners and the user who unsubscribed
-    project_path = get_project_path(project)
-    recipients = (
-        UserProfile.query.filter(
-            UserProfile.user_id.in_(project.access.owners + [current_user.id])
-        )
-        .filter(UserProfile.receive_notifications)
-        .all()
-    )
-    for profile in recipients:
-        if not profile.user.verified_email:
-            continue
-        html = render_template(
-            "email/project_unsubscribe.html",
-            project_path=project_path,
-            recipient=profile.user.username,
-            username=current_user.username,
-        )
-        email_data = {
-            "subject": f"Access to mergin project {project_path} has been modified",
-            "html": html,
-            "recipients": [profile.user.email],
-            "sender": current_app.config["MAIL_DEFAULT_SENDER"],
-        }
-        send_email_async.delay(**email_data)
     return NoContent, 200
 
 
