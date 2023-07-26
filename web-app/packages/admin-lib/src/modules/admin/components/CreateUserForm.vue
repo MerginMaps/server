@@ -82,7 +82,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import {
-  postRetryCond,
   htmlUtils,
   useDialogStore,
   useNotificationStore,
@@ -90,6 +89,8 @@ import {
 } from '@mergin/lib'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
+
+import { AdminApi, CreateUserData } from '..'
 
 export default defineComponent({
   data() {
@@ -129,7 +130,7 @@ export default defineComponent({
       return ['username', 'email', 'password'].some((k) => data[k] === '')
     },
     submit() {
-      const data = {
+      const data: CreateUserData = {
         username: this.username.trim(),
         email: this.email.trim(),
         password: this.password,
@@ -137,14 +138,7 @@ export default defineComponent({
       }
       htmlUtils.waitCursor(true)
       this.clearErrors({ componentId: this.merginComponentUuid })
-      // TODO: JM - move to user api (and store action)
-      this.$http
-        .post('/app/auth/user', data, {
-          'axios-retry': {
-            retries: 5,
-            retryCondition: (error) => postRetryCond(error)
-          }
-        })
+      AdminApi.createUser(data)
         .then(() => {
           this.close()
           this.$emit('success')

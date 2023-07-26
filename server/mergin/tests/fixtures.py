@@ -5,6 +5,7 @@
 import os
 import sys
 import uuid
+from copy import deepcopy
 from shutil import copy, move
 from flask import current_app
 from flask_login import current_user
@@ -29,7 +30,9 @@ def flask_app(request):
     """Flask app with fresh db and initialized empty tables"""
     from ..sync.db_events import remove_events
 
-    application = create_app(["SERVER_TYPE", "DOCS_URL", "COLLECT_STATISTICS"])
+    application = create_app(
+        ["SERVER_TYPE", "DOCS_URL", "COLLECT_STATISTICS", "USER_SELF_REGISTRATION"]
+    )
     register(application)
     application.config["TEST_DIR"] = os.path.join(thisdir, "test_projects")
     application.config["SERVER_NAME"] = "localhost.localdomain"
@@ -163,8 +166,10 @@ def diff_project(app):
         for i, change in enumerate(changes):
             ver = "v{}".format(i + 2)
             if change["added"]:
-                meta = change["added"][0]
-                meta["location"] = os.path.join(ver, os.path.basename(meta["path"]))
+                meta = deepcopy(
+                    change["added"][0]
+                )  # during push we do not store 'location' in 'added' metadata
+                meta["location"] = os.path.join(ver, meta["path"])
                 new_file = os.path.join(project.storage.project_dir, meta["location"])
                 os.makedirs(os.path.dirname(new_file), exist_ok=True)
                 copy(os.path.join(test_project_dir, meta["path"]), new_file)

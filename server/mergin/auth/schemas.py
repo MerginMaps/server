@@ -1,6 +1,7 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+from datetime import timedelta
 
 from flask import current_app
 from marshmallow import fields
@@ -54,6 +55,7 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
     """User schema with full information"""
 
     profile = fields.Nested(UserProfileSchema())
+    scheduled_removal = DateTimeWithZ(attribute="removal_at", dump_only=True)
 
     class Meta:
         model = User
@@ -65,6 +67,7 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
             "is_admin",
             "verified_email",
             "profile",
+            "scheduled_removal",
         )
         load_instance = True
 

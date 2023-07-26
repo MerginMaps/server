@@ -18,10 +18,11 @@ from .app import (
     do_register_user,
     send_confirmation_email,
     confirm_token,
-    user_deleted,
     generate_confirmation_token,
     inactivate_user,
     user_created,
+    force_delete_user,
+    user_account_closed,
 )
 from .bearer import encode_token
 from .models import User, LoginHistory
@@ -38,6 +39,7 @@ from .forms import (
 )
 from .. import db
 from ..app import DEPRECATION_API_MSG
+from ..utils import format_time_delta
 
 
 # public endpoints
@@ -150,10 +152,8 @@ def login_public():  # noqa: E501
             data["session"] = {"token": token, "expire": expire}
             LoginHistory.add_record(user.username, request)
             return data
-        elif not user:
+        else:
             abort(401, "Invalid username or password")
-        elif not user.active:
-            abort(401, "Account is not activated")
     abort(400, _extract_first_error(form.errors))
 
 
@@ -165,8 +165,8 @@ def close_user_account():
     """
     inactivate_user(current_user)
     # emit signal to be caught elsewhere
-    user_deleted.send(current_user)
-    return NoContent, 200
+    user_account_closed.send(current_user)
+    return NoContent, 204
 
 
 # private endpoints
@@ -221,10 +221,8 @@ def login():  # pylint: disable=W0613,W0612
             if not os.path.isfile(current_app.config["MAINTENANCE_FILE"]):
                 LoginHistory.add_record(user.username, request)
             return "", 200
-        elif not user:
+        else:
             abort(401, "Invalid username or password")
-        elif not user.active:
-            abort(401, "Account is not active, please contact administrators")
     return jsonify(form.errors), 401
 
 
@@ -415,6 +413,8 @@ def update_user(username):  # pylint: disable=W0613,W0612
 
     user = User.query.filter_by(username=username).first_or_404("User not found")
     form.update_obj(user)
+    # remove inactive since flag for ban or re-activation
+    user.inactive_since = None
     db.session.add(user)
     db.session.commit()
     return jsonify(UserSchema().dump(user))
@@ -423,11 +423,11 @@ def update_user(username):  # pylint: disable=W0613,W0612
 @auth_required(permissions=["admin"])
 def delete_user(username):  # pylint: disable=W0613,W0612
     user = User.query.filter_by(username=username).first_or_404("User not found")
-    user_deleted.send(user)
     inactivate_user(user)
-    db.session.delete(user)
-    db.session.commit()
-    return "", 200
+    user_account_closed.send(user)
+    # emit signal that we want to do immediate deletion
+    force_delete_user.send(user)
+    return "", 204
 
 
 @auth_required(permissions=["admin"])

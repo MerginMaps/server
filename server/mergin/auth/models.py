@@ -4,9 +4,9 @@
 
 from __future__ import annotations
 import datetime
-from typing import List
-
+from typing import List, Optional
 import bcrypt
+from flask import current_app
 from .. import db
 from ..sync.utils import get_user_agent, get_ip
 
@@ -120,6 +120,17 @@ class User(db.Model):
                     )
                     users_found.extend(users_anywhere)
         return users_found
+
+    @property
+    def removal_at(self) -> Optional[datetime.timedelta]:
+        """Timestamp of pending user removal. While user is waiting for removal, it is not possible to create
+        another user with the same username/email
+        """
+        if not self.inactive_since:
+            return
+        return self.inactive_since + datetime.timedelta(
+            days=current_app.config["ACCOUNT_EXPIRATION"]
+        )
 
 
 class UserProfile(db.Model):

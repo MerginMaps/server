@@ -5,8 +5,9 @@
 from flask import render_template, current_app
 from sqlalchemy import event
 
+from .app import force_delete_user
 from .. import db
-from ..auth.models import UserProfile
+from ..auth.models import UserProfile, User
 
 
 def before_user_profile_updated(mapper, connection, target):
@@ -53,9 +54,17 @@ def before_user_profile_updated(mapper, connection, target):
             send_email_async.delay(**email_data)
 
 
+def permanently_delete_user(user: User):
+    """Permanently remove user from database"""
+    db.session.delete(user)
+    db.session.commit()
+
+
 def register_events():
     event.listen(UserProfile, "after_update", before_user_profile_updated)
+    force_delete_user.connect(permanently_delete_user)
 
 
 def remove_events():
     event.remove(UserProfile, "after_update", before_user_profile_updated)
+    force_delete_user.disconnect(permanently_delete_user)

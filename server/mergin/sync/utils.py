@@ -353,24 +353,6 @@ def split_project_path(project_path):
     return workspace_name, project_name
 
 
-def format_time_delta(delta: timedelta) -> str:
-    """Format timedelta difference approximately in days or hours"""
-    days = round(delta.total_seconds() / (24 * 3600))
-    if days > 1:
-        difference = f"{days} days"
-    elif delta.days > 0:
-        difference = "1 day"
-    else:
-        hours = delta.total_seconds() / 3600
-        if hours > 1:
-            difference = f"{math.ceil(hours)} hours"
-        elif hours > 0:
-            difference = "1 hour"
-        else:
-            difference = "N/A"
-    return difference
-
-
 def is_valid_gpkg(file_meta):
     """Check if diff file is valid"""
     return file_meta["size"] != 0

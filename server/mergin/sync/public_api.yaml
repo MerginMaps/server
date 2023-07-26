@@ -652,9 +652,10 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
+                anyOf:
                   - $ref: "#/components/schemas/UnprocessableEntityError"
                   - $ref: "#/components/schemas/TrialExpired"
+                  - $ref: "#/components/schemas/StorageLimitHit"
       x-openapi-router-controller: mergin.sync.public_api_controller
   #not implemented in connexion, going directly to flask endpoint
   #  /project/push/chunk/{transaction_id}/{chunk_id}:
@@ -1066,6 +1067,20 @@ components:
         detail: Project access could not be updated (UpdateProjectAccessError)
         invalid_usernames: [john.doe]
         invalid_ids: [1,2]
+    StorageLimitHit:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      type: object
+      properties:
+        current_usage:
+          type: integer
+        storage_limit:
+          type: integer
+      example:
+        code: StorageLimitHit
+        detail: You have reached a data limit (StorageLimitHit)
+        current_usage: 24865
+        storage_limit: 24865
     Project:
       type: object
       required:

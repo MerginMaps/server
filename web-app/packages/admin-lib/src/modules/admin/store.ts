@@ -100,12 +100,12 @@ export const useAdminStore = defineStore('adminModule', {
       }
     },
 
-    async closeAccount(payload) {
+    async deleteUser(payload) {
       const notificationStore = useNotificationStore()
 
       htmlUtils.waitCursor(true)
       try {
-        await AdminApi.closeAccount(payload.username)
+        await AdminApi.deleteUser(payload.username)
         await AdminModule.routerService.push({ name: 'accounts' })
       } catch (err) {
         const msg =
@@ -189,7 +189,7 @@ export const useAdminStore = defineStore('adminModule', {
             }
           }
           if (isUpdate) {
-            this.setInfoUrl(response.data.info_url)
+            commit('setInfoUrl', response.data.info_url)
           }
         }
       } catch (e) {

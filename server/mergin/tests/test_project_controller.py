@@ -1209,11 +1209,14 @@ def test_exceed_data_limit(client):
         data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
         headers=json_headers,
     )
-    assert resp.status_code == 400
-    assert resp.json["detail"] == "You have reached a data limit"
+    assert resp.status_code == 422
+    assert resp.json["code"] == "StorageLimitHit"
+    assert resp.json["detail"] == "You have reached a data limit (StorageLimitHit)"
+    assert "current_usage" in resp.json
+    assert isinstance(resp.json["storage_limit"], int)
     failure = SyncFailuresHistory.query.filter_by(project_id=project.id).first()
     assert failure.error_type == "push_start"
-    assert failure.error_details == "You have reached a data limit"
+    assert failure.error_details == "You have reached a data limit (StorageLimitHit)"
 
     # try to make some space only by removing file
     changes["added"] = []
@@ -1241,8 +1244,8 @@ def test_exceed_data_limit(client):
         data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
         headers=json_headers,
     )
-    assert resp.status_code == 400
-    assert resp.json["detail"] == "You have reached a data limit"
+    assert resp.status_code == 422
+    assert resp.json["detail"] == "You have reached a data limit (StorageLimitHit)"
 
     # try to upload while removing some other files, test4.txt being larger than test2.txt
     changes["removed"] = [
@@ -1613,6 +1616,7 @@ clone_project_data = [
         "foo",
         404,
     ),  # project cloned to non-existing namespace
+    ({"project": "storage_limit_hit"}, "mergin", 422),  # StorageLimitHit
 ]
 
 
@@ -1639,9 +1643,19 @@ def test_clone_project(client, data, username, expected):
             data=json.dumps({"login": user.username, "password": "bar"}),
             headers=json_headers,
         )
-
+    # abort when there is not enough storage
+    if "project" in data and data["project"] == "storage_limit_hit":
+        project = Project.query.filter_by(
+            name=test_project, workspace_id=test_workspace_id
+        ).first()
+        user_disk_space = sum(p.disk_usage for p in project.creator.projects)
+        # set basic storage that it is fully used
+        Configuration.GLOBAL_STORAGE = user_disk_space
     resp = client.post(endpoint, data=json.dumps(data), headers=json_headers)
     assert resp.status_code == expected
+    if expected == 422:
+        assert resp.json["code"] == "StorageLimitHit"
+        assert resp.json["detail"] == "You have reached a data limit (StorageLimitHit)"
     if expected == 200:
         proj = data.get("project", test_project).strip()
         template = Project.query.filter_by(
@@ -1848,24 +1862,32 @@ changeset_data = [
 
 @pytest.mark.parametrize("version, path, expected", changeset_data)
 def test_changeset_file(client, diff_project, version, path, expected):
+    pv = ProjectVersion.query.filter_by(
+        project_id=diff_project.id, name=version
+    ).first()
+
     url = "/v1/resource/changesets/{}/{}/{}?path={}".format(
         test_workspace_name, test_project, version, path
     )
     resp = client.get(url)
     assert resp.status_code == expected
 
+    if expected == 200 and is_versioned_file(path):
+        # remove gpkg file, so it is reconstructed on demand and request still works
+        f = pv.project.storage.file_path(os.path.join(version, path))
+        if os.path.exists(f):
+            os.remove(f)
+        assert client.get(url).status_code == 200
+
     if resp.status_code == 200:
-        version = ProjectVersion.query.filter_by(
-            project_id=diff_project.id, name=version
-        ).first()
-        file = next((f for f in version.files if f["path"] == path), None)
+        file = next((f for f in pv.files if f["path"] == path), None)
         changeset = os.path.join(
-            version.project.storage.project_dir, file["diff"]["location"]
+            pv.project.storage.project_dir, file["diff"]["location"]
         )
         json_file = "changeset"
 
         # create manually list changes
-        version.project.storage.geodiff.list_changes(changeset, json_file)
+        pv.project.storage.geodiff.list_changes(changeset, json_file)
         list_changes = json.loads(open(json_file, "r").read())
         os.remove(json_file)
 
@@ -1997,7 +2019,7 @@ def test_orphan_project(client):
     resp = client.delete(
         url_for("/.mergin_auth_controller_delete_user", username=user.username)
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 204
     assert not User.query.filter_by(id=user_id).count()
     # project still exists (it belongs to workspace)
     p = Project.query.filter_by(name="orphan").first()
@@ -2129,7 +2151,13 @@ def test_inactive_project(client, diff_project):
         headers=json_headers,
     )
     assert resp.status_code == 409
-    assert "Project with the same name is scheduled for deletion" in resp.json["detail"]
+    assert (
+        "Project with the same name is scheduled for deletion, "
+        "you can create a project with this name in "
+        + str(client.application.config["DELETED_PROJECT_EXPIRATION"])
+        + " days"
+        in resp.json["detail"]
+    )
 
     # clone with the name of inactive project
     p = create_project("proj_to_clone", diff_project.workspace, user)
@@ -2140,7 +2168,13 @@ def test_inactive_project(client, diff_project):
         headers=json_headers,
     )
     assert resp.status_code == 409
-    assert "Project with the same name is scheduled for deletion" in resp.json["detail"]
+    assert (
+        "Project with the same name is scheduled for deletion, "
+        "you can create a project with this name in "
+        + str(client.application.config["DELETED_PROJECT_EXPIRATION"])
+        + " days"
+        in resp.json["detail"]
+    )
 
 
 def test_get_project_version(client, diff_project):
