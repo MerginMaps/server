@@ -17,6 +17,7 @@ import {
 import Vue from 'vue'
 
 import store from './store'
+
 import DashboardView from '@/modules/dashboard/views/DashboardView'
 import AppHeader from '@/modules/layout/components/AppHeader'
 import SideBar from '@/modules/layout/components/SideBar'

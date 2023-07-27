@@ -149,6 +149,11 @@ class Project(db.Model):
             # ('v1', 'added', {'checksum': '89469a6482267de394c7c7270cb7ffafe694ea76', 'location': 'v1/data/tests.gpkg',
             # 'mtime': '2019-07-18T07:52:38.770113Z', 'path': 'base.gpkg', 'size': 98304})
 
+            # make sure we have "location" in response (e.g. 'added' changes do not have it stored)
+            # which consists of version and file path
+            if "location" not in r.value:
+                r.value["location"] = os.path.join(r.name, r.value["path"])
+
             history[r.name] = {**r.value, "change": r.change}
             # end of file history
             if r.change in ["added", "removed"]:
@@ -272,6 +277,15 @@ class Project(db.Model):
         """Next project version in vx format"""
         ver = int(self.latest_version.replace("v", "")) + 1
         return "v" + str(ver)
+
+    @property
+    def expiration(self) -> timedelta:
+        """Expiration of the project marked for removal
+        i.e. if a user deletes a project - in what time it will be removed from database
+        It will be possible to create a new project using the same name and will not be possible to restore the old one after this time.
+        This time should be used to remove all local copies of the file."""
+        initial = timedelta(days=current_app.config["DELETED_PROJECT_EXPIRATION"])
+        return initial - (datetime.utcnow() - self.removed_at)
 
 
 class ProjectRole(Enum):
@@ -527,11 +541,7 @@ class AccessRequest(db.Model):
 
     user = db.relationship("User", uselist=False)
 
-    project = db.relationship(
-        "Project",
-        uselist=False,
-        backref=db.backref("access_requests", single_parent=True, cascade="all,delete"),
-    )
+    project = db.relationship("Project", uselist=False)
 
     def __init__(self, project, user_id):
         self.project_id = project.id

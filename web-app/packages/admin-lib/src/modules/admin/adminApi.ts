@@ -6,6 +6,7 @@
 import {
   ApiRequestSuccessInfo,
   LoginData,
+  UserProfileResponse,
   UserResponse /*, getDefaultRetryOptions */
 } from '@mergin/lib'
 import { AxiosResponse } from 'axios'
@@ -15,8 +16,8 @@ import {
   UsersParams,
   UpdateUserData,
   UsersResponse,
-  ServerVersion,
-  LatestServerVersionResponse
+  LatestServerVersionResponse,
+  CreateUserData
 } from '@/modules/admin/types'
 
 export const AdminApi = {
@@ -24,24 +25,23 @@ export const AdminApi = {
     AdminModule.httpService.post('/app/admin/login', data),
 
   async fetchUsers(params: UsersParams): Promise<AxiosResponse<UsersResponse>> {
-    return AdminModule.httpService.get(`/app/auth/user`, { params })
+    return AdminModule.httpService.get(`/app/admin/users`, { params })
   },
 
-  // TODO: duplicate of getAuthUserByUserName - refactor
   async fetchUserProfileByName(
     username: string
   ): Promise<AxiosResponse<UserResponse>> {
     return AdminModule.httpService.get(
-      `/app/auth/user/${username}?random=${Math.random()}`
+      `/app/admin/user/${username}?random=${Math.random()}`
     )
   },
 
-  async closeAccount(
+  async deleteUser(
     username: number,
     withRetry?: boolean
   ): Promise<AxiosResponse<void>> {
     return AdminModule.httpService.delete(
-      `/app/auth/user/${username}` /*, {
+      `/app/admin/user/${username}` /*, {
       ...(withRetry ? getDefaultRetryOptions() : {})
     } */
     )
@@ -53,7 +53,7 @@ export const AdminApi = {
     withRetry?: boolean
   ): Promise<AxiosResponse<UserResponse>> {
     return AdminModule.httpService.patch(
-      `/app/auth/user/${username}`,
+      `/app/admin/user/${username}`,
       data /*,
       {
         ...(withRetry ? getDefaultRetryOptions() : {})
@@ -97,5 +97,11 @@ export const AdminApi = {
     return new Promise((resolve) => {
       resolve(result)
     })
+  },
+
+  async createUser(
+    data: CreateUserData
+  ): Promise<AxiosResponse<UserProfileResponse>> {
+    return AdminModule.httpService.post(`/app/admin/user`, data)
   }
 }

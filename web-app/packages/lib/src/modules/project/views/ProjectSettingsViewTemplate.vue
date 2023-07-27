@@ -67,7 +67,7 @@ import debounce from 'lodash/debounce'
 import Vue from 'vue'
 import { mapActions, mapState } from 'vuex'
 
-import ProjectAccessRequests from '@/modules/project/components/ProjectAccessRequest.vue'
+import ProjectAccessRequests from '@/modules/project/components/ProjectAccessRequests.vue'
 
 export default Vue.extend({
   name: 'ProjectSettingsViewTemplate',

@@ -5,13 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-row
-    v-if="
-      currentNamespace &&
-      namespaceAccessRequests &&
-      namespaceAccessRequests.length > 0
-    "
-  >
+  <v-row v-if="currentNamespace && accessRequests && accessRequestsCount > 0">
     <v-card class="bubble mt-3">
       <h3>Project access requests</h3>
       <v-card-text>
@@ -29,7 +23,8 @@ export default Vue.extend({
   name: 'DashboardAccessRequestsRow',
   computed: {
     ...mapState('projectModule', [
-      'namespaceAccessRequests',
+      'accessRequests',
+      'accessRequestsCount',
       'currentNamespace'
     ])
   },

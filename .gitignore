@@ -18,3 +18,5 @@ venv/
 # generated documentation
 gen
 
+# pyenv
+.python-version
