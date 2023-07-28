@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   </projects-list-view-template>
 </template>
 
-<script>
+<script lang="ts">
 import {
   ProjectsListViewTemplate,
   ProjectsTableDataLoader,
