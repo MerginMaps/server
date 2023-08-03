@@ -18,6 +18,7 @@ import { defineComponent } from 'vue'
 
 import ProjectAccessRequestTableTemplate from './ProjectAccessRequestTableTemplate.vue'
 
+import { getErrorMessage } from '@/common/error_utils'
 import { useNotificationStore } from '@/modules/notification/store'
 
 export default defineComponent({
@@ -34,10 +35,9 @@ export default defineComponent({
 
     // TODO: Add more handlers from template, add more emits from template
     async onAcceptAccessRequestError(err: AxiosError) {
-      const msg = err.response
-        ? err.response.data?.detail
-        : 'Failed to accept access request'
-      this.error({ text: msg })
+      this.error({
+        text: getErrorMessage(err, 'Failed to accept access request')
+      })
     }
   }
 })

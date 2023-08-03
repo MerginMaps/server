@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import {
+  errorUtils,
   htmlUtils,
   LoginPayload,
   useFormStore,
@@ -81,7 +82,7 @@ export const useAdminStore = defineStore('adminModule', {
         const response = await AdminApi.fetchUsers(payload.params)
         this.setUsers(response.data)
       } catch (e) {
-        notificationStore.error({ text: e.response.data?.detail || e.message })
+        notificationStore.error({ text: errorUtils.getErrorMessage(e) })
       } finally {
         this.setLoading(false)
       }
@@ -108,11 +109,9 @@ export const useAdminStore = defineStore('adminModule', {
         await AdminApi.deleteUser(payload.username)
         await AdminModule.routerService.push({ name: 'accounts' })
       } catch (err) {
-        const msg =
-          err.response && err.response.data.detail
-            ? err.response.data.detail
-            : 'Unable to close account'
-        await notificationStore.error({ text: msg })
+        await notificationStore.error({
+          text: errorUtils.getErrorMessage(err, 'Unable to close account')
+        })
       } finally {
         htmlUtils.waitCursor(false)
       }
@@ -133,11 +132,12 @@ export const useAdminStore = defineStore('adminModule', {
         }
         await AdminModule.routerService.push({ name: 'accounts' })
       } catch (err) {
-        const msg =
-          err.response && err.response.data.detail
-            ? err.response.data.detail
-            : 'Unable to permanently remove account'
-        await notificationStore.error({ text: msg })
+        await notificationStore.error({
+          text: errorUtils.getErrorMessage(
+            err,
+            'Unable to permanently remove account'
+          )
+        })
       } finally {
         htmlUtils.waitCursor(false)
       }

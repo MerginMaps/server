@@ -144,9 +144,3 @@ export function calculateChunks(fileSize) {
   }
   return chunks
 }
-
-export function parseError(error, msg = '') {
-  return error.response && error.response.data && error.response.data.detail
-    ? error.response.data.detail
-    : msg
-}

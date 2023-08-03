@@ -82,6 +82,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import {
+  errorUtils,
   htmlUtils,
   useDialogStore,
   useNotificationStore,
@@ -147,14 +148,13 @@ export default defineComponent({
           })
         })
         .catch((err) => {
-          const msg =
-            err.response.data && err.response.data.detail
-              ? err.response.data.detail
-              : 'Failed to create user'
           this.handleError({
             componentId: this.merginComponentUuid,
             error: err,
-            generalMessage: msg
+            generalMessage: errorUtils.getErrorMessage(
+              err,
+              'Failed to create user'
+            )
           })
         })
         .finally(() => htmlUtils.waitCursor(false))

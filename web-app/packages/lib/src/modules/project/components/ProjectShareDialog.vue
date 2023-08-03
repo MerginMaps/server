@@ -79,6 +79,7 @@ import { PropType, defineComponent } from 'vue'
 import AccountAutocomplete from './AccountAutocomplete.vue'
 import PermissionInfo from './PermissionInfo.vue'
 
+import { getErrorMessage } from '@/common/error_utils'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
@@ -192,8 +193,7 @@ export default defineComponent({
               this.close()
             } catch (err) {
               this.error({
-                text:
-                  err.response.data?.detail || 'Failed to save project settings'
+                text: getErrorMessage(err, 'Failed to save project settings')
               })
             }
           }

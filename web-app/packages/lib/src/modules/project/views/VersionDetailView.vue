@@ -121,10 +121,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import axios from 'axios'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import { getErrorMessage } from '@/common/error_utils'
 import { useNotificationStore } from '@/modules/notification/store'
 import FileChangesetSummaryTable from '@/modules/project/components/FileChangesetSummaryTable.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
@@ -200,11 +200,9 @@ export default defineComponent({
         )
         this.version = response.data
       } catch (err) {
-        const msg =
-          axios.isAxiosError(err) && err.response
-            ? err.response.data?.detail
-            : 'Failed to fetch project version'
-        this.error({ text: msg })
+        this.error({
+          text: getErrorMessage(err, 'Failed to fetch project version')
+        })
       }
     }
   }

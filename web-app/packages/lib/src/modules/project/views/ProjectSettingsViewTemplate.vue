@@ -67,6 +67,7 @@ import debounce from 'lodash/debounce'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import { getErrorMessage } from '@/common/error_utils'
 import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useNotificationStore } from '@/modules/notification/store'
@@ -146,7 +147,7 @@ export default defineComponent({
         })
       } catch (err) {
         this.error({
-          text: err.response.data?.detail || 'Failed to save project settings'
+          text: getErrorMessage(err, 'Failed to save project settings')
         })
       }
     }, 2000),

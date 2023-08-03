@@ -143,6 +143,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import { getErrorMessage } from '@/common/error_utils'
 import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
 import { GetProjectAccessRequestsPayload } from '@/modules'
 import { useNotificationStore } from '@/modules/notification/store'
@@ -257,10 +258,9 @@ export default defineComponent({
         })
         await this.updatePaginationOrFetch()
       } catch (err) {
-        const msg = err.response
-          ? err.response.data?.detail
-          : 'Failed to accept access request'
-        this.error({ text: msg })
+        this.error({
+          text: getErrorMessage(err, 'Failed to accept access request')
+        })
       }
     },
     expired(expire) {

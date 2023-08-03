@@ -47,6 +47,7 @@ import isArray from 'lodash/isArray'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
 import { useNotificationStore } from '@/modules'
 import { useInstanceStore } from '@/modules/instance/store'
@@ -157,10 +158,9 @@ export default defineComponent({
           }
         })
         .catch((err) => {
-          const msg = err.response
-            ? err.response.data?.detail
-            : 'Failed to display changeset of file'
-          this.error({ text: msg })
+          this.error({
+            text: getErrorMessage(err, 'Failed to display changeset of file')
+          })
         })
         .finally(() => {
           this.loading = false

@@ -147,6 +147,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import {
   ApiRequestSuccessInfo,
   ConfirmDialog,
+  errorUtils,
   htmlUtils,
   PaginatedAdminProjectsParams,
   ProjectApi,
@@ -296,7 +297,10 @@ export default defineComponent({
         result.success = true
       } catch (e) {
         result.success = false
-        result.message = e.response.data?.detail || 'Unable to remove project'
+        result.message = errorUtils.getErrorMessage(
+          e,
+          'Unable to remove project'
+        )
       }
 
       if (result.success) {
@@ -328,8 +332,10 @@ export default defineComponent({
             result.success = true
           } catch (e) {
             result.success = false
-            result.message =
-              e.response.data?.detail || 'Unable to restore project'
+            result.message = errorUtils.getErrorMessage(
+              e,
+              'Unable to restore project'
+            )
           }
 
           if (result.success) {

@@ -11,6 +11,7 @@ import Vue from 'vue'
 
 import { ProjectModule } from './module'
 
+import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
 import { filesDiff } from '@/common/mergin_utils'
 import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
@@ -285,7 +286,7 @@ export const useProjectStore = defineStore('projectModule', {
         ProjectModule.routerService.replace({ path: '/' })
       } catch (e) {
         await notificationStore.error({
-          text: e.response.data?.detail || 'Failed to remove project'
+          text: getErrorMessage(e, 'Failed to remove project')
         })
         waitCursor(false)
       }
@@ -375,10 +376,9 @@ export const useProjectStore = defineStore('projectModule', {
       try {
         await ProjectApi.cancelProjectAccessRequest(payload.itemId, true)
       } catch (err) {
-        const msg = err.response
-          ? err.response.data?.detail
-          : 'Failed to cancel access request'
-        await notificationStore.error({ text: msg })
+        await notificationStore.error({
+          text: getErrorMessage(err, 'Failed to cancel access request')
+        })
       } finally {
         waitCursor(false)
       }
@@ -444,10 +444,9 @@ export const useProjectStore = defineStore('projectModule', {
         this.setProject({ project: null })
         waitCursor(false)
       } catch (err) {
-        const msg = err.response
-          ? err.response.data?.detail
-          : 'Failed to unsubscribe from project'
-        await notificationStore.error({ text: msg })
+        await notificationStore.error({
+          text: getErrorMessage(err, 'Failed to unsubscribe from project')
+        })
         waitCursor(false)
       }
     },
@@ -575,8 +574,7 @@ export const useProjectStore = defineStore('projectModule', {
       try {
         return await ProjectApi.pushProjectChanges(projectPath, data)
       } catch (err) {
-        const msg = (err.response && err.response.data?.detail) || 'Error'
-        await notificationStore.error({ text: msg })
+        await notificationStore.error({ text: getErrorMessage(err, 'Error') })
         return undefined
       }
     },

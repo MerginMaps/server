@@ -10,6 +10,7 @@ import Vue from 'vue'
 
 import { UserModule } from './module'
 
+import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
 import { isAtLeastRole, UserRole } from '@/common/permission_utils'
 import { useDialogStore } from '@/modules/dialog/store'
@@ -198,12 +199,8 @@ export const useUserStore = defineStore('userModule', {
         // taken from logout action, router would return error because user is considered as logged in
         location.href = '/'
       } catch (err) {
-        const msg =
-          err.response && err.response.data.detail
-            ? err.response.data.detail
-            : 'Unable to close account'
         await notificationStore.error({
-          text: msg
+          text: getErrorMessage(err, 'Unable to close account')
         })
       } finally {
         waitCursor(false)

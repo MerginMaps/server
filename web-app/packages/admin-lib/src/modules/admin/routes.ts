@@ -8,7 +8,7 @@ import {
   FileVersionDetailView,
   ProjectVersionsView,
   VersionDetailView,
-  merginUtils,
+  errorUtils,
   useUserStore
 } from '@mergin/lib'
 import { RouteRecord } from 'vue-router'
@@ -69,7 +69,9 @@ export default (): RouteRecord[] => [
         })
         next()
       } catch (e) {
-        next(Error(merginUtils.parseError(e, 'Failed to fetch user profile')))
+        next(
+          Error(errorUtils.getErrorMessage(e, 'Failed to fetch user profile'))
+        )
       }
     }
   },

@@ -5,6 +5,7 @@
 // import { getDefaultRetryOptions } from '@mergin/lib'
 import {
   ApiRequestSuccessInfo,
+  errorUtils,
   LoginData,
   UserProfileResponse,
   UserResponse /*, getDefaultRetryOptions */
@@ -92,7 +93,7 @@ export const AdminApi = {
       result.success = true
     } catch (e) {
       result.success = false
-      result.message = e.response.data?.detail || 'Unable to update storage'
+      result.message = errorUtils.getErrorMessage(e, 'Unable to update storage')
     }
     return new Promise((resolve) => {
       resolve(result)
