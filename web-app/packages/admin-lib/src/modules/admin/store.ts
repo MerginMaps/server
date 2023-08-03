@@ -189,7 +189,7 @@ export const useAdminStore = defineStore('adminModule', {
             }
           }
           if (isUpdate) {
-            commit('setInfoUrl', response.data.info_url)
+            this.setInfoUrl(response.data.info_url)
           }
         }
       } catch (e) {
