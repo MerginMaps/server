@@ -35,6 +35,7 @@ $ pipenv run flask run # run dev server on port 5000
 $ sudo apt install nodejs
 $ cd web-app
 $ yarn install
+$ yarn link:dependencies # link dependencies
 $ yarn build:libs
 $ yarn serve  # development client app server on port 8080
 $ yarn serve:admin  # development admin app server on port 8081

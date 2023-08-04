@@ -13,6 +13,8 @@
     "build:lib:all": "yarn build:lib && yarn build:types",
     "build:lib:all:prod": "yarn build:lib:prod && yarn build:types",
     "clean": "echo 'Nothing to clean.'",
+    "link:register": "echo '[@mergin/app] Nothing to register.'",
+    "link:unregister": "echo '[@mergin/app] Nothing to unregister.'",
     "lint": "eslint . --ext .js,.vue,.ts",
     "i18n:report": "vue-cli-service i18n:report --src './src/admin/**/*.?(js|vue)' --locales './src/admin/locales/**/*.json'"
   },

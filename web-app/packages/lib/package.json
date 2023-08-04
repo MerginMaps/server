@@ -38,6 +38,8 @@
     "clean:lib": "rimraf ./dist",
     "clean:types:temp": "rimraf ./**/*.vue.ts",
     "clean:types": "rimraf ./types ./tsconfig.tsbuildinfo && yarn clean:types:temp",
+    "link:register": "yarn link",
+    "link:unregister": "yarn unlink || true",
     "lint": "eslint . --ext .js,.vue,.ts"
   },
   "dependencies": {
