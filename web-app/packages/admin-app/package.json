@@ -21,8 +21,6 @@
   "dependencies": {
     "@gtm-support/vue2-gtm": "^1.0.0",
     "@mdi/font": "^6.6.96",
-    "@mergin/admin-lib": "^0.1.0",
-    "@mergin/lib": "^0.1.0",
     "@vue/cli": "^5.0.4",
     "axios": "^0.26.1",
     "core-js": "^3.6.5",

@@ -42,7 +42,6 @@
     "lint": "eslint . --ext .js,.vue,.ts"
   },
   "dependencies": {
-    "@mergin/lib": "0.1.0",
     "axios": "^0.26.1",
     "axios-retry": "^3.2.4",
     "core-js": "^3.8.3",
