@@ -25,7 +25,7 @@ import VueMeta from 'vue-meta'
 
 import App from './App.vue'
 import router from './router'
-import { getPiniaInstance } from './store'
+import { addRouterToPinia, getPiniaInstance } from './store'
 
 import i18n from '@/plugins/i18n/i18n'
 import vuetify from '@/plugins/vuetify/vuetify'
@@ -49,6 +49,8 @@ Vue.filter('currency', numberUtils.formatToCurrency)
 Vue.mixin(MerginComponentUuidMixin)
 
 const createMerginApp = () => {
+  addRouterToPinia(router)
+
   router.onError((e) => {
     const appStore = useAppStore()
     appStore.setServerError(e.message)

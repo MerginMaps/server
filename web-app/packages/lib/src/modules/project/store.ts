@@ -9,8 +9,6 @@ import omit from 'lodash/omit'
 import { defineStore } from 'pinia'
 import Vue from 'vue'
 
-import { ProjectModule } from './module'
-
 import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
 import { filesDiff } from '@/common/mergin_utils'
@@ -257,7 +255,7 @@ export const useProjectStore = defineStore('projectModule', {
       try {
         await ProjectApi.createProject(payload.namespace, payload.data, true)
         this.setProject({ project: null })
-        await ProjectModule.routerService.push({
+        await this.router.push({
           name: 'project',
           params: {
             namespace: payload.namespace,
@@ -283,7 +281,7 @@ export const useProjectStore = defineStore('projectModule', {
         this.setProject({ project: null })
         await userStore.fetchUserProfile()
         waitCursor(false)
-        ProjectModule.routerService.replace({ path: '/' })
+        this.router.replace({ path: '/' })
       } catch (e) {
         await notificationStore.error({
           text: getErrorMessage(e, 'Failed to remove project')
@@ -407,7 +405,7 @@ export const useProjectStore = defineStore('projectModule', {
         waitCursor(false)
         cbSuccess()
         this.setProject({ project: null })
-        await ProjectModule.routerService.push({
+        await this.router.push({
           name: 'project',
           params: {
             namespace: data.namespace,
@@ -469,7 +467,7 @@ export const useProjectStore = defineStore('projectModule', {
             text: 'Failed to load project data'
           })
         } else if (e.response.status === 403 && !isLoggedUser) {
-          await ProjectModule.routerService.push(
+          await this.router.push(
             `/login?redirect=/projects/${namespace}/${projectName}`
           )
         } else if (e.response.status === 403) {

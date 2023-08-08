@@ -8,8 +8,6 @@ import Cookies from 'universal-cookie'
 // import { isNavigationFailure, NavigationFailureType } from 'vue-router'
 import Vue from 'vue'
 
-import { UserModule } from './module'
-
 import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
 import { isAtLeastRole, UserRole } from '@/common/permission_utils'
@@ -211,7 +209,7 @@ export const useUserStore = defineStore('userModule', {
       const notificationStore = useNotificationStore()
 
       try {
-        UserModule.routerService
+        this.router
           .push(payload.currentRoute.query.redirect)
           // TODO: V3_UPGRADE - probably not needed anymore in vue-router v4 - check needed
           .catch((e) => {
@@ -234,7 +232,7 @@ export const useUserStore = defineStore('userModule', {
 
     async redirectFromLoginAfterLogin(payload) {
       if (payload.currentRoute.path === '/login') {
-        UserModule.routerService.push({ path: '/' }).catch((e) => {
+        this.router.push({ path: '/' }).catch((e) => {
           // TODO: V3_UPGRADE - probably not needed anymore in vue-router v4 - check needed
           // if (!isNavigationFailure(e, NavigationFailureType.redirected)) {
           Promise.reject(e)
@@ -265,7 +263,7 @@ export const useUserStore = defineStore('userModule', {
 
       try {
         await UserApi.resetPassword({ email: payload.email })
-        await UserModule.routerService.push({ path: '/login' })
+        await this.router.push({ path: '/login' })
         await notificationStore.show({
           text: 'Email with password reset link was sent to your email address',
           timeout: 3000
