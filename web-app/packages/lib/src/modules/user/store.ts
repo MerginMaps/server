@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import isObject from 'lodash/isObject'
-import { defineStore } from 'pinia'
+import { defineStore, getActivePinia } from 'pinia'
 import Cookies from 'universal-cookie'
 // import { isNavigationFailure, NavigationFailureType } from 'vue-router'
 import Vue from 'vue'
@@ -232,12 +232,14 @@ export const useUserStore = defineStore('userModule', {
 
     async redirectFromLoginAfterLogin(payload) {
       if (payload.currentRoute.path === '/login') {
-        this.router.push({ path: '/' }).catch((e) => {
-          // TODO: V3_UPGRADE - probably not needed anymore in vue-router v4 - check needed
-          // if (!isNavigationFailure(e, NavigationFailureType.redirected)) {
-          Promise.reject(e)
-          // }
-        })
+        getActivePinia()
+          .router.push({ path: '/' })
+          .catch((e) => {
+            // TODO: V3_UPGRADE - probably not needed anymore in vue-router v4 - check needed
+            // if (!isNavigationFailure(e, NavigationFailureType.redirected)) {
+            Promise.reject(e)
+            // }
+          })
       }
     },
 
@@ -263,7 +265,7 @@ export const useUserStore = defineStore('userModule', {
 
       try {
         await UserApi.resetPassword({ email: payload.email })
-        await this.router.push({ path: '/login' })
+        await getActivePinia().router.push({ path: '/login' })
         await notificationStore.show({
           text: 'Email with password reset link was sent to your email address',
           timeout: 3000

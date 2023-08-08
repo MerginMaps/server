@@ -6,7 +6,7 @@ import { AxiosResponse } from 'axios'
 import FileSaver from 'file-saver'
 import keyBy from 'lodash/keyBy'
 import omit from 'lodash/omit'
-import { defineStore } from 'pinia'
+import { defineStore, getActivePinia } from 'pinia'
 import Vue from 'vue'
 
 import { getErrorMessage } from '@/common/error_utils'
@@ -255,7 +255,7 @@ export const useProjectStore = defineStore('projectModule', {
       try {
         await ProjectApi.createProject(payload.namespace, payload.data, true)
         this.setProject({ project: null })
-        await this.router.push({
+        await getActivePinia().router.push({
           name: 'project',
           params: {
             namespace: payload.namespace,
@@ -281,7 +281,7 @@ export const useProjectStore = defineStore('projectModule', {
         this.setProject({ project: null })
         await userStore.fetchUserProfile()
         waitCursor(false)
-        this.router.replace({ path: '/' })
+        getActivePinia().router.replace({ path: '/' })
       } catch (e) {
         await notificationStore.error({
           text: getErrorMessage(e, 'Failed to remove project')
@@ -405,7 +405,7 @@ export const useProjectStore = defineStore('projectModule', {
         waitCursor(false)
         cbSuccess()
         this.setProject({ project: null })
-        await this.router.push({
+        await getActivePinia().router.push({
           name: 'project',
           params: {
             namespace: data.namespace,
@@ -467,7 +467,7 @@ export const useProjectStore = defineStore('projectModule', {
             text: 'Failed to load project data'
           })
         } else if (e.response.status === 403 && !isLoggedUser) {
-          await this.router.push(
+          await getActivePinia().router.push(
             `/login?redirect=/projects/${namespace}/${projectName}`
           )
         } else if (e.response.status === 403) {

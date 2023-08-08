@@ -11,7 +11,7 @@ import {
   useNotificationStore,
   UserResponse
 } from '@mergin/lib'
-import { defineStore } from 'pinia'
+import { defineStore, getActivePinia } from 'pinia'
 import Cookies from 'universal-cookie'
 
 import { AdminApi } from '@/modules/admin/adminApi'
@@ -105,7 +105,7 @@ export const useAdminStore = defineStore('adminModule', {
       htmlUtils.waitCursor(true)
       try {
         await AdminApi.deleteUser(payload.username)
-        await this.router.push({ name: 'accounts' })
+        await getActivePinia().router.push({ name: 'accounts' })
       } catch (err) {
         await notificationStore.error({
           text: errorUtils.getErrorMessage(err, 'Unable to close account')
@@ -128,7 +128,7 @@ export const useAdminStore = defineStore('adminModule', {
           // update stored user detail data
           this.setUserAdminProfile(response.data)
         }
-        await this.router.push({ name: 'accounts' })
+        await getActivePinia().router.push({ name: 'accounts' })
       } catch (err) {
         await notificationStore.error({
           text: errorUtils.getErrorMessage(
