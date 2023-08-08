@@ -29,7 +29,8 @@ export default defineConfig(({ mode }) => ({
       // https: 'https-browserify',
       path: 'path-browserify',
       url: 'url/'
-    }
+    },
+    dedupe: ['vue', 'pinia', 'vue-router', 'vuetify', '@mergin/lib']
   },
   build: {
     sourcemap: mode !== 'production',
