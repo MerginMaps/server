@@ -105,6 +105,31 @@ class UpdateForm(FlaskForm):
                 field.populate_obj(obj, name)
 
 
+def create_simple_app() -> Flask:
+    from .config import Configuration
+
+    app = connexion.FlaskApp(__name__, specification_dir=os.path.join(this_dir))
+    flask_app = app.app
+
+    flask_app.json_encoder = FlaskJSONEncoder
+    flask_app.config.from_object(Configuration)
+    db.init_app(flask_app)
+    ma.init_app(flask_app)
+    Migrate(flask_app, db)
+    flask_app.connexion_app = app
+
+    @flask_app.cli.command()
+    def init_db():
+        """Re-creates application database"""
+        print("Database initialization ...")
+        db.drop_all(bind=None)
+        db.create_all(bind=None)
+        db.session.commit()
+        print("Done. Tables created.")
+
+    return flask_app
+
+
 def create_app(public_keys: List[str] = None) -> Flask:
     """Factory function to create Flask app instance"""
     from itsdangerous import BadTimeSignature, BadSignature
@@ -119,8 +144,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
     from .sync.commands import add_commands
     from .auth import register as register_auth
 
-    app = connexion.FlaskApp(__name__, specification_dir=os.path.join(this_dir))
-    app.app.json_encoder = FlaskJSONEncoder
+    app = create_simple_app().connexion_app
 
     app.add_api(
         "sync/public_api.yaml",
@@ -136,13 +160,9 @@ def create_app(public_keys: List[str] = None) -> Flask:
         validate_responses=True,
     )
 
-    app.app.config.from_object(Configuration)
     app.app.config.from_object(SyncConfig)
     app.app.connexion_app = app
 
-    db.init_app(app.app)
-    ma.init_app(app.app)
-    Migrate(app.app, db)
     mail.init_app(app.app)
     app.mail = mail
     csrf.init_app(app.app)
@@ -387,15 +407,6 @@ def create_app(public_keys: List[str] = None) -> Flask:
 
             cfg["server_configured"] = is_server_configured()
             return jsonify(cfg), 200
-
-    @application.cli.command()
-    def init_db():
-        """Re-creates application database"""
-        print("Database initialization ...")
-        db.drop_all(bind=None)
-        db.create_all(bind=None)
-        db.session.commit()
-        print("Done. Tables created.")
 
     # append project commands (from default sync module)
     add_commands(application)
