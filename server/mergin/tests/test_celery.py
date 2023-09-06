@@ -10,12 +10,14 @@ from unittest.mock import patch
 
 from .. import db
 from ..config import Configuration
-from ..sync.models import Project
+from ..sync.models import Project, AccessRequest
 from ..celery import send_email_async
 from ..sync.tasks import remove_temp_files, remove_projects_backups
 from ..sync.storages.disk import move_to_tmp
 from . import test_project, test_workspace_name, test_workspace_id
-from .utils import cleanup, add_user
+from .utils import add_user, create_workspace, create_project, login
+from ..auth.models import User
+from . import json_headers
 
 
 def test_send_email(app):
@@ -55,23 +57,26 @@ def test_send_email(app):
 @patch("mergin.celery.send_email_async.apply_async")
 def test_send_email_from_flask(send_email_mock, client):
     """Test correct data are passed to celery task which is called from endpoint."""
-    usr = add_user("test1", "test")
-    project = Project.query.filter_by(
-        workspace_id=test_workspace_id, name="test"
-    ).first()
-    readers = project.access.readers.copy()
-    readers.append(usr.id)
-    project.access.readers = readers
-    db.session.commit()
+    user = User.query.filter(User.username == "mergin").first()
+    test_workspace = create_workspace()
+    p = create_project("testx", test_workspace, user)
+    user2 = add_user("test_user", "ilovemergin")
+    login(client, "test_user", "ilovemergin")
     email_data = {
-        "subject": "Mergin project mergin/test has been deleted",
-        "recipients": [usr.email],
+        "subject": "Project access requested",
+        "recipients": [user.email],
         "sender": current_app.config["MAIL_DEFAULT_SENDER"],
     }
-    resp = client.delete("/v1/project/{}/{}".format("mergin", "test"))
+    resp = client.post(
+        f"/app/project/access-request/{test_workspace.name}/{p.name}",
+        headers=json_headers,
+    )
+    access_request = AccessRequest.query.filter(
+        AccessRequest.project_id == p.id
+    ).first()
     assert resp.status_code == 200
-    # cleanup files
-    cleanup(client, [project.storage.project_dir])
+    assert access_request.user.username == "test_user"
+
     assert send_email_mock.called
     call_args, _ = send_email_mock.call_args
     _, kwargs = call_args
