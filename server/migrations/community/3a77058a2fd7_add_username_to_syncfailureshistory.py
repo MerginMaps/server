@@ -22,9 +22,22 @@ depends_on = None
 
 def upgrade():
     op.add_column(
-        "sync_failures_history", sa.Column("username", sa.String(), nullable=True)
+        "sync_failures_history", sa.Column("user_id", sa.Integer(), nullable=True)
+    )
+    op.create_foreign_key(
+        "fk_sync_failures_history_user_id_user",
+        "sync_failures_history",
+        "user",
+        ["user_id"],
+        ["id"],
+        ondelete="SET NULL",
     )
 
 
 def downgrade():
-    op.drop_column("sync_failures_history", "username")
+    op.drop_constraint(
+        "fk_sync_failures_history_user_id_user",
+        "sync_failures_history",
+        type_="foreignkey",
+    )
+    op.drop_column("sync_failures_history", "user_id")

@@ -676,7 +676,7 @@ def catch_sync_failure(f):
                 e.description = e.response.json["detail"]
             if project:
                 project.sync_failed(
-                    user_agent, error_type, str(e.description), current_user.username
+                    user_agent, error_type, str(e.description), current_user.id
                 )
             else:
                 logging.warning("Missing project info in sync failure")
@@ -815,7 +815,7 @@ def project_push(namespace, project_name):
                 "",
                 "push_lost",
                 "Push artefact removed by subsequent push",
-                current_user.username,
+                current_user.id,
             )
 
         # Try again after cleanup
