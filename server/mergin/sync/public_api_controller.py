@@ -675,7 +675,9 @@ def catch_sync_failure(f):
             if not e.description:  # custom error cases (e.g. StorageLimitHit)
                 e.description = e.response.json["detail"]
             if project:
-                project.sync_failed(user_agent, error_type, str(e.description))
+                project.sync_failed(
+                    user_agent, error_type, str(e.description), current_user.id
+                )
             else:
                 logging.warning("Missing project info in sync failure")
 
@@ -810,7 +812,10 @@ def project_push(namespace, project_name):
             db.session.commit()
             # previous push attempt is definitely lost
             project.sync_failed(
-                "", "push_lost", "Push artefact removed by subsequent push"
+                "",
+                "push_lost",
+                "Push artefact removed by subsequent push",
+                current_user.id,
             )
 
         # Try again after cleanup
