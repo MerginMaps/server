@@ -61,7 +61,6 @@ def remove_projects_backups():
             break
 
         for p in projects:
-            p.storage.delete()
             db.session.delete(p)
             db.session.commit()
 

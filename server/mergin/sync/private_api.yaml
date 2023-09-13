@@ -220,6 +220,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
   /project/removed-project/{id}:
     delete:
+      deprecated: true
       tags:
         - project
         - admin

@@ -103,6 +103,4 @@ def test_remove_project(client, diff_project):
     assert not Upload.query.filter_by(project_id=project_id).count()
     assert not ProjectVersion.query.filter_by(project_id=project_id).count()
     assert not ProjectAccess.query.filter_by(project_id=project_id).count()
-    # files need to be deleted manually
-    assert project_dir.exists()
     cleanup(client, [project_dir])

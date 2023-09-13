@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import os
-from flask import render_template, current_app, abort
+from flask import current_app, abort
 from sqlalchemy import event
 
 from .. import db
@@ -34,6 +34,10 @@ def remove_user_references(mapper, connection, user):  # pylint: disable=W0612
             )
 
 
+def remove_project_storage(mapper, connection, project):
+    project.storage.delete()
+
+
 def check(session):
     if os.path.isfile(current_app.config["MAINTENANCE_FILE"]):
         abort(503, "Service unavailable due to maintenance, please try later")
@@ -41,6 +45,7 @@ def check(session):
 
 def register_events():
     event.listen(User, "before_delete", remove_user_references)
+    event.listen(Project, "before_delete", remove_project_storage)
     event.listen(db.session, "before_commit", check)
 
 

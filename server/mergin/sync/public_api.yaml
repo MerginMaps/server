@@ -281,6 +281,7 @@ paths:
                   - $ref: "#/components/schemas/UsersLimitHit"
       x-openapi-router-controller: mergin.sync.public_api_controller
     delete:
+      deprecated: true
       tags:
         - project
       summary: Delete a project.
@@ -299,6 +300,13 @@ paths:
           $ref: "#/components/responses/NotFoundResp"
       x-openapi-router-controller: mergin.sync.public_api_controller
   /project/by_uuid/{project_id}:
+    parameters:
+      - name: project_id
+        in: path
+        description: UUID of the project
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - project
@@ -306,15 +314,8 @@ paths:
       description: Returns a single project with details about files including history for
         versioned files (diffs) if needed.
       operationId: get_project_by_uuid
-      parameters:
-        - name: project_id
-          in: path
-          description: UUID of project to return.
-          required: true
-          schema:
-            type: string
       responses:
-        "200":
+        "204":
           description: Success.
           content:
             application/json:

@@ -138,15 +138,14 @@ def require_project(ws, project_name, permission):
     return project
 
 
-def require_project_by_uuid(uuid, permission):
+def require_project_by_uuid(uuid, permission, scheduled=False):
     if not is_valid_uuid(uuid):
         abort(404)
 
-    project = (
-        Project.query.filter_by(id=uuid)
-        .filter(Project.removed_at.is_(None))
-        .first_or_404()
-    )
+    project = Project.query.filter_by(id=uuid)
+    if not scheduled:
+        project = project.filter(Project.removed_at.is_(None))
+    project = project.first_or_404()
     workspace = project.workspace
     if not workspace:
         abort(404)
