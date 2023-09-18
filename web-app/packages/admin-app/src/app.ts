@@ -48,17 +48,18 @@ Vue.filter('currency', numberUtils.formatToCurrency)
 // global mixin - replace with composable after migration to Vue 3
 Vue.mixin(MerginComponentUuidMixin)
 
-const createMerginApp = () => {
+const createMerginApp = (): Vue => {
+  const pinia = getPiniaInstance()
   addRouterToPinia(router)
 
   router.onError((e) => {
-    const appStore = useAppStore()
+    const appStore = useAppStore(pinia)
     appStore.setServerError(e.message)
   })
 
   return new Vue({
     router,
-    pinia: getPiniaInstance(),
+    pinia,
     vuetify,
     i18n,
     render: (h) => h(App)

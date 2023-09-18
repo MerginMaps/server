@@ -18,7 +18,7 @@ import {
 
 import { createMerginApp } from './app'
 import router from './router'
-import { getPiniaInstance } from './store'
+import { createPiniaInstance, getPiniaInstance } from './store'
 
 // initialize modules
 moduleUtils.initializeAppModule(LayoutModule)
@@ -37,11 +37,18 @@ moduleUtils.initializeAppModule(InstanceModule, {
   httpService: http
 })
 
-const instanceStore = useInstanceStore(getPiniaInstance())
-// App initialization
-instanceStore.initApp().then(async (response) => {
+async function main() {
+  createPiniaInstance()
+  const pinia = getPiniaInstance()
+
+  const instanceStore = useInstanceStore(pinia)
+  // App initialization
+  const response = await instanceStore.initApp()
   initCsrfToken(response)
   await instanceStore.fetchConfig()
+
   const app = createMerginApp()
   app.$mount('#app')
-})
+}
+
+main()

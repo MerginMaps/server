@@ -24,7 +24,7 @@ import VueMeta from 'vue-meta'
 
 import App from './App.vue'
 import router from './router'
-import { getPiniaInstance } from './store'
+import { addRouterToPinia, getPiniaInstance } from './store'
 
 import i18n from '@/plugins/i18n/i18n'
 import vuetify from '@/plugins/vuetify/vuetify'
@@ -47,19 +47,21 @@ Vue.filter('currency', numberUtils.formatToCurrency)
 // global mixin - replace with composable after migration to Vue 3
 Vue.mixin(MerginComponentUuidMixin)
 
-const createMerginApp = () => {
+const createMerginApp = (): Vue => {
+  const pinia = getPiniaInstance()
+  addRouterToPinia(router)
+
   router.onError((e) => {
-    const appStore = useAppStore()
+    const appStore = useAppStore(pinia)
     appStore.setServerError(e.message)
   })
 
   return new Vue({
     router,
-    pinia: getPiniaInstance(),
+    pinia,
     vuetify,
     i18n,
     render: (h) => h(App)
   })
 }
-
 export { createMerginApp }
