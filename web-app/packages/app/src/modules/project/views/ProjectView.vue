@@ -52,6 +52,7 @@ export default defineComponent({
     const formStore = useFormStore()
 
     const canCreateProject = computed(() => userStore.isGlobalWorkspaceAdmin)
+    const isProjectOwner = computed(() => projectStore.isProjectOwner)
 
     function openCloneDialog() {
       const dialogProps = {
@@ -80,7 +81,7 @@ export default defineComponent({
 
     return {
       canCreateProject,
-      isProjectOwner: projectStore.isProjectOwner,
+      isProjectOwner,
       openCloneDialog
     }
   }
