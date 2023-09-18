@@ -153,6 +153,13 @@ def create_app(public_keys: List[str] = None) -> Flask:
         validate_responses=True,
     )
     app.add_api(
+        "sync/public_api_v2.yaml",
+        arguments={"title": "Mergin"},
+        options={"swagger_ui": Configuration.SWAGGER_UI},
+        validate_responses=True,
+        pythonic_params=True,
+    )
+    app.add_api(
         "sync/private_api.yaml",
         base_path="/app",
         arguments={"title": "Mergin"},
@@ -208,6 +215,9 @@ def create_app(public_keys: List[str] = None) -> Flask:
     # Adjust CSRF policy for API
     def custom_protect():
         if request.path.startswith("/v1/") and "session" not in request.cookies:
+            # Disable csrf for non-web clients
+            return
+        if request.path.startswith("/v2/") and "session" not in request.cookies:
             # Disable csrf for non-web clients
             return
         return csrf._protect()

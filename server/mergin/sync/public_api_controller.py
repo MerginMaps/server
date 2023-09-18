@@ -77,7 +77,6 @@ from ..utils import format_time_delta
 
 push_triggered = signal("push_triggered")
 project_version_created = signal("project_version_created")
-project_deleted = signal("project_deleted")
 
 
 def _project_version_files(project, version=None):
@@ -254,7 +253,6 @@ def delete_project(namespace, project_name):  # noqa: E501
     project = require_project(namespace, project_name, ProjectPermissions.Delete)
     project.removed_at = datetime.utcnow()
     project.removed_by = current_user.username
-    project_deleted.send(project)
     db.session.commit()
     return NoContent, 200
 

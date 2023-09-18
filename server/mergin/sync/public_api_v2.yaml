@@ -1,0 +1,67 @@
+openapi: 3.0.0
+info:
+  description: Mergin API to synchronize your GIS data.
+  version: "0.6"
+  title: Mergin API
+servers:
+  - url: /v2
+tags:
+  - name: project
+    description: Mergin project
+paths:
+  /project/{id}:
+    delete:
+      tags:
+        - project
+      summary: Delete project immediately
+      operationId: delete_project_now
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
+  /project/{id}/scheduleDelete:
+    delete:
+      tags:
+        - project
+      summary: Schedule project to delete
+      operationId: schedule_delete_project
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
+components:
+  responses:
+    NoContent:
+      description: No content
+    BadRequest:
+      description: Invalid request.
+    Unauthorized:
+      description: Authentication information is missing or invalid
+    NotFound:
+      description: Not found
+  parameters:
+    ProjectId:
+      name: id
+      in: path
+      description: UUID of the project
+      required: true
+      schema:
+        type: string
+        format: uuid
+        pattern: \b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b
