@@ -49,6 +49,7 @@ import { CheckForUpdates } from '@mergin/admin-lib'
 import {
   DialogWindows,
   GlobalWarning,
+  initCsrfToken,
   initRequestInterceptors,
   initResponseInterceptors,
   Notifications,
@@ -110,6 +111,10 @@ export default defineComponent({
     }
   },
   async created() {
+    // App initialization
+    const response = await this.initApp()
+    initCsrfToken(response)
+    await this.fetchConfig()
     if (this.loggedUser) {
       // here is loaded current workspace on startup (and reloaded in watcher when user has changed)
       await this.checkCurrentWorkspace()
@@ -130,7 +135,7 @@ export default defineComponent({
     initResponseInterceptors(resetUser)
   },
   methods: {
-    ...mapActions(useInstanceStore, ['fetchPing']),
+    ...mapActions(useInstanceStore, ['fetchPing', 'initApp', 'fetchConfig']),
     ...mapActions(useNotificationStore, { notificationError: 'error' }),
     ...mapActions(useUserStore, ['checkCurrentWorkspace', 'updateLoggedUser']),
     ...mapActions(useAppStore, ['setServerError'])

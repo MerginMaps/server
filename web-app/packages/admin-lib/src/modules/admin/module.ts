@@ -4,7 +4,7 @@
 
 import { moduleUtils, Module } from '@mergin/lib'
 
-import getRoutes from './routes'
+import { getRoutes } from './routes'
 
 export const AdminModule: Module = {
   name: 'adminModule',
@@ -22,7 +22,6 @@ export const AdminModule: Module = {
     } else {
       console.error(`Module ${AdminModule.name} - missing httpService`)
     }
-
     if (services.routerService) {
       AdminModule.routerService = services.routerService
       AdminModule._addRoutes(services.routerService, routeOverrides)

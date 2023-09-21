@@ -6,6 +6,7 @@ import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
 import { VuetifyResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 // import dts from 'vite-plugin-dts'
 // import vuetify from 'vite-plugin-vuetify'
 
@@ -17,7 +18,11 @@ export default defineConfig(({ mode }) => ({
     vue(),
     Components({
       resolvers: [VuetifyResolver()]
-    }) /*, vuetify() */ /*, dts() */
+    }) /*, vuetify() */ /*, dts() */,
+    viteStaticCopy({
+      // copy sass files to use in other applications
+      targets: [{ src: 'src/sass/**.scss', dest: 'sass' }]
+    })
   ],
   publicDir: './src/assets',
 
@@ -31,7 +36,8 @@ export default defineConfig(({ mode }) => ({
       // https: 'https-browserify',
       path: 'path-browserify',
       url: 'url/'
-    }
+    },
+    dedupe: ['vue', 'pinia', 'vue-router', 'vuetify']
   },
   build: {
     commonjsOptions: {

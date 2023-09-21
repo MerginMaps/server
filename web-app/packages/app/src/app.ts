@@ -14,7 +14,7 @@ import {
   dateUtils,
   textUtils,
   numberUtils,
-  http,
+  getHttpService,
   MerginComponentUuidMixin,
   useAppStore
 } from '@mergin/lib'
@@ -24,7 +24,7 @@ import VueMeta from 'vue-meta'
 
 import App from './App.vue'
 import router from './router'
-import { addRouterToPinia, getPiniaInstance } from './store'
+import { getPiniaInstance } from './store'
 
 import i18n from '@/plugins/i18n/i18n'
 import vuetify from '@/plugins/vuetify/vuetify'
@@ -32,7 +32,7 @@ import vuetify from '@/plugins/vuetify/vuetify'
 Vue.config.productionTip = false
 Vue.use(PortalVue)
 Vue.use(VueMeta)
-Vue.prototype.$http = http
+Vue.prototype.$http = getHttpService()
 
 Vue.filter('filesize', (value, unit, digits = 2, minUnit = 'B') => {
   return numberUtils.formatFileSize(value, unit, digits, minUnit)
@@ -49,12 +49,6 @@ Vue.mixin(MerginComponentUuidMixin)
 
 const createMerginApp = (): Vue => {
   const pinia = getPiniaInstance()
-  addRouterToPinia(router)
-
-  router.onError((e) => {
-    const appStore = useAppStore(pinia)
-    appStore.setServerError(e.message)
-  })
 
   return new Vue({
     router,

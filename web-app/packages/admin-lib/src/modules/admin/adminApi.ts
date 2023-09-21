@@ -6,6 +6,7 @@
 import {
   ApiRequestSuccessInfo,
   errorUtils,
+  getHttpService,
   LoginData,
   UserProfileResponse,
   UserResponse /*, getDefaultRetryOptions */
@@ -18,23 +19,24 @@ import {
   UpdateUserData,
   UsersResponse,
   LatestServerVersionResponse,
-  CreateUserData
+  CreateUserData,
+  PaginatedAdminProjectsResponse,
+  PaginatedAdminProjectsParams
 } from '@/modules/admin/types'
 
 export const AdminApi = {
-  login: (data: LoginData): Promise<AxiosResponse<void>> =>
-    AdminModule.httpService.post('/app/admin/login', data),
+  login: (data: LoginData): Promise<AxiosResponse<void>> => {
+    return AdminModule.httpService.post('/app/admin/login', data)
+  },
 
   async fetchUsers(params: UsersParams): Promise<AxiosResponse<UsersResponse>> {
-    return AdminModule.httpService.get(`/app/admin/users`, { params })
+    return getHttpService().get(`/app/admin/users`, { params })
   },
 
   async fetchUserProfileByName(
     username: string
   ): Promise<AxiosResponse<UserResponse>> {
-    return AdminModule.httpService.get(
-      `/app/admin/user/${username}?random=${Math.random()}`
-    )
+    return AdminModule.httpService?.get(`/app/admin/user/${username}?random=${Math.random()}`)
   },
 
   async deleteUser(
@@ -65,7 +67,7 @@ export const AdminApi = {
   async getServerVersion(): Promise<
     AxiosResponse<LatestServerVersionResponse>
   > {
-    return AdminModule.httpService.get('/v1/latest-version')
+    return getHttpService().get('/v1/latest-version')
   },
 
   // TODO: deprecated?
@@ -83,7 +85,7 @@ export const AdminApi = {
   ): Promise<ApiRequestSuccessInfo> {
     const result = {} as ApiRequestSuccessInfo
     try {
-      await AdminModule.httpService.post(
+      await getHttpService().post(
         `/app/account/change-storage/${accountId}`,
         data /*,
         {
@@ -104,5 +106,33 @@ export const AdminApi = {
     data: CreateUserData
   ): Promise<AxiosResponse<UserProfileResponse>> {
     return AdminModule.httpService.post(`/app/admin/user`, data)
+  },
+
+  async getPaginatedAdminProject(
+    params: PaginatedAdminProjectsParams
+  ): Promise<AxiosResponse<PaginatedAdminProjectsResponse>> {
+    return getHttpService().get('/app/admin/projects', { params })
+  },
+
+  /**
+   * Permanently remove project
+   * @param id removed project id
+   * @return Result promise
+   */
+  async removeProject(id: number): Promise<AxiosResponse<void>> {
+    return await AdminModule.httpService.delete(`/app/project/removed-project/${id}`, {
+      'axios-retry': { retries: 5 }
+    })
+  },
+
+  /**
+   * Restore removed project
+   * @param id (Int) removed project id
+   * @return Result promise
+   */
+  async restoreProject(id: number): Promise<AxiosResponse<void>> {
+    return await AdminModule.httpService.post(`/app/project/removed-project/restore/${id}`, null, {
+      'axios-retry': { retries: 5 }
+    })
   }
 }

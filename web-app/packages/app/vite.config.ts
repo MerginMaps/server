@@ -11,6 +11,10 @@ const serverPort = process.env.FLASK_RUN_PORT ?? 5000
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base:
+    mode === 'production' && process.env.PUBLIC_PATH
+      ? process.env.PUBLIC_PATH
+      : '/',
   plugins: [
     vue(),
     Components({

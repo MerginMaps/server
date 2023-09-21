@@ -6,54 +6,48 @@ import { AdminModule } from '@mergin/admin-lib'
 import {
   DialogModule,
   FormModule,
-  http,
-  initCsrfToken,
+  getHttpService,
   InstanceModule,
   LayoutModule,
   moduleUtils,
   NotificationModule,
   ProjectModule,
   UserModule,
-  useInstanceStore
+  useAppStore
 } from '@mergin/lib'
 
 import { createMerginApp } from './app'
-import router from './router'
-import { getPiniaInstance } from './store'
-
-// initialize modules
-moduleUtils.initializeAppModule(LayoutModule)
-moduleUtils.initializeAppModule(UserModule, {
-  httpService: http,
-  routerService: router
-})
-moduleUtils.initializeAppModule(NotificationModule)
-moduleUtils.initializeAppModule(DialogModule)
-moduleUtils.initializeAppModule(FormModule)
-moduleUtils.initializeAppModule(ProjectModule, {
-  httpService: http,
-  routerService: router
-})
-moduleUtils.initializeAppModule(InstanceModule, {
-  httpService: http
-})
-moduleUtils.initializeAppModule(AdminModule, {
-  httpService: http,
-  routerService: router
-})
+import { createRouter } from './router'
+import { createPiniaInstance } from './store'
 
 async function main() {
   createPiniaInstance()
-  const pinia = getPiniaInstance()
+  const httpService = getHttpService()
+  // initialize modules
+  moduleUtils.initializeAppModule(LayoutModule)
+  moduleUtils.initializeAppModule(UserModule, {
+    httpService
+  })
+  moduleUtils.initializeAppModule(NotificationModule)
+  moduleUtils.initializeAppModule(DialogModule)
+  moduleUtils.initializeAppModule(FormModule)
+  moduleUtils.initializeAppModule(ProjectModule, {
+    httpService
+  })
+  moduleUtils.initializeAppModule(InstanceModule, {
+    httpService
+  })
+  moduleUtils.initializeAppModule(AdminModule, {
+    httpService
+  })
+  createMerginApp().$mount('#app')
 
-  const instanceStore = useInstanceStore(pinia)
-  // App initialization
-  const response = await instanceStore.initApp()
-  initCsrfToken(response)
-  await instanceStore.fetchConfig()
-
-  const app = createMerginApp()
-  app.$mount('#app')
+  const router = createRouter()
+  router.onError((e) => {
+    console.error(e)
+    const appStore = useAppStore()
+    appStore.setServerError(e.message)
+  })
 }
 
 main()

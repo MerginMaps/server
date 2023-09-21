@@ -13,7 +13,6 @@ import {
 } from '@mergin/lib'
 import { defineStore, getActivePinia } from 'pinia'
 import Cookies from 'universal-cookie'
-
 import { AdminApi } from '@/modules/admin/adminApi'
 import { UpdateUserPayload } from '@/modules/admin/types'
 
@@ -92,7 +91,7 @@ export const useAdminStore = defineStore('adminModule', {
       try {
         const response = await AdminApi.fetchUserProfileByName(payload.username)
         this.setUserAdminProfile(response.data)
-      } catch {
+      } catch(e) {
         await notificationStore.error({ text: 'Failed to fetch user profile' })
       } finally {
         htmlUtils.waitCursor(false)
@@ -191,7 +190,7 @@ export const useAdminStore = defineStore('adminModule', {
           }
         }
       } catch (e) {
-        console.log(e)
+        console.error(e)
       }
     },
 

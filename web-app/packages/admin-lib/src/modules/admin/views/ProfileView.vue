@@ -154,6 +154,24 @@ export default defineComponent({
       dialog: false
     }
   },
+  mounted() {
+    this.setUserAdminProfile(null)
+
+    this.fetchUserProfileByName({
+      username: this.username
+    })
+  },
+  watch: {
+    username: {
+      handler(username) {
+        this.setUserAdminProfile(null)
+
+        this.fetchUserProfileByName({
+          username
+        })
+      }
+    }
+  },
   computed: {
     ...mapState(useAdminStore, ['userAdminProfile']),
     usage() {
@@ -168,7 +186,12 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapActions(useAdminStore, ['deleteUser', 'updateUser']),
+    ...mapActions(useAdminStore, [
+      'deleteUser',
+      'updateUser',
+      'setUserAdminProfile',
+      'fetchUserProfileByName'
+    ]),
     ...mapActions(useDialogStore, ['show']),
 
     changeStatusDialog() {

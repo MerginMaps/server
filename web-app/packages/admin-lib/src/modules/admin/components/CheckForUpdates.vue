@@ -26,9 +26,9 @@ export default defineComponent({
   created() {
     this.getCheckUpdateFromCookies()
     this.checkVersions({
-      major: this.configData.major,
-      minor: this.configData.minor,
-      fix: this.configData.fix ?? null
+      major: this.configData?.major,
+      minor: this.configData?.minor,
+      fix: this.configData?.fix ?? null
     })
   }
 })

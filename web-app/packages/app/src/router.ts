@@ -25,12 +25,16 @@ import ProjectsListView from '@/modules/project/views/ProjectsListView.vue'
 import ProjectView from '@/modules/project/views/ProjectView.vue'
 import LoginView from '@/modules/user/views/LoginView.vue'
 import ProfileView from '@/modules/user/views/ProfileView.vue'
+import { addRouterToPinia } from './store'
 
 Vue.use(Router)
 
 const router = new Router({
-  mode: 'history',
-  routes: [
+  mode: 'history'
+})
+
+export const createRouter = () => {
+  const routes = [
     {
       path: '/',
       name: 'home',
@@ -183,10 +187,18 @@ const router = new Router({
       component: NotFoundView
     }
   ]
-})
 
-/** Handles redirect to /login when user is not authenticated. */
-router.beforeEach((to, from, next) =>
-  routeUtils.isAuthenticatedGuard(to, from, next)
-)
+  routes.forEach((route) => {
+    router.addRoute(route)
+  })
+
+  /** Handles redirect to /login when user is not authenticated. */
+  router.beforeEach((to, from, next) => {
+    const userStore = useUserStore()
+    routeUtils.isAuthenticatedGuard(to, from, next, userStore)
+  })
+  addRouterToPinia(router)
+  return router
+}
+
 export default router

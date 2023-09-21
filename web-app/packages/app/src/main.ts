@@ -8,47 +8,43 @@ import {
   UserModule,
   NotificationModule,
   moduleUtils,
-  http,
-  initCsrfToken,
+  getHttpService,
   ProjectModule,
   LayoutModule,
   InstanceModule,
-  useInstanceStore
+  useAppStore,
 } from '@mergin/lib'
 
 import { createMerginApp } from './app'
-import router from './router'
-import { createPiniaInstance, getPiniaInstance } from './store'
-
-// initialize modules
-moduleUtils.initializeAppModule(LayoutModule)
-moduleUtils.initializeAppModule(UserModule, {
-  httpService: http,
-  routerService: router
-})
-moduleUtils.initializeAppModule(NotificationModule)
-moduleUtils.initializeAppModule(DialogModule)
-moduleUtils.initializeAppModule(FormModule)
-moduleUtils.initializeAppModule(ProjectModule, {
-  httpService: http,
-  routerService: router
-})
-moduleUtils.initializeAppModule(InstanceModule, {
-  httpService: http
-})
+import { createRouter } from './router'
+import { createPiniaInstance } from './store'
 
 async function main() {
   createPiniaInstance()
-  const pinia = getPiniaInstance()
+  const httpService = getHttpService()
 
-  const instanceStore = useInstanceStore(pinia)
-  // App initialization
-  const response = await instanceStore.initApp()
-  initCsrfToken(response)
-  await instanceStore.fetchConfig()
+  // initialize modules
+  moduleUtils.initializeAppModule(LayoutModule)
+  moduleUtils.initializeAppModule(UserModule, {
+    httpService
+  })
+  moduleUtils.initializeAppModule(NotificationModule)
+  moduleUtils.initializeAppModule(DialogModule)
+  moduleUtils.initializeAppModule(FormModule)
+  moduleUtils.initializeAppModule(ProjectModule, {
+    httpService
+  })
+  moduleUtils.initializeAppModule(InstanceModule, {
+    httpService
+  })
 
-  const app = createMerginApp()
-  app.$mount('#app')
+  createMerginApp().$mount('#app')
+  const router = createRouter()
+
+  router.onError((e) => {
+    const appStore = useAppStore()
+    appStore.setServerError(e.message)
+  })
 }
 
 main()

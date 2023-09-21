@@ -30,14 +30,13 @@ import {
   ProjectVersionsPayload,
   ProjectAccessRequest,
   GetUserAccessRequestsPayload,
-  AccessRequestsPayload,
   GetProjectAccessRequestsPayload,
   DownloadPayload
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
 
 interface File {
-  chunks: any
+  chunks: unknown
 }
 
 export interface UploadFilesPayload {
@@ -607,6 +606,16 @@ export const useProjectStore = defineStore('projectModule', {
           notificationStore.error({ text: resp.detail })
         })
       }
+    },
+
+    constructDownloadProjectUrl(payload: {
+      namespace: string
+      projectName: string
+    }) {
+      return ProjectApi.constructDownloadProjectUrl(
+        payload.namespace,
+        payload.projectName
+      )
     }
   }
 })

@@ -101,7 +101,6 @@ import { defineComponent } from 'vue'
 import { useLayoutStore } from '@/modules/layout/store'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
-import { UserApi } from '@/modules/user/userApi'
 
 export default defineComponent({
   name: 'app-header-template',
@@ -128,17 +127,18 @@ export default defineComponent({
   },
   methods: {
     ...mapActions(useLayoutStore, ['setDrawer']),
+    ...mapActions(useUserStore, { logoutUser: 'logout' }),
 
     async logout() {
       try {
-        await UserApi.logout()
+        await this.logoutUser()
         if (this.$route.path === '/') {
           location.reload()
         } else {
           location.href = '/'
         }
       } catch (e) {
-        console.log(e)
+        console.error(e)
       }
     }
   }

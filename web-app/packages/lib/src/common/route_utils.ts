@@ -27,10 +27,9 @@ export function isAuthenticatedGuard(
   to: Route,
   from: Route,
   next: NavigationGuardNext,
+  userStore,
   options?: IsAuthenticatedGuardOptions
 ) {
-  const userStore = useUserStore()
-
   if (to.meta.public || userStore.isLoggedIn) {
     if (isTheSameRoute(from, to)) {
       return false
@@ -47,8 +46,12 @@ export function isAuthenticatedGuard(
 }
 
 /** Handles redirect to /login when user is not superUser. */
-export function isSuperUser(to: Route, from: Route, next: NavigationGuardNext) {
-  const userStore = useUserStore()
+export function isSuperUser(
+  to: Route,
+  from: Route,
+  next: NavigationGuardNext,
+  userStore
+) {
   if (userStore.isSuperUser) {
     next()
   } else {

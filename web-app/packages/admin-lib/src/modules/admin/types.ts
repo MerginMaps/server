@@ -6,6 +6,8 @@
 import {
   PaginatedRequestParams,
   PaginatedResponseDefaults,
+  Project,
+  ProjectListItem,
   UserResponse
 } from '@mergin/lib'
 
@@ -43,5 +45,30 @@ export interface LatestServerVersionResponse {
 
   version: string
   info_url: string
+}
+
+export interface PaginatedProjectsResponse extends PaginatedResponseDefaults {
+  projects: ProjectListItem[]
+}
+
+export interface AdminProjectListItem extends Project {
+  disk_usage: number
+  id: string
+  name: string
+  namespace: string
+  updated: string
+  version: string
+  removed_at: string
+  removed_by: string
+}
+
+export interface PaginatedAdminProjectsResponse
+  extends PaginatedResponseDefaults {
+  projects: AdminProjectListItem[]
+}
+
+export interface PaginatedAdminProjectsParams extends PaginatedRequestParams {
+  workspace?: string
+  name?: string
 }
 /* eslint-enable camelcase */

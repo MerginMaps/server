@@ -570,6 +570,10 @@ export const useUserStore = defineStore('userModule', {
       } catch (e) {
         console.warn('Loading of stored user workspace id has failed.', e)
       }
+    },
+
+    async logout() {
+      await UserApi.logout()
     }
   }
 })

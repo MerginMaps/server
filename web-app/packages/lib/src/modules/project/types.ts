@@ -8,7 +8,6 @@ import {
   ProjectPermissionName
 } from '@/common/permission_utils'
 import {
-  PaginatedRequestParams,
   PaginatedRequestParamsApi,
   PaginatedResponse,
   PaginatedResponseDefaults
@@ -34,11 +33,6 @@ export interface PaginatedProjectsParams extends PaginatedRequestParamsApi {
   only_public?: boolean
 }
 
-export interface PaginatedAdminProjectsParams extends PaginatedRequestParams {
-  workspace?: string
-  name?: string
-}
-
 export interface ProjectItemPermissions {
   delete: boolean
   update: boolean
@@ -60,17 +54,6 @@ export type ProjectTags = 'valid_qgis' | 'mappin_use' | 'input_use'
 export interface Project {
   name: string
   created?: string
-}
-
-export interface AdminProjectListItem extends Project {
-  disk_usage: number
-  id: string
-  name: string
-  namespace: string
-  updated: string
-  version: string
-  removed_at: string
-  removed_by: string
 }
 
 export interface ProjectListItem extends Project {
@@ -139,11 +122,6 @@ export interface ProjectDetail extends ProjectListItem {
 
 export interface PaginatedProjectsResponse extends PaginatedResponseDefaults {
   projects: ProjectListItem[]
-}
-
-export interface PaginatedAdminProjectsResponse
-  extends PaginatedResponseDefaults {
-  projects: AdminProjectListItem[]
 }
 
 export interface PaginatedProjectsPayload {

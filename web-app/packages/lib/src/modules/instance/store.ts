@@ -54,7 +54,7 @@ export const useInstanceStore = defineStore('instanceModule', {
         this.setInitialized()
         return response
       } catch {
-        await notificationStore.error({ text: 'Failed to init application.' })
+        notificationStore.error({ text: 'Failed to init application.' })
       }
     },
 

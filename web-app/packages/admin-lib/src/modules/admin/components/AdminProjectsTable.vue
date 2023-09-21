@@ -149,20 +149,18 @@ import {
   ConfirmDialog,
   errorUtils,
   htmlUtils,
-  PaginatedAdminProjectsParams,
-  ProjectApi,
   useDialogStore,
   useNotificationStore
 } from '@mergin/lib'
-import debounce from 'lodash/debounce'
 import { mapActions } from 'pinia'
 import { defineComponent } from 'vue'
+
+import { AdminApi, PaginatedAdminProjectsParams } from '@/main'
 
 export default defineComponent({
   name: 'projects-table',
   props: {
     showNamespace: Boolean,
-    namespace: String,
     sortable: {
       type: Boolean,
       default: true
@@ -219,10 +217,10 @@ export default defineComponent({
     }
   },
   created() {
-    this.filterData = debounce(this.filterData, 3000)
+    // this.filterData = debounce(this.filterData, 3000)
   },
   methods: {
-    ...mapActions(useDialogStore, ['show']),
+    ...mapActions(useDialogStore, { showDialog: 'show' }),
     ...mapActions(useNotificationStore, ['error', 'show']),
 
     paginating(options) {
@@ -260,7 +258,7 @@ export default defineComponent({
       if (this.searchFilterByNamespace) {
         params.workspace = this.searchFilterByNamespace.trim()
       }
-      ProjectApi.getPaginatedAdminProject(params)
+      AdminApi.getPaginatedAdminProject(params)
         .then((resp) => {
           this.projects = resp.data.projects
           this.numberOfItems = resp.data.count
@@ -274,15 +272,6 @@ export default defineComponent({
         })
     },
 
-    changeSort(column) {
-      if (this.pagination.sortBy === column) {
-        this.pagination.descending = !this.pagination.descending
-      } else {
-        this.pagination.sortBy = column
-        this.pagination.descending = false
-      }
-    },
-
     filterData() {
       this.options.page = 1
       this.fetchProjects()
@@ -293,7 +282,7 @@ export default defineComponent({
 
       const result = {} as ApiRequestSuccessInfo
       try {
-        await ProjectApi.removeProject(id)
+        await AdminApi.removeProject(id)
         result.success = true
       } catch (e) {
         result.success = false
@@ -328,7 +317,7 @@ export default defineComponent({
 
           const result = {} as ApiRequestSuccessInfo
           try {
-            await ProjectApi.restoreProject(item.id)
+            await AdminApi.restoreProject(item.id)
             result.success = true
           } catch (e) {
             result.success = false
@@ -352,7 +341,7 @@ export default defineComponent({
           htmlUtils.waitCursor(false)
         }
       }
-      this.show({
+      this.showDialog({
         component: ConfirmDialog,
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
@@ -369,7 +358,7 @@ export default defineComponent({
           this.deleteProject(item.id)
         }
       }
-      this.show({
+      this.showDialog({
         component: ConfirmDialog,
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })

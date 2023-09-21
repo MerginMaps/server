@@ -270,10 +270,10 @@ export default defineComponent({
           this.$route.params.version_id
         )
       } else {
-        return ProjectApi.constructDownloadProjectUrl(
-          this.namespace,
-          this.projectName
-        )
+        return this.constructDownloadProjectUrl({
+          namespace: this.namespace,
+          projectName: this.projectName
+        })
       }
     }
   },
@@ -303,7 +303,8 @@ export default defineComponent({
     ...mapActions(useProjectStore, [
       'downloadArchive',
       'fetchProjectDetail',
-      'unsubscribeProject'
+      'unsubscribeProject',
+      'constructDownloadProjectUrl'
     ]),
     ...mapActions(useProjectStore, ['setProject']),
     ...mapActions(useDialogStore, { showDialog: 'show' }),

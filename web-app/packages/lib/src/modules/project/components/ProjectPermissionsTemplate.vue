@@ -158,9 +158,9 @@ export default defineComponent({
       const users = this.users.map((user) => ({
         username: user.username,
         user,
-        owner: ownersnames.includes(user.username),
-        read: readersnames.includes(user.username),
-        write: writersnames.includes(user.username)
+        owner: ownersnames?.includes(user.username),
+        read: readersnames?.includes(user.username),
+        write: writersnames?.includes(user.username)
       }))
       return sortBy(users, [
         (u) => {
@@ -177,10 +177,12 @@ export default defineComponent({
   watch: {
     value: {
       deep: true,
-      handler() {
+      handler(value) {
         // update local clonedValue if value is changed in parent
-        this.clonedValue = JSON.parse(JSON.stringify(this.value))
-        this.emit()
+        if (value) {
+          this.clonedValue = JSON.parse(JSON.stringify(this.value))
+          this.emit()
+        }
       }
     },
     users: {

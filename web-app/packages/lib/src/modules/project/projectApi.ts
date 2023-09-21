@@ -11,8 +11,6 @@ import {
   CloneProjectParams,
   CreateProjectParams,
   FetchProjectVersionsParams,
-  PaginatedAdminProjectsParams,
-  PaginatedAdminProjectsResponse,
   PaginatedProjectsParams,
   PaginatedProjectsResponse,
   PaginatedProjectVersionsResponse,
@@ -25,6 +23,7 @@ import {
   SaveProjectSettings,
   UpdateProjectAccessParams
 } from '@/modules/project/types'
+
 
 export const ProjectApi = {
   async fetchProject(
@@ -84,13 +83,6 @@ export const ProjectApi = {
     params: PaginatedProjectsParams
   ): Promise<AxiosResponse<PaginatedProjectsResponse>> {
     return ProjectModule.httpService('/v1/project/paginated', { params })
-  },
-
-  // TODO: refactor to admin-lib?
-  async getPaginatedAdminProject(
-    params: PaginatedAdminProjectsParams
-  ): Promise<AxiosResponse<PaginatedAdminProjectsResponse>> {
-    return ProjectModule.httpService('/app/admin/projects', { params })
   },
 
   saveProjectSettings(
@@ -274,33 +266,6 @@ export const ProjectApi = {
 
   async getProjectTemplates(): Promise<AxiosResponse<ProjectTemplate[]>> {
     return ProjectModule.httpService.get('/app/project/templates')
-  },
-
-  /**
-   * Permanently remove project
-   * @param id removed project id
-   * @return Result promise
-   */
-  async removeProject(id: number): Promise<AxiosResponse<void>> {
-    return await ProjectModule.httpService.delete(
-      `/app/project/removed-project/${id}`,
-      {
-        'axios-retry': { retries: 5 }
-      }
-    )
-  },
-
-  /**
-   * Restore removed project
-   * @param id (Int) removed project id
-   * @return Result promise
-   */
-  async restoreProject(id: number): Promise<AxiosResponse<void>> {
-    return await ProjectModule.httpService.post(
-      `/app/project/removed-project/restore/${id}`,
-      null,
-      { 'axios-retry': { retries: 5 } }
-    )
   },
 
   async downloadFile(url: string): Promise<AxiosResponse<Blob>> {

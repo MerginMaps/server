@@ -51,7 +51,7 @@ import { PageView } from '@mergin/lib'
 import { defineComponent } from 'vue'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
-import AdminProjectsTable from '@/modules/project/components/AdminProjectsTable.vue'
+import AdminProjectsTable from '@/modules/admin/components/AdminProjectsTable.vue'
 
 export default defineComponent({
   name: 'ProjectsView',

@@ -52,7 +52,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { useInstanceStore, useLayoutStore, UserApi } from '@mergin/lib'
+import { useInstanceStore, useLayoutStore, useUserStore } from '@mergin/lib'
 import { mapState, mapActions } from 'pinia'
 import { defineComponent } from 'vue'
 
@@ -81,9 +81,10 @@ export default defineComponent({
   methods: {
     ...mapActions(useLayoutStore, ['setDrawer']),
     ...mapActions(useAdminStore, ['removeServerConfiguredCookies']),
+    ...mapActions(useUserStore, { logoutUser: 'logout' }),
     async logout() {
       try {
-        await UserApi.logout()
+        await this.logoutUser()
         if (this.$route.path === '/') {
           location.reload()
         } else {
@@ -91,7 +92,7 @@ export default defineComponent({
         }
         await this.removeServerConfiguredCookies()
       } catch (e) {
-        console.log(e)
+        console.error(e)
       }
     }
   }
