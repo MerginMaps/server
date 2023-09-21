@@ -5,7 +5,7 @@
 from datetime import datetime, timedelta
 import pytest
 import json
-from flask import url_for, current_app
+from flask import url_for
 from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy import desc
 from unittest.mock import patch
