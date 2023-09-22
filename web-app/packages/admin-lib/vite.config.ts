@@ -44,13 +44,14 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       // make sure to externalize deps that shouldn't be bundled
       // into your library
-      external: ['vue', ...Object.keys(packageJson.dependencies)],
+      external: ['vue', 'pinia', ...Object.keys(packageJson.dependencies)],
       output: {
         exports: 'named',
         // Provide global variables to use in the UMD build
         // for externalized deps
         globals: {
-          vue: 'Vue'
+          vue: 'Vue',
+          pinia: 'pinia'
         }
       }
     }
