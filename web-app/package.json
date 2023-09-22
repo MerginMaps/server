@@ -35,8 +35,8 @@
     "types:admin-lib": "yarn workspace @mergin/admin-lib build:types",
     "watch:lib": "yarn workspace @mergin/lib build:lib:watch",
     "watch:lib:types": "yarn workspace @mergin/lib build:types:watch",
-    "watch:admin-lib:types": "yarn workspace @mergin/admin-lib build:types:watch",
     "watch:admin-lib": "yarn workspace @mergin/admin-lib build:lib:watch",
+    "watch:admin-lib:types": "yarn workspace @mergin/admin-lib build:types:watch",
     "lint:all": "yarn workspaces run lint"
   },
   "devDependencies": {
