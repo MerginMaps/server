@@ -46,7 +46,7 @@ If you are developing a library package (named **-lib*), it is useful to watch t
 To watch the @mergin/lib library while developing:
 
 ```shell
-# watch:saas-lib, etc.
+# watch:admin-lib, etc.
 yarn watch:lib
 # Also watch type definitions
 yarn watch:lib:types
