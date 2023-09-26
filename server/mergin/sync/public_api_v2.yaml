@@ -9,7 +9,7 @@ tags:
   - name: project
     description: Mergin project
 paths:
-  /project/{id}:
+  /projects/{id}:
     delete:
       tags:
         - project
@@ -27,8 +27,8 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
-  /project/{id}/scheduleDelete:
-    delete:
+  /projects/{id}/scheduleDelete:
+    post:
       tags:
         - project
       summary: Schedule project to delete

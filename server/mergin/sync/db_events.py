@@ -51,4 +51,5 @@ def register_events():
 
 def remove_events():
     event.remove(User, "before_delete", remove_user_references)
+    event.remove(Project, "before_delete", remove_project_storage)
     event.remove(db.session, "before_commit", check)
