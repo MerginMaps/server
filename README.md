@@ -4,6 +4,7 @@
 </picture>
 
 <img src="https://img.shields.io/badge/License-Dual AGPL3 and MM Commercial licence-blue">
+
 [![Code Layout](https://github.com/MerginMaps/mergin/actions/workflows/code_style.yml/badge.svg)](https://github.com/MerginMaps/mergin/actions/workflows/code_style.yml)
 [![Auto Tests](https://github.com/MerginMaps/mergin/actions/workflows/auto_tests.yml/badge.svg)](https://github.com/MerginMaps/mergin/actions/workflows/auto_tests.yml)
 [![Coverage Status](https://coveralls.io/repos/github/MerginMaps/mergin/badge.svg)](https://coveralls.io/github/MerginMaps/mergin)
