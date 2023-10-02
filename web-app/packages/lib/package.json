@@ -29,7 +29,7 @@
     "build:lib:prod": "yarn clean:types:temp && vite build",
     "build:lib:watch": "yarn clean:types:temp && vite build --watch --mode development",
     "build:lib:all": "yarn build:lib && yarn build:types",
-    "build:lib:all:prod": "yarn build:lib:prod && yarn build:types",
+    "build:lib:all:prod": "yarn build:lib:prod",
     "build:types:old": "yarn clean:types && tsc --declaration --emitDeclarationOnly && vue-typegen gen -s src -o types && tsc-alias && yarn clean:types:temp",
     "build:types": "yarn clean:types && (vue-tsc --declaration --emitDeclarationOnly || true) && tsc-alias",
     "build:types:watch:old": "yarn clean:types && tsc --declaration --emitDeclarationOnly --watch && vue-typegen gen -s src -o types && tsc-alias && yarn clean:types:temp",

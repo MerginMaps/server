@@ -10,7 +10,7 @@
     "build:lib": "echo 'Not defined script'",
     "build:lib:prod": "echo 'Not defined script'",
     "build:lib:all": "yarn build:lib && yarn build:types",
-    "build:lib:all:prod": "yarn build:lib:prod && yarn build:types",
+    "build:lib:all:prod": "yarn build:lib:prod",
     "build:types": "echo 'Not defined script'",
     "clean": "echo 'Nothing to clean.'",
     "link:register": "echo '[@mergin/admin-app] Nothing to register.'",
