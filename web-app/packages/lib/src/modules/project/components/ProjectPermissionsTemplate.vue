@@ -97,14 +97,13 @@ import pick from 'lodash/pick'
 import sortBy from 'lodash/sortBy'
 import toLower from 'lodash/toLower'
 import union from 'lodash/union'
-import { mapState } from 'pinia'
+import { mapState, mapActions } from 'pinia'
 import { defineComponent } from 'vue'
 
 import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
 import { UserSearchParams } from '@/modules/user/types'
-import { UserApi } from '@/modules/user/userApi'
 
 export default defineComponent({
   props: {
@@ -199,7 +198,7 @@ export default defineComponent({
               namespace: this.currentNamespace,
               names: item.join(',')
             }
-            await UserApi.getAuthUserSearch(params).then((resp) => {
+            await this.getAuthUserSearch(params).then((resp) => {
               resp.data
                 .filter(
                   (i) => !this.users.map((u) => u.username).includes(i.username)
@@ -212,6 +211,7 @@ export default defineComponent({
     }
   },
   methods: {
+    ...mapActions(useUserStore, ['getAuthUserSearch']),
     canRemoveUser(userId: number) {
       // project owner can remove project, but project creator cannot be removed
       return (

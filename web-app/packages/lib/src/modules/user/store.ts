@@ -25,7 +25,8 @@ import {
   UserDetailResponse,
   WorkspaceIdPayload,
   WorkspaceResponse,
-  SetWorkspaceIdPayload
+  SetWorkspaceIdPayload,
+  UserSearchParams
 } from '@/modules/user/types'
 import { UserApi } from '@/modules/user/userApi'
 
@@ -209,8 +210,8 @@ export const useUserStore = defineStore('userModule', {
       const notificationStore = useNotificationStore()
 
       try {
-        this.router
-          .push(payload.currentRoute.query.redirect)
+        getActivePinia()
+          .router.push(payload.currentRoute.query.redirect)
           // TODO: V3_UPGRADE - probably not needed anymore in vue-router v4 - check needed
           .catch((e) => {
             //   if (!isNavigationFailure(e, NavigationFailureType.redirected)) {
@@ -574,6 +575,10 @@ export const useUserStore = defineStore('userModule', {
 
     async logout() {
       await UserApi.logout()
+    },
+
+    async getAuthUserSearch(payload: UserSearchParams) {
+      return await UserApi.getAuthUserSearch(payload)
     }
   }
 })
