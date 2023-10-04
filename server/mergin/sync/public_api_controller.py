@@ -77,7 +77,6 @@ from ..utils import format_time_delta
 
 push_triggered = signal("push_triggered")
 project_version_created = signal("project_version_created")
-project_deleted = signal("project_deleted")
 
 
 def _project_version_files(project, version=None):
@@ -254,7 +253,6 @@ def delete_project(namespace, project_name):  # noqa: E501
     project = require_project(namespace, project_name, ProjectPermissions.Delete)
     project.removed_at = datetime.utcnow()
     project.removed_by = current_user.username
-    project_deleted.send(project)
     db.session.commit()
     return NoContent, 200
 
@@ -675,7 +673,9 @@ def catch_sync_failure(f):
             if not e.description:  # custom error cases (e.g. StorageLimitHit)
                 e.description = e.response.json["detail"]
             if project:
-                project.sync_failed(user_agent, error_type, str(e.description))
+                project.sync_failed(
+                    user_agent, error_type, str(e.description), current_user.id
+                )
             else:
                 logging.warning("Missing project info in sync failure")
 
@@ -810,7 +810,10 @@ def project_push(namespace, project_name):
             db.session.commit()
             # previous push attempt is definitely lost
             project.sync_failed(
-                "", "push_lost", "Push artefact removed by subsequent push"
+                "",
+                "push_lost",
+                "Push artefact removed by subsequent push",
+                current_user.id,
             )
 
         # Try again after cleanup

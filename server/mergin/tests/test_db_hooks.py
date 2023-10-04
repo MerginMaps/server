@@ -6,7 +6,13 @@ import os
 from pathlib import Path
 
 from sqlalchemy.orm.attributes import flag_modified
-from ..sync.models import Project, ProjectVersion, Upload, ProjectAccess
+from ..sync.models import (
+    Project,
+    ProjectVersion,
+    Upload,
+    ProjectAccess,
+    SyncFailuresHistory,
+)
 from ..auth.models import User, UserProfile
 from .. import db
 from . import DEFAULT_USER
@@ -58,7 +64,13 @@ def test_close_user_account(client, diff_project):
     )
     assert user.id not in proj_resp.json["access"]["writers"]
     assert user.username not in proj_resp.json["access"]["writersnames"]
-
+    # add failed sync
+    diff_project.sync_failed(
+        "",
+        "push_lost",
+        "Push artefact removed by subsequent push",
+        user.id,
+    )
     # now remove user
     inactivate_user(user)
     db.session.delete(user)
@@ -77,6 +89,11 @@ def test_close_user_account(client, diff_project):
     assert user_id not in diff_project.access.writers
     # user remains referenced in existing project version he created (as read-only ref)
     assert diff_project.get_latest_version().author == "user"
+    sync_fail_history = SyncFailuresHistory.query.filter(
+        SyncFailuresHistory.project_id == diff_project.id
+    ).all()
+    assert len(sync_fail_history) == 1
+    assert sync_fail_history[0].user_id is None
 
 
 def test_remove_project(client, diff_project):
@@ -103,6 +120,4 @@ def test_remove_project(client, diff_project):
     assert not Upload.query.filter_by(project_id=project_id).count()
     assert not ProjectVersion.query.filter_by(project_id=project_id).count()
     assert not ProjectAccess.query.filter_by(project_id=project_id).count()
-    # files need to be deleted manually
-    assert project_dir.exists()
     cleanup(client, [project_dir])

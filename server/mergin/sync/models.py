@@ -165,9 +165,11 @@ class Project(db.Model):
 
         return history
 
-    def sync_failed(self, client, error_type, error_details):
+    def sync_failed(self, client, error_type, error_details, user_id):
         """Commit failed attempt to sync failure history table"""
-        new_failure = SyncFailuresHistory(self, client, error_type, error_details)
+        new_failure = SyncFailuresHistory(
+            self, client, error_type, error_details, user_id
+        )
         db.session.add(new_failure)
         db.session.commit()
 
@@ -583,13 +585,17 @@ class SyncFailuresHistory(db.Model):
     )  # e.g. push_start, push_finish, push_lost
     error_details = db.Column(db.String, index=True)
     timestamp = db.Column(db.DateTime(), default=datetime.utcnow, index=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True
+    )
 
-    def __init__(self, project, ua, err_type, err_details):
+    def __init__(self, project, ua, err_type, err_details, user_id):
         self.user_agent = ua
         self.error_type = err_type
         self.error_details = err_details
         self.project_id = project.id
         self.last_version = project.latest_version
+        self.user_id = user_id
 
 
 class GeodiffActionHistory(db.Model):

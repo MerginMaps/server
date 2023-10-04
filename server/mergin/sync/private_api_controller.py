@@ -215,7 +215,6 @@ def force_project_delete(id):  # noqa: E501
     project = Project.query.get_or_404(id)
     if not project.removed_at:
         abort(400, "Failed to remove: Project is still active")
-    project.storage.delete()
     db.session.delete(project)
     db.session.commit()
     return "", 204
