@@ -15,7 +15,10 @@ import {
   Router,
   useUserStore
 } from '@mergin/lib'
+import { Pinia } from 'pinia'
 import Vue from 'vue'
+
+import { addRouterToPinia } from './store'
 
 import DashboardView from '@/modules/dashboard/views/DashboardView.vue'
 import AppHeader from '@/modules/layout/components/AppHeader.vue'
@@ -25,7 +28,6 @@ import ProjectsListView from '@/modules/project/views/ProjectsListView.vue'
 import ProjectView from '@/modules/project/views/ProjectView.vue'
 import LoginView from '@/modules/user/views/LoginView.vue'
 import ProfileView from '@/modules/user/views/ProfileView.vue'
-import { addRouterToPinia } from './store'
 
 Vue.use(Router)
 
@@ -33,14 +35,14 @@ const router = new Router({
   mode: 'history'
 })
 
-export const createRouter = () => {
+export const createRouter = (pinia: Pinia) => {
   const routes = [
     {
       path: '/',
       name: 'home',
       meta: { public: true },
       beforeEnter: (to, from, next) => {
-        const userStore = useUserStore()
+        const userStore = useUserStore(pinia)
         if (userStore.isLoggedIn) {
           next('/dashboard')
         } else {
@@ -50,7 +52,7 @@ export const createRouter = () => {
     },
     {
       beforeEnter: (to, from, next) => {
-        const userStore = useUserStore()
+        const userStore = useUserStore(pinia)
         if (userStore.isLoggedIn) {
           next('/dashboard')
         } else {
@@ -194,7 +196,7 @@ export const createRouter = () => {
 
   /** Handles redirect to /login when user is not authenticated. */
   router.beforeEach((to, from, next) => {
-    const userStore = useUserStore()
+    const userStore = useUserStore(pinia)
     routeUtils.isAuthenticatedGuard(to, from, next, userStore)
   })
   addRouterToPinia(router)

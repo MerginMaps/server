@@ -15,8 +15,7 @@ import {
   textUtils,
   numberUtils,
   getHttpService,
-  MerginComponentUuidMixin,
-  useAppStore
+  MerginComponentUuidMixin
 } from '@mergin/lib'
 import PortalVue from 'portal-vue'
 import Vue from 'vue'

@@ -47,7 +47,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import {
   DialogWindows,
   GlobalWarning,
-  initCsrfToken,
   initRequestInterceptors,
   initResponseInterceptors,
   Notifications,
@@ -106,9 +105,6 @@ export default defineComponent({
     }
   },
   async created() {
-    // App initialization
-    const response = await this.initApp()
-    initCsrfToken(response)
     await this.fetchConfig()
     if (this.loggedUser) {
       // here is loaded current workspace on startup (and reloaded in watcher when user has changed)

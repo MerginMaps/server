@@ -27,6 +27,7 @@ import {
   useAdminStore
 } from '@mergin/admin-lib'
 import { addRouterToPinia } from './store'
+import { Pinia } from 'pinia'
 
 const router = new Router({
   mode: 'history',
@@ -35,7 +36,7 @@ const router = new Router({
 
 Vue.use(Router)
 
-export const createRouter = () => {
+export const createRouter = (pinia: Pinia) => {
   const routes = [
     {
       path: '*',
@@ -43,7 +44,7 @@ export const createRouter = () => {
     },
     {
       beforeEnter: (to, from, next) => {
-        const userStore = useUserStore()
+        const userStore = useUserStore(pinia)
         if (userStore.isSuperUser) {
           next('/dashboard')
         } else {
@@ -73,7 +74,7 @@ export const createRouter = () => {
       component: AccountView,
       props: true,
       beforeEnter: (to, from, next) => {
-        const userStore = useUserStore()
+        const userStore = useUserStore(pinia)
         routeUtils.isAuthenticatedGuard(to, from, next, userStore)
         routeUtils.isSuperUser(to, from, next, userStore)
       }
@@ -84,7 +85,7 @@ export const createRouter = () => {
       component: ProfileView,
       props: true,
       beforeEnter: async (to, from, next) => {
-        const adminStore = useAdminStore()
+        const adminStore = useAdminStore(pinia)
         adminStore.setUserAdminProfile(null)
         try {
           await adminStore.fetchUserProfileByName({
@@ -218,7 +219,7 @@ export const createRouter = () => {
 
   /** Handles redirect to /login when user is not authenticated. */
   router.beforeEach((to, from, next) => {
-    const userStore = useUserStore()
+    const userStore = useUserStore(pinia)
     routeUtils.isAuthenticatedGuard(to, from, next, userStore)
     routeUtils.isSuperUser(to, from, next, userStore)
   })
