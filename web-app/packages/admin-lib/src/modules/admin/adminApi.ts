@@ -30,7 +30,7 @@ export const AdminApi = {
   },
 
   async fetchUsers(params: UsersParams): Promise<AxiosResponse<UsersResponse>> {
-    return getHttpService().get(`/app/admin/users`, { params })
+    return AdminModule.httpService.get(`/app/admin/users`, { params })
   },
 
   async fetchUserProfileByName(
@@ -67,7 +67,7 @@ export const AdminApi = {
   async getServerVersion(): Promise<
     AxiosResponse<LatestServerVersionResponse>
   > {
-    return getHttpService().get('/v1/latest-version')
+    return AdminModule.httpService.get('/v1/latest-version')
   },
 
   // TODO: deprecated?
@@ -85,7 +85,7 @@ export const AdminApi = {
   ): Promise<ApiRequestSuccessInfo> {
     const result = {} as ApiRequestSuccessInfo
     try {
-      await getHttpService().post(
+      await AdminModule.httpService.post(
         `/app/account/change-storage/${accountId}`,
         data /*,
         {
@@ -111,7 +111,7 @@ export const AdminApi = {
   async getPaginatedAdminProject(
     params: PaginatedAdminProjectsParams
   ): Promise<AxiosResponse<PaginatedAdminProjectsResponse>> {
-    return getHttpService().get('/app/admin/projects', { params })
+    return AdminModule.httpService.get('/app/admin/projects', { params })
   },
 
   /**
