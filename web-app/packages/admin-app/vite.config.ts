@@ -67,6 +67,9 @@ export default defineConfig(({ mode }) => ({
       '/v1': {
         target: `http://127.0.0.1:${serverPort}`
       },
+      '/v2': {
+        target: `http://127.0.0.1:${serverPort}`
+      },
       '/app': {
         target: `http://127.0.0.1:${serverPort}`
       },

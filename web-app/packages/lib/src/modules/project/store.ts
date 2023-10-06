@@ -31,7 +31,8 @@ import {
   ProjectAccessRequest,
   GetUserAccessRequestsPayload,
   GetProjectAccessRequestsPayload,
-  DownloadPayload
+  DownloadPayload,
+  DeleteProjectPayload
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
 
@@ -266,17 +267,13 @@ export const useProjectStore = defineStore('projectModule', {
       }
     },
 
-    async deleteProject(payload) {
+    async deleteProject(payload: DeleteProjectPayload) {
       const notificationStore = useNotificationStore()
       const userStore = useUserStore()
 
       try {
         waitCursor(true)
-        await ProjectApi.deleteProject(
-          payload.namespace,
-          payload.projectName,
-          true
-        )
+        await ProjectApi.deleteProject(payload.projectId, true)
         this.setProject({ project: null })
         await userStore.fetchUserProfile()
         waitCursor(false)

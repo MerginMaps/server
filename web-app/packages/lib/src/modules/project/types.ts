@@ -307,3 +307,7 @@ export interface TableDataHeader {
   sortable?: boolean
   width?: number
 }
+
+export interface DeleteProjectPayload {
+  projectId: string
+}
