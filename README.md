@@ -1,6 +1,6 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" width=350 srcset="https://raw.githubusercontent.com/MerginMaps/.github/main/images/MM_logo_HORIZ_COLOR_NEGATIVE_VECTOR.svg">
-  <img width=350 src="https://raw.githubusercontent.com/MerginMaps/.github/main/images/MM_logo_HORIZ_COLOR_PRIMARY_VECTOR.svg">
+  <source media="(prefers-color-scheme: dark)" width=350 srcset="https://raw.githubusercontent.com/MerginMaps/.github/main/images/MM_logo_HORIZ_COLOR_INVERSE_VECTOR.svg">
+  <img width=350 src="https://raw.githubusercontent.com/MerginMaps/.github/main/images/MM_logo_HORIZ_COLOR_VECTOR.svg">
 </picture>
 
 <img src="https://img.shields.io/badge/License-Dual AGPL3 and MM Commercial licence-blue">
