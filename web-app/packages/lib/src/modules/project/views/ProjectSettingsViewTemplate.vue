@@ -188,8 +188,7 @@ export default defineComponent({
     },
     onDeleteProject() {
       this.deleteProject({
-        namespace: this.namespace,
-        projectName: this.projectName
+        projectId: this.project.id
       })
     }
   }

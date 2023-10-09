@@ -24,7 +24,6 @@ import {
   UpdateProjectAccessParams
 } from '@/modules/project/types'
 
-
 export const ProjectApi = {
   async fetchProject(
     namespace: string,
@@ -59,16 +58,12 @@ export const ProjectApi = {
   },
 
   async deleteProject(
-    namespace: string,
-    projectName: string,
+    id: string,
     withRetry?: boolean
   ): Promise<AxiosResponse<void>> {
-    return ProjectModule.httpService.delete(
-      `/v1/project/${namespace ? `${namespace}/${projectName}` : projectName}`,
-      {
-        ...(withRetry ? getDefaultRetryOptions() : {})
-      }
-    )
+    return ProjectModule.httpService.post(`/v2/projects/${id}/scheduleDelete`, {
+      ...(withRetry ? getDefaultRetryOptions() : {})
+    })
   },
 
   async unsubscribeProject(id: string): Promise<AxiosResponse<void>> {
