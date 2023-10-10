@@ -328,8 +328,7 @@ export default defineComponent({
           }
 
           if (result.success) {
-            const index = this.projects.findIndex((i) => i.id === item.id)
-            this.projects.splice(index, 1)
+            this.fetchProjects()
             await this.show({
               text: 'Project restored successfully'
             })
