@@ -30,13 +30,7 @@ export default defineConfig(({ mode }) => ({
     alias: {
       '@': resolve(__dirname, './src'),
       // 'vue-i18n': 'vue-i18n/dist/vue-i18n.cjs.js',
-      // buffer: 'buffer/',
-      events: 'events',
-      https: 'agent-base',
-      // http: 'stream-http',
-      // https: 'https-browserify',
-      path: 'path-browserify',
-      url: 'url/'
+      url: 'rollup-plugin-node-polyfills/polyfills/url'
     },
     dedupe: [
       'vue',
@@ -58,10 +52,9 @@ export default defineConfig(({ mode }) => ({
       },
       plugins: [
         NodeGlobalsPolyfillPlugin({
-          process: true,
-          buffer: true
+          process: false,
+          buffer: false
         })
-        // NodeModulesPolyfillPlugin()
       ]
     }
     // include: ['linked-dep', 'node_modules']

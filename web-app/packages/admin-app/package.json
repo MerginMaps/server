@@ -19,12 +19,10 @@
     "i18n:report": "vue-cli-service i18n:report --src './src/admin/**/*.?(js|vue)' --locales './src/admin/locales/**/*.json'"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^6.4.2",
     "@gtm-support/vue2-gtm": "^1.0.0",
     "@mdi/font": "^6.6.96",
-    "@vue/cli": "^5.0.4",
     "axios": "^0.26.1",
-    "core-js": "^3.6.5",
-    "country-region-data": "^1.6.0",
     "crypto-js": "^3.1.9-1",
     "date-fns": "^2.28.0",
     "file-saver": "^2.0.5",
@@ -35,12 +33,9 @@
     "portal-vue": "^2.1.7",
     "vue": "^2.7.14",
     "vue-i18n": "^8.28.2",
-    "vue-material-design-icons": "^4.13.0",
     "vue-meta": "^2.4.0",
-    "vue-pdf": "^4.3.0",
     "vue-router": "^3.6.5",
     "vue-tabler-icons": "~1.13.0",
-    "vue-tel-input": "~4.4.2",
     "vuetify": "^2.6.15"
   }
 }

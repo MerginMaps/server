@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
-import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
 import vue from '@vitejs/plugin-vue2'
 import { resolve } from 'path'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
@@ -11,7 +10,6 @@ import { VuetifyResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
-// import dts from 'vite-plugin-dts'
 // import vuetify from 'vite-plugin-vuetify'
 
 import packageJson from './package.json'
@@ -33,13 +31,9 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
-      // buffer: 'buffer/',
-      events: 'events',
+      events: 'rollup-plugin-node-polyfills/polyfills/events',
       https: 'agent-base',
-      // http: 'stream-http',
-      // https: 'https-browserify',
-      path: 'path-browserify',
-      url: 'url/'
+      path: 'rollup-plugin-node-polyfills/polyfills/path'
     },
     dedupe: ['vue', 'pinia', 'vue-router', 'vuetify']
   },
@@ -86,8 +80,7 @@ export default defineConfig(({ mode }) => ({
         NodeGlobalsPolyfillPlugin({
           process: true,
           buffer: true
-        }),
-        NodeModulesPolyfillPlugin()
+        })
       ]
     }
   },

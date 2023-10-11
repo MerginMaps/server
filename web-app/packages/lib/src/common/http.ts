@@ -13,7 +13,7 @@ export interface HttpService extends AxiosInstance {
   appendParams?: (url: string, params: Record<string, any>) => string
 }
 
-let HTTP: HttpService = axios.create({
+const HTTP: HttpService = axios.create({
   baseURL: '',
   withCredentials: true,
   httpsAgent: new https.Agent({
