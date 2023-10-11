@@ -10,9 +10,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import { AppHeaderTemplate } from '@mergin/lib'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'AppHeader',
   props: {
     isPrimary: {

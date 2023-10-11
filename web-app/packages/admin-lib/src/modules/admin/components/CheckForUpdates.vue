@@ -9,23 +9,26 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapState, mapActions } from 'vuex'
+import { useInstanceStore } from '@mergin/lib'
+import { mapState, mapActions } from 'pinia'
+import { defineComponent } from 'vue'
 
-export default Vue.extend({
+import { useAdminStore } from '@/modules/admin/store'
+
+export default defineComponent({
   name: 'CheckForUpdates',
   computed: {
-    ...mapState('instanceModule', ['configData'])
+    ...mapState(useInstanceStore, ['configData'])
   },
   methods: {
-    ...mapActions('adminModule', ['getCheckUpdateFromCookies', 'checkVersions'])
+    ...mapActions(useAdminStore, ['getCheckUpdateFromCookies', 'checkVersions'])
   },
   created() {
     this.getCheckUpdateFromCookies()
     this.checkVersions({
-      major: this.configData.major,
-      minor: this.configData.minor,
-      fix: this.configData.fix ?? null
+      major: this.configData?.major,
+      minor: this.configData?.minor,
+      fix: this.configData?.fix ?? null
     })
   }
 })

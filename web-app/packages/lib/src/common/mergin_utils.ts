@@ -107,8 +107,8 @@ export function filesDiff(oldFiles, newFiles) {
   const removed = difference(oFilesPaths, nFilesPaths)
 
   const diff = {
-    added: added,
-    removed: removed,
+    added,
+    removed,
     updated
   }
   const changes = Object.values(diff).reduce(
@@ -143,10 +143,4 @@ export function calculateChunks(fileSize) {
     chunks.push(Math.random().toString(36).substring(2))
   }
   return chunks
-}
-
-export function parseError(error, msg = '') {
-  return error.response && error.response.data && error.response.data.detail
-    ? error.response.data.detail
-    : msg
 }

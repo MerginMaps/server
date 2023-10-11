@@ -9,13 +9,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapActions } from 'vuex'
+import { mapActions } from 'pinia'
+import { defineComponent } from 'vue'
 
 import CloneDialogTemplate from './CloneDialogTemplate.vue'
+
+import { useProjectStore } from '@/modules/project/store'
 import { CloneProjectParams } from '@/modules/project/types'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'clone-dialog',
   props: {
     project: String,
@@ -23,7 +25,7 @@ export default Vue.extend({
   },
   components: { CloneDialogTemplate },
   methods: {
-    ...mapActions('projectModule', ['cloneProject']),
+    ...mapActions(useProjectStore, ['cloneProject']),
 
     async onCloneProject(
       project: string,

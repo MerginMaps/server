@@ -140,13 +140,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapActions, mapState } from 'vuex'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
+import { getErrorMessage } from '@/common/error_utils'
 import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
 import { GetProjectAccessRequestsPayload } from '@/modules'
+import { useNotificationStore } from '@/modules/notification/store'
+import { useProjectStore } from '@/modules/project/store'
+import { useUserStore } from '@/modules/user/store'
 
-export default Vue.extend({
+export default defineComponent({
   data() {
     return {
       loading: false,
@@ -199,20 +203,20 @@ export default Vue.extend({
     }
   },
   computed: {
-    ...mapState('projectModule', [
+    ...mapState(useProjectStore, [
       'project',
       'accessRequests',
       'accessRequestsCount'
     ]),
-    ...mapState('userModule', ['loggedUser'])
+    ...mapState(useUserStore, ['loggedUser'])
   },
   methods: {
-    ...mapActions('projectModule', [
+    ...mapActions(useProjectStore, [
       'cancelProjectAccessRequest',
       'acceptProjectAccessRequest',
       'getProjectAccessRequests'
     ]),
-    ...mapActions('notificationModule', ['error']),
+    ...mapActions(useNotificationStore, ['error']),
 
     onUpdateOptions(options) {
       this.options = options
@@ -250,15 +254,13 @@ export default Vue.extend({
         await this.acceptProjectAccessRequest({
           data,
           itemId: request.id,
-          namespace: this.project.namespace,
-          projectName: this.project.name
+          namespace: this.project.namespace
         })
         await this.updatePaginationOrFetch()
       } catch (err) {
-        const msg = err.response
-          ? err.response.data?.detail
-          : 'Failed to accept access request'
-        this.error({ text: msg })
+        this.error({
+          text: getErrorMessage(err, 'Failed to accept access request')
+        })
       }
     },
     expired(expire) {
@@ -267,8 +269,7 @@ export default Vue.extend({
     async cancelRequest(request) {
       await this.cancelProjectAccessRequest({
         itemId: request.id,
-        namespace: this.project.namespace,
-        projectName: this.project.name
+        namespace: this.project.namespace
       })
       await this.updatePaginationOrFetch()
     },
@@ -309,7 +310,7 @@ label {
   font-weight: 500;
 }
 
-::v-deep {
+::v-deep(*) {
   .v-data-table__overflow {
     margin: 0.5em 0;
     border: 1px solid #ddd;

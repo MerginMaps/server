@@ -14,13 +14,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 
 import FullStorageWarning from '@/common/components/FullStorageWarning.vue'
 import UsageStatus from '@/common/components/UsageStatus.vue'
 import DashboardFullStorageWarningRow from '@/modules/dashboard/components/DashboardFullStorageWarningRow.vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'DashboardUsageInfoRow',
   components: {
     DashboardFullStorageWarningRow,

@@ -1,5 +1,5 @@
 
-# Mergin Maps Development
+# Mergin Maps Development guide
 
 This page contains useful information for those who wish to develop Mergin.
 
@@ -30,15 +30,32 @@ $ pipenv run celery -A application.celery worker --loglevel=info &
 $ pipenv run flask run # run dev server on port 5000
 ```
 
-### Web app
+### Web applications
+
+Before installing the web applications, make sure you have Node.js installed in a supported version. The applications require Node.js version **17 or higher**.
+
 ```shell
-$ sudo apt install nodejs
 $ cd web-app
 $ yarn install
-$ yarn build:libs
-$ yarn serve  # development client app server on port 8080
-$ yarn serve:admin  # development admin app server on port 8081
+$ yarn link:dependencies # link dependencies
+$ yarn build:libs # bild libraries @mergin/lib @mergin/admin-lib
+$ yarn dev  # development client web application dev server on port 8080 (package @mergin/app)
+$ yarn dev:admin  # development admin appplication dev server on port 8081 (package @mergin/admin-app)
 ```
+
+If you are developing a library package (named **-lib*), it is useful to watch the library for changes instead of rebuilding it each time. 
+
+To watch the @mergin/lib library while developing:
+
+```shell
+# watch:admin-lib, etc.
+yarn watch:lib
+# Also watch type definitions
+yarn watch:lib:types
+```
+
+Watching the type definitions is also useful to pick up any changes to imports or new components that are added.
+
 
 ## Running tests
 To launch the unit tests run:

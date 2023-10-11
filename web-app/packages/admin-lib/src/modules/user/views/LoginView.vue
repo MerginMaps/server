@@ -8,21 +8,24 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <login-view-template @userLogin="handleUserLogin" />
 </template>
 
-<script>
-import { LoginViewTemplate } from '@mergin/lib'
-import { mapActions } from 'vuex'
+<script lang="ts">
+import { LoginViewTemplate, useUserStore } from '@mergin/lib'
+import { mapActions } from 'pinia'
+import { defineComponent } from 'vue'
 
-export default {
+import { useAdminStore } from '@/modules/admin/store'
+
+export default defineComponent({
   name: 'LoginView',
   components: {
     LoginViewTemplate
   },
   methods: {
-    ...mapActions('userModule', [
+    ...mapActions(useUserStore, [
       'redirectAfterLogin',
       'redirectFromLoginAfterLogin'
     ]),
-    ...mapActions('adminModule', ['adminLogin']),
+    ...mapActions(useAdminStore, ['adminLogin']),
     async handleUserLogin(payload) {
       try {
         await this.adminLogin(payload)
@@ -38,5 +41,5 @@ export default {
       } catch {}
     }
   }
-}
+})
 </script>

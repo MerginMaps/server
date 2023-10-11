@@ -10,11 +10,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 
 import GlobalWarningTemplate from '@/common/components/GlobalWarningTemplate.vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'GlobalWarning',
   components: { GlobalWarningTemplate }
 })

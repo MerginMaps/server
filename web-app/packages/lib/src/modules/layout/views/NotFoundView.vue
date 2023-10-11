@@ -27,16 +27,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapState } from 'vuex'
+import { mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
 import CustomPage from '@/common/components/CustomPage.vue'
+import { useUserStore } from '@/modules/user/store'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'NotFoundView',
   components: { CustomPage },
   computed: {
-    ...mapState('userModule', ['loggedUser']),
+    ...mapState(useUserStore, ['loggedUser']),
     displayBackButton() {
       return this.loggedUser
     }

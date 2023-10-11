@@ -44,12 +44,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import groupBy from 'lodash/groupBy'
 import isArray from 'lodash/isArray'
-import Vue from 'vue'
-import { mapState } from 'vuex'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
+import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
+import { useNotificationStore } from '@/modules'
+import { useInstanceStore } from '@/modules/instance/store'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'FileVersionDetailView',
   props: {
     namespace: String,
@@ -73,7 +76,7 @@ export default Vue.extend({
     }
   },
   computed: {
-    ...mapState('instanceModule', ['configData']),
+    ...mapState(useInstanceStore, ['configData']),
     docsLinkManageSynchronisation() {
       return `${this.configData?.docs_url ?? ''}/manage/synchronisation`
     }
@@ -83,7 +86,9 @@ export default Vue.extend({
   },
 
   methods: {
-    // TODO: refactor to vuex action
+    ...mapActions(useNotificationStore, ['error']),
+
+    // TODO: refactor to pinia action
     getChangeset() {
       waitCursor(true)
       this.$http
@@ -153,10 +158,9 @@ export default Vue.extend({
           }
         })
         .catch((err) => {
-          const msg = err.response
-            ? err.response.data?.detail
-            : 'Failed to display changeset of file'
-          this.$store.dispatch('notificationModule/error', { text: msg })
+          this.error({
+            text: getErrorMessage(err, 'Failed to display changeset of file')
+          })
         })
         .finally(() => {
           this.loading = false
@@ -167,7 +171,7 @@ export default Vue.extend({
 })
 </script>
 <style lang="scss" scoped>
-::v-deep .v-data-table__wrapper {
+::v-deep(.v-data-table__wrapper) {
   td.text-start {
     max-width: 250px;
   }

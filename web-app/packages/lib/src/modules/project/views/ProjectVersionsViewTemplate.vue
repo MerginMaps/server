@@ -133,15 +133,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               :style="[rowStyle(item)]"
               data-cy="project-versions-download-btn"
               @click="
-                downloadArchive(
-                  '/v1/project/download/' +
+                downloadArchive({
+                  url:
+                    '/v1/project/download/' +
                     namespace +
                     '/' +
                     projectName +
                     '?version=' +
                     item.name +
                     '&format=zip'
-                )
+                })
               "
             >
               <v-icon>archive</v-icon>
@@ -167,19 +168,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue, { PropType } from 'vue'
-import { mapActions, mapState } from 'vuex'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent, PropType } from 'vue'
 
-import MerginAPIMixin from '@/common/mixins/MerginAPIMixin'
 import {
   FetchProjectVersionsParams,
   ProjectVersion,
   ProjectVersionsItem
 } from '@/modules'
+import { useProjectStore } from '@/modules/project/store'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProjectVersionsViewTemplate',
-  mixins: [MerginAPIMixin],
   props: {
     projectName: String,
     namespace: String,
@@ -232,7 +232,7 @@ export default Vue.extend({
     }
   },
   computed: {
-    ...mapState('projectModule', [
+    ...mapState(useProjectStore, [
       'versions',
       'versionsLoading',
       'versionsCount'
@@ -253,7 +253,7 @@ export default Vue.extend({
     $route: 'fetchVersions'
   },
   methods: {
-    ...mapActions('projectModule', ['fetchProjectVersions']),
+    ...mapActions(useProjectStore, ['fetchProjectVersions', 'downloadArchive']),
     paginating(options) {
       this.options = options
       this.fetchVersions()

@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-row>
           <v-col cols="12" class="pa-0">
             <v-card
-              v-if="!loggedUser.verified_email"
+              v-if="!loggedUser?.verified_email"
               outlined
               class="bubble mt-3"
               style="
@@ -122,7 +122,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                             <v-btn
                               @click="showConfirmationDialog"
                               class="primary--text"
-                              :disabled="loggedUser.verified_profile"
+                              :disabled="loggedUser?.verified_profile"
                               cy-data="profile-verify-email-btn"
                             >
                               <v-icon small class="mr-2">send</v-icon>
@@ -158,14 +158,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapState, mapActions } from 'vuex'
+import { mapState, mapActions } from 'pinia'
+import { defineComponent } from 'vue'
 
+import { ConfirmDialog, useDialogStore } from '@/modules'
 import PageView from '@/modules/layout/components/PageView.vue'
+import { useLayoutStore } from '@/modules/layout/store'
 import ChangePasswordForm from '@/modules/user/components/ChangePasswordForm.vue'
 import EditProfileForm from '@/modules/user/components/EditProfileForm.vue'
+import { useUserStore } from '@/modules/user/store'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProfileViewTemplate',
   props: {
     name: String
@@ -177,8 +180,8 @@ export default Vue.extend({
     }
   },
   computed: {
-    ...mapState('layoutModule', ['drawer']),
-    ...mapState('userModule', ['loggedUser']),
+    ...mapState(useLayoutStore, ['drawer']),
+    ...mapState(useUserStore, ['loggedUser']),
     usage() {
       return this.loggedUser?.disk_usage / this.loggedUser?.storage
     }
@@ -192,11 +195,13 @@ export default Vue.extend({
     }
   },
   methods: {
-    ...mapActions('userModule', {
+    ...mapActions(useDialogStore, ['show']),
+    ...mapActions(useUserStore, {
       fetchUserProfile: 'fetchUserProfile',
       resendConfirmationEmailToUser: 'resendConfirmationEmail',
       closeUserProfile: 'closeUserProfile'
     }),
+
     resendConfirmationEmail() {
       this.resendConfirmationEmailToUser({ email: this.loggedUser?.email })
     },
@@ -208,7 +213,8 @@ export default Vue.extend({
       const listeners = {
         confirm: () => this.resendConfirmationEmail()
       }
-      this.$store.dispatch('dialogModule/prompt', {
+      this.show({
+        component: ConfirmDialog,
         params: {
           props,
           listeners,
@@ -228,7 +234,8 @@ export default Vue.extend({
       const listeners = {
         confirm: async () => await this.closeUserProfile()
       }
-      this.$store.dispatch('dialogModule/prompt', {
+      this.show({
+        component: ConfirmDialog,
         params: {
           props,
           listeners,
@@ -239,7 +246,7 @@ export default Vue.extend({
     changePasswordDialog() {
       const props = {}
       const dialog = { maxWidth: 500, persistent: true }
-      this.$store.dispatch('dialogModule/show', {
+      this.show({
         component: ChangePasswordForm,
         params: {
           props,
@@ -250,7 +257,7 @@ export default Vue.extend({
     editProfileDialog() {
       const props = { profile: this.loggedUser }
       const dialog = { maxWidth: 500, persistent: true }
-      this.$store.dispatch('dialogModule/show', {
+      this.show({
         component: EditProfileForm,
         params: {
           props,
@@ -263,7 +270,7 @@ export default Vue.extend({
 </script>
 
 <style lang="scss" scoped>
-@import 'src/sass/dashboard';
+@use '@/sass/dashboard';
 
 .bubble {
   width: 100%;

@@ -95,12 +95,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapState, mapMutations, mapGetters } from 'vuex'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
-import { UserApi } from '@/modules/user/userApi'
+import { useLayoutStore } from '@/modules/layout/store'
+import { useProjectStore } from '@/modules/project/store'
+import { useUserStore } from '@/modules/user/store'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'app-header-template',
   props: {
     isPrimary: {
@@ -113,10 +115,9 @@ export default Vue.extend({
     }
   },
   computed: {
-    ...mapState('layoutModule', ['drawer']),
-    ...mapState('userModule', ['loggedUser']),
-    ...mapGetters('userModule', ['getUserFullName']),
-    ...mapState('projectModule', ['currentNamespace']),
+    ...mapState(useLayoutStore, ['drawer']),
+    ...mapState(useUserStore, ['loggedUser', 'getUserFullName']),
+    ...mapState(useProjectStore, ['currentNamespace']),
     profileUrl() {
       return {
         name: 'user',
@@ -125,17 +126,19 @@ export default Vue.extend({
     }
   },
   methods: {
-    ...mapMutations('layoutModule', ['setDrawer']),
+    ...mapActions(useLayoutStore, ['setDrawer']),
+    ...mapActions(useUserStore, { logoutUser: 'logout' }),
+
     async logout() {
       try {
-        await UserApi.logout()
+        await this.logoutUser()
         if (this.$route.path === '/') {
           location.reload()
         } else {
           location.href = '/'
         }
       } catch (e) {
-        console.log(e)
+        console.error(e)
       }
     }
   }

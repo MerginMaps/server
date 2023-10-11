@@ -78,14 +78,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import axios from 'axios'
 import pick from 'lodash/pick'
-import Vue from 'vue'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 import { CloudUploadIcon } from 'vue-tabler-icons'
-import { mapActions, mapMutations, mapState } from 'vuex'
 
 import ActionButton from '@/common/components/ActionButton.vue'
 import { CHUNK_SIZE, isVersionedFile } from '@/common/mergin_utils'
+import { ConfirmDialog, useDialogStore, useNotificationStore } from '@/modules'
+import { useProjectStore } from '@/modules/project/store'
 
-export default Vue.extend({
+export default defineComponent({
   data() {
     return {
       source: null
@@ -99,7 +101,7 @@ export default Vue.extend({
     CloudUploadIcon
   },
   computed: {
-    ...mapState('projectModule', ['project', 'uploads']),
+    ...mapState(useProjectStore, ['project', 'uploads']),
 
     upload() {
       return this.uploads[this.project.path]
@@ -119,12 +121,12 @@ export default Vue.extend({
     }
   },
   methods: {
-    ...mapMutations('projectModule', [
+    ...mapActions(useDialogStore, { showDialog: 'show' }),
+    ...mapActions(useNotificationStore, ['show']),
+    ...mapActions(useProjectStore, [
       'setProject',
       'discardUpload',
-      'startUpload'
-    ]),
-    ...mapActions('projectModule', [
+      'startUpload',
       'pushProjectChanges',
       'pushProjectChunks',
       'pushFinishTransaction',
@@ -156,13 +158,13 @@ export default Vue.extend({
       const projectPath = this.project.path
       const version = this.project.version || 'v0'
       const resp = await this.pushProjectChanges({
-        data: { version: version, changes },
+        data: { version, changes },
         projectPath
       })
       const { transaction } = resp.data
       if (!transaction) {
         this.discardUpload({ projectPath })
-        await this.$store.dispatch('notificationModule/show', {
+        await this.show({
           text: 'Project updated'
         })
         this.setProject({ project: resp.data })
@@ -218,7 +220,8 @@ export default Vue.extend({
       }
 
       if (this.upload.diff.updated.filter((i) => isVersionedFile(i)).length) {
-        this.$store.dispatch('dialogModule/prompt', {
+        this.showDialog({
+          component: ConfirmDialog,
           params: { props, listeners, dialog: { maxWidth: 500 } }
         })
       } else {

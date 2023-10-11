@@ -15,17 +15,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue, { PropType } from 'vue'
-import { mapActions } from 'vuex'
+import { mapActions } from 'pinia'
+import { defineComponent, PropType } from 'vue'
 
 import { PaginatedGridOptions } from '@/common'
+import { useNotificationStore } from '@/modules/notification/store'
 import ProjectsTable from '@/modules/project/components/ProjectsTable.vue'
+import { useProjectStore } from '@/modules/project/store'
 import {
   PaginatedProjectsParams,
   ProjectGridState
 } from '@/modules/project/types'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'projects-table-data-loader',
   components: { ProjectsTable },
   props: {
@@ -72,8 +74,8 @@ export default Vue.extend({
     }
   },
   methods: {
-    ...mapActions('projectModule', ['getProjects']),
-    ...mapActions('notificationModule', ['error']),
+    ...mapActions(useProjectStore, ['getProjects']),
+    ...mapActions(useNotificationStore, ['error']),
     async fetchProjects(
       projectGridState: ProjectGridState,
       gridOptions: PaginatedGridOptions,

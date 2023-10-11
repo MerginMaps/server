@@ -9,11 +9,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :namespace="namespace"
     :projectName="projectName"
     :asAdmin="asAdmin"
-    :show-settings="isProjectOwner"
+    :show-settings="projectStore.isProjectOwner"
   >
-    <template #permissions="{ settingsAccess, keyProp, saveProject }">
+    <!-- TODO: V3_UPGRADE [MERGIN-EXT] - change settingsAccess to settings.access  -->
+    <template #permissions="{ settings, keyProp, saveProject }">
       <project-permissions-template
-        v-model="settingsAccess"
+        v-model="settings.access"
         :key="keyProp"
         @save-project="saveProject(...arguments)"
       />
@@ -21,14 +22,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   </project-settings-view-template>
 </template>
 
-<script>
+<script lang="ts">
 import {
   ProjectSettingsViewTemplate,
-  ProjectPermissionsTemplate
+  ProjectPermissionsTemplate,
+  useProjectStore
 } from '@mergin/lib'
-import { useGetters } from 'vuex-composition-helpers'
+import { defineComponent } from 'vue'
 
-export default {
+export default defineComponent({
   name: 'ProjectSettingsView',
   components: {
     ProjectSettingsViewTemplate,
@@ -43,11 +45,11 @@ export default {
     }
   },
   setup(_props) {
-    const { isProjectOwner } = useGetters('projectModule', ['isProjectOwner'])
+    const projectStore = useProjectStore()
 
     return {
-      isProjectOwner
+      projectStore
     }
   }
-}
+})
 </script>

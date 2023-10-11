@@ -49,13 +49,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 import { UserIcon } from 'vue-tabler-icons'
-import { mapState } from 'vuex'
 
 import SideBarItem from '@/modules/layout/components/SideBarItem.vue'
+import { useLayoutStore } from '@/modules/layout/store'
+import { useUserStore } from '@/modules/user/store'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'SideBarTemplate',
   components: {
     SideBarItem,
@@ -77,8 +79,8 @@ export default Vue.extend({
     }
   },
   computed: {
-    ...mapState('userModule', ['loggedUser']),
-    ...mapState('layoutModule', {
+    ...mapState(useUserStore, ['loggedUser']),
+    ...mapState(useLayoutStore, {
       barColor: 'barColor',
       drawerState: 'drawer'
     }),
@@ -87,17 +89,17 @@ export default Vue.extend({
         return this.drawerState
       },
       set(val) {
-        this.$store.commit('layoutModule/setDrawer', { drawer: val })
+        this.setDrawer({ drawer: val })
       }
     }
   },
-  methods: {}
+  methods: {
+    ...mapActions(useLayoutStore, ['setDrawer'])
+  }
 })
 </script>
 
 <style lang="scss" scoped>
-@import 'vuetify/src/styles/tools/rtl';
-
 .theme--dark.v-navigation-drawer {
   background-color: #eaebef !important;
 }

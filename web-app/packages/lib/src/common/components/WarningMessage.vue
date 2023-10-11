@@ -13,11 +13,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 
 import WarningMessageTemplate from './WarningMessageTemplate.vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'WarningMessage',
   components: { WarningMessageTemplate },
   props: {

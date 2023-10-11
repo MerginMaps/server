@@ -33,13 +33,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapActions, mapState } from 'vuex'
+import { useInstanceStore } from '@mergin/lib'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
-export default Vue.extend({
+import { useAdminStore } from '@/modules/admin/store'
+
+export default defineComponent({
   name: 'ServerNotConfigured',
   methods: {
-    ...mapActions('adminModule', [
+    ...mapActions(useAdminStore, [
       'setServerConfiguredCookies',
       'getServerConfiguredCookies'
     ]),
@@ -52,8 +55,8 @@ export default Vue.extend({
     this.getServerConfiguredCookies()
   },
   computed: {
-    ...mapState('instanceModule', ['configData']),
-    ...mapState('adminModule', ['isServerConfigHidden']),
+    ...mapState(useInstanceStore, ['configData']),
+    ...mapState(useAdminStore, ['isServerConfigHidden']),
     docsLinkDocumentation(): string {
       return `${this.configData?.docs_url ?? ''}/dev/mergince`
     },

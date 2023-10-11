@@ -22,10 +22,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapMutations } from 'vuex'
+import { mapActions } from 'pinia'
+import { defineComponent } from 'vue'
 
-export default Vue.extend({
+import { useProjectStore } from '@/modules/project/store'
+
+export default defineComponent({
   data() {
     return {
       showMenu: false,
@@ -35,7 +37,7 @@ export default Vue.extend({
     }
   },
   methods: {
-    ...mapMutations('projectModule', ['deleteFiles']),
+    ...mapActions(useProjectStore, ['deleteFiles']),
     open(evt, file) {
       this.showMenu = true
       this.x = evt.clientX

@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <dashboard-usage-info-row />
     </template>
     <template #content>
-      <dashboard-access-requests-row v-if="isGlobalWorkspaceAdmin">
+      <dashboard-access-requests-row v-if="userStore.isGlobalWorkspaceAdmin">
         <template v-slot:table="{ namespace }">
           <project-access-request-table :namespace="namespace" />
         </template>
@@ -32,19 +32,20 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   </dashboard-view-template>
 </template>
 
-<script>
+<script lang="ts">
 import {
   DashboardViewTemplate,
   DashboardProjectsRow,
   DashboardAccessRequestsRow,
   ProjectsTableDataLoader,
   DashboardUsageInfoRow,
-  ProjectAccessRequestTable
+  ProjectAccessRequestTable,
+  useProjectStore,
+  useUserStore
 } from '@mergin/lib'
-import { computed, ref, onMounted } from '@vue/composition-api'
-import { useActions, useGetters } from 'vuex-composition-helpers'
+import { defineComponent, computed, ref, onMounted } from 'vue'
 
-export default {
+export default defineComponent({
   name: 'DashboardView',
   components: {
     DashboardViewTemplate,
@@ -62,14 +63,13 @@ export default {
       page: 1
     })
 
-    const { initProjects } = useActions('projectModule', ['initProjects'])
-    const { isGlobalWorkspaceAdmin } = useGetters('userModule', [
-      'isGlobalWorkspaceAdmin'
-    ])
-    const canCreateProject = computed(() => isGlobalWorkspaceAdmin?.value)
+    const projectStore = useProjectStore()
+    const userStore = useUserStore()
+
+    const canCreateProject = computed(() => userStore.isGlobalWorkspaceAdmin)
 
     onMounted(async () => {
-      await initProjects({
+      await projectStore.initProjects({
         params: { per_page: 5, page: 1 }
         // TODO: transform options to request params
         // params: initialOptions.value
@@ -78,9 +78,9 @@ export default {
 
     return {
       initialOptions,
-      isGlobalWorkspaceAdmin,
+      userStore,
       canCreateProject
     }
   }
-}
+})
 </script>

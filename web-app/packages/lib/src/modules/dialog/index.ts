@@ -5,3 +5,4 @@
 export * from './components'
 export * from './store'
 export * from './module'
+export * from './types'

@@ -108,12 +108,15 @@ export function initResponseInterceptors(authErrorCallback: () => void) {
   )
 }
 
-export function initCsrfToken(response: AxiosResponse) {
-  HTTP.defaults.headers.common['X-CSRF-Token'] =
-    response.headers['x-csrf-token']
+export function getHttpService() {
+  return HTTP
 }
 
-export default HTTP
+export function initCsrfToken(response: AxiosResponse) {
+  const http = getHttpService()
+  http.defaults.headers.common['X-CSRF-Token'] =
+    response.headers['x-csrf-token']
+}
 
 export function postRetryCond(error) {
   if (!error.config) {

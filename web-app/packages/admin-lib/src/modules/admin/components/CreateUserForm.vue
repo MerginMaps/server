@@ -18,12 +18,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           name="username"
           color="inputColor"
           v-model="username"
+          :error-messages="errors.username"
         />
         <v-text-field
           placeholder="Email"
           name="email"
           color="inputColor"
           v-model="email"
+          :error-messages="errors.email"
         />
         <v-layout align-center>
           <v-text-field
@@ -34,6 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             :append-icon="passwordVisible ? 'visibility_off' : 'visibility'"
             @click:append="passwordVisible = !passwordVisible"
             :type="passwordVisible ? 'text' : 'password'"
+            :error-messages="errors.password"
           />
           <v-tooltip
             top
@@ -78,13 +81,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { htmlUtils } from '@mergin/lib'
-import Vue from 'vue'
-import { mapActions } from 'vuex'
+import {
+  errorUtils,
+  htmlUtils,
+  useDialogStore,
+  useNotificationStore,
+  useFormStore
+} from '@mergin/lib'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
 import { AdminApi, CreateUserData } from '..'
 
-export default Vue.extend({
+export default defineComponent({
   data() {
     return {
       isValid: null,
@@ -95,14 +104,29 @@ export default Vue.extend({
     }
   },
   computed: {
+    ...mapState(useFormStore, ['getErrorByComponentId']),
+
     invalidInput() {
       return this.isValid === null
         ? this.validateInput(this.$data)
         : !this.isValid
+    },
+    errors() {
+      return this.getErrorByComponentId(this.merginComponentUuid) ?? {}
     }
   },
+  beforeDestroy() {
+    this.clearErrors({
+      componentId: this.merginComponentUuid,
+      keepNotification: true
+    })
+  },
+
   methods: {
-    ...mapActions('dialogModule', ['close']),
+    ...mapActions(useDialogStore, ['close']),
+    ...mapActions(useNotificationStore, ['show']),
+    ...mapActions(useFormStore, ['clearErrors', 'handleError']),
+
     validateInput(data) {
       return ['username', 'email', 'password'].some((k) => data[k] === '')
     },
@@ -114,22 +138,23 @@ export default Vue.extend({
         confirm: this.password
       }
       htmlUtils.waitCursor(true)
+      this.clearErrors({ componentId: this.merginComponentUuid })
       AdminApi.createUser(data)
         .then(() => {
           this.close()
           this.$emit('success')
-          this.$store.dispatch('notificationModule/show', {
+          this.show({
             text: 'User created'
           })
         })
         .catch((err) => {
-          // TODO process backend form errors
-          const msg =
-            err.response.data && err.response.data.detail
-              ? err.response.data.detail
-              : 'Failed to create user'
-          this.$store.dispatch('notificationModule/error', {
-            text: msg
+          this.handleError({
+            componentId: this.merginComponentUuid,
+            error: err,
+            generalMessage: errorUtils.getErrorMessage(
+              err,
+              'Failed to create user'
+            )
           })
         })
         .finally(() => htmlUtils.waitCursor(false))

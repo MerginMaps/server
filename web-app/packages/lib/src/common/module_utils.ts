@@ -2,48 +2,46 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import { RouteConfig } from 'vue-router'
+import { RouteRecord } from 'vue-router'
 
 import { Module, ModuleService, RouteOverrides } from '@/common/types'
 
-export const initializeAppModule = <S, R>(
-  module: Module<S, R>,
-  services: ModuleService,
+export const initializeAppModule = (
+  module: Module,
+  services?: ModuleService,
   routeOverrides?: RouteOverrides
 ) => {
-  if (services.store) {
-    services.store.registerModule(module.name, module.moduleStore)
-    module.init(services, routeOverrides)
-  }
+  module.init(services, routeOverrides)
 }
 
-function elevateToRouteConfig(
-  route: Partial<RouteConfig>
-): route is RouteConfig {
+function elevateToRouteRecord(
+  route: Partial<RouteRecord>
+): route is RouteRecord {
   return true
 }
 
 export function applyRouteOverride(
-  route: Partial<RouteConfig>,
+  route: Partial<RouteRecord>,
   routeOverrides?: RouteOverrides
-): Partial<RouteConfig> {
+): Partial<RouteRecord> {
   let overridenRoute = route
+  const routeName: string = route.name as unknown as string
   if (overridenRoute.children) {
     overridenRoute.children = route.children.map((child) => {
       const overridenChild = applyRouteOverride(child, routeOverrides)
       let result = child
-      // ALWAYS true - this is just hack to cast Partial<RouteConfig> to RouteConfig to get rid of TS error
-      if (elevateToRouteConfig(overridenChild)) {
+      // ALWAYS true - this is just hack to cast Partial<RouteRecord> to RouteRecord to get rid of TS error
+      if (elevateToRouteRecord(overridenChild)) {
         result = overridenChild
       }
       return result
     })
-  } else if (routeOverrides && routeOverrides[route.name]) {
-    overridenRoute = { ...overridenRoute, ...routeOverrides[route.name] }
+  } else if (routeOverrides && routeOverrides[routeName]) {
+    overridenRoute = { ...overridenRoute, ...routeOverrides[routeName] }
   }
 
-  if (routeOverrides && routeOverrides[route.name]) {
-    overridenRoute = { ...overridenRoute, ...routeOverrides[route.name] }
+  if (routeOverrides && routeOverrides[routeName]) {
+    overridenRoute = { ...overridenRoute, ...routeOverrides[routeName] }
   }
   return overridenRoute
 }

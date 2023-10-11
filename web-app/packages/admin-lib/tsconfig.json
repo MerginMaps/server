@@ -1,11 +1,13 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "module": "esnext",
+    "target": "ES5",
+    "module": "ESNext",
     // setting strict to false
-    "strict": false,
+    "strict": true,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
     "jsx": "preserve",
-    "moduleResolution": "node",
+    "moduleResolution": "Node",
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowJs": true,
@@ -14,12 +16,12 @@
     "useDefineForClassFields": true,
     "sourceMap": true,
     "baseUrl": "src",
-    "types": ["webpack-env", "node"],
+    "types": ["node", "vite/client"],
     "rootDir": "src",
     "paths": {
       "@/*": ["*"]
     },
-    "lib": ["esnext", "dom", "dom.iterable", "scripthost"],
+    "lib": ["ESNext", "DOM", "DOM.Iterable", "ScriptHost"],
 
     "declaration": true,
     "emitDeclarationOnly": true,
@@ -37,10 +39,12 @@
     "src/**/*.jsx",
     "src/**/*.json",
     "src/**/*.ts",
+    "src/**/*.d.ts",
     "src/**/*.tsx",
     "src/**/*.vue",
     "tests/**/*.ts",
     "tests/**/*.tsx"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }

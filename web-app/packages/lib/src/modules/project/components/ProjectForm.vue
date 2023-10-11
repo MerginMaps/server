@@ -35,10 +35,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapActions, mapState } from 'vuex'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
-export default Vue.extend({
+import { useDialogStore } from '@/modules/dialog/store'
+import { useFormStore } from '@/modules/form/store'
+import { useProjectStore } from '@/modules/project/store'
+
+export default defineComponent({
   name: 'new-project',
   data() {
     return {
@@ -47,7 +51,7 @@ export default Vue.extend({
     }
   },
   computed: {
-    ...mapState('projectModule', ['currentNamespace'])
+    ...mapState(useProjectStore, ['currentNamespace'])
   },
   beforeDestroy() {
     this.clearErrors({
@@ -56,9 +60,9 @@ export default Vue.extend({
     })
   },
   methods: {
-    ...mapActions('dialogModule', ['close']),
-    ...mapActions('formModule', ['clearErrors']),
-    ...mapActions('projectModule', { createProjectAction: 'createProject' }),
+    ...mapActions(useDialogStore, ['close']),
+    ...mapActions(useFormStore, ['clearErrors']),
+    ...mapActions(useProjectStore, { createProjectAction: 'createProject' }),
 
     async createProject() {
       // TODO: add types

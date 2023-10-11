@@ -5,14 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-snackbar
-    v-if="list.length"
-    bottom
-    right
-    auto-height
-    :timeout="-1"
-    :value="visible"
-  >
+  <v-snackbar v-if="list.length" bottom right :timeout="-1" :value="visible">
     <v-layout column>
       <v-layout
         class="py-1 row align-center justify-space-between"
@@ -35,10 +28,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import debounce from 'lodash/debounce'
-import Vue from 'vue'
-import { mapState } from 'vuex'
+import { mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
-export default Vue.extend({
+import { useProjectStore } from '@/modules/project/store'
+
+export default defineComponent({
   name: 'upload-progress',
   data() {
     return {
@@ -46,7 +41,7 @@ export default Vue.extend({
     }
   },
   computed: {
-    ...mapState('projectModule', ['uploads']),
+    ...mapState(useProjectStore, ['uploads']),
     list() {
       return Object.values(this.uploads)
     },
@@ -66,7 +61,7 @@ export default Vue.extend({
 </script>
 
 <style lang="scss" scoped>
-::v-deep {
+::v-deep(*) {
   .v-snack__content {
     padding: 0.75em 1em;
   }

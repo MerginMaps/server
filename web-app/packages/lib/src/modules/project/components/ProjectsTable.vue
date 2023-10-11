@@ -218,13 +218,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import debounce from 'lodash/debounce'
-import Vue, { PropType } from 'vue'
+import { defineComponent, PropType } from 'vue'
 
 import { PaginatedGridOptions } from '@/common'
 import { formatToTitle } from '@/common/text_utils'
 import { ProjectListItem } from '@/modules/project/types'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'projects-table',
   props: {
     showNamespace: {
@@ -367,7 +367,7 @@ export default Vue.extend({
     margin-right: 0.5em;
     height: 1.3em;
 
-    ::v-deep .v-chip__content {
+    ::v-deep(.v-chip__content) {
       padding: 0 0.2em;
       font-size: 85%;
     }
@@ -389,7 +389,7 @@ export default Vue.extend({
 }
 
 .v-toolbar {
-  ::v-deep .v-toolbar__content {
+  ::v-deep(.v-toolbar__content) {
     padding-left: 0;
   }
 }

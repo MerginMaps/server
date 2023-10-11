@@ -19,13 +19,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 
 import DashboardCoreAppBar from '../components/DashboardCoreAppBar.vue'
 import DashboardCoreDrawer from '../components/DashboardCoreDrawer.vue'
 import ServerNotConfigured from '../components/ServerNotConfigured.vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'AdminLayoutView',
 
   components: {
@@ -40,7 +40,7 @@ export default Vue.extend({
 })
 </script>
 <style lang="scss" scoped>
-::v-deep .v-application--wrap {
+::v-deep(.v-application--wrap) {
   overflow-y: auto;
 }
 </style>

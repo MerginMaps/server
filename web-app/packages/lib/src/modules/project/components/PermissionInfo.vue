@@ -14,12 +14,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapState } from 'vuex'
+import { mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
-export default Vue.extend({
+import { useInstanceStore } from '@/modules/instance/store'
+
+export default defineComponent({
   computed: {
-    ...mapState('instanceModule', ['configData']),
+    ...mapState(useInstanceStore, ['configData']),
 
     docsLinkManagePermissions(): string {
       return `${this.configData?.docs_url ?? ''}/manage/permissions`

@@ -5,6 +5,8 @@
 // import { getDefaultRetryOptions } from '@mergin/lib'
 import {
   ApiRequestSuccessInfo,
+  errorUtils,
+  getHttpService,
   LoginData,
   UserProfileResponse,
   UserResponse /*, getDefaultRetryOptions */
@@ -17,12 +19,15 @@ import {
   UpdateUserData,
   UsersResponse,
   LatestServerVersionResponse,
-  CreateUserData
+  CreateUserData,
+  PaginatedAdminProjectsResponse,
+  PaginatedAdminProjectsParams
 } from '@/modules/admin/types'
 
 export const AdminApi = {
-  login: (data: LoginData): Promise<AxiosResponse<void>> =>
-    AdminModule.httpService.post('/app/admin/login', data),
+  login: (data: LoginData): Promise<AxiosResponse<void>> => {
+    return AdminModule.httpService.post('/app/admin/login', data)
+  },
 
   async fetchUsers(params: UsersParams): Promise<AxiosResponse<UsersResponse>> {
     return AdminModule.httpService.get(`/app/admin/users`, { params })
@@ -31,9 +36,7 @@ export const AdminApi = {
   async fetchUserProfileByName(
     username: string
   ): Promise<AxiosResponse<UserResponse>> {
-    return AdminModule.httpService.get(
-      `/app/admin/user/${username}?random=${Math.random()}`
-    )
+    return AdminModule.httpService?.get(`/app/admin/user/${username}?random=${Math.random()}`)
   },
 
   async deleteUser(
@@ -92,7 +95,7 @@ export const AdminApi = {
       result.success = true
     } catch (e) {
       result.success = false
-      result.message = e.response.data?.detail || 'Unable to update storage'
+      result.message = errorUtils.getErrorMessage(e, 'Unable to update storage')
     }
     return new Promise((resolve) => {
       resolve(result)
@@ -103,5 +106,33 @@ export const AdminApi = {
     data: CreateUserData
   ): Promise<AxiosResponse<UserProfileResponse>> {
     return AdminModule.httpService.post(`/app/admin/user`, data)
+  },
+
+  async getPaginatedAdminProject(
+    params: PaginatedAdminProjectsParams
+  ): Promise<AxiosResponse<PaginatedAdminProjectsResponse>> {
+    return AdminModule.httpService.get('/app/admin/projects', { params })
+  },
+
+  /**
+   * Permanently remove project
+   * @param id removed project id
+   * @return Result promise
+   */
+  async removeProject(id: number): Promise<AxiosResponse<void>> {
+    return await AdminModule.httpService.delete(`/app/project/removed-project/${id}`, {
+      'axios-retry': { retries: 5 }
+    })
+  },
+
+  /**
+   * Restore removed project
+   * @param id (Int) removed project id
+   * @return Result promise
+   */
+  async restoreProject(id: number): Promise<AxiosResponse<void>> {
+    return await AdminModule.httpService.post(`/app/project/removed-project/restore/${id}`, null, {
+      'axios-retry': { retries: 5 }
+    })
   }
 }
