@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
-// import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
 import vue from '@vitejs/plugin-vue2'
 import { resolve } from 'path'
+import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
 import { VuetifyResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
@@ -29,14 +29,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
-      // 'vue-i18n': 'vue-i18n/dist/vue-i18n.cjs.js',
-      // buffer: 'buffer/',
-      events: 'events',
-      https: 'agent-base',
-      // http: 'stream-http',
-      // https: 'https-browserify',
-      path: 'path-browserify',
-      url: 'url/'
+      url: 'rollup-plugin-node-polyfills/polyfills/url'
     },
     dedupe: ['vue', 'pinia', 'vue-router', 'vuetify', '@mergin/lib']
   },
@@ -48,7 +41,14 @@ export default defineConfig(({ mode }) => ({
     //   include: [/node_modules/],
     //   transformMixedEsModules: true
     // },
-    sourcemap: mode !== 'production'
+    sourcemap: mode !== 'production',
+    rollupOptions: {
+      plugins: [
+        // Enable rollup polyfills plugin
+        // used during production bundling
+        rollupNodePolyFill()
+      ]
+    }
   },
   optimizeDeps: {
     exclude: ['vue', '@mergin'],
@@ -58,10 +58,9 @@ export default defineConfig(({ mode }) => ({
       },
       plugins: [
         NodeGlobalsPolyfillPlugin({
-          process: true,
-          buffer: true
+          process: false,
+          buffer: false
         })
-        // NodeModulesPolyfillPlugin()
       ]
     }
     // include: ['linked-dep', 'node_modules']

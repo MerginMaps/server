@@ -16,8 +16,7 @@ import {
   textUtils,
   numberUtils,
   getHttpService,
-  MerginComponentUuidMixin,
-  useAppStore
+  MerginComponentUuidMixin
 } from '@mergin/lib'
 import PortalVue from 'portal-vue'
 import Vue from 'vue'
@@ -25,7 +24,7 @@ import VueMeta from 'vue-meta'
 
 import App from './App.vue'
 import router from './router'
-import { addRouterToPinia, getPiniaInstance } from './store'
+import { getPiniaInstance } from './store'
 
 import i18n from '@/plugins/i18n/i18n'
 import vuetify from '@/plugins/vuetify/vuetify'
