@@ -66,9 +66,7 @@ export default defineConfig(({ mode }) => ({
       plugins: [
         // Enable rollup polyfills plugin
         // used during production bundling
-        rollupNodePolyFill({
-          include: ['events']
-        })
+        rollupNodePolyFill()
       ]
     }
   },
