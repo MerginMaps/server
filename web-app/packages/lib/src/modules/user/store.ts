@@ -431,7 +431,7 @@ export const useUserStore = defineStore('userModule', {
     async getAllUserWorkspacesFromCookies() {
       let value: Record<string, string>
       try {
-        const cookieValue = -cookies.get(COOKIES_CURRENT_WORKSPACE, {
+        const cookieValue = cookies.get(COOKIES_CURRENT_WORKSPACE, {
           doNotParse: true
         })
         if (cookieValue) {
