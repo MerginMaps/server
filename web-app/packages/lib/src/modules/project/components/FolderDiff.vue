@@ -4,23 +4,20 @@ Copyright (C) Lutra Consulting Limited
 SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
-<template functional>
+<template>
   <span class="diff">
-    <span v-if="props.added" class="added">{{ props.added }}</span>
-    <span v-if="props.removed" class="removed">{{ props.removed }}</span>
-    <span v-if="props.updated" class="updated">{{ props.updated }}</span>
-    <span v-if="props.added + props.removed + props.updated > 0">
-      / {{ props.count }}</span
-    >
+    <span v-if="added" class="added">{{ added }}</span>
+    <span v-if="removed" class="removed">{{ removed }}</span>
+    <span v-if="updated" class="updated">{{ updated }}</span>
+    <span v-if="added + removed + updated > 0"> / {{ count }}</span>
   </span>
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'FolderDiff',
-  functional: true,
   props: {
     added: Number,
     removed: Number,

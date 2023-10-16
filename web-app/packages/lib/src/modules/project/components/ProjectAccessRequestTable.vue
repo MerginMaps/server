@@ -13,12 +13,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import { AxiosError } from 'axios'
-import Vue from 'vue'
-import { mapActions } from 'vuex'
+import { mapActions } from 'pinia'
+import { defineComponent } from 'vue'
 
 import ProjectAccessRequestTableTemplate from './ProjectAccessRequestTableTemplate.vue'
 
-export default Vue.extend({
+import { getErrorMessage } from '@/common/error_utils'
+import { useNotificationStore } from '@/modules/notification/store'
+
+export default defineComponent({
   name: 'ProjectAccessRequestTable',
   components: { ProjectAccessRequestTableTemplate },
   props: {
@@ -28,14 +31,13 @@ export default Vue.extend({
     }
   },
   methods: {
-    ...mapActions('notificationModule', ['error']),
+    ...mapActions(useNotificationStore, ['error']),
 
     // TODO: Add more handlers from template, add more emits from template
     async onAcceptAccessRequestError(err: AxiosError) {
-      const msg = err.response
-        ? err.response.data?.detail
-        : 'Failed to accept access request'
-      this.error({ text: msg })
+      this.error({
+        text: getErrorMessage(err, 'Failed to accept access request')
+      })
     }
   }
 })

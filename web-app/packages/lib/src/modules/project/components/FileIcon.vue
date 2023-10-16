@@ -18,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 
 import mIconDbSchema from '@/assets/qgis-icons/mIconDbSchema.svg'
 import mIconFolder from '@/assets/qgis-icons/mIconFolder.svg'
@@ -46,7 +46,7 @@ const iconByExtensionDict = {
   xlsx: mIconTableLayer
 }
 
-export default Vue.extend({
+export default defineComponent({
   props: {
     file: Object
   },

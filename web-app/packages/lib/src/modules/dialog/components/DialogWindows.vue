@@ -6,26 +6,36 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <v-dialog :value="isDialogOpen" v-bind="dialogProps" @input="close">
-    <div
+    <component
       v-if="params"
-      :is="params.component"
+      :is="component"
       v-bind="params.props"
-      v-on="params.listeners"
+      v-on="dialogListeners"
     />
   </v-dialog>
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapState, mapGetters, mapActions } from 'vuex'
+import { mapState, mapActions } from 'pinia'
+import { defineComponent } from 'vue'
 
-export default Vue.extend({
+import { useDialogStore } from '@/modules/dialog/store'
+
+export default defineComponent({
   computed: {
-    ...mapState('dialogModule', ['isDialogOpen', 'params']),
-    ...mapGetters('dialogModule', ['dialogProps'])
+    ...mapState(useDialogStore, [
+      'isDialogOpen',
+      'params',
+      'component',
+      'dialogProps'
+    ]),
+
+    dialogListeners() {
+      return this.params?.listeners ?? {}
+    }
   },
   methods: {
-    ...mapActions('dialogModule', ['close'])
+    ...mapActions(useDialogStore, ['close'])
   }
 })
 </script>

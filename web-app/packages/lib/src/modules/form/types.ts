@@ -4,7 +4,7 @@
 
 import { AxiosError } from 'axios'
 
-export type MerginComponentUuid = number
+export type MerginComponentUuid = string
 export type FormInputError = string
 export type FormErrors = Record<string, FormInputError[]>
 export type FormErrorMessage = string | undefined

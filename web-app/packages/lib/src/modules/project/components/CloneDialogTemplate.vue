@@ -35,12 +35,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapActions, mapGetters } from 'vuex'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
+import { useDialogStore } from '@/modules/dialog/store'
+import { useFormStore } from '@/modules/form/store'
+import { useProjectStore } from '@/modules/project/store'
 import { CloneProjectParams } from '@/modules/project/types'
+import { useUserStore } from '@/modules/user/store'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'clone-dialog-template',
   props: {
     namespace: String,
@@ -52,7 +56,7 @@ export default Vue.extend({
     }
   },
   computed: {
-    ...mapGetters('userModule', ['currentWorkspace'])
+    ...mapState(useUserStore, ['currentWorkspace'])
   },
   created() {
     this.newProjectName = this.project
@@ -64,9 +68,9 @@ export default Vue.extend({
     })
   },
   methods: {
-    ...mapActions('dialogModule', ['close']),
-    ...mapActions('formModule', ['clearErrors', 'handleError']),
-    ...mapActions('projectModule', ['cloneProject']),
+    ...mapActions(useDialogStore, ['close']),
+    ...mapActions(useFormStore, ['clearErrors', 'handleError']),
+    ...mapActions(useProjectStore, ['cloneProject']),
 
     successCloneCallback() {
       this.close()

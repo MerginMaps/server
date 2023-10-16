@@ -2,22 +2,24 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import { Module } from 'vuex'
+import { defineStore } from 'pinia'
+import { markRaw } from 'vue'
 
-import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
-import { RootState } from '@/modules/types'
+import { DialogParams, DialogPayload } from './types'
 
 export interface DialogState {
   isDialogOpen: boolean
-  params: Record<string, any>
+  params: DialogParams
+  // VUE3_UPGRADE add import { Component } from 'vue' as type
+  component: any
 }
 
-const DialogStore: Module<DialogState, RootState> = {
-  namespaced: true,
-  state: {
+export const useDialogStore = defineStore('dialogModule', {
+  state: (): DialogState => ({
     isDialogOpen: false,
-    params: null
-  },
+    params: null,
+    component: null
+  }),
 
   getters: {
     dialogProps(state) {
@@ -25,39 +27,32 @@ const DialogStore: Module<DialogState, RootState> = {
     }
   },
 
-  mutations: {
-    openDialog(state, payload) {
-      state.isDialogOpen = true
-      state.params = payload.params
-    },
-    closeDialog(state) {
-      state.isDialogOpen = false
-    },
-    changeParams(state, payload) {
-      state.params = payload.params
-    }
-  },
   actions: {
-    show({ commit }, payload) {
-      commit('openDialog', {
-        params: { ...payload.params, component: payload.component }
+    openDialog(payload: DialogPayload) {
+      this.isDialogOpen = true
+      this.params = { ...payload.params }
+      this.component = markRaw(payload.component)
+    },
+    closeDialog() {
+      this.isDialogOpen = false
+      this.component = null
+    },
+    changeParams(payload: { params: DialogParams }) {
+      this.params = payload.params
+    },
+    show(payload: DialogPayload) {
+      this.openDialog({
+        params: { ...payload.params },
+        component: payload.component
       })
     },
-    prompt({ dispatch }, payload) {
-      dispatch('show', {
-        component: ConfirmDialog,
-        params: payload.params
-      })
-    },
-    close({ commit, state }) {
-      commit('closeDialog')
-      if (state.params?.dialog && !state.params.dialog.keepAlive) {
+    close() {
+      this.closeDialog()
+      if (this.params?.dialog && !this.params.dialog.keepAlive) {
         setTimeout(() => {
-          commit('changeParams', { params: null })
+          this.changeParams({ params: null })
         }, 300)
       }
     }
   }
-}
-
-export default DialogStore
+})

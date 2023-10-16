@@ -52,11 +52,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { UserApi } from '@mergin/lib'
-import Vue from 'vue'
-import { mapState, mapMutations, mapGetters, mapActions } from 'vuex'
+import { useInstanceStore, useLayoutStore, useUserStore } from '@mergin/lib'
+import { mapState, mapActions } from 'pinia'
+import { defineComponent } from 'vue'
 
-export default Vue.extend({
+import { useAdminStore } from '@/modules/admin/store'
+
+export default defineComponent({
   name: 'DashboardCoreAppBar',
 
   props: {
@@ -71,18 +73,18 @@ export default Vue.extend({
   }),
 
   computed: {
-    ...mapState('layoutModule', ['drawer']),
-    ...mapState('instanceModule', ['configData']),
-    ...mapState('adminModule', ['info_url']),
-    ...mapGetters('adminModule', ['displayUpdateAvailable'])
+    ...mapState(useLayoutStore, ['drawer']),
+    ...mapState(useInstanceStore, ['configData']),
+    ...mapState(useAdminStore, ['info_url', 'displayUpdateAvailable'])
   },
 
   methods: {
-    ...mapMutations('layoutModule', ['setDrawer']),
-    ...mapActions('adminModule', ['removeServerConfiguredCookies']),
+    ...mapActions(useLayoutStore, ['setDrawer']),
+    ...mapActions(useAdminStore, ['removeServerConfiguredCookies']),
+    ...mapActions(useUserStore, { logoutUser: 'logout' }),
     async logout() {
       try {
-        await UserApi.logout()
+        await this.logoutUser()
         if (this.$route.path === '/') {
           location.reload()
         } else {
@@ -90,7 +92,7 @@ export default Vue.extend({
         }
         await this.removeServerConfiguredCookies()
       } catch (e) {
-        console.log(e)
+        console.error(e)
       }
     }
   }

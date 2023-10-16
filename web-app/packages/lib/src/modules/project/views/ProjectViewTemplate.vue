@@ -60,7 +60,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <project-share-button />
           </slot>
           <action-button
-            @click="downloadArchive(downloadUrl)"
+            @click="downloadArchive({ url: downloadUrl })"
             data-cy="project-download-btn"
           >
             <template #icon>
@@ -163,6 +163,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         v-if="
           project &&
           $route.name === 'project-tree' &&
+          project.permissions &&
           project.permissions.upload
         "
         class="drop-area"
@@ -184,23 +185,27 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue, { PropType } from 'vue'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent, PropType } from 'vue'
 import { CopyIcon, DownloadIcon, SquareMinusIcon } from 'vue-tabler-icons'
-import { mapActions, mapGetters, mapMutations, mapState } from 'vuex'
 
 import ActionButton from '@/common/components/ActionButton.vue'
 import { waitCursor } from '@/common/html_utils'
-import MerginAPIMixin from '@/common/mixins/MerginAPIMixin'
 import { USER_ROLE_NAME_BY_ROLE, UserRole } from '@/common/permission_utils'
+import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
+import { useDialogStore } from '@/modules/dialog/store'
 import PageView from '@/modules/layout/components/PageView.vue'
+import { useLayoutStore } from '@/modules/layout/store'
+import { useNotificationStore } from '@/modules/notification/store'
 import DropArea from '@/modules/project/components/DropArea.vue'
 import ProjectShareButton from '@/modules/project/components/ProjectShareButton.vue'
 import UploadPanel from '@/modules/project/components/UploadPanel.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
+import { useProjectStore } from '@/modules/project/store'
+import { useUserStore } from '@/modules/user/store'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProjectViewTemplate',
-  mixins: [MerginAPIMixin],
   components: {
     ActionButton,
     ProjectShareButton,
@@ -237,11 +242,11 @@ export default Vue.extend({
     }
   },
   computed: {
-    ...mapState('layoutModule', ['drawer']),
-    ...mapState('projectModule', ['project', 'uploads']),
-    ...mapState('userModule', ['loggedUser']),
-    ...mapGetters('projectModule', ['isProjectOwner']),
-    ...mapGetters('userModule', ['currentWorkspace', 'isLoggedIn']),
+    ...mapState(useLayoutStore, ['drawer']),
+    ...mapState(useProjectStore, ['project', 'uploads']),
+    ...mapState(useUserStore, ['loggedUser']),
+    ...mapState(useProjectStore, ['isProjectOwner']),
+    ...mapState(useUserStore, ['currentWorkspace', 'isLoggedIn']),
 
     canCloneProject() {
       return this.isLoggedIn && !this.hideCloneButton
@@ -265,10 +270,10 @@ export default Vue.extend({
           this.$route.params.version_id
         )
       } else {
-        return ProjectApi.constructDownloadProjectUrl(
-          this.namespace,
-          this.projectName
-        )
+        return this.constructDownloadProjectUrl({
+          namespace: this.namespace,
+          projectName: this.projectName
+        })
       }
     }
   },
@@ -295,12 +300,15 @@ export default Vue.extend({
     }
   },
   methods: {
-    ...mapActions('projectModule', [
+    ...mapActions(useProjectStore, [
+      'downloadArchive',
       'fetchProjectDetail',
-      'unsubscribeProject'
+      'unsubscribeProject',
+      'constructDownloadProjectUrl'
     ]),
-    ...mapMutations('projectModule', ['setProject']),
-    ...mapActions('dialogModule', ['show']),
+    ...mapActions(useProjectStore, ['setProject']),
+    ...mapActions(useDialogStore, { showDialog: 'show' }),
+    ...mapActions(useNotificationStore, ['error', 'show']),
 
     setFetchProjectResponseStatus(status) {
       this.fetchProjectsResponseStatus = status
@@ -329,7 +337,7 @@ export default Vue.extend({
       )
         .then(() => {
           waitCursor(false)
-          this.$store.dispatch('notificationModule/show', {
+          this.show({
             text: 'Access has been requested'
           })
           this.$router.push({
@@ -337,7 +345,7 @@ export default Vue.extend({
           })
         })
         .catch(() => {
-          this.$store.dispatch('notificationModule/error', {
+          this.error({
             text: 'Failed to request'
           })
           waitCursor(false)
@@ -358,7 +366,8 @@ export default Vue.extend({
           }
         }
       }
-      this.$store.dispatch('dialogModule/prompt', {
+      this.showDialog({
+        component: ConfirmDialog,
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
     }
@@ -422,7 +431,7 @@ export default Vue.extend({
   border: solid #eee;
   border-width: 1px 0;
 
-  ::v-deep {
+  ::v-deep(*) {
     .v-text-field {
       padding-top: 0;
       margin-top: 0;

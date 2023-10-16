@@ -18,8 +18,5 @@ yarn.lock
 *.sln
 *.sw*
 
-# cypress
-packages/saas-app/cypress/videos
-
 README.md
 doc

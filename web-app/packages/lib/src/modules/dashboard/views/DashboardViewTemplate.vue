@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               First create new project, add people to it or explore public
               project for more inspiration
             </p>
-            <v-btn color="orange" @click="newProjectDialog(loggedUser.email)"
+            <v-btn color="orange" @click="newProjectDialog"
               ><span style="color: white">New project</span>
             </v-btn>
           </v-card>
@@ -88,13 +88,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapState } from 'vuex'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
+import { useDialogStore } from '@/modules'
 import PageView from '@/modules/layout/components/PageView.vue'
+import { useLayoutStore } from '@/modules/layout/store'
 import ProjectForm from '@/modules/project/components/ProjectForm.vue'
+import { useProjectStore } from '@/modules/project/store'
+import { useUserStore } from '@/modules/user/store'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'DashboardViewTemplate',
   components: {
     PageView
@@ -106,14 +110,16 @@ export default Vue.extend({
     }
   },
   computed: {
-    ...mapState('layoutModule', ['drawer']),
-    ...mapState('userModule', ['loggedUser']),
-    ...mapState('projectModule', ['projectsCount'])
+    ...mapState(useLayoutStore, ['drawer']),
+    ...mapState(useUserStore, ['loggedUser']),
+    ...mapState(useProjectStore, ['projectsCount'])
   },
   methods: {
+    ...mapActions(useDialogStore, ['show']),
+
     newProjectDialog() {
       const dialog = { maxWidth: 500, persistent: true }
-      this.$store.dispatch('dialogModule/show', {
+      this.show({
         component: ProjectForm,
         params: {
           dialog
@@ -125,7 +131,7 @@ export default Vue.extend({
 </script>
 
 <style scoped lang="scss">
-@import 'src/sass/dashboard';
+@use '@/sass/dashboard';
 
 .v-navigation-drawer {
   -webkit-overflow-scrolling: touch;

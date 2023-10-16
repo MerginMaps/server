@@ -88,17 +88,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import debounce from 'lodash/debounce'
 import isEmpty from 'lodash/isEmpty'
-import Vue from 'vue'
+import { mapState, mapActions } from 'pinia'
+import { defineComponent } from 'vue'
 import { SendIcon, UserIcon } from 'vue-tabler-icons'
-import { mapState } from 'vuex'
 
 import { isValidEmail } from '@/common/text_utils'
+import { useProjectStore } from '@/modules/project/store'
 import UserSearchChip from '@/modules/user/components/UserSearchChip.vue'
 import { EMPTY_INVITE_ITEM } from '@/modules/user/constants'
 import { UserSearchParams } from '@/modules/user/types'
-import { UserApi } from '@/modules/user/userApi'
+import { useUserStore } from '@/main'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'AccountAutocomplete',
   components: { UserSearchChip, SendIcon, UserIcon },
   props: {
@@ -115,7 +116,7 @@ export default Vue.extend({
     }
   },
   computed: {
-    ...mapState('projectModule', ['currentNamespace']),
+    ...mapState(useProjectStore, ['currentNamespace']),
     items() {
       return this.searchResults.map((item) => {
         return { ...item }
@@ -150,6 +151,7 @@ export default Vue.extend({
     }
   },
   methods: {
+    ...mapActions(useUserStore, ['getAuthUserSearch']),
     search: debounce(function () {
       // clear non-relevant cached items
       this.refreshCachedItems(this.users)
@@ -169,7 +171,7 @@ export default Vue.extend({
         namespace: this.currentNamespace,
         like: this.query
       }
-      UserApi.getAuthUserSearch(params)
+      this.getAuthUserSearch(params)
         .then((resp) => {
           if (resp.data?.length > 0) {
             // return data from api in search results and remove items included in filterUsers

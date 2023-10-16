@@ -97,14 +97,15 @@ import pick from 'lodash/pick'
 import sortBy from 'lodash/sortBy'
 import toLower from 'lodash/toLower'
 import union from 'lodash/union'
-import Vue from 'vue'
-import { mapGetters, mapState } from 'vuex'
+import { mapState, mapActions } from 'pinia'
+import { defineComponent } from 'vue'
 
 import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
+import { useProjectStore } from '@/modules/project/store'
+import { useUserStore } from '@/modules/user/store'
 import { UserSearchParams } from '@/modules/user/types'
-import { UserApi } from '@/modules/user/userApi'
 
-export default Vue.extend({
+export default defineComponent({
   props: {
     value: Object
   },
@@ -136,13 +137,17 @@ export default Vue.extend({
           width: 60
         }
       ],
-      originalValue: null
+      originalValue: null,
+      clonedValue: null
     }
   },
   computed: {
-    ...mapState('userModule', ['loggedUser']),
-    ...mapState('projectModule', ['currentNamespace', 'project']),
-    ...mapGetters('projectModule', ['isProjectOwner']),
+    ...mapState(useUserStore, ['loggedUser']),
+    ...mapState(useProjectStore, [
+      'currentNamespace',
+      'project',
+      'isProjectOwner'
+    ]),
 
     permissionStates() {
       return ['owner', 'writer', 'reader']
@@ -152,9 +157,9 @@ export default Vue.extend({
       const users = this.users.map((user) => ({
         username: user.username,
         user,
-        owner: ownersnames.includes(user.username),
-        read: readersnames.includes(user.username),
-        write: writersnames.includes(user.username)
+        owner: ownersnames?.includes(user.username),
+        read: readersnames?.includes(user.username),
+        write: writersnames?.includes(user.username)
       }))
       return sortBy(users, [
         (u) => {
@@ -171,10 +176,12 @@ export default Vue.extend({
   watch: {
     value: {
       deep: true,
-      handler() {
+      handler(value) {
         // update local clonedValue if value is changed in parent
-        this.clonedValue = JSON.parse(JSON.stringify(this.value))
-        this.emit()
+        if (value) {
+          this.clonedValue = JSON.parse(JSON.stringify(this.value))
+          this.emit()
+        }
       }
     },
     users: {
@@ -191,7 +198,7 @@ export default Vue.extend({
               namespace: this.currentNamespace,
               names: item.join(',')
             }
-            await UserApi.getAuthUserSearch(params).then((resp) => {
+            await this.getAuthUserSearch(params).then((resp) => {
               resp.data
                 .filter(
                   (i) => !this.users.map((u) => u.username).includes(i.username)
@@ -204,6 +211,7 @@ export default Vue.extend({
     }
   },
   methods: {
+    ...mapActions(useUserStore, ['getAuthUserSearch']),
     canRemoveUser(userId: number) {
       // project owner can remove project, but project creator cannot be removed
       return (
@@ -330,7 +338,7 @@ label {
   font-weight: 500;
 }
 
-::v-deep {
+::v-deep(*) {
   .v-data-table__overflow {
     margin: 0.5em 0;
     border: 1px solid #ddd;
@@ -345,7 +353,7 @@ label {
 }
 
 .v-list {
-  ::v-deep .v-list-item {
+  ::v-deep(.v-list-item) {
     min-height: unset;
   }
 }

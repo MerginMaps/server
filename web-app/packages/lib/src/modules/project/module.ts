@@ -3,19 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import getRoutes from './routes'
-import store, { ProjectState } from './store'
+
 import { applyRouteOverride } from '@/common/module_utils'
 import { Module } from '@/common/types'
-import { RootState } from '@/modules/types'
 
-export const ProjectModule: Module<ProjectState, RootState> = {
+export const ProjectModule: Module = {
   name: 'projectModule',
   routerService: undefined,
   httpService: undefined,
-  moduleStore: store,
-  _addRoutes: (router, rootStore, routeOverrides) => {
+  _addRoutes: (router, routeOverrides) => {
     // add routes to router
-    getRoutes(rootStore).forEach((route) => {
+    getRoutes().forEach((route) => {
       router.addRoute(applyRouteOverride(route, routeOverrides))
     })
   },
@@ -28,13 +26,7 @@ export const ProjectModule: Module<ProjectState, RootState> = {
 
     if (services.routerService) {
       ProjectModule.routerService = services.routerService
-      if (services.store) {
-        ProjectModule._addRoutes(
-          services.routerService,
-          services.store,
-          routeOverrides
-        )
-      }
+      ProjectModule._addRoutes(services.routerService, routeOverrides)
     }
   }
 }

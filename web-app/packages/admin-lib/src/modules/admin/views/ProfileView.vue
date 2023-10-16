@@ -136,13 +136,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { ConfirmDialog, PageView } from '@mergin/lib'
-import Vue from 'vue'
-import { mapActions, mapState } from 'vuex'
+import { ConfirmDialog, PageView, useDialogStore } from '@mergin/lib'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
+import { useAdminStore } from '@/modules/admin/store'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProfileView',
   components: { PageView, AdminLayout },
   props: {
@@ -153,8 +154,26 @@ export default Vue.extend({
       dialog: false
     }
   },
+  mounted() {
+    this.setUserAdminProfile(null)
+
+    this.fetchUserProfileByName({
+      username: this.username
+    })
+  },
+  watch: {
+    username: {
+      handler(username) {
+        this.setUserAdminProfile(null)
+
+        this.fetchUserProfileByName({
+          username
+        })
+      }
+    }
+  },
   computed: {
-    ...mapState('adminModule', ['userAdminProfile']),
+    ...mapState(useAdminStore, ['userAdminProfile']),
     usage() {
       return this.profile.disk_usage / this.profile.storage
     },
@@ -167,7 +186,14 @@ export default Vue.extend({
     }
   },
   methods: {
-    ...mapActions('adminModule', ['deleteUser', 'updateUser']),
+    ...mapActions(useAdminStore, [
+      'deleteUser',
+      'updateUser',
+      'setUserAdminProfile',
+      'fetchUserProfileByName'
+    ]),
+    ...mapActions(useDialogStore, ['show']),
+
     changeStatusDialog() {
       const props = {
         text: this.userAdminProfile.active
@@ -185,7 +211,7 @@ export default Vue.extend({
           })
         }
       }
-      this.$store.dispatch('dialogModule/show', {
+      this.show({
         component: ConfirmDialog,
         params: {
           props,
@@ -209,7 +235,8 @@ export default Vue.extend({
         confirm: async () =>
           await this.deleteUser({ username: this.userAdminProfile.username })
       }
-      this.$store.dispatch('dialogModule/prompt', {
+      this.show({
+        component: ConfirmDialog,
         params: { props, listeners, dialog: { maxWidth: 500 } }
       })
     }

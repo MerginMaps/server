@@ -63,10 +63,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapActions, mapGetters } from 'vuex'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
-export default Vue.extend({
+import { useDialogStore } from '@/modules/dialog/store'
+import { useFormStore } from '@/modules/form/store'
+import { useUserStore } from '@/modules/user/store'
+
+export default defineComponent({
   props: {
     profile: Object
   },
@@ -76,7 +80,7 @@ export default Vue.extend({
     }
   },
   computed: {
-    ...mapGetters('formModule', ['getErrorByComponentId']),
+    ...mapState(useFormStore, ['getErrorByComponentId']),
     errors() {
       return this.getErrorByComponentId(this.merginComponentUuid) ?? {}
     }
@@ -88,9 +92,9 @@ export default Vue.extend({
     })
   },
   methods: {
-    ...mapActions('formModule', ['clearErrors']),
-    ...mapActions('userModule', ['editUserProfile']),
-    ...mapActions('dialogModule', ['close']),
+    ...mapActions(useFormStore, ['clearErrors']),
+    ...mapActions(useUserStore, ['editUserProfile']),
+    ...mapActions(useDialogStore, ['close']),
 
     submit() {
       this.clearErrors({ componentId: this.merginComponentUuid })

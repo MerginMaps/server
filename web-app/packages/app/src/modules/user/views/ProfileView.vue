@@ -12,10 +12,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   </profile-view-template>
 </template>
 
-<script>
+<script lang="ts">
 import { ProfileViewTemplate, ProfileAccessRequestsRow } from '@mergin/lib'
+import { defineComponent } from 'vue'
 
-export default {
+export default defineComponent({
   name: 'ProfileView',
   components: {
     ProfileViewTemplate,
@@ -24,5 +25,5 @@ export default {
   props: {
     name: String
   }
-}
+})
 </script>

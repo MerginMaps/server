@@ -73,25 +73,30 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import isEqual from 'lodash/isEqual'
 import omit from 'lodash/omit'
-import Vue from 'vue'
-import { mapActions, mapGetters, mapState } from 'vuex'
+import { mapActions, mapState } from 'pinia'
+import { PropType, defineComponent } from 'vue'
 
 import AccountAutocomplete from './AccountAutocomplete.vue'
 import PermissionInfo from './PermissionInfo.vue'
-import { UserSearch, UserSearchInvite } from '@/modules'
+
+import { getErrorMessage } from '@/common/error_utils'
+import { useDialogStore } from '@/modules/dialog/store'
+import { useNotificationStore } from '@/modules/notification/store'
+import { useProjectStore } from '@/modules/project/store'
 import UserSearchChip from '@/modules/user/components/UserSearchChip.vue'
+import { UserSearch, UserSearchInvite } from '@/modules/user/types'
 
 interface Data {
-  addedUsers: (UserSearchInvite | UserSearch)[]
+  addedUsers: Array<UserSearchInvite | UserSearch>
   isPending: boolean
 }
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProjectShareDialog',
   components: { PermissionInfo, UserSearchChip, AccountAutocomplete },
   props: {
     allowInvite: Boolean,
-    inputUsers: Array,
+    inputUsers: Array as PropType<Data['addedUsers']>,
     readonly: Boolean,
     name: String
   },
@@ -102,8 +107,11 @@ export default Vue.extend({
     }
   },
   computed: {
-    ...mapState('projectModule', ['currentNamespace', 'project']),
-    ...mapGetters('projectModule', ['isProjectOwner']),
+    ...mapState(useProjectStore, [
+      'currentNamespace',
+      'project',
+      'isProjectOwner'
+    ]),
 
     projectAccess() {
       return this.project?.access
@@ -127,9 +135,9 @@ export default Vue.extend({
   },
 
   methods: {
-    ...mapActions('dialogModule', ['close']),
-    ...mapActions('projectModule', ['saveProjectSettings']),
-    ...mapActions('notificationModule', ['error']),
+    ...mapActions(useDialogStore, ['close']),
+    ...mapActions(useProjectStore, ['saveProjectSettings']),
+    ...mapActions(useNotificationStore, ['error']),
 
     onAutocompleteUpdate(event) {
       this.addedUsers = event
@@ -185,8 +193,7 @@ export default Vue.extend({
               this.close()
             } catch (err) {
               this.error({
-                text:
-                  err.response.data?.detail || 'Failed to save project settings'
+                text: getErrorMessage(err, 'Failed to save project settings')
               })
             }
           }

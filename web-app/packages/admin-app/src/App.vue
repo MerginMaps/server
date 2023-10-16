@@ -44,19 +44,24 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   </v-app>
 </template>
 
-<script>
+<script lang="ts">
 import { CheckForUpdates } from '@mergin/admin-lib'
 import {
   DialogWindows,
   GlobalWarning,
   initRequestInterceptors,
   initResponseInterceptors,
-  Notifications
+  Notifications,
+  useAppStore,
+  useInstanceStore,
+  useNotificationStore,
+  useUserStore
   // UploadProgress
 } from '@mergin/lib'
-import { mapActions, mapMutations, mapState } from 'vuex'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
-export default {
+export default defineComponent({
   name: 'app',
   components: {
     /* UploadProgress, */ Notifications,
@@ -83,18 +88,19 @@ export default {
     }
   },
   computed: {
-    ...mapState('instanceModule', ['pingData']),
-    ...mapState('userModule', ['loggedUser']),
+    ...mapState(useInstanceStore, ['pingData']),
+    ...mapState(useUserStore, ['loggedUser']),
+    ...mapState(useAppStore, ['serverError']),
 
     error() {
-      return this.$store.state.serverError
+      return this.serverError
     }
   },
   watch: {
     error() {
       if (!this.error) return
-      this.$store.dispatch('notificationModule/error', { text: this.error })
-      this.$store.commit('serverError', null) // reset error so it is displayed just once
+      this.notificationError({ text: this.error })
+      this.setServerError(null) // reset error so it is displayed just once
     },
     async loggedUser(value, oldValue) {
       if (value && value?.id !== oldValue?.id) {
@@ -104,6 +110,7 @@ export default {
     }
   },
   async created() {
+    await this.fetchConfig()
     if (this.loggedUser) {
       // here is loaded current workspace on startup (and reloaded in watcher when user has changed)
       await this.checkCurrentWorkspace()
@@ -124,11 +131,12 @@ export default {
     initResponseInterceptors(resetUser)
   },
   methods: {
-    ...mapActions('instanceModule', ['fetchPing']),
-    ...mapActions('userModule', ['checkCurrentWorkspace']),
-    ...mapMutations('userModule', ['updateLoggedUser'])
+    ...mapActions(useInstanceStore, ['fetchPing', 'initApp', 'fetchConfig']),
+    ...mapActions(useNotificationStore, { notificationError: 'error' }),
+    ...mapActions(useUserStore, ['checkCurrentWorkspace', 'updateLoggedUser']),
+    ...mapActions(useAppStore, ['setServerError'])
   }
-}
+})
 </script>
 
 <style lang="scss">

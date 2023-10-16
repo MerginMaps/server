@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import { defineStore } from 'pinia'
 import Vue from 'vue'
-import { Module } from 'vuex'
 
 import {
   ClearErrorsPayload,
@@ -13,40 +13,41 @@ import {
   MerginComponentUuidPayload,
   SetFormErrorPayload
 } from '@/modules/form/types'
-import { RootState } from '@/modules/types'
+import { useNotificationStore } from '@/modules/notification/store'
 
 export interface FormState {
   errors: Record<MerginComponentUuid, FormErrors>
 }
 
-const FormStore: Module<FormState, RootState> = {
-  namespaced: true,
-  state: {
+export const useFormStore = defineStore('formModule', {
+  state: (): FormState => ({
     errors: {}
-  },
+  }),
+
   getters: {
     getErrorByComponentId: (state) => (payload: MerginComponentUuid) => {
       return state.errors[payload]
     }
   },
-  mutations: {
-    setFormErrors(state, payload: SetFormErrorPayload) {
-      Vue.set(state.errors, payload.componentId, payload.errors)
-    },
-    resetFormErrors(state, payload: MerginComponentUuidPayload) {
-      Vue.delete(state.errors, payload.componentId)
-    }
-  },
+
   actions: {
-    clearErrors({ commit }, payload: ClearErrorsPayload) {
-      commit('resetFormErrors', payload)
+    setFormErrors(payload: SetFormErrorPayload) {
+      Vue.set(this.errors, payload.componentId, payload.errors)
+    },
+    resetFormErrors(payload: MerginComponentUuidPayload) {
+      Vue.delete(this.errors, payload.componentId)
+    },
+    clearErrors(payload: ClearErrorsPayload) {
+      const notificationStore = useNotificationStore()
+      this.resetFormErrors(payload)
       if (!payload.keepNotification) {
         // reset error message in notification component
-        commit('notificationModule/closeNotification', null, { root: true })
+        notificationStore.closeNotification()
       }
     },
-    async handleError({ commit, dispatch }, payload: HandleErrorPayload) {
+    async handleError(payload: HandleErrorPayload) {
       let errorMessage
+      const notificationStore = useNotificationStore()
       if (typeof payload.error?.response?.data === 'object') {
         // two types of error responses
         // TODO: Get data from HTTP status code, handle formError not standard error with detail
@@ -56,7 +57,7 @@ const FormStore: Module<FormState, RootState> = {
         ) {
           errorMessage = payload.error.response.data.detail
         } else {
-          commit('setFormErrors', {
+          this.setFormErrors({
             componentId: payload.componentId,
             errors: payload.error.response.data
           })
@@ -70,14 +71,8 @@ const FormStore: Module<FormState, RootState> = {
       }
       if (errorMessage) {
         // show error message in notification component
-        await dispatch(
-          'notificationModule/error',
-          { text: errorMessage },
-          { root: true }
-        )
+        await notificationStore.error({ text: errorMessage })
       }
     }
   }
-}
-
-export default FormStore
+})

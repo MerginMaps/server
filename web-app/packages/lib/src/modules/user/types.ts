@@ -102,11 +102,11 @@ export interface ChangePasswordWithTokenParams {
   confirm: string
 }
 
-export interface ChangePasswordWithTokenPayload {
+export interface ChangePasswordWithTokenPayload
+  extends MerginComponentUuidPayload {
   data: ChangePasswordWithTokenParams
   token: string
   callback: (value: boolean) => void
-  componentId: string
 }
 
 export interface EditUserProfileParams {

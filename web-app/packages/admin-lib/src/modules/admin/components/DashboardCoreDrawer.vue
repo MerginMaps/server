@@ -37,7 +37,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           size="45"
         >
           <v-img
-            :src="require('@/assets/mm-icon-white-large-no-transparency.png')"
+            :src="getImageUrl('mm-icon-white-large-no-transparency.png')"
             max-height="45"
           />
         </v-list-item-avatar>
@@ -80,11 +80,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 // Utilities
-import { BaseItem } from '@mergin/lib'
-import Vue from 'vue'
-import { mapState } from 'vuex'
+import { BaseItem, useLayoutStore, useUserStore } from '@mergin/lib'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'DashboardCoreDrawer',
 
   components: { BaseItem },
@@ -97,15 +97,19 @@ export default Vue.extend({
   },
 
   computed: {
-    ...mapState(['barColor', 'barImage']),
-    ...mapState('layoutModule', { drawerState: 'drawer' }),
-    ...mapState('userModule', ['loggedUser']),
+    ...mapState(useLayoutStore, {
+      drawerState: 'drawer',
+      barColor: 'barColor',
+      barImage: 'barImage'
+    }),
+    ...mapState(useUserStore, ['loggedUser']),
+
     drawer: {
       get() {
         return this.drawerState
       },
       set(val) {
-        this.$store.commit('layoutModule/setDrawer', { drawer: val })
+        this.setDrawer({ drawer: val })
       }
     },
     items() {
@@ -147,6 +151,11 @@ export default Vue.extend({
   },
 
   methods: {
+    ...mapActions(useLayoutStore, ['setDrawer']),
+
+    getImageUrl(name) {
+      return new URL(`../../../assets/${name}`, import.meta.url).href
+    },
     mapItem(item) {
       return {
         ...item,

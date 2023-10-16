@@ -121,11 +121,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapState } from 'vuex'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
+import { getErrorMessage } from '@/common/error_utils'
+import { useNotificationStore } from '@/modules/notification/store'
 import FileChangesetSummaryTable from '@/modules/project/components/FileChangesetSummaryTable.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
+import { useProjectStore } from '@/modules/project/store'
 
 const Colors = {
   added: 'green--text',
@@ -133,7 +136,7 @@ const Colors = {
   updated: 'orange--text'
 }
 
-export default Vue.extend({
+export default defineComponent({
   name: 'VersionDetailView',
   components: { FileChangesetSummaryTable },
   props: {
@@ -155,7 +158,7 @@ export default Vue.extend({
     this.getVersion()
   },
   computed: {
-    ...mapState('projectModule', ['project', 'versions']),
+    ...mapState(useProjectStore, ['project', 'versions']),
     colors() {
       return Colors
     },
@@ -181,6 +184,7 @@ export default Vue.extend({
     $route: 'getVersion'
   },
   methods: {
+    ...mapActions(useNotificationStore, ['error']),
     async getVersion() {
       try {
         const currentVersion = this.versions?.find(
@@ -196,10 +200,9 @@ export default Vue.extend({
         )
         this.version = response.data
       } catch (err) {
-        const msg = err.response
-          ? err.response.data?.detail
-          : 'Failed to fetch project version'
-        this.$store.dispatch('notificationModule/error', { text: msg })
+        this.error({
+          text: getErrorMessage(err, 'Failed to fetch project version')
+        })
       }
     }
   }
@@ -224,7 +227,7 @@ export default Vue.extend({
 }
 
 .v-list {
-  ::v-deep .v-list-item {
+  ::v-deep(.v-list-item) {
     font-size: 14px;
     color: #444;
 
@@ -234,7 +237,7 @@ export default Vue.extend({
   }
 
   &.files {
-    ::v-deep .v-list-group__items {
+    ::v-deep(.v-list-group__items) {
       .v-list-item {
         padding-left: 20px;
       }

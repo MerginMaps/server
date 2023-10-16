@@ -17,12 +17,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   />
 </template>
 
-<script>
-import { CloneDialog, ProjectViewTemplate } from '@mergin/lib'
-import { computed } from '@vue/composition-api'
-import { useActions, useGetters } from 'vuex-composition-helpers'
+<script lang="ts">
+import {
+  CloneDialog,
+  ProjectViewTemplate,
+  useDialogStore,
+  useFormStore,
+  useProjectStore,
+  useUserStore
+} from '@mergin/lib'
+import { computed, defineComponent } from 'vue'
 
-export default {
+export default defineComponent({
   name: 'ProjectView',
   components: {
     ProjectViewTemplate
@@ -40,14 +46,13 @@ export default {
     }
   },
   setup(props) {
-    const { show } = useActions('dialogModule', ['show'])
-    const { isProjectOwner } = useGetters('projectModule', ['isProjectOwner'])
-    const { isGlobalWorkspaceAdmin } = useGetters('userModule', [
-      'isGlobalWorkspaceAdmin'
-    ])
-    const { handleError } = useActions('formModule', ['handleError'])
+    const userStore = useUserStore()
+    const projectStore = useProjectStore()
+    const dialogStore = useDialogStore()
+    const formStore = useFormStore()
 
-    const canCreateProject = computed(() => isGlobalWorkspaceAdmin?.value)
+    const canCreateProject = computed(() => userStore.isGlobalWorkspaceAdmin)
+    const isProjectOwner = computed(() => projectStore.isProjectOwner)
 
     function openCloneDialog() {
       const dialogProps = {
@@ -57,14 +62,14 @@ export default {
       const dialog = { maxWidth: 580, persistent: true }
       const listeners = {
         error: (error, data) => {
-          handleError({
+          formStore.handleError({
             componentId: data.merginComponentUuid,
             error,
             generalMessage: 'Failed to clone project'
           })
         }
       }
-      show({
+      dialogStore.show({
         component: CloneDialog,
         params: {
           props: dialogProps,
@@ -80,5 +85,5 @@ export default {
       openCloneDialog
     }
   }
-}
+})
 </script>

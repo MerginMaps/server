@@ -64,7 +64,7 @@ export const UserApi = {
   },
 
   // TODO: deprecated?
-  confirmEmail: (token: string): Promise<AxiosResponse<any>> => {
+  confirmEmail: (token: string): Promise<AxiosResponse<void>> => {
     return UserModule.httpService.post(`/app/auth/confirm-email/${token}`)
   },
 

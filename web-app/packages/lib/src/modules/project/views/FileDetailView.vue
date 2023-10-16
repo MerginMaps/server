@@ -62,13 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <!--     render only if file is smaller than 100MB-->
     <div class="container" v-if="mimetype && file.size < 104857600">
       <output>
-        <pdf
-          :src="downloadLink"
-          @num-pages="pageCount = $event"
-          @page-loaded="currentPage = $event"
-          v-if="mimetype.match('pdf')"
-        ></pdf>
-        <img :src="downloadLink" v-else-if="mimetype.match('image')" />
+        <img :src="downloadLink" v-if="mimetype.match('image')" />
         <v-textarea
           v-else-if="mimetype.match('text')"
           :auto-grow="true"
@@ -85,13 +79,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import Path from 'path'
-import Vue from 'vue'
-import pdf from 'vue-pdf'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 import { DownloadIcon, TrashIcon } from 'vue-tabler-icons'
-import { mapMutations, mapState } from 'vuex'
 
 import ActionButton from '@/common/components/ActionButton.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
+import { useProjectStore } from '@/modules/project/store'
 
 const Colors = {
   added: 'green',
@@ -99,7 +93,7 @@ const Colors = {
   updated: 'orange'
 }
 
-export default Vue.extend({
+export default defineComponent({
   name: 'FileInfoView',
   props: {
     namespace: String,
@@ -110,13 +104,13 @@ export default Vue.extend({
     }
   },
   components: {
-    pdf,
+    // pdf,
     ActionButton,
     DownloadIcon,
     TrashIcon
   },
   computed: {
-    ...mapState('projectModule', ['project', 'uploads']),
+    ...mapState(useProjectStore, ['project', 'uploads']),
     upload() {
       return this.uploads[this.project.path]
     },
@@ -183,7 +177,7 @@ export default Vue.extend({
     this.txtPreview()
   },
   methods: {
-    ...mapMutations('projectModule', ['deleteFiles']),
+    ...mapActions(useProjectStore, ['deleteFiles']),
     txtPreview() {
       ProjectApi.getProjectFileByUrl(this.downloadLink).then((resp) => {
         this.mimetype = resp.headers['content-type']
@@ -222,7 +216,7 @@ export default Vue.extend({
 }
 
 .v-list {
-  ::v-deep .v-list__tile {
+  ::v-deep(.v-list__tile) {
     font-size: 14px;
     color: #444;
 

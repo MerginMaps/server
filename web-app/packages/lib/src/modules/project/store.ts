@@ -6,13 +6,14 @@ import { AxiosResponse } from 'axios'
 import FileSaver from 'file-saver'
 import keyBy from 'lodash/keyBy'
 import omit from 'lodash/omit'
+import { defineStore, getActivePinia } from 'pinia'
 import Vue from 'vue'
-import { Module } from 'vuex'
 
+import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
 import { filesDiff } from '@/common/mergin_utils'
 import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
-import { ProjectModule } from '@/modules/project/module'
+import { useNotificationStore } from '@/modules/notification/store'
 import { ProjectApi } from '@/modules/project/projectApi'
 import {
   AcceptProjectAccessRequestPayload,
@@ -29,16 +30,17 @@ import {
   ProjectVersionsPayload,
   ProjectAccessRequest,
   GetUserAccessRequestsPayload,
-  AccessRequestsPayload,
-  GetProjectAccessRequestsPayload
+  GetProjectAccessRequestsPayload,
+  DownloadPayload,
+  DeleteProjectPayload
 } from '@/modules/project/types'
-import { RootState } from '@/modules/types'
+import { useUserStore } from '@/modules/user/store'
 
 interface File {
-  chunks: any
+  chunks: unknown
 }
 
-interface UploadFilesPayload {
+export interface UploadFilesPayload {
   files: File[]
 }
 
@@ -55,9 +57,8 @@ export interface ProjectState {
   versionsLoading: boolean
 }
 
-const ProjectStore: Module<ProjectState, RootState> = {
-  namespaced: true,
-  state: {
+export const useProjectStore = defineStore('projectModule', {
+  state: (): ProjectState => ({
     accessRequests: [],
     accessRequestsCount: 0,
     project: null,
@@ -68,14 +69,25 @@ const ProjectStore: Module<ProjectState, RootState> = {
     versions: [],
     versionsCount: 0,
     versionsLoading: false
+  }),
+
+  getters: {
+    isProjectOwner: (state) =>
+      isAtLeastProjectRole(state.project?.role, ProjectRole.owner),
+    getProjectByName(state) {
+      return (payload) => {
+        return state.projects?.find((project) => project.name === payload.name)
+      }
+    }
   },
 
-  mutations: {
-    setAccessRequests(state, payload: AccessRequestsPayload) {
-      state.accessRequests = payload.accessRequests
-      state.accessRequestsCount = payload.count
+  actions: {
+    setAccessRequests(payload) {
+      this.accessRequests = payload.accessRequests
+      this.accessRequestsCount = payload.count
     },
-    setProject(state, payload: { project: ProjectDetail }) {
+
+    setProject(payload: { project: ProjectDetail }) {
       let enhancedProject: EnhancedProjectDetail = null
       if (payload.project) {
         enhancedProject = {
@@ -87,42 +99,43 @@ const ProjectStore: Module<ProjectState, RootState> = {
             enhancedProject.namespace,
             enhancedProject.name
           ].join('/')
-          const upload = state.uploads[enhancedProject.path]
+          const upload = this.uploads[enhancedProject.path]
           if (upload) {
             upload.diff = filesDiff(enhancedProject.files, upload.files)
           }
         }
       }
-      state.project = enhancedProject
+      this.project = enhancedProject
     },
-    setProjects(state, payload: ProjectsPayload) {
-      state.projects = payload.projects
-      state.projectsCount = payload.count
+    setProjects(payload: ProjectsPayload) {
+      this.projects = payload.projects
+      this.projectsCount = payload.count
     },
-    projectVersions(state, payload: ProjectVersionsPayload) {
-      state.versions = payload.versions
-      state.versionsCount = payload.count
+    setProjectVersions(payload: ProjectVersionsPayload) {
+      this.versions = payload.versions
+      this.versionsCount = payload.count
     },
-    projectVersionsLoading(state, loading: boolean) {
-      state.versionsLoading = loading
+    projectVersionsLoading(loading: boolean) {
+      this.versionsLoading = loading
     },
 
-    initUpload(state, payload) {
+    initUpload(payload) {
       const upload = {
         files: payload.files ?? {},
         diff: null,
         analysingFiles: []
       }
-      Vue.set(state.uploads, state.project.path, upload)
+      Vue.set(this.uploads, this.project.path, upload)
     },
-    analysingFiles(state, payload) {
-      const upload = state.uploads[state.project.path]
+
+    analysingFiles(payload) {
+      const upload = this.uploads[this.project.path]
       Vue.set(upload, 'analysingFiles', payload.files)
     },
-    finishFileAnalysis(state, payload) {
-      const upload = state.uploads[state.project.path]
+
+    finishFileAnalysis(payload) {
+      const upload = this.uploads[this.project.path]
       if (upload.analysingFiles) {
-        // upload.analysingFiles = upload.analysingFiles.filter(p => p !== path)
         Vue.set(
           upload,
           'analysingFiles',
@@ -130,7 +143,8 @@ const ProjectStore: Module<ProjectState, RootState> = {
         )
       }
     },
-    uploadFiles(state, payload: UploadFilesPayload) {
+
+    uploadFiles(payload: UploadFilesPayload) {
       let files = payload.files
       files = keyBy(files, 'path')
       const chunks = Object.values(files)
@@ -139,26 +153,29 @@ const ProjectStore: Module<ProjectState, RootState> = {
         .reduce((sum, item) => sum + item)
       const upload = {
         files,
-        diff: filesDiff(state.project.files, files),
+        diff: filesDiff(this.project.files, files),
         running: false,
         progress: 0,
         loaded: 0,
         total: chunks
       }
-      Vue.set(state.uploads, state.project.path, upload)
+      Vue.set(this.uploads, this.project.path, upload)
     },
-    discardUpload(state, payload) {
-      Vue.delete(state.uploads, payload.projectPath)
+
+    discardUpload(payload) {
+      Vue.delete(this.uploads, payload.projectPath)
     },
-    startUpload(state) {
-      const upload = state.uploads[state.project.path]
+
+    startUpload() {
+      const upload = this.uploads[this.project.path]
       if (upload) {
         upload.running = true
         upload.progress = 0
       }
     },
-    chunkUploaded(state, payload) {
-      const upload = state.uploads[payload.project]
+
+    chunkUploaded(payload) {
+      const upload = this.uploads[payload.project]
       if (upload) {
         upload.loaded++
         if (upload.loaded === upload.total) {
@@ -166,21 +183,23 @@ const ProjectStore: Module<ProjectState, RootState> = {
         }
       }
     },
-    cancelUpload(state) {
-      const upload = state.uploads[state.project.path]
+
+    cancelUpload() {
+      const upload = this.uploads[this.project.path]
       if (upload) {
         upload.running = false
         upload.progress = 0
       }
     },
-    deleteFiles(state, payload) {
-      let upload = state.uploads[state.project.path]
+
+    deleteFiles(payload) {
+      let upload = this.uploads[this.project.path]
       if (!upload) {
         upload = {
-          files: { ...state.project.files },
+          files: { ...this.project.files },
           diff: filesDiff({}, {})
         }
-        Vue.set(state.uploads, state.project.path, upload)
+        Vue.set(this.uploads, this.project.path, upload)
       }
 
       payload.files.forEach((path) => {
@@ -195,57 +214,48 @@ const ProjectStore: Module<ProjectState, RootState> = {
           upload.files = omit(upload.files, removed)
         }
       })
-      upload.diff = filesDiff(state.project.files, upload.files)
+      upload.diff = filesDiff(this.project.files, upload.files)
     },
 
-    setCurrentNamespace(state, payload) {
-      state.currentNamespace = payload.currentNamespace
-    }
-  },
-  getters: {
-    isProjectOwner: (state) =>
-      isAtLeastProjectRole(state.project?.role, ProjectRole.owner),
-    getProjectByName: (state) => (payload) => {
-      return state.projects?.find((project) => project.name === payload.name)
-    }
-  },
-  actions: {
-    async initProjects({ dispatch, state }, payload: PaginatedProjectsPayload) {
-      if (!(state.projects?.length > 0)) {
-        await dispatch('getProjects', payload)
+    setCurrentNamespace(payload) {
+      this.currentNamespace = payload.currentNamespace
+    },
+
+    async initProjects(payload: PaginatedProjectsPayload) {
+      if (!(this.projects?.length > 0)) {
+        await this.getProjects(payload)
       }
     },
 
-    async getProjects({ commit, dispatch }, payload: PaginatedProjectsPayload) {
+    async getProjects(payload: PaginatedProjectsPayload) {
+      const notificationStore = useNotificationStore()
+
       let response
       try {
         response = await ProjectApi.getPaginatedProject(payload.params)
-        commit('setProjects', {
+        this.setProjects({
           projects: response.data?.projects,
           count: response.data?.count
         })
       } catch (_err) {
-        await dispatch(
-          'notificationModule/error',
-          {
-            text: 'Failed to load projects'
-          },
-          { root: true }
-        )
+        await notificationStore.error({
+          text: 'Failed to load projects'
+        })
       }
       return response
     },
-    clearProjects({ commit }) {
-      commit('setProjects', { projects: [], count: 0 })
-      commit('setProject', { project: null })
+
+    clearProjects() {
+      this.setProjects({ projects: [], count: 0 })
+      this.setProject({ project: null })
     },
 
-    async createProject({ commit }, payload) {
+    async createProject(payload) {
       waitCursor(true)
       try {
         await ProjectApi.createProject(payload.namespace, payload.data, true)
-        commit('setProject', { project: null })
-        await ProjectModule.routerService.push({
+        this.setProject({ project: null })
+        await getActivePinia().router.push({
           name: 'project',
           params: {
             namespace: payload.namespace,
@@ -256,32 +266,27 @@ const ProjectStore: Module<ProjectState, RootState> = {
         waitCursor(false)
       }
     },
-    async deleteProject({ commit, dispatch }, payload) {
+
+    async deleteProject(payload: DeleteProjectPayload) {
+      const notificationStore = useNotificationStore()
+      const userStore = useUserStore()
+
       try {
         waitCursor(true)
-        await ProjectApi.deleteProject(
-          payload.namespace,
-          payload.projectName,
-          true
-        )
-        commit('setProject', { project: null })
-        await dispatch('userModule/fetchUserProfile', undefined, { root: true })
+        await ProjectApi.deleteProject(payload.projectId, true)
+        this.setProject({ project: null })
+        await userStore.fetchUserProfile()
         waitCursor(false)
-        ProjectModule.routerService.replace({ path: '/' })
+        getActivePinia().router.replace({ path: '/' })
       } catch (e) {
-        await dispatch(
-          'notificationModule/error',
-          { text: e.response.data?.detail || 'Failed to remove project' },
-          { root: true }
-        )
+        await notificationStore.error({
+          text: getErrorMessage(e, 'Failed to remove project')
+        })
         waitCursor(false)
       }
     },
-    async initUserAccessRequests(
-      { dispatch },
-      payload?: GetUserAccessRequestsPayload
-    ) {
-      await dispatch('fetchUserAccessRequests', {
+    async initUserAccessRequests(payload?: GetUserAccessRequestsPayload) {
+      await this.fetchUserAccessRequests({
         params: {
           page: 1,
           per_page: 10,
@@ -291,34 +296,28 @@ const ProjectStore: Module<ProjectState, RootState> = {
       })
     },
 
-    async fetchUserAccessRequests(
-      { commit, dispatch },
-      payload: GetUserAccessRequestsPayload
-    ) {
+    async fetchUserAccessRequests(payload: GetUserAccessRequestsPayload) {
+      const notificationStore = useNotificationStore()
+
       try {
         const accessRequestResponse = await ProjectApi.fetchAccessRequests(
           payload.params
         )
-        commit('setAccessRequests', {
+        this.setAccessRequests({
           accessRequests: accessRequestResponse.data?.items,
           count: accessRequestResponse.data?.count
         })
       } catch {
-        await dispatch(
-          'notificationModule/error',
-          { text: 'Failed to fetch project access requests' },
-          {
-            root: true
-          }
-        )
+        await notificationStore.error({
+          text: 'Failed to fetch project access requests'
+        })
       }
     },
 
     async initNamespaceAccessRequests(
-      { dispatch },
       payload: GetNamespaceAccessRequestsPayload
     ) {
-      await dispatch('fetchNamespaceAccessRequests', {
+      await this.fetchNamespaceAccessRequests({
         ...payload,
         params: {
           page: 1,
@@ -330,66 +329,56 @@ const ProjectStore: Module<ProjectState, RootState> = {
     },
 
     async fetchNamespaceAccessRequests(
-      { commit, dispatch },
       payload: GetNamespaceAccessRequestsPayload
     ) {
+      const notificationStore = useNotificationStore()
+
       try {
         const accessRequestResponse =
           await ProjectApi.fetchNamespaceAccessRequests(
             payload.namespace,
             payload.params
           )
-        commit('setAccessRequests', {
+        this.setAccessRequests({
           accessRequests: accessRequestResponse.data?.items,
           count: accessRequestResponse.data?.count
         })
       } catch {
-        await dispatch(
-          'notificationModule/error',
-          { text: 'Failed to fetch project access requests' },
-          {
-            root: true
-          }
-        )
+        await notificationStore.error({
+          text: 'Failed to fetch project access requests'
+        })
       }
     },
 
-    async getProjectAccessRequests(
-      { dispatch },
-      payload: GetProjectAccessRequestsPayload
-    ) {
+    async getProjectAccessRequests(payload: GetProjectAccessRequestsPayload) {
       if (payload.namespace) {
-        await dispatch('fetchNamespaceAccessRequests', payload)
+        await this.fetchNamespaceAccessRequests({
+          namespace: payload.namespace,
+          ...payload
+        })
       } else {
-        await dispatch('fetchUserAccessRequests', payload)
+        await this.fetchUserAccessRequests(payload)
       }
     },
 
     async cancelProjectAccessRequest(
-      { dispatch },
       payload: CancelProjectAccessRequestPayload
     ) {
+      const notificationStore = useNotificationStore()
+
       waitCursor(true)
       try {
         await ProjectApi.cancelProjectAccessRequest(payload.itemId, true)
       } catch (err) {
-        const msg = err.response
-          ? err.response.data?.detail
-          : 'Failed to cancel access request'
-        await dispatch(
-          'notificationModule/error',
-          { text: msg },
-          {
-            root: true
-          }
-        )
+        await notificationStore.error({
+          text: getErrorMessage(err, 'Failed to cancel access request')
+        })
       } finally {
         waitCursor(false)
       }
     },
 
     async acceptProjectAccessRequest(
-      state,
       payload: AcceptProjectAccessRequestPayload
     ) {
       waitCursor(true)
@@ -404,15 +393,15 @@ const ProjectStore: Module<ProjectState, RootState> = {
       }
     },
 
-    async cloneProject({ commit }, payload) {
+    async cloneProject(payload) {
       const { namespace, project, data, cbSuccess } = payload
       try {
         waitCursor(true)
         await ProjectApi.cloneProject(namespace, project, data)
         waitCursor(false)
         cbSuccess()
-        commit('setProject', { project: null })
-        await ProjectModule.routerService.push({
+        this.setProject({ project: null })
+        await getActivePinia().router.push({
           name: 'project',
           params: {
             namespace: data.namespace,
@@ -425,66 +414,56 @@ const ProjectStore: Module<ProjectState, RootState> = {
       }
     },
 
-    async fetchProject({ commit, dispatch }, payload: ProjectParams) {
+    async fetchProject(payload: ProjectParams) {
+      const notificationStore = useNotificationStore()
+
       try {
         const projectResponse = await ProjectApi.fetchProject(
           payload.namespace,
           payload.projectName
         )
-        commit('setProject', { project: projectResponse.data })
+        this.setProject({ project: projectResponse.data })
       } catch (e) {
         console.warn('Failed to load project data', e)
-        await dispatch(
-          'notificationModule/error',
-          { text: 'Failed to load project data' },
-          {
-            root: true
-          }
-        )
+        await notificationStore.error({ text: 'Failed to load project data' })
       }
     },
 
-    async unsubscribeProject({ commit, dispatch }, payload) {
+    async unsubscribeProject(payload) {
+      const notificationStore = useNotificationStore()
+
       try {
         waitCursor(true)
         await ProjectApi.unsubscribeProject(payload.id)
-        commit('setProject', { project: null })
+        this.setProject({ project: null })
         waitCursor(false)
       } catch (err) {
-        const msg = err.response
-          ? err.response.data?.detail
-          : 'Failed to unsubscribe from project'
-        await dispatch(
-          'notificationModule/error',
-          { text: msg },
-          {
-            root: true
-          }
-        )
+        await notificationStore.error({
+          text: getErrorMessage(err, 'Failed to unsubscribe from project')
+        })
         waitCursor(false)
       }
     },
-    async fetchProjectDetail({ commit, dispatch }, payload) {
+
+    async fetchProjectDetail(payload) {
+      const notificationStore = useNotificationStore()
+
       const { callbackStatus, namespace, projectName, isLoggedUser } = payload
       try {
         const projectResponse = await ProjectApi.fetchProject(
           payload.namespace,
           payload.projectName
         )
-        commit('setProject', { project: projectResponse.data })
+        this.setProject({ project: projectResponse.data })
       } catch (e) {
         callbackStatus(e.response.status)
 
         if (e.response.status !== 404 && e.response.status !== 403) {
-          dispatch(
-            'notificationModule/error',
-            {
-              text: 'Failed to load project data'
-            },
-            { root: true }
-          )
+          notificationStore.error({
+            text: 'Failed to load project data'
+          })
         } else if (e.response.status === 403 && !isLoggedUser) {
-          await ProjectModule.routerService.push(
+          await getActivePinia().router.push(
             `/login?redirect=/projects/${namespace}/${projectName}`
           )
         } else if (e.response.status === 403) {
@@ -499,50 +478,38 @@ const ProjectStore: Module<ProjectState, RootState> = {
               }
             })
             .catch(() => {
-              dispatch(
-                'notificationModule/error',
-                {
-                  text: 'Failed to load project access requests data'
-                },
-                { root: true }
-              )
+              notificationStore.error({
+                text: 'Failed to load project access requests data'
+              })
             })
         }
       }
     },
 
-    async fetchProjectVersions(
-      { commit, dispatch },
-      payload: FetchProjectVersionsPayload
-    ) {
+    async fetchProjectVersions(payload: FetchProjectVersionsPayload) {
+      const notificationStore = useNotificationStore()
+
       try {
-        commit('projectVersionsLoading', true)
+        this.projectVersionsLoading(true)
         const response = await ProjectApi.fetchProjectVersions(
           payload.namespace,
           payload.projectName,
           payload.params
         )
-        commit('projectVersions', {
-          versions: response?.data?.versions,
-          count: response?.data?.count
+        this.setProjectVersions({
+          versions: response.data?.versions,
+          count: response.data?.count
         })
       } catch (e) {
-        await dispatch(
-          'notificationModule/error',
-          {
-            text: 'Failed to fetch project versions'
-          },
-          { root: true }
-        )
+        await notificationStore.error({
+          text: 'Failed to fetch project versions'
+        })
       } finally {
-        commit('projectVersionsLoading', false)
+        this.projectVersionsLoading(false)
       }
     },
 
-    async saveProjectSettings(
-      { commit },
-      payload
-    ): Promise<AxiosResponse<ProjectDetail>> {
+    async saveProjectSettings(payload): Promise<AxiosResponse<ProjectDetail>> {
       const { namespace, newSettings, projectName } = payload
 
       try {
@@ -554,7 +521,7 @@ const ProjectStore: Module<ProjectState, RootState> = {
             newSettings,
             true
           )
-        commit('setProject', { project: saveProjectSettingsResponse.data })
+        this.setProject({ project: saveProjectSettingsResponse.data })
         waitCursor(false)
         return saveProjectSettingsResponse
       } finally {
@@ -562,7 +529,7 @@ const ProjectStore: Module<ProjectState, RootState> = {
       }
     },
 
-    async pushProjectChunks({ commit }, payload) {
+    async pushProjectChunks(payload) {
       const pushProjectChunksResponse = await ProjectApi.pushProjectChunks(
         payload.transaction,
         payload.chunk,
@@ -570,58 +537,58 @@ const ProjectStore: Module<ProjectState, RootState> = {
         payload.data,
         true
       )
-      commit('chunkUploaded', { project: payload.projectPath })
+      this.chunkUploaded({ project: payload.projectPath })
       return pushProjectChunksResponse
     },
 
-    async pushFinishTransaction({ commit, dispatch }, payload) {
+    async pushFinishTransaction(payload) {
+      const notificationStore = useNotificationStore()
+      const userStore = useUserStore()
+
       const { projectPath, token, transaction } = payload
       try {
         const pushFinishTransactionResponse =
           await ProjectApi.pushFinishTransaction(transaction, token, true)
-        commit('discardUpload', { projectPath })
-        dispatch(
-          'notificationModule/show',
-          {
-            text: `Upload finished: ${projectPath}`
-          },
-          { root: true }
-        )
-        commit('setProject', { project: pushFinishTransactionResponse.data })
-        dispatch('userModule/fetchUserProfile', undefined, { root: true })
+        this.discardUpload({ projectPath })
+        notificationStore.show({
+          text: `Upload finished: ${projectPath}`
+        })
+        this.setProject({ project: pushFinishTransactionResponse.data })
+        await userStore.fetchUserProfile()
         waitCursor(false)
       } catch (err) {
-        dispatch('pushCancelTransaction', { err, transaction })
+        this.pushCancelTransaction({ err, transaction })
       }
     },
 
-    async pushProjectChanges({ dispatch }, payload) {
+    async pushProjectChanges(payload) {
+      const notificationStore = useNotificationStore()
+
       const { data, projectPath } = payload
       try {
         return await ProjectApi.pushProjectChanges(projectPath, data)
       } catch (err) {
-        const msg = (err.response && err.response.data?.detail) || 'Error'
-        await dispatch(
-          'notificationModule/error',
-          { text: msg },
-          { root: true }
-        )
+        await notificationStore.error({ text: getErrorMessage(err, 'Error') })
         return undefined
       }
     },
 
-    async pushCancelTransaction({ commit, dispatch }, payload) {
+    async pushCancelTransaction(payload) {
+      const notificationStore = useNotificationStore()
+
       const { err, transaction } = payload
-      commit('cancelUpload')
+      this.cancelUpload()
       const msg = err.__CANCEL__
         ? err.message
         : (err.response && err.response.data?.detail) || 'Error'
-      dispatch('notificationModule/error', { text: msg }, { root: true })
+      notificationStore.error({ text: msg })
       await ProjectApi.pushCancelTransaction(transaction)
       waitCursor(false)
     },
 
-    async downloadArchive({ dispatch }, payload) {
+    async downloadArchive(payload: DownloadPayload) {
+      const notificationStore = useNotificationStore()
+
       try {
         const resp = await ProjectApi.downloadFile(payload.url)
         const fileName =
@@ -633,15 +600,19 @@ const ProjectStore: Module<ProjectState, RootState> = {
         const blob = new Blob([e.response.data], { type: 'text/plain' })
         blob.text().then((text) => {
           resp = JSON.parse(text)
-          dispatch(
-            'notificationModule/error',
-            { text: resp.detail },
-            { root: true }
-          )
+          notificationStore.error({ text: resp.detail })
         })
       }
+    },
+
+    constructDownloadProjectUrl(payload: {
+      namespace: string
+      projectName: string
+    }) {
+      return ProjectApi.constructDownloadProjectUrl(
+        payload.namespace,
+        payload.projectName
+      )
     }
   }
-}
-
-export default ProjectStore
+})

@@ -4,18 +4,15 @@
 
 import { moduleUtils, Module } from '@mergin/lib'
 
-import getRoutes from './routes'
-import store, { AdminState } from './store'
-import { CeAdminLibRootState } from '@/modules/types'
+import { getRoutes } from './routes'
 
-export const AdminModule: Module<AdminState, CeAdminLibRootState> = {
+export const AdminModule: Module = {
   name: 'adminModule',
   routerService: undefined,
   httpService: undefined,
-  moduleStore: store,
-  _addRoutes: (router, rootStore, routeOverrides) => {
+  _addRoutes: (router, routeOverrides) => {
     // add routes to router
-    getRoutes(rootStore).forEach((route) => {
+    getRoutes().forEach((route) => {
       router.addRoute(moduleUtils.applyRouteOverride(route, routeOverrides))
     })
   },
@@ -25,16 +22,9 @@ export const AdminModule: Module<AdminState, CeAdminLibRootState> = {
     } else {
       console.error(`Module ${AdminModule.name} - missing httpService`)
     }
-
     if (services.routerService) {
       AdminModule.routerService = services.routerService
-      if (services.store) {
-        AdminModule._addRoutes(
-          services.routerService,
-          services.store,
-          routeOverrides
-        )
-      }
+      AdminModule._addRoutes(services.routerService, routeOverrides)
     }
   }
 }

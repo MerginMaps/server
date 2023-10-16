@@ -9,17 +9,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
-import { mapGetters, mapState } from 'vuex'
+import { mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
 import ProjectShareButtonTemplate from './ProjectShareButtonTemplate.vue'
 
-export default Vue.extend({
+import { useProjectStore } from '@/modules/project/store'
+import { useUserStore } from '@/modules/user/store'
+
+export default defineComponent({
   components: { ProjectShareButtonTemplate },
   computed: {
-    ...mapGetters('userModule', ['currentWorkspace']),
-    ...mapState('projectModule', ['project']),
-    ...mapGetters('projectModule', ['isProjectOwner']),
+    ...mapState(useUserStore, ['currentWorkspace']),
+    ...mapState(useProjectStore, ['project', 'isProjectOwner']),
 
     canShareProject() {
       return (

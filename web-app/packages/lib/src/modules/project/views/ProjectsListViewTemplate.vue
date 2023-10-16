@@ -69,15 +69,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 import { PlusIcon, SearchIcon } from 'vue-tabler-icons'
-import { mapState } from 'vuex'
 
 import ActionButton from '@/common/components/ActionButton.vue'
+import { useDialogStore } from '@/modules'
 import PageView from '@/modules/layout/components/PageView.vue'
+import { useLayoutStore } from '@/modules/layout/store'
 import ProjectForm from '@/modules/project/components/ProjectForm.vue'
+import { useUserStore } from '@/modules/user/store'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProjectsListView',
   components: { ActionButton, PageView, PlusIcon, SearchIcon },
   props: {
@@ -85,8 +88,8 @@ export default Vue.extend({
     canCreateProject: Boolean
   },
   computed: {
-    ...mapState('userModule', ['loggedUser']),
-    ...mapState('layoutModule', ['drawer']),
+    ...mapState(useUserStore, ['loggedUser']),
+    ...mapState(useLayoutStore, ['drawer']),
     header() {
       return this.onlyPublic ? 'Mergin Maps public projects' : 'Projects'
     },
@@ -95,6 +98,8 @@ export default Vue.extend({
     }
   },
   methods: {
+    ...mapActions(useDialogStore, ['show']),
+
     findPublicProjects() {
       this.$router.push({
         name: 'explore'
@@ -102,7 +107,7 @@ export default Vue.extend({
     },
     newProjectDialog() {
       const dialog = { maxWidth: 500, persistent: true }
-      this.$store.dispatch('dialogModule/show', {
+      this.show({
         component: ProjectForm,
         params: {
           listeners: {

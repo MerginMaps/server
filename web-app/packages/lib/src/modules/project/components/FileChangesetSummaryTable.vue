@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <v-data-table
       :headers="headers"
       :items="displayedChangeset"
-      footer-props.items-per-page-options='[10, 25, {"text": "$vuetify.dataIterator.rowsPerPageAll","value": -1}]'
+      footer-props.items-per-page-options='[10, 25, {"text": "c$vuetify.dataIterator.rowsPerPageAll","value": -1}]'
       :hide-default-footer="displayedChangeset.length <= 10"
     >
       <!-- headers -->
@@ -48,9 +48,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'file-changeset-summary-table',
   props: {
     changesets: Array

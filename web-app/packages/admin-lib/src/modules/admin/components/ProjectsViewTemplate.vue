@@ -48,12 +48,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import { PageView } from '@mergin/lib'
-import Vue from 'vue'
+import { defineComponent } from 'vue'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
-import AdminProjectsTable from '@/modules/project/components/AdminProjectsTable.vue'
+import AdminProjectsTable from '@/modules/admin/components/AdminProjectsTable.vue'
 
-export default Vue.extend({
+export default defineComponent({
   name: 'ProjectsView',
   components: {
     PageView,

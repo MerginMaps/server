@@ -39,12 +39,15 @@ import debounce from 'lodash/debounce'
 import keyBy from 'lodash/keyBy'
 import pickBy from 'lodash/pickBy'
 import Path from 'path'
-import Vue from 'vue'
-import { mapMutations, mapState } from 'vuex'
+import { mapActions, mapState } from 'pinia'
+import { defineComponent } from 'vue'
 
 import { getFiles, checksum } from '@/common/mergin_utils'
+import { useInstanceStore } from '@/modules/instance/store'
+import { useNotificationStore } from '@/modules/notification/store'
+import { useProjectStore } from '@/modules/project/store'
 
-export default Vue.extend({
+export default defineComponent({
   props: ['location'],
   data() {
     return {
@@ -52,8 +55,8 @@ export default Vue.extend({
     }
   },
   computed: {
-    ...mapState('projectModule', ['project', 'uploads']),
-    ...mapState('instanceModule', ['configData']),
+    ...mapState(useProjectStore, ['project', 'uploads']),
+    ...mapState(useInstanceStore, ['configData']),
     upload() {
       return this.project && this.uploads[this.project.name]
     },
@@ -68,12 +71,14 @@ export default Vue.extend({
     }
   },
   methods: {
-    ...mapMutations('projectModule', [
+    ...mapActions(useNotificationStore, ['error']),
+    ...mapActions(useProjectStore, [
       'initUpload',
       'uploadFiles',
       'finishFileAnalysis',
       'analysingFiles'
     ]),
+
     setOver: debounce(function (isOver) {
       this.dragOver = isOver
     }, 30),
@@ -88,7 +93,7 @@ export default Vue.extend({
         return
       }
       if (this.upload && this.upload.running) {
-        return this.$store.dispatch('notificationModule/error', {
+        return this.error({
           text: 'You cannot update files during upload'
         })
       }
@@ -97,7 +102,7 @@ export default Vue.extend({
         (i: DataTransferItem) => i.webkitGetAsEntry()
       )
       if (entries.some((e) => e === null)) {
-        return this.$store.dispatch('notificationModule/error', {
+        return this.error({
           text: 'Drop only files or folders'
         })
       }
@@ -151,7 +156,7 @@ export default Vue.extend({
       // for (let file of files) {
       //   const hash = await checksum(file.file)
       //   file.checksum = hash
-      //   this.$store.commit('finishFileAnalysis', file.path)
+      //   this.finishFileAnalysis({ path: file.path })
       // }
       // return files
 

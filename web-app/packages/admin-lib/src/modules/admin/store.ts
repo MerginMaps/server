@@ -2,14 +2,19 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import { htmlUtils, LoginPayload, UserResponse } from '@mergin/lib'
+import {
+  errorUtils,
+  htmlUtils,
+  LoginPayload,
+  useFormStore,
+  useInstanceStore,
+  useNotificationStore,
+  UserResponse
+} from '@mergin/lib'
+import { defineStore, getActivePinia } from 'pinia'
 import Cookies from 'universal-cookie'
-import { Module } from 'vuex'
-
 import { AdminApi } from '@/modules/admin/adminApi'
-import { AdminModule } from '@/modules/admin/module'
 import { UpdateUserPayload } from '@/modules/admin/types'
-import { CeAdminLibRootState } from '@/modules/types'
 
 export interface AdminState {
   loading: boolean
@@ -26,9 +31,8 @@ export interface AdminState {
 const cookies = new Cookies()
 const COOKIES_HIDE_SERVER_CONFIGURED_BANNER = 'hideServerConfiguredBanner'
 
-const AdminStore: Module<AdminState, CeAdminLibRootState> = {
-  namespaced: true,
-  state: {
+export const useAdminStore = defineStore('adminModule', {
+  state: (): AdminState => ({
     loading: false,
     users: {
       items: [],
@@ -38,115 +42,99 @@ const AdminStore: Module<AdminState, CeAdminLibRootState> = {
     checkForUpdates: undefined,
     info_url: undefined,
     isServerConfigHidden: false
-  },
-  mutations: {
-    loading(state, value) {
-      state.loading = value
-    },
-    users(state, data) {
-      state.users.count = data.total
-      state.users.items = data.users
-    },
-    userAdminProfile(state, userAdminProfile) {
-      state.userAdminProfile = userAdminProfile
-    },
-    setCheckForUpdates(state, value) {
-      state.checkForUpdates = value
-    },
-    setInfoUrl(state, value: string) {
-      state.info_url = value
-    },
-    setIsServerConfigHidden(state, value: boolean) {
-      state.isServerConfigHidden = value
-    }
-  },
+  }),
+
   getters: {
     displayUpdateAvailable: (state) => {
       return !!state.checkForUpdates
     }
   },
+
   actions: {
-    async fetchUsers({ commit, dispatch }, payload) {
-      commit('loading', true)
+    setLoading(value) {
+      this.loading = value
+    },
+    setUsers(data) {
+      this.users.count = data.total
+      this.users.items = data.users
+    },
+    setUserAdminProfile(userAdminProfile) {
+      this.userAdminProfile = userAdminProfile
+    },
+    setCheckForUpdates(value) {
+      this.checkForUpdates = value
+    },
+    setInfoUrl(value: string) {
+      this.info_url = value
+    },
+    setIsServerConfigHidden(value: boolean) {
+      this.isServerConfigHidden = value
+    },
+
+    async fetchUsers(payload) {
+      const notificationStore = useNotificationStore()
+
+      this.setLoading(true)
       try {
         const response = await AdminApi.fetchUsers(payload.params)
-        commit('users', response.data)
+        this.setUsers(response.data)
       } catch (e) {
-        await dispatch(
-          'notificationModule/error',
-          { text: e.response.data?.detail || e.message },
-          {
-            root: true
-          }
-        )
+        notificationStore.error({ text: errorUtils.getErrorMessage(e) })
       } finally {
-        commit('loading', false)
+        this.setLoading(false)
       }
     },
-    async fetchUserProfileByName({ commit, dispatch }, payload) {
+    async fetchUserProfileByName(payload) {
+      const notificationStore = useNotificationStore()
+
       htmlUtils.waitCursor(true)
       try {
         const response = await AdminApi.fetchUserProfileByName(payload.username)
-        commit('userAdminProfile', response.data)
-      } catch {
-        await dispatch(
-          'notificationModule/error',
-          { text: 'Failed to fetch user profile' },
-          {
-            root: true
-          }
-        )
+        this.setUserAdminProfile(response.data)
+      } catch(e) {
+        await notificationStore.error({ text: 'Failed to fetch user profile' })
       } finally {
         htmlUtils.waitCursor(false)
       }
     },
 
-    async deleteUser({ dispatch }, payload) {
+    async deleteUser(payload) {
+      const notificationStore = useNotificationStore()
+
       htmlUtils.waitCursor(true)
       try {
         await AdminApi.deleteUser(payload.username)
-        await AdminModule.routerService.push({ name: 'accounts' })
+        await getActivePinia().router.push({ name: 'accounts' })
       } catch (err) {
-        const msg =
-          err.response && err.response.data.detail
-            ? err.response.data.detail
-            : 'Unable to close account'
-        await dispatch(
-          'notificationModule/error',
-          { text: msg },
-          {
-            root: true
-          }
-        )
+        await notificationStore.error({
+          text: errorUtils.getErrorMessage(err, 'Unable to close account')
+        })
       } finally {
         htmlUtils.waitCursor(false)
       }
     },
 
-    async updateUser({ commit, dispatch, state }, payload: UpdateUserPayload) {
+    async updateUser(payload: UpdateUserPayload) {
+      const notificationStore = useNotificationStore()
+
       htmlUtils.waitCursor(true)
       try {
         const response = await AdminApi.updateUser(
           payload.username,
           payload.data
         )
-        if (state.userAdminProfile?.id === response.data?.id) {
+        if (this.userAdminProfile?.id === response.data?.id) {
           // update stored user detail data
-          commit('userAdminProfile', response.data)
+          this.setUserAdminProfile(response.data)
         }
-        await AdminModule.routerService.push({ name: 'accounts' })
+        await getActivePinia().router.push({ name: 'accounts' })
       } catch (err) {
-        const msg =
-          err.response && err.response.data.detail
-            ? err.response.data.detail
-            : 'Unable to permanently remove account'
-        await dispatch(
-          'notificationModule/error',
-          { text: msg },
-          {
-            root: true
-          }
-        )
+        await notificationStore.error({
+          text: errorUtils.getErrorMessage(
+            err,
+            'Unable to permanently remove account'
+          )
+        })
       } finally {
         htmlUtils.waitCursor(false)
       }
@@ -160,24 +148,23 @@ const AdminStore: Module<AdminState, CeAdminLibRootState> = {
       )
     },
 
-    async adminLogin({ dispatch }, payload: LoginPayload) {
+    async adminLogin(payload: LoginPayload) {
+      const instanceStore = useInstanceStore()
+      const formStore = useFormStore()
+
       try {
         await AdminApi.login(payload.data)
-        await dispatch('instanceModule/initApp', undefined, { root: true })
+        await instanceStore.initApp()
       } catch (error) {
-        await dispatch(
-          'formModule/handleError',
-          {
-            componentId: payload.componentId,
-            error: error,
-            generalMessage: 'Failed to login'
-          },
-          { root: true }
-        )
+        await formStore.handleError({
+          componentId: payload.componentId,
+          error,
+          generalMessage: 'Failed to login'
+        })
       }
     },
 
-    async checkVersions({ commit }, payload) {
+    async checkVersions(payload) {
       try {
         const response = await AdminApi.getServerVersion()
         const { major, minor, fix } = response.data
@@ -199,17 +186,17 @@ const AdminStore: Module<AdminState, CeAdminLibRootState> = {
             }
           }
           if (isUpdate) {
-            commit('setInfoUrl', response.data.info_url)
+            this.setInfoUrl(response.data.info_url)
           }
         }
       } catch (e) {
-        console.log(e)
+        console.error(e)
       }
     },
 
-    async getCheckUpdateFromCookies({ dispatch }) {
+    async getCheckUpdateFromCookies() {
       const currentCheckForUpdatesCookie = cookies.get('checkUpdates')
-      await dispatch('setCheckUpdatesToCookies', {
+      await this.setCheckUpdatesToCookies({
         value:
           currentCheckForUpdatesCookie === undefined
             ? true
@@ -217,32 +204,30 @@ const AdminStore: Module<AdminState, CeAdminLibRootState> = {
       })
     },
 
-    async setCheckUpdatesToCookies({ commit }, payload) {
+    async setCheckUpdatesToCookies(payload) {
       const expires = new Date()
       // cookies expire in one year
       expires.setFullYear(expires.getFullYear() + 1)
       cookies.set('checkUpdates', payload.value, { expires })
-      commit('setCheckForUpdates', payload.value)
+      this.setCheckForUpdates(payload.value)
     },
 
-    async getServerConfiguredCookies({ commit }) {
+    async getServerConfiguredCookies() {
       const currentHideServerConfiguredBannerCookie = cookies.get(
         COOKIES_HIDE_SERVER_CONFIGURED_BANNER
       )
       if (currentHideServerConfiguredBannerCookie === 'true') {
-        commit('setIsServerConfigHidden', true)
+        this.setIsServerConfigHidden(true)
       }
     },
 
-    async setServerConfiguredCookies({ commit }) {
+    async setServerConfiguredCookies() {
       cookies.set(COOKIES_HIDE_SERVER_CONFIGURED_BANNER, true)
-      commit('setIsServerConfigHidden', true)
+      this.setIsServerConfigHidden(true)
     },
 
     async removeServerConfiguredCookies() {
       cookies.remove(COOKIES_HIDE_SERVER_CONFIGURED_BANNER)
     }
   }
-}
-
-export default AdminStore
+})
