@@ -34,3 +34,21 @@ class StorageLimitHit(ResponseError):
         data["current_usage"] = self.current_usage
         data["storage_limit"] = self.storage_limit
         return data
+
+
+class InvalidProjectName(ResponseError):
+    code = "InvalidProjectName"
+    detail = "Entered project name is invalid, don't start project name with . and use only alphanumeric or these -._!"
+
+    def to_dict(self) -> Dict:
+        data = super().to_dict()
+        return data
+
+
+class ProjectNameAlreadyExists(ResponseError):
+    code = "ProjectNameAlreadyExists"
+    detail = "Entered project name already exists"
+
+    def to_dict(self) -> Dict:
+        data = super().to_dict()
+        return data

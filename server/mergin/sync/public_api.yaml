@@ -977,7 +977,7 @@ components:
     UnsupportedMediaType:
       description: Payload format is in an unsupported format.
     ConflictResp:
-      description: Request could not be processed becuase of conflict in resources
+      description: Request could not be processed because of conflict in resources
     UnprocessableEntity:
       description: Request was correct and yet server could not process it
     ProjectsLimitHitResp:

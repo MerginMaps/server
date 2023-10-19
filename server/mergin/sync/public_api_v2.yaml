@@ -27,6 +27,31 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
+    patch:
+      tags:
+        - project
+      summary: Rename project
+      operationId: rename_project
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Request could not be processed by server
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/InvalidProjectName"
+                  - $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/schemas/ProjectNameAlreadyExists"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
   /projects/{id}/scheduleDelete:
     post:
       tags:
@@ -65,3 +90,28 @@ components:
         type: string
         format: uuid
         pattern: \b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b
+  schemas:
+    CustomError:
+      type: object
+      properties:
+        code:
+          type: string
+        detail:
+          type: string
+      required:
+        - code
+        - detail
+    InvalidProjectName:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      type: object
+      example:
+        code: InvalidProjectName
+        detail: Entered project name is invalid, don't start project name with . and use only alphanumeric or these -._! (InvalidProjectName)
+    ProjectNameAlreadyExists:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      type: object
+      example:
+        code: ProjectNameAlreadyExists
+        detail: Entered project name already exists (ProjectNameAlreadyExists)

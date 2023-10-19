@@ -4,14 +4,17 @@
 
 from datetime import datetime
 
-from connexion import NoContent
-from flask import abort
+from connexion import NoContent, request
+from flask import abort, jsonify, make_response, current_app
 from flask_login import current_user
 
 from mergin import db
 from mergin.auth import auth_required
-from mergin.sync.models import Project
 from mergin.sync.permissions import ProjectPermissions, require_project_by_uuid
+
+from .errors import InvalidProjectName, ProjectNameAlreadyExists
+from .models import Project
+from .utils import is_name_allowed
 
 
 @auth_required
@@ -43,3 +46,30 @@ def delete_project_now(id_):
     db.session.commit()
 
     return NoContent, 204
+
+
+@auth_required
+def rename_project(id_):
+    """Rename project
+
+    :param id_: Project_id
+    :type id_: str
+
+    :rtype: None
+    """
+    project = require_project_by_uuid(id_, ProjectPermissions.Update)
+    new_name = request.json["name"].strip()
+
+    if not is_name_allowed(new_name):
+        abort(make_response(jsonify(InvalidProjectName().to_dict()), 400))
+
+    new_name_exists = Project.query.filter_by(
+        workspace_id=project.workspace_id, name=new_name
+    ).first()
+    if new_name_exists:
+        abort(make_response(jsonify(ProjectNameAlreadyExists().to_dict()), 409))
+
+    project.name = new_name
+    db.session.commit()
+
+    return "", 200
