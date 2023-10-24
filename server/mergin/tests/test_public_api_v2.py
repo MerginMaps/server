@@ -1,10 +1,9 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
-import json
 
 from mergin.sync.models import Project
-from tests import test_project, test_workspace_id, json_headers
+from tests import test_project, test_workspace_id
 
 
 def test_schedule_delete_project(client):
@@ -44,27 +43,17 @@ def test_rename_project(client):
     project = Project.query.filter_by(
         workspace_id=test_workspace_id, name=test_project
     ).first()
-    data = {"name": " new_project_name  "}
-    response = client.patch(
-        f"v2/projects/{project.id}", data=json.dumps(data), headers=json_headers
-    )
-    assert response.status_code == 200
+    data = {"name": "new_project_name"}
+    response = client.patch(f"v2/projects/{project.id}", json=data)
+    assert response.status_code == 204
     assert project.name == "new_project_name"
-    # repeat - the new name is already occupied
-    response = client.patch(
-        f"v2/projects/{project.id}", data=json.dumps(data), headers=json_headers
-    )
+    # name already exists
+    response = client.patch(f"v2/projects/{project.id}", json=data)
     assert response.status_code == 409
-    assert response.json["code"] == "ProjectNameAlreadyExists"
-    assert "Entered project name already exists" in response.json["detail"]
-    # illegal project name
-    data = {"name": ".new_name"}
+    # invalid project name
+    response = client.patch(f"v2/projects/{project.id}", json={"name": ".new_name"})
+    assert response.status_code == 400
     response = client.patch(
-        f"v2/projects/{project.id}", data=json.dumps(data), headers=json_headers
+        f"v2/projects/{project.id}", json={"name": " new_project_name"}
     )
     assert response.status_code == 400
-    assert response.json["code"] == "InvalidProjectName"
-    assert (
-        "Entered project name is invalid, don't start project name with . "
-        "and use only alphanumeric or these -._!"
-    ) in response.json["detail"]

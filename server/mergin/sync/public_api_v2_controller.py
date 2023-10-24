@@ -5,16 +5,14 @@
 from datetime import datetime
 
 from connexion import NoContent, request
-from flask import abort, jsonify, make_response, current_app
+from flask import abort, jsonify
 from flask_login import current_user
 
 from mergin import db
 from mergin.auth import auth_required
+from mergin.sync.models import Project
 from mergin.sync.permissions import ProjectPermissions, require_project_by_uuid
-
-from .errors import InvalidProjectName, ProjectNameAlreadyExists
-from .models import Project
-from .utils import is_name_allowed
+from mergin.sync.utils import is_name_allowed
 
 
 @auth_required
@@ -49,27 +47,29 @@ def delete_project_now(id_):
 
 
 @auth_required
-def rename_project(id_):
+def update_project(id_):
     """Rename project
 
     :param id_: Project_id
     :type id_: str
-
-    :rtype: None
     """
     project = require_project_by_uuid(id_, ProjectPermissions.Update)
-    new_name = request.json["name"].strip()
+    new_name = request.json["name"]
 
     if not is_name_allowed(new_name):
-        abort(make_response(jsonify(InvalidProjectName().to_dict()), 400))
-
+        return (
+            jsonify(
+                code="InvalidProjectName", detail="Entered project name is invalid"
+            ),
+            400,
+        )
     new_name_exists = Project.query.filter_by(
         workspace_id=project.workspace_id, name=new_name
     ).first()
     if new_name_exists:
-        abort(make_response(jsonify(ProjectNameAlreadyExists().to_dict()), 409))
+        abort(409, "Name already exist within workspace")
 
-    project.name = new_name
+    project.name = new_name.strip()
     db.session.commit()
 
-    return "", 200
+    return NoContent, 204

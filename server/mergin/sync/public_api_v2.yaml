@@ -10,47 +10,73 @@ tags:
     description: Mergin project
 paths:
   /projects/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
     delete:
       tags:
         - project
       summary: Delete project immediately
       operationId: delete_project_now
-      parameters:
-        - $ref: "#/components/parameters/ProjectId"
       responses:
         "204":
           $ref: "#/components/responses/NoContent"
         "400":
           $ref: "#/components/responses/BadRequest"
-        "403":
+        "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
     patch:
       tags:
         - project
-      summary: Rename project
-      operationId: rename_project
-      parameters:
-        - $ref: "#/components/parameters/ProjectId"
+      summary: Update project
+      operationId: update_project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: survey
       responses:
-        "200":
-          description: OK
+        "204":
+          $ref: "#/components/responses/NoContent"
         "400":
-          description: Request could not be processed by server
+          description: Invalid project name
           content:
             application/json:
               schema:
-                anyOf:
-                  - $ref: "#/components/schemas/InvalidProjectName"
-                  - $ref: "#/components/responses/BadRequest"
-        "403":
+                type: object
+                required:
+                  - code
+                  - detail
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - InvalidProjectName
+                    example: InvalidProjectName
+                  detail:
+                    type: string
+                    enum:
+                      - "Entered project name is invalid"
+                    example: "Entered project name is invalid"
+        "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
         "409":
-          $ref: "#/components/schemas/ProjectNameAlreadyExists"
+          $ref: "#/components/responses/Conflict"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
   /projects/{id}/scheduleDelete:
     post:
@@ -65,8 +91,10 @@ paths:
           $ref: "#/components/responses/NoContent"
         "400":
           $ref: "#/components/responses/BadRequest"
-        "403":
+        "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
@@ -75,11 +103,15 @@ components:
     NoContent:
       description: No content
     BadRequest:
-      description: Invalid request.
+      description: Invalid request
     Unauthorized:
       description: Authentication information is missing or invalid
+    Forbidden:
+      description: Invalid token
     NotFound:
       description: Not found
+    Conflict:
+      description: Conflict
   parameters:
     ProjectId:
       name: id
@@ -90,28 +122,3 @@ components:
         type: string
         format: uuid
         pattern: \b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b
-  schemas:
-    CustomError:
-      type: object
-      properties:
-        code:
-          type: string
-        detail:
-          type: string
-      required:
-        - code
-        - detail
-    InvalidProjectName:
-      allOf:
-        - $ref: '#/components/schemas/CustomError'
-      type: object
-      example:
-        code: InvalidProjectName
-        detail: Entered project name is invalid, don't start project name with . and use only alphanumeric or these -._! (InvalidProjectName)
-    ProjectNameAlreadyExists:
-      allOf:
-        - $ref: '#/components/schemas/CustomError'
-      type: object
-      example:
-        code: ProjectNameAlreadyExists
-        detail: Entered project name already exists (ProjectNameAlreadyExists)
