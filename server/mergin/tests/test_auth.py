@@ -14,7 +14,13 @@ from ..auth.models import User, UserProfile, LoginHistory
 from ..auth.tasks import prune_removed_users
 from .. import db
 from ..sync.models import Project
-from . import test_workspace_id, json_headers, DEFAULT_USER, test_workspace_name
+from . import (
+    test_workspace_id,
+    json_headers,
+    DEFAULT_USER,
+    test_workspace_name,
+    test_project,
+)
 from .utils import add_user, login_as_admin, login
 
 
@@ -718,3 +724,19 @@ def test_admin_login(client, data, expected):
     add_user("user", "user")
     resp = client.post("/app/admin/login", data=json.dumps(data), headers=json_headers)
     assert resp.status_code == expected
+
+
+def test_update_project_v2(client):
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+    data = {"name": "new_project_name"}
+    resp = client.patch(f"v2/projects/{project.id}", json=data)
+    assert resp.status_code == 401
+    user = add_user("test", "test")
+    login(client, "test", "test")
+    resp = client.patch(f"v2/projects/{project.id}", json=data)
+    assert resp.status_code == 403
+    login_as_admin(client)
+    resp = client.patch(f"v2/projects/{project.id}", json=data)
+    assert resp.status_code == 204
