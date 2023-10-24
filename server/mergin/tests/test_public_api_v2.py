@@ -37,3 +37,25 @@ def test_delete_after_schedule(client):
     assert response.status_code == 204
     response = client.delete(f"v2/projects/{project.id}")
     assert response.status_code == 204
+
+
+def test_rename_project(client):
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+    data = {"name": "new_project_name"}
+    response = client.patch(f"v2/projects/{project.id}", json=data)
+    assert response.status_code == 204
+    assert project.name == "new_project_name"
+    # name already exists
+    response = client.patch(f"v2/projects/{project.id}", json=data)
+    assert response.status_code == 409
+    # invalid project name
+    response = client.patch(f"v2/projects/{project.id}", json={"name": ".new_name"})
+    assert response.status_code == 400
+    assert response.json["code"] == "InvalidProjectName"
+    response = client.patch(
+        f"v2/projects/{project.id}", json={"name": " new_project_name"}
+    )
+    assert response.status_code == 400
+    assert response.json["code"] == "InvalidProjectName"
