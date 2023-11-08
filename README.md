@@ -77,10 +77,10 @@ You are currently browsing repository for Mergin Maps web server and web client.
 - 🏰 **Permission system** - Decide who can read, write or manage projects
 - 🌈 **Web interface** - Simple user interface to view and manage projects
 - ⚡️ **Fast** - Efficient sync protocol transfering data between clients and server
-- 🧑‍💻 **Developer friendly** - Mergin Maps is open platform. CLI tools and client libraries are available for [Python](https://github.com/MerginMaps/server-py-client) and [C++](https://github.com/MerginMaps/server-cpp-client)
-- :camera: **Sync images** - Supporting sync of photos with common cloud storage using [mergin-media-sync](https://github.com/MerginMaps/server-media-sync) tool
-- 💽 **Sync with database** - Supporting two-way sync of data with PostGIS using [mergin-db-sync](https://github.com/MerginMaps/server-db-sync) tool
-- 👷‍♀️ **Work packages** - Split main database to smaller chunks for teams using [mergin-work-packages](https://github.com/MerginMaps/server-work-packages) tool
+- 🧑‍💻 **Developer friendly** - Mergin Maps is open platform. CLI tools and client libraries are available for [Python](https://github.com/MerginMaps/python-api-client) and [C++](https://github.com/MerginMaps/cpp-api-client)
+- :camera: **Sync images** - Supporting sync of photos with common cloud storage using [mergin-media-sync](https://github.com/MerginMaps/media-sync) tool
+- 💽 **Sync with database** - Supporting two-way sync of data with PostGIS using [mergin-db-sync](https://github.com/MerginMaps/db-sync) tool
+- 👷‍♀️ **Work packages** - Split main database to smaller chunks for teams using [mergin-work-packages](https://github.com/MerginMaps/work-packages) tool
 
 Mergin Maps offers a unique combination of features that other tools do not provide out of the box:
 
