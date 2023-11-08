@@ -5,8 +5,8 @@
 
 <img src="https://img.shields.io/badge/License-Dual AGPL3 and MM Commercial licence-blue">
 
-[![Code Layout](https://github.com/MerginMaps/mergin/actions/workflows/code_style.yml/badge.svg)](https://github.com/MerginMaps/mergin/actions/workflows/code_style.yml)
-[![Auto Tests](https://github.com/MerginMaps/mergin/actions/workflows/auto_tests.yml/badge.svg)](https://github.com/MerginMaps/mergin/actions/workflows/auto_tests.yml)
+[![Code Layout](https://github.com/MerginMaps/server/actions/workflows/code_style.yml/badge.svg)](https://github.com/MerginMaps/server/actions/workflows/code_style.yml)
+[![Auto Tests](https://github.com/MerginMaps/server/actions/workflows/auto_tests.yml/badge.svg)](https://github.com/MerginMaps/server/actions/workflows/auto_tests.yml)
 [![Coverage Status](https://coveralls.io/repos/github/MerginMaps/mergin/badge.svg)](https://coveralls.io/github/MerginMaps/mergin)
 
 ## About
@@ -77,10 +77,10 @@ You are currently browsing repository for Mergin Maps web server and web client.
 - 🏰 **Permission system** - Decide who can read, write or manage projects
 - 🌈 **Web interface** - Simple user interface to view and manage projects
 - ⚡️ **Fast** - Efficient sync protocol transfering data between clients and server
-- 🧑‍💻 **Developer friendly** - Mergin Maps is open platform. CLI tools and client libraries are available for [Python](https://github.com/merginmaps/mergin-py-client) and [C++](https://github.com/merginmaps/mergin-cpp-client)
-- :camera: **Sync images** - Supporting sync of photos with common cloud storage using [mergin-media-sync](https://github.com/merginmaps/mergin-media-sync) tool
-- 💽 **Sync with database** - Supporting two-way sync of data with PostGIS using [mergin-db-sync](https://github.com/merginmaps/mergin-db-sync) tool
-- 👷‍♀️ **Work packages** - Split main database to smaller chunks for teams using [mergin-work-packages](https://github.com/merginmaps/mergin-work-packages) tool
+- 🧑‍💻 **Developer friendly** - Mergin Maps is open platform. CLI tools and client libraries are available for [Python](https://github.com/MerginMaps/python-api-client) and [C++](https://github.com/MerginMaps/cpp-api-client)
+- :camera: **Sync images** - Supporting sync of photos with common cloud storage using [mergin-media-sync](https://github.com/MerginMaps/media-sync) tool
+- 💽 **Sync with database** - Supporting two-way sync of data with PostGIS using [mergin-db-sync](https://github.com/MerginMaps/db-sync) tool
+- 👷‍♀️ **Work packages** - Split main database to smaller chunks for teams using [mergin-work-packages](https://github.com/MerginMaps/work-packages) tool
 
 Mergin Maps offers a unique combination of features that other tools do not provide out of the box:
 
@@ -125,12 +125,12 @@ Contributions are welcome!
 More information for developers can be found in the dedicated [development](development.md) page.
 
 Client side modules:
-- [Python](https://github.com/merginmaps/mergin-py-client) client library + CLI
-- [C++](https://github.com/merginmaps/mergin-cpp-client) client library + CLI
+- [Python](https://github.com/MerginMaps/python-api-client) client library + CLI
+- [C++](https://github.com/MerginMaps/cpp-api-client) client library + CLI
 
 More related tools:
-- [mergin-db-sync](https://github.com/merginmaps/mergin-db-sync) - set up two-way sync between Mergin Maps and PostGIS database
-- [mergin-work-packages](https://github.com/merginmaps/mergin-work-packages) - split data for teams to work packages
+- [mergin-db-sync](https://github.com/MerginMaps/db-sync) - set up two-way sync between Mergin Maps and PostGIS database
+- [mergin-work-packages](https://github.com/MerginMaps/work-packages) - split data for teams to work packages
 
 Learn more about [geodiff](https://github.com/merginmaps/geodiff) - the low-level library providing seamless merging of changes from multiple sources.
 
