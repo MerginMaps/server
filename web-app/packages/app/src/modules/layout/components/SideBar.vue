@@ -38,12 +38,13 @@ export default defineComponent({
 })
 </script>
 
+
 <template>
   <SideBarTemplate>
     <template #items>
-      <v-list nav flat data-cy="side-bar-main-list">
-        <template v-for="(item, i) in mainItems">
-          <side-bar-item :item="item" :id="`item-${i}`" :key="`item-${i}`">
+      <v-list nav variant="flat" data-cy="side-bar-main-list">
+        <template v-for="(item, i) in mainItems" :key="`item-${i}`">
+          <side-bar-item :item="item" :id="`item-${i}`">
             <template #icon>
               <component :is="item.tablerIcon"></component>
             </template>

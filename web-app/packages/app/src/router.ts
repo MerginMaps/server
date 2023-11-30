@@ -12,11 +12,9 @@ import {
   NotFoundView,
   VerifyEmailView,
   routeUtils,
-  Router,
   useUserStore
 } from '@mergin/lib'
 import { Pinia } from 'pinia'
-import Vue from 'vue'
 
 import { addRouterToPinia } from './store'
 
@@ -28,170 +26,170 @@ import ProjectsListView from '@/modules/project/views/ProjectsListView.vue'
 import ProjectView from '@/modules/project/views/ProjectView.vue'
 import LoginView from '@/modules/user/views/LoginView.vue'
 import ProfileView from '@/modules/user/views/ProfileView.vue'
-
-Vue.use(Router)
-
-const router = new Router({
-  mode: 'history'
-})
+import {
+  createWebHistory,
+  createRouter as createRouterInstance
+} from 'vue-router'
 
 export const createRouter = (pinia: Pinia) => {
-  const routes = [
-    {
-      path: '/',
-      name: 'home',
-      meta: { public: true },
-      beforeEnter: (to, from, next) => {
-        const userStore = useUserStore(pinia)
-        if (userStore.isLoggedIn) {
-          next('/dashboard')
-        } else {
-          next('/login')
-        }
-      }
-    },
-    {
-      beforeEnter: (to, from, next) => {
-        const userStore = useUserStore(pinia)
-        if (userStore.isLoggedIn) {
-          next('/dashboard')
-        } else {
-          next()
-        }
-      },
-      path: '/login/:reset?',
-      name: 'login',
-      component: LoginView,
-      props: true,
-      meta: { public: true }
-    },
-    {
-      path: '/confirm-email/:token',
-      name: 'confirm_email',
-      component: VerifyEmailView,
-      props: true,
-      meta: { public: true }
-    },
-    {
-      path: '/change-password/:token',
-      name: 'change_password',
-      component: ChangePasswordView,
-      props: true,
-      meta: { public: true }
-    },
-    {
-      path: '/dashboard',
-      name: 'dashboard',
-      components: {
-        default: DashboardView,
-        header: AppHeader,
-        sidebar: SideBar
-      },
-      props: {
-        default: true
-      }
-    },
-    {
-      path: '/profile',
-      name: 'user_profile',
-      meta: { allowedForNoWorkspace: true },
-      components: {
-        default: ProfileView,
-        header: AppHeader,
-        sidebar: SideBar
-      },
-      props: true
-    },
-    {
-      path: '/projects',
-      name: 'projects',
-      components: {
-        default: ProjectsListView,
-        header: AppHeader,
-        sidebar: SideBar
-      },
-      props: {
-        default: true
-      },
-      meta: { public: true },
-      children: [
-        {
-          path: 'explore',
-          name: 'explore',
-          component: ProjectsListView,
-          props: true,
-          meta: { public: true }
-        },
-        {
-          path: ':namespace',
-          name: 'namespace-projects',
-          component: ProjectsListView,
-          props: true
-        }
-      ]
-    },
-    {
-      path: '/projects/:namespace/:projectName',
-      name: 'project',
-      components: {
-        default: ProjectView,
-        header: AppHeader,
-        sidebar: SideBar
-      },
-      props: {
-        default: true
-      },
-      redirect: { name: 'project-tree' },
-      children: [
-        {
-          path: 'blob/:location*',
-          name: 'blob',
-          component: FileDetailView,
-          props: true,
-          meta: { public: true }
-        },
-        {
-          path: 'tree/:location*',
-          name: 'project-tree',
-          component: FileBrowserView,
-          props: true,
-          meta: { public: true }
-        },
-        {
-          path: 'settings',
-          name: 'project-settings',
-          component: ProjectSettingsView,
-          props: true
-        },
-        {
-          path: 'history',
-          name: 'project-versions',
-          component: ProjectVersionsView,
-          props: true
-        },
-        {
-          path: 'history/:version_id',
-          name: 'project-versions-detail',
-          component: VersionDetailView,
-          props: true
-        },
-        {
-          path: 'history/:version_id/:path',
-          name: 'file-version-detail',
-          component: FileVersionDetailView,
-          props: true,
-          meta: { public: true }
-        }
-      ]
-    },
-    {
-      path: '*',
-      component: NotFoundView
-    }
-  ]
 
-  routes.forEach((route) => {
-    router.addRoute(route)
+  const router = createRouterInstance({
+    history: createWebHistory(),
+    routes: [
+      {
+        path: '/',
+        name: 'home',
+        meta: { public: true },
+        redirect: null,
+        beforeEnter: (to, from, next) => {
+          const userStore = useUserStore(pinia)
+          if (userStore.isLoggedIn) {
+            next('/dashboard')
+          } else {
+            next('/login')
+          }
+        }
+      },
+      {
+        beforeEnter: (to, from, next) => {
+          const userStore = useUserStore(pinia)
+          if (userStore.isLoggedIn) {
+            next('/dashboard')
+          } else {
+            next()
+          }
+        },
+        path: '/login/:reset?',
+        name: 'login',
+        component: LoginView,
+        props: true,
+        meta: { public: true }
+      },
+      {
+        path: '/confirm-email/:token',
+        name: 'confirm_email',
+        component: VerifyEmailView,
+        props: true,
+        meta: { public: true }
+      },
+      {
+        path: '/change-password/:token',
+        name: 'change_password',
+        component: ChangePasswordView,
+        props: true,
+        meta: { public: true }
+      },
+      {
+        path: '/dashboard',
+        name: 'dashboard',
+        components: {
+          default: DashboardView,
+          header: AppHeader,
+          sidebar: SideBar
+        },
+        props: {
+          default: true
+        }
+      },
+      {
+        path: '/profile',
+        name: 'user_profile',
+        meta: { allowedForNoWorkspace: true },
+        components: {
+          default: ProfileView,
+          header: AppHeader,
+          sidebar: SideBar
+        },
+        props: true
+      },
+      {
+        path: '/projects',
+        name: 'projects',
+        components: {
+          default: ProjectsListView,
+          header: AppHeader,
+          sidebar: SideBar
+        },
+        props: {
+          default: true
+        },
+        meta: { public: true },
+        children: [
+          {
+            path: 'explore',
+            name: 'explore',
+            component: ProjectsListView,
+            props: true,
+            meta: { public: true }
+          },
+          {
+            path: ':namespace',
+            name: 'namespace-projects',
+            component: ProjectsListView,
+            props: true
+          }
+        ]
+      },
+      {
+        path: '/projects/:namespace/:projectName',
+        name: 'project',
+        components: {
+          default: ProjectView,
+          header: AppHeader,
+          sidebar: SideBar
+        },
+        props: {
+          default: true
+        },
+        redirect: { name: 'project-tree' },
+        children: [
+          {
+            path: 'blob/:location*',
+            name: 'blob',
+            component: FileDetailView,
+            props: true,
+            meta: { public: true }
+          },
+          {
+            path: 'tree/:location*',
+            name: 'project-tree',
+            component: FileBrowserView,
+            props: true,
+            meta: { public: true }
+          },
+          {
+            path: 'settings',
+            name: 'project-settings',
+            component: ProjectSettingsView,
+            props: true
+          },
+          {
+            path: 'history',
+            name: 'project-versions',
+            component: ProjectVersionsView,
+            props: true
+          },
+          {
+            path: 'history/:version_id',
+            name: 'project-versions-detail',
+            component: VersionDetailView,
+            props: true
+          },
+          {
+            path: 'history/:version_id/:path',
+            name: 'file-version-detail',
+            component: FileVersionDetailView,
+            props: true,
+            meta: { public: true }
+          }
+        ]
+      },
+      {
+        path: '/:pathMatch(.*)*',
+        component: NotFoundView,
+        meta: { public: true, hejno: true }
+      }
+    ]
   })
 
   /** Handles redirect to /login when user is not authenticated. */
@@ -199,8 +197,5 @@ export const createRouter = (pinia: Pinia) => {
     const userStore = useUserStore(pinia)
     routeUtils.isAuthenticatedGuard(to, from, next, userStore)
   })
-  addRouterToPinia(router)
   return router
 }
-
-export default router

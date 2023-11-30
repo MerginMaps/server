@@ -53,7 +53,7 @@ export default defineComponent({
   padding: 5px 0 5px 0 !important;
 }
 
-::v-deep(.v-list-item) {
+:deep(.v-list-item) {
   font-size: 14px;
   color: #444;
   min-height: 32px;

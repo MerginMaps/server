@@ -7,56 +7,56 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div v-if="version">
     <portal to="download-button">
-      <v-tooltip top>
-        <template v-slot:activator="{ on }">
-          <v-btn icon v-on="on" :href="downloadUrl">
+      <v-tooltip location="top">
+        <template v-slot:activator="{ props }">
+          <v-btn icon v-bind="props" :href="downloadUrl">
             <v-icon>archive</v-icon>
           </v-btn>
         </template>
         <span>Download Project Version {{ version.name }} (ZIP)</span>
       </v-tooltip>
     </portal>
-    <v-list two-line subheader>
+    <v-list lines="two" subheader>
       <v-list-item>
-        <v-list-item-content>
+        <div>
           <v-list-item-title>Version</v-list-item-title>
           <v-list-item-subtitle>{{ version.name }}</v-list-item-subtitle>
-        </v-list-item-content>
+        </div>
       </v-list-item>
       <v-list-item>
-        <v-list-item-content>
+        <div>
           <v-list-item-title>Author</v-list-item-title>
           <v-list-item-subtitle>{{ version.author }}</v-list-item-subtitle>
-        </v-list-item-content>
+        </div>
       </v-list-item>
       <v-list-item>
-        <v-list-item-content>
+        <div>
           <v-list-item-title>Project Size</v-list-item-title>
           <v-list-item-subtitle
-            >{{ version.project_size | filesize }}
+            >{{ $filters.filesize(version.project_size) }}
           </v-list-item-subtitle>
-        </v-list-item-content>
+        </div>
       </v-list-item>
       <v-list-item>
-        <v-list-item-content>
+        <div>
           <v-list-item-title>Created</v-list-item-title>
           <v-list-item-subtitle
-            >{{ version.created | datetime }}
+            >{{ $filters.datetime(version.created) }}
           </v-list-item-subtitle>
-        </v-list-item-content>
+        </div>
       </v-list-item>
       <v-list-item>
-        <v-list-item-content>
+        <div>
           <v-list-item-title>User Agent</v-list-item-title>
           <v-list-item-subtitle>{{ version.user_agent }}</v-list-item-subtitle>
-        </v-list-item-content>
+        </div>
       </v-list-item>
     </v-list>
     <v-list class="files" expand>
       <v-list-item>
-        <v-list-item-content>
+        <div>
           <v-list-item-title>Files changes:</v-list-item-title>
-        </v-list-item-content>
+        </div>
       </v-list-item>
       <v-list-group
         data-cy="version-detail-groups"
@@ -66,12 +66,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       >
         <!--                v-if="changes[key].length"-->
         <template v-slot:activator>
-          <v-list-item-content>
+          <div>
             <v-list-item-title>
-              <v-icon small v-text="icon" class="mr-2" />
+              <v-icon size="small" v-text="icon" class="mr-2" />
               <span>{{ text }} ({{ changes[key].length }})</span>
             </v-list-item-title>
-          </v-list-item-content>
+          </div>
         </template>
 
         <div
@@ -81,11 +81,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           no-action
         >
           <div :class="colors[key]">
-            {{ item.path }}:
-            {{
-              version.changesets[item.path]
-                ? version.changesets[item.path]['size']
-                : item.size | filesize
+            {{ item.path
+            }}{{
+              $filters.filesize(
+                version.changesets[item.path]
+                  ? version.changesets[item.path]['size']
+                  : item.size
+              )
             }}
             <template v-if="version.changesets[item.path]">
               <div v-if="!version.changesets[item.path].error">
@@ -109,7 +111,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   :changesets="version.changesets[item.path]['summary']"
                 />
               </div>
-              <div v-else class="text--primary">
+              <div v-else class="text-primary">
                 Details not available: {{ version.changesets[item.path].error }}
               </div>
             </template>
@@ -227,7 +229,7 @@ export default defineComponent({
 }
 
 .v-list {
-  ::v-deep(.v-list-item) {
+  :deep(.v-list-item) {
     font-size: 14px;
     color: #444;
 
@@ -237,7 +239,7 @@ export default defineComponent({
   }
 
   &.files {
-    ::v-deep(.v-list-group__items) {
+    :deep(.v-list-group__items) {
       .v-list-item {
         padding-left: 20px;
       }

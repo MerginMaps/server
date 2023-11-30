@@ -5,45 +5,54 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-layout
-    class="row shrink align-end justify-center header"
+  <v-app-bar
+    flat
+    class="header"
     v-bind:class="{ primary: isPrimary }"
+    theme="dark"
   >
-    <v-layout class="content">
-      <router-link class="logo" :to="{ name: 'home' }">
-        <img src="@/assets/MM_logo_HORIZ_NEG_color.svg" alt="Mergin logo" />
-      </router-link>
-
-      <slot name="menu">
+    <template #prepend
+      ><slot name="menu">
+        <!-- TODO: `fab` prop was removed, check if `rounded` prop is enough here -->
         <v-btn
-          class="mr-3 toggle-toolbar small-screen"
+          class="toggle-toolbar small-screen"
           elevation="1"
-          fab
-          small
+          rounded
+          size="small"
           @click="setDrawer({ drawer: !drawer })"
         >
-          <v-icon v-if="drawer" class="primary--text">
+          <v-icon v-if="drawer" class="text-primary">
             fa-angle-double-left
           </v-icon>
-          <v-icon v-else class="primary--text"> fa-angle-double-right</v-icon>
+          <v-icon v-else class="text-primary"> fa-angle-double-right</v-icon>
         </v-btn>
-        <v-spacer />
       </slot>
-      <v-menu
+      <router-link class="logo" :to="{ name: 'home' }">
+        <img
+          src="@/assets/MM_logo_HORIZ_NEG_color.svg"
+          alt="Mergin logo"
+          :style="{ height: '63px' }"
+        />
+      </router-link>
+    </template>
+
+    <template #title></template>
+
+    <template #append
+      ><v-menu
         v-if="loggedUser && loggedUser.email"
         :min-width="150"
-        bottom
-        left
-        offset-y
+        location="bottom"
+        start
         origin="top right"
         transition="scale-transition"
         id="user-menu"
       >
-        <template v-slot:activator="{ on }">
+        <template v-slot:activator="{ props }">
           <v-btn
-            v-on="on"
+            v-bind="props"
             text
-            dark
+            theme="dark"
             :ripple="false"
             class="icon-btn"
             cy-data="app-header-btn"
@@ -57,7 +66,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 <span class="accountName font-weight-bold">
                   {{ getUserFullName }}
                 </span>
-                <v-icon small>keyboard_arrow_down</v-icon>
+                <v-icon size="small">keyboard_arrow_down</v-icon>
               </div>
               <div v-if="renderNamespace" class="namespace font-weight-bold">
                 {{ currentNamespace || 'no workspace' }}
@@ -66,11 +75,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </v-btn>
         </template>
 
-        <v-list dense>
+        <v-list density="compact">
           <v-list-item class="pb-1">
             <div class="user-name">
               <strong> {{ getUserFullName }} </strong>
-              <span class="caption"> {{ this.loggedUser.email }} </span>
+              <span class="caption"> {{ loggedUser.email }} </span>
             </div>
           </v-list-item>
           <v-divider class="mx-4 my-1"></v-divider>
@@ -88,19 +97,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <span class="menuItem"> Sign Out </span>
           </v-list-item>
           <slot name="menuItems"></slot>
-        </v-list>
-      </v-menu>
-    </v-layout>
-  </v-layout>
+        </v-list> </v-menu
+    ></template>
+  </v-app-bar>
 </template>
 
 <script lang="ts">
-import { mapActions, mapState } from 'pinia'
+import { mapActions, mapState, mapGetters } from 'pinia'
 import { defineComponent } from 'vue'
 
 import { useLayoutStore } from '@/modules/layout/store'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
+import { UserApi } from '@/modules/user/userApi'
 
 export default defineComponent({
   name: 'app-header-template',
@@ -116,7 +125,8 @@ export default defineComponent({
   },
   computed: {
     ...mapState(useLayoutStore, ['drawer']),
-    ...mapState(useUserStore, ['loggedUser', 'getUserFullName']),
+    ...mapState(useUserStore, ['loggedUser']),
+    ...mapGetters(useUserStore, ['getUserFullName']),
     ...mapState(useProjectStore, ['currentNamespace']),
     profileUrl() {
       return {
@@ -127,18 +137,17 @@ export default defineComponent({
   },
   methods: {
     ...mapActions(useLayoutStore, ['setDrawer']),
-    ...mapActions(useUserStore, { logoutUser: 'logout' }),
 
     async logout() {
       try {
-        await this.logoutUser()
+        await UserApi.logout()
         if (this.$route.path === '/') {
           location.reload()
         } else {
           location.href = '/'
         }
       } catch (e) {
-        console.error(e)
+        console.log(e)
       }
     }
   }
@@ -147,12 +156,6 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .header {
-  padding: 0 0.5em;
-  position: relative;
-  min-height: 63px;
-  flex-shrink: 0;
-  z-index: 7;
-
   .content {
     height: 63px;
     align-items: center;
@@ -194,29 +197,10 @@ export default defineComponent({
   }
 
   a {
-    color: #fff;
-    min-width: 2em;
-    margin: 0.35em 0.25em;
-    padding: 0.35em 0.75em;
     text-decoration: none;
-    font-weight: 500;
-    /*font-size: 110%;*/
-    font-size: 15.4px;
-
-    &.active {
-      color: orange;
-    }
-
     &.logo {
-      padding: 0;
-      margin: 0 1em;
-      height: inherit;
-      position: relative;
-
       img {
-        height: inherit;
         width: auto;
-        padding: 0.25em 0;
       }
     }
   }
@@ -235,6 +219,7 @@ export default defineComponent({
 
 .v-btn {
   text-transform: none;
+  margin: 0;
 }
 
 .menu-sub-title {

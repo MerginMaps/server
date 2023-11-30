@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :href="slackLink"
       target="_blank"
     >
-      <message-icon class="primary--text"></message-icon>
+      <message-icon></message-icon>
     </a>
     <p class="version hidden-md-and-down">Version: {{ version }}</p>
   </v-layout>
@@ -58,7 +58,7 @@ export default defineComponent({
   font-size: 12px;
 }
 
-::v-deep(.main-content) {
+:deep(.main-content) {
   width: 800px;
   margin: 0 1em;
   @media (max-width: 1264px) {

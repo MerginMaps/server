@@ -5,8 +5,7 @@
 import isObject from 'lodash/isObject'
 import { defineStore, getActivePinia } from 'pinia'
 import Cookies from 'universal-cookie'
-// import { isNavigationFailure, NavigationFailureType } from 'vue-router'
-import Vue from 'vue'
+import { isNavigationFailure, NavigationFailureType } from 'vue-router'
 
 import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
@@ -122,7 +121,7 @@ export const useUserStore = defineStore('userModule', {
     },
 
     updateVerifiedEmail(payload) {
-      Vue.set(this.loggedUser, 'verified_email', payload.verifiedEmail)
+      this.loggedUser.verified_email = payload.verifiedEmail
     },
 
     setWorkspaces(payload) {
@@ -212,22 +211,15 @@ export const useUserStore = defineStore('userModule', {
       try {
         getActivePinia()
           .router.push(payload.currentRoute.query.redirect)
-          // TODO: V3_UPGRADE - probably not needed anymore in vue-router v4 - check needed
           .catch((e) => {
-            //   if (!isNavigationFailure(e, NavigationFailureType.redirected)) {
-            Promise.reject(e)
-            //   }
+            if (!isNavigationFailure(e)) {
+              Promise.reject(e)
+            }
           })
       } catch (e) {
-        // TODO: V3_UPGRADE - probably not needed anymore in vue-router v4 - check needed
-        // if (isNavigationFailure(e, NavigationFailureType.redirected)) {
-        //   // expected redirect
-        //   //   https://router.vuejs.org/guide/advanced/navigation-failures.html#detecting-navigation-failures
-        // } else {
         await notificationStore.error({
           text: e
         })
-        // }
       }
     },
 
@@ -236,10 +228,9 @@ export const useUserStore = defineStore('userModule', {
         getActivePinia()
           .router.push({ path: '/' })
           .catch((e) => {
-            // TODO: V3_UPGRADE - probably not needed anymore in vue-router v4 - check needed
-            // if (!isNavigationFailure(e, NavigationFailureType.redirected)) {
-            Promise.reject(e)
-            // }
+            if (!isNavigationFailure(e)) {
+              Promise.reject(e)
+            }
           })
       }
     },

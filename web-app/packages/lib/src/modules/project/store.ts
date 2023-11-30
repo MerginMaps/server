@@ -7,7 +7,6 @@ import FileSaver from 'file-saver'
 import keyBy from 'lodash/keyBy'
 import omit from 'lodash/omit'
 import { defineStore, getActivePinia } from 'pinia'
-import Vue from 'vue'
 
 import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
@@ -125,21 +124,19 @@ export const useProjectStore = defineStore('projectModule', {
         diff: null,
         analysingFiles: []
       }
-      Vue.set(this.uploads, this.project.path, upload)
+      this.uploads[this.project.path] = upload
     },
 
     analysingFiles(payload) {
       const upload = this.uploads[this.project.path]
-      Vue.set(upload, 'analysingFiles', payload.files)
+      upload.analysingFiles = payload.files
     },
 
     finishFileAnalysis(payload) {
       const upload = this.uploads[this.project.path]
       if (upload.analysingFiles) {
-        Vue.set(
-          upload,
-          'analysingFiles',
-          upload.analysingFiles.filter((p) => p !== payload.path)
+        upload.analysingFiles = upload.analysingFiles.filter(
+          (p) => p !== payload.path
         )
       }
     },
@@ -159,11 +156,11 @@ export const useProjectStore = defineStore('projectModule', {
         loaded: 0,
         total: chunks
       }
-      Vue.set(this.uploads, this.project.path, upload)
+      this.uploads[this.project.path] = upload
     },
 
     discardUpload(payload) {
-      Vue.delete(this.uploads, payload.projectPath)
+      delete this.uploads[payload.projectPath]
     },
 
     startUpload() {
@@ -199,12 +196,12 @@ export const useProjectStore = defineStore('projectModule', {
           files: { ...this.project.files },
           diff: filesDiff({}, {})
         }
-        Vue.set(this.uploads, this.project.path, upload)
+        this.uploads[this.project.path] = upload
       }
 
       payload.files.forEach((path) => {
         if (upload.files[path]) {
-          Vue.delete(upload.files, path)
+          delete upload.files[path]
         } else {
           // should be folder
           const dirPrefix = path + '/'

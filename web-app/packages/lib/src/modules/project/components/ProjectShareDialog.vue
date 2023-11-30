@@ -7,13 +7,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <v-card>
     <v-card-title>
-      <span class="text-h5 primary--text font-weight-bold"
+      <span class="text-h5 text-primary font-weight-bold"
         >Share project {{ project.name }}</span
       >
     </v-card-title>
     <v-card-text>
       <v-layout mt-2 column>
-        <h4 class="primary--text">
+        <h4 class="text-primary">
           {{
             readonly
               ? `Project ${project.name} will be shared with following people`
@@ -21,14 +21,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           }}
         </h4>
         <v-layout v-if="readonly" mx-0 mb-2 row align-center>
-          <v-chip-group active-class="primary--text" column>
+          <v-chip-group active-class="text-primary" column>
             <user-search-chip
               v-for="user in addedUsers.slice(0, 5)"
               :item="user"
               :key="user.id"
             />
           </v-chip-group>
-          <h4 class="primary--text" v-if="addedUsers && addedUsers.length > 5">
+          <h4 class="text-primary" v-if="addedUsers && addedUsers.length > 5">
             and {{ addedUsers.length - 5 }} more ...
           </h4>
         </v-layout>
@@ -49,7 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <permission-info />
       <v-spacer />
       <div class="flex-row">
-        <v-btn @click="closeDialog" outlined>{{
+        <v-btn @click="closeDialog" variant="outlined">{{
           readonly ? 'Back' : 'Cancel'
         }}</v-btn>
         <v-btn

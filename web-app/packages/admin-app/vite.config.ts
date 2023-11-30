@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => ({
     vue(),
     Components({
       resolvers: [VuetifyResolver()]
-    }) /*, vuetify() */
+    })
   ],
 
   resolve: {
@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => ({
       'pinia',
       'vue-router',
       'vuetify',
-      '@mergin/lib',
+      '@mergin/lib-vue2',
       '@mergin/admin-lib'
     ]
   },

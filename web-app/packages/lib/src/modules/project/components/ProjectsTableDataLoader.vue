@@ -90,18 +90,16 @@ export default defineComponent({
       }
       params.page = gridOptions.page
       params.per_page = gridOptions.itemsPerPage
-      if (gridOptions.sortBy[0]) {
+      if (gridOptions.sortBy) {
         let orderParam = ''
-        if (gridOptions.sortBy[0] === 'meta.size') {
+        if (gridOptions.sortBy === 'meta.size') {
           orderParam = 'disk_usage'
         } else {
           orderParam =
-            gridOptions.sortBy[0] === 'owner'
-              ? 'namespace'
-              : gridOptions.sortBy[0]
+            gridOptions.sortBy === 'owner' ? 'namespace' : gridOptions.sortBy
         }
         params.order_params =
-          orderParam + (gridOptions.sortDesc[0] ? '_desc' : '_asc')
+          orderParam + (gridOptions.sortDesc ? '_desc' : '_asc')
       }
       if (projectGridState.searchFilterByProjectName) {
         params.name = projectGridState.searchFilterByProjectName.trim()

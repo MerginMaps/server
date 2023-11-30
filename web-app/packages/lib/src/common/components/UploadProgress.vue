@@ -5,7 +5,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-snackbar v-if="list.length" bottom right :timeout="-1" :value="visible">
+  <v-snackbar
+    v-if="list.length"
+    location="bottom right"
+    auto-height
+    :timeout="-1"
+    :model-value="visible"
+  >
     <v-layout column>
       <v-layout
         class="py-1 row align-center justify-space-between"
@@ -16,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-progress-circular
           :size="55"
           :width="8"
-          :value="(upload.loaded / upload.total) * 100"
+          :model-value="(upload.loaded / upload.total) * 100"
           color="teal"
         >
           {{ Math.floor((upload.loaded / upload.total) * 100) }}%
@@ -61,7 +67,7 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-::v-deep(*) {
+:deep(*) {
   .v-snack__content {
     padding: 0.75em 1em;
   }

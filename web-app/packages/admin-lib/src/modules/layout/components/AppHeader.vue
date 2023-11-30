@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { AppHeaderTemplate } from '@mergin/lib'
+import { AppHeaderTemplate } from '@mergin/lib-vue2'
 import { defineComponent } from 'vue'
 
 export default defineComponent({

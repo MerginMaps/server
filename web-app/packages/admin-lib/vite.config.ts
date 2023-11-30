@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => ({
     alias: {
       '@': resolve(__dirname, './src')
     },
-    dedupe: ['vue', 'pinia', 'vue-router', 'vuetify', '@mergin/lib']
+    dedupe: ['vue', 'pinia', 'vue-router', 'vuetify', '@mergin/lib-vue2']
   },
   build: {
     sourcemap: mode !== 'production',
@@ -42,7 +42,7 @@ export default defineConfig(({ mode }) => ({
         'vue',
         'pinia',
         ...Object.keys(packageJson.dependencies),
-        '@mergin/lib'
+        '@mergin/lib-vue2'
       ],
       output: {
         exports: 'named',

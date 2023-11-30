@@ -6,6 +6,7 @@
     "packages/admin-lib",
     "packages/app",
     "packages/admin-app",
+    "packages/lib-vue2",
     "packages/*"
   ],
   "scripts": {
@@ -24,10 +25,10 @@
     "build:dev": "yarn workspace @mergin/app build:dev",
     "build:admin": "yarn workspace @mergin/admin-app build",
     "build:admin:dev": "yarn workspace @mergin/admin-app build:dev",
-    "clean:libs": "yarn workspace @mergin/lib clean && yarn workspace @mergin/admin-lib clean",
+    "clean:libs": "yarn workspace @mergin/lib clean && yarn workspace @mergin/admin-lib clean && yarn workspace @mergin/lib-vue2 clean",
     "clean:libs:noadmin": "yarn workspace @mergin/lib clean",
     "i18n:report": "yarn workspace @mergin/app 18n:report",
-    "link:dependencies": "yarn link:register && yarn link @mergin/lib && yarn link @mergin/admin-lib",
+    "link:dependencies": "yarn link:register && yarn link @mergin/lib && yarn link @mergin/admin-lib && yarn link @mergin/lib-vue2",
     "link:register": "yarn workspaces run link:register",
     "link:unregister": "yarn workspaces run link:unregister",
     "types:libs": "yarn workspaces run build:types",
@@ -64,7 +65,6 @@
     "prettier": "2.6.0",
     "rimraf": "^3.0.2",
     "rollup-plugin-copy": "^3.4.0",
-    "sass": "~1.32.13",
     "tsc-alias": "^1.8.6",
     "typescript": "^5.0.4",
     "unplugin-vue-components": "^0.25.1",
@@ -76,5 +76,8 @@
   "engines": {
     "node": ">=17"
   },
-  "version": "0.0.0"
+  "version": "0.0.0",
+  "dependencies": {
+    "sass": "^1.62.1"
+  }
 }

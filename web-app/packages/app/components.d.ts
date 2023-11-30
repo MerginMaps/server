@@ -9,10 +9,11 @@ declare module 'vue' {
   export interface GlobalComponents {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    VApp: typeof import('vuetify/lib')['VApp']
-    VCard: typeof import('vuetify/lib')['VCard']
-    VCardText: typeof import('vuetify/lib')['VCardText']
+    VApp: typeof import('vuetify/components')['VApp']
+    VCard: typeof import('vuetify/components')['VCard']
+    VCardText: typeof import('vuetify/components')['VCardText']
     VLayout: typeof import('vuetify/lib')['VLayout']
-    VList: typeof import('vuetify/lib')['VList']
+    VList: typeof import('vuetify/components')['VList']
+    VMain: typeof import('vuetify/components')['VMain']
   }
 }

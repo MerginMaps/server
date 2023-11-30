@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "vite --port 8080",
-    "preview": "vite preview --port 8080",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
+    "dev": "vue-demi-switch 3 && vite --port 8080",
+    "preview": "vue-demi-switch 3 && vite preview --port 8080",
+    "build": "vue-demi-switch 3 && vite build",
+    "build:dev": "vue-demi-switch 3 && vite build --mode development",
     "build:lib": "echo 'Not defined script'",
     "build:lib:prod": "echo 'Not defined script'",
     "build:types": "echo 'Not defined script'",
@@ -30,13 +30,13 @@
     "lodash": "^4.17.21",
     "material-icons": "^0.2.3",
     "pdfjs-dist": "2.5.207",
-    "pinia": "^2.1.4",
-    "portal-vue": "^2.1.7",
-    "vue": "^2.7.14",
-    "vue-i18n": "^8.28.2",
-    "vue-meta": "^2.4.0",
-    "vue-router": "^3.6.5",
-    "vue-tabler-icons": "~1.13.0",
-    "vuetify": "^2.6.15"
+    "pinia": "^2.1.7",
+    "portal-vue": "^3.0.0",
+    "vue": "^3.3.8",
+    "vue-i18n": "^9.7.1",
+    "vue-meta": "^3.0.0-alpha.10",
+    "vue-router": "^4.1.6",
+    "vue-tabler-icons": "~2.20.0",
+    "vuetify": "3.4.3"
   }
 }

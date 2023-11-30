@@ -17,7 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         style="margin-left: 15px"
       />
       <v-spacer />
-      <v-btn text @click="close">
+      <v-btn variant="text" @click="close">
         {{ cancelText }}
       </v-btn>
       <v-btn :disabled="!isConfirmed" color="primary" @click="confirm">

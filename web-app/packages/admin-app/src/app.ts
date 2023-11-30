@@ -8,7 +8,7 @@ import 'material-icons/iconfont/material-icons.scss'
 import '@fortawesome/fontawesome-free/css/all.css'
 import '@mdi/font/css/materialdesignicons.css'
 
-import '@mergin/lib/dist/style.css'
+import '@mergin/lib-vue2/dist/style.css'
 import '@mergin/admin-lib/dist/style.css'
 
 import {
@@ -17,7 +17,7 @@ import {
   numberUtils,
   getHttpService,
   MerginComponentUuidMixin
-} from '@mergin/lib'
+} from '@mergin/lib-vue2'
 import PortalVue from 'portal-vue'
 import Vue from 'vue'
 import VueMeta from 'vue-meta'

@@ -10,9 +10,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     id="core-navigation-drawer-user"
     v-model="drawer"
     :expand-on-hover="expandOnHover"
-    :right="$vuetify.rtl"
+    :location="$vuetify.locale.isRtl ? 'right' : 'left'"
     mobile-breakpoint="960"
-    :dark="barColor !== 'rgba(228, 226, 226, 1), rgba(255, 255, 255, 0.7)'"
     app
     width="200"
     v-bind="$attrs"
@@ -25,12 +24,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         flat
         tile
         style="height: 100%; width: 200px"
-        :outlined="true"
+        variant="outlined"
       >
-        <v-card class="pa-2" tile :outlined="true" style="margin-top: 40px">
+        <v-card class="pa-2" tile variant="outlined" style="margin-top: 40px">
           <slot name="items"></slot>
           <v-divider style="width: 90%; margin: 5px 0 5px 0" />
-          <v-list nav flat>
+          <v-list nav variant="flat">
             <side-bar-item
               id="item-userProfile"
               key="item-userProfile"
@@ -56,6 +55,7 @@ import { UserIcon } from 'vue-tabler-icons'
 import SideBarItem from '@/modules/layout/components/SideBarItem.vue'
 import { useLayoutStore } from '@/modules/layout/store'
 import { useUserStore } from '@/modules/user/store'
+import { SideBarItemModel } from '../types'
 
 export default defineComponent({
   name: 'SideBarTemplate',
@@ -75,7 +75,7 @@ export default defineComponent({
         title: 'User profile',
         to: '/profile',
         tablerIcon: 'user-icon'
-      }
+      } as SideBarItemModel
     }
   },
   computed: {
@@ -100,18 +100,7 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-.theme--dark.v-navigation-drawer {
-  background-color: #eaebef !important;
-}
-
-.theme--dark.v-navigation-drawer .v-divider {
-  border-color: #f3f4f8;
-}
-
-.theme--dark.v-card {
-  background-color: #eaebef !important;
-}
-
+// TODO: UPGRADE VUE 3 - rewrite this hard coded part (use sass variable if possible)
 .v-application .white--text {
   color: #2d4470 !important;
   caret-color: #2d4470 !important;

@@ -48,24 +48,24 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <folder-diff v-if="item.diffStats" v-bind="item.diffStats" />
         </template>
         <template #item.mtime="{ value }">
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on }">
-              <span v-on="on">
+          <v-tooltip location="bottom">
+            <template v-slot:activator="{ props }">
+              <span v-bind="props">
                 <template v-if="value">
-                  {{ value | timediff }}
+                  {{ $filters.timediff(value) }}
                 </template>
               </span>
             </template>
             <span>
               <template v-if="value">
-                {{ value | datetime }}
+                {{ $filters.datetime(value) }}
               </template>
             </span>
           </v-tooltip>
         </template>
         <template #item.size="{ value }">
           <template v-if="value !== undefined">
-            {{ value | filesize }}
+            {{ $filters.filesize(value) }}
           </template>
         </template>
       </v-data-table>
@@ -153,14 +153,14 @@ export default defineComponent({
       return `${this.configData?.docs_url ?? ''}/manage/create-project`
     },
     upload() {
-      return this.uploads[this.project?.path]
+      return this.uploads[this.project.path]
     },
     projectFiles() {
-      let files = this.project?.files
+      let files = this.project.files
       if (this.upload && this.diff) {
         files = { ...files, ...this.upload.files }
       }
-      return files ? Object.values(files).map(this.fileTreeView) : []
+      return Object.values(files).map(this.fileTreeView)
     },
     directoryFiles() {
       return this.projectFiles.filter(
@@ -207,7 +207,7 @@ export default defineComponent({
         list.push(
           ...orderBy(
             removed
-              .map((path) => this.project?.files[path])
+              .map((path) => this.project.files[path])
               .map(this.fullPathView),
             this.sortBy,
             this.options.descending ? 'desc' : 'asc'
@@ -215,9 +215,7 @@ export default defineComponent({
         )
         list.push(
           ...orderBy(
-            added
-              .map((path) => this.upload?.files[path])
-              .map(this.fullPathView),
+            added.map((path) => this.upload.files[path]).map(this.fullPathView),
             this.sortBy,
             this.options.descending ? 'desc' : 'asc'
           )
@@ -225,7 +223,7 @@ export default defineComponent({
         list.push(
           ...orderBy(
             updated
-              .map((path) => this.upload?.files[path])
+              .map((path) => this.upload.files[path])
               .map(this.fullPathView),
             this.sortBy,
             this.options.descending ? 'desc' : 'asc'
@@ -398,7 +396,7 @@ export default defineComponent({
   }
 }
 
-::v-deep(.v-data-table) {
+:deep(.v-data-table) {
   tr {
     color: #555;
 
@@ -464,7 +462,7 @@ export default defineComponent({
 }
 
 .v-data-table {
-  ::v-deep(.v-data-footer__select) {
+  :deep(.v-data-footer__select) {
     display: none;
   }
 }

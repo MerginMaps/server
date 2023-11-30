@@ -5,12 +5,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
+  <!--      TODO: VUE 3 - replace offset-y boolean with offset number|string-->
   <v-menu
     v-model="showMenu"
     :position-x="x"
     :position-y="y"
-    absolute
-    offset-y
+    position="absolute"
+    offset
     :min-width="150"
   >
     <v-list>
@@ -20,6 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </v-list>
   </v-menu>
 </template>
+
 
 <script lang="ts">
 import { mapActions } from 'pinia'

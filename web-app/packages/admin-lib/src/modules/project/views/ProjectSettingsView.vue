@@ -11,7 +11,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :asAdmin="asAdmin"
     :show-settings="true"
   >
-    <!-- TODO: V3_UPGRADE [MERGIN-EXT] - change settingsAccess to settings.access  -->
     <template #permissions="{ settings, keyProp, saveProject }">
       <project-permissions-template
         v-model="settings.access"
@@ -26,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import {
   ProjectSettingsViewTemplate,
   ProjectPermissionsTemplate
-} from '@mergin/lib'
+} from '@mergin/lib-vue2'
 import { defineComponent } from 'vue'
 
 export default defineComponent({

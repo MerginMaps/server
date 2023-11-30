@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <v-layout class="no-shrink column">
-    <label class="mt-4 grey--text text--darken-1">Manage Access:</label>
+    <label class="mt-4 text-grey-darken-1">Manage Access:</label>
     <slot name="banner" />
     <v-data-table
       :headers="header"
@@ -15,9 +15,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :hide-default-footer="displayedValues.length <= 10"
     >
       <template #header.permissions="{ header }">
-        <v-tooltip v-if="header.tooltip" top>
-          <template v-slot:activator="{ on }">
-            <span v-on="on">
+        <v-tooltip v-if="header.tooltip" location="top">
+          <template v-slot:activator="{ props }">
+            <span v-bind="props">
               {{ header.text }}
             </span>
           </template>
@@ -30,35 +30,35 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </span>
       </template>
 
-      <template #item.user="{ value }">
+      <template #item.user="{ modelValue }">
         <v-tooltip
-          top
-          v-if="value.profile.first_name || value.profile.last_name"
+          location="top"
+          v-if="modelValue.profile.first_name || modelValue.profile.last_name"
         >
-          <template v-slot:activator="{ on }">
-            <b v-on="on">
-              {{ value.username }}
+          <template v-slot:activator="{ props }">
+            <b v-bind="props">
+              {{ modelValue.username }}
             </b>
           </template>
           <span>
-            <span v-if="value.profile.first_name">{{
-              value.profile.first_name
+            <span v-if="modelValue.profile.first_name">{{
+              modelValue.profile.first_name
             }}</span>
-            <span v-if="value.profile.last_name">
-              {{ value.profile.last_name }}</span
+            <span v-if="modelValue.profile.last_name">
+              {{ modelValue.profile.last_name }}</span
             >
           </span>
         </v-tooltip>
         <b v-else>
-          {{ value.username }}
+          {{ modelValue.username }}
         </b>
       </template>
 
       <template #item.permissions="{ item }">
         <v-select
-          :value="actualPermissions(item)"
+          :model-value="actualPermissions(item)"
           :items="permissionStates"
-          @input="(e) => valueChanged(item, e)"
+          @update:model-value="(e) => valueChanged(item, e)"
           :disabled="!isProjectOwner"
           hide-details
           label="reader"
@@ -107,7 +107,7 @@ import { UserSearchParams } from '@/modules/user/types'
 
 export default defineComponent({
   props: {
-    value: Object
+    modelValue: Object
   },
   data() {
     return {
@@ -153,7 +153,7 @@ export default defineComponent({
       return ['owner', 'writer', 'reader']
     },
     displayedValues() {
-      const { ownersnames, readersnames, writersnames } = this.value
+      const { ownersnames, readersnames, writersnames } = this.modelValue
       const users = this.users.map((user) => ({
         username: user.username,
         user,
@@ -169,9 +169,9 @@ export default defineComponent({
     }
   },
   created() {
-    this.originalValue = JSON.parse(JSON.stringify(this.value))
+    this.originalValue = JSON.parse(JSON.stringify(this.modelValue))
     // this is just temporary solution for ESLint: Unexpected mutation of &quot;value&quot; prop. (vue/no-mutating-props)
-    this.clonedValue = JSON.parse(JSON.stringify(this.value))
+    this.clonedValue = JSON.parse(JSON.stringify(this.modelValue))
   },
   watch: {
     value: {
@@ -179,7 +179,7 @@ export default defineComponent({
       handler(value) {
         // update local clonedValue if value is changed in parent
         if (value) {
-          this.clonedValue = JSON.parse(JSON.stringify(this.value))
+          this.clonedValue = JSON.parse(JSON.stringify(this.modelValue))
           this.emit()
         }
       }
@@ -188,7 +188,7 @@ export default defineComponent({
       immediate: true,
       deep: true,
       handler(_access) {
-        const { ownersnames, readersnames, writersnames } = this.value
+        const { ownersnames, readersnames, writersnames } = this.modelValue
         const names = union(ownersnames, readersnames, writersnames)
         // server returns only 5 entries from db for single call
         const chunks = chunk(names, 5)
@@ -322,7 +322,7 @@ export default defineComponent({
       }
       this.$emit('save-project', newValues)
       this.originalValue = JSON.parse(
-        JSON.stringify({ ...this.value, ...modifiedValues })
+        JSON.stringify({ ...this.modelValue, ...modifiedValues })
       )
     }
   }
@@ -338,27 +338,25 @@ label {
   font-weight: 500;
 }
 
-::v-deep(*) {
-  .v-data-table__overflow {
-    margin: 0.5em 0;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    padding: 0.5em;
-    background-color: #f9f9f9;
+:deep(*) .v-data-table__overflow {
+  margin: 0.5em 0;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 0.5em;
+  background-color: #f9f9f9;
 
-    .v-datatable {
-      background-color: transparent;
-    }
+  .v-datatable {
+    background-color: transparent;
   }
 }
 
 .v-list {
-  ::v-deep(.v-list-item) {
+  :deep(.v-list-item) {
     min-height: unset;
   }
 }
 
-.v-list-item-content {
+.div {
   b {
     margin-right: 10px;
   }

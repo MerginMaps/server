@@ -7,16 +7,37 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <v-app :class="`${loggedUser ? 'appFont' : ''}`">
     <dialog-windows />
-    <v-layout column fill-height>
+    <!-- TODO: V3_UPGRADE v-layout has cleaned whole API (need-change: fill-height -> full-height) -->
+    <!-- TODO: V3_UPGRADE - check this https://router.vuejs.org/guide/migration/#router-view-keep-alive-and-transition     -->
+    <!--      <transition name="fade">-->
+    <!--        <router-view name="header" />-->
+    <!--      </transition>-->
+    <!--      <transition name="fade">-->
+    <!--        <router-view :key="$route.fullPath" name="sidebar" />-->
+    <!--      </transition>-->
+    <router-view name="header" v-slot="{ Component, route }">
       <transition name="fade">
-        <router-view name="header" />
+        <div :key="route.name">
+          <component :is="Component" />
+        </div>
       </transition>
+    </router-view>
+    <router-view
+      name="sidebar"
+      v-slot="{ Component, route }"
+      :key="$route.fullPath"
+    >
       <transition name="fade">
-        <router-view :key="$route.fullPath" name="sidebar" />
+        <div :key="route.name">
+          <component :is="Component" />
+        </div>
       </transition>
+    </router-view>
+
+    <v-main>
       <v-card
         v-if="pingData && pingData.maintenance"
-        outlined
+        variant="outlined"
         class="maintenance_warning"
       >
         <v-card-text>
@@ -27,17 +48,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           >
         </v-card-text>
       </v-card>
-      <global-warning
-        v-if="loggedUser"
-        class="white--text"
-        style="margin: auto"
-      ></global-warning>
-      <v-layout column fill-height class="app-content">
+      <router-view class="page" v-slot="{ Component, route }">
         <transition name="fade">
-          <router-view class="page" />
+          <div :key="route.name">
+            <component :is="Component" />
+          </div>
         </transition>
-      </v-layout>
-    </v-layout>
+      </router-view>
+    </v-main>
     <upload-progress />
     <notifications />
   </v-app>
@@ -58,28 +76,11 @@ import {
 } from '@mergin/lib'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
+import { useMeta } from 'vue-meta'
 
 export default defineComponent({
   name: 'app',
   components: { UploadProgress, Notifications, DialogWindows, GlobalWarning },
-  metaInfo() {
-    return {
-      title: 'Mergin Maps',
-      meta: [
-        {
-          name: 'description',
-          content:
-            'Store and track changes to your geo-data. Mergin Maps is a repository of geo-data for collaborative work.'
-        },
-        {
-          property: 'og:title',
-          content:
-            'Store and track changes to your geo-data. Mergin Maps is a repository of geo-data for collaborative work.'
-        },
-        { property: 'og:site_name', content: 'Mergin Maps' }
-      ]
-    }
-  },
   computed: {
     ...mapState(useInstanceStore, ['pingData']),
     ...mapState(useAppStore, ['serverError']),
@@ -103,6 +104,24 @@ export default defineComponent({
         await this.checkCurrentWorkspace()
       }
     }
+  },
+  setup() {
+    useMeta({
+      title: 'Mergin Maps',
+      meta: [
+        {
+          name: 'description',
+          content:
+            'Store and track changes to your geo-data. Mergin Maps is a repository of geo-data for collaborative work.'
+        },
+        {
+          property: 'og:title',
+          content:
+            'Store and track changes to your geo-data. Mergin Maps is a repository of geo-data for collaborative work.'
+        },
+        { property: 'og:site_name', content: 'Mergin Maps' }
+      ]
+    })
   },
   async created() {
     await this.fetchConfig()

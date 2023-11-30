@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-// import { getDefaultRetryOptions } from '@mergin/lib'
+// import { getDefaultRetryOptions } from '@mergin/lib-vue2'
 import {
   ApiRequestSuccessInfo,
   errorUtils,
@@ -10,7 +10,7 @@ import {
   LoginData,
   UserProfileResponse,
   UserResponse /*, getDefaultRetryOptions */
-} from '@mergin/lib'
+} from '@mergin/lib-vue2'
 import { AxiosResponse } from 'axios'
 
 import { AdminModule } from '@/modules/admin/module'
