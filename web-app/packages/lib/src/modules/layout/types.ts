@@ -4,8 +4,7 @@
 
 export interface SideBarItemModel {
   title: string
-  subtitle: string
   to: string
   icon: string
-  tablerIcon: string
+  active: boolean
 }

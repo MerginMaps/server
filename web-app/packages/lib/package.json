@@ -44,6 +44,8 @@
     "axios-retry": "^3.2.4",
     "date-fns": "^2.28.0",
     "lodash": "^4.17.21",
+    "primeflex": "^3.3.1",
+    "primevue": "^3.42.0",
     "universal-cookie": "^4.0.4",
     "vue": "^3.3.8",
     "vue-router": "^4.1.6",

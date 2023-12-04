@@ -6,7 +6,10 @@ import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfil
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
-import { Vuetify3Resolver } from 'unplugin-vue-components/resolvers'
+import {
+  Vuetify3Resolver,
+  PrimeVueResolver
+} from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
@@ -19,7 +22,12 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     vue(),
     Components({
-      resolvers: [Vuetify3Resolver()]
+      resolvers: [
+        Vuetify3Resolver(),
+        PrimeVueResolver({
+          prefix: 'P'
+        })
+      ]
     }),
     viteStaticCopy({
       // copy sass files to use in other applications
@@ -27,6 +35,14 @@ export default defineConfig(({ mode }) => ({
     })
   ],
   publicDir: './src/assets',
+
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: `@import "primeflex/core/_variables.scss";`
+      }
+    }
+  },
 
   resolve: {
     alias: {
@@ -42,7 +58,7 @@ export default defineConfig(({ mode }) => ({
       //   include: [/node_modules/],
       transformMixedEsModules: true
     },
-    sourcemap: mode !== 'production',
+    sourcemap: false,
     lib: {
       // Could also be a dictionary or array of multiple entry points
       entry: resolve(__dirname, 'src/main.ts'),

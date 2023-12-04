@@ -7,9 +7,13 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    PAvatar: typeof import('primevue/avatar')['default']
+    PButton: typeof import('primevue/button')['default']
+    PMenu: typeof import('primevue/menu')['default']
+    PMenubar: typeof import('primevue/menubar')['default']
+    POverlayPanel: typeof import('primevue/overlaypanel')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    VAppBar: typeof import('vuetify/components')['VAppBar']
     VAutocomplete: typeof import('vuetify/components')['VAutocomplete']
     VAvatar: typeof import('vuetify/components')['VAvatar']
     VBtn: typeof import('vuetify/components')['VBtn']
@@ -37,7 +41,6 @@ declare module 'vue' {
     VListItemSubtitle: typeof import('vuetify/components')['VListItemSubtitle']
     VListItemTitle: typeof import('vuetify/components')['VListItemTitle']
     VMenu: typeof import('vuetify/components')['VMenu']
-    VNavigationDrawer: typeof import('vuetify/components')['VNavigationDrawer']
     VPagination: typeof import('vuetify/components')['VPagination']
     VProgressCircular: typeof import('vuetify/components')['VProgressCircular']
     VResponsive: typeof import('vuetify/components')['VResponsive']

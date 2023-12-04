@@ -10,7 +10,6 @@ import * as labsComponents from 'vuetify/labs/components'
 import { createVueI18nAdapter } from 'vuetify/locale/adapters/vue-i18n'
 
 import i18n from '@/plugins/i18n/i18n'
-import '@/sass/overrides.sass'
 
 const defaultThemeLight: ThemeDefinition = {
   dark: false,

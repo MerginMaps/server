@@ -200,7 +200,6 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-@use '@/assets/sass/project';
 
 .settings {
   display: flex;

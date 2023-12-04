@@ -517,6 +517,18 @@
     estree-walker "^2.0.2"
     picomatch "^2.3.1"
 
+"@tabler/icons-webfont@^2.42.0":
+  version "2.42.0"
+  resolved "https://registry.yarnpkg.com/@tabler/icons-webfont/-/icons-webfont-2.42.0.tgz#ac3567db65c3f03f3350b7b78ca20504d7781f10"
+  integrity sha512-Ev0mUvVuuKTSLzH4XIZSkwdOJI/nfa34HCu++DzhmGgeDHdAKAWGlxRjegSJG79uvMqtcbVwpmH41Vc9EMu61A==
+  dependencies:
+    "@tabler/icons" "2.42.0"
+
+"@tabler/icons@2.42.0":
+  version "2.42.0"
+  resolved "https://registry.yarnpkg.com/@tabler/icons/-/icons-2.42.0.tgz#306a444d18c6cf2966ee9d30262d41da4746fb01"
+  integrity sha512-ynV4iaC1c1mUhuAr9HRaoq8KrWYmZ0bJEpOh7qTBE+OfdDsdvQUe+0S7FW+DHkJ4RuxQMdO8djrZK7HrUw9YMA==
+
 "@types/cookie@^0.3.3":
   version "0.3.3"
   resolved "https://registry.yarnpkg.com/@types/cookie/-/cookie-0.3.3.tgz#85bc74ba782fb7aa3a514d11767832b0e3bc6803"
@@ -2877,6 +2889,16 @@ prettier@2.6.0:
   version "2.6.0"
   resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.6.0.tgz#12f8f504c4d8ddb76475f441337542fa799207d4"
   integrity sha512-m2FgJibYrBGGgQXNzfd0PuDGShJgRavjUoRCw1mZERIWVSXF0iLzLm+aOqTAbLnC3n6JzUhAA8uZnFVghHJ86A==
+
+primeflex@^3.3.1:
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/primeflex/-/primeflex-3.3.1.tgz#361dddf6eb5db50d733e4cddd4b6e376a3d7bd68"
+  integrity sha512-zaOq3YvcOYytbAmKv3zYc+0VNS9Wg5d37dfxZnveKBFPr7vEIwfV5ydrpiouTft8MVW6qNjfkaQphHSnvgQbpQ==
+
+primevue@^3.42.0:
+  version "3.42.0"
+  resolved "https://registry.yarnpkg.com/primevue/-/primevue-3.42.0.tgz#17b44f6c85c48b44cacd43a76142a59ebf8bad4f"
+  integrity sha512-vY/nHBInl/k2MFfgx+5dGI3tH1P6OmO2Oj6eOLwtHk000yopPxLBUP/enALoElriy5EaPzfv02upOrsQqd+nJA==
 
 punycode@^2.1.0:
   version "2.3.0"

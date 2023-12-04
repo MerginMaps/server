@@ -12,15 +12,13 @@ import {
   NotFoundView,
   VerifyEmailView,
   routeUtils,
-  useUserStore
+  useUserStore,
+  SideBarTemplate as SideBar
 } from '@mergin/lib'
 import { Pinia } from 'pinia'
 
-import { addRouterToPinia } from './store'
-
 import DashboardView from '@/modules/dashboard/views/DashboardView.vue'
 import AppHeader from '@/modules/layout/components/AppHeader.vue'
-import SideBar from '@/modules/layout/components/SideBar.vue'
 import ProjectSettingsView from '@/modules/project/views/ProjectSettingsView.vue'
 import ProjectsListView from '@/modules/project/views/ProjectsListView.vue'
 import ProjectView from '@/modules/project/views/ProjectView.vue'
@@ -32,7 +30,6 @@ import {
 } from 'vue-router'
 
 export const createRouter = (pinia: Pinia) => {
-
   const router = createRouterInstance({
     history: createWebHistory(),
     routes: [
@@ -87,6 +84,9 @@ export const createRouter = (pinia: Pinia) => {
           header: AppHeader,
           sidebar: SideBar
         },
+        meta: {
+          title: 'Dashboard'
+        },
         props: {
           default: true
         }
@@ -94,7 +94,7 @@ export const createRouter = (pinia: Pinia) => {
       {
         path: '/profile',
         name: 'user_profile',
-        meta: { allowedForNoWorkspace: true },
+        meta: { allowedForNoWorkspace: true, title: 'Profile' },
         components: {
           default: ProfileView,
           header: AppHeader,
@@ -113,7 +113,7 @@ export const createRouter = (pinia: Pinia) => {
         props: {
           default: true
         },
-        meta: { public: true },
+        meta: { public: true, title: 'Projects' },
         children: [
           {
             path: 'explore',
