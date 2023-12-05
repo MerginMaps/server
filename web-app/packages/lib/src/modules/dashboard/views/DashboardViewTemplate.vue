@@ -5,154 +5,56 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <page-view
-    :style="`padding-left: ${
-      drawer ? 280 : 20
-    }px; overflow-y: auto; padding-right:20px; margin-right: 0px;`"
-  >
-    <v-layout class="column fill-height main-content">
-      <v-container>
-        <slot name="usageInfo" />
-        <v-row v-if="projectsCount === 0 && canCreateProject">
-          <v-card variant="outlined" class="mt-3">
-            <h3>Welcome {{ loggedUser.username }}, are you ready to start?</h3>
-            <p>
-              First create new project, add people to it or explore public
-              project for more inspiration
+  <div>
+    <app-container>
+      <slot name="usageInfo" />
+    </app-container>
+    <app-container><slot name="content"></slot></app-container>
+    <footer>
+      <app-container>
+        <app-section class="grid-nogutter flex align-items-center">
+          <div
+            class="dashboard-view-footer-mobile relative col-12 lg:col-3 align-self-start"
+          >
+            <img
+              src="@/assets/footer-mobile.png"
+              class="absolute top-0 left-2rem"
+            />
+          </div>
+          <div class="col-12 lg:col-5">
+            <h2 class="text-color text-sm font-semibold">
+              Download Mergin Maps
+            </h2>
+            <p class="text-color-secondary text-sm">
+              Capture geo-info easily through your mobile/tablet with the Mergin
+              Maps Input app.
             </p>
-            <v-btn color="orange" @click="newProjectDialog()"
-              ><span style="color: white">New project</span>
-            </v-btn>
-          </v-card>
-        </v-row>
-        <v-row>
-          <v-col class="pa-0">
-            <v-card class="mt-3" variant="tonal">
-              <v-card-title
-                ><h3>Download Mergin Maps Input app</h3></v-card-title
-              >
-              <v-card-text
-                ><p>
-                  Capture geo-info easily through your mobile/tablet with the
-                  Mergin Maps Input app. Designed to be compatible with all
-                  mobile devices - even those with small screens.
-                </p>
-                <v-row>
-                  <v-col cols="7" md="3" sm="3">
-                    <div class="store-button">
-                      <a
-                        href="https://play.google.com/store/apps/details?id=uk.co.lutraconsulting&utm_source=mergin-website&utm_medium=banner&utm_campaign=input"
-                        target="_blank"
-                      >
-                        <img
-                          alt="Get it on Google Play"
-                          src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png"
-                          height="70"
-                        />
-                      </a>
-                    </div>
-                  </v-col>
-                  <v-col cols="7" md="3" sm="3">
-                    <div class="store-button app-store-button">
-                      <a
-                        href="https://apps.apple.com/us/app/input/id1478603559?ls=1&utm_source=mergin-website&utm_medium=banner&utm_campaign=input"
-                        target="_blank"
-                      >
-                        <img
-                          alt="Get it on Apple store"
-                          src="@/assets/App_Store.svg"
-                          height="48"
-                        />
-                      </a>
-                    </div>
-                  </v-col>
-                  <v-col cols="7" md="3" sm="3">
-                    <div class="store-button huawei-store-button">
-                      <a
-                        href="https://appgallery.huawei.com/app/C104422773"
-                        target="_blank"
-                      >
-                        <img
-                          alt="Explore it on AppGallery"
-                          src="@/assets/huawei.svg"
-                          height="48"
-                        />
-                      </a>
-                    </div>
-                  </v-col> </v-row
-              ></v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-        <slot name="content"></slot>
-      </v-container>
-    </v-layout>
-  </page-view>
+          </div>
+          <div class="col-12 lg:col-4">
+            <a
+              href="https://apps.apple.com/us/app/input/id1478603559?ls=1&utm_source=mergin-website&utm_medium=banner&utm_campaign=input"
+              target="_blank"
+              class="mr-1"
+              ><img src="@/assets/appstore.jpg"
+            /></a>
+            <a
+              href="https://play.google.com/store/apps/details?id=uk.co.lutraconsulting&utm_source=mergin-website&utm_medium=banner&utm_campaign=input"
+              target="_blank"
+              ><img src="@/assets/googleplay.jpg"
+            /></a>
+          </div> </app-section
+      ></app-container>
+    </footer>
+  </div>
 </template>
 
-<script lang="ts">
-import { mapActions, mapState } from 'pinia'
-import { defineComponent } from 'vue'
-
-import { useDialogStore } from '@/modules'
-import PageView from '@/modules/layout/components/PageView.vue'
-import { useLayoutStore } from '@/modules/layout/store'
-import ProjectForm from '@/modules/project/components/ProjectForm.vue'
-import { useProjectStore } from '@/modules/project/store'
-import { useUserStore } from '@/modules/user/store'
-
-export default defineComponent({
-  name: 'DashboardViewTemplate',
-  components: {
-    PageView
-  },
-  props: {
-    canCreateProject: {
-      type: Boolean,
-      default: false
-    }
-  },
-  computed: {
-    ...mapState(useLayoutStore, ['drawer']),
-    ...mapState(useUserStore, ['loggedUser']),
-    ...mapState(useProjectStore, ['projectsCount'])
-  },
-  methods: {
-    ...mapActions(useDialogStore, ['show']),
-
-    newProjectDialog() {
-      const dialog = { maxWidth: 500, persistent: true }
-      this.show({
-        component: ProjectForm,
-        params: {
-          dialog
-        }
-      })
-    }
-  }
-})
+<script lang="ts" setup>
+import { AppContainer, AppSection } from '@/common/components'
 </script>
 
 <style scoped lang="scss">
-
-.store-button {
-  text-align: center;
-}
-
-.app-store-button {
-  padding-top: 11px;
-}
-
-.huawei-store-button {
-  padding-top: 10px;
-}
-
-@media only screen and (min-width: 600px) and (max-width: 960px) {
-  .app-store-button {
-    margin-left: 25%;
-  }
-  .huawei-store-button {
-    margin-left: 35%;
-  }
+.dashboard-view-footer-mobile {
+  margin-top: -1.5rem;
+  min-height: 100px;
 }
 </style>

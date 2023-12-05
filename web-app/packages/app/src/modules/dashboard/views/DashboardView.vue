@@ -8,6 +8,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <dashboard-view-template :canCreateProject="canCreateProject">
     <template #usageInfo>
       <dashboard-usage-info-row />
+      <dashboard-full-storage-warning-row v-slot="{ usage }">
+        <full-storage-warning :usage="usage" />
+      </dashboard-full-storage-warning-row>
     </template>
     <template #content>
       <dashboard-access-requests-row v-if="userStore.isGlobalWorkspaceAdmin">
@@ -15,8 +18,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <project-access-request-table :namespace="namespace" />
         </template>
       </dashboard-access-requests-row>
-      <dashboard-projects-row>
-        <template #projects>
+      <app-section>
+        <template #title>Recent active projects</template>
+        <template #default>
           <projects-table-data-loader
             :show-namespace="false"
             :showFooter="false"
@@ -27,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             show-tags
           />
         </template>
-      </dashboard-projects-row>
+      </app-section>
     </template>
   </dashboard-view-template>
 </template>
@@ -35,13 +39,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import {
   DashboardViewTemplate,
-  DashboardProjectsRow,
-  DashboardAccessRequestsRow,
   ProjectsTableDataLoader,
   DashboardUsageInfoRow,
+  DashboardFullStorageWarningRow,
   ProjectAccessRequestTable,
+  FullStorageWarning,
   useProjectStore,
-  useUserStore
+  useUserStore,
+  AppSection
 } from '@mergin/lib'
 import { defineComponent, computed, ref, onMounted } from 'vue'
 
@@ -49,11 +54,12 @@ export default defineComponent({
   name: 'DashboardView',
   components: {
     DashboardViewTemplate,
-    DashboardProjectsRow,
-    DashboardAccessRequestsRow,
     ProjectsTableDataLoader,
+    DashboardFullStorageWarningRow,
     DashboardUsageInfoRow,
-    ProjectAccessRequestTable
+    ProjectAccessRequestTable,
+    AppSection,
+    FullStorageWarning
   },
   setup() {
     const initialOptions = ref({

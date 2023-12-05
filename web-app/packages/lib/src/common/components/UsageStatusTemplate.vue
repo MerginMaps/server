@@ -6,9 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <!--  this is merely a placeholder -->
 <template>
-  <div>
-    <slot name="billing"></slot>
-  </div>
+  <slot name="billing"></slot>
 </template>
 
 <script lang="ts">

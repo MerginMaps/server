@@ -5,14 +5,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-row v-if="currentNamespace && accessRequests && accessRequests.length > 0">
-    <v-card variant="tonal" class="mt-3">
-      <v-card-title><h3>Project access requests</h3></v-card-title>
-      <v-card-text>
-        <slot name="table" :namespace="currentNamespace"></slot>
-      </v-card-text>
-    </v-card>
-  </v-row>
+  <app-section
+    v-if="currentNamespace && accessRequests && accessRequests.length > 0"
+  >
+    <template #title>Project access requests</template>
+    <template #default>
+      <slot name="table" :namespace="currentNamespace"></slot>
+    </template>
+  </app-section>
 </template>
 
 <script lang="ts">
@@ -36,7 +36,8 @@ export default defineComponent({
       async handler(value) {
         if (value) {
           await this.initNamespaceAccessRequests({
-            namespace: value
+            namespace: value,
+            params: null
           })
         }
       }
