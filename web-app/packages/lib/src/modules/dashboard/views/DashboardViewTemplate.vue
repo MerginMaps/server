@@ -12,16 +12,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <app-container><slot name="content"></slot></app-container>
     <footer>
       <app-container>
-        <app-section class="grid-nogutter flex align-items-center">
+        <app-section class="grid grid-nogutter flex align-items-center p-4">
           <div
-            class="dashboard-view-footer-mobile relative col-12 lg:col-3 align-self-start"
+            class="dashboard-view-footer-mobile relative col-12 lg:col-3 align-self-start mb-2 lg:mb-0 flex justify-content-center"
           >
             <img
               src="@/assets/footer-mobile.png"
               class="absolute top-0 left-2rem"
             />
           </div>
-          <div class="col-12 lg:col-5">
+          <div class="col-12 lg:col-6 mb-2 lg:mb-0 text-center lg:text-left">
             <h2 class="text-color text-sm font-semibold">
               Download Mergin Maps
             </h2>
@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               Maps Input app.
             </p>
           </div>
-          <div class="col-12 lg:col-4">
+          <div class="col-12 lg:col-3 flex justify-content-center">
             <a
               href="https://apps.apple.com/us/app/input/id1478603559?ls=1&utm_source=mergin-website&utm_medium=banner&utm_campaign=input"
               target="_blank"

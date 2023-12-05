@@ -32,6 +32,7 @@ import { addRouterToPinia, getPiniaInstance } from './store'
 
 import i18n from '@/plugins/i18n/i18n'
 import vuetify from '@/plugins/vuetify/vuetify'
+import Tooltip from 'primevue/tooltip';
 
 const createMerginApp = () => {
   const pinia = getPiniaInstance()
@@ -47,6 +48,7 @@ const createMerginApp = () => {
     .use(PortalVue)
     .use(createMetaManager())
     .use(PrimeVue)
+    .directive('tooltip', Tooltip)
 
   app.config.globalProperties.$http = getHttpService()
   app.config.globalProperties.$filters = {

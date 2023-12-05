@@ -8,14 +8,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <projects-table
     v-bind="$props"
     :projects="projects"
-    :numberOfItems="numberOfItems"
+    :numberOfItems="projectsCount"
     :onlyPublic="onlyPublic"
     @fetch-projects="fetchProjects"
   />
 </template>
 
 <script lang="ts">
-import { mapActions } from 'pinia'
+import { mapState, mapActions } from 'pinia'
 import { defineComponent, PropType } from 'vue'
 
 import { PaginatedGridOptions } from '@/common'
@@ -37,10 +37,6 @@ export default defineComponent({
       default: false
     },
     namespace: String,
-    sortable: {
-      type: Boolean,
-      default: true
-    },
     asAdmin: {
       type: Boolean,
       default: false
@@ -60,18 +56,13 @@ export default defineComponent({
     initialOptions: {
       type: Object as PropType<PaginatedGridOptions>,
       default: () => ({
-        sortBy: ['updated'],
-        sortDesc: [true],
         itemsPerPage: 25,
         page: 1
       })
     }
   },
-  data() {
-    return {
-      numberOfItems: 0,
-      projects: []
-    }
+  computed: {
+    ...mapState(useProjectStore, ['projects', 'projectsCount'])
   },
   methods: {
     ...mapActions(useProjectStore, ['getProjects']),
@@ -126,9 +117,7 @@ export default defineComponent({
         params.last_updated_in = projectGridState.searchFilterByDay
       }
       try {
-        const response = await this.getProjects({ params })
-        this.projects = response.data?.projects
-        this.numberOfItems = response.data?.count
+        await this.getProjects({ params })
         if (onFinish) {
           onFinish()
         }

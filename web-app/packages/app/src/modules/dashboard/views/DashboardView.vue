@@ -24,11 +24,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <projects-table-data-loader
             :show-namespace="false"
             :showFooter="false"
-            :showHeader="false"
-            :sortable="false"
             :public="false"
             :initialOptions="initialOptions"
-            show-tags
           />
         </template>
       </app-section>
@@ -42,9 +39,9 @@ import {
   ProjectsTableDataLoader,
   DashboardUsageInfoRow,
   DashboardFullStorageWarningRow,
+  DashboardAccessRequestsRow,
   ProjectAccessRequestTable,
   FullStorageWarning,
-  useProjectStore,
   useUserStore,
   AppSection
 } from '@mergin/lib'
@@ -55,6 +52,7 @@ export default defineComponent({
   components: {
     DashboardViewTemplate,
     ProjectsTableDataLoader,
+    DashboardAccessRequestsRow,
     DashboardFullStorageWarningRow,
     DashboardUsageInfoRow,
     ProjectAccessRequestTable,
@@ -63,24 +61,15 @@ export default defineComponent({
   },
   setup() {
     const initialOptions = ref({
-      sortBy: ['updated'],
-      sortDesc: [true],
+      sortBy: 'updated',
+      sortDesc: true,
       itemsPerPage: 5,
       page: 1
     })
 
-    const projectStore = useProjectStore()
     const userStore = useUserStore()
 
     const canCreateProject = computed(() => userStore.isGlobalWorkspaceAdmin)
-
-    onMounted(async () => {
-      await projectStore.initProjects({
-        params: { per_page: 5, page: 1 }
-        // TODO: transform options to request params
-        // params: initialOptions.value
-      })
-    })
 
     return {
       initialOptions,

@@ -44,7 +44,6 @@ async function main() {
   const response = await instanceStore.initApp()
   initCsrfToken(response)
   createMerginApp().mount('#app')
-  console.log('piniar', pinia.router)
 }
 
 main()

@@ -160,7 +160,7 @@ $infoButtonFocusShadow: 0 0 0 0.2rem lighten($infoButtonBg, 35%);
 
 /// Background of a success button
 /// @group button
-$successButtonBg: map-get($map: $colors, $key: forest-light);
+$successButtonBg: map-get($map: $colors, $key: light-green);
 
 /// Text color of a success button
 /// @group button
@@ -168,11 +168,11 @@ $successButtonTextColor: #004C45;
 
 /// Border of a success button
 /// @group button
-$successButtonBorder: 1px solid map-get($map: $colors, $key: forest-light);;
+$successButtonBorder: 1px solid map-get($map: $colors, $key: light-green);;
 
 /// Background of a success button in hover state
 /// @group button
-$successButtonHoverBg: map-get($map: $colors, $key: forest-light);
+$successButtonHoverBg: map-get($map: $colors, $key: light-green);
 
 /// Text color of a success button in hover state
 /// @group button

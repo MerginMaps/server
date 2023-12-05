@@ -19,10 +19,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import { AppSection } from '@/common/components'
 import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
   name: 'DashboardAccessRequestsRow',
+  components: { AppSection },
   computed: {
     ...mapState(useProjectStore, [
       'accessRequests',

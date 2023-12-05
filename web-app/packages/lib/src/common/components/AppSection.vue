@@ -1,10 +1,10 @@
 <template>
-  <section class="surface-section p-4 border-round-3xl">
+  <section class="surface-section border-round-2xl overflow-hidden">
     <header
       v-if="!!$slots.title"
-      class="flex justify-content-between align-items-center pb-4"
+      class="flex justify-content-between align-items-center p-4"
     >
-      <h2 class="text-xl"><slot name="title"></slot></h2>
+      <h2 class="text-sm text-color"><slot name="title"></slot></h2>
       <slot name="extra"></slot>
     </header>
     <slot></slot>

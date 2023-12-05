@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   >
     <template #projects="{ onlyPublic }">
       <projects-table-data-loader
-        :key="namespace + $route.name"
+        :key="namespace + $route.name.toString()"
         :show-namespace="false"
         :namespace="namespace"
         :only-public="onlyPublic"
