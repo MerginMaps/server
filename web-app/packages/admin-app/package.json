@@ -31,11 +31,12 @@
     "pdfjs-dist": "2.5.207",
     "pinia": "^2.1.7",
     "portal-vue": "^2.1.7",
+    "sass": "^1.69.5",
     "vue": "^2.7.14",
     "vue-i18n": "^8.28.2",
     "vue-meta": "^2.4.0",
     "vue-router": "^3.6.5",
-    "vue-tabler-icons": "~1.13.0",
+    "vue-tabler-icons": "^1.0",
     "vuetify": "^2.6.15"
   }
 }

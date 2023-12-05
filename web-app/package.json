@@ -33,9 +33,12 @@
     "link:unregister": "yarn workspaces run link:unregister",
     "types:libs": "yarn workspaces run build:types",
     "types:lib": "yarn workspace @mergin/lib build:types",
+    "types:lib-vue2": "yarn workspace @mergin/lib-vue2 build:types",
     "types:admin-lib": "yarn workspace @mergin/admin-lib build:types",
     "watch:lib": "yarn workspace @mergin/lib build:lib:watch",
+    "watch:lib-vue2": "yarn workspace @mergin/lib-vue2 build:lib:watch",
     "watch:lib:types": "yarn workspace @mergin/lib build:types:watch",
+    "watch:lib-vue2:types": "yarn workspace @mergin/lib-vue2 build:types:watch",
     "watch:admin-lib": "yarn workspace @mergin/admin-lib build:lib:watch",
     "watch:admin-lib:types": "yarn workspace @mergin/admin-lib build:types:watch",
     "lint:all": "yarn workspaces run lint"
@@ -77,7 +80,5 @@
     "node": ">=17"
   },
   "version": "0.0.0",
-  "dependencies": {
-    "sass": "^1.62.1"
-  }
+  "dependencies": {}
 }
