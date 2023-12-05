@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
+  <!--    TODO: VUE 3 - cache-items prop has been removed, caching should be handled externally. -->
   <v-autocomplete
     ref="autocomplete"
     placeholder="Find user"
@@ -17,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     clearable
     hide-selected
     :filter="filterSelected"
-    item-text="email"
+    item-title="email"
     item-value="email"
     :no-data-text="
       !query || query.length <= 2
@@ -30,31 +31,31 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     hide-details
     return-object
     data-cy="account-autocomplete-input"
-    @input="$emit('update', users)"
+    @update:model-value="$emit('update', users)"
   >
     <template v-slot:selection="data">
       <user-search-chip
         :item="data.item"
         v-bind="data.attrs"
-        :input-value="data.selected"
+        :model-value="data.selected"
         close
         @click="data.select"
         @click:close="removeItem(data.item)"
       />
     </template>
     <template v-slot:item="{ item }">
-      <v-list-item-avatar size="18" left>
-        <send-icon
-          v-if="allowInvite && item.isInvite"
-          size="18"
-          class="primary--text"
-        />
-        <user-icon v-else size="18" class="primary--text" />
-      </v-list-item-avatar>
-      <v-list-item-content
+      <v-list-item
         style="padding-bottom: 6px; padding-top: 6px"
         data-cy="account-autocomplete-list"
       >
+        <template #prepend>
+          <send-icon
+            v-if="allowInvite && item.isInvite"
+            size="18"
+            class="text-primary"
+          />
+          <user-icon v-else size="18" class="text-primary" />
+        </template>
         <v-list-item-title
           v-if="allowInvite && item.isInvite"
           v-html="`Invite \&quot;${item.email}\&quot; to your workspace`"
@@ -73,10 +74,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           v-if="!allowInvite || !item.isInvite"
           v-html="emphasizeMatch(item.email, query)"
         ></v-list-item-subtitle>
-      </v-list-item-content>
+      </v-list-item>
     </template>
     <template v-slot:append-item>
-      <div class="text-right text-caption grey--text text--darken-1">
+      <div class="text-right text-caption text-grey-darken-1">
         <span class="pr-1" v-if="items && items.some((item) => !item.isInvite)"
           >Not the right person? Try typing their email address instead!</span
         >

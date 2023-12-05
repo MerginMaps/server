@@ -3,10 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
-import vue from '@vitejs/plugin-vue2'
+import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
-import { VuetifyResolver } from 'unplugin-vue-components/resolvers'
+import {
+  Vuetify3Resolver,
+  PrimeVueResolver
+} from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
@@ -19,14 +22,27 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     vue(),
     Components({
-      resolvers: [VuetifyResolver()]
-    }) /*, vuetify() */ /*, dts() */,
+      resolvers: [
+        Vuetify3Resolver(),
+        PrimeVueResolver({
+          prefix: 'P'
+        })
+      ]
+    }),
     viteStaticCopy({
       // copy sass files to use in other applications
       targets: [{ src: 'src/sass/**.scss', dest: 'sass' }]
     })
   ],
   publicDir: './src/assets',
+
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: `@import "primeflex/core/_variables.scss";`
+      }
+    }
+  },
 
   resolve: {
     alias: {
@@ -42,7 +58,7 @@ export default defineConfig(({ mode }) => ({
       //   include: [/node_modules/],
       transformMixedEsModules: true
     },
-    sourcemap: mode !== 'production',
+    sourcemap: false,
     lib: {
       // Could also be a dictionary or array of multiple entry points
       entry: resolve(__dirname, 'src/main.ts'),
@@ -71,7 +87,7 @@ export default defineConfig(({ mode }) => ({
     }
   },
   optimizeDeps: {
-    exclude: ['vue', '@mergin'],
+    exclude: ['vue', '@mergin', 'vue-demi'],
     esbuildOptions: {
       define: {
         global: 'globalThis'

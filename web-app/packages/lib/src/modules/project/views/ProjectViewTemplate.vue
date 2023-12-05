@@ -12,12 +12,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   >
     <div slot="left" class="panel" />
     <v-layout class="column fill-height project-page main-content">
-      <v-card v-if="project" style="margin-bottom: 0" outlined>
+      <v-card v-if="project" style="margin-bottom: 0" variant="outlined">
         <!-- Toolbar -->
         <v-layout class="row align-center toolbar">
           <div class="breadcrumbs" style="font-size: 20px">
             <v-icon color="primary">map</v-icon>
-            <span v-if="showNamespace" class="primary--text"
+            <span v-if="showNamespace" class="text-primary"
               >{{ project.namespace }} /</span
             >
             <router-link
@@ -90,10 +90,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </action-button>
         </v-layout>
 
-        <v-card class="layout column fill-height" flat>
+        <v-card
+          class="layout column fill-height"
+          variant="flat"
+          slider-color="primary"
+        >
           <v-card-title>
             <v-tabs left-active v-model="tab" show-arrows>
-              <v-tabs-slider color="primary"></v-tabs-slider>
+              <div color="primary"></div>
               <v-tab
                 key="files"
                 :to="{
@@ -431,7 +435,7 @@ export default defineComponent({
   border: solid #eee;
   border-width: 1px 0;
 
-  ::v-deep(*) {
+  :deep(*) {
     .v-text-field {
       padding-top: 0;
       margin-top: 0;

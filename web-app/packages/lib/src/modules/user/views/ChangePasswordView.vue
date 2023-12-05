@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       class="text-center"
       v-on:="changePasswordWithToken"
     >
-      <v-card-title class="justify-center primary--text font-weight-bold ml-3">
+      <v-card-title class="justify-center text-primary font-weight-bold ml-3">
         <h3>Change password</h3>
       </v-card-title>
       <v-card-text>
@@ -21,22 +21,23 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             name="password"
             color="inputColor"
             v-model="password"
+            autocomplete="new-password"
             data-cy="change-password"
             :append-icon="passwordVisible ? 'visibility_off' : 'visibility'"
-            @click:append="passwordVisible = !passwordVisible"
+            @click:append-inner="passwordVisible = !passwordVisible"
             :type="passwordVisible ? 'text' : 'password'"
             :error-messages="errors.password"
             v-on="on"
           >
             <template v-slot:append-outer>
               <v-tooltip
-                top
+                location="top"
                 color="orange"
                 max-width="350"
                 content-class="form-tooltip"
               >
-                <template v-slot:activator="{ on }">
-                  <v-icon v-on="on" class="ml-1 mb-1">info</v-icon>
+                <template v-slot:activator="{ props }">
+                  <v-icon v-bind="props" class="ml-1 mb-1">info</v-icon>
                 </template>
                 <ul>
                   <li>Password must be at least 8 characters long.</li>
@@ -67,7 +68,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
           <v-card-actions class="justify-center">
             <v-btn
-              class="primary text--white"
+              class="bg-primary text-white"
               data-cy="change-password-btn"
               :disabled="!password || !confirm"
               @click="changePasswordWithToken"

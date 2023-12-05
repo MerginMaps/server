@@ -52,7 +52,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { useInstanceStore, useLayoutStore, useUserStore } from '@mergin/lib'
+import { useInstanceStore, useLayoutStore, useUserStore } from '@mergin/lib-vue2'
 import { mapState, mapActions } from 'pinia'
 import { defineComponent } from 'vue'
 

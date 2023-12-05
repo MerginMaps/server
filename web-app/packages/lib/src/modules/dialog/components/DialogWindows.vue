@@ -5,7 +5,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-dialog :value="isDialogOpen" v-bind="dialogProps" @input="close">
+  <v-dialog
+    :model-value="isDialogOpen"
+    v-bind="dialogProps"
+    @update:model-value="close"
+  >
     <component
       v-if="params"
       :is="component"

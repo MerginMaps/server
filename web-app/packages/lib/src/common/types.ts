@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import VueRouter, { RouteRecord } from 'vue-router'
+import { RouteRecordRaw, Router } from 'vue-router'
 
 import { HttpService } from '@/common/http'
 
@@ -10,12 +10,12 @@ export type RouteName = string
 export type RouteOverrides = Record<
   RouteName,
   // do not allow to override children
-  Partial<Omit<RouteRecord, 'children'>>
+  Partial<Omit<RouteRecordRaw, 'children'>>
 >
 
 export interface ModuleService {
   httpService?: HttpService
-  routerService?: VueRouter
+  routerService?: Router
   [key: string]: any
 }
 
@@ -28,8 +28,8 @@ export interface BaseModule {
 export interface Module extends BaseModule, ModuleService {}
 
 export interface PaginatedGridOptions {
-  sortBy: string[]
-  sortDesc: boolean[]
+  sortBy: string
+  sortDesc: boolean
   itemsPerPage: number
   page: number
 }

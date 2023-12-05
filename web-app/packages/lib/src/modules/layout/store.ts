@@ -5,22 +5,34 @@
 import { defineStore } from 'pinia'
 
 export interface LayoutState {
-  barColor: string
-  barImage: string
+  sidebarBreakpoint: number
   drawer: boolean
+  /** If sidebar is in overlay mode (on mobile is flying over content) */
+  isOverlay: boolean
 }
 
 export const useLayoutStore = defineStore('layoutModule', {
   state: (): LayoutState => ({
-    barColor: 'rgba(176, 177, 181 1), rgba(176, 177, 181 1)', // TODO: global - check if necessary and useful, MV-2022-06-30: I would probably get rid of this if possible
-    barImage:
-      'https://demos.creative-tim.com/material-dashboard/assets/img/sidebar-1.jpg', // TODO: global - check if necessary and useful, MV-2022-06-30: I would probably get rid of this if possible
-    drawer: null
+    sidebarBreakpoint: 992,
+    drawer: false,
+    isOverlay: false
   }),
 
   actions: {
-    setBarImage(payload) {
-      this.barImage = payload.barImage
+    init() {
+      this.updateScreenParams()
+      window?.addEventListener('resize', this.updateScreenParams)
+    },
+    updateScreenParams() {
+      const width = window.innerWidth
+      const isSmall =
+        window.matchMedia !== undefined
+          ? window.matchMedia(
+              `screen and (max-width: ${this.sidebarBreakpoint}px)`
+            ).matches
+          : width < this.sidebarBreakpoint
+      this.drawer = !isSmall
+      this.isOverlay = isSmall
     },
     setDrawer(payload) {
       this.drawer = payload.drawer

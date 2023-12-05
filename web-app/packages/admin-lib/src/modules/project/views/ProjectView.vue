@@ -24,7 +24,7 @@ import {
   ProjectViewTemplate,
   useDialogStore,
   useFormStore
-} from '@mergin/lib'
+} from '@mergin/lib-vue2'
 import { defineComponent } from 'vue'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'

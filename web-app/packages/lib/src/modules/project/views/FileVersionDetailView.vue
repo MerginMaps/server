@@ -6,11 +6,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div>
-    <v-list two-line subheader v-if="tables">
+    <v-list lines="two" subheader v-if="tables">
       <v-list-item v-bind:key="name" v-for="(value, name) in tables">
-        <v-list-item-content>
+        <div>
           <v-list-item-title>
-            <h3 class="primary--text">{{ name }}</h3>
+            <h3 class="text-primary">{{ name }}</h3>
           </v-list-item-title>
           <br />
           <v-data-table
@@ -24,19 +24,22 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             style="overflow-x: auto"
           >
             <template #item.operationTypeHeader="{ value }">
-              <v-icon small :color="actions[value].color">{{
+              <v-icon size="small" :color="actions[value].color">{{
                 actions[value].icon
               }}</v-icon>
             </template>
           </v-data-table>
-        </v-list-item-content>
+        </div>
       </v-list-item>
     </v-list>
-    <v-card v-else-if="!tables && !loading" class="bubble mt-3" outlined>
-      <h4>Changes cannot be calculated</h4>
-      For details please check the
-      <a :href="docsLinkManageSynchronisation" target="_blank">documentation</a
-      >.
+    <v-card v-else-if="!tables && !loading" class="mt-3" variant="tonal">
+      <v-card-title><h4>Changes cannot be calculated</h4></v-card-title>
+      <v-card-text
+        >For details please check the
+        <a :href="docsLinkManageSynchronisation" target="_blank"
+          >documentation</a
+        >.</v-card-text
+      >
     </v-card>
   </div>
 </template>
@@ -47,7 +50,6 @@ import isArray from 'lodash/isArray'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
-import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
 import { useNotificationStore } from '@/modules'
 import { useInstanceStore } from '@/modules/instance/store'
@@ -158,9 +160,10 @@ export default defineComponent({
           }
         })
         .catch((err) => {
-          this.error({
-            text: getErrorMessage(err, 'Failed to display changeset of file')
-          })
+          const msg = err.response
+            ? err.response.data?.detail
+            : 'Failed to display changeset of file'
+          this.error({ text: msg })
         })
         .finally(() => {
           this.loading = false
@@ -171,7 +174,7 @@ export default defineComponent({
 })
 </script>
 <style lang="scss" scoped>
-::v-deep(.v-data-table__wrapper) {
+:deep(.v-data-table__wrapper) {
   td.text-start {
     max-width: 250px;
   }

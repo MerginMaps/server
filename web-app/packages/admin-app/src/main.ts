@@ -16,7 +16,7 @@ import {
   useAppStore,
   useInstanceStore,
   initCsrfToken
-} from '@mergin/lib'
+} from '@mergin/lib-vue2'
 
 import { createMerginApp } from './app'
 import { createRouter } from './router'

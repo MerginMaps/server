@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <div>
     <div v-if="state" v-text="stateText" :class="['status', colors[state]]" />
     <action-button
-      v-if="project && project.permissions.upload && this.state !== 'removed'"
+      v-if="project && project.permissions.upload && state !== 'removed'"
       @click="removeSelected"
       data-cy="file-detail-remove-btn"
       style="float: right"
@@ -31,31 +31,34 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       Download File
     </action-button>
 
-    <v-list two-line subheader>
+    <v-list lines="two" subheader>
       <v-list-item>
-        <v-list-item-content>
+        <div>
           <v-list-item-title>Name</v-list-item-title>
           <v-list-item-subtitle>{{ filename }}</v-list-item-subtitle>
-        </v-list-item-content>
+        </div>
       </v-list-item>
       <v-list-item>
-        <v-list-item-content>
+        <div>
           <v-list-item-title>Size</v-list-item-title>
           <v-list-item-subtitle>
-            {{ file.size | filesize }}
+            {{ $filters.filesize(file.size) }}
             <span v-if="state === 'updated'"
-              >(new: {{ upload.files[file.path].size | filesize }})</span
+              >(new:
+              {{ $filters.filesize(upload.files[file.path].size) }})</span
             >
           </v-list-item-subtitle>
-        </v-list-item-content>
+        </div>
       </v-list-item>
       <v-list-item>
-        <v-list-item-content>
+        <div>
           <v-list-item-title>Last update</v-list-item-title>
           <v-list-item-subtitle
-            >{{ file.mtime | datetime }} ({{ file.mtime | timediff }})
+            >{{ $filters.datetime(file.mtime) }} ({{
+              $filters.timediff(file.mtime)
+            }})
           </v-list-item-subtitle>
-        </v-list-item-content>
+        </div>
       </v-list-item>
     </v-list>
 
@@ -67,9 +70,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           v-else-if="mimetype.match('text')"
           :auto-grow="true"
           :readonly="true"
-          :value="content"
-          filled
-          solo
+          :model-value="content"
+          variant="solo-filled"
         >
         </v-textarea>
       </output>
@@ -81,6 +83,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import Path from 'path'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
+// import pdf from 'vue-pdf'
 import { DownloadIcon, TrashIcon } from 'vue-tabler-icons'
 
 import ActionButton from '@/common/components/ActionButton.vue'
@@ -170,7 +173,7 @@ export default defineComponent({
       pageCount: 0,
       currentPage: 0,
       content: null,
-      mimetype: null
+      mimetype: null as string
     }
   },
   created() {
@@ -216,7 +219,7 @@ export default defineComponent({
 }
 
 .v-list {
-  ::v-deep(.v-list__tile) {
+  :deep(.v-list__tile) {
     font-size: 14px;
     color: #444;
 

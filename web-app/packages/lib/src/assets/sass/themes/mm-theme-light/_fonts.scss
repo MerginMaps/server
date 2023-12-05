@@ -1,0 +1,8 @@
+// Configuration for the font-face of the theme, defaults to the system font so left as blank
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+body {
+  font-family: Inter, sans-serif;
+}
+
+$fontFamily: Inter, sans-serif

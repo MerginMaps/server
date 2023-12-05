@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <v-layout v-if="!namespace" class="column fill-height main-content">
       <v-layout shrink class="column ml-1 my-2 pl-3">
         <v-layout align-center shrink>
-          <h1 class="primary--text">
+          <h1 class="text-primary">
             {{ header }}
             <span v-if="namespace">
               <v-icon class="arrow">chevron_right</v-icon> {{ namespace }}</span
@@ -48,7 +48,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <br />
         <v-divider />
       </v-layout>
-      <v-card class="table" style="-webkit-box-shadow: none; box-shadow: none">
+      <v-card class="table" variant="flat">
         <v-card-text>
           <slot name="projects" :onlyPublic="onlyPublic"></slot>
         </v-card-text>

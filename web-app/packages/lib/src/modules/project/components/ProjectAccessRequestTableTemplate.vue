@@ -20,11 +20,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       v-on:update:options="onUpdateOptions"
     >
       <template #item.expire="{ value }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <span v-on="on">{{ value | remainingtime }}</span>
+        <v-tooltip location="bottom">
+          <template v-slot:activator="{ props }">
+            <span v-bind="props">{{ $filters.remainingtime(value) }}</span>
           </template>
-          <span>{{ value | datetime }}</span>
+          <span>{{ $filters.datetime(value) }}</span>
         </v-tooltip>
       </template>
       <template #item.permission="{ item }">
@@ -40,8 +40,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div class="justify-center">
           <div style="text-align: end">
             <v-tooltip bottom v-if="showAccept">
-              <template v-slot:activator="{ on }">
-                <span v-on="on">
+              <template v-slot:activator="{ props }">
+                <span v-bind="props">
                   <v-chip
                     :disabled="expired(item.expire)"
                     @click="acceptRequest(item)"
@@ -49,6 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                     color="green"
                     class="white--text"
                     :value="permissions[item.id]"
+                    :model-value="permissions[item.id]"
                   >
                     accept
                   </v-chip>
@@ -56,9 +57,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               </template>
               <span>Accept request</span>
             </v-tooltip>
-            <v-tooltip bottom>
-              <template v-slot:activator="{ on }">
-                <span v-on="on">
+            <v-tooltip location="bottom">
+              <template v-slot:activator="{ props }">
+                <span v-bind="props">
                   <v-chip
                     @click="cancelRequest(item)"
                     elevation="0"
@@ -241,7 +242,7 @@ export default defineComponent({
     margin-right: 0.5em;
     height: 1.6em;
 
-    ::v-deep .v-chip__content {
+    :deep(*) .v-chip__content {
       cursor: pointer;
       padding: 0 0.5em;
       font-size: 85%;

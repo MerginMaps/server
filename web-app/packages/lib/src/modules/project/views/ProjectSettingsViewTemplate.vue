@@ -34,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <v-btn
               @click="confirmPublicPrivate()"
               class="private-public-btn"
-              outlined
+              variant="outlined"
             >
               <span v-if="settings.access.public">Make private</span>
               <span v-else>Make public</span>
@@ -52,7 +52,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             >
           </v-col>
           <v-col self-align="end">
-            <v-btn @click="confirmDelete" class="private-public-btn" outlined>
+            <v-btn
+              @click="confirmDelete"
+              class="private-public-btn"
+              variant="outlined"
+            >
               <span>Delete</span>
             </v-btn>
           </v-col>
@@ -196,7 +200,6 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-@use '@/sass/project';
 
 .settings {
   display: flex;

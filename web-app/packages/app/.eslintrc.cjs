@@ -17,5 +17,8 @@ module.exports = {
   rules: {
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off'
+    // Vue 3 opt https://v3-migration.vuejs.org/breaking-changes/key-attribute.html#with-template-v-for
+    'vue/no-v-for-template-key-on-child': 'error',
+    'vue/no-v-for-template-key': 'off',
   }
 }

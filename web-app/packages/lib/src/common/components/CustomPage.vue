@@ -7,12 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div class="main-window">
     <v-layout justify-center align-end shrink>
-      <v-img
-        contain
-        max-width="300"
-        position="center bottom"
-        :transition="false"
-      />
+      <v-img max-width="300" position="center bottom" :transition="false" />
     </v-layout>
 
     <v-container class="py-1">

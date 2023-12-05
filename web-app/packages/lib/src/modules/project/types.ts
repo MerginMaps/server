@@ -311,3 +311,9 @@ export interface TableDataHeader {
 export interface DeleteProjectPayload {
   projectId: string
 }
+
+export interface VDataIteratorOptions {
+  page: number
+  itemsPerPage: number
+  sortBy?: Array<{ key: string; order?: boolean | 'asc' | 'desc' }>
+}

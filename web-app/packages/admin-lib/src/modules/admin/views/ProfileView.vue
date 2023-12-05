@@ -136,7 +136,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { ConfirmDialog, PageView, useDialogStore } from '@mergin/lib'
+import { ConfirmDialog, PageView, useDialogStore } from '@mergin/lib-vue2'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 

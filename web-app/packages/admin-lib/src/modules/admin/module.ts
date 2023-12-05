@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import { moduleUtils, Module } from '@mergin/lib'
+import { moduleUtils, Module } from '@mergin/lib-vue2'
 
 import { getRoutes } from './routes'
 

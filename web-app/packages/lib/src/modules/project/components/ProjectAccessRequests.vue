@@ -6,22 +6,21 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <v-layout class="no-shrink column">
-    <label class="mt-4 grey--text text--darken-1">Access requests:</label>
+    <label class="mt-4 text-grey-darken-1">Access requests:</label>
     <v-data-table
       :loading="loading"
       :headers="tableHeaders"
       :items="accessRequests"
       :server-items-length="accessRequestsCount"
       no-data-text="No access requests"
-      :footer-props="{ 'items-per-page-options': [10, 25, 50] }"
-      :hide-default-footer="accessRequestsCount <= 10"
       :options="options"
       v-on:update:options="onUpdateOptions"
+      :footer-props="{ 'items-per-page-options': [10, 25, 50] }"
     >
       <template #header.user="{ header }">
-        <v-tooltip v-if="header.tooltip" top>
-          <template v-slot:activator="{ on }">
-            <span v-on="on">
+        <v-tooltip v-if="header.tooltip" location="top">
+          <template v-slot:activator="{ props }">
+            <span v-bind="props">
               {{ header.text }}
             </span>
           </template>
@@ -34,9 +33,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </span>
       </template>
       <template #header.expire="{ header }">
-        <v-tooltip v-if="header.tooltip" top>
-          <template v-slot:activator="{ on }">
-            <span v-on="on">
+        <v-tooltip v-if="header.tooltip" location="top">
+          <template v-slot:activator="{ props }">
+            <span v-bind="props">
               {{ header.text }}
             </span>
           </template>
@@ -56,8 +55,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             (value.profile.first_name || value.profile.last_name)
           "
         >
-          <template v-slot:activator="{ on }">
-            <b v-on="on">
+          <template v-slot:activator="{ props }">
+            <b v-bind="props">
               {{ value.username }}
             </b>
           </template>
@@ -75,11 +74,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </b>
       </template>
       <template #item.expire="{ value }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <span v-on="on">{{ value | remainingtime }}</span>
+        <v-tooltip location="bottom">
+          <template v-slot:activator="{ props }">
+            <span v-bind="props">{{ $filters.remainingtime(value) }}</span>
           </template>
-          <span>{{ value | datetime }}</span>
+          <span>{{ $filters.datetime(value) }}</span>
         </v-tooltip>
       </template>
       <template #item.permissions="{ item }">
@@ -92,9 +91,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </template>
       <template #item.confirm="{ item }">
         <div class="justify-center px-0">
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on }">
-              <span v-on="on">
+          <v-tooltip location="bottom">
+            <template v-slot:activator="{ props }">
+              <span v-bind="props">
                 <v-chip
                   :disabled="!canAcceptAccessRequest(item.user.id, item.expire)"
                   @click="acceptRequest(item)"
@@ -112,9 +111,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </template>
       <template #item.cancel="{ item }">
         <div class="justify-center">
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on }">
-              <span v-on="on">
+          <v-tooltip location="bottom">
+            <template v-slot:activator="{ props }">
+              <span v-bind="props">
                 <v-chip
                   :disabled="!canCancelAccessRequest(item.user.id)"
                   @click="cancelRequest(item)"
@@ -310,7 +309,7 @@ label {
   font-weight: 500;
 }
 
-::v-deep(*) {
+:deep(*) {
   .v-data-table__overflow {
     margin: 0.5em 0;
     border: 1px solid #ddd;
@@ -324,7 +323,7 @@ label {
   }
 }
 
-.v-list-item-content {
+.div {
   b {
     margin-right: 10px;
   }

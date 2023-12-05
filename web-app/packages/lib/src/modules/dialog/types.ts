@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-// import Vue, { Component } from 'vue'
+import { Component } from 'vue'
 
 export interface DialogParams {
   dialog: Record<string, unknown>
@@ -13,5 +13,5 @@ export interface DialogParams {
 
 export interface DialogPayload {
   params: DialogParams
-  component: any
+  component: Component
 }

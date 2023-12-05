@@ -16,31 +16,33 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-row>
           <v-col cols="12" class="pa-0">
             <v-card
-              v-if="!loggedUser?.verified_email"
-              outlined
-              class="bubble mt-3"
+              v-if="!loggedUser.verified_email"
+              variant="outlined"
+              class="mt-3"
               style="
                 background-color: #ffc863;
                 color: rgba(0, 0, 0, 0.87);
                 overflow: hidden;
               "
             >
-              Your email hasn't been confirmed yet
-              <v-btn
-                color="#ecf3ff"
-                @click="resendConfirmationEmail"
-                style="float: right"
-                >Send confirmation email
-              </v-btn>
+              <v-card-text
+                >Your email hasn't been confirmed yet
+                <v-btn
+                  color="#ecf3ff"
+                  @click="resendConfirmationEmail"
+                  style="float: right"
+                  >Send confirmation email
+                </v-btn></v-card-text
+              >
             </v-card>
           </v-col>
         </v-row>
         <v-row>
           <v-col cols="12" class="pa-0">
-            <v-card flat>
+            <v-card variant="flat">
               <v-card-text>
                 <div class="profile">
-                  <h1 class="primary--text">Profile</h1>
+                  <h1 class="text-primary">Profile</h1>
                   <br />
                   <v-divider />
                   <v-layout align-center>
@@ -58,14 +60,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                             <li cy-data="profile-email">
                               <b> Email: </b>{{ loggedUser.email }}
                               <v-tooltip
-                                top
+                                location="top"
                                 v-if="
                                   'project-versions' !== $route.name &&
                                   'project-versions-detail' !== $route.name
                                 "
                               >
-                                <template v-slot:activator="{ on }">
-                                  <span v-on="on">
+                                <template v-slot:activator="{ props }">
+                                  <span v-bind="props">
                                     <v-icon
                                       v-if="loggedUser.verified_email"
                                       color="green"
@@ -88,7 +90,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                             </li>
                             <li cy-data="profile-registered">
                               <b> Registered: </b
-                              >{{ loggedUser.registration_date | date }}
+                              >{{ $filters.date(loggedUser.registration_date) }}
                             </li>
                           </ul>
                           <br />
@@ -101,31 +103,31 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                           <div>
                             <v-btn
                               @click="changePasswordDialog"
-                              class="primary--text"
+                              class="text-primary"
                               cy-data="profile-change-password-btn"
                             >
-                              <v-icon small class="mr-2">lock</v-icon>
+                              <v-icon class="mr-2">edit</v-icon>
                               Change password
                             </v-btn>
                           </div>
                           <div>
                             <v-btn
                               @click="editProfileDialog"
-                              class="primary--text"
+                              class="text-primary"
                               cy-data="profile-edit-btn"
                             >
-                              <v-icon small class="mr-2">edit</v-icon>
+                              <v-icon class="mr-2">edit</v-icon>
                               Edit profile
                             </v-btn>
                           </div>
                           <div>
                             <v-btn
                               @click="showConfirmationDialog"
-                              class="primary--text"
-                              :disabled="loggedUser?.verified_profile"
+                              class="text-primary"
+                              :disabled="loggedUser.verified_email"
                               cy-data="profile-verify-email-btn"
                             >
-                              <v-icon small class="mr-2">send</v-icon>
+                              <v-icon class="mr-2">edit</v-icon>
                               Verify email
                             </v-btn>
                           </div>
@@ -133,11 +135,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                             <v-btn
                               @click="confirmDeleteUser"
                               class="white--text"
-                              depressed
+                              variant="flat"
                               color="red"
                               cy-data="profile-close-account-btn"
                             >
-                              <v-icon small class="mr-2">remove_circle</v-icon>
+                              <v-icon class="mr-2">remove_circle</v-icon>
                               Close my account
                             </v-btn>
                           </div>
@@ -270,8 +272,6 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-@use '@/sass/dashboard';
-
 .bubble {
   width: 100%;
 }
