@@ -26,6 +26,14 @@ export default defineConfig(({ mode }) => ({
     })
   ],
 
+  css: {
+    preprocessorOptions: {
+      sass: {
+        quietDeps: true
+      }
+    }
+  },
+
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),

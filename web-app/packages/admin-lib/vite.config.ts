@@ -19,6 +19,13 @@ export default defineConfig(({ mode }) => ({
     }) /*, vuetify() */
   ],
   publicDir: './src/assets',
+  css: {
+    preprocessorOptions: {
+      sass: {
+        quietDeps: true
+      }
+    }
+  },
 
   resolve: {
     alias: {

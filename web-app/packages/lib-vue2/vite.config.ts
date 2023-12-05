@@ -27,6 +27,13 @@ export default defineConfig(({ mode }) => ({
     })
   ],
   publicDir: './src/assets',
+  css: {
+    preprocessorOptions: {
+      scss: {
+        quietDeps: true
+      }
+    }
+  },
 
   resolve: {
     alias: {
@@ -71,7 +78,7 @@ export default defineConfig(({ mode }) => ({
     }
   },
   optimizeDeps: {
-    exclude: ['vue', '@mergin'],
+    exclude: ['vue', '@mergin', 'vue-demi'],
     esbuildOptions: {
       define: {
         global: 'globalThis'

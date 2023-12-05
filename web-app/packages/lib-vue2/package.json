@@ -47,6 +47,7 @@
     "universal-cookie": "^4.0.4",
     "vue": "^2.7.14",
     "vue-router": "^3.6.5",
+    "vue-tabler-icons": "^1.0",
     "vuetify": "^2.6.15"
   },
   "peerDependencies": {
