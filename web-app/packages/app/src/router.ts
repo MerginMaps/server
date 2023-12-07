@@ -187,7 +187,7 @@ export const createRouter = (pinia: Pinia) => {
       {
         path: '/:pathMatch(.*)*',
         component: NotFoundView,
-        meta: { public: true, hejno: true }
+        meta: { public: true }
       }
     ]
   })

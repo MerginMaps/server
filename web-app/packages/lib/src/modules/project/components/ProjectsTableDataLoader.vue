@@ -5,13 +5,26 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <projects-table
-    v-bind="$props"
-    :projects="projects"
-    :numberOfItems="projectsCount"
-    :onlyPublic="onlyPublic"
-    @fetch-projects="fetchProjects"
-  />
+  <div>
+    <projects-table
+      v-bind="$props"
+      :projects="projects"
+      :numberOfItems="projectsCount"
+      @fetch-projects="fetchProjects"
+    >
+      <template #empty>
+        <div class="flex flex-column align-items-center p-6 text-center">
+          <img src="@/assets/map-circle.svg" alt="No projects" />
+          <p class="font-semibold p-4">There are currently no projects.</p>
+          <p class="text-sm opacity-80">You don’t have got any projects yet.</p>
+          <template v-if="canCreateProject">
+            <p class="text-sm opacity-80 pb-4">Please create new project.</p>
+            <PButton @click="newProjectDialog">Create new project</PButton>
+          </template>
+        </div>
+      </template>
+    </projects-table>
+  </div>
 </template>
 
 <script lang="ts">
@@ -19,6 +32,7 @@ import { mapState, mapActions } from 'pinia'
 import { defineComponent, PropType } from 'vue'
 
 import { PaginatedGridOptions } from '@/common'
+import { ProjectForm, useDialogStore } from '@/modules'
 import { useNotificationStore } from '@/modules/notification/store'
 import ProjectsTable from '@/modules/project/components/ProjectsTable.vue'
 import { useProjectStore } from '@/modules/project/store'
@@ -59,6 +73,10 @@ export default defineComponent({
         itemsPerPage: 25,
         page: 1
       })
+    },
+    /** Whether the user can create a new project */
+    canCreateProject: {
+      type: Boolean as PropType<boolean>
     }
   },
   computed: {
@@ -67,6 +85,7 @@ export default defineComponent({
   methods: {
     ...mapActions(useProjectStore, ['getProjects']),
     ...mapActions(useNotificationStore, ['error']),
+    ...mapActions(useDialogStore, ['show']),
     async fetchProjects(
       projectGridState: ProjectGridState,
       gridOptions: PaginatedGridOptions,
@@ -77,7 +96,7 @@ export default defineComponent({
         this.$route.name === 'shared_projects' ||
         this.$route.name === 'my_projects'
       ) {
-        params.flag = this.$route.meta.flag
+        params.flag = this.$route.meta.flag as string
       }
       params.page = gridOptions.page
       params.per_page = gridOptions.itemsPerPage
@@ -127,6 +146,15 @@ export default defineComponent({
         }
         await this.error({ text: 'Failed to fetch list of projects' })
       }
+    },
+    newProjectDialog() {
+      const dialog = { maxWidth: 500, persistent: true }
+      this.show({
+        component: ProjectForm,
+        params: {
+          dialog
+        }
+      })
     }
   }
 })

@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div>
     <PDataTable
+      v-if="numberOfItems > 0"
       :value="projects"
       :paginator="showFooter"
       :first="options.page - 1"
@@ -103,8 +104,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :pt="ptColumn"
         ></PColumn>
       </template>
-      <template #empty>No projects found</template>
     </PDataTable>
+    <!-- Empty state -->
+    <slot v-else name="empty"></slot>
   </div>
 </template>
 
@@ -113,7 +115,6 @@ import { DataTableRowClickEvent } from 'primevue/datatable'
 import { defineComponent, PropType } from 'vue'
 
 import { PaginatedGridOptions } from '@/common'
-import { formatToTitle } from '@/common/text_utils'
 import { ProjectListItem, TableDataHeader } from '@/modules/project/types'
 
 export default defineComponent({
@@ -166,11 +167,6 @@ export default defineComponent({
         }
       )
       return columns
-    },
-    selectKeys() {
-      return this.keys.map((i) => {
-        return { title: formatToTitle(i), value: i }
-      })
     },
     ptColumn() {
       return {

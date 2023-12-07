@@ -6,7 +6,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <app-container>
-    <app-section v-if="currentNamespace && accessRequests">
+    <app-section
+      v-if="currentNamespace && accessRequests && accessRequestsCount > 0"
+    >
       <template #title
         >Requests
         <span class="text-color-secondary"
