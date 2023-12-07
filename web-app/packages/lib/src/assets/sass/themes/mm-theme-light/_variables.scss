@@ -24,7 +24,9 @@ $colors: (
     "sand": #FFF4E2,
     "warning": #E39722,
     "primary": $primaryColor,
-    "grape": #5A2740
+    "grape": #5A2740,
+    "positive": #C0EBCF,
+    "negative": #F0C4BC
 );
 
 // Mandatory Designer Variables
@@ -81,7 +83,7 @@ $colors: (
     --surface-overlay:#ffffff;
     --surface-border:#dee2e6;
     --surface-hover:#e9ecef;
-    --focus-ring: #{$focusShadow};
+    --focus-ring: 0 0 0 0.2rem $focusOutlineColor;
     --maskbg: #{$maskBg};
     --highlight-bg: #{$highlightBg};
     --highlight-text-color: #{$highlightTextColor};

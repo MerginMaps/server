@@ -8,9 +8,9 @@ import 'material-icons/iconfont/material-icons.scss'
 import '@fortawesome/fontawesome-free/css/all.css'
 import '@mdi/font/css/materialdesignicons.css'
 import PrimeVue from 'primevue/config';
-import "@mergin/lib/dist/sass/themes/mm-theme-light/theme.scss"
 import "primevue/resources/primevue.min.css";
 import "primeflex/primeflex.min.css"
+import "@mergin/lib/dist/sass/themes/mm-theme-light/theme.scss"
 import "@tabler/icons-webfont/tabler-icons.min.css"
 
 import '@mergin/lib/dist/style.css'

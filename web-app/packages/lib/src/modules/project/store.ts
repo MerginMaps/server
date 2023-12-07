@@ -287,7 +287,7 @@ export const useProjectStore = defineStore('projectModule', {
         params: {
           page: 1,
           per_page: 10,
-          order_params: 'expire DESC',
+          order_params: 'expire ASC',
           ...payload?.params
         }
       })
@@ -319,7 +319,7 @@ export const useProjectStore = defineStore('projectModule', {
         params: {
           page: 1,
           per_page: 10,
-          order_params: 'expire DESC',
+          order_params: 'expire ASC',
           ...payload.params
         }
       })

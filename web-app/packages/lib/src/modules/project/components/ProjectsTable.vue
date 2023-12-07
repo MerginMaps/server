@@ -17,6 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :loading="loading"
       :lazy="true"
       size="small"
+      @row-click="rowClick"
     >
       <template v-for="col in columns" :key="col.field">
         <PColumn
@@ -108,11 +109,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { DataTableRowClickEvent } from 'primevue/datatable'
 import { defineComponent, PropType } from 'vue'
 
 import { PaginatedGridOptions } from '@/common'
 import { formatToTitle } from '@/common/text_utils'
-import { ProjectListItem } from '@/modules/project/types'
+import { ProjectListItem, TableDataHeader } from '@/modules/project/types'
 
 export default defineComponent({
   name: 'projects-table',
@@ -146,11 +148,7 @@ export default defineComponent({
     }
   },
   computed: {
-    columns(): {
-      header: string
-      field?: string
-      sortable?: boolean
-    }[] {
+    columns(): TableDataHeader[] {
       let columns = []
       if (this.showNamespace) {
         columns.push({
@@ -227,6 +225,16 @@ export default defineComponent({
     filterData() {
       this.options.page = 1
       this.fetchProjects()
+    },
+    rowClick(e: DataTableRowClickEvent) {
+      const { data } = e
+      this.$router.push({
+        name: 'project',
+        params: {
+          namespace: data.namespace,
+          projectName: data.name
+        }
+      })
     }
   }
 })

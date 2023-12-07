@@ -11,6 +11,8 @@ declare module 'vue' {
     PButton: typeof import('primevue/button')['default']
     PColumn: typeof import('primevue/column')['default']
     PDataTable: typeof import('primevue/datatable')['default']
+    PDataView: typeof import('primevue/dataview')['default']
+    PDropdown: typeof import('primevue/dropdown')['default']
     PMenu: typeof import('primevue/menu')['default']
     PMenubar: typeof import('primevue/menubar')['default']
     POverlayPanel: typeof import('primevue/overlaypanel')['default']

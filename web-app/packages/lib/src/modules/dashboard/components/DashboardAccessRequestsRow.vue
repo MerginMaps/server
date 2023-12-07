@@ -5,26 +5,31 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <app-section
-    v-if="currentNamespace && accessRequests && accessRequests.length > 0"
-  >
-    <template #title>Project access requests</template>
-    <template #default>
-      <slot name="table" :namespace="currentNamespace"></slot>
-    </template>
-  </app-section>
+  <app-container>
+    <app-section v-if="currentNamespace && accessRequests">
+      <template #title
+        >Requests
+        <span class="text-color-secondary"
+          >({{ accessRequestsCount }})</span
+        ></template
+      >
+      <template #default>
+        <slot name="table" :namespace="currentNamespace"></slot>
+      </template>
+    </app-section>
+  </app-container>
 </template>
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
-import { AppSection } from '@/common/components'
+import { AppContainer, AppSection } from '@/common/components'
 import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
   name: 'DashboardAccessRequestsRow',
-  components: { AppSection },
+  components: { AppSection, AppContainer },
   computed: {
     ...mapState(useProjectStore, [
       'accessRequests',

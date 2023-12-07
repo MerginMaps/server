@@ -160,11 +160,11 @@ $infoButtonFocusShadow: 0 0 0 0.2rem lighten($infoButtonBg, 35%);
 
 /// Background of a success button
 /// @group button
-$successButtonBg: map-get($map: $colors, $key: light-green);
+$successButtonBg: map-get($map: $colors, $key: positive);
 
 /// Text color of a success button
 /// @group button
-$successButtonTextColor: #004C45;
+$successButtonTextColor: $primaryDarkColor;
 
 /// Border of a success button
 /// @group button
@@ -172,11 +172,11 @@ $successButtonBorder: 1px solid map-get($map: $colors, $key: light-green);;
 
 /// Background of a success button in hover state
 /// @group button
-$successButtonHoverBg: map-get($map: $colors, $key: light-green);
+$successButtonHoverBg: $primaryDarkColor;
 
 /// Text color of a success button in hover state
 /// @group button
-$successButtonTextHoverColor: #ffffff;
+$successButtonTextHoverColor: map-get($map: $colors, $key: positive);
 
 /// Border color of a success button in hover state
 /// @group button
@@ -280,23 +280,23 @@ $helpButtonFocusShadow:0 0 0 0.2rem #CE93D8;
 
 /// Background of a danger button
 /// @group button
-$dangerButtonBg: #f44336;
+$dangerButtonBg: map-get($map: $colors, $key: negative);
 
 /// Text color of a danger button
 /// @group button
-$dangerButtonTextColor: #ffffff;
+$dangerButtonTextColor: map-get($map: $colors, $key: grape);
 
 /// Border of a danger button
 /// @group button
-$dangerButtonBorder: 1px solid #f44336;
+$dangerButtonBorder: 1px solid map-get($map: $colors, $key: negative);
 
 /// Background of a danger button in hover state
 /// @group button
-$dangerButtonHoverBg: #e53935;
+$dangerButtonHoverBg: map-get($map: $colors, $key: grape);
 
 /// Text color of a danger button in hover state
 /// @group button
-$dangerButtonTextHoverColor: #ffffff;
+$dangerButtonTextHoverColor: map-get($map: $colors, $key: negative);
 
 /// Border color of a danger button in hover state
 /// @group button

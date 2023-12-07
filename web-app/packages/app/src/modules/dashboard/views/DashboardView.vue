@@ -18,17 +18,20 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <project-access-request-table :namespace="namespace" />
         </template>
       </dashboard-access-requests-row>
-      <app-section>
-        <template #title>Recent active projects</template>
-        <template #default>
-          <projects-table-data-loader
-            :show-namespace="false"
-            :showFooter="false"
-            :public="false"
-            :initialOptions="initialOptions"
-          />
-        </template>
-      </app-section>
+      <!-- Projects -->
+      <app-container>
+        <app-section>
+          <template #title>Recent active projects</template>
+          <template #default>
+            <projects-table-data-loader
+              :show-namespace="false"
+              :showFooter="false"
+              :public="false"
+              :initialOptions="initialOptions"
+            />
+          </template>
+        </app-section>
+      </app-container>
     </template>
   </dashboard-view-template>
 </template>
@@ -43,9 +46,10 @@ import {
   ProjectAccessRequestTable,
   FullStorageWarning,
   useUserStore,
-  AppSection
+  AppSection,
+  AppContainer
 } from '@mergin/lib'
-import { defineComponent, computed, ref, onMounted } from 'vue'
+import { defineComponent, computed, ref } from 'vue'
 
 export default defineComponent({
   name: 'DashboardView',
@@ -57,7 +61,8 @@ export default defineComponent({
     DashboardUsageInfoRow,
     ProjectAccessRequestTable,
     AppSection,
-    FullStorageWarning
+    FullStorageWarning,
+    AppContainer
   },
   setup() {
     const initialOptions = ref({

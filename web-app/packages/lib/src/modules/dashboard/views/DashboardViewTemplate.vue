@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <app-container>
       <slot name="usageInfo" />
     </app-container>
-    <app-container><slot name="content"></slot></app-container>
+    <slot name="content"></slot>
     <footer>
       <app-container>
         <app-section class="grid grid-nogutter flex align-items-center p-4">

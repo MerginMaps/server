@@ -302,8 +302,8 @@ export interface ProjectVersionsItem extends ProjectVersion {
 }
 
 export interface TableDataHeader {
-  text: string
-  value: string
+  header: string
+  field: string
   sortable?: boolean
   width?: number
 }
