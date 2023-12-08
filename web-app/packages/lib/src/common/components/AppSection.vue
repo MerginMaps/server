@@ -1,5 +1,11 @@
 <template>
-  <section class="surface-section border-round-2xl overflow-hidden">
+  <section
+    :class="[
+      ground
+        ? 'surface-ground'
+        : 'surface-section border-round-2xl overflow-hidden'
+    ]"
+  >
     <header
       v-if="!!$slots.title"
       class="flex justify-content-between align-items-center p-4"
@@ -11,6 +17,10 @@
   </section>
 </template>
 
-<script lang="ts" setup></script>
+<script lang="ts" setup>
+withDefaults(defineProps<{ ground: boolean }>(), {
+  ground: false
+})
+</script>
 
 <style scoped lang="scss"></style>
