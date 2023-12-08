@@ -4,7 +4,7 @@ $buttonPadding: 0.7em 1.7em;
 
 /// Width of a button having an icon with no label
 /// @group button
-$buttonIconOnlyWidth: 2.357rem;
+$buttonIconOnlyWidth: 2.6rem;
 
 /// Padding of a button having an icon with no label
 /// @group button
@@ -64,7 +64,7 @@ $textButtonActiveBgOpacity:.16;
 
 /// Border style of a outlined button
 /// @group button
-$outlinedButtonBorder:1px solid;
+$outlinedButtonBorder:2px solid;
 
 /// Text color of a plain text button
 /// @group button
@@ -80,7 +80,7 @@ $plainButtonActiveBgColor:#dee2e6;
 
 /// Background of a secondary button
 /// @group button
-$secondaryButtonBg: #607D8B;
+$secondaryButtonBg: $primaryDarkColor;
 
 /// Text color of a secondary button
 /// @group button
@@ -88,11 +88,11 @@ $secondaryButtonTextColor: #ffffff;
 
 /// Border of a secondary button
 /// @group button
-$secondaryButtonBorder: 1px solid #607D8B;
+$secondaryButtonBorder: 1px solid $primaryDarkColor;
 
 /// Background of a secondary button in hover state
 /// @group button
-$secondaryButtonHoverBg: #546E7A;
+$secondaryButtonHoverBg: $primaryDarkColor;
 
 /// Text color of a secondary button in hover state
 /// @group button
@@ -100,11 +100,11 @@ $secondaryButtonTextHoverColor: #ffffff;
 
 /// Border color of a secondary button in hover state
 /// @group button
-$secondaryButtonHoverBorderColor: #546E7A;
+$secondaryButtonHoverBorderColor: $primaryDarkColor;
 
 /// Background of a secondary button in pressed state
 /// @group button
-$secondaryButtonActiveBg: #455A64;
+$secondaryButtonActiveBg: $primaryDarkColor;
 
 /// Text color of a secondary button in pressed state
 /// @group button
@@ -112,7 +112,7 @@ $secondaryButtonTextActiveColor: #ffffff;
 
 /// Border color of a secondary button in pressed state
 /// @group button
-$secondaryButtonActiveBorderColor: #455A64;
+$secondaryButtonActiveBorderColor: $primaryDarkColor;
 
 /// Box shadow of a secondary button in focused state
 /// @group button
