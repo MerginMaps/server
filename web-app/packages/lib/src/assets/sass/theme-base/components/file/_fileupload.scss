@@ -23,6 +23,11 @@
         color: $panelContentTextColor;
         border-bottom-right-radius: $borderRadius;
         border-bottom-left-radius: $borderRadius;
+
+        &.p-fileupload-highlight {
+            border: $fileUploadContentHoverBorder;
+            background-color: $highlightBg;
+        }
     }
 
     .p-fileupload-file {

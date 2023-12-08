@@ -10,7 +10,7 @@
                 transition: $listItemTransition;
                 border-radius: $borderRadius;
 
-                &:focus {
+                &:focus-visible {
                     @include focused();
                 }
 

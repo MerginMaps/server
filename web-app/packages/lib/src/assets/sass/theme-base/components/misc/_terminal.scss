@@ -5,7 +5,8 @@
 	padding: $panelContentPadding;
 
 	.p-terminal-input {
-		font-size: $fontSize;
-		font-family: $fontFamily;
+		font-family: var(--font-family);
+		font-feature-settings: var(--font-feature-settings, normal);
+		font-size: $inputTextFontSize;
 	}
 }

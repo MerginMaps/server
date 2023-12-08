@@ -12,7 +12,7 @@
             background: $splitterGutterHandleBg;
             transition: $formElementTransition;
             
-            &:focus {
+            &:focus-visible {
                 @include focused();
             }
         }

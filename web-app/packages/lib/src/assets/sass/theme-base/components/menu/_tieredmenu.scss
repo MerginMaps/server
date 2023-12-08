@@ -4,7 +4,7 @@
     color: $menuTextColor;
     border: $menuBorder;
     border-radius: $borderRadius;
-    width: $menuWidth;
+    min-width: $menuWidth;
 
     &.p-tieredmenu-overlay {
         background: $overlayMenuBg;

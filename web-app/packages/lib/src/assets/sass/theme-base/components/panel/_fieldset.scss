@@ -28,7 +28,7 @@
                     margin-right: $inlineSpacing;
                 }
 
-                &:focus {
+                &:focus-visible {
                     @include focused();
                 }
 

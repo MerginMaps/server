@@ -511,6 +511,10 @@ $fileUploadProgressBarHeight: .25rem;
 /// @group form
 $fileUploadContentPadding: 2rem 1rem;
 
+///
+/// @group form
+$fileUploadContentHoverBorder: 1px dashed #e9ecef !default;
+
 /// Border of the fileupload content item section
 /// @group form
 $fileUploadFileBorder: 1px solid #c3cad2;;

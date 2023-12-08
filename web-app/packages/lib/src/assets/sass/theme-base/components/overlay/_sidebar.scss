@@ -7,6 +7,11 @@
     .p-sidebar-header {
         padding: $panelHeaderPadding;
 
+        .p-sidebar-header-content {
+            font-weight: $dialogHeaderFontWeight;
+            font-size: $dialogHeaderFontSize;
+        }
+
         .p-sidebar-close,
         .p-sidebar-icon {
             @include action-icon();

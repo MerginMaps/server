@@ -221,7 +221,7 @@
         }
     }
 
-    &:focus {
+    &:focus-visible {
         @include focused();
     }
 }

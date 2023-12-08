@@ -261,30 +261,6 @@ $dataViewContentPadding: 0;
 /// @group data
 $dataViewContentBorder: 0 none;
 
-/// Border for an item of a dataview in list orientation
-/// @group data
-$dataViewListItemBorder: solid #e9ecef;
-
-/// Border width for an item of a dataview in list orientation
-/// @group data
-$dataViewListItemBorderWidth: 0 0 1px 0;
-
-/// Background of a full calendar event
-/// @group data
-$fullCalendarEventBg: $primaryDarkColor;
-
-/// Border color of a full calendar event
-/// @group data
-$fullCalendarEventBorderColor: $primaryDarkColor;
-
-/// Border of a full calendar event
-/// @group data
-$fullCalendarEventBorder: 1px solid $primaryDarkColor;
-
-/// Text color of a full calendar event
-/// @group data
-$fullCalendarEventTextColor: $primaryTextColor;
-
 /// Padding of a tree
 /// @group data
 $treeContainerPadding: 0.286rem;

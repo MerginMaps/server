@@ -11,7 +11,7 @@
 
     .p-dataview-header {
         background: $tableHeaderBg;
-        color: $textColor;
+        color: $tableHeaderTextColor;
         border: $tableHeaderBorder;
         border-width: $tableHeaderBorderWidth;
         padding: $tableHeaderPadding;
@@ -20,18 +20,9 @@
 
     .p-dataview-content {
         background: $tableBodyRowBg;
-        color: $textColor;
+        color: $tableBodyRowTextColor;
         border: $dataViewContentBorder;
         padding: $dataViewContentPadding;
-    }
-
-    &.p-dataview-list {
-        .p-dataview-content {
-            > .p-grid > div {
-                border: $dataViewListItemBorder;
-                border-width: $dataViewListItemBorderWidth;
-            }
-        }
     }
 
     .p-dataview-footer {

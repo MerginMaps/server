@@ -16,7 +16,7 @@
 
         &:not(.p-disabled) {
             .p-accordion-header-link {
-                &:focus {
+                &:focus-visible {
                     @include focused-inset();
                 }
             }

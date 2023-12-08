@@ -57,10 +57,8 @@
             margin: $dockCurrentItemMargin 0;
         }
     }
-}
 
-@media screen and (max-width: 960px) {
-    .p-dock {
+    &.p-dock-mobile {
         &.p-dock-top,
         &.p-dock-bottom {
             .p-dock-list-container {

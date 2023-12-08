@@ -34,11 +34,11 @@
 
         @if (nth($overlayContentBorder, 2) == 'none') {
             border-color: rgba($overlayContentBg, 0);
-            border-bottom-color: $overlayContentBg;
+            border-bottom-color: scale-color($overlayContentBg, $lightness: -5%);
         }
         @else {
             border-color: rgba(nth($overlayContentBorder, 3), 0);
-            border-bottom-color: nth($overlayContentBorder, 3);
+            border-bottom-color: scale-color(nth($overlayContentBorder, 3), $lightness: -5%);
         }
     }
 
