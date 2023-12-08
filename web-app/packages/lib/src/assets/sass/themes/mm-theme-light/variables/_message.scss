@@ -112,7 +112,7 @@ $successMessageIconColor: #ffffff;
 
 /// Background of a warning message
 /// @group message
-$warningMessageBg: #FFB300;
+$warningMessageBg: map-get($map: $colors, $key: warning);
 
 /// Border of a warning message
 /// @group message
@@ -120,11 +120,11 @@ $warningMessageBorder: 0 none;
 
 /// Text color of a warning message
 /// @group message
-$warningMessageTextColor: $textColor;
+$warningMessageTextColor: map-get($map: $colors, $key: earth);
 
 /// Icon color of a warning message
 /// @group message
-$warningMessageIconColor: $textColor;
+$warningMessageIconColor: map-get($map: $colors, $key: earth);
 
 /// Background of an error message
 /// @group message
