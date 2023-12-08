@@ -416,6 +416,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
                 cfg = {**cfg, **parsed_version}
 
             cfg["server_configured"] = is_server_configured()
+            cfg["build_hash"] = application.config["BUILD_HASH"]
             return jsonify(cfg), 200
 
     # append project commands (from default sync module)
