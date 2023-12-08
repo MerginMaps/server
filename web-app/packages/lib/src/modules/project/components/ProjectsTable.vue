@@ -31,9 +31,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         >
           <template #body="slotProps">
             <p class="font-semibold text-sm mb-1">
-              {{ slotProps.data.name
+              <template v-if="showNamespace"
+                >{{ slotProps.data.namespace }} /</template
+              >{{ slotProps.data.name
               }}<PTag
-                v-if="slotProps.data.access.public"
+                v-if="slotProps.data.access.public && !onlyPublic"
                 severity="success"
                 :pt="{ root: { class: 'p-1 ml-1' } }"
                 >Public</PTag
@@ -125,6 +127,10 @@ export default defineComponent({
       default: false
     },
     namespace: String,
+    onlyPublic: {
+      type: Boolean,
+      default: true
+    },
     showFooter: {
       type: Boolean,
       default: true
@@ -149,12 +155,6 @@ export default defineComponent({
   computed: {
     columns(): TableDataHeader[] {
       let columns = []
-      if (this.showNamespace) {
-        columns.push({
-          header: 'Workspace',
-          field: 'namespace'
-        })
-      }
       columns = columns.concat(
         { header: 'Project name', field: 'name' },
         { header: 'Versions', field: 'version' },
