@@ -142,8 +142,6 @@ export default defineComponent({
     return {
       options: { ...this.initialOptions },
       searchFilterByProjectName: '',
-      searchFilterByNamespace: '',
-      searchFilterByDay: '',
       loading: false,
       keys: ['name', 'updated', 'disk_usage']
     }
@@ -208,9 +206,7 @@ export default defineComponent({
         'fetch-projects',
         {
           searchFilterByProjectName: this.searchFilterByProjectName,
-          searchFilterByNamespace: this.searchFilterByNamespace,
-          namespace: this.namespace,
-          searchFilterByDay: this.searchFilterByDay
+          namespace: this.namespace
         },
         this.options,
         () => {

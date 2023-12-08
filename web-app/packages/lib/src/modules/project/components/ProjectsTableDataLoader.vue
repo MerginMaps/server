@@ -116,9 +116,6 @@ export default defineComponent({
       if (projectGridState.searchFilterByProjectName) {
         params.name = projectGridState.searchFilterByProjectName.trim()
       }
-      if (projectGridState.searchFilterByNamespace) {
-        params.namespace = projectGridState.searchFilterByNamespace.trim()
-      }
       if (projectGridState.namespace) {
         params.only_namespace = projectGridState.namespace
       }
@@ -130,12 +127,6 @@ export default defineComponent({
       }
       if (this.onlyPublic) {
         params.only_public = true
-      }
-      if (
-        projectGridState.searchFilterByDay &&
-        projectGridState.searchFilterByDay >= 0
-      ) {
-        params.last_updated_in = projectGridState.searchFilterByDay
       }
       try {
         await this.getProjects({ params })
