@@ -12,12 +12,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :paginator="showFooter"
       :first="options.page - 1"
       :rows="options.itemsPerPage"
-      :rowsPerPageOptions="[10, 25, 50, 100]"
       :currentPage="options.page"
       :totalRecords="numberOfItems"
       :loading="loading"
       :lazy="true"
       size="small"
+      :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
       @row-click="rowClick"
     >
       <template v-for="col in columns" :key="col.field">
