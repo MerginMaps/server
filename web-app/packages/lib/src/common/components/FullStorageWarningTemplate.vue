@@ -5,26 +5,40 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-card
-    class="mt-3"
-    style="background-color: #fce8e6; color: rgba(0, 0, 0, 0.87)"
-    variant="outlined"
-  >
-    <v-card-text
-      ><span>
-        <b>Your storage is almost full ({{ usage }}%).</b> Soon you will not be
-        able to sync your projects. <slot name="buttons"></slot> </span
-    ></v-card-text>
-  </v-card>
+  <app-container v-if="open">
+    <app-section ground>
+      <PMessage severity="warn" @close="open = false">
+        <p>
+          <span class="font-semibold"
+            >Your storage is almost full ({{ usage }}%).</span
+          >
+          Soon you will not be able to sync your projects.
+          <slot name="buttons"></slot></p
+      ></PMessage>
+    </app-section>
+  </app-container>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, ref } from 'vue'
+
+import { AppContainer, AppSection } from '@/common/components'
 
 export default defineComponent({
   name: 'FullStorageWarningTemplate',
+  components: {
+    AppContainer,
+    AppSection
+  },
   props: {
     usage: Number
+  },
+  setup() {
+    /** Handle open state with connection to message close button */
+    const open = ref(true)
+    return {
+      open
+    }
   }
 })
 </script>

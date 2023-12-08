@@ -15,6 +15,7 @@ declare module 'vue' {
     PDropdown: typeof import('primevue/dropdown')['default']
     PMenu: typeof import('primevue/menu')['default']
     PMenubar: typeof import('primevue/menubar')['default']
+    PMessage: typeof import('primevue/message')['default']
     POverlayPanel: typeof import('primevue/overlaypanel')['default']
     PTag: typeof import('primevue/tag')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

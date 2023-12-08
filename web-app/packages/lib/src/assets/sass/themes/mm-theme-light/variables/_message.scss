@@ -8,7 +8,7 @@ $messagePadding: 1rem 1.5rem;
 
 /// Border width of a message
 /// @group message
-$messageBorderWidth: 0 0 0 4px;
+$messageBorderWidth: 0 0 0 6px;
 
 /// Font size of a message icon
 /// @group message
@@ -116,7 +116,7 @@ $warningMessageBg: map-get($map: $colors, $key: warning);
 
 /// Border of a warning message
 /// @group message
-$warningMessageBorder: 0 none;
+$warningMessageBorder: 0 solid map-get($map: $colors, $key: earth);
 
 /// Text color of a warning message
 /// @group message

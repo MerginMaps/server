@@ -5,9 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-row v-if="usage > 90">
-    <slot :usage="usage" :username="loggedUser.username" />
-  </v-row>
+  <slot v-if="usage > 90" :usage="usage" />
 </template>
 
 <script lang="ts">
@@ -19,14 +17,14 @@ import { useUserStore } from '@/modules/user/store'
 export default defineComponent({
   name: 'DashboardFullStorageWarningRow',
   computed: {
-    ...mapState(useUserStore, ['loggedUser']),
-
+    ...mapState(useUserStore, ['currentWorkspace']),
     usage() {
       return Math.floor(
-        (this.loggedUser?.disk_usage / this.loggedUser?.storage) * 100
+        (this.currentWorkspace?.disk_usage / this.currentWorkspace?.storage) *
+          100
       )
     }
-  }
+  },
 })
 </script>
 

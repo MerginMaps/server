@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 // styles must be imported first (at least before imports of our libs)
-import 'vuetify/dist/vuetify.min.css'
 import 'material-icons/iconfont/material-icons.scss'
 import '@fortawesome/fontawesome-free/css/all.css'
 import '@mdi/font/css/materialdesignicons.css'

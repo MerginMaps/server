@@ -13,10 +13,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       @fetch-projects="fetchProjects"
     >
       <template #empty>
-        <div class="flex flex-column align-items-center p-6 text-center">
+        <div class="flex flex-column align-items-center p-4 text-center">
           <img src="@/assets/map-circle.svg" alt="No projects" />
           <p class="font-semibold p-4">There are currently no projects.</p>
-          <p class="text-sm opacity-80">You don’t have got any projects yet.</p>
+          <p class="text-sm opacity-80 m-0">
+            You don’t have got any projects yet.
+          </p>
           <template v-if="canCreateProject">
             <p class="text-sm opacity-80 pb-4">Please create new project.</p>
             <PButton @click="newProjectDialog">Create new project</PButton>

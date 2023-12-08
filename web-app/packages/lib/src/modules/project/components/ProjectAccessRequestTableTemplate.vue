@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     }"
   >
     <template #header>
-      <h3 class="font-semibold text-xs text-color">Access requests</h3>
+      <h3 class="font-semibold text-xs text-color m-0">Access requests</h3>
     </template>
     <template #list="slotProps">
       <template v-for="item in slotProps.items" :key="item.id">

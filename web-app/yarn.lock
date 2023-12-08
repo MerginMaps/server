@@ -2895,10 +2895,10 @@ primeflex@^3.3.1:
   resolved "https://registry.yarnpkg.com/primeflex/-/primeflex-3.3.1.tgz#361dddf6eb5db50d733e4cddd4b6e376a3d7bd68"
   integrity sha512-zaOq3YvcOYytbAmKv3zYc+0VNS9Wg5d37dfxZnveKBFPr7vEIwfV5ydrpiouTft8MVW6qNjfkaQphHSnvgQbpQ==
 
-primevue@^3.42.0:
-  version "3.42.0"
-  resolved "https://registry.yarnpkg.com/primevue/-/primevue-3.42.0.tgz#17b44f6c85c48b44cacd43a76142a59ebf8bad4f"
-  integrity sha512-vY/nHBInl/k2MFfgx+5dGI3tH1P6OmO2Oj6eOLwtHk000yopPxLBUP/enALoElriy5EaPzfv02upOrsQqd+nJA==
+primevue@^3.43.0:
+  version "3.43.0"
+  resolved "https://registry.yarnpkg.com/primevue/-/primevue-3.43.0.tgz#bee115cd9a8324106d0a66078eb82c37b9118693"
+  integrity sha512-iW2gEbM79v5RzRYIrg010fN1DRr5CIRdMsVMG3pBUCq0rzUGnm/hlzJ9ThDZyJrA0/tEKByAo/Pra56s5PnvqQ==
 
 punycode@^2.1.0:
   version "2.3.0"

@@ -4,6 +4,8 @@
 
 export * from './base'
 
+export { default as AppSection } from './AppSection.vue'
+export { default as AppContainer } from './AppContainer.vue'
 export { default as ActionButton } from './ActionButton.vue'
 export { default as CustomPage } from './CustomPage.vue'
 export { default as FullStorageWarning } from './FullStorageWarning.vue'
@@ -17,5 +19,3 @@ export { default as UsageStatus } from './UsageStatus.vue'
 export { default as UsageStatusTemplate } from './UsageStatusTemplate.vue'
 export { default as WarningMessage } from './WarningMessage.vue'
 export { default as WarningMessageTemplate } from './WarningMessageTemplate.vue'
-export { default as AppSection } from './AppSection.vue'
-export { default as AppContainer } from './AppContainer.vue'

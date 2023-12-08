@@ -34,7 +34,7 @@ import {
   useUserStore,
   DashboardProjectsRow
 } from '@mergin/lib'
-import { defineComponent, computed, ref } from 'vue'
+import { defineComponent, computed } from 'vue'
 
 export default defineComponent({
   name: 'DashboardView',
