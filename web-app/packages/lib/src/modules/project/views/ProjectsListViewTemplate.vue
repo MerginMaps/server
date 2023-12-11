@@ -150,7 +150,7 @@ export default defineComponent({
       })
     },
     newProjectDialog() {
-      const dialog = { maxWidth: 500, persistent: true }
+      const dialog = { persistent: true, header: 'New project' }
       this.show({
         component: ProjectForm,
         params: {

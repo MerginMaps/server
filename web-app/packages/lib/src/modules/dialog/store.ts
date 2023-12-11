@@ -16,13 +16,20 @@ export interface DialogState {
 export const useDialogStore = defineStore('dialogModule', {
   state: (): DialogState => ({
     isDialogOpen: false,
-    params: null,
+    params: {
+      dialog: {
+        maxWidth: 500,
+        header: 'Action'
+      }
+    },
     component: null
   }),
 
   getters: {
-    dialogProps(state) {
-      return state.params ? state.params.dialog : {}
+    dialogProps(state): DialogParams['dialog'] {
+      return state.params
+        ? state.params.dialog
+        : { header: 'Action', maxWidth: 500 }
     }
   },
 

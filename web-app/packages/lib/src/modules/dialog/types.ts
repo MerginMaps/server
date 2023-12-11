@@ -5,7 +5,12 @@
 import { Component } from 'vue'
 
 export interface DialogParams {
-  dialog: Record<string, unknown>
+  dialog: {
+    maxWidth?: number
+    persistent?: boolean
+    keepAlive?: boolean
+    header: string
+  }
   // TODO: clear unknown based on 'on-listener' in template
   listeners?: unknown | Record<string, (...args: unknown[]) => void>
   props?: Record<string, unknown>

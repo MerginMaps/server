@@ -143,11 +143,14 @@ export default defineComponent({
       }
     },
     newProjectDialog() {
-      const dialog = { maxWidth: 500, persistent: true }
+      const dialog = { persistent: true, header: 'New project' }
       this.show({
         component: ProjectForm,
         params: {
-          dialog
+          dialog,
+          listeners: {
+            error: (err, data) => this.$emit('new-project-error', err, data)
+          },
         }
       })
     }

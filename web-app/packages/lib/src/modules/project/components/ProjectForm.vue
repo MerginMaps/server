@@ -5,53 +5,81 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-card v-on:keyup.enter="createProject">
-    <v-card-title>
-      <span class="text-h5">New project</span>
-    </v-card-title>
-    <v-card-text>
-      <p class="text-xs-center red--text" v-text="error" />
-      <v-text-field
-        autofocus
-        label="name"
-        v-model="name"
-        data-cy="project-form-name"
-      />
-    </v-card-text>
-    <v-card-actions>
-      <v-spacer />
-      <v-btn @click="close" class="black--text"> Close</v-btn>
-      <v-btn
-        id="create-project-btn"
-        class="primary"
-        :disabled="!name"
-        @click="createProject"
-        data-cy="project-form-create-btn"
+  <div class="py-4">
+    <div class="mb-4">
+      <span class="flex p-float-label w-full">
+        <PInputText
+          autofocus
+          id="name"
+          v-model="name"
+          type="text"
+          :class="{ 'p-invalid': errors.detail }"
+          aria-describedby="text-error"
+          data-cy="project-form-name"
+          class="border-round-xl flex-grow-1"
+          :style="{ backgroundColor: 'var(--light-green-color)' }"
+        />
+        <label for="name">Project name</label>
+        <small class="p-error" id="text-error">{{
+          errors.detail || '&nbsp;'
+        }}</small>
+      </span>
+    </div>
+
+    <tip-message class="mb-4">
+      ><template #description
+        >A good candidate for a project name is name of the location, or purpose
+        of the field survey.</template
+      ></tip-message
+    >
+
+    <div class="flex justify-content-between align-items-center">
+      <PButton
+        severity="secondary"
+        outlined
+        @click="close"
+        class="flex w-6 mr-1 justify-content-center"
+        >Cancel</PButton
       >
-        Create
-      </v-btn>
-    </v-card-actions>
-  </v-card>
+
+      <PButton
+        id="create-project-btn"
+        :disabled="!name"
+        @click="create"
+        data-cy="project-form-create-btn"
+        class="flex w-6 justify-content-center"
+      >
+        Create project
+      </PButton>
+    </div>
+  </div>
 </template>
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import { TipMessage } from '@/common/components'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useFormStore } from '@/modules/form/store'
 import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
-  name: 'new-project',
+  name: 'new-project-form',
+  components: {
+    TipMessage
+  },
   data() {
     return {
-      name: '',
-      error: null
+      name: ''
     }
   },
   computed: {
-    ...mapState(useProjectStore, ['currentNamespace'])
+    ...mapState(useProjectStore, ['currentNamespace']),
+    ...mapState(useFormStore, ['getErrorByComponentId']),
+    errors() {
+      return this.getErrorByComponentId(this.merginComponentUuid) ?? {}
+    }
   },
   beforeDestroy() {
     this.clearErrors({
@@ -62,9 +90,9 @@ export default defineComponent({
   methods: {
     ...mapActions(useDialogStore, ['close']),
     ...mapActions(useFormStore, ['clearErrors']),
-    ...mapActions(useProjectStore, { createProjectAction: 'createProject' }),
+    ...mapActions(useProjectStore, ['createProject']),
 
-    async createProject() {
+    async create() {
       // TODO: add types
       const dialogData = { componentId: this.merginComponentUuid }
       await this.clearErrors(dialogData)
@@ -72,8 +100,8 @@ export default defineComponent({
         const data = {
           name: this.name.trim(),
           public: false
-        } as any
-        await this.createProjectAction({
+        }
+        await this.createProject({
           data,
           namespace: this.currentNamespace
         })
@@ -82,6 +110,12 @@ export default defineComponent({
       } catch (err) {
         this.$emit('error', err, dialogData)
       }
+    },
+    beforeDestroy() {
+      this.clearErrors({
+        componentId: this.merginComponentUuid,
+        keepNotification: true
+      })
     }
   }
 })

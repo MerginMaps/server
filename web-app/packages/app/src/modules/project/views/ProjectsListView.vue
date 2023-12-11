@@ -16,6 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         :show-namespace="false"
         :namespace="namespace"
         :only-public="onlyPublic"
+        @new-project-error="onNewProjectError"
       />
     </template>
   </projects-list-view-template>
@@ -49,6 +50,7 @@ export default defineComponent({
      * Error handler for create new project from $emit in Template
      * */
     function onNewProjectError(err, data) {
+      console.log(data)
       formStore.handleError({
         componentId: data.componentId,
         error: err,
