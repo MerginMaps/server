@@ -8,6 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <div>
     <projects-table
       v-bind="$props"
+      :show-footer="showFooter && projectsCount > initialOptions.itemsPerPage"
       :projects="projects"
       :numberOfItems="projectsCount"
       @fetch-projects="fetchProjects"
@@ -102,6 +103,7 @@ export default defineComponent({
       }
       params.page = gridOptions.page
       params.per_page = gridOptions.itemsPerPage
+      console.log(gridOptions)
       if (gridOptions.sortBy) {
         let orderParam = ''
         if (gridOptions.sortBy === 'meta.size') {

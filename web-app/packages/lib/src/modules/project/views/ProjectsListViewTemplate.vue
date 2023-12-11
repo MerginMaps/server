@@ -35,11 +35,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </header>
         <!-- Filters -->
         <div class="flex align-items-center justify-content-between">
-          <span class="p-input-icon-left">
+          <span class="p-input-icon-left flex-grow-1">
             <i class="ti ti-search text-xl"></i>
             <PInputText
               placeholder="Search projects by name"
-              :pt="{ root: { class: 'border-round-xl' } }"
+              v-model="projectsStore.projectsSearch"
+              :pt="{ root: { class: 'border-round-xl w-full' } }"
             />
           </span>
           <PButton
@@ -74,11 +75,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
-import { MenuItem } from 'primevue/menuitem'
+import { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { defineComponent, ref } from 'vue'
 
 import { AppContainer, AppSection } from '@/common'
-import { useDialogStore } from '@/modules'
+import { useDialogStore, useProjectStore } from '@/modules'
 import { useLayoutStore } from '@/modules/layout/store'
 import ProjectForm from '@/modules/project/components/ProjectForm.vue'
 import { useUserStore } from '@/modules/user/store'
@@ -91,13 +92,15 @@ export default defineComponent({
     canCreateProject: Boolean
   },
   setup() {
+    const projectsStore = useProjectStore()
     const menu = ref()
 
-    return { menu }
+    return { menu, projectsStore }
   },
   computed: {
     ...mapState(useUserStore, ['loggedUser']),
     ...mapState(useLayoutStore, ['drawer']),
+    ...mapState(useProjectStore, ['projectsSorting']),
     header() {
       return this.onlyPublic ? 'Mergin Maps public projects' : 'My projects'
     },
@@ -106,23 +109,40 @@ export default defineComponent({
     },
     filterMenuItems(): MenuItem[] {
       return [
-      {
-          label: 'Sort by name',
-          command: () => {
-            console.log('hhh')
-          }
+        {
+          label: 'Sort by name A-Z',
+          key: 'name',
+          sortDesc: false
+        },
+        {
+          label: 'Sort by name Z-A',
+          key: 'name',
+          sortDesc: true
         },
         {
           label: 'Sort by last updated',
+          key: 'updated',
+          sortDesc: true
         },
         {
-          label: 'Sort by file size'
+          label: 'Sort by file size',
+          keys: 'disk_usage',
+          sortDesc: true
         }
-      ]
+      ].map((item) => ({
+        ...item,
+        command: (e: MenuItemCommandEvent) => this.menuItemClick(e),
+        class:
+          this.projectsSorting.sortBy === item.key &&
+          this.projectsSorting.sortDesc === item.sortDesc
+            ? 'bg-primary-400'
+            : ''
+      }))
     }
   },
   methods: {
     ...mapActions(useDialogStore, ['show']),
+    ...mapActions(useProjectStore, ['setProjectsSorting']),
 
     findPublicProjects() {
       this.$router.push({
@@ -142,7 +162,14 @@ export default defineComponent({
       })
     },
     toggleMenu(event) {
-      this.$refs.menu.toggle(event)
+      const menu = this.$refs.menu as { toggle: (event: Event) => void }
+      menu.toggle(event)
+    },
+    menuItemClick(e: MenuItemCommandEvent) {
+      this.setProjectsSorting({
+        sortBy: e.item.key,
+        sortDesc: e.item.sortDesc
+      })
     }
   }
 })

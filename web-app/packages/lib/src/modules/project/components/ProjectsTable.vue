@@ -10,7 +10,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       v-if="numberOfItems > 0"
       :value="projects"
       :paginator="showFooter"
-      :first="options.page - 1"
       :rows="options.itemsPerPage"
       :currentPage="options.page"
       :totalRecords="numberOfItems"
@@ -19,6 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       size="small"
       :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
       @row-click="rowClick"
+      @page="onPage"
     >
       <template v-for="col in columns" :key="col.field">
         <PColumn
@@ -48,6 +48,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 class="ti ti-alert-circle-filled ml-1"
                 data-cy="project-form-missing-project"
                 style="color: var(--grape-color)"
+              ></i>
+              <i
+                v-if="slotProps.data.has_conflict"
+                v-tooltip.right="{
+                  value: 'Conflicting file in project'
+                }"
+                class="ti ti-alert-triangle-filled ml-1"
+                style="margin-right: 20px"
+                data-cy="project-form-conflict-file"
               ></i>
             </p>
             <p
@@ -113,8 +122,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { DataTableRowClickEvent } from 'primevue/datatable'
+import debounce from 'lodash/debounce'
+import { mapState } from 'pinia'
+import { DataTablePageEvent, DataTableRowClickEvent } from 'primevue/datatable'
 import { defineComponent, PropType } from 'vue'
+
+import { useProjectStore } from '../store'
 
 import { PaginatedGridOptions } from '@/common'
 import { ProjectListItem, TableDataHeader } from '@/modules/project/types'
@@ -147,12 +160,11 @@ export default defineComponent({
   data() {
     return {
       options: { ...this.initialOptions },
-      searchFilterByProjectName: '',
-      loading: false,
-      keys: ['name', 'updated', 'disk_usage']
+      loading: false
     }
   },
   computed: {
+    ...mapState(useProjectStore, ['projectsSearch', 'projectsSorting']),
     columns(): TableDataHeader[] {
       let columns = []
       columns = columns.concat(
@@ -183,6 +195,17 @@ export default defineComponent({
     $route: {
       immediate: false,
       handler: 'changedRoute'
+    },
+    projectsSearch: {
+      handler: debounce(function () {
+        this.filterData()
+      }, 500)
+    },
+    projectsSorting: {
+      deep: true,
+      handler() {
+        this.fetchProjects()
+      }
     }
   },
   created() {
@@ -205,10 +228,10 @@ export default defineComponent({
       this.$emit(
         'fetch-projects',
         {
-          searchFilterByProjectName: this.searchFilterByProjectName,
+          searchFilterByProjectName: this.projectsSearch,
           namespace: this.namespace
         },
-        this.options,
+        { ...this.options, ...this.projectsSorting },
         () => {
           this.loading = false
         }
@@ -227,6 +250,11 @@ export default defineComponent({
           projectName: data.name
         }
       })
+    },
+    onPage(e: DataTablePageEvent) {
+      this.options.page = e.page + 1
+      this.options.itemsPerPage = e.rows
+      this.fetchProjects()
     }
   }
 })

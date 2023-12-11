@@ -31,7 +31,8 @@ import {
   GetUserAccessRequestsPayload,
   GetProjectAccessRequestsPayload,
   DownloadPayload,
-  DeleteProjectPayload
+  DeleteProjectPayload,
+  ProjectsSortingParams
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
 
@@ -49,6 +50,8 @@ export interface ProjectState {
   project: EnhancedProjectDetail
   projects: ProjectListItem[]
   projectsCount: number
+  projectsSearch: string
+  projectsSorting: ProjectsSortingParams
   uploads: any
   currentNamespace: string
   versions: ProjectVersion[]
@@ -67,7 +70,12 @@ export const useProjectStore = defineStore('projectModule', {
     currentNamespace: null,
     versions: [],
     versionsCount: 0,
-    versionsLoading: false
+    versionsLoading: false,
+    projectsSearch: null,
+    projectsSorting: {
+      sortBy: 'updated',
+      sortDesc: true
+    }
   }),
 
   getters: {
@@ -610,6 +618,10 @@ export const useProjectStore = defineStore('projectModule', {
         payload.namespace,
         payload.projectName
       )
+    },
+
+    setProjectsSorting(payload: ProjectsSortingParams) {
+      this.projectsSorting = payload
     }
   }
 })
