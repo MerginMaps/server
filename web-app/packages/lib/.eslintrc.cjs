@@ -21,5 +21,6 @@ module.exports = {
     'vue/no-v-for-template-key-on-child': 'error',
     'vue/no-v-for-template-key': 'off',
     'vue/no-multiple-template-root': 'off',
+    'vue/no-v-model-argument': 'off',
   }
 }
