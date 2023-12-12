@@ -27,7 +27,8 @@ $colors: (
     "positive": #C0EBCF,
     "negative": #F0C4BC,
     "warning": #F7DDAF,
-    "earth": #4D2A24
+    "earth": #4D2A24,
+    "deep-ocean": #1C324A
 );
 
 // Mandatory Designer Variables
@@ -90,5 +91,8 @@ $colors: (
     --highlight-text-color: #{$highlightTextColor};
     --forest-color: #{$primaryDarkColor};
     --grape-color: #{map-get($colors, "grape")};
+    // TODO: use primary-classes primary-100 ... ??
+    --light-green-color: #{map-get($colors, "light-green")};
+    --deep-ocean-color: #{map-get($colors, "light-ocean")};
     color-scheme: light;
 }

@@ -16,6 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         :show-namespace="false"
         :namespace="namespace"
         :only-public="onlyPublic"
+        @new-project-error="onNewProjectError"
       />
     </template>
   </projects-list-view-template>

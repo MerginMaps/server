@@ -8,10 +8,12 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     PAvatar: typeof import('primevue/avatar')['default']
+    PBreadcrumb: typeof import('primevue/breadcrumb')['default']
     PButton: typeof import('primevue/button')['default']
     PColumn: typeof import('primevue/column')['default']
     PDataTable: typeof import('primevue/datatable')['default']
     PDataView: typeof import('primevue/dataview')['default']
+    PDialog: typeof import('primevue/dialog')['default']
     PDropdown: typeof import('primevue/dropdown')['default']
     PInputText: typeof import('primevue/inputtext')['default']
     PMenu: typeof import('primevue/menu')['default']
@@ -34,7 +36,6 @@ declare module 'vue' {
     VCol: typeof import('vuetify/components')['VCol']
     VContainer: typeof import('vuetify/components')['VContainer']
     VDataTable: typeof import('vuetify/components')['VDataTable']
-    VDialog: typeof import('vuetify/components')['VDialog']
     VDivider: typeof import('vuetify/components')['VDivider']
     VForm: typeof import('vuetify/components')['VForm']
     VIcon: typeof import('vuetify/components')['VIcon']
