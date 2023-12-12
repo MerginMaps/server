@@ -17,8 +17,7 @@ export default defineComponent({
   name: 'FullStorageWarning',
   components: { FullStorageWarningTemplate },
   props: {
-    usage: Number,
-    username: String
+    usage: Number
   }
 })
 </script>

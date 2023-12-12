@@ -2,6 +2,10 @@
     &.p-invalid.p-component > .p-inputtext {
         @include invalid-input();
     }
+
+    &:not(.p-calendar-disabled).p-focus > .p-inputtext {
+        @include focused-input();
+    }
 }
 
 .p-datepicker {
@@ -190,6 +194,14 @@
         }
     }
 
+    &.p-datepicker-mobile {
+        table {
+            th, td {
+                padding: $calendarCellDatePaddingSM;
+            }
+        }
+    }
+
     &:not(.p-disabled) {
         table {
             td {
@@ -234,14 +246,4 @@
         }
     }
 
-}
-
-@media screen and (max-width: $calendarBreakpoint) {
-    .p-datepicker {
-        table {
-            th, td {
-                padding: $calendarCellDatePaddingSM;
-            }
-        }
-    }
 }

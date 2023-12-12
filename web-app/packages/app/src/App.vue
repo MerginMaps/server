@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         'col-12',
         'min-h-full',
         'overflow-auto',
-        drawer && !isOverlay && 'xl:col-offset-2 xl:col-10',
+        drawer && !isOverlay && 'xl:col-offset-2 xl:col-10'
       ]"
     >
       <router-view name="header" v-slot="{ Component, route }">
@@ -50,11 +50,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           >
         </v-card-text>
       </v-card>
-      <router-view class="page" v-slot="{ Component, route }">
+      <router-view v-slot="{ Component, route }">
         <transition name="fade">
-          <div :key="route.name">
-            <component :is="Component" />
-          </div>
+          <component :is="Component" />
         </transition>
       </router-view>
     </main>
@@ -75,7 +73,8 @@ import {
   useInstanceStore,
   useLayoutStore,
   useNotificationStore,
-  useUserStore
+  useUserStore,
+  AppContainer
 } from '@mergin/lib'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
@@ -83,7 +82,13 @@ import { useMeta } from 'vue-meta'
 
 export default defineComponent({
   name: 'app',
-  components: { UploadProgress, Notifications, DialogWindows, GlobalWarning },
+  components: {
+    UploadProgress,
+    Notifications,
+    DialogWindows,
+    GlobalWarning,
+    AppContainer
+  },
   computed: {
     ...mapState(useInstanceStore, ['pingData']),
     ...mapState(useAppStore, ['serverError']),
@@ -161,7 +166,6 @@ export default defineComponent({
 </script>
 
 <style lang="scss">
-
 .fade-leave-active {
   position: absolute;
   top: 0;

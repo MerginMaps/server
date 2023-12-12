@@ -32,7 +32,7 @@
         color: $highlightTextColor;
     }
 
-    &:focus {
+    &:focus-visible {
         @include focused();
     }
 
@@ -53,7 +53,7 @@
         background: $actionIconHoverBg;
     }
 
-    &:focus {
+    &:focus-visible {
         @include focused();
     }
 }
@@ -88,7 +88,7 @@
                 background: $inputListItemHoverBg;
             }
 
-            &:focus {
+            &:focus-visible {
                 @include focused-listitem();
             }
         }

@@ -16,9 +16,7 @@ import { UserSearch } from '@/modules/user/types'
 
 export interface ProjectGridState {
   searchFilterByProjectName: string
-  searchFilterByNamespace: string
   namespace: string
-  searchFilterByDay: number
 }
 
 export interface PaginatedProjectsParams extends PaginatedRequestParamsApi {
@@ -302,8 +300,8 @@ export interface ProjectVersionsItem extends ProjectVersion {
 }
 
 export interface TableDataHeader {
-  text: string
-  value: string
+  header: string
+  field: string
   sortable?: boolean
   width?: number
 }

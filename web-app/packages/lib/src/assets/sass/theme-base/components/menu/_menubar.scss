@@ -22,7 +22,7 @@
         background: $overlayMenuBg;
         border: $overlayMenuBorder;
         box-shadow: $overlayMenuShadow;
-        width: $menuWidth;
+        min-width: $menuWidth;
 
         .p-menuitem-separator {
             border-top: $divider;
@@ -33,14 +33,9 @@
             font-size: $menuitemSubmenuIconFontSize;
         }
     }
-}
 
-@media screen and (max-width: 960px) {
-    .p-menubar {
-        position: relative;
-
+    &.p-menubar-mobile {
         .p-menubar-button {
-            display: flex;
             width: $actionIconWidth;
             height: $actionIconHeight;
             color: $horizontalMenuRootMenuitemIconColor;
@@ -58,13 +53,10 @@
         }
 
         .p-menubar-root-list {
-            position: absolute;
-            display: none;
             padding: $verticalMenuPadding;
             background: $overlayMenuBg;
             border: $overlayMenuBorder;
             box-shadow: $overlayMenuShadow;
-            width: 100%;
     
             .p-menuitem-separator {
                 border-top: $divider;
@@ -76,9 +68,6 @@
             }
 
             .p-menuitem {
-                width: 100%;
-                position: static;
-
                 .p-menuitem-content {
                     .p-menuitem-link {
                         .p-submenu-icon {
@@ -101,11 +90,6 @@
             }
 
             .p-submenu-list {
-                width: 100%;
-                position: static;
-                box-shadow: none;
-                border: 0 none;
-
                 .p-submenu-icon {
                     transition: transform $transitionDuration;
                     transform: rotate(90deg);
@@ -122,20 +106,7 @@
                 }
             }
     
-            .p-menuitem {
-                width: 100%;
-                position: static;
-            }
-
             @include nested-submenu-indents(nth($menuitemPadding, 1), 2, 10);
-        }
-
-        &.p-menubar-mobile-active .p-menubar-root-list {
-            display: flex;
-            flex-direction: column;
-            top: 100%;
-            left: 0;
-            z-index: 1;
         }
     }
 }

@@ -4,5 +4,6 @@
 
 export { default as DashboardAccessRequestsRow } from './DashboardAccessRequestsRow.vue'
 export { default as DashboardFullStorageWarningRow } from './DashboardFullStorageWarningRow.vue'
-export { default as DashboardProjectsRow } from './DashboardProjectsRow.vue'
 export { default as DashboardUsageInfoRow } from './DashboardUsageInfoRow.vue'
+export { default as DashboardProjectsRow } from './DashboardProjectsRow.vue'
+export { default as DashboardFooter } from './DashboardFooter.vue'

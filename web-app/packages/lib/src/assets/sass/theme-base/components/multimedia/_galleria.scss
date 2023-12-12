@@ -139,7 +139,7 @@
         }
 
         .p-galleria-thumbnail-item-content {
-            &:focus {
+            &:focus-visible {
                 @include focused();
             }
         }

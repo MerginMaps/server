@@ -28,14 +28,12 @@ export interface ResetPasswordData {
 
 /* eslint-disable camelcase */
 export interface UserProfileResponse {
-  disk_usage: number
   first_name: string
   has_project: boolean
   last_name: string
   name: string
   receive_notifications: boolean
   registration_date: string
-  storage: number
 }
 
 export interface UserResponse {

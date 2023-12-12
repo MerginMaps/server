@@ -5,20 +5,34 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <projects-table
-    v-bind="$props"
-    :projects="projects"
-    :numberOfItems="numberOfItems"
-    :onlyPublic="onlyPublic"
-    @fetch-projects="fetchProjects"
-  />
+  <div>
+    <projects-table
+      v-bind="$props"
+      :projects="projects"
+      :numberOfItems="projectsCount"
+      @fetch-projects="fetchProjects"
+    >
+      <template #empty>
+        <div class="flex flex-column align-items-center p-4 text-center">
+          <img src="@/assets/map-circle.svg" alt="No projects" />
+          <p class="font-semibold p-4">There are currently no projects.</p>
+          <p class="text-sm opacity-80 m-0">You don't have any projects yet.</p>
+          <template v-if="canCreateProject">
+            <p class="text-sm opacity-80 pb-4">Please create new project.</p>
+            <PButton @click="newProjectDialog">Create new project</PButton>
+          </template>
+        </div>
+      </template>
+    </projects-table>
+  </div>
 </template>
 
 <script lang="ts">
-import { mapActions } from 'pinia'
+import { mapState, mapActions } from 'pinia'
 import { defineComponent, PropType } from 'vue'
 
 import { PaginatedGridOptions } from '@/common'
+import { ProjectForm, useDialogStore } from '@/modules'
 import { useNotificationStore } from '@/modules/notification/store'
 import ProjectsTable from '@/modules/project/components/ProjectsTable.vue'
 import { useProjectStore } from '@/modules/project/store'
@@ -37,10 +51,6 @@ export default defineComponent({
       default: false
     },
     namespace: String,
-    sortable: {
-      type: Boolean,
-      default: true
-    },
     asAdmin: {
       type: Boolean,
       default: false
@@ -60,22 +70,22 @@ export default defineComponent({
     initialOptions: {
       type: Object as PropType<PaginatedGridOptions>,
       default: () => ({
-        sortBy: ['updated'],
-        sortDesc: [true],
         itemsPerPage: 25,
         page: 1
       })
+    },
+    /** Whether the user can create a new project */
+    canCreateProject: {
+      type: Boolean as PropType<boolean>
     }
   },
-  data() {
-    return {
-      numberOfItems: 0,
-      projects: []
-    }
+  computed: {
+    ...mapState(useProjectStore, ['projects', 'projectsCount'])
   },
   methods: {
     ...mapActions(useProjectStore, ['getProjects']),
     ...mapActions(useNotificationStore, ['error']),
+    ...mapActions(useDialogStore, ['show']),
     async fetchProjects(
       projectGridState: ProjectGridState,
       gridOptions: PaginatedGridOptions,
@@ -86,7 +96,7 @@ export default defineComponent({
         this.$route.name === 'shared_projects' ||
         this.$route.name === 'my_projects'
       ) {
-        params.flag = this.$route.meta.flag
+        params.flag = this.$route.meta.flag as string
       }
       params.page = gridOptions.page
       params.per_page = gridOptions.itemsPerPage
@@ -104,9 +114,6 @@ export default defineComponent({
       if (projectGridState.searchFilterByProjectName) {
         params.name = projectGridState.searchFilterByProjectName.trim()
       }
-      if (projectGridState.searchFilterByNamespace) {
-        params.namespace = projectGridState.searchFilterByNamespace.trim()
-      }
       if (projectGridState.namespace) {
         params.only_namespace = projectGridState.namespace
       }
@@ -119,16 +126,8 @@ export default defineComponent({
       if (this.onlyPublic) {
         params.only_public = true
       }
-      if (
-        projectGridState.searchFilterByDay &&
-        projectGridState.searchFilterByDay >= 0
-      ) {
-        params.last_updated_in = projectGridState.searchFilterByDay
-      }
       try {
-        const response = await this.getProjects({ params })
-        this.projects = response.data?.projects
-        this.numberOfItems = response.data?.count
+        await this.getProjects({ params })
         if (onFinish) {
           onFinish()
         }
@@ -138,6 +137,15 @@ export default defineComponent({
         }
         await this.error({ text: 'Failed to fetch list of projects' })
       }
+    },
+    newProjectDialog() {
+      const dialog = { maxWidth: 500, persistent: true }
+      this.show({
+        component: ProjectForm,
+        params: {
+          dialog
+        }
+      })
     }
   }
 })

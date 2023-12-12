@@ -92,7 +92,8 @@ const onCloseClick = () => {
 
 <style lang="scss" scoped>
 .sidebar {
-  max-width: 16.6%;
+  // Based on <main> grid values
+  max-width: 16.66%;
   // TODO: Clean it to normal values after VUETIFY
   z-index: 1004;
 }

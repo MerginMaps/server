@@ -5,22 +5,34 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-row>
-    <v-col class="pa-0">
-      <v-card class="mt-3" variant="outlined" color="white">
-        <v-card-title><h3>Recent active projects</h3></v-card-title>
-        <v-card-text style="padding-left: 0">
-          <slot name="projects"></slot>
-        </v-card-text>
-      </v-card>
-    </v-col>
-  </v-row>
+  <!-- Projects -->
+  <app-container>
+    <app-section>
+      <template #title>Recent active projects</template>
+      <template #default>
+        <projects-table-data-loader
+          :show-namespace="false"
+          :showFooter="false"
+          :public="false"
+          :can-create-project="canCreateProject"
+          :initialOptions="initialOptions"
+        />
+      </template>
+    </app-section>
+  </app-container>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { reactive } from 'vue'
 
-export default defineComponent({
-  name: 'DashboardProjectsRow'
+import { AppContainer, AppSection } from '@/common'
+import ProjectsTableDataLoader from '@/modules/project/components/ProjectsTableDataLoader.vue'
+defineProps<{ canCreateProject: boolean }>()
+
+const initialOptions = reactive({
+  sortBy: 'updated',
+  sortDesc: true,
+  itemsPerPage: 5,
+  page: 1
 })
 </script>

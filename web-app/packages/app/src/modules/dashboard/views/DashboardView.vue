@@ -5,9 +5,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <dashboard-view-template :canCreateProject="canCreateProject">
+  <dashboard-view-template>
     <template #usageInfo>
       <dashboard-usage-info-row />
+      <dashboard-full-storage-warning-row v-slot="{ usage }">
+        <full-storage-warning :usage="usage" />
+      </dashboard-full-storage-warning-row>
     </template>
     <template #content>
       <dashboard-access-requests-row v-if="userStore.isGlobalWorkspaceAdmin">
@@ -15,19 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <project-access-request-table :namespace="namespace" />
         </template>
       </dashboard-access-requests-row>
-      <dashboard-projects-row>
-        <template #projects>
-          <projects-table-data-loader
-            :show-namespace="false"
-            :showFooter="false"
-            :showHeader="false"
-            :sortable="false"
-            :public="false"
-            :initialOptions="initialOptions"
-            show-tags
-          />
-        </template>
-      </dashboard-projects-row>
+      <dashboard-projects-row :canCreateProject="canCreateProject" />
     </template>
   </dashboard-view-template>
 </template>
@@ -35,49 +26,33 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import {
   DashboardViewTemplate,
-  DashboardProjectsRow,
-  DashboardAccessRequestsRow,
-  ProjectsTableDataLoader,
   DashboardUsageInfoRow,
+  DashboardFullStorageWarningRow,
+  DashboardAccessRequestsRow,
   ProjectAccessRequestTable,
-  useProjectStore,
-  useUserStore
+  FullStorageWarning,
+  useUserStore,
+  DashboardProjectsRow
 } from '@mergin/lib'
-import { defineComponent, computed, ref, onMounted } from 'vue'
+import { defineComponent, computed } from 'vue'
 
 export default defineComponent({
   name: 'DashboardView',
   components: {
     DashboardViewTemplate,
-    DashboardProjectsRow,
     DashboardAccessRequestsRow,
-    ProjectsTableDataLoader,
+    DashboardFullStorageWarningRow,
     DashboardUsageInfoRow,
-    ProjectAccessRequestTable
+    ProjectAccessRequestTable,
+    FullStorageWarning,
+    DashboardProjectsRow
   },
   setup() {
-    const initialOptions = ref({
-      sortBy: ['updated'],
-      sortDesc: [true],
-      itemsPerPage: 5,
-      page: 1
-    })
-
-    const projectStore = useProjectStore()
     const userStore = useUserStore()
 
     const canCreateProject = computed(() => userStore.isGlobalWorkspaceAdmin)
 
-    onMounted(async () => {
-      await projectStore.initProjects({
-        params: { per_page: 5, page: 1 }
-        // TODO: transform options to request params
-        // params: initialOptions.value
-      })
-    })
-
     return {
-      initialOptions,
       userStore,
       canCreateProject
     }

@@ -5,7 +5,7 @@
     border: $overlayMenuBorder;
     box-shadow: $overlayMenuShadow;
     border-radius: $borderRadius;
-    width: $menuWidth;
+    min-width: $menuWidth;
 
     .p-contextmenu-root-list {
         outline: 0 none;

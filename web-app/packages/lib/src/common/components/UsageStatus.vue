@@ -9,15 +9,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <UsageStatusTemplate></UsageStatusTemplate>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-
+<script setup lang="ts">
 import UsageStatusTemplate from './UsageStatusTemplate.vue'
-
-export default defineComponent({
-  name: 'UsageStatus',
-  components: { UsageStatusTemplate }
-})
 </script>
 
 <style scoped></style>

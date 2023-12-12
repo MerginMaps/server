@@ -25,7 +25,7 @@
                 color: $stepsItemTextColor;
             }
 
-            &:not(.p-disabled):focus {
+            &:not(.p-disabled):focus-visible {
                 @include focused();
             }
         }

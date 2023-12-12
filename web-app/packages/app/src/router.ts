@@ -170,13 +170,13 @@ export const createRouter = (pinia: Pinia) => {
             props: true
           },
           {
-            path: 'history/:version_id',
+            path: 'history/:version_id?',
             name: 'project-versions-detail',
             component: VersionDetailView,
             props: true
           },
           {
-            path: 'history/:version_id/:path',
+            path: 'history/:version_id?/:path?',
             name: 'file-version-detail',
             component: FileVersionDetailView,
             props: true,
@@ -187,7 +187,7 @@ export const createRouter = (pinia: Pinia) => {
       {
         path: '/:pathMatch(.*)*',
         component: NotFoundView,
-        meta: { public: true, hejno: true }
+        meta: { public: true }
       }
     ]
   })
