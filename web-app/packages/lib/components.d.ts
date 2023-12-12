@@ -12,6 +12,7 @@ declare module 'vue' {
     PColumn: typeof import('primevue/column')['default']
     PDataTable: typeof import('primevue/datatable')['default']
     PDataView: typeof import('primevue/dataview')['default']
+    PDialog: typeof import('primevue/dialog')['default']
     PDropdown: typeof import('primevue/dropdown')['default']
     PInputText: typeof import('primevue/inputtext')['default']
     PMenu: typeof import('primevue/menu')['default']

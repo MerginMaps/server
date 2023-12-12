@@ -1,3 +1,9 @@
+<!--
+Copyright (C) Lutra Consulting Limited
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+-->
+
 <template>
   <div class="app-container mx-auto py-4 px-4 xl:px-0">
     <slot></slot>
