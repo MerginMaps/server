@@ -141,6 +141,9 @@ export const createRouter = (pinia: Pinia) => {
         props: {
           default: true
         },
+        meta: {
+          title: 'Projects'
+        },
         redirect: { name: 'project-tree' },
         children: [
           {
@@ -182,7 +185,13 @@ export const createRouter = (pinia: Pinia) => {
             props: true,
             meta: { public: true }
           }
-        ]
+        ].map((child) => ({
+          ...child,
+          beforeEnter: (to, from, next) => {
+            to.meta.title = to.params.projectName as string
+            next()
+          }
+        }))
       },
       {
         path: '/:pathMatch(.*)*',

@@ -5,10 +5,22 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <PMenubar class="app-header pt-0 pb-2 px-4 justify-content-between">
+  <PMenubar
+    class="app-header pt-0 pb-2 px-2"
+    :pt="{
+      start: {
+        class: 'w-10'
+      },
+      end: {
+        class: 'align-self-start lg:align-self-center'
+      }
+    }"
+  >
     <template #start
       ><slot name="menu">
-        <div class="flex align-items-center">
+        <div
+          class="flex flex-column lg:flex-row align-items-start lg:align-items-center"
+        >
           <PButton
             class="mr-2"
             icon="ti ti-menu-2"
@@ -18,24 +30,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             @click="setDrawer({ drawer: !drawer })"
             :pt="{ icon: { class: 'text-3xl' } }"
           />
-          <h1 class="text-3xl mb-0 mt-1">
-            <slot name="title">{{ title }}</slot>
-          </h1>
+          <app-breadcrumbs></app-breadcrumbs>
         </div>
       </slot>
     </template>
 
     <template #end>
-      <div class="flex align-items-center">
+      <div>
         <slot name="invitationsIcon"></slot>
         <PButton
-          plain
           text
-          type="button"
-          label="Toggle"
           aria-haspopup="true"
           aria-controls="app-header-profile"
-          class="text-color"
+          class="text-color p-0"
           @click="toggleMenu"
           size="small"
         >
@@ -90,7 +97,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { MenuItem } from 'primevue/menuitem'
 import { defineComponent, ref, PropType } from 'vue'
-import { useRoute } from 'vue-router'
+
+import { AppBreadcrumbs } from '.'
 
 import { useLayoutStore } from '@/modules/layout/store'
 import { useProjectStore } from '@/modules/project/store'
@@ -98,6 +106,9 @@ import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   name: 'app-header-template',
+  components: {
+    AppBreadcrumbs
+  },
   props: {
     renderNamespace: {
       type: Boolean,
@@ -109,7 +120,6 @@ export default defineComponent({
   },
   setup() {
     const menu = ref()
-    const route = useRoute()
 
     const toggleMenu = (event) => {
       menu.value.toggle(event)
@@ -117,8 +127,7 @@ export default defineComponent({
 
     return {
       menu,
-      toggleMenu,
-      title: route.meta.title ?? 'Dashboard'
+      toggleMenu
     }
   },
   computed: {

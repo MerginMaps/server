@@ -8,6 +8,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     PAvatar: typeof import('primevue/avatar')['default']
+    PBreadcrumb: typeof import('primevue/breadcrumb')['default']
     PButton: typeof import('primevue/button')['default']
     PColumn: typeof import('primevue/column')['default']
     PDataTable: typeof import('primevue/datatable')['default']

@@ -191,6 +191,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
 import { defineComponent, PropType } from 'vue'
+import { useRoute } from 'vue-router'
 import { CopyIcon, DownloadIcon, SquareMinusIcon } from 'vue-tabler-icons'
 
 import ActionButton from '@/common/components/ActionButton.vue'
@@ -271,7 +272,7 @@ export default defineComponent({
         return ProjectApi.constructDownloadProjectVersionUrl(
           this.namespace,
           this.projectName,
-          this.$route.params.version_id
+          this.$route.params.version_id as string
         )
       } else {
         return this.constructDownloadProjectUrl({
@@ -372,7 +373,11 @@ export default defineComponent({
       }
       this.showDialog({
         component: ConfirmDialog,
-        params: { props, listeners, dialog: { maxWidth: 500 } }
+        params: {
+          props,
+          listeners,
+          dialog: { maxWidth: 500, header: 'Leave project' }
+        }
       })
     }
   }
