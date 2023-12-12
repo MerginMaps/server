@@ -111,7 +111,6 @@ export default defineComponent({
       }
       params.page = gridOptions.page
       params.per_page = gridOptions.itemsPerPage
-      console.log(gridOptions)
       if (gridOptions.sortBy) {
         let orderParam = ''
         if (gridOptions.sortBy === 'meta.size') {

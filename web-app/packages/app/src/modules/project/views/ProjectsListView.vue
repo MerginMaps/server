@@ -50,7 +50,6 @@ export default defineComponent({
      * Error handler for create new project from $emit in Template
      * */
     function onNewProjectError(err, data) {
-      console.log(data)
       formStore.handleError({
         componentId: data.componentId,
         error: err,
