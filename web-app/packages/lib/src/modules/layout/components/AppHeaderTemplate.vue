@@ -12,6 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <PButton
             class="mr-2"
             icon="ti ti-menu-2"
+            severity="secondary"
             text
             rounded
             @click="setDrawer({ drawer: !drawer })"

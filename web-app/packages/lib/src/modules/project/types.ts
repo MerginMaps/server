@@ -315,3 +315,8 @@ export interface VDataIteratorOptions {
   itemsPerPage: number
   sortBy?: Array<{ key: string; order?: boolean | 'asc' | 'desc' }>
 }
+
+export interface ProjectsSortingParams {
+  sortBy: string
+  sortDesc: boolean
+}
