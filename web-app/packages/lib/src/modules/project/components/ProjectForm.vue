@@ -26,19 +26,21 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </span>
     </div>
 
-    <tip-message class="mb-4">
+    <tip-message class="mb-6">
       ><template #description
-        >A good candidate for a project name is name of the location, or purpose
+        >A good candidate for a project name is name of the location or purpose
         of the field survey.</template
       ></tip-message
     >
 
-    <div class="flex justify-content-between align-items-center">
+    <div
+      class="flex flex-column lg:flex-row justify-content-between align-items-center"
+    >
       <PButton
         severity="secondary"
         outlined
         @click="close"
-        class="flex w-6 mr-1 justify-content-center"
+        class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
         >Cancel</PButton
       >
 
@@ -47,7 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         :disabled="!name"
         @click="create"
         data-cy="project-form-create-btn"
-        class="flex w-6 justify-content-center"
+        class="flex w-12 lg:w-6 justify-content-center"
       >
         Create project
       </PButton>

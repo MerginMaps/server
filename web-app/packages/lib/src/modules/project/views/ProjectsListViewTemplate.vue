@@ -7,13 +7,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <app-container>
     <template v-if="!namespace">
-      <app-section ground class="py-2">
+      <app-section ground class="py-4">
         <!-- Title with buttons -->
         <header class="flex flex-wrap align-items-center">
           <h1 class="text-3xl font-semibold">
             {{ header }}
           </h1>
-          <div class="flex flex-grow-1 align-items-center justify-content-end">
+          <div
+            class="flex flex-grow-1 align-items-center lg:justify-content-end mb-4 lg:mb-0"
+          >
             <PButton
               v-if="canCreateProject && loggedUser && loggedUser.email"
               @click="newProjectDialog"
