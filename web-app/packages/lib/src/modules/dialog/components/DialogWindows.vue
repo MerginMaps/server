@@ -10,13 +10,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     modal
     :dismissableMask="!dialogProps.persistent"
     :close-on-escape="!dialogProps.persistent"
-    :style="{
-      maxWidth: `${dialogProps.maxWidth}px`
-    }"
     :header="dialogProps.header ?? 'Action'"
     @close="close"
     :pt="{
       root: {
+        style: {
+          maxWidth: `${dialogProps.maxWidth}px`
+        },
         class: 'w-10 lg:w-4 border-round-2xl'
       },
       header: {
