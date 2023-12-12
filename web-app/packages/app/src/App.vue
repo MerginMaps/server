@@ -37,6 +37,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </div>
         </transition>
       </router-view>
+      <PDivider :pt="{ root: { class: 'm-0'}}"></PDivider>
       <v-card
         v-if="pingData && pingData.maintenance"
         variant="outlined"

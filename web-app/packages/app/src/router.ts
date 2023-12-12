@@ -188,7 +188,14 @@ export const createRouter = (pinia: Pinia) => {
         ].map((child) => ({
           ...child,
           beforeEnter: (to, from, next) => {
-            to.meta.title = to.params.projectName as string
+            // added project name to matched route
+            to.matched = to.matched.map((route) => ({
+              ...route,
+              meta: {
+                ...route.meta,
+                title: route.name === to.name ? to.params.projectName as string : route.meta.title
+              }
+            }))
             next()
           }
         }))

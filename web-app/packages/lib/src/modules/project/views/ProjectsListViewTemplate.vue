@@ -7,9 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <app-container>
     <template v-if="!namespace">
-      <app-section ground class="py-4">
+      <app-section ground class="pb-4">
         <!-- Title with buttons -->
-        <header class="flex flex-wrap align-items-center">
+        <header class="flex flex-column lg:flex-row lg:align-items-center">
           <h1 class="text-3xl font-semibold">
             {{ header }}
           </h1>

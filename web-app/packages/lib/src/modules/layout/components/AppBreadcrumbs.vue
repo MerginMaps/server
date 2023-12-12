@@ -47,12 +47,14 @@ import { MenuItem } from 'primevue/menuitem'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const items: MenuItem[] = route.matched.map<MenuItem>((item) => ({
-  label: route.name === item.name ? route.meta.title : item.meta.title,
-  active: route.name === item.name,
-  route: item.name,
-  params: route.params
-}))
+const items: MenuItem[] = route.matched
+  .filter((item) => item.meta.title)
+  .map<MenuItem>((item) => ({
+    label: item.meta.title,
+    active: route.name === item.name,
+    route: item.name,
+    params: route.params
+  }))
 </script>
 
 <style scoped lang="scss">

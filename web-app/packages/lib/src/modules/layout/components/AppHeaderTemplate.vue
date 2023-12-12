@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <PMenubar
-    class="app-header pt-0 pb-2 px-2"
+    class="app-header pt-0 px-2"
     :pt="{
       start: {
         class: 'w-10'
