@@ -11,6 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :dismissableMask="!dialogProps.persistent"
     :close-on-escape="!dialogProps.persistent"
     :header="dialogProps.header ?? 'Action'"
+    :draggable="false"
     @close="close"
     :pt="{
       root: {
