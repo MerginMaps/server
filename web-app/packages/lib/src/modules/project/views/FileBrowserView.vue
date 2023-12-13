@@ -6,92 +6,116 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div>
-    <v-layout class="column">
-      <v-row>
-        <v-col class="pa-0">
-          <v-text-field
-            class="search"
-            placeholder="Find file"
-            append-icon="search"
-            v-model="searchFilter"
-            hide-details
-            style="padding-left: 7px; padding-bottom: 10px"
-            v-if="searchFilter !== '' || items.length > 0"
-          />
-        </v-col>
-      </v-row>
-      <v-data-table
-        v-if="
-          searchFilter !== '' ||
-          items.length ||
-          (project && !project.permissions.upload) ||
-          filter !== ''
-        "
-        class="file-table"
-        :headers="header"
-        :items="items"
-        color="primary"
-        no-data-text="No files found."
-        :items-per-page="itemPerPage"
-        :hide-default-footer="items.length <= itemPerPage"
-        :options="options"
-        v-model="selected"
-        item-key="path"
-        data-cy="file-browser-table"
-      >
-        <template #item.name="{ item }">
-          <router-link :to="item.link">
-            <file-icon :file="item" />
-            <span data-cy="file-browser-item">{{ item.name }}</span>
-          </router-link>
-          <v-spacer />
-          <folder-diff v-if="item.diffStats" v-bind="item.diffStats" />
-        </template>
-        <template #item.mtime="{ value }">
-          <v-tooltip location="bottom">
-            <template v-slot:activator="{ props }">
-              <span v-bind="props">
+    <!-- Searching -->
+    <app-container v-if="searchFilter !== '' || items.length > 0">
+      <app-section ground>
+        <div class="flex">
+          <span class="p-input-icon-left flex-grow-1">
+            <i class="ti ti-search text-xl"></i>
+            <PInputText
+              placeholder="Search files"
+              v-model="searchFilter"
+              :pt="{ root: { class: 'border-round-xl w-full' } }"
+            />
+          </span>
+        </div>
+      </app-section>
+    </app-container>
+
+    <app-container>
+      <app-panel-toggleable :collapsed="dataTableOpen">
+        <template #header>Upload files</template>
+        <div class="flex flex-column lg:flex-row">
+          <div
+            class="flex flex-column align-items-center w-12 lg:w-6 mb-4 lg:mb-0 lg:mr-4 border-round-xl surface-ground p-4"
+          >
+            <div class="w-full flex justify-content-end">
+              <PTag severity="success">Recommended</PTag>
+            </div>
+
+            <div
+              class="flex align-items-center justify-content-center text-2xl surface-section border-circle p-4 text-color-forest w-5rem h-5rem"
+            >
+              <img src="@/assets/Icon/24/QGIS.svg" width="24" height="24" />
+            </div>
+
+            <h4 class="text-lg font-semibold text-color-forest">
+              Mergin Maps plugin for QGIS
+            </h4>
+            <p class="text-sm opacity-80">
+              This is the easiest and recommended way.
+              <a
+                target="_blank"
+                class="text-color-forest font-semibold no-underline"
+                :href="docsLinkManageCreateProject"
+                >Learn how to use it.</a
+              >
+            </p>
+          </div>
+          <div class="w-12 lg:w-6 border-round-xl surface-ground">
+            <drop-area
+              v-if="
+                project &&
+                $route.name === 'project-tree' &&
+                project.permissions &&
+                project.permissions.upload
+              "
+              :location="location"
+              data-cy="project-drop-area"
+            >
+            </drop-area>
+          </div>
+        </div>
+      </app-panel-toggleable>
+    </app-container>
+
+    <app-container v-if="dataTableOpen">
+      <app-section>
+        <v-data-table
+          class="file-table"
+          :headers="header"
+          :items="items"
+          color="primary"
+          no-data-text="No files found."
+          :items-per-page="itemPerPage"
+          :hide-default-footer="items.length <= itemPerPage"
+          :options="options"
+          v-model="selected"
+          item-key="path"
+          data-cy="file-browser-table"
+        >
+          <template #item.name="{ item }">
+            <router-link :to="item.link">
+              <file-icon :file="item" />
+              <span data-cy="file-browser-item">{{ item.name }}</span>
+            </router-link>
+            <v-spacer />
+            <folder-diff v-if="item.diffStats" v-bind="item.diffStats" />
+          </template>
+          <template #item.mtime="{ value }">
+            <v-tooltip location="bottom">
+              <template v-slot:activator="{ props }">
+                <span v-bind="props">
+                  <template v-if="value">
+                    {{ $filters.timediff(value) }}
+                  </template>
+                </span>
+              </template>
+              <span>
                 <template v-if="value">
-                  {{ $filters.timediff(value) }}
+                  {{ $filters.datetime(value) }}
                 </template>
               </span>
-            </template>
-            <span>
-              <template v-if="value">
-                {{ $filters.datetime(value) }}
-              </template>
-            </span>
-          </v-tooltip>
-        </template>
-        <template #item.size="{ value }">
-          <template v-if="value !== undefined">
-            {{ $filters.filesize(value) }}
+            </v-tooltip>
           </template>
-        </template>
-      </v-data-table>
-      <v-card v-else style="-webkit-box-shadow: none; box-shadow: none">
-        <v-card-title style="padding-left: 0"
-          ><strong>
-            Well done! The next step is adding some data.
-          </strong></v-card-title
-        >
-        <v-card-text style="padding-left: 0">
-          There are two options: <br />
-          <br />
-          1. Use the Mergin Maps plugin for QGIS to upload data. This is the
-          easiest and <strong>recommended</strong> way. See the documentation on
-          <a target="_blank" :href="docsLinkManageCreateProject"
-            >how to install and use the plugin</a
-          >. <br />
-          <br />
-          2. Drag and drop files from your computer to the lower part of this
-          page. This option is convenient if your project files are already
-          fully prepared and only need uploading.
-        </v-card-text>
-      </v-card>
-      <v-spacer />
-      <file-menu ref="menu" />
-    </v-layout>
+          <template #item.size="{ value }">
+            <template v-if="value !== undefined">
+              {{ $filters.filesize(value) }}
+            </template>
+          </template>
+        </v-data-table>
+      </app-section>
+    </app-container>
   </div>
 </template>
 
@@ -105,18 +129,28 @@ import Path from 'path'
 import { mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import {
+  AppSection,
+  AppContainer,
+  AppPanelToggleable
+} from '@/common/components'
 import { formatDateTime } from '@/common/date_utils'
 import { dirname } from '@/common/path_utils'
 import { removeAccents } from '@/common/text_utils'
 import { useInstanceStore } from '@/modules/instance/store'
-import FileIcon from '@/modules/project/components/FileIcon.vue'
-import FileMenu from '@/modules/project/components/FileMenu.vue'
+import DropArea from '@/modules/project/components/DropArea.vue'
 import FolderDiff from '@/modules/project/components/FolderDiff.vue'
 import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
   name: 'FileBrowserView',
-  components: { FileIcon, FolderDiff, FileMenu },
+  components: {
+    FolderDiff,
+    AppSection,
+    AppContainer,
+    AppPanelToggleable,
+    DropArea
+  },
   props: {
     namespace: String,
     projectName: String,
@@ -293,6 +327,14 @@ export default defineComponent({
     },
     allSelected() {
       return this.items.every((i) => this.selected.includes(i.path))
+    },
+    dataTableOpen() {
+      return (
+        this.searchFilter !== '' ||
+        this.items.length ||
+        (this.project && !this.project.permissions.upload) ||
+        this.filter !== ''
+      )
     }
   },
   methods: {
@@ -384,86 +426,4 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss" scoped>
-.search {
-  max-width: 260px;
-  margin: 0 0.25em;
-}
-
-.v-menu__content {
-  .v-list__tile__title {
-    text-align: right;
-  }
-}
-
-:deep(.v-data-table) {
-  tr {
-    color: #555;
-
-    &.updated {
-      color: orange;
-    }
-
-    &.removed,
-    &.rmoved {
-      color: red;
-    }
-
-    &.added,
-    &.nmoved {
-      color: green;
-    }
-
-    a,
-    .v-icon {
-      color: inherit;
-    }
-
-    .v-icon {
-      opacity: 0.75;
-    }
-  }
-
-  td {
-    text-align: left;
-
-    a {
-      text-decoration: none;
-
-      .v-icon {
-        line-height: 18px;
-        margin-right: 4px;
-      }
-    }
-  }
-
-  th,
-  tr {
-    min-width: 0;
-
-    .v-input--checkbox {
-      opacity: 0.75;
-      align-items: flex-end;
-      justify-content: flex-end;
-
-      .v-input--selection-controls__input {
-        margin: 0;
-      }
-
-      .v-icon {
-        pointer-events: none;
-      }
-    }
-  }
-}
-
-.v-speed-dial {
-  position: absolute;
-}
-
-.v-data-table {
-  :deep(.v-data-footer__select) {
-    display: none;
-  }
-}
-</style>
+<style lang="scss" scoped></style>

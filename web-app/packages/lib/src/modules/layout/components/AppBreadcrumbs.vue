@@ -58,7 +58,4 @@ const items: MenuItem[] = route.matched
 </script>
 
 <style scoped lang="scss">
-.text-color-forest {
-  color: var(--forest-color);
-}
 </style>

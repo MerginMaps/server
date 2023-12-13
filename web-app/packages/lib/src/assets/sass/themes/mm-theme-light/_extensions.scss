@@ -8,3 +8,13 @@ h5,
 h6 {
   color: $primaryDarkColor;
 }
+
+// Customization of infinite border of tabs using classes instead pt because, we want to have access to variables
+.p-tabview-nav-content {
+  border: $tabviewNavBorder;
+  border-width: $tabviewNavBorderWidth;
+}
+
+.text-color-forest {
+  color: $primaryDarkColor;
+}
