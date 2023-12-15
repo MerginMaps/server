@@ -87,9 +87,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         >
           <template #header>
             <div class="grid grid-nogutter">
-              <div v-for="col in columns" class="col-4 text-xs" :key="col.text">
+              <!-- Visible on lg breakpoint > -->
+              <div
+                v-for="col in columns"
+                class="col-4 text-xs hidden lg:flex"
+                :key="col.text"
+              >
                 {{ col.text }}
               </div>
+              <!-- else -->
+              <div class="col-12 flex lg:hidden">Name</div>
             </div>
           </template>
           <template #list="slotProps">
@@ -100,7 +107,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               @click.prevent="rowClick(item.link)"
             >
               <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->
-              <div class="flex align-items-center col-4">
+              <div class="flex align-items-center col-12 lg:col-4">
                 <p class="font-semibold">
                   <file-icon :file="item" />{{ item.name }}
                 </p>
@@ -108,16 +115,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   <folder-diff v-if="item.diffStats" v-bind="item.diffStats" />
                 </div>
               </div>
-              <div class="flex align-items-center col-4">
+              <div class="flex align-items-center col-12 lg:col-4">
                 <span
                   v-if="item.mtime"
                   v-tooltip.bottom="{ value: $filters.datetime(item.mtime) }"
+                  class="text-sm opacity-80"
                 >
                   {{ $filters.timediff(item.mtime) }}
                 </span>
               </div>
-              <div class="flex align-items-center col-4">
-                <span v-if="item.size">{{ $filters.filesize(item.size) }}</span>
+              <div class="flex align-items-center col-12 lg:col-4">
+                <span class="text-sm opacity-80" v-if="item.size">{{
+                  $filters.filesize(item.size)
+                }}</span>
               </div>
             </div>
           </template>
@@ -192,6 +202,7 @@ export default defineComponent({
         descending: false,
         sortBy: 'name'
       },
+      // Setup this to lower number in case of testing
       itemPerPage: 50,
       searchFilter: '',
       filter: '',

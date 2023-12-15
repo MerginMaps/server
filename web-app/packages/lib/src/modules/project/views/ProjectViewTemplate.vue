@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div>
     <template v-if="project">
-      <app-container class="flex justify-content-end xl:pb-1 -mb-6">
+      <app-container class="flex justify-content-end xl:pb-1 lg:-mb-6">
         <!-- Z indexes based on minus margin, its not possible to add additional buttons to tab view -->
         <div class="relative z-1">
           <!-- Toolbar -->
@@ -15,35 +15,34 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <slot name="shareButton">
             <project-share-button />
           </slot>
-          <action-button
+          <PButton
+            severity="secondary"
+            outlined
             @click="downloadArchive({ url: downloadUrl })"
             data-cy="project-download-btn"
-          >
-            <template #icon>
-              <download-icon />
-            </template>
-            Download
-          </action-button>
-          <action-button
+            icon="ti ti-download"
+            class="mr-2"
+            label="Download"
+          />
+          <PButton
+            severity="secondary"
+            outlined
             @click="cloneDialog"
             v-if="canCloneProject"
             data-cy="project-clone-btn"
-          >
-            <template #icon>
-              <copy-icon />
-            </template>
-            Clone
-          </action-button>
-          <action-button
+            icon="ti ti-copy"
+            label="Clone"
+            class="mr-2"
+          />
+          <PButton
+            severity="secondary"
+            outlined
             @click="unsubscribeDialog"
             data-cy="project-leave-btn"
+            icon="ti ti-logout"
+            label="Leave project"
             v-if="canLeaveProject"
-          >
-            <template #icon>
-              <square-minus-icon />
-            </template>
-            Leave project
-          </action-button>
+          />
         </div>
       </app-container>
 
@@ -87,38 +86,41 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </PTabPanel>
       </PTabView>
     </template>
-    <app-section v-else-if="fetchProjectsResponseStatus === 403">
-      <v-layout
-        class="public-private-zone"
-        style="padding-top: 25px; padding-left: 25px"
-      >
-        <v-btn id="request-access-btn" @click="createAccessRequest"
-          >Request access
-        </v-btn>
-        <span class="private-public-text">
-          <b>This is a private project</b><br />
-          You don't have permissions to access this project.
-        </span>
-      </v-layout>
-    </app-section>
-    <app-section v-else-if="fetchProjectsResponseStatus === 404">
-      <span
-        class="private-public-text"
-        style="padding-top: 25px; padding-left: 25px"
-      >
-        <b>Project not found</b><br />
-        Please check if address is written correctly
-      </span>
-    </app-section>
-    <app-section v-else-if="fetchProjectsResponseStatus === 409">
-      <span
-        class="private-public-text"
-        style="padding-top: 25px; padding-left: 25px"
-      >
-        <b>You don't have permission to access this project</b><br />
-        You already requested access
-      </span>
-    </app-section>
+    <app-container v-else-if="fetchProjectsResponseStatus">
+      <app-section v-if="fetchProjectsResponseStatus === 403">
+        <div class="flex flex-column align-items-center p-4 text-center">
+          <img src="@/assets/map-circle.svg" alt="No project" />
+          <p class="font-semibold">This is a private project</p>
+          <p class="text-sm opacity-80 mt-2 mb-4">
+            You don't have permissions to access this project.
+          </p>
+          <PButton id="request-access-btn" @click="createAccessRequest"
+            >Request access</PButton
+          >
+        </div>
+      </app-section>
+      <app-section v-else-if="fetchProjectsResponseStatus === 404">
+        <div class="flex flex-column align-items-center p-4 text-center">
+          <img src="@/assets/map-circle.svg" alt="No project" />
+          <p class="font-semibold">Project not found</p>
+          <p class="text-sm opacity-80 mt-2 mb-4">
+            Please check if address is written correctly
+          </p>
+        </div>
+      </app-section>
+      <app-section v-else-if="fetchProjectsResponseStatus === 409">
+        <div class="flex flex-column align-items-center p-4 text-center">
+          <img src="@/assets/map-circle.svg" alt="No project" />
+          <p class="font-semibold">
+            You don't have permission to access this project
+          </p>
+          <p class="text-sm opacity-80 mt-2 mb-4">
+            You already requested access
+          </p>
+        </div>
+      </app-section>
+    </app-container>
+
     <div slot="right">
       <upload-panel v-if="upload" :namespace="namespace" class="my-1 mr-1" />
     </div>
@@ -129,10 +131,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { TabPanelPassThroughOptions } from 'primevue/tabpanel'
 import { defineComponent, PropType } from 'vue'
-import { CopyIcon, DownloadIcon, SquareMinusIcon } from 'vue-tabler-icons'
 
 import { AppContainer, AppSection } from '@/common'
-import ActionButton from '@/common/components/ActionButton.vue'
 import { waitCursor } from '@/common/html_utils'
 import { USER_ROLE_NAME_BY_ROLE, UserRole } from '@/common/permission_utils'
 import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
@@ -152,12 +152,8 @@ interface TabItem {
 export default defineComponent({
   name: 'ProjectViewTemplate',
   components: {
-    ActionButton,
     ProjectShareButton,
     UploadPanel,
-    CopyIcon,
-    DownloadIcon,
-    SquareMinusIcon,
     AppContainer,
     AppSection
   },

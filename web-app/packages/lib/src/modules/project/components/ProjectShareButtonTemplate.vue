@@ -5,20 +5,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <action-button :disabled="false" @click="onShareProject" v-if="loggedUser">
-    <template #icon>
-      <plus-icon />
-    </template>
-    Share
-  </action-button>
+  <PButton
+    @click="onShareProject"
+    v-if="loggedUser"
+    icon="ti ti-send"
+    label="Share"
+    class="mr-2"
+  />
 </template>
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { PlusIcon } from 'vue-tabler-icons'
 
-import ActionButton from '@/common/components/ActionButton.vue'
 import { useDialogStore } from '@/modules/dialog/store'
 import ProjectShareDialog from '@/modules/project/components/ProjectShareDialog.vue'
 import { useUserStore } from '@/modules/user/store'
@@ -27,7 +26,6 @@ export default defineComponent({
   props: {
     allowInvite: Boolean
   },
-  components: { ActionButton, PlusIcon },
   computed: {
     ...mapState(useUserStore, ['loggedUser'])
   },
@@ -43,7 +41,8 @@ export default defineComponent({
       }
       const dialog = {
         maxWidth: 600,
-        persistent: true
+        persistent: true,
+        header: 'Share project'
       }
       this.show({
         component: ProjectShareDialog,

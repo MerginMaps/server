@@ -56,26 +56,23 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </dl>
 
         <!--     render only if file is smaller than 100MB-->
-        <div
-          class="flex flex-column align-items-center w-full py-4"
+        <output
           v-if="mimetype && file.size < 104857600"
+          class="flex flex-column align-items-center w-full py-4"
         >
-          <output>
-            <PImage
-              :src="downloadLink"
-              v-if="mimetype.match('image')"
-              preview
-            />
-            <v-textarea
-              v-else-if="mimetype.match('text')"
-              :auto-grow="true"
-              :readonly="true"
-              :model-value="content"
-              variant="solo-filled"
-            >
-            </v-textarea>
-          </output>
-        </div>
+          <PImage
+            :src="downloadLink"
+            v-if="mimetype.match('image')"
+            preview
+            imageClass="w-full"
+          />
+          <div
+            class="file-detail-code border-round-xl p-4 line-height-3 w-full"
+            v-else-if="mimetype.match('text')"
+          >
+            <span class="opacity-80 text-sm">{{ content }}</span>
+          </div>
+        </output>
       </div>
 
       <!-- foooter -->
@@ -238,4 +235,11 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.file-detail {
+  &-code {
+    background-color: var(--light-green-color);
+    word-wrap: break-word;
+  }
+}
+</style>
