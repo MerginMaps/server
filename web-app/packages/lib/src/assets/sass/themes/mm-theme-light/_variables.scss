@@ -94,5 +94,8 @@ $colors: (
     // TODO: use primary-classes primary-100 ... ??
     --light-green-color: #{map-get($colors, "light-green")};
     --deep-ocean-color: #{map-get($colors, "light-ocean")};
+    --negative-color: #{map-get($colors, "negative")};
+    --warning-color: #{map-get($colors, "warning")};
+    --positive-color: #{map-get($colors, "positive")};
     color-scheme: light;
 }

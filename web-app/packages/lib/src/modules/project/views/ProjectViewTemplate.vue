@@ -50,7 +50,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <PTabView
         :active-index="activeTabIndex"
         @tab-click="(e) => tabClick(e.index)"
-        lazy
         :pt="{
           root: {
             class: 'relative z-auto'
@@ -71,20 +70,20 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         }"
       >
         <PTabPanel header="Files" :pt="ptHeaderAction">
-          <router-view v-if="project" class="content-container" />
+          <router-view />
         </PTabPanel>
         <slot name="map.tab" :ptHeaderAction="ptHeaderAction" />
         <PTabPanel
           v-if="tabs.some((item) => item.route === `project-versions`)"
           header="History"
           :pt="ptHeaderAction"
-          ><router-view v-if="project" class="content-container" />
+          ><router-view />
         </PTabPanel>
         <PTabPanel
           v-if="tabs.some((item) => item.route === `project-settings`)"
           header="Settings"
           :pt="ptHeaderAction"
-          ><router-view v-if="project" class="content-container" />
+          ><router-view />
         </PTabPanel>
       </PTabView>
     </template>
@@ -120,7 +119,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         You already requested access
       </span>
     </app-section>
-    <div slot="right" class="panel">
+    <div slot="right">
       <upload-panel v-if="upload" :namespace="namespace" class="my-1 mr-1" />
     </div>
   </div>
@@ -380,8 +379,7 @@ export default defineComponent({
      */
     tabClick(index: number) {
       this.$router.push({
-        name: this.tabs[index].route,
-        params: { namespace: this.namespace, projectName: this.project.name }
+        name: this.tabs[index].route
       })
     }
   }

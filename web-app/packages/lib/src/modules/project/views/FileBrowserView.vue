@@ -71,51 +71,63 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
     <app-container v-if="dataTableOpen">
       <app-section>
-        <v-data-table
-          class="file-table"
-          :headers="header"
-          :items="items"
-          color="primary"
-          no-data-text="No files found."
-          :items-per-page="itemPerPage"
-          :hide-default-footer="items.length <= itemPerPage"
-          :options="options"
-          v-model="selected"
-          item-key="path"
+        <PDataView
+          :value="items"
+          :data-key="'id'"
+          :paginator="items.length > itemPerPage"
+          :rows="itemPerPage"
+          :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
           data-cy="file-browser-table"
+          :pt="{
+            header: {
+              class: 'px-4 py-2'
+            }
+          }"
         >
-          <template #item.name="{ item }">
-            <router-link :to="item.link">
-              <file-icon :file="item" />
-              <span data-cy="file-browser-item">{{ item.name }}</span>
-            </router-link>
-            <v-spacer />
-            <folder-diff v-if="item.diffStats" v-bind="item.diffStats" />
+          <template #header>
+            <div class="grid grid-nogutter">
+              <div v-for="col in columns" class="col-4 text-xs" :key="col.text">
+                {{ col.text }}
+              </div>
+            </div>
           </template>
-          <template #item.mtime="{ value }">
-            <v-tooltip location="bottom">
-              <template v-slot:activator="{ props }">
-                <span v-bind="props">
-                  <template v-if="value">
-                    {{ $filters.timediff(value) }}
-                  </template>
+          <template #list="slotProps">
+            <div
+              v-for="item in slotProps.items"
+              :key="item.id"
+              class="grid grid-nogutter px-4 py-2 mt-0 border-bottom-1 border-gray-200 text-sm"
+              @click.prevent="rowClick(item.link)"
+            >
+              <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->
+              <div class="flex align-items-center col-4">
+                <p class="font-semibold">
+                  <file-icon :file="item" />{{ item.name }}
+                </p>
+                <div>
+                  <folder-diff v-if="item.diffStats" v-bind="item.diffStats" />
+                </div>
+              </div>
+              <div class="flex align-items-center col-4">
+                <span
+                  v-if="item.mtime"
+                  v-tooltip.bottom="{ value: $filters.datetime(item.mtime) }"
+                >
+                  {{ $filters.timediff(item.mtime) }}
                 </span>
-              </template>
-              <span>
-                <template v-if="value">
-                  {{ $filters.datetime(value) }}
-                </template>
-              </span>
-            </v-tooltip>
+              </div>
+              <div class="flex align-items-center col-4">
+                <span v-if="item.size">{{ $filters.filesize(item.size) }}</span>
+              </div>
+            </div>
           </template>
-          <template #item.size="{ value }">
-            <template v-if="value !== undefined">
-              {{ $filters.filesize(value) }}
-            </template>
+          <template #empty>
+            <span>No files found.</span>
           </template>
-        </v-data-table>
+        </PDataView>
       </app-section>
     </app-container>
+    <!-- Sidebars -->
+    <file-detail-sidebar :namespace="namespace" :project-name="projectName" />
   </div>
 </template>
 
@@ -139,6 +151,8 @@ import { dirname } from '@/common/path_utils'
 import { removeAccents } from '@/common/text_utils'
 import { useInstanceStore } from '@/modules/instance/store'
 import DropArea from '@/modules/project/components/DropArea.vue'
+import FileDetailSidebar from '@/modules/project/components/FileDetailSidebar.vue'
+import FileIcon from '@/modules/project/components/FileIcon.vue'
 import FolderDiff from '@/modules/project/components/FolderDiff.vue'
 import { useProjectStore } from '@/modules/project/store'
 
@@ -146,10 +160,12 @@ export default defineComponent({
   name: 'FileBrowserView',
   components: {
     FolderDiff,
+    FileIcon,
     AppSection,
     AppContainer,
     AppPanelToggleable,
-    DropArea
+    DropArea,
+    FileDetailSidebar
   },
   props: {
     namespace: String,
@@ -173,11 +189,7 @@ export default defineComponent({
       searchFilter: '',
       filter: '',
       selected: [],
-      header: [
-        { text: 'Name', value: 'name' },
-        { text: 'Modified', value: 'mtime' },
-        { text: 'Size', value: 'size' }
-      ]
+      columns: [{ text: 'Name' }, { text: 'Modified' }, { text: 'Size' }]
     }
   },
   computed: {
@@ -296,7 +308,7 @@ export default defineComponent({
         items.push({
           name: '..',
           type: 'folder',
-          link: Path.normalize(Path.join(this.$route.path, '@/')),
+          link: Path.normalize(Path.join(this.$route.path, '..')),
           mtime: ''
         })
       }
@@ -403,10 +415,6 @@ export default defineComponent({
       }
       return files.map((f) => ({ ...f, name: f.path.slice(dirPrefix.length) }))
     },
-    openMenu(evt, file) {
-      // TODO: highlight
-      this.$refs.menu.open(evt, file)
-    },
     toggleAll(selected) {
       const fn = selected ? union : difference
       this.selected = fn(
@@ -421,6 +429,9 @@ export default defineComponent({
         this.sortBy = column
         this.options.descending = false
       }
+    },
+    rowClick(path: string) {
+      this.$router.push({ path })
     }
   }
 })

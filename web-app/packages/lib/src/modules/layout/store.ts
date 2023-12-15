@@ -5,7 +5,7 @@
 import { defineStore } from 'pinia'
 
 export interface LayoutState {
-  sidebarBreakpoint: number
+  overlayBreakpoint: number
   drawer: boolean
   /** If sidebar is in overlay mode (on mobile is flying over content) */
   isOverlay: boolean
@@ -17,7 +17,7 @@ const CLOSED_ELEMENTS_KEY = 'mm-closed-elements'
 
 export const useLayoutStore = defineStore('layoutModule', {
   state: (): LayoutState => ({
-    sidebarBreakpoint: 992,
+    overlayBreakpoint: 992,
     drawer: false,
     isOverlay: false,
     closedElements: []
@@ -47,9 +47,9 @@ export const useLayoutStore = defineStore('layoutModule', {
       const isSmall =
         window.matchMedia !== undefined
           ? window.matchMedia(
-              `screen and (max-width: ${this.sidebarBreakpoint}px)`
+              `screen and (max-width: ${this.overlayBreakpoint}px)`
             ).matches
-          : width < this.sidebarBreakpoint
+          : width < this.overlayBreakpoint
       this.drawer = !isSmall
       this.isOverlay = isSmall
     },

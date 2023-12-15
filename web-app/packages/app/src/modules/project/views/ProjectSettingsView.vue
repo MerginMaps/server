@@ -5,20 +5,21 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <project-settings-view-template
+  Hopaa
+  <!-- <project-settings-view-template
     :namespace="namespace"
     :projectName="projectName"
     :asAdmin="asAdmin"
     :show-settings="projectStore.isProjectOwner"
   >
-    <!-- <template #permissions="{ settings, keyProp, saveProject }">
+    <template #permissions="{ settings, keyProp, saveProject }">
       <project-permissions-template
         v-model="settings.access"
         :key="keyProp"
         @save-project="saveProject(...arguments)"
       />
-    </template> -->
-  </project-settings-view-template>
+    </template>
+  </project-settings-view-template> -->
 </template>
 
 <script lang="ts">

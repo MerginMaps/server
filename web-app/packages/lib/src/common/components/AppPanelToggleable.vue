@@ -35,7 +35,7 @@
       <i
         :class="[
           'font-semibold text-color-forest ti',
-          collapsed ? 'ti-chevron-compact-down' : 'ti-chevron-compact-up'
+          collapsed ? 'ti-chevron-down' : 'ti-chevron-up'
         ]"
       ></i>
     </template>

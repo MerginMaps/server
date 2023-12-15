@@ -5,7 +5,6 @@
 import {
   ChangePasswordView,
   FileBrowserView,
-  FileDetailView,
   FileVersionDetailView,
   ProjectVersionsView,
   VersionDetailView,
@@ -130,6 +129,23 @@ export const createRouter = (pinia: Pinia) => {
           }
         ]
       },
+      /** Redirect of unused /blob path to /tree */
+      {
+        path: '/projects/:namespace/:projectName/blob/:location?',
+        name: 'blob',
+        component: NotFoundView,
+        props: true,
+        meta: { public: true },
+        beforeEnter: (to, from, next) => {
+          next({
+            path: `/projects/${to.params.namespace}/${
+              to.params.projectName
+            }/tree${from.params.location ? `/${from.params.location}` : ''}`,
+            query: { file_path: to.params.location }
+          })
+          return
+        }
+      },
       {
         path: '/projects/:namespace/:projectName',
         name: 'project',
@@ -145,16 +161,10 @@ export const createRouter = (pinia: Pinia) => {
           title: 'Projects'
         },
         redirect: { name: 'project-tree' },
+
         children: [
           {
-            path: 'blob/:location*',
-            name: 'blob',
-            component: FileDetailView,
-            props: true,
-            meta: { public: true }
-          },
-          {
-            path: 'tree/:location*',
+            path: 'tree/:location?',
             name: 'project-tree',
             component: FileBrowserView,
             props: true,
@@ -193,7 +203,10 @@ export const createRouter = (pinia: Pinia) => {
               ...route,
               meta: {
                 ...route.meta,
-                title: route.name === to.name ? to.params.projectName as string : route.meta.title
+                title:
+                  route.name === to.name
+                    ? (to.params.projectName as string)
+                    : route.meta.title
               }
             }))
             next()
