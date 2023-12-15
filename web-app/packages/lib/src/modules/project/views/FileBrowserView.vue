@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <!-- Searching -->
     <app-container v-if="searchFilter !== '' || items.length > 0">
       <app-section ground>
-        <div class="flex">
+        <div class="flex align-items-center">
           <span class="p-input-icon-left flex-grow-1">
             <i class="ti ti-search text-xl"></i>
             <PInputText
@@ -18,6 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               :pt="{ root: { class: 'border-round-xl w-full' } }"
             />
           </span>
+          <AppMenu :items="filterMenuItems" />
         </div>
       </app-section>
     </app-container>
@@ -73,7 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <app-section>
         <PDataView
           :value="items"
-          :data-key="'id'"
+          :data-key="'path'"
           :paginator="items.length > itemPerPage"
           :rows="itemPerPage"
           :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
@@ -95,7 +96,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <div
               v-for="item in slotProps.items"
               :key="item.id"
-              class="grid grid-nogutter px-4 py-2 mt-0 border-bottom-1 border-gray-200 text-sm"
+              class="grid grid-nogutter px-4 py-2 mt-0 border-bottom-1 border-gray-200 text-sm hover:bg-gray-200 cursor-pointer"
               @click.prevent="rowClick(item.link)"
             >
               <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->
@@ -121,7 +122,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             </div>
           </template>
           <template #empty>
-            <span>No files found.</span>
+            <div class="w-full text-center p-4">
+              <span>No files found.</span>
+            </div>
           </template>
         </PDataView>
       </app-section>
@@ -139,6 +142,7 @@ import orderBy from 'lodash/orderBy'
 import union from 'lodash/union'
 import Path from 'path'
 import { mapState } from 'pinia'
+import { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { defineComponent } from 'vue'
 
 import {
@@ -146,6 +150,7 @@ import {
   AppContainer,
   AppPanelToggleable
 } from '@/common/components'
+import AppMenu from '@/common/components/AppMenu.vue'
 import { formatDateTime } from '@/common/date_utils'
 import { dirname } from '@/common/path_utils'
 import { removeAccents } from '@/common/text_utils'
@@ -165,7 +170,8 @@ export default defineComponent({
     AppContainer,
     AppPanelToggleable,
     DropArea,
-    FileDetailSidebar
+    FileDetailSidebar,
+    AppMenu
   },
   props: {
     namespace: String,
@@ -182,10 +188,11 @@ export default defineComponent({
   data() {
     return {
       options: {
-        rowsPerPage: -1
+        rowsPerPage: -1,
+        descending: false,
+        sortBy: 'name'
       },
       itemPerPage: 50,
-      sortBy: 'name',
       searchFilter: '',
       filter: '',
       selected: [],
@@ -255,14 +262,14 @@ export default defineComponent({
             removed
               .map((path) => this.project.files[path])
               .map(this.fullPathView),
-            this.sortBy,
+            this.options.sortBy,
             this.options.descending ? 'desc' : 'asc'
           )
         )
         list.push(
           ...orderBy(
             added.map((path) => this.upload.files[path]).map(this.fullPathView),
-            this.sortBy,
+            this.options.sortBy,
             this.options.descending ? 'desc' : 'asc'
           )
         )
@@ -271,7 +278,7 @@ export default defineComponent({
             updated
               .map((path) => this.upload.files[path])
               .map(this.fullPathView),
-            this.sortBy,
+            this.options.sortBy,
             this.options.descending ? 'desc' : 'asc'
           )
         )
@@ -295,11 +302,12 @@ export default defineComponent({
           escapeRegExp(removeAccents(this.searchFilter)),
           'i'
         )
+        // TODO: Replace with DataView sorting instead this order_by with lodash
         return orderBy(
           this.filterByLocation(this.projectFiles).filter(
             (f) => f.path.search(regex) !== -1
           ),
-          this.sortBy,
+          this.options.sortBy,
           this.options.descending ? 'desc' : 'asc'
         )
       }
@@ -315,14 +323,14 @@ export default defineComponent({
       items.push(
         ...orderBy(
           this.folders,
-          this.sortBy,
+          this.options.sortBy,
           this.options.descending ? 'desc' : 'asc'
         )
       )
       items.push(
         ...orderBy(
           this.directoryFiles,
-          this.sortBy,
+          this.options.sortBy,
           this.options.descending ? 'desc' : 'asc'
         )
       )
@@ -347,6 +355,38 @@ export default defineComponent({
         (this.project && !this.project.permissions.upload) ||
         this.filter !== ''
       )
+    },
+    filterMenuItems(): MenuItem[] {
+      return [
+        {
+          label: 'Sort by name A-Z',
+          key: 'name',
+          sortDesc: false
+        },
+        {
+          label: 'Sort by name Z-A',
+          key: 'name',
+          sortDesc: true
+        },
+        {
+          label: 'Sort by last modified',
+          key: 'mtime',
+          sortDesc: true
+        },
+        {
+          label: 'Sort by file size',
+          key: 'size',
+          sortDesc: true
+        }
+      ].map((item) => ({
+        ...item,
+        command: (e: MenuItemCommandEvent) => this.menuItemClick(e),
+        class:
+          this.options.sortBy === item.key &&
+          this.options.descending === item.sortDesc
+            ? 'bg-primary-400'
+            : ''
+      }))
     }
   },
   methods: {
@@ -423,15 +463,19 @@ export default defineComponent({
       )
     },
     changeSort(column) {
-      if (this.sortBy === column) {
+      if (this.options.sortBy === column) {
         this.options.descending = !this.options.descending
       } else {
-        this.sortBy = column
+        this.options.sortBy = column
         this.options.descending = false
       }
     },
     rowClick(path: string) {
       this.$router.push({ path })
+    },
+    menuItemClick(e: MenuItemCommandEvent) {
+      this.options.sortBy = e.item.key
+      this.options.descending = e.item.sortDesc
     }
   }
 })

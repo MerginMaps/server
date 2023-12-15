@@ -26,7 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           {{ stateText }}
         </PInlineMessage>
 
-        <dl class="grid">
+        <dl class="grid grid-nogutter">
           <div class="col-12">
             <dt class="text-xs opacity-80 mb-1">Name</dt>
             <dl>
