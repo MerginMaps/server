@@ -200,7 +200,6 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-
 .settings {
   display: flex;
   flex-direction: column;
