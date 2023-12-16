@@ -132,7 +132,7 @@ export default defineComponent({
                         typeof row.old === 'undefined' ? 'N/A' : row.old
                     } else {
                       data.values[columnIdentifier] =
-                        (typeof row.old === 'undefined' ? 'N/A' : row.old) +
+                        (typeof row.old === 'undefinedchangesets/' ? 'N/A' : row.old) +
                         ' ' +
                         String.fromCharCode(parseInt('2794', 16)) +
                         ' ' +

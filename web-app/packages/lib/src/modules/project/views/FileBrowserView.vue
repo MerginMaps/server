@@ -96,7 +96,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 {{ col.text }}
               </div>
               <!-- else -->
-              <div class="col-12 flex lg:hidden">Name</div>
+              <div class="col-12 flex lg:hidden">Files</div>
             </div>
           </template>
           <template #list="slotProps">
@@ -111,21 +111,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 <p class="font-semibold">
                   <file-icon :file="item" />{{ item.name }}
                 </p>
-                <div>
-                  <folder-diff v-if="item.diffStats" v-bind="item.diffStats" />
-                </div>
               </div>
               <div class="flex align-items-center col-12 lg:col-4">
                 <span
                   v-if="item.mtime"
                   v-tooltip.bottom="{ value: $filters.datetime(item.mtime) }"
-                  class="text-sm opacity-80"
+                  class="opacity-80"
                 >
                   {{ $filters.timediff(item.mtime) }}
                 </span>
               </div>
               <div class="flex align-items-center col-12 lg:col-4">
-                <span class="text-sm opacity-80" v-if="item.size">{{
+                <span class="opacity-80" v-if="item.size">{{
                   $filters.filesize(item.size)
                 }}</span>
               </div>
@@ -168,13 +165,11 @@ import { useInstanceStore } from '@/modules/instance/store'
 import DropArea from '@/modules/project/components/DropArea.vue'
 import FileDetailSidebar from '@/modules/project/components/FileDetailSidebar.vue'
 import FileIcon from '@/modules/project/components/FileIcon.vue'
-import FolderDiff from '@/modules/project/components/FolderDiff.vue'
 import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
   name: 'FileBrowserView',
   components: {
-    FolderDiff,
     FileIcon,
     AppSection,
     AppContainer,
@@ -492,4 +487,8 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.p-dataview-content div {
+  word-break: break-word;
+}
+</style>
