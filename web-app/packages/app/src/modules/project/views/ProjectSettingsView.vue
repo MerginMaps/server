@@ -10,6 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :projectName="projectName"
     :asAdmin="asAdmin"
     :show-settings="projectStore.isProjectOwner"
+    :show-access-requests="userStore.isGlobalWorkspaceAdmin"
   >
     <!-- TODO: V3_UPGRADE [MERGIN-EXT] - change settingsAccess to settings.access  -->
     <template #permissions="{ settings, keyProp, saveProject }">
@@ -26,7 +27,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import {
   ProjectSettingsViewTemplate,
   ProjectPermissionsTemplate,
-  useProjectStore
+  useProjectStore,
+  useUserStore
 } from '@mergin/lib'
 import { defineComponent } from 'vue'
 
@@ -46,9 +48,11 @@ export default defineComponent({
   },
   setup(_props) {
     const projectStore = useProjectStore()
+    const userStore = useUserStore()
 
     return {
-      projectStore
+      projectStore,
+      userStore
     }
   }
 })
