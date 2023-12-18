@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <div class="app-container mx-auto py-4 px-4 xl:px-0">
+  <div class="app-container mx-auto py-3 px-4 xl:px-0">
     <slot></slot>
   </div>
 </template>

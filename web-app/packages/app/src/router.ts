@@ -5,7 +5,6 @@
 import {
   ChangePasswordView,
   FileBrowserView,
-  FileDetailView,
   FileVersionDetailView,
   ProjectVersionsView,
   VersionDetailView,
@@ -130,6 +129,23 @@ export const createRouter = (pinia: Pinia) => {
           }
         ]
       },
+      /** Redirect of unused /blob path to /tree */
+      {
+        path: '/projects/:namespace/:projectName/blob/:location?',
+        name: 'blob',
+        component: NotFoundView,
+        props: true,
+        meta: { public: true },
+        beforeEnter: (to, from, next) => {
+          next({
+            path: `/projects/${to.params.namespace}/${
+              to.params.projectName
+            }/tree${from.params.location ? `/${from.params.location}` : ''}`,
+            query: { file_path: to.params.location }
+          })
+          return
+        }
+      },
       {
         path: '/projects/:namespace/:projectName',
         name: 'project',
@@ -141,17 +157,14 @@ export const createRouter = (pinia: Pinia) => {
         props: {
           default: true
         },
+        meta: {
+          title: 'Projects'
+        },
         redirect: { name: 'project-tree' },
+
         children: [
           {
-            path: 'blob/:location*',
-            name: 'blob',
-            component: FileDetailView,
-            props: true,
-            meta: { public: true }
-          },
-          {
-            path: 'tree/:location*',
+            path: 'tree/:location?',
             name: 'project-tree',
             component: FileBrowserView,
             props: true,
@@ -170,19 +183,35 @@ export const createRouter = (pinia: Pinia) => {
             props: true
           },
           {
-            path: 'history/:version_id?',
+            path: 'history/:version_id',
             name: 'project-versions-detail',
             component: VersionDetailView,
             props: true
           },
           {
-            path: 'history/:version_id?/:path?',
+            path: 'history/:version_id/:path',
             name: 'file-version-detail',
             component: FileVersionDetailView,
             props: true,
             meta: { public: true }
           }
-        ]
+        ].map((child) => ({
+          ...child,
+          beforeEnter: (to, from, next) => {
+            // added project name to matched route
+            to.matched = to.matched.map((route) => ({
+              ...route,
+              meta: {
+                ...route.meta,
+                title:
+                  route.name === to.name
+                    ? (to.params.projectName as string)
+                    : route.meta.title
+              }
+            }))
+            next()
+          }
+        }))
       },
       {
         path: '/:pathMatch(.*)*',

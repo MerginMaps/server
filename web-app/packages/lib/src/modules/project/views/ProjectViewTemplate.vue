@@ -5,220 +5,157 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <page-view
-    :style="`padding-left: ${
-      drawer ? 260 : 20
-    }px; overflow-y: auto; padding-right:20px; margin-right: 0px;`"
-  >
-    <div slot="left" class="panel" />
-    <v-layout class="column fill-height project-page main-content">
-      <v-card v-if="project" style="margin-bottom: 0" variant="outlined">
-        <!-- Toolbar -->
-        <v-layout class="row align-center toolbar">
-          <div class="breadcrumbs" style="font-size: 20px">
-            <v-icon color="primary">map</v-icon>
-            <span v-if="showNamespace" class="text-primary"
-              >{{ project.namespace }} /</span
-            >
-            <router-link
-              :to="{
-                name: 'project',
-                project: project
-              }"
-            >
-              <b>{{ project.name }}</b></router-link
-            >
-
-            <router-link
-              :to="{
-                name: 'project-versions-detail'
-              }"
-              v-slot="{ href, route, navigate }"
-            >
-              <span v-if="route.params.version_id">
-                &gt;
-                <a :href="href" @click="navigate">
-                  {{ route.params.version_id }}
-                </a>
-              </span>
-            </router-link>
-            <router-link
-              :to="{ name: 'file-version-detail' }"
-              v-slot="{ href, route, navigate }"
-            >
-              <span v-if="route.params.path">
-                &gt;
-                <a :href="href" @click="navigate">
-                  {{ route.params.path }}
-                </a>
-              </span>
-            </router-link>
-          </div>
-          <v-spacer />
+  <div>
+    <template v-if="project">
+      <app-container class="flex justify-content-end xl:pb-1 lg:-mb-6">
+        <!-- Z indexes based on minus margin, its not possible to add additional buttons to tab view -->
+        <div class="relative z-1">
+          <!-- Toolbar -->
           <portal-target name="project-toolbar" class="layout row shrink" />
           <slot name="shareButton">
             <project-share-button />
           </slot>
-          <action-button
+          <PButton
+            severity="secondary"
+            outlined
             @click="downloadArchive({ url: downloadUrl })"
             data-cy="project-download-btn"
-          >
-            <template #icon>
-              <download-icon />
-            </template>
-            Download
-          </action-button>
-          <action-button
+            icon="ti ti-download"
+            class="mr-2"
+            label="Download"
+          />
+          <PButton
+            severity="secondary"
+            outlined
             @click="cloneDialog"
             v-if="canCloneProject"
             data-cy="project-clone-btn"
-          >
-            <template #icon>
-              <copy-icon />
-            </template>
-            Clone
-          </action-button>
-          <action-button
+            icon="ti ti-copy"
+            label="Clone"
+            class="mr-2"
+          />
+          <PButton
+            severity="secondary"
+            outlined
             @click="unsubscribeDialog"
             data-cy="project-leave-btn"
+            icon="ti ti-logout"
+            label="Leave project"
             v-if="canLeaveProject"
-          >
-            <template #icon>
-              <square-minus-icon />
-            </template>
-            Leave project
-          </action-button>
-        </v-layout>
+          />
+        </div>
+      </app-container>
 
-        <v-card
-          class="layout column fill-height"
-          variant="flat"
-          slider-color="primary"
-        >
-          <v-card-title>
-            <v-tabs left-active v-model="tab" show-arrows>
-              <div color="primary"></div>
-              <v-tab
-                key="files"
-                :to="{
-                  name: `project-tree`,
-                  params: { namespace: namespace, projectName: project.name }
-                }"
-                >Files
-              </v-tab>
-              <slot name="map.tab" v-if="loggedUser" />
-              <v-tab
-                key="history"
-                v-if="loggedUser && showHistory"
-                :to="{
-                  name: `project-versions`,
-                  params: { namespace: namespace, projectName: project.name }
-                }"
-                >History
-              </v-tab>
-              <v-tab
-                key="settings"
-                v-if="loggedUser && showSettings"
-                :to="{
-                  name: `project-settings`,
-                  params: { namespace: namespace, projectName: project.name }
-                }"
-                >Settings
-              </v-tab>
-            </v-tabs>
-          </v-card-title>
-          <v-divider></v-divider>
-          <router-view v-if="project" class="content-container" />
-        </v-card>
-      </v-card>
-      <v-card v-else-if="fetchProjectsResponseStatus === 403">
-        <v-layout
-          class="public-private-zone"
-          style="padding-top: 25px; padding-left: 25px"
-        >
-          <v-btn id="request-access-btn" @click="createAccessRequest"
-            >Request access
-          </v-btn>
-          <span class="private-public-text">
-            <b>This is a private project</b><br />
-            You don't have permissions to access this project.
-          </span>
-        </v-layout>
-      </v-card>
-      <v-card v-else-if="fetchProjectsResponseStatus === 404">
-        <span
-          class="private-public-text"
-          style="padding-top: 25px; padding-left: 25px"
-        >
-          <b>Project not found</b><br />
-          Please check if address is written correctly
-        </span>
-      </v-card>
-      <v-card v-else-if="fetchProjectsResponseStatus === 409">
-        <span
-          class="private-public-text"
-          style="padding-top: 25px; padding-left: 25px"
-        >
-          <b>You don't have permission to access this project</b><br />
-          You already requested access
-        </span>
-      </v-card>
-      <drop-area
-        v-if="
-          project &&
-          $route.name === 'project-tree' &&
-          project.permissions &&
-          project.permissions.upload
-        "
-        class="drop-area"
-        :location="location"
-        data-cy="project-drop-area"
+      <PTabView
+        :active-index="activeTabIndex"
+        @tab-click="(e) => tabClick(e.index)"
+        :pt="{
+          root: {
+            class: 'relative z-auto'
+          },
+          nav: {
+            style: {
+              backgroundColor: 'transparent',
+              maxWidth: '1120px'
+            },
+            class: 'mx-auto border-transparent'
+          },
+          panelContainer: {
+            style: {
+              backgroundColor: 'transparent'
+            },
+            class: 'p-0'
+          }
+        }"
       >
-        <v-layout row wrap align-center class="drag-drop-text">
-          <span>
-            <v-icon>publish</v-icon> Drag & drop here or click and select
-            file(s) to upload
-          </span>
-        </v-layout>
-      </drop-area>
-    </v-layout>
-    <div slot="right" class="panel">
+        <PTabPanel header="Files" :pt="ptHeaderAction">
+          <router-view />
+        </PTabPanel>
+        <slot name="map.tab" :ptHeaderAction="ptHeaderAction" />
+        <PTabPanel
+          v-if="tabs.some((item) => item.route === `project-versions`)"
+          header="History"
+          :pt="ptHeaderAction"
+          ><router-view />
+        </PTabPanel>
+        <PTabPanel
+          v-if="tabs.some((item) => item.route === `project-settings`)"
+          header="Settings"
+          :pt="ptHeaderAction"
+          ><router-view />
+        </PTabPanel>
+      </PTabView>
+    </template>
+    <app-container v-else-if="fetchProjectsResponseStatus">
+      <app-section v-if="fetchProjectsResponseStatus === 403">
+        <div class="flex flex-column align-items-center p-4 text-center">
+          <img src="@/assets/map-circle.svg" alt="No project" />
+          <p class="font-semibold">This is a private project</p>
+          <p class="text-sm opacity-80 mt-2 mb-4">
+            You don't have permissions to access this project.
+          </p>
+          <PButton id="request-access-btn" @click="createAccessRequest"
+            >Request access</PButton
+          >
+        </div>
+      </app-section>
+      <app-section v-else-if="fetchProjectsResponseStatus === 404">
+        <div class="flex flex-column align-items-center p-4 text-center">
+          <img src="@/assets/map-circle.svg" alt="No project" />
+          <p class="font-semibold">Project not found</p>
+          <p class="text-sm opacity-80 mt-2 mb-4">
+            Please check if address is written correctly
+          </p>
+        </div>
+      </app-section>
+      <app-section v-else-if="fetchProjectsResponseStatus === 409">
+        <div class="flex flex-column align-items-center p-4 text-center">
+          <img src="@/assets/map-circle.svg" alt="No project" />
+          <p class="font-semibold">
+            You don't have permission to access this project
+          </p>
+          <p class="text-sm opacity-80 mt-2 mb-4">
+            You already requested access
+          </p>
+        </div>
+      </app-section>
+    </app-container>
+
+    <div slot="right">
       <upload-panel v-if="upload" :namespace="namespace" class="my-1 mr-1" />
     </div>
-  </page-view>
+  </div>
 </template>
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
+import { TabPanelPassThroughOptions } from 'primevue/tabpanel'
 import { defineComponent, PropType } from 'vue'
-import { CopyIcon, DownloadIcon, SquareMinusIcon } from 'vue-tabler-icons'
 
-import ActionButton from '@/common/components/ActionButton.vue'
+import { AppContainer, AppSection } from '@/common'
 import { waitCursor } from '@/common/html_utils'
 import { USER_ROLE_NAME_BY_ROLE, UserRole } from '@/common/permission_utils'
 import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 import { useDialogStore } from '@/modules/dialog/store'
-import PageView from '@/modules/layout/components/PageView.vue'
 import { useLayoutStore } from '@/modules/layout/store'
 import { useNotificationStore } from '@/modules/notification/store'
-import DropArea from '@/modules/project/components/DropArea.vue'
 import ProjectShareButton from '@/modules/project/components/ProjectShareButton.vue'
 import UploadPanel from '@/modules/project/components/UploadPanel.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
 
+interface TabItem {
+  route: string
+}
+
 export default defineComponent({
   name: 'ProjectViewTemplate',
   components: {
-    ActionButton,
     ProjectShareButton,
-    PageView,
     UploadPanel,
-    DropArea,
-    CopyIcon,
-    DownloadIcon,
-    SquareMinusIcon
+    AppContainer,
+    AppSection
   },
   props: {
     /**  Show namespace (ws) label in breadcrumb of page */
@@ -237,7 +174,8 @@ export default defineComponent({
     hideCloneButton: {
       type: Boolean,
       default: false
-    }
+    },
+    mapRoute: String
   },
   data() {
     return {
@@ -251,6 +189,56 @@ export default defineComponent({
     ...mapState(useUserStore, ['loggedUser']),
     ...mapState(useProjectStore, ['isProjectOwner']),
     ...mapState(useUserStore, ['currentWorkspace', 'isLoggedIn']),
+
+    tabs(): TabItem[] {
+      const defaultTabs: TabItem[] = [
+        {
+          route: 'project-tree'
+        }
+      ]
+
+      if (this.loggedUser) {
+        // If map in slots, add route to map tab
+        if (this.$slots['map.tab']) {
+          defaultTabs.push({
+            route: this.mapRoute
+          })
+        }
+        if (this.showHistory) {
+          defaultTabs.push({
+            route: 'project-versions'
+          })
+        }
+        if (this.showSettings) {
+          defaultTabs.push({
+            route: 'project-settings'
+          })
+        }
+      }
+      return defaultTabs
+    },
+
+    activeTabIndex(): number {
+      return this.tabs.findIndex((item) => item.route === this.$route.name)
+    },
+
+    /** Rewrite of styles for TabPanels */
+    ptHeaderAction(): TabPanelPassThroughOptions {
+      return {
+        headerAction({ context }) {
+          // Custom handling of active styles for tabs
+          return {
+            style: {
+              backgroundColor: 'transparent',
+              borderBottomColor: context.active
+                ? 'var(--forest-color)'
+                : 'transparent'
+            },
+            class: ['hover:border-400', { 'text-color-forest': context.active }]
+          }
+        }
+      }
+    },
 
     canCloneProject() {
       return this.isLoggedIn && !this.hideCloneButton
@@ -271,7 +259,7 @@ export default defineComponent({
         return ProjectApi.constructDownloadProjectVersionUrl(
           this.namespace,
           this.projectName,
-          this.$route.params.version_id
+          this.$route.params.version_id as string
         )
       } else {
         return this.constructDownloadProjectUrl({
@@ -372,111 +360,26 @@ export default defineComponent({
       }
       this.showDialog({
         component: ConfirmDialog,
-        params: { props, listeners, dialog: { maxWidth: 500 } }
+        params: {
+          props,
+          listeners,
+          dialog: { maxWidth: 500, header: 'Leave project' }
+        }
+      })
+    },
+
+    /**
+     * Handles clicking on a tab by index.
+     *
+     * @param index - The index of the clicked tab.
+     */
+    tabClick(index: number) {
+      this.$router.push({
+        name: this.tabs[index].route
       })
     }
   }
 })
 </script>
 
-<style lang="scss" scoped>
-.project-page {
-  .drop-area {
-    max-height: 100%;
-    display: flex;
-    flex-grow: 1;
-    flex-direction: column;
-  }
-
-  .v-card {
-    display: flex;
-    flex-direction: column;
-    margin: 0.25em;
-    overflow: unset;
-    flex-grow: 0;
-
-    .content-container {
-      padding: 0.25em 0;
-      background-color: #fff;
-      flex: 1;
-    }
-  }
-
-  small {
-    opacity: 0.6;
-    margin-bottom: 2px;
-  }
-}
-
-.theme--light.v-card.v-sheet--outlined {
-  border: none;
-}
-
-.panel {
-  flex: 1 1;
-  box-sizing: border-box;
-  position: relative;
-}
-
-.v-card__subtitle,
-.v-card__text,
-.v-card__title {
-  padding: 16px 0 16px 0;
-}
-
-.toolbar {
-  max-width: 100%;
-  margin-right: 0;
-  margin-left: 0;
-  flex-shrink: 0;
-  flex-grow: 0;
-  padding: 0.5em 1em;
-  background-color: #fafafa;
-  border: solid #eee;
-  border-width: 1px 0;
-
-  :deep(*) {
-    .v-text-field {
-      padding-top: 0;
-      margin-top: 0;
-      font-size: 15px;
-    }
-
-    .v-btn {
-      padding: 0 0.5em;
-      margin: 0.25em;
-      min-width: 2em;
-    }
-  }
-}
-
-.breadcrumbs {
-  color: #777;
-
-  a {
-    text-decoration: none;
-    margin: 0 0.25em;
-  }
-}
-
-.drop-area {
-  margin-top: 5px;
-  padding-left: 5px;
-
-  .drag-drop-text {
-    border: 1px dashed rgba(0, 0, 0, 0.6);
-    opacity: 0.6;
-    margin: 0.25em 0.25em 0.25em 0.25em;
-
-    span {
-      width: 100%;
-      text-align: center;
-      margin: 20px;
-    }
-
-    i {
-      transform: rotate(180deg);
-    }
-  }
-}
-</style>
+<style lang="scss" scoped></style>

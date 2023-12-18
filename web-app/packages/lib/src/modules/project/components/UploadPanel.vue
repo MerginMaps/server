@@ -5,74 +5,63 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-card>
-    <v-toolbar density="compact" text theme="dark" color="primary">
-      <v-toolbar-title>Data Sync</v-toolbar-title>
-      <v-spacer />
-      <v-btn icon @click="resetUpload">
-        <v-icon>close</v-icon>
-      </v-btn>
-    </v-toolbar>
-
-    <v-card-text v-if="upload.diff && upload.diff.changes">
-      <v-layout class="stats-line">
-        <label>Removed files:</label>
-        <v-spacer />
-        <span class="red--text">{{ upload.diff.removed.length }}</span>
-        <v-icon size="small" color="red">delete</v-icon>
-      </v-layout>
-      <v-layout class="stats-line">
-        <label>Added files:</label>
-        <v-spacer />
-        <span class="green--text">{{ upload.diff.added.length }}</span>
-        <v-icon size="small" color="green">add_circle</v-icon>
-      </v-layout>
-      <v-layout class="stats-line">
-        <label>Modified files:</label>
-        <v-spacer />
-        <span class="orange--text">{{ upload.diff.updated.length }}</span>
-        <v-icon size="small" color="orange">edit</v-icon>
-      </v-layout>
-      <v-layout class="stats-line">
-        <label>Upload data size:</label>
-        <v-spacer />
-        <span>{{ $filters.filesize(uploadSize) }}</span>
-      </v-layout>
-    </v-card-text>
-    <v-card-text v-else-if="upload.diff">
-      All files are up to date!
-    </v-card-text>
-
-    <v-card-text v-if="remainingAnalyzingFiles">
-      <v-layout row>
-        <v-progress-circular
-          :size="30"
-          :width="3"
-          color="primary"
-          indeterminate
-        />
-        <v-spacer />
-        <span style="padding-right: 30px"
-          >Remaining files: {{ remainingAnalyzingFiles }}</span
+  <PDialog
+    v-model:visible="visible"
+    :position="isUnderOverlayBreakpoint ? 'topleft' : 'bottomright'"
+    class="upload-panel"
+    :pt="{
+      root: {
+        class: 'w-8 lg:w-3 mr-4 mb-4'
+      },
+      header: {
+        class: 'border-none py-2'
+      },
+      closeButton: {
+        class: 'text-color-forest'
+      }
+    }"
+  >
+    <template #header>
+      <p class="font-semibold">
+        Data Sync
+        <span v-if="upload.diff" class="text-color-secondary"
+          >({{ $filters.filesize(uploadSize) }})</span
         >
-      </v-layout>
-    </v-card-text>
-
-    <v-card-actions v-if="upload.diff && upload.diff.changes">
-      <v-spacer />
-      <action-button
-        id="update-files-btn"
-        @click="confirmUpload"
-        :disabled="upload.running || remainingAnalyzingFiles > 0"
+      </p>
+    </template>
+    <div v-if="upload.diff && upload.diff.changes">
+      <div
+        class="flex py-1 align-items-center"
+        v-for="key in ['added', 'updated', 'removed']"
+        :key="key"
       >
-        <template #icon>
-          <cloud-upload-icon />
-        </template>
-        Update
-      </action-button>
-      <v-spacer />
-    </v-card-actions>
-  </v-card>
+        <div
+          :class="[
+            'border-circle p-2 mr-1 upload-panel-diff-circle text-center',
+            `upload-panel-diff-circle--${key}`
+          ]"
+        >
+          <i :class="['ti', `ti-${diffIcon[key]}`]" class="text-xl"></i>
+        </div>
+        <span class="text-sm opacity-80 capitalize">{{ key }}</span>
+        <div
+          class="upload-panel-diff-count border-circle p-2 w-2rem h-2rem ml-auto text-center"
+        >
+          {{ upload.diff[key].length }}
+        </div>
+      </div>
+      <div class="py-4 w-full">
+        <PButton
+          id="update-files-btn"
+          @click="confirmUpload"
+          :disabled="upload.running || remainingAnalyzingFiles > 0"
+          class="flex justify-content-center w-full text-center"
+        >
+          Update Changes
+        </PButton>
+      </div>
+    </div>
+  </PDialog>
 </template>
 
 <script lang="ts">
@@ -80,12 +69,17 @@ import axios from 'axios'
 import pick from 'lodash/pick'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { CloudUploadIcon } from 'vue-tabler-icons'
 
-import ActionButton from '@/common/components/ActionButton.vue'
 import { CHUNK_SIZE, isVersionedFile } from '@/common/mergin_utils'
-import { ConfirmDialog, useDialogStore, useNotificationStore } from '@/modules'
+import {
+  ConfirmDialog,
+  useDialogStore,
+  useLayoutStore,
+  useNotificationStore
+} from '@/modules'
 import { useProjectStore } from '@/modules/project/store'
+
+type DiffKeys = 'removed' | 'added' | 'updated'
 
 export default defineComponent({
   data() {
@@ -96,13 +90,19 @@ export default defineComponent({
   props: {
     namespace: String
   },
-  components: {
-    ActionButton,
-    CloudUploadIcon
-  },
   computed: {
     ...mapState(useProjectStore, ['project', 'uploads']),
+    ...mapState(useLayoutStore, ['isUnderOverlayBreakpoint']),
+    visible: {
+      get() {
+        return !!this.upload
+      },
+      set(visible) {
+        if (visible) return visible
 
+        this.resetUpload()
+      }
+    },
     upload() {
       return this.uploads[this.project.path]
     },
@@ -118,6 +118,14 @@ export default defineComponent({
     remainingAnalyzingFiles() {
       const list = (this.upload && this.upload.analysingFiles) || []
       return list.length
+    },
+    diffIcon() {
+      const icons: Record<DiffKeys, string> = {
+        removed: 'trash',
+        added: 'plus',
+        updated: 'pencil'
+      }
+      return icons
     }
   },
   methods: {
@@ -233,27 +241,20 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-.v-card {
-  min-width: 240px;
-}
-
-.stats-line {
-  align-items: center;
-  margin: 0.75em 0;
-
-  label {
-    font-weight: 500;
-    color: #555;
+.upload-panel {
+  &-diff-count {
+    background-color: var(--light-green-color);
   }
-
-  .spacer {
-    height: 1em;
-    border-bottom: 1px dotted #ccc;
-    margin: 0 0.5em;
-  }
-
-  .v-icon {
-    margin: 0 0.25em;
+  &-diff-circle {
+    &--removed {
+      background-color: var(--negative-color);
+    }
+    &--updated {
+      background-color: var(--warning-color);
+    }
+    &--added {
+      background-color: var(--positive-color);
+    }
   }
 }
 </style>

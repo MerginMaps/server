@@ -157,7 +157,7 @@ export default defineComponent({
           dialog,
           listeners: {
             error: (err, data) => this.$emit('new-project-error', err, data)
-          },
+          }
         }
       })
     }

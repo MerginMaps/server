@@ -116,6 +116,7 @@ export interface ProjectListItemFiles extends FileInfo, HistoryFileInfo {
 export interface ProjectDetail extends ProjectListItem {
   role: ProjectRoleName
   files?: ProjectListItemFiles[]
+  workspace_id: number
 }
 
 export interface PaginatedProjectsResponse extends PaginatedResponseDefaults {

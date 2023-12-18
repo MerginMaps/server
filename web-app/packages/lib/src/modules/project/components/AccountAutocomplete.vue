@@ -94,11 +94,11 @@ import { defineComponent } from 'vue'
 import { SendIcon, UserIcon } from 'vue-tabler-icons'
 
 import { isValidEmail } from '@/common/text_utils'
+import { useUserStore } from '@/main'
 import { useProjectStore } from '@/modules/project/store'
 import UserSearchChip from '@/modules/user/components/UserSearchChip.vue'
 import { EMPTY_INVITE_ITEM } from '@/modules/user/constants'
 import { UserSearchParams } from '@/modules/user/types'
-import { useUserStore } from '@/main'
 
 export default defineComponent({
   name: 'AccountAutocomplete',

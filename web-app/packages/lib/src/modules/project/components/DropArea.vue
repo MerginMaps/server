@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div
-    class="drop-area"
+    class="drop-area h-full"
     :class="{ active: dragOver }"
     @dragover.prevent="onDragOver"
     @dragleave.capture="setOver(false)"
@@ -30,7 +30,23 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         multiple
       />
     </div>
-    <slot />
+    <slot>
+      <div
+        class="flex flex-column justify-content-center align-items-center text-center h-full p-4 pt-6"
+      >
+        <div
+          class="text-2xl surface-section border-circle p-4 text-color-forest w-5rem h-5rem rotate-180"
+        >
+          <i class="ti ti-download" />
+        </div>
+        <h4 class="text-lg font-semibold text-color-forest">
+          Drag and drop files
+        </h4>
+        <p class="text-sm opacity-80">
+          You can drop files from your computer to start uploading
+        </p>
+      </div>
+    </slot>
   </div>
 </template>
 

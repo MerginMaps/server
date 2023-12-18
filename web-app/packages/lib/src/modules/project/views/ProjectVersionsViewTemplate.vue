@@ -5,172 +5,204 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <div>
-    <v-layout align-center shrink>
-      <v-spacer />
-    </v-layout>
-    <div class="text-center">
-      <v-pagination
-        v-if="showPagination && options && versionsCount > options.itemsPerPage"
-        v-model="options.page"
-        :length="Math.ceil(versionsCount / options.itemsPerPage)"
-        :total-visible="2"
-        circle
-        color="primary"
-        @update:model-value="fetchPage"
-      ></v-pagination>
-    </div>
-    <v-data-table
-      :headers="headers"
-      :items="items"
-      item-key="name"
-      :options="options"
-      :server-items-length="versionsCount"
-      v-on:update:options="paginating"
-      :hide-default-footer="true"
-      :loading="versionsLoading"
-      no-data-text="No project history"
-      color="primary"
-      data-cy="project-verision-table"
-    >
-      <!-- headers -->
-      <template v-slot:header.changes.added="{ header }">
-        <v-tooltip location="bottom">
-          <template v-slot:activator="{ props }">
-            <v-icon v-bind="props" size="small" :color="header.color"
-              >{{ header.icon }}
-            </v-icon>
-          </template>
-          <span>Added</span>
-        </v-tooltip>
-      </template>
-      <template v-slot:header.changes.removed="{ header }">
-        <v-tooltip location="bottom">
-          <template v-slot:activator="{ props }">
-            <v-icon v-bind="props" size="small" :color="header.color"
-              >{{ header.icon }}
-            </v-icon>
-          </template>
-          <span>Deleted</span>
-        </v-tooltip>
-      </template>
-      <template v-slot:header.changes.updated="{ header }">
-        <v-tooltip location="bottom">
-          <template v-slot:activator="{ props }">
-            <v-icon v-bind="props" size="small" :color="header.color"
-              >{{ header.icon }}
-            </v-icon>
-          </template>
-          <span>Modified</span>
-        </v-tooltip>
-      </template>
-      <!-- data -->
-      <template v-slot:item.created="{ item }">
-        <span>
-          <v-tooltip location="bottom">
-            <template v-slot:activator="{ props }">
-              <span v-bind="props" :style="[rowStyle[item]]">{{
-                $filters.timediff(item.created)
-              }}</span>
-            </template>
-            <span>{{ $filters.datetime(item.created) }}</span>
-          </v-tooltip>
-        </span>
-      </template>
-      <template v-slot:item.author="{ item }"
-        ><span :style="[rowStyle(item)]">{{ item.author }}</span></template
+  <app-container>
+    <app-section>
+      <PDataView
+        :value="items"
+        :data-key="'name'"
+        :paginator="
+          showPagination && options && versionsCount > options.itemsPerPage
+        "
+        :rows="options.itemsPerPage"
+        :totalRecords="versionsCount"
+        :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
+        data-cy="project-verision-table"
+        lazy
+        @page="onPage"
+        :pt="{
+          header: {
+            // small header
+            class: 'px-3 py-2'
+          }
+        }"
       >
-      <template v-slot:item.name="{ item }">
-        <span data-cy="project-versions-version">
-          <router-link
-            :style="[rowStyle(item)]"
-            :to="
-              item.disabled
-                ? ''
-                : {
-                    name: 'project-versions-detail',
-                    params: { version_id: item.name }
-                  }
-            "
-          >
-            {{ item.name }}
-          </router-link>
-        </span>
-      </template>
-      <template v-slot:item.changes.added="{ item }">
-        <span>
-          <span :style="[rowStyle(item)]" class="green--text">{{
-            item.changes.added.length
-          }}</span>
-        </span>
-      </template>
-      <template v-slot:item.changes.removed="{ item }">
-        <span>
-          <span :style="[rowStyle(item)]" class="red--text">{{
-            item.changes.removed.length
-          }}</span>
-        </span>
-      </template>
-      <template v-slot:item.changes.updated="{ item }">
-        <span>
-          <span :style="[rowStyle(item)]" class="orange--text">{{
-            item.changes.updated.length
-          }}</span>
-        </span>
-      </template>
-      <template v-slot:item.project_size="{ item }">
-        <span :style="[rowStyle(item)]">
-          {{ $filters.filesize(item.project_size) }}
-        </span>
-      </template>
-      <template v-slot:item.archived="{ item }">
-        <v-tooltip location="top">
-          <template v-slot:activator="{ props }">
-            <v-btn
-              icon
-              v-bind="props"
-              :disabled="item.disabled"
-              :style="[rowStyle(item)]"
-              data-cy="project-versions-download-btn"
-              @click="
-                downloadArchive({
-                  url:
-                    '/v1/project/download/' +
-                    namespace +
-                    '/' +
-                    projectName +
-                    '?version=' +
-                    item.name +
-                    '&format=zip'
-                })
-              "
+        <template #header>
+          <div class="w-11 grid grid-nogutter">
+            <!-- Visible on lg breakpoint > -->
+            <div
+              v-for="col in columns.filter((item) => !item.fixed)"
+              :class="['text-xs hidden lg:flex', `col-${col.cols ?? 1}`]"
+              :key="col.text"
             >
-              <v-icon>archive</v-icon>
-            </v-btn>
-          </template>
-          <span>Download Project Version {{ item.name }} (ZIP)</span>
-        </v-tooltip>
-      </template>
-    </v-data-table>
-    <div class="text-center">
-      <v-pagination
-        v-if="showPagination && options && versionsCount > options.itemsPerPage"
-        v-model="options.page"
-        :length="Math.ceil(versionsCount / options.itemsPerPage)"
-        :total-visible="7"
-        circle
-        color="primary"
-        @update:model-value="fetchPage"
-      ></v-pagination>
-    </div>
-    <slot name="table-footer"></slot>
-  </div>
+              {{ col.text }}
+            </div>
+            <!-- else -->
+            <div class="col-12 flex lg:hidden">Versions</div>
+          </div>
+        </template>
+
+        <!-- table rows -->
+        <template #list="slotProps">
+          <div
+            v-for="item in slotProps.items"
+            :key="item.id"
+            class="flex align-items-center hover:bg-gray-200 cursor-pointer border-bottom-1 border-gray-200 text-sm px-3 py-2 mt-0"
+            :style="[rowStyle(item)]"
+          >
+            <div
+              class="flex-grow-1 grid grid-nogutter w-11"
+              @click.prevent="!item.disabled && rowClick(item.name)"
+            >
+              <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->
+              <template
+                v-for="col in columns.filter((item) => !item.fixed)"
+                :key="col.value"
+              >
+                <div
+                  v-if="col.value === 'name'"
+                  :class="[
+                    'flex flex-column justify-content-center col-12',
+                    `lg:col-${col.cols ?? 1}`
+                  ]"
+                >
+                  <p class="text-xs opacity-80 mb-1 lg:hidden">
+                    {{ col.text }}
+                  </p>
+                  <span :class="col.textClass">
+                    {{ item.name }}
+                  </span>
+                </div>
+                <div
+                  v-else-if="col.value === 'created'"
+                  :class="[
+                    'flex flex-column justify-content-center col-12',
+                    `lg:col-${col.cols ?? 1}`
+                  ]"
+                >
+                  <p class="text-xs opacity-80 mb-1 lg:hidden">
+                    {{ col.text }}
+                  </p>
+                  <span
+                    v-tooltip.bottom="{
+                      value: $filters.datetime(item.created)
+                    }"
+                    :class="col.textClass"
+                  >
+                    {{ $filters.timediff(item.created) }}
+                  </span>
+                </div>
+                <div
+                  v-else-if="col.value === 'changes.added'"
+                  :class="[
+                    'flex flex-column justify-content-center col-12',
+                    `lg:col-${col.cols ?? 1}`
+                  ]"
+                >
+                  <p class="text-xs opacity-80 mb-1 lg:hidden">
+                    {{ col.text }}
+                  </p>
+                  <span :class="col.textClass">{{
+                    item.changes.added.length
+                  }}</span>
+                </div>
+                <div
+                  v-else-if="col.value === 'changes.updated'"
+                  :class="[
+                    'flex flex-column justify-content-center col-12',
+                    `lg:col-${col.cols ?? 1}`
+                  ]"
+                >
+                  <p class="text-xs opacity-80 mb-1 lg:hidden">
+                    {{ col.text }}
+                  </p>
+                  <span :class="col.textClass">
+                    {{ item.changes.updated.length }}
+                  </span>
+                </div>
+                <div
+                  v-else-if="col.value === 'changes.removed'"
+                  :class="[
+                    'flex flex-column justify-content-center col-12',
+                    `lg:col-${col.cols ?? 1}`
+                  ]"
+                >
+                  <p class="text-xs opacity-80 mb-1 lg:hidden">
+                    {{ col.text }}
+                  </p>
+                  <span :class="col.textClass">
+                    {{ item.changes.removed.length }}
+                  </span>
+                </div>
+                <div
+                  v-else-if="col.value === 'project_size'"
+                  :class="[
+                    'flex flex-column justify-content-center col-12',
+                    `lg:col-${col.cols ?? 1}`
+                  ]"
+                >
+                  <p class="text-xs opacity-80 mb-1 lg:hidden">
+                    {{ col.text }}
+                  </p>
+                  <span :class="col.textClass">{{
+                    $filters.filesize(item.project_size)
+                  }}</span>
+                </div>
+                <div
+                  v-else
+                  :class="[
+                    'flex flex-column justify-content-center col-12',
+                    `lg:col-${col.cols ?? 1}`
+                  ]"
+                >
+                  <p class="text-xs opacity-80 mb-1 lg:hidden">
+                    {{ col.text }}
+                  </p>
+                  <span :class="col.textClass">{{ item[col.value] }}</span>
+                </div>
+              </template>
+            </div>
+            <!-- actions -->
+            <div class="flex w-1 flex-shrink-0 justify-content-end">
+              <PButton
+                icon="ti ti-download"
+                severity="secondary"
+                text
+                :disabled="item.disabled"
+                :style="[rowStyle(item)]"
+                data-cy="project-versions-download-btn"
+                @click="
+                  downloadArchive({
+                    url:
+                      '/v1/project/download/' +
+                      namespace +
+                      '/' +
+                      projectName +
+                      '?version=' +
+                      item.name +
+                      '&format=zip'
+                  })
+                "
+              />
+            </div>
+          </div>
+        </template>
+        <template #empty>
+          <div class="w-full text-center p-4">
+            <span>No versions found.</span>
+          </div>
+        </template>
+      </PDataView>
+      <slot name="table-footer"></slot>
+    </app-section>
+  </app-container>
 </template>
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
+import { DataViewPageEvent } from 'primevue/dataview'
 import { defineComponent, PropType } from 'vue'
 
+import { AppSection, AppContainer } from '@/common/components'
 import {
   FetchProjectVersionsParams,
   ProjectVersion,
@@ -178,8 +210,20 @@ import {
 } from '@/modules'
 import { useProjectStore } from '@/modules/project/store'
 
+interface ColumnItem {
+  text: string
+  value: string
+  cols?: number
+  fixed?: boolean
+  textClass?: string
+}
+
 export default defineComponent({
   name: 'ProjectVersionsViewTemplate',
+  components: {
+    AppSection,
+    AppContainer
+  },
   props: {
     projectName: String,
     namespace: String,
@@ -196,34 +240,35 @@ export default defineComponent({
   },
   data() {
     return {
-      headers: [
-        { text: 'Version', value: 'name' },
-        { text: 'Created', value: 'created' },
-        { text: 'Author', value: 'author', sortable: false },
+      columns: [
         {
-          text: 'Added',
+          text: 'Version',
+          value: 'name',
+          textClass: 'font-semibold white-space-normal'
+        },
+        { text: 'Created', value: 'created', cols: 2 },
+        { text: 'Author', value: 'author', cols: 2 },
+        {
+          text: 'Files added',
           value: 'changes.added',
-          icon: 'add_circle',
-          color: 'green',
-          sortable: false
+          cols: 2
         },
         {
-          text: 'Removed',
-          value: 'changes.removed',
-          icon: 'delete',
-          color: 'red',
-          sortable: false
-        },
-        {
-          text: 'Modified',
+          text: 'Files edited',
           value: 'changes.updated',
-          icon: 'edit',
-          color: 'orange',
-          sortable: false
+          cols: 2
         },
-        { text: 'Size', value: 'project_size', sortable: false },
-        { text: '', value: 'archived', sortable: false }
-      ],
+        {
+          text: 'Files removed',
+          value: 'changes.removed',
+          cols: 2
+        },
+        { text: 'Size', value: 'project_size' },
+        { text: '', value: 'archived', fixed: true }
+      ].map((item) => ({
+        ...item,
+        textClass: item.textClass === undefined ? 'opacity-80' : item.textClass
+      })) as ColumnItem[],
       options: {
         sortDesc: [true],
         itemsPerPage: this.defaultItemsPerPage ?? 50,
@@ -249,19 +294,11 @@ export default defineComponent({
       }))
     }
   },
-  watch: {
-    $route: 'fetchVersions'
+  created() {
+    this.fetchVersions()
   },
   methods: {
     ...mapActions(useProjectStore, ['fetchProjectVersions', 'downloadArchive']),
-    paginating(options) {
-      this.options = options
-      this.fetchVersions()
-    },
-    fetchPage(number) {
-      this.options.page = number
-      this.fetchVersions()
-    },
     rowStyle(item: ProjectVersionsItem) {
       return item.disabled && { opacity: 0.5, cursor: 'not-allowed' }
     },
@@ -276,18 +313,23 @@ export default defineComponent({
         namespace: this.namespace,
         projectName: this.projectName
       })
+    },
+    onPage(e: DataViewPageEvent) {
+      this.options.page = e.page + 1
+      this.options.itemsPerPage = e.rows
+      this.fetchVersions()
+    },
+    rowClick(name: string) {
+      this.$router.push({
+        path: `history/${name}`
+      })
     }
   }
 })
 </script>
 
 <style lang="scss" scoped>
-.v-card.table {
-  min-height: unset;
-  overflow: unset;
-}
-
-.changes {
-  flex: 0.3 1 auto;
+.p-dataview-content div {
+  word-break: break-word;
 }
 </style>

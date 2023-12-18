@@ -11,7 +11,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :paginator="accessRequestsCount > 10"
     :loading="loading"
     :rows="options.itemsPerPage"
-    :rowsPerPageOptions="[10, 25, 50]"
     :totalRecords="accessRequestsCount"
     :data-key="'id'"
     :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"

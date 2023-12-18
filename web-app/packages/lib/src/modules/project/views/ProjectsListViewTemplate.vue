@@ -7,9 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <app-container>
     <template v-if="!namespace">
-      <app-section ground class="py-4">
+      <app-section ground class="pb-4">
         <!-- Title with buttons -->
-        <header class="flex flex-wrap align-items-center">
+        <header class="flex flex-column lg:flex-row lg:align-items-center">
           <h1 class="text-3xl font-semibold">
             {{ header }}
           </h1>
@@ -45,20 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               :pt="{ root: { class: 'border-round-xl w-full' } }"
             />
           </span>
-          <PButton
-            severity="secondary"
-            text
-            icon="ti ti-settings"
-            @click="toggleMenu"
-            aria-haspopup="true"
-            aria-controls="projects-filters-menu"
-          />
-          <PMenu
-            ref="menu"
-            id="projects-filters-menu"
-            :model="filterMenuItems"
-            :popup="true"
-          />
+          <app-menu :items="filterMenuItems" />
         </div>
       </app-section>
       <app-section>
@@ -81,6 +68,7 @@ import { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { defineComponent, ref } from 'vue'
 
 import { AppContainer, AppSection } from '@/common'
+import AppMenu from '@/common/components/AppMenu.vue'
 import { useDialogStore, useProjectStore } from '@/modules'
 import { useLayoutStore } from '@/modules/layout/store'
 import ProjectForm from '@/modules/project/components/ProjectForm.vue'
@@ -88,7 +76,7 @@ import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   name: 'ProjectsListView',
-  components: { AppContainer, AppSection },
+  components: { AppContainer, AppSection, AppMenu },
   props: {
     namespace: String,
     canCreateProject: Boolean
@@ -127,8 +115,8 @@ export default defineComponent({
           sortDesc: true
         },
         {
-          label: 'Sort by file size',
-          keys: 'disk_usage',
+          label: 'Sort by files size',
+          key: 'meta.size',
           sortDesc: true
         }
       ].map((item) => ({

@@ -5,7 +5,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <project-settings-view-template
+  Hopaa
+  <!-- <project-settings-view-template
     :namespace="namespace"
     :projectName="projectName"
     :asAdmin="asAdmin"
@@ -18,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         @save-project="saveProject(...arguments)"
       />
     </template>
-  </project-settings-view-template>
+  </project-settings-view-template> -->
 </template>
 
 <script lang="ts">

@@ -5,14 +5,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <div>
+  <div class="mr-2 text-lg">
     <template v-if="icon">
       <span>
-        <img :src="icon" />
+        <img :src="icon" width="24" height="24" />
       </span>
     </template>
     <template v-else>
-      <v-icon>{{ mdi }}</v-icon>
+      <i :class="['ti p-1', `ti-${mdi}`]" />
     </template>
   </div>
 </template>
@@ -28,9 +28,9 @@ import mIconZip from '@/assets/qgis-icons/mIconZip.svg'
 import providerQgis from '@/assets/qgis-icons/providerQgis.svg'
 
 const mdiByExtensionDict = {
-  jpg: 'image',
-  jpeg: 'image',
-  png: 'image'
+  jpg: 'photo',
+  jpeg: 'photo',
+  png: 'photo'
 }
 
 const iconByExtensionDict = {
@@ -74,7 +74,7 @@ export default defineComponent({
       } else {
         const splittedName = file.name.split('.')
         const ext = splittedName[splittedName.length - 1].toLowerCase()
-        mdi = mdiByExtensionDict[ext] ? mdiByExtensionDict[ext] : 'description'
+        mdi = mdiByExtensionDict[ext] ? mdiByExtensionDict[ext] : 'file'
       }
       return mdi
     }

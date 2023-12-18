@@ -24,7 +24,7 @@ export default defineComponent({
           100
       )
     }
-  },
+  }
 })
 </script>
 

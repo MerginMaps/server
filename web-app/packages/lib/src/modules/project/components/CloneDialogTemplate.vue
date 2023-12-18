@@ -5,33 +5,47 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-card v-on:keyup.enter="onCloneProject" data-cy="clone-dialog-card">
-    <v-card-title>
-      <span class="text-h5">Clone Project</span>
-    </v-card-title>
-    <v-card-text>
-      <v-text-field
+  <div class="py-4">
+    <span class="flex p-float-label w-full pb-3">
+      <PInputText
         autofocus
-        label="new project"
+        id="name"
         v-model="newProjectName"
+        type="text"
+        aria-describedby="text-error"
         data-cy="clone-dialog-project-name"
+        class="border-round-xl flex-grow-1"
+        :style="{ backgroundColor: 'var(--light-green-color)' }"
       />
-      <slot name="dynamic-items"></slot>
-    </v-card-text>
-    <v-card-actions>
-      <v-spacer />
-      <v-btn @click="close" data-cy="clone-dialog-close-btn"> Close </v-btn>
-      <v-btn
+      <label for="name">Project name</label>
+    </span>
+    <!-- Dynamic items to pass other inputs -->
+    <slot name="dynamic-items"></slot>
+
+    <!-- Footer -->
+    <div
+      class="flex flex-column lg:flex-row justify-content-between align-items-center pt-3"
+    >
+      <PButton
+        severity="secondary"
+        outlined
+        @click="close"
+        class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
+        data-cy="clone-dialog-close-btn"
+        >Cancel</PButton
+      >
+
+      <PButton
         id="clone-project-btn"
-        class="primary"
         :disabled="!newProjectName || !currentWorkspace"
         @click="onCloneProject"
-        data-cy="clone-dialog-clone-btn"
+        data-cy="project-form-create-btn"
+        class="flex w-12 lg:w-6 justify-content-center"
       >
-        Clone
-      </v-btn>
-    </v-card-actions>
-  </v-card>
+        Clone project
+      </PButton>
+    </div>
+  </div>
 </template>
 
 <script lang="ts">

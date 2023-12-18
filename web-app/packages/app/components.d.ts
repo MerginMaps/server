@@ -7,6 +7,8 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    PDivider: typeof import('primevue/divider')['default']
+    PTabPanel: typeof import('primevue/tabpanel')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     VApp: typeof import('vuetify/components')['VApp']

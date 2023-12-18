@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <v-layout class="no-shrink column">
     <label class="mt-4 text-grey-darken-1">Access requests:</label>
-    <v-data-table
+    <!-- <v-data-table
       :loading="loading"
       :headers="tableHeaders"
       :items="accessRequests"
@@ -129,7 +129,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </v-tooltip>
         </div>
       </template>
-    </v-data-table>
+    </v-data-table> -->
     <button
       ref="hidden-btn"
       id="accept-request-access-btn"
