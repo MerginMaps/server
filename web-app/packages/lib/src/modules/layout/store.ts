@@ -8,7 +8,7 @@ export interface LayoutState {
   overlayBreakpoint: number
   drawer: boolean
   /** If sidebar is in overlay mode (on mobile is flying over content) */
-  isOverlay: boolean
+  isUnderOverlayBreakpoint: boolean
   /** Parsed closed elements from local storage and pushed back to local storage */
   closedElements: string[]
 }
@@ -19,7 +19,7 @@ export const useLayoutStore = defineStore('layoutModule', {
   state: (): LayoutState => ({
     overlayBreakpoint: 992,
     drawer: false,
-    isOverlay: false,
+    isUnderOverlayBreakpoint: false,
     closedElements: []
   }),
   getters: {
@@ -51,7 +51,7 @@ export const useLayoutStore = defineStore('layoutModule', {
             ).matches
           : width < this.overlayBreakpoint
       this.drawer = !isSmall
-      this.isOverlay = isSmall
+      this.isUnderOverlayBreakpoint = isSmall
     },
     setDrawer(payload) {
       this.drawer = payload.drawer

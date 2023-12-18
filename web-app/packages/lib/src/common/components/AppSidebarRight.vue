@@ -34,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </div>
 
           <!-- content -->
-          <div class="overflow-y-auto px-4 py-2">
+          <div class="overflow-y-auto p-4 pt-6">
             <slot></slot>
           </div>
 

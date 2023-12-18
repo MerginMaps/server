@@ -28,7 +28,7 @@ withDefaults(
     items: MenuItem[]
     icon: string
   }>(),
-  { icon: 'ti ti-settings' }
+  { icon: 'ti ti-sort-descending' }
 )
 
 const menu = ref<{ toggle: (event: Event) => void }>()

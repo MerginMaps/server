@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
         <dl class="grid grid-nogutter">
           <div class="col-12">
-            <dt class="text-xs opacity-80 mb-1">Name</dt>
+            <dt class="text-xs opacity-80 mb-1">File</dt>
             <dl>
               <h3 class="text-2xl mt-0">
                 <FileIcon :file="{ ...file, name: fileName }" />{{ fileName }}

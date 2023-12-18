@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         'col-12',
         'min-h-full',
         'overflow-auto',
-        drawer && !isOverlay && 'xl:col-offset-2 xl:col-10'
+        drawer && !isUnderOverlayBreakpoint && 'xl:col-offset-2 xl:col-10'
       ]"
     >
       <router-view name="header" v-slot="{ Component, route }">
@@ -94,7 +94,7 @@ export default defineComponent({
     ...mapState(useInstanceStore, ['pingData']),
     ...mapState(useAppStore, ['serverError']),
     ...mapState(useUserStore, ['loggedUser']),
-    ...mapState(useLayoutStore, ['drawer', 'isOverlay']),
+    ...mapState(useLayoutStore, ['drawer', 'isUnderOverlayBreakpoint']),
 
     error() {
       return this.serverError

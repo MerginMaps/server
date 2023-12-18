@@ -7,11 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <PDialog
     v-model:visible="visible"
-    position="bottomright"
+    :position="isUnderOverlayBreakpoint ? 'topleft' : 'bottomright'"
     class="upload-panel"
     :pt="{
       root: {
-        class: 'w-11 lg:w-3 mr-4 mb-4'
+        class: 'w-8 lg:w-3 mr-4 mb-4'
       },
       header: {
         class: 'border-none py-2'
@@ -71,7 +71,12 @@ import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
 import { CHUNK_SIZE, isVersionedFile } from '@/common/mergin_utils'
-import { ConfirmDialog, useDialogStore, useNotificationStore } from '@/modules'
+import {
+  ConfirmDialog,
+  useDialogStore,
+  useLayoutStore,
+  useNotificationStore
+} from '@/modules'
 import { useProjectStore } from '@/modules/project/store'
 
 type DiffKeys = 'removed' | 'added' | 'updated'
@@ -87,6 +92,7 @@ export default defineComponent({
   },
   computed: {
     ...mapState(useProjectStore, ['project', 'uploads']),
+    ...mapState(useLayoutStore, ['isUnderOverlayBreakpoint']),
     visible: {
       get() {
         return !!this.upload
