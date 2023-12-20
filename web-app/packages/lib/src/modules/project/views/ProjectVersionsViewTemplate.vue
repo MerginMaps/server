@@ -6,6 +6,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <app-container>
+    <app-section ground class="flex justify-content-end">
+      <AppMenu :items="filterMenuItems" />
+    </app-section>
     <app-section>
       <PDataView
         :value="items"
@@ -199,11 +202,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
 import { DataViewPageEvent } from 'primevue/dataview'
+import { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { defineComponent, PropType } from 'vue'
 
 import VersionDetailSidebar from '../components/VersionDetailSidebar.vue'
 
 import { AppSection, AppContainer } from '@/common/components'
+import AppMenu from '@/common/components/AppMenu.vue'
 import {
   FetchProjectVersionsParams,
   ProjectVersion,
@@ -224,7 +229,8 @@ export default defineComponent({
   components: {
     AppSection,
     AppContainer,
-    VersionDetailSidebar
+    VersionDetailSidebar,
+    AppMenu
   },
   props: {
     projectName: String,
@@ -272,7 +278,7 @@ export default defineComponent({
         textClass: item.textClass === undefined ? 'opacity-80' : item.textClass
       })) as ColumnItem[],
       options: {
-        sortDesc: [true],
+        sortDesc: true,
         itemsPerPage: this.defaultItemsPerPage ?? 50,
         page: 1
       }
@@ -294,6 +300,24 @@ export default defineComponent({
         ...v,
         disabled: this.disabledKeys.some((d) => d === v.name)
       }))
+    },
+    filterMenuItems(): MenuItem[] {
+      return [
+        {
+          label: 'Newest versions',
+          key: 'newst',
+          sortDesc: true
+        },
+        {
+          label: 'Oldest versions',
+          key: 'oldest',
+          sortDesc: false
+        }
+      ].map((item) => ({
+        ...item,
+        command: (e: MenuItemCommandEvent) => this.menuItemClick(e),
+        class: this.options.sortDesc === item.sortDesc ? 'bg-primary-400' : ''
+      }))
     }
   },
   created() {
@@ -308,7 +332,7 @@ export default defineComponent({
       const params: FetchProjectVersionsParams = {
         page: this.options.page,
         per_page: this.options.itemsPerPage,
-        descending: this.options.sortDesc[0]
+        descending: this.options.sortDesc
       }
       await this.fetchProjectVersions({
         params,
@@ -325,6 +349,10 @@ export default defineComponent({
       this.$router.push({
         path: `history/${name}`
       })
+    },
+    menuItemClick(e: MenuItemCommandEvent) {
+      this.options.sortDesc = e.item.sortDesc
+      this.fetchVersions()
     }
   }
 })

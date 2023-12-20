@@ -4,6 +4,6 @@ declare module 'vue-router' {
   interface RouteMeta {
     public?: boolean
     allowedForNoWorkspace?: boolean
-    title?: string
+    breadcrump?: { title: string; path: string }[]
   }
 }

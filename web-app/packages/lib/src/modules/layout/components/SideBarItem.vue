@@ -17,10 +17,10 @@ export default defineComponent({
 </script>
 
 <template>
-  <li>
+  <li class="p-2">
     <router-link
       :class="[
-        'sidebar-item__link p-4 flex align-items-center transition-color transition-duration-200 no-underline',
+        'sidebar-item__link p-3 flex align-items-center transition-color transition-duration-200 no-underline border-round-lg',
         item.active && 'sidebar-item__link--active'
       ]"
       :to="item.to"
@@ -41,8 +41,8 @@ export default defineComponent({
     }
 
     &--active {
-      color: var(--surface-a);
-      background-color: var(--forest-color);
+      color: var(--forest-color);
+      background-color: var(--light-green-color);
       font-weight: 600;
     }
   }

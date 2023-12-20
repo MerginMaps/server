@@ -134,6 +134,7 @@ export default defineComponent({
     })
   },
   async created() {
+    this.init()
     await this.fetchConfig()
     if (this.loggedUser) {
       // here is loaded current workspace on startup (and reloaded in watcher when user has changed)
@@ -161,7 +162,8 @@ export default defineComponent({
     ...mapActions(useAppStore, ['setServerError']),
     ...mapActions(useInstanceStore, ['fetchPing', 'fetchConfig', 'initApp']),
     ...mapActions(useNotificationStore, { notificationError: 'error' }),
-    ...mapActions(useUserStore, ['checkCurrentWorkspace', 'updateLoggedUser'])
+    ...mapActions(useUserStore, ['checkCurrentWorkspace', 'updateLoggedUser']),
+    ...mapActions(useLayoutStore, ['init'])
   }
 })
 </script>

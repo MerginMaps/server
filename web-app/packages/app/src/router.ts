@@ -83,7 +83,7 @@ export const createRouter = (pinia: Pinia) => {
           sidebar: SideBar
         },
         meta: {
-          title: 'Dashboard'
+          breadcrump: [{ title: 'Dashboard', path: '/dashboard' }]
         },
         props: {
           default: true
@@ -111,7 +111,11 @@ export const createRouter = (pinia: Pinia) => {
         props: {
           default: true
         },
-        meta: { public: true, title: 'Projects' },
+        meta: {
+          public: true,
+          title: 'Projects',
+          breadcrump: [{ title: 'Projects', path: '/projects' }]
+        },
         children: [
           {
             path: 'explore',
@@ -154,9 +158,7 @@ export const createRouter = (pinia: Pinia) => {
         meta: { public: true },
         beforeEnter: (to, from, next) => {
           next({
-            path: `/projects/${to.params.namespace}/${
-              to.params.projectName
-            }/history`,
+            path: `/projects/${to.params.namespace}/${to.params.projectName}/history`,
             query: { version_id: to.params.version_id }
           })
           return
@@ -174,7 +176,7 @@ export const createRouter = (pinia: Pinia) => {
           default: true
         },
         meta: {
-          title: 'Projects'
+          breadcrump: [{ title: 'Projects', path: '/projects' }]
         },
         redirect: { name: 'project-tree' },
 
@@ -203,25 +205,50 @@ export const createRouter = (pinia: Pinia) => {
             name: 'file-version-detail',
             component: FileVersionDetailView,
             props: true,
-            meta: { public: true }
-          }
-        ].map((child) => ({
-          ...child,
-          beforeEnter: (to, from, next) => {
-            // added project name to matched route
-            to.matched = to.matched.map((route) => ({
-              ...route,
-              meta: {
-                ...route.meta,
-                title:
-                  route.name === to.name
-                    ? (to.params.projectName as string)
-                    : route.meta.title
+            meta: { public: true },
+            // TODO: refactor to function in utils
+            beforeEnter(to, from, next) {
+              to.meta = {
+                ...to.meta,
+                breadcrump: [
+                  {
+                    title: String(to.params.projectName),
+                    path: '/projects/history'
+                  },
+                  {
+                    title: String(to.params.version_id),
+                    path: `/projects/${to.params.namespace}/${to.params.projectName}/history/${to.params.version_id}`
+                  },
+                  {
+                    title: String(to.params.path),
+                    path: to.fullPath
+                  }
+                ]
               }
-            }))
-            next()
+              next()
+            }
           }
-        }))
+        ]
+          // Not apply for project version detail , which have own breadcrump
+          .map((child) =>
+            child.name === 'file-version-detail'
+              ? child
+              : {
+                  ...child,
+                  beforeEnter: (to, from, next) => {
+                    to.meta = {
+                      ...to.meta,
+                      breadcrump: [
+                        {
+                          title: String(to.params.projectName),
+                          path: to.fullPath
+                        }
+                      ]
+                    }
+                    next()
+                  }
+                }
+          )
       },
       {
         path: '/:pathMatch(.*)*',

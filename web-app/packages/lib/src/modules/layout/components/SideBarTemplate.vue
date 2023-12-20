@@ -63,20 +63,20 @@ import { useLayoutStore } from '@/modules/layout/store'
 
 const route = useRoute()
 const layoutStore = useLayoutStore()
-layoutStore.init()
-
-const currentPage = computed(() => route.name)
 
 const initialSidebarItems = computed<SideBarItemModel[]>(() => {
   return [
     {
-      active: currentPage.value === 'dashboard',
+      active: route.matched.some((item) => item.name === 'dashboard'),
       title: 'Dashboard',
       to: '/dashboard',
       icon: 'ti ti-home'
     },
     {
-      active: currentPage.value === 'projects',
+      // TODO: hardcoded path names add to enum
+      active: route.matched.some(
+        (item) => item.name === 'projects' || item.name === 'project'
+      ),
       title: 'Projects',
       to: '/projects',
       icon: 'ti ti-article'

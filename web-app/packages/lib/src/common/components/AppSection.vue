@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :class="[
       ground
         ? 'surface-ground'
-        : 'surface-section border-round-2xl overflow-hidden'
+        : 'surface-section border-round-xl overflow-hidden'
     ]"
   >
     <header
