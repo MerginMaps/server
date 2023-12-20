@@ -48,11 +48,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             :key="item.id"
             class="flex align-items-center hover:bg-gray-200 cursor-pointer border-bottom-1 border-gray-200 text-sm px-3 py-2 mt-0"
             :style="[rowStyle(item)]"
+            @click.prevent="!item.disabled && rowClick(item.name)"
           >
-            <div
-              class="flex-grow-1 grid grid-nogutter w-11"
-              @click.prevent="!item.disabled && rowClick(item.name)"
-            >
+            <div class="flex-grow-1 grid grid-nogutter w-11">
               <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->
               <template
                 v-for="col in columns.filter((item) => !item.fixed)"
@@ -170,7 +168,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 :disabled="item.disabled"
                 :style="[rowStyle(item)]"
                 data-cy="project-versions-download-btn"
-                @click="
+                @click.stop="
                   downloadArchive({
                     url:
                       '/v1/project/download/' +
@@ -194,6 +192,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </PDataView>
       <slot name="table-footer"></slot>
     </app-section>
+    <VersionDetailSidebar />
   </app-container>
 </template>
 
@@ -201,6 +200,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { DataViewPageEvent } from 'primevue/dataview'
 import { defineComponent, PropType } from 'vue'
+
+import VersionDetailSidebar from '../components/VersionDetailSidebar.vue'
 
 import { AppSection, AppContainer } from '@/common/components'
 import {
@@ -222,7 +223,8 @@ export default defineComponent({
   name: 'ProjectVersionsViewTemplate',
   components: {
     AppSection,
-    AppContainer
+    AppContainer,
+    VersionDetailSidebar
   },
   props: {
     projectName: String,

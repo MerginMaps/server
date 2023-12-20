@@ -63,6 +63,8 @@ import { useInstanceStore } from '@/modules/instance/store'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
 
+type ExtendedFile = File & { isFile: boolean }
+
 export default defineComponent({
   props: ['location'],
   data() {
@@ -114,9 +116,9 @@ export default defineComponent({
         })
       }
       // prepare all entries because they will be not accessible after this callback ends (after 'await')
-      const entries = Array.from(evt.dataTransfer.items).map(
-        (i: DataTransferItem) => i.webkitGetAsEntry()
-      )
+      const entries = Array.from(
+        evt.dataTransfer.items as DataTransferItem[]
+      ).map((i) => i.webkitGetAsEntry())
       if (entries.some((e) => e === null)) {
         return this.error({
           text: 'Drop only files or folders'
@@ -129,9 +131,11 @@ export default defineComponent({
         this.$refs.selectFilesInput.click()
       }
     },
-    onFileSelected(evt) {
+    onFileSelected(evt: Event) {
       // prepare all entries because they will be not accessible after this callback ends (after 'await')
-      const entries = Array.from(evt.target.files).map((i: any) => {
+      const entries = Array.from(
+        (evt.target as HTMLInputElement).files as unknown as ExtendedFile[]
+      ).map((i) => {
         i.isFile = true
         return i
       })

@@ -7,7 +7,6 @@ import {
   FileBrowserView,
   FileVersionDetailView,
   ProjectVersionsView,
-  VersionDetailView,
   NotFoundView,
   VerifyEmailView,
   routeUtils,
@@ -146,6 +145,23 @@ export const createRouter = (pinia: Pinia) => {
           return
         }
       },
+      /** Redirect of unused /history/:version_id path to /history?version_id */
+      {
+        path: '/projects/:namespace/:projectName/history/:version_id',
+        name: 'project-versions-detail',
+        component: NotFoundView,
+        props: true,
+        meta: { public: true },
+        beforeEnter: (to, from, next) => {
+          next({
+            path: `/projects/${to.params.namespace}/${
+              to.params.projectName
+            }/history`,
+            query: { version_id: to.params.version_id }
+          })
+          return
+        }
+      },
       {
         path: '/projects/:namespace/:projectName',
         name: 'project',
@@ -180,12 +196,6 @@ export const createRouter = (pinia: Pinia) => {
             path: 'history',
             name: 'project-versions',
             component: ProjectVersionsView,
-            props: true
-          },
-          {
-            path: 'history/:version_id',
-            name: 'project-versions-detail',
-            component: VersionDetailView,
             props: true
           },
           {

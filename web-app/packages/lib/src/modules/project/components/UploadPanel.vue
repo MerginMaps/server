@@ -45,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </div>
         <span class="text-sm opacity-80 capitalize">{{ key }}</span>
         <div
-          class="upload-panel-diff-count border-circle p-2 w-2rem h-2rem ml-auto text-center"
+          class="upload-panel-diff-count border-circle p-2 w-2rem h-2rem ml-auto text-center text-color-forest"
         >
           {{ upload.diff[key].length }}
         </div>

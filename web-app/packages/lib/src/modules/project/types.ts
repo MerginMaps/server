@@ -244,7 +244,8 @@ export interface ProjectVersion {
   project_name: string
   namespace: string
   user_agent: string
-  changesets: ChangesetSuccess | ChangesetError
+  changesets: ChangesetSuccess & ChangesetError
+  project_size: number
 }
 
 export interface PaginatedProjectVersionsResponse
@@ -320,4 +321,14 @@ export interface VDataIteratorOptions {
 export interface ProjectsSortingParams {
   sortBy: string
   sortDesc: boolean
+}
+
+export interface ProjectVersionFileChange {
+  changes: {
+    columns: number
+    name: string
+    new: string
+  }[]
+  table: string
+  type: 'insert' | 'update' | 'delete'
 }
