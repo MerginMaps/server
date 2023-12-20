@@ -72,7 +72,6 @@ const items = [
     ...item,
     active: index === items.length - 1
   }))
-console.log(items)
 </script>
 
 <style scoped lang="scss"></style>
