@@ -53,14 +53,13 @@ const items = [
   ...route.matched.reduce<EnhancedMenuItem[]>((acc, curr) => {
     if (curr.name === route.name) return acc
 
-    const value = [
+    return [
       ...acc,
       ...(curr.meta?.breadcrump ?? []).map((item) => ({
         label: item.title,
         path: item.path
       }))
     ]
-    return value
   }, []),
   // adding current route wich is not in matched meta
   ...(route.meta.breadcrump ?? []).map((item) => ({
