@@ -213,7 +213,7 @@ export const createRouter = (pinia: Pinia) => {
                 breadcrump: [
                   {
                     title: String(to.params.projectName),
-                    path: '/projects/history'
+                    path: `/projects/${to.params.namespace}/${to.params.projectName}/history`
                   },
                   {
                     title: String(to.params.version_id),
