@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import os
-from .version import get_version
+from .version import get_version, get_git_hash
 from decouple import config, Csv
 
 config_dir = os.path.abspath(os.path.dirname(__file__))
@@ -93,3 +93,5 @@ class Configuration(object):
     SERVER_TYPE = config("SERVER_TYPE", default="")
     # can users create their own account or is it reserved for superuser only
     USER_SELF_REGISTRATION = config("USER_SELF_REGISTRATION", default=False, cast=bool)
+    # last commit hash number
+    BUILD_HASH = config("BUILD_NUMBER", default=get_git_hash())

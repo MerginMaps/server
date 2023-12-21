@@ -10,6 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :projectName="projectName"
     :asAdmin="asAdmin"
     :show-settings="true"
+    :show-access-requests="true"
   >
     <template #permissions="{ settings, keyProp, saveProject }">
       <project-permissions-template

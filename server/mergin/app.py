@@ -387,8 +387,8 @@ def create_app(public_keys: List[str] = None) -> Flask:
             # request which would result in conflict, e.g. creating the same project again
             logging.warning(f"HTTP 409: {response.data}")
         elif response.status_code == 422:
-            # request was valid but still could not be processed, e.g. geodiff error
-            logging.error(f"HTTP 422: {response.data}", exc_info=True)
+            # request was valid but still could not be processed, e.g. limits error
+            logging.info(f"HTTP 422: {response.data}", exc_info=True)
         else:
             # ignore other errors
             pass
@@ -416,6 +416,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
                 cfg = {**cfg, **parsed_version}
 
             cfg["server_configured"] = is_server_configured()
+            cfg["build_hash"] = application.config["BUILD_HASH"]
             return jsonify(cfg), 200
 
     # append project commands (from default sync module)

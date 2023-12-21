@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :key-prop="key"
       :save-project="saveProject"
     ></slot>
-    <project-access-requests />
+    <project-access-requests v-if="showAccessRequests" />
     <v-layout class="public-private-zone">
       <v-container>
         <v-row>
@@ -69,7 +69,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import debounce from 'lodash/debounce'
 import { mapActions, mapState } from 'pinia'
-import { defineComponent } from 'vue'
+import { PropType, defineComponent } from 'vue'
 
 import { getErrorMessage } from '@/common/error_utils'
 import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
@@ -91,7 +91,11 @@ export default defineComponent({
       type: Boolean,
       default: false
     },
-    showSettings: Boolean
+    showSettings: Boolean,
+    showAccessRequests: {
+      type: Boolean as PropType<boolean>,
+      default: false
+    }
   },
   data() {
     return {

@@ -20,6 +20,7 @@ def test_config(client):
         "major",
         "minor",
         "user_self_registration",
+        "build_hash",
     }
     resp = client.get("/config")
     assert resp.status_code == 200
