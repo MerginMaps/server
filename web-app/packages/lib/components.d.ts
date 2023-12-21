@@ -7,6 +7,8 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    PAccordion: typeof import('primevue/accordion')['default']
+    PAccordionTab: typeof import('primevue/accordiontab')['default']
     PAvatar: typeof import('primevue/avatar')['default']
     PBreadcrumb: typeof import('primevue/breadcrumb')['default']
     PButton: typeof import('primevue/button')['default']
@@ -14,6 +16,7 @@ declare module 'vue' {
     PDataTable: typeof import('primevue/datatable')['default']
     PDataView: typeof import('primevue/dataview')['default']
     PDialog: typeof import('primevue/dialog')['default']
+    PDivider: typeof import('primevue/divider')['default']
     PDropdown: typeof import('primevue/dropdown')['default']
     PImage: typeof import('primevue/image')['default']
     PInlineMessage: typeof import('primevue/inlinemessage')['default']
@@ -47,8 +50,6 @@ declare module 'vue' {
     VIcon: typeof import('vuetify/components')['VIcon']
     VImg: typeof import('vuetify/components')['VImg']
     VLayout: typeof import('vuetify/components')['VLayout']
-    VList: typeof import('vuetify/components')['VList']
-    VListGroup: typeof import('vuetify/components')['VListGroup']
     VListItem: typeof import('vuetify/components')['VListItem']
     VListItemSubtitle: typeof import('vuetify/components')['VListItemSubtitle']
     VListItemTitle: typeof import('vuetify/components')['VListItemTitle']

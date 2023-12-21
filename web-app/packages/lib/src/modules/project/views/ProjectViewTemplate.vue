@@ -68,23 +68,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           }
         }"
       >
-        <PTabPanel header="Files" :pt="ptHeaderAction">
-          <router-view />
-        </PTabPanel>
+        <PTabPanel header="Files" :pt="ptHeaderAction"></PTabPanel>
         <slot name="map.tab" :ptHeaderAction="ptHeaderAction" />
-        <PTabPanel
-          v-if="tabs.some((item) => item.route === `project-versions`)"
-          header="History"
-          :pt="ptHeaderAction"
-          ><router-view />
-        </PTabPanel>
-        <PTabPanel
-          v-if="tabs.some((item) => item.route === `project-settings`)"
-          header="Settings"
-          :pt="ptHeaderAction"
-          ><router-view />
-        </PTabPanel>
+        <PTabPanel header="History" :pt="ptHeaderAction"></PTabPanel>
+        <PTabPanel header="Settings" :pt="ptHeaderAction"></PTabPanel>
       </PTabView>
+      <router-view />
     </template>
     <app-container v-else-if="fetchProjectsResponseStatus">
       <app-section v-if="fetchProjectsResponseStatus === 403">
@@ -135,6 +124,7 @@ import { defineComponent, PropType } from 'vue'
 import { AppContainer, AppSection } from '@/common'
 import { waitCursor } from '@/common/html_utils'
 import { USER_ROLE_NAME_BY_ROLE, UserRole } from '@/common/permission_utils'
+import { ProjectRouteName } from '@/modules'
 import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useLayoutStore } from '@/modules/layout/store'
@@ -193,7 +183,7 @@ export default defineComponent({
     tabs(): TabItem[] {
       const defaultTabs: TabItem[] = [
         {
-          route: 'project-tree'
+          route: ProjectRouteName.ProjectTree
         }
       ]
 
@@ -206,12 +196,12 @@ export default defineComponent({
         }
         if (this.showHistory) {
           defaultTabs.push({
-            route: 'project-versions'
+            route: ProjectRouteName.ProjectHistory
           })
         }
         if (this.showSettings) {
           defaultTabs.push({
-            route: 'project-settings'
+            route: ProjectRouteName.ProjectSettings
           })
         }
       }
@@ -219,7 +209,9 @@ export default defineComponent({
     },
 
     activeTabIndex(): number {
-      return this.tabs.findIndex((item) => item.route === this.$route.name)
+      return this.tabs.findIndex((item) =>
+        this.$route.matched.some((m) => m.name === item.route)
+      )
     },
 
     /** Rewrite of styles for TabPanels */

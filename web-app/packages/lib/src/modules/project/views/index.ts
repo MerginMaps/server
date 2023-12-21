@@ -8,5 +8,4 @@ export { default as ProjectsListViewTemplate } from './ProjectsListViewTemplate.
 export { default as ProjectSettingsViewTemplate } from './ProjectSettingsViewTemplate.vue'
 export { default as ProjectVersionsView } from './ProjectVersionsView.vue'
 export { default as ProjectViewTemplate } from './ProjectViewTemplate.vue'
-export { default as VersionDetailView } from './VersionDetailView.vue'
 export { default as ProjectVersionsViewTemplate } from './ProjectVersionsViewTemplate.vue'

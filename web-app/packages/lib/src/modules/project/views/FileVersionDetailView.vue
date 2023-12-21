@@ -6,53 +6,106 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div>
-    <v-list lines="two" subheader v-if="tables">
-      <v-list-item v-bind:key="name" v-for="(value, name) in tables">
-        <div>
-          <v-list-item-title>
-            <h3 class="text-primary">{{ name }}</h3>
-          </v-list-item-title>
-          <br />
-          <v-data-table
-            :headers="value.headers"
-            :items="value.changes"
-            no-data-text="No changeset"
-            color="primary"
-            footer-props.items-per-page-options='[10, 25, {"text": "$vuetify.dataIterator.rowsPerPageAll","value": -1}]'
-            :hide-default-footer="value.changes.length <= 10"
-            disable-sort
-            style="overflow-x: auto"
-          >
-            <template #item.operationTypeHeader="{ value }">
-              <v-icon size="small" :color="actions[value].color">{{
-                actions[value].icon
-              }}</v-icon>
-            </template>
-          </v-data-table>
+    <AppContainer v-if="tables">
+      <AppSection ground class="mb-3">
+        <h2>{{ path }}</h2>
+      </AppSection>
+      <AppSection v-bind:key="name" v-for="(value, name) in tables">
+        <template #title
+          ><i class="ti ti-file-spreadsheet mb-2"></i>{{ name }}</template
+        >
+        <PDataTable
+          :value="value.changes"
+          :paginator="value.changes.length > itemsPerPage"
+          :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
+          :rows="itemsPerPage"
+          size="small"
+          :scrollable="true"
+          scroll-height="400px"
+        >
+          <template v-for="col in value.headers" :key="col.value">
+            <!-- Show icon with insert / update / delete -->
+            <PColumn
+              v-if="col.value === 'operationTypeHeader'"
+              :header="col.text"
+              style="width: 50px"
+              :pt="ptColumn"
+            >
+              <template #body="slotProps">
+                <div
+                  :class="[
+                    'border-circle mr-1 text-center text-xs flex flex-column justify-content-center',
+                    `file-version-detail-diff-circle file-version-detail-diff-circle--${
+                      slotProps.data[col.value]
+                    }`
+                  ]"
+                >
+                  <i
+                    :class="[
+                      'ti',
+                      `ti-${actions[slotProps.data[col.value]].icon}`
+                    ]"
+                  ></i>
+                </div>
+              </template>
+            </PColumn>
+            <!-- else show data -->
+            <PColumn
+              v-else
+              :header="col.text"
+              :style="{ minWidth: `${col.width}px` }"
+              :pt="ptColumn"
+            >
+              <template #body="slotProps">{{
+                slotProps.data[col.value]
+              }}</template>
+            </PColumn>
+          </template>
+          <template #empty>
+            <div class="flex flex-column align-items-center p-4 text-center">
+              <p>No changeset for current layer</p>
+            </div>
+          </template>
+        </PDataTable>
+      </AppSection>
+    </AppContainer>
+    <AppContainer v-else>
+      <AppSection class="p-4">
+        <div class="flex flex-column align-items-center text-center">
+          <h3>Changes cannot be calculated</h3>
+          <p>
+            For details please check the
+            <a
+              class="font-semibold text-underline text-color-forest"
+              :href="docsLinkManageSynchronisation"
+              target="_blank"
+              >documentation</a
+            >.
+          </p>
         </div>
-      </v-list-item>
-    </v-list>
-    <v-card v-else-if="!tables && !loading" class="mt-3" variant="tonal">
-      <v-card-title><h4>Changes cannot be calculated</h4></v-card-title>
-      <v-card-text
-        >For details please check the
-        <a :href="docsLinkManageSynchronisation" target="_blank"
-          >documentation</a
-        >.</v-card-text
-      >
-    </v-card>
+      </AppSection>
+    </AppContainer>
   </div>
 </template>
 
 <script lang="ts">
+import { AxiosResponse } from 'axios'
 import groupBy from 'lodash/groupBy'
 import isArray from 'lodash/isArray'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import AppContainer from '@/common/components/AppContainer.vue'
+import AppSection from '@/common/components/AppSection.vue'
 import { waitCursor } from '@/common/html_utils'
-import { useNotificationStore } from '@/modules'
+import { ProjectVersionFileChange, useNotificationStore } from '@/modules'
 import { useInstanceStore } from '@/modules/instance/store'
+
+interface ColumnItem {
+  text: string
+  value: string
+  width: number
+}
 
 export default defineComponent({
   name: 'FileVersionDetailView',
@@ -60,36 +113,46 @@ export default defineComponent({
     namespace: String,
     projectName: String,
     version_id: String,
-    path: String,
-    asAdmin: {
-      type: Boolean,
-      default: false
-    }
+    path: String
   },
   data() {
     return {
-      tables: null,
+      tables: null as Record<
+        string,
+        { headers?: ColumnItem[]; changes?: Record<string, string | number>[] }
+      > | null,
       loading: true,
       actions: {
-        insert: { icon: 'add_circle', color: 'green' },
-        update: { icon: 'edit', color: 'orange' },
-        delete: { icon: 'delete', color: 'red' }
-      }
+        insert: { icon: 'plus' },
+        update: { icon: 'pen' },
+        delete: { icon: 'trash' }
+      },
+      itemsPerPage: 10
     }
   },
   computed: {
     ...mapState(useInstanceStore, ['configData']),
     docsLinkManageSynchronisation() {
       return `${this.configData?.docs_url ?? ''}/manage/synchronisation`
+    },
+    ptColumn() {
+      return {
+        headerCell: {
+          style: {
+            backgroundColor: '#F8F9FA'
+          }
+        },
+        headerTitle: {
+          class: 'text-xs'
+        }
+      }
     }
   },
   created() {
     this.getChangeset()
   },
-
   methods: {
     ...mapActions(useNotificationStore, ['error']),
-
     // TODO: refactor to pinia action
     getChangeset() {
       waitCursor(true)
@@ -97,7 +160,7 @@ export default defineComponent({
         .get(
           `/v1/resource/changesets/${this.namespace}/${this.projectName}/${this.version_id}?path=${this.path}`
         )
-        .then((resp) => {
+        .then((resp: AxiosResponse<ProjectVersionFileChange[]>) => {
           if (!resp.data.length) return
           // process data grouped by tables
           this.tables = {}
@@ -112,8 +175,8 @@ export default defineComponent({
             ]
             const changes = []
             if (isArray(value)) {
-              const arrayValue = value as []
-              arrayValue.forEach((data: any) => {
+              const arrayValue = value
+              arrayValue.forEach((data) => {
                 if (data.table === 'gpkg_contents') {
                   return
                 }
@@ -125,24 +188,23 @@ export default defineComponent({
                   row.value = {}
                   if (data.type === 'insert') {
                     data.values[columnIdentifier] =
-                      typeof row.new === 'undefined' ? 'N/A' : row.new
+                      row.new === undefined ? 'N/A' : row.new
                   } else if (data.type === 'update') {
                     if (typeof row.new === 'undefined') {
                       data.values[columnIdentifier] =
-                        typeof row.old === 'undefined' ? 'N/A' : row.old
+                        row.old === undefined ? 'N/A' : row.old
                     } else {
                       data.values[columnIdentifier] =
-                        (typeof row.old === 'undefinedchangesets/' ? 'N/A' : row.old) +
+                        (row.old === undefined ? 'N/A' : row.old) +
                         ' ' +
                         String.fromCharCode(parseInt('2794', 16)) +
                         ' ' +
-                        (typeof row.new === 'undefined' ? 'N/A' : row.new)
+                        (row.new === undefined ? 'N/A' : row.new)
                     }
                   } else if (data.type === 'delete') {
                     data.values[columnIdentifier] =
-                      typeof row.old === 'undefined' ? 'N/A' : row.old
+                      row.old === undefined ? 'N/A' : row.old
                   }
-
                   if (!headers.map((h) => h.value).includes(columnIdentifier)) {
                     headers.push({
                       text: row.name,
@@ -154,7 +216,6 @@ export default defineComponent({
                 changes.push(data.values)
               })
             }
-
             _this.tables[key].headers = headers
             _this.tables[key].changes = changes
           }
@@ -170,13 +231,24 @@ export default defineComponent({
           waitCursor(false)
         })
     }
-  }
+  },
+  components: { AppContainer, AppSection }
 })
 </script>
 <style lang="scss" scoped>
-:deep(.v-data-table__wrapper) {
-  td.text-start {
-    max-width: 250px;
+.file-version-detail {
+  &-diff-circle {
+    width: 24px;
+    height: 24px;
+    &--delete {
+      background-color: var(--negative-color);
+    }
+    &--update {
+      background-color: var(--warning-color);
+    }
+    &--insert {
+      background-color: var(--positive-color);
+    }
   }
 }
 </style>

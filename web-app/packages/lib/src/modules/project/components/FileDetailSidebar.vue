@@ -61,7 +61,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           class="flex flex-column align-items-center w-full py-4"
         >
           <PImage
-            :src="downloadLink"
+            :src="downloadUrl"
             v-if="mimetype.match('image')"
             preview
             imageClass="w-full"
@@ -127,7 +127,7 @@ export default defineComponent({
     fileName() {
       return Path.basename(this.file?.path)
     },
-    downloadLink() {
+    downloadUrl() {
       // added random number to request avoid to browser caching files
       return ProjectApi.constructDownloadProjectFileUrl(
         this.namespace,
@@ -205,7 +205,7 @@ export default defineComponent({
   methods: {
     ...mapActions(useProjectStore, ['deleteFiles']),
     txtPreview() {
-      ProjectApi.getProjectFileByUrl(this.downloadLink).then((resp) => {
+      ProjectApi.getProjectFileByUrl(this.downloadUrl).then((resp) => {
         this.mimetype = resp.headers['content-type']
         if (resp.headers['content-type'].match('text')) {
           if (resp.data.constructor === Object) {
@@ -228,7 +228,7 @@ export default defineComponent({
       this.deleteFiles({ files: [this.file.path] })
     },
     downloadFile() {
-      window.location.href = this.downloadLink
+      window.location.href = this.downloadUrl
     }
   },
   components: { AppSidebarRight, FileIcon }

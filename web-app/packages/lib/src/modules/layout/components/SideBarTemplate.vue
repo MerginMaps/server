@@ -58,25 +58,30 @@ import { useRoute } from 'vue-router'
 
 import { SideBarItemModel } from '../types'
 
+import { DashboardRouteName } from '@/main'
 import SideBarItem from '@/modules/layout/components/SideBarItem.vue'
 import { useLayoutStore } from '@/modules/layout/store'
+import { ProjectRouteName } from '@/modules/project'
 
 const route = useRoute()
 const layoutStore = useLayoutStore()
-layoutStore.init()
-
-const currentPage = computed(() => route.name)
 
 const initialSidebarItems = computed<SideBarItemModel[]>(() => {
   return [
     {
-      active: currentPage.value === 'dashboard',
+      active: route.matched.some(
+        (item) => item.name === DashboardRouteName.Dashboard
+      ),
       title: 'Dashboard',
       to: '/dashboard',
       icon: 'ti ti-home'
     },
     {
-      active: currentPage.value === 'projects',
+      active: route.matched.some(
+        (item) =>
+          item.name === ProjectRouteName.Projects ||
+          item.name === ProjectRouteName.Project
+      ),
       title: 'Projects',
       to: '/projects',
       icon: 'ti ti-article'

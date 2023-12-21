@@ -7,7 +7,6 @@ import {
   FileBrowserView,
   FileVersionDetailView,
   ProjectVersionsView,
-  VersionDetailView,
   NotFoundView,
   VerifyEmailView,
   routeUtils,
@@ -84,7 +83,7 @@ export const createRouter = (pinia: Pinia) => {
           sidebar: SideBar
         },
         meta: {
-          title: 'Dashboard'
+          breadcrump: [{ title: 'Dashboard', path: '/dashboard' }]
         },
         props: {
           default: true
@@ -112,7 +111,11 @@ export const createRouter = (pinia: Pinia) => {
         props: {
           default: true
         },
-        meta: { public: true, title: 'Projects' },
+        meta: {
+          public: true,
+          title: 'Projects',
+          breadcrump: [{ title: 'Projects', path: '/projects' }]
+        },
         children: [
           {
             path: 'explore',
@@ -146,6 +149,21 @@ export const createRouter = (pinia: Pinia) => {
           return
         }
       },
+      /** Redirect of unused /history/:version_id path to /history?version_id */
+      {
+        path: '/projects/:namespace/:projectName/history/:version_id',
+        name: 'project-versions-detail',
+        component: NotFoundView,
+        props: true,
+        meta: { public: true },
+        beforeEnter: (to, from, next) => {
+          next({
+            path: `/projects/${to.params.namespace}/${to.params.projectName}/history`,
+            query: { version_id: to.params.version_id }
+          })
+          return
+        }
+      },
       {
         path: '/projects/:namespace/:projectName',
         name: 'project',
@@ -158,7 +176,7 @@ export const createRouter = (pinia: Pinia) => {
           default: true
         },
         meta: {
-          title: 'Projects'
+          breadcrump: [{ title: 'Projects', path: '/projects' }]
         },
         redirect: { name: 'project-tree' },
 
@@ -183,35 +201,54 @@ export const createRouter = (pinia: Pinia) => {
             props: true
           },
           {
-            path: 'history/:version_id',
-            name: 'project-versions-detail',
-            component: VersionDetailView,
-            props: true
-          },
-          {
             path: 'history/:version_id/:path',
             name: 'file-version-detail',
             component: FileVersionDetailView,
             props: true,
-            meta: { public: true }
-          }
-        ].map((child) => ({
-          ...child,
-          beforeEnter: (to, from, next) => {
-            // added project name to matched route
-            to.matched = to.matched.map((route) => ({
-              ...route,
-              meta: {
-                ...route.meta,
-                title:
-                  route.name === to.name
-                    ? (to.params.projectName as string)
-                    : route.meta.title
+            meta: { public: true },
+            // TODO: refactor to function in utils
+            beforeEnter(to, from, next) {
+              to.meta = {
+                ...to.meta,
+                breadcrump: [
+                  {
+                    title: String(to.params.projectName),
+                    path: `/projects/${to.params.namespace}/${to.params.projectName}/history`
+                  },
+                  {
+                    title: String(to.params.version_id),
+                    path: `/projects/${to.params.namespace}/${to.params.projectName}/history/${to.params.version_id}`
+                  },
+                  {
+                    title: String(to.params.path),
+                    path: to.fullPath
+                  }
+                ]
               }
-            }))
-            next()
+              next()
+            }
           }
-        }))
+        ]
+          // Not apply for project version detail , which have own breadcrump
+          .map((child) =>
+            child.name === 'file-version-detail'
+              ? child
+              : {
+                  ...child,
+                  beforeEnter: (to, from, next) => {
+                    to.meta = {
+                      ...to.meta,
+                      breadcrump: [
+                        {
+                          title: String(to.params.projectName),
+                          path: to.fullPath
+                        }
+                      ]
+                    }
+                    next()
+                  }
+                }
+          )
       },
       {
         path: '/:pathMatch(.*)*',

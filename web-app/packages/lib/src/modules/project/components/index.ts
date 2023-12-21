@@ -22,3 +22,4 @@ export { default as ProjectsTableDataLoader } from './ProjectsTableDataLoader.vu
 export { default as UploadPanel } from './UploadPanel.vue'
 export { default as ProjectAccessRequestTableTemplate } from './ProjectAccessRequestTableTemplate.vue'
 export { default as FileDetailSidebar } from './FileDetailSidebar.vue'
+export { default as VersionDetailSidebar } from './VersionDetailSidebar.vue'

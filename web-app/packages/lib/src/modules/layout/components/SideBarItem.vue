@@ -17,14 +17,14 @@ export default defineComponent({
 </script>
 
 <template>
-  <li>
+  <li class="p-2">
     <router-link
       :class="[
-        'sidebar-item__link p-4 flex align-items-center transition-color transition-duration-200 no-underline',
+        'sidebar-item__link px-3 py-2 flex align-items-center transition-color transition-duration-200 no-underline border-round-lg text-sm',
         item.active && 'sidebar-item__link--active'
       ]"
       :to="item.to"
-      ><div class="mr-2"><i :class="['text-2xl', item.icon]"></i></div>
+      ><div class="mr-2"><i :class="['text-xl', item.icon]"></i></div>
       <span>{{ item.title }}</span></router-link
     >
   </li>
@@ -41,8 +41,8 @@ export default defineComponent({
     }
 
     &--active {
-      color: var(--surface-a);
-      background-color: var(--forest-color);
+      color: var(--forest-color);
+      background-color: var(--light-green-color);
       font-weight: 600;
     }
   }

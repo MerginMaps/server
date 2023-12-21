@@ -19,11 +19,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   >
     <template #item="{ item, props }">
       <router-link
-        v-if="item.route"
+        v-if="item.path"
         v-slot="{ href, navigate }"
         :to="{
-          params: item.params,
-          name: item.route
+          path: item.path
         }"
         custom
       >
@@ -46,14 +45,32 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { MenuItem } from 'primevue/menuitem'
 import { useRoute } from 'vue-router'
 
+type EnhancedMenuItem = MenuItem & { path: string; active?: boolean }
+
 const route = useRoute()
-const items: MenuItem[] = route.matched
-  .filter((item) => item.meta.title)
-  .map<MenuItem>((item) => ({
-    label: item.meta.title,
-    active: route.name === item.name,
-    route: item.name,
-    params: route.params
+// Merge all matched meta.breadcrumps with current route breadcrumps
+const items = [
+  ...route.matched.reduce<EnhancedMenuItem[]>((acc, curr) => {
+    if (curr.name === route.name) return acc
+
+    return [
+      ...acc,
+      ...(curr.meta?.breadcrump ?? []).map((item) => ({
+        label: item.title,
+        path: item.path
+      }))
+    ]
+  }, []),
+  // adding current route wich is not in matched meta
+  ...(route.meta.breadcrump ?? []).map((item) => ({
+    label: item.title,
+    path: item.path
+  }))
+]
+  // last will be active
+  .map((item, index, items) => ({
+    ...item,
+    active: index === items.length - 1
   }))
 </script>
 

@@ -101,29 +101,33 @@ export default defineComponent({
       return [
         {
           label: 'Sort by name A-Z',
-          key: 'name',
+          key: 'name-asc',
+          value: 'name',
           sortDesc: false
         },
         {
           label: 'Sort by name Z-A',
-          key: 'name',
+          key: 'name-desc',
+          value: 'name',
           sortDesc: true
         },
         {
           label: 'Sort by last updated',
           key: 'updated',
+          value: 'updated',
           sortDesc: true
         },
         {
           label: 'Sort by files size',
           key: 'meta.size',
+          value: 'meta.size',
           sortDesc: true
         }
       ].map((item) => ({
         ...item,
         command: (e: MenuItemCommandEvent) => this.menuItemClick(e),
         class:
-          this.projectsSorting.sortBy === item.key &&
+          this.projectsSorting.sortBy === item.value &&
           this.projectsSorting.sortDesc === item.sortDesc
             ? 'bg-primary-400'
             : ''
@@ -157,7 +161,7 @@ export default defineComponent({
     },
     menuItemClick(e: MenuItemCommandEvent) {
       this.setProjectsSorting({
-        sortBy: e.item.key,
+        sortBy: e.item.value,
         sortDesc: e.item.sortDesc
       })
     }

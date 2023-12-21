@@ -21,7 +21,8 @@ import {
   PushProjectChangesParams,
   PushProjectChangesResponse,
   SaveProjectSettings,
-  UpdateProjectAccessParams
+  UpdateProjectAccessParams,
+  ProjectVersion
 } from '@/modules/project/types'
 
 export const ProjectApi = {
@@ -253,7 +254,7 @@ export const ProjectApi = {
   async getProjectVersion(
     projectId: string,
     versionName: string
-  ): Promise<AxiosResponse<string>> {
+  ): Promise<AxiosResponse<ProjectVersion>> {
     return ProjectModule.httpService.get(
       `/v1/project/version/${projectId}/${versionName}`
     )

@@ -6,6 +6,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <app-container>
+    <app-section ground class="flex justify-content-end">
+      <AppMenu :items="filterMenuItems" />
+    </app-section>
     <app-section>
       <PDataView
         :value="items"
@@ -48,11 +51,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             :key="item.id"
             class="flex align-items-center hover:bg-gray-200 cursor-pointer border-bottom-1 border-gray-200 text-sm px-3 py-2 mt-0"
             :style="[rowStyle(item)]"
+            @click.prevent="!item.disabled && rowClick(item.name)"
           >
-            <div
-              class="flex-grow-1 grid grid-nogutter w-11"
-              @click.prevent="!item.disabled && rowClick(item.name)"
-            >
+            <div class="flex-grow-1 grid grid-nogutter w-11">
               <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->
               <template
                 v-for="col in columns.filter((item) => !item.fixed)"
@@ -170,7 +171,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 :disabled="item.disabled"
                 :style="[rowStyle(item)]"
                 data-cy="project-versions-download-btn"
-                @click="
+                @click.stop="
                   downloadArchive({
                     url:
                       '/v1/project/download/' +
@@ -194,15 +195,20 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </PDataView>
       <slot name="table-footer"></slot>
     </app-section>
+    <VersionDetailSidebar />
   </app-container>
 </template>
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
 import { DataViewPageEvent } from 'primevue/dataview'
+import { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { defineComponent, PropType } from 'vue'
 
+import VersionDetailSidebar from '../components/VersionDetailSidebar.vue'
+
 import { AppSection, AppContainer } from '@/common/components'
+import AppMenu from '@/common/components/AppMenu.vue'
 import {
   FetchProjectVersionsParams,
   ProjectVersion,
@@ -222,7 +228,9 @@ export default defineComponent({
   name: 'ProjectVersionsViewTemplate',
   components: {
     AppSection,
-    AppContainer
+    AppContainer,
+    VersionDetailSidebar,
+    AppMenu
   },
   props: {
     projectName: String,
@@ -270,7 +278,7 @@ export default defineComponent({
         textClass: item.textClass === undefined ? 'opacity-80' : item.textClass
       })) as ColumnItem[],
       options: {
-        sortDesc: [true],
+        sortDesc: true,
         itemsPerPage: this.defaultItemsPerPage ?? 50,
         page: 1
       }
@@ -292,6 +300,24 @@ export default defineComponent({
         ...v,
         disabled: this.disabledKeys.some((d) => d === v.name)
       }))
+    },
+    filterMenuItems(): MenuItem[] {
+      return [
+        {
+          label: 'Newest versions',
+          key: 'newest',
+          sortDesc: true
+        },
+        {
+          label: 'Oldest versions',
+          key: 'oldest',
+          sortDesc: false
+        }
+      ].map((item) => ({
+        ...item,
+        command: (e: MenuItemCommandEvent) => this.menuItemClick(e),
+        class: this.options.sortDesc === item.sortDesc ? 'bg-primary-400' : ''
+      }))
     }
   },
   created() {
@@ -306,7 +332,7 @@ export default defineComponent({
       const params: FetchProjectVersionsParams = {
         page: this.options.page,
         per_page: this.options.itemsPerPage,
-        descending: this.options.sortDesc[0]
+        descending: this.options.sortDesc
       }
       await this.fetchProjectVersions({
         params,
@@ -323,6 +349,10 @@ export default defineComponent({
       this.$router.push({
         path: `history/${name}`
       })
+    },
+    menuItemClick(e: MenuItemCommandEvent) {
+      this.options.sortDesc = e.item.sortDesc
+      this.fetchVersions()
     }
   }
 })
