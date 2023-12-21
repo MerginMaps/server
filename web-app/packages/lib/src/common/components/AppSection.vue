@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts" setup>
-withDefaults(defineProps<{ ground: boolean }>(), {
+withDefaults(defineProps<{ ground?: boolean }>(), {
   ground: false
 })
 </script>

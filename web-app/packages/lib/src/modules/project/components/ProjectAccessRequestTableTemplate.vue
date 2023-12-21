@@ -47,7 +47,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             >
               Expiring in {{ $filters.remainingtime(item.expire) }}
             </p>
-            <PDropdown
+            <AppDropdown
               v-if="showAccept"
               :options="[
                 { value: 'read', label: 'Reader' },
@@ -94,9 +94,11 @@ import { DataViewPageEvent } from 'primevue/dataview'
 import { DropdownChangeEvent } from 'primevue/dropdown'
 import { defineComponent } from 'vue'
 
+import AppDropdown from '@/common/components/AppDropdown.vue'
 import { ProjectPermissionName } from '@/common/permission_utils'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
+
 import {
   GetProjectAccessRequestsPayload,
   ProjectAccessRequest
@@ -104,6 +106,7 @@ import {
 
 export default defineComponent({
   name: 'ProjectAccessRequestTableTemplate',
+  components: { AppDropdown },
   props: {
     namespace: {
       type: String,

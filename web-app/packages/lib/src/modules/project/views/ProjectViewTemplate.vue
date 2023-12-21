@@ -109,7 +109,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </div>
       </app-section>
     </app-container>
-
     <div slot="right">
       <upload-panel v-if="upload" :namespace="namespace" class="my-1 mr-1" />
     </div>
@@ -134,6 +133,7 @@ import UploadPanel from '@/modules/project/components/UploadPanel.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
+import AppDropdown from '@/common/components/AppDropdown.vue'
 
 interface TabItem {
   route: string
@@ -145,7 +145,8 @@ export default defineComponent({
     ProjectShareButton,
     UploadPanel,
     AppContainer,
-    AppSection
+    AppSection,
+    AppDropdown
   },
   props: {
     /**  Show namespace (ws) label in breadcrumb of page */
@@ -170,7 +171,8 @@ export default defineComponent({
   data() {
     return {
       fetchProjectsResponseStatus: null,
-      tab: null
+      tab: null,
+      value: 'read'
     }
   },
   computed: {
