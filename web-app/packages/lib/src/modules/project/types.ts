@@ -244,7 +244,7 @@ export interface ProjectVersion {
   project_name: string
   namespace: string
   user_agent: string
-  changesets: ChangesetSuccess & ChangesetError
+  changesets: ChangesetSuccess | ChangesetError
   project_size: number
 }
 

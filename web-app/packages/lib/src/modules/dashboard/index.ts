@@ -5,3 +5,4 @@
 export * from './components'
 export * from './module'
 export * from './views'
+export * from './routes'

@@ -133,6 +133,7 @@ import UploadPanel from '@/modules/project/components/UploadPanel.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
+import { ProjectRouteName } from '@/modules'
 
 interface TabItem {
   route: string
@@ -182,7 +183,7 @@ export default defineComponent({
     tabs(): TabItem[] {
       const defaultTabs: TabItem[] = [
         {
-          route: 'project-tree'
+          route: ProjectRouteName.ProjectTree
         }
       ]
 
@@ -195,12 +196,12 @@ export default defineComponent({
         }
         if (this.showHistory) {
           defaultTabs.push({
-            route: 'project-versions'
+            route: ProjectRouteName.ProjectHistory
           })
         }
         if (this.showSettings) {
           defaultTabs.push({
-            route: 'project-settings'
+            route: ProjectRouteName.ProjectSettings
           })
         }
       }

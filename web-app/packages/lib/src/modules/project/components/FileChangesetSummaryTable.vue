@@ -55,12 +55,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
 
-import { ProjectVersion } from '../types'
+import { ChangesetSuccessSummaryItem } from '../types'
 
 export default defineComponent({
   name: 'file-changeset-summary-table',
   props: {
-    changesets: Array as PropType<ProjectVersion['changesets']['summary']>
+    changesets: Array as PropType<ChangesetSuccessSummaryItem[]>
   },
   data() {
     return {

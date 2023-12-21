@@ -60,6 +60,8 @@ import { SideBarItemModel } from '../types'
 
 import SideBarItem from '@/modules/layout/components/SideBarItem.vue'
 import { useLayoutStore } from '@/modules/layout/store'
+import { ProjectRouteName } from '@/modules/project'
+import { DashboardRouteName } from '@/main'
 
 const route = useRoute()
 const layoutStore = useLayoutStore()
@@ -67,15 +69,18 @@ const layoutStore = useLayoutStore()
 const initialSidebarItems = computed<SideBarItemModel[]>(() => {
   return [
     {
-      active: route.matched.some((item) => item.name === 'dashboard'),
+      active: route.matched.some(
+        (item) => item.name === DashboardRouteName.Dashboard
+      ),
       title: 'Dashboard',
       to: '/dashboard',
       icon: 'ti ti-home'
     },
     {
-      // TODO: hardcoded path names add to enum
       active: route.matched.some(
-        (item) => item.name === 'projects' || item.name === 'project'
+        (item) =>
+          item.name === ProjectRouteName.Projects ||
+          item.name === ProjectRouteName.Project
       ),
       title: 'Projects',
       to: '/projects',

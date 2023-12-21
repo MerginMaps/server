@@ -305,7 +305,7 @@ export default defineComponent({
       return [
         {
           label: 'Newest versions',
-          key: 'newst',
+          key: 'newest',
           sortDesc: true
         },
         {
