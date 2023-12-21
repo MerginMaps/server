@@ -124,6 +124,7 @@ import { defineComponent, PropType } from 'vue'
 import { AppContainer, AppSection } from '@/common'
 import { waitCursor } from '@/common/html_utils'
 import { USER_ROLE_NAME_BY_ROLE, UserRole } from '@/common/permission_utils'
+import { ProjectRouteName } from '@/modules'
 import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useLayoutStore } from '@/modules/layout/store'
@@ -133,7 +134,6 @@ import UploadPanel from '@/modules/project/components/UploadPanel.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
-import { ProjectRouteName } from '@/modules'
 
 interface TabItem {
   route: string

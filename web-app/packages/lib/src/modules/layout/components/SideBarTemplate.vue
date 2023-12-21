@@ -58,10 +58,10 @@ import { useRoute } from 'vue-router'
 
 import { SideBarItemModel } from '../types'
 
+import { DashboardRouteName } from '@/main'
 import SideBarItem from '@/modules/layout/components/SideBarItem.vue'
 import { useLayoutStore } from '@/modules/layout/store'
 import { ProjectRouteName } from '@/modules/project'
-import { DashboardRouteName } from '@/main'
 
 const route = useRoute()
 const layoutStore = useLayoutStore()
