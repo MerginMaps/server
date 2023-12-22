@@ -176,8 +176,7 @@ export interface AcceptProjectAccessRequestData {
   permissions: ProjectPermissionName
 }
 
-export interface GetProjectAccessRequestsPayload
-  extends GetUserAccessRequestsPayload {
+export interface GetAccessRequestsPayload extends GetUserAccessRequestsPayload {
   namespace?: string
 }
 

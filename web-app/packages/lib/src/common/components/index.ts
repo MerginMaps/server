@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-export * from './base'
-
 export { default as AppSection } from './AppSection.vue'
 export { default as AppContainer } from './AppContainer.vue'
 export { default as AppPanelToggleable } from './AppPanelToggleable.vue'

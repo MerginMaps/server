@@ -133,7 +133,6 @@ import UploadPanel from '@/modules/project/components/UploadPanel.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
-import AppDropdown from '@/common/components/AppDropdown.vue'
 
 interface TabItem {
   route: string
@@ -145,8 +144,7 @@ export default defineComponent({
     ProjectShareButton,
     UploadPanel,
     AppContainer,
-    AppSection,
-    AppDropdown
+    AppSection
   },
   props: {
     /**  Show namespace (ws) label in breadcrumb of page */

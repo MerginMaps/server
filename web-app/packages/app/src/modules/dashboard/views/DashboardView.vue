@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <template #content>
       <dashboard-access-requests-row v-if="userStore.isGlobalWorkspaceAdmin">
         <template v-slot:table="{ namespace }">
-          <project-access-request-table :namespace="namespace" />
+          <access-request-table :namespace="namespace" />
         </template>
       </dashboard-access-requests-row>
       <dashboard-projects-row :canCreateProject="canCreateProject" />
@@ -29,7 +29,7 @@ import {
   DashboardUsageInfoRow,
   DashboardFullStorageWarningRow,
   DashboardAccessRequestsRow,
-  ProjectAccessRequestTable,
+  AccessRequestTable,
   FullStorageWarning,
   useUserStore,
   DashboardProjectsRow
@@ -43,7 +43,7 @@ export default defineComponent({
     DashboardAccessRequestsRow,
     DashboardFullStorageWarningRow,
     DashboardUsageInfoRow,
-    ProjectAccessRequestTable,
+    AccessRequestTable,
     FullStorageWarning,
     DashboardProjectsRow
   },

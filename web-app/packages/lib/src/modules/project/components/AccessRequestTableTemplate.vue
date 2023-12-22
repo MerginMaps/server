@@ -98,14 +98,13 @@ import AppDropdown from '@/common/components/AppDropdown.vue'
 import { ProjectPermissionName } from '@/common/permission_utils'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
-
 import {
-  GetProjectAccessRequestsPayload,
+  GetAccessRequestsPayload,
   ProjectAccessRequest
 } from '@/modules/project/types'
 
 export default defineComponent({
-  name: 'ProjectAccessRequestTableTemplate',
+  name: 'AccessRequestTableTemplate',
   components: { AppDropdown },
   props: {
     namespace: {
@@ -160,7 +159,7 @@ export default defineComponent({
     ...mapActions(useProjectStore, [
       'cancelProjectAccessRequest',
       'acceptProjectAccessRequest',
-      'getProjectAccessRequests'
+      'getAccessRequests'
     ]),
     ...mapActions(useNotificationStore, ['error']),
 
@@ -209,7 +208,7 @@ export default defineComponent({
     async fetchItems() {
       this.loading = true
       try {
-        const payload: GetProjectAccessRequestsPayload = {
+        const payload: GetAccessRequestsPayload = {
           namespace: this.namespace,
           params: {
             page: this.options.page,
@@ -219,7 +218,7 @@ export default defineComponent({
               `${this.options.sortBy} ${this.options.sortDesc ? 'DESC' : 'ASC'}`
           }
         }
-        await this.getProjectAccessRequests(payload)
+        await this.getAccessRequests(payload)
       } finally {
         this.loading = false
       }

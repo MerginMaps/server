@@ -29,7 +29,7 @@ import {
   ProjectVersionsPayload,
   ProjectAccessRequest,
   GetUserAccessRequestsPayload,
-  GetProjectAccessRequestsPayload,
+  GetAccessRequestsPayload,
   DownloadPayload,
   DeleteProjectPayload,
   ProjectsSortingParams
@@ -355,7 +355,7 @@ export const useProjectStore = defineStore('projectModule', {
       }
     },
 
-    async getProjectAccessRequests(payload: GetProjectAccessRequestsPayload) {
+    async getAccessRequests(payload: GetAccessRequestsPayload) {
       if (payload.namespace) {
         await this.fetchNamespaceAccessRequests({
           namespace: payload.namespace,
