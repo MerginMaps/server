@@ -5,69 +5,76 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-layout class="settings column">
+  <div>
     <slot
       name="permissions"
       :settings="settings"
       :key-prop="key"
       :save-project="saveProject"
     ></slot>
-    <project-access-requests v-if="showAccessRequests" />
-    <v-layout class="public-private-zone">
-      <v-container>
-        <v-row>
-          <v-col>
-            <span class="private-public-text" v-if="settings.access.public">
-              <b>This is public project</b><br />
-              <span class="description-text"
-                >Hide this project from everyone.</span
-              >
-            </span>
-            <span class="private-public-text" v-else>
-              <b>This is private project</b><br />
-              <span class="description-text"
-                >Make this project visible to anyone.</span
-              >
-            </span>
-          </v-col>
-          <v-col>
-            <v-btn
-              @click="confirmPublicPrivate()"
-              class="private-public-btn"
-              variant="outlined"
+    <app-container v-if="showAccessRequests">
+      <app-section
+        ><template #title
+          >Requests
+          <span class="text-color-secondary"
+            >({{ accessRequestsCount }})</span
+          ></template
+        ><project-access-requests
+      /></app-section>
+    </app-container>
+
+    <v-container>
+      <v-row>
+        <v-col>
+          <span class="private-public-text" v-if="settings.access.public">
+            <b>This is public project</b><br />
+            <span class="description-text"
+              >Hide this project from everyone.</span
             >
-              <span v-if="settings.access.public">Make private</span>
-              <span v-else>Make public</span>
-            </v-btn>
-          </v-col>
-        </v-row>
-        <slot name="operations"></slot>
-        <v-row
-          v-if="project && project.permissions && project.permissions.delete"
-        >
-          <v-col>
-            <span class="private-public-text">
-              <b>Delete project</b><br />
-              <span class="description-text">All data will be lost</span></span
+          </span>
+          <span class="private-public-text" v-else>
+            <b>This is private project</b><br />
+            <span class="description-text"
+              >Make this project visible to anyone.</span
             >
-          </v-col>
-          <v-col self-align="end">
-            <v-btn
-              @click="confirmDelete"
-              class="private-public-btn"
-              variant="outlined"
-            >
-              <span>Delete</span>
-            </v-btn>
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-layout>
-  </v-layout>
+          </span>
+        </v-col>
+        <v-col>
+          <v-btn
+            @click="confirmPublicPrivate()"
+            class="private-public-btn"
+            variant="outlined"
+          >
+            <span v-if="settings.access.public">Make private</span>
+            <span v-else>Make public</span>
+          </v-btn>
+        </v-col>
+      </v-row>
+      <slot name="operations"></slot>
+      <v-row
+        v-if="project && project.permissions && project.permissions.delete"
+      >
+        <v-col>
+          <span class="private-public-text">
+            <b>Delete project</b><br />
+            <span class="description-text">All data will be lost</span></span
+          >
+        </v-col>
+        <v-col self-align="end">
+          <v-btn
+            @click="confirmDelete"
+            class="private-public-btn"
+            variant="outlined"
+          >
+            <span>Delete</span>
+          </v-btn>
+        </v-col>
+      </v-row>
+    </v-container>
+  </div>
 </template>
 
 <script lang="ts">
-import debounce from 'lodash/debounce'
 import { mapActions, mapState } from 'pinia'
 import { PropType, defineComponent } from 'vue'
 
@@ -78,11 +85,16 @@ import { useNotificationStore } from '@/modules/notification/store'
 import ProjectAccessRequests from '@/modules/project/components/ProjectAccessRequests.vue'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
+import AppContainer from '@/common/components/AppContainer.vue'
+import AppSection from '@/common/components/AppSection.vue'
+import { ProjectAccess } from '@/modules'
 
 export default defineComponent({
   name: 'ProjectSettingsViewTemplate',
   components: {
-    ProjectAccessRequests
+    ProjectAccessRequests,
+    AppContainer,
+    AppSection
   },
   props: {
     namespace: String,
@@ -99,13 +111,13 @@ export default defineComponent({
   },
   data() {
     return {
-      settings: {},
+      settings: {} as { access?: ProjectAccess },
       key: 0
     }
   },
   computed: {
     ...mapState(useUserStore, ['loggedUser']),
-    ...mapState(useProjectStore, ['project'])
+    ...mapState(useProjectStore, ['project', 'accessRequestsCount'])
   },
   watch: {
     project: {
@@ -133,7 +145,7 @@ export default defineComponent({
   },
   methods: {
     ...mapActions(useProjectStore, ['deleteProject', 'saveProjectSettings']),
-    ...mapActions(useDialogStore, ['show']),
+    ...mapActions(useDialogStore, { showDialog: 'show' }),
     ...mapActions(useNotificationStore, ['error']),
 
     saveProject(newSettingsAccessValues) {
@@ -146,7 +158,7 @@ export default defineComponent({
       this.settings.access.writersnames = newSettings.access.writersnames
       this.saveSettings(newSettings)
     },
-    saveSettings: debounce(function (newSettings) {
+    saveSettings(newSettings) {
       try {
         this.saveProjectSettings({
           namespace: this.namespace,
@@ -158,7 +170,7 @@ export default defineComponent({
           text: getErrorMessage(err, 'Failed to save project settings')
         })
       }
-    }, 2000),
+    },
     togglePublicPrivate() {
       this.settings.access.public = !this.settings.access.public
     },
@@ -174,9 +186,13 @@ export default defineComponent({
       const listeners = {
         confirm: () => this.onDeleteProject()
       }
-      this.show({
+      this.showDialog({
         component: ConfirmDialog,
-        params: { props, listeners, dialog: { maxWidth: 500 } }
+        params: {
+          props,
+          listeners,
+          dialog: { header: 'Confirm delete project' }
+        }
       })
     },
     confirmPublicPrivate() {
@@ -189,9 +205,9 @@ export default defineComponent({
       const listeners = {
         confirm: () => this.togglePublicPrivate()
       }
-      this.show({
+      this.showDialog({
         component: ConfirmDialog,
-        params: { props, listeners, dialog: { maxWidth: 500 } }
+        params: { props, listeners, dialog: { header: 'Public project' } }
       })
     },
     onDeleteProject() {
@@ -203,14 +219,4 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss" scoped>
-.settings {
-  display: flex;
-  flex-direction: column;
-  flex: 1 0 auto;
-}
-
-.actions {
-  flex: 0 0 auto;
-}
-</style>
+<style lang="scss" scoped></style>

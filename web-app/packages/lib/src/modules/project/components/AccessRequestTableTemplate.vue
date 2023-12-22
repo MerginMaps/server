@@ -19,6 +19,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :pt="{
       header: {
         class: 'px-4 py-2'
+      },
+      loadingOverlay: {
+        class: 'bg-primary-reverse opacity-50'
       }
     }"
   >

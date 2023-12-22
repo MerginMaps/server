@@ -27,7 +27,7 @@ import {
   FetchProjectVersionsPayload,
   ProjectVersion,
   ProjectVersionsPayload,
-  ProjectAccessRequest,
+  AccessRequest,
   GetUserAccessRequestsPayload,
   GetAccessRequestsPayload,
   DownloadPayload,
@@ -45,7 +45,7 @@ export interface UploadFilesPayload {
 }
 
 export interface ProjectState {
-  accessRequests: ProjectAccessRequest[]
+  accessRequests: AccessRequest[]
   accessRequestsCount: number
   project: EnhancedProjectDetail
   projects: ProjectListItem[]

@@ -5,11 +5,83 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-layout class="no-shrink column">
-    <label class="mt-4 text-grey-darken-1">Manage Access:</label>
-    <slot name="banner" />
-    <v-data-table
-      :headers="header"
+  <AppContainer>
+    <AppSection>
+      <PDataView
+        :value="displayedValues"
+        :data-key="'id'"
+        data-cy="project-verision-table"
+        lazy
+        :pt="{
+          header: {
+            // small header
+            class: 'px-3 py-2'
+          }
+        }"
+      >
+        <template #header>
+          <div class="w-11 grid grid-nogutter">
+            <!-- Visible on lg breakpoint > -->
+            <div
+              v-for="col in columns.filter((item) => !item.fixed)"
+              :class="['text-xs hidden lg:flex', `col-${col.cols ?? 4}`]"
+              :key="col.text"
+            >
+              {{ col.text }}
+            </div>
+            <!-- else -->
+            <div class="col-12 flex lg:hidden">Members</div>
+          </div>
+        </template>
+
+        <!-- table rows -->
+        <template #list="slotProps">
+          <div
+            v-for="item in slotProps.items"
+            :key="item.id"
+            class="flex align-items-center hover:bg-gray-50 cursor-pointer border-bottom-1 border-gray-200 text-sm px-3 py-2 mt-0"
+            @click.prevent="rowClick(item.name)"
+          >
+            <div class="flex-grow-1 grid grid-nogutter">
+              <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->
+              <div
+                v-for="col in columns.filter((item) => !item.fixed)"
+                :key="col.value"
+                :class="[
+                  'flex flex-column justify-content-center col-12',
+                  `lg:col-${col.cols ?? 4}`
+                ]"
+              >
+                <p class="text-xs opacity-80 mb-1 lg:hidden">
+                  {{ col.text }}
+                </p>
+                <span :class="col.textClass">
+                  {{ item[col.value] }}
+                </span>
+              </div>
+              <!-- actions -->
+            </div>
+            <div class="flex flex-shrink-0 justify-content-end">
+              <PButton
+                icon="ti ti-download"
+                severity="secondary"
+                text
+                :disabled="!canRemoveUser(item.user.id)"
+                @click.stop="removeUser(item.user)"
+              />
+            </div>
+          </div>
+        </template>
+        <template #empty>
+          <div class="w-full text-center p-4">
+            <span>No versions found.</span>
+          </div>
+        </template>
+      </PDataView>
+    </AppSection>
+
+    <!-- <v-data-table
+      :headers="columns"
       :items="displayedValues"
       no-data-text="No users"
       :hide-default-footer="displayedValues.length <= 10"
@@ -80,13 +152,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </v-btn>
         </div>
       </template>
-    </v-data-table>
+    </v-data-table> -->
+    <slot name="banner" />
     <button
       ref="hidden-input"
       id="change-permissions-input"
       style="visibility: hidden"
     />
-  </v-layout>
+  </AppContainer>
 </template>
 
 <script lang="ts">
@@ -104,6 +177,16 @@ import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
 import { UserSearchParams } from '@/modules/user/types'
+import AppContainer from '@/common/components/AppContainer.vue'
+import AppSection from '@/common/components/AppSection.vue'
+
+interface ColumnItem {
+  text: string
+  value: string
+  cols?: number
+  fixed?: boolean
+  textClass?: string
+}
 
 export default defineComponent({
   props: {
@@ -114,29 +197,24 @@ export default defineComponent({
       // search data
       isLoading: false,
       users: [],
-      header: [
+      columns: [
         {
-          text: 'User',
-          value: 'user',
-          align: 'left',
-          sortable: false
+          text: 'Email address',
+          value: 'email',
+          textClass: 'font-semibold',
+          cols: 10
         },
         {
-          text: 'Permissions',
+          text: 'Project permissions',
           value: 'permissions',
-          width: 60,
-          align: 'left',
-          sortable: false,
-          tooltip: 'Has permission to change project settings'
+          cols: 2
         },
         {
           text: 'Remove',
           value: 'remove',
-          align: 'right',
-          sortable: false,
-          width: 60
+          fixed: true
         }
-      ],
+      ] as ColumnItem[],
       originalValue: null,
       clonedValue: null
     }
@@ -148,7 +226,6 @@ export default defineComponent({
       'project',
       'isProjectOwner'
     ]),
-
     permissionStates() {
       return ['owner', 'writer', 'reader']
     },
@@ -156,6 +233,7 @@ export default defineComponent({
       const { ownersnames, readersnames, writersnames } = this.modelValue
       const users = this.users.map((user) => ({
         username: user.username,
+        email: user.email,
         user,
         owner: ownersnames?.includes(user.username),
         read: readersnames?.includes(user.username),
@@ -223,7 +301,6 @@ export default defineComponent({
       const el = this.$refs['hidden-input']
       el.value = permission
       el.dispatchEvent(new Event('click', {}))
-
       if (permission === 'owner') {
         this.setOwnerPermission(user)
       } else if (permission === 'writer') {
@@ -252,7 +329,6 @@ export default defineComponent({
       })
       // emit change of value
       this.emit(this.clonedValue)
-
       this.users.splice(this.users.indexOf(user), 1)
     },
     setWritePermission(user) {
@@ -325,7 +401,8 @@ export default defineComponent({
         JSON.stringify({ ...this.modelValue, ...modifiedValues })
       )
     }
-  }
+  },
+  components: { AppContainer, AppSection }
 })
 </script>
 
