@@ -52,6 +52,6 @@ services:
       - "8080:80"
     volumes:
       - ./projects:/data  # map data dir to host
-      - ${PWD}/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
     networks:
       - merginmaps
