@@ -58,6 +58,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               option-value="value"
               v-model="permissions[item.id]"
               @change="(e) => permissionsChange(e, item)"
+              :disabled="expired(item.expire)"
               class="w-6 lg:w-4 p-1"
             />
             <div class="flex justify-content-end w-6 lg:w-4 p-1">
@@ -75,6 +76,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 rounded
                 aria-label="Accept"
                 severity="success"
+                :disabled="expired(item.expire)"
                 @click="acceptRequest(item)"
               />
             </div>
@@ -100,7 +102,7 @@ import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
 import {
   GetAccessRequestsPayload,
-  ProjectAccessRequest
+  AccessRequest
 } from '@/modules/project/types'
 
 export default defineComponent({
@@ -168,7 +170,7 @@ export default defineComponent({
       this.options.itemsPerPage = e.rows
       this.fetchItems()
     },
-    permissionsChange(e: DropdownChangeEvent, item: ProjectAccessRequest) {
+    permissionsChange(e: DropdownChangeEvent, item: AccessRequest) {
       const { value } = e
       const { id } = item
       this.selectedPermissions[id] = value

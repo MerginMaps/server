@@ -5,149 +5,103 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-layout class="no-shrink column">
-    <label class="mt-4 text-grey-darken-1">Access requests:</label>
-    <!-- <v-data-table
-      :loading="loading"
-      :headers="tableHeaders"
-      :items="accessRequests"
-      :server-items-length="accessRequestsCount"
-      no-data-text="No access requests"
-      :options="options"
-      v-on:update:options="onUpdateOptions"
-      :footer-props="{ 'items-per-page-options': [10, 25, 50] }"
-    >
-      <template #header.user="{ header }">
-        <v-tooltip v-if="header.tooltip" location="top">
-          <template v-slot:activator="{ props }">
-            <span v-bind="props">
-              {{ header.text }}
-            </span>
-          </template>
-          <span>
-            {{ header.tooltip }}
-          </span>
-        </v-tooltip>
-        <span v-else>
-          {{ header.text }}
-        </span>
-      </template>
-      <template #header.expire="{ header }">
-        <v-tooltip v-if="header.tooltip" location="top">
-          <template v-slot:activator="{ props }">
-            <span v-bind="props">
-              {{ header.text }}
-            </span>
-          </template>
-          <span>
-            {{ header.tooltip }}
-          </span>
-        </v-tooltip>
-        <span v-else>
-          {{ header.text }}
-        </span>
-      </template>
-      <template #item.user="{ value }">
-        <v-tooltip
-          top
-          v-if="
-            value.profile &&
-            (value.profile.first_name || value.profile.last_name)
-          "
+  <PDataView
+    :value="accessRequests"
+    :lazy="true"
+    :paginator="accessRequestsCount > 10"
+    :loading="loading"
+    :rows="options.itemsPerPage"
+    :totalRecords="accessRequestsCount"
+    :data-key="'id'"
+    :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
+    size="small"
+    @page="onPage"
+    :pt="{
+      header: {
+        class: 'px-4 py-2'
+      },
+      loadingOverlay: {
+        class: 'bg-primary-reverse opacity-50'
+      }
+    }"
+  >
+    <template #header>
+      <h3 class="font-semibold text-xs text-color m-0">Access requests</h3>
+    </template>
+    <template #list="slotProps">
+      <template v-for="item in slotProps.items" :key="item.id">
+        <!-- Row -->
+        <div
+          class="flex flex-column lg:flex-row align-items-center justify-content-between px-4 py-2 mt-0 border-bottom-1 border-gray-200"
         >
-          <template v-slot:activator="{ props }">
-            <b v-bind="props">
-              {{ value.username }}
-            </b>
-          </template>
-          <span>
-            <span v-if="value.profile && value.profile.first_name">{{
-              value.profile.first_name
-            }}</span>
-            <span v-if="value.profile && value.profile.last_name">
-              {{ value.profile.last_name }}</span
+          <p class="w-12 lg:w-4 text-xs p-2 lg:p-0">
+            User
+            <span class="font-semibold">{{ item.requested_by }}</span>
+            wants to transfer project
+            <span class="font-semibold">{{ item.project_name }}</span>
+            to your workspace.
+          </p>
+          <div
+            class="flex w-12 lg:w-4 align-items-center flex-wrap lg:flex-nowrap"
+          >
+            <p
+              v-tooltip.top="{ value: $filters.datetime(item.expire) }"
+              class="opacity-80 text-xs w-12 lg:w-4 p-2 lg:p-1"
             >
-          </span>
-        </v-tooltip>
-        <b v-else>
-          {{ value.username }}
-        </b>
-      </template>
-      <template #item.expire="{ value }">
-        <v-tooltip location="bottom">
-          <template v-slot:activator="{ props }">
-            <span v-bind="props">{{ $filters.remainingtime(value) }}</span>
-          </template>
-          <span>{{ $filters.datetime(value) }}</span>
-        </v-tooltip>
-      </template>
-      <template #item.permissions="{ item }">
-        <v-select
-          :items="['read', 'write', 'owner']"
-          v-model="permissions[item.id]"
-          return-object
-        >
-        </v-select>
-      </template>
-      <template #item.confirm="{ item }">
-        <div class="justify-center px-0">
-          <v-tooltip location="bottom">
-            <template v-slot:activator="{ props }">
-              <span v-bind="props">
-                <v-chip
-                  :disabled="!canAcceptAccessRequest(item.user.id, item.expire)"
-                  @click="acceptRequest(item)"
-                  elevation="0"
-                  color="green"
-                  class="white--text"
-                >
-                  accept
-                </v-chip>
-              </span>
-            </template>
-            <span>Accept request</span>
-          </v-tooltip>
+              Expiring in {{ $filters.remainingtime(item.expire) }}
+            </p>
+            <AppDropdown
+              :options="[
+                { value: 'read', label: 'Reader' },
+                { value: 'write', label: 'Writer' },
+                { value: 'owner', label: 'Owner' }
+              ]"
+              option-label="label"
+              option-value="value"
+              v-model="permissions[item.id]"
+              class="w-6 lg:w-4 p-1"
+            />
+            <div class="flex justify-content-end w-6 lg:w-4 p-1">
+              <PButton
+                :disabled="!canCancelAccessRequest(item.user.id)"
+                icon="ti ti-x"
+                rounded
+                aria-label="Disallow"
+                severity="danger"
+                class="mr-2"
+                @click="cancelRequest(item)"
+              />
+              <PButton
+                :disabled="!canAcceptAccessRequest(item.user.id, item.expire)"
+                icon="ti ti-check"
+                rounded
+                aria-label="Accept"
+                severity="success"
+                @click="acceptRequest(item)"
+              />
+            </div>
+          </div>
         </div>
       </template>
-      <template #item.cancel="{ item }">
-        <div class="justify-center">
-          <v-tooltip location="bottom">
-            <template v-slot:activator="{ props }">
-              <span v-bind="props">
-                <v-chip
-                  :disabled="!canCancelAccessRequest(item.user.id)"
-                  @click="cancelRequest(item)"
-                  elevation="0"
-                  color="red"
-                  class="white--text"
-                >
-                  cancel
-                </v-chip>
-              </span>
-            </template>
-            <span>Cancel access request</span>
-          </v-tooltip>
-        </div>
-      </template>
-    </v-data-table> -->
-    <button
-      ref="hidden-btn"
-      id="accept-request-access-btn"
-      style="visibility: hidden"
-    />
-  </v-layout>
+    </template>
+    <template #empty>
+      <p class="text-center p-4 m-0">No access requests found</p>
+    </template>
+  </PDataView>
 </template>
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import AppDropdown from '@/common/components/AppDropdown.vue'
 import { getErrorMessage } from '@/common/error_utils'
 import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
-import { GetProjectAccessRequestsPayload } from '@/modules'
+import { GetAccessRequestsPayload } from '@/modules'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
+import { DataViewPageEvent } from 'primevue/dataview'
 
 export default defineComponent({
   data() {
@@ -155,52 +109,15 @@ export default defineComponent({
       loading: false,
       options: {
         // Default is order_params=expire ASC
-        sortBy: ['expire'],
-        sortDesc: [false],
+        sortBy: 'expire',
+        sortDesc: false,
         itemsPerPage: 10,
         page: 1
       },
-      permissions: {},
-      tableHeaders: [
-        {
-          text: 'User',
-          value: 'user',
-          align: 'left',
-          sortable: false,
-          tooltip: 'Request from user'
-        },
-        {
-          text: 'Expire',
-          value: 'expire',
-          align: 'left',
-          sortable: false,
-          tooltip: 'Project access request expiration date'
-        },
-        {
-          text: 'Permissions',
-          value: 'permissions',
-          align: 'right',
-          sortable: false,
-          width: 60
-        },
-        {
-          text: ' ',
-          value: 'confirm',
-          align: 'right',
-          sortable: false,
-          width: 60
-        },
-        {
-          text: '',
-          value: 'cancel',
-          align: 'right',
-          sortable: false,
-          width: 60
-        }
-      ],
-      originalValue: null
+      permissions: {}
     }
   },
+  components: { AppDropdown },
   computed: {
     ...mapState(useProjectStore, [
       'project',
@@ -209,11 +126,14 @@ export default defineComponent({
     ]),
     ...mapState(useUserStore, ['loggedUser'])
   },
+  created() {
+    this.fetchItems()
+  },
   methods: {
     ...mapActions(useProjectStore, [
       'cancelProjectAccessRequest',
       'acceptProjectAccessRequest',
-      'getProjectAccessRequests'
+      'getAccessRequests'
     ]),
     ...mapActions(useNotificationStore, ['error']),
 
@@ -244,9 +164,6 @@ export default defineComponent({
     },
     async acceptRequest(request) {
       try {
-        const el = this.$refs['hidden-btn']
-        el.value = this.permissions[request.id]
-        el.dispatchEvent(new Event('click', {}))
         const data = {
           permissions: this.permissions[request.id]
         }
@@ -275,86 +192,34 @@ export default defineComponent({
     async fetchItems() {
       this.loading = true
       try {
-        const payload: GetProjectAccessRequestsPayload = {
+        const payload: GetAccessRequestsPayload = {
           namespace: this.project.namespace,
           params: {
+            project_name: this.project.name,
             page: this.options.page,
             per_page: this.options.itemsPerPage,
             order_params:
               this.options.sortBy[0] &&
               `${this.options.sortBy[0]} ${
                 this.options.sortDesc[0] ? 'DESC' : 'ASC'
-              }`,
-            project_name: this.project.name
+              }`
           }
         }
-        await this.getProjectAccessRequests(payload)
+        await this.getAccessRequests(payload)
         this.accessRequests.forEach((request) => {
           this.permissions[request.id] = 'read'
         })
       } finally {
         this.loading = false
       }
+    },
+    onPage(e: DataViewPageEvent) {
+      this.options.page = e.page + 1
+      this.options.itemsPerPage = e.rows
+      this.fetchItems()
     }
   }
 })
 </script>
 
-<style lang="scss" scoped>
-.no-shrink {
-  flex: 0 0 auto;
-}
-
-label {
-  font-weight: 500;
-}
-
-:deep(*) {
-  .v-data-table__overflow {
-    margin: 0.5em 0;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    padding: 0.5em;
-    background-color: #f9f9f9;
-
-    .v-datatable {
-      background-color: transparent;
-    }
-  }
-}
-
-.div {
-  b {
-    margin-right: 10px;
-  }
-
-  span {
-    margin-right: 3px;
-    font-size: 12px;
-  }
-}
-
-.private-public-btn {
-  font-size: 12px;
-  padding-left: 20px;
-  padding-right: 20px;
-
-  span {
-    font-weight: 700;
-  }
-}
-
-.private-public-text {
-  font-size: 14px;
-}
-
-.public-private-zone {
-  margin-top: 20px;
-  margin-bottom: 20px;
-
-  button {
-    margin-right: 20px;
-    margin-top: 1px;
-  }
-}
-</style>
+<style lang="scss" scoped></style>

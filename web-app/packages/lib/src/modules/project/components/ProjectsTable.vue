@@ -19,6 +19,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
       @row-click="rowClick"
       @page="onPage"
+      :pt="{
+        loadingOverlay: {
+          class: 'bg-primary-reverse opacity-50'
+        }
+      }"
     >
       <template v-for="col in columns" :key="col.field">
         <PColumn

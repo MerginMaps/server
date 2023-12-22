@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       v-if="!!$slots.title"
       class="flex justify-content-between align-items-center p-4"
     >
-      <h2 class="text-sm text-color"><slot name="title"></slot></h2>
+      <h2 class="text-sm text-color m-0"><slot name="title"></slot></h2>
       <slot name="extra"></slot>
     </header>
     <slot></slot>
