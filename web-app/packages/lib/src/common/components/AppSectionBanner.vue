@@ -27,10 +27,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       }"
     >
       <template v-if="!$slots.header" #header>
-        <header class="w-full flex align-items-center justify-content-between">
-          <div class="flex align-items-center">
-            <div class="flex mr-4"><slot name="header-image"></slot></div>
-            <div class="flex flex-column gap-2">
+        <header
+          class="w-full flex flex-column lg:flex-row align-items-center justify-content-between row-gap-4"
+        >
+          <div
+            class="flex flex-column lg:flex-row align-items-center row-gap-2"
+          >
+            <div class="flex lg:mr-4">
+              <slot name="header-image"></slot>
+            </div>
+            <div class="flex flex-column gap-2 text-center lg:text-left">
               <h3 class="text-color text-sm font-semibold m-0">
                 <slot name="title"></slot>
               </h3>
