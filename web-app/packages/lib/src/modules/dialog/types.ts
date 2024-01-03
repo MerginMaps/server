@@ -4,6 +4,15 @@
 
 import { Component } from 'vue'
 
+export interface ConfirmDialogProps {
+  text: string
+  severity?: 'primary' | 'danger'
+  confirmText?: string
+  cancelText?: string
+  description?: string
+  confirmField?: { label: string; expected: string }
+}
+
 export interface DialogParams {
   dialog: {
     maxWidth?: number
@@ -13,7 +22,7 @@ export interface DialogParams {
   }
   // TODO: clear unknown based on 'on-listener' in template
   listeners?: unknown | Record<string, (...args: unknown[]) => void>
-  props?: Record<string, unknown>
+  props?: Record<string, unknown> | ConfirmDialogProps
 }
 
 export interface DialogPayload {

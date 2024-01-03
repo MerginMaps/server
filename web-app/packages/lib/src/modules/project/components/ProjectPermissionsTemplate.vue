@@ -5,161 +5,109 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <AppContainer>
-    <AppSection>
-      <PDataView
-        :value="displayedValues"
-        :data-key="'id'"
-        data-cy="project-verision-table"
-        lazy
-        :pt="{
-          header: {
-            // small header
-            class: 'px-3 py-2'
-          }
-        }"
-      >
-        <template #header>
-          <div class="w-11 grid grid-nogutter">
-            <!-- Visible on lg breakpoint > -->
-            <div
-              v-for="col in columns.filter((item) => !item.fixed)"
-              :class="['text-xs hidden lg:flex', `col-${col.cols ?? 4}`]"
-              :key="col.text"
-            >
-              {{ col.text }}
-            </div>
-            <!-- else -->
-            <div class="col-12 flex lg:hidden">Members</div>
-          </div>
-        </template>
-
-        <!-- table rows -->
-        <template #list="slotProps">
-          <div
-            v-for="item in slotProps.items"
-            :key="item.id"
-            class="flex align-items-center hover:bg-gray-50 cursor-pointer border-bottom-1 border-gray-200 text-sm px-3 py-2 mt-0"
-            @click.prevent="rowClick(item.name)"
-          >
-            <div class="flex-grow-1 grid grid-nogutter">
-              <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->
+  <div>
+    <AppContainer>
+      <AppSection>
+        <PDataView
+          :value="displayedValues"
+          :data-key="'id'"
+          :pt="{
+            header: {
+              // small header
+              class: 'px-4 py-2'
+            }
+          }"
+        >
+          <template #header>
+            <div class="w-11 grid grid-nogutter">
+              <!-- Visible on lg breakpoint > -->
               <div
                 v-for="col in columns.filter((item) => !item.fixed)"
-                :key="col.value"
-                :class="[
-                  'flex flex-column justify-content-center col-12',
-                  `lg:col-${col.cols ?? 4}`
-                ]"
+                :class="['text-xs hidden lg:flex', `col-${col.cols ?? 4}`]"
+                :key="col.text"
               >
-                <p class="text-xs opacity-80 mb-1 lg:hidden">
-                  {{ col.text }}
-                </p>
-                <span :class="col.textClass">
-                  {{ item[col.value] }}
-                </span>
+                {{ col.text }}
               </div>
-              <!-- actions -->
+              <!-- else -->
+              <div class="col-12 flex lg:hidden">Members</div>
             </div>
-            <div class="flex flex-shrink-0 justify-content-end">
-              <PButton
-                icon="ti ti-download"
-                severity="secondary"
-                text
-                :disabled="!canRemoveUser(item.user.id)"
-                @click.stop="removeUser(item.user)"
-              />
-            </div>
-          </div>
-        </template>
-        <template #empty>
-          <div class="w-full text-center p-4">
-            <span>No versions found.</span>
-          </div>
-        </template>
-      </PDataView>
-    </AppSection>
-
-    <!-- <v-data-table
-      :headers="columns"
-      :items="displayedValues"
-      no-data-text="No users"
-      :hide-default-footer="displayedValues.length <= 10"
-    >
-      <template #header.permissions="{ header }">
-        <v-tooltip v-if="header.tooltip" location="top">
-          <template v-slot:activator="{ props }">
-            <span v-bind="props">
-              {{ header.text }}
-            </span>
           </template>
-          <span>
-            {{ header.tooltip }}
-          </span>
-        </v-tooltip>
-        <span v-else>
-          {{ header.text }}
-        </span>
-      </template>
 
-      <template #item.user="{ modelValue }">
-        <v-tooltip
-          location="top"
-          v-if="modelValue.profile.first_name || modelValue.profile.last_name"
-        >
-          <template v-slot:activator="{ props }">
-            <b v-bind="props">
-              {{ modelValue.username }}
-            </b>
-          </template>
-          <span>
-            <span v-if="modelValue.profile.first_name">{{
-              modelValue.profile.first_name
-            }}</span>
-            <span v-if="modelValue.profile.last_name">
-              {{ modelValue.profile.last_name }}</span
+          <!-- table rows -->
+          <template #list="slotProps">
+            <div
+              v-for="item in slotProps.items"
+              :key="item.id"
+              class="flex align-items-center hover:bg-gray-50 border-bottom-1 border-gray-200 text-sm px-4 py-2 mt-0"
             >
-          </span>
-        </v-tooltip>
-        <b v-else>
-          {{ modelValue.username }}
-        </b>
-      </template>
-
-      <template #item.permissions="{ item }">
-        <v-select
-          :model-value="actualPermissions(item)"
-          :items="permissionStates"
-          @update:model-value="(e) => valueChanged(item, e)"
-          :disabled="!isProjectOwner"
-          hide-details
-          label="reader"
-          single-line
-          class="input-selection"
-          style="width: 120px"
-        >
-        </v-select>
-      </template>
-
-      <template #item.remove="{ item }">
-        <div class="justify-center px-0">
-          <v-btn
-            :disabled="!canRemoveUser(item.user.id)"
-            @click="removeUser(item.user)"
-            icon
-          >
-            <v-icon color="red darken-3">delete</v-icon>
-          </v-btn>
-        </div>
-      </template>
-    </v-data-table> -->
-    <slot name="banner" />
-    <button
-      ref="hidden-input"
-      id="change-permissions-input"
-      style="visibility: hidden"
-    />
-  </AppContainer>
+              <div class="w-11 grid grid-nogutter">
+                <!-- Columns, we are using data view instead table, it is better handling of responsive state -->
+                <div
+                  v-for="col in columns.filter((item) => !item.fixed)"
+                  :key="col.value"
+                  :class="[
+                    'flex flex-column justify-content-center col-12',
+                    `lg:col-${col.cols ?? 4}`
+                  ]"
+                >
+                  <p class="text-xs opacity-80 mb-1 lg:hidden">
+                    {{ col.text }}
+                  </p>
+                  <span :class="col.textClass">
+                    <PAvatar
+                      v-if="col.value === 'email'"
+                      :label="(item.username ?? '').charAt(0).toUpperCase()"
+                      shape="circle"
+                      :pt="{
+                        root: {
+                          class:
+                            'surface-ground mr-2 font-semibold text-color-forest',
+                          style: {
+                            borderRadius: '50%'
+                          }
+                        }
+                      }"
+                    />
+                    <AppDropdown
+                      v-if="col.value === 'permissions'"
+                      :options="permissionStates"
+                      :model-value="actualPermissions(item)"
+                      @update:model-value="(e) => valueChanged(item, e)"
+                      :disabled="!isProjectOwner"
+                      class="w-6 lg:w-full"
+                    />
+                    <template v-else>{{ item[col.value] }}</template>
+                  </span>
+                </div>
+                <!-- actions -->
+              </div>
+              <div class="w-1 flex justify-content-end">
+                <PButton
+                  icon="ti ti-trash"
+                  severity="secondary"
+                  text
+                  rounded
+                  @click.stop="removeUser(item.user)"
+                  class="text-xl p-0"
+                  :style="{
+                    visibility: canRemoveUser(item.user.id)
+                      ? 'visible'
+                      : 'hidden'
+                  }"
+                />
+              </div>
+            </div>
+          </template>
+          <template #empty>
+            <div class="w-full text-center p-4">
+              <span>No members found.</span>
+            </div>
+          </template>
+        </PDataView>
+      </AppSection>
+    </AppContainer>
+    <AppContainer v-if="$slots.banner">Hej<slot name="banner" /></AppContainer>
+  </div>
 </template>
 
 <script lang="ts">
@@ -173,12 +121,14 @@ import union from 'lodash/union'
 import { mapState, mapActions } from 'pinia'
 import { defineComponent } from 'vue'
 
+import AppContainer from '@/common/components/AppContainer.vue'
+import AppDropdown from '@/common/components/AppDropdown.vue'
+import AppSection from '@/common/components/AppSection.vue'
+import { DropdownOption } from '@/common/components/types'
 import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
 import { UserSearchParams } from '@/modules/user/types'
-import AppContainer from '@/common/components/AppContainer.vue'
-import AppSection from '@/common/components/AppSection.vue'
 
 interface ColumnItem {
   text: string
@@ -202,7 +152,12 @@ export default defineComponent({
           text: 'Email address',
           value: 'email',
           textClass: 'font-semibold',
-          cols: 10
+          cols: 5
+        },
+        {
+          text: 'Username',
+          value: 'username',
+          cols: 5
         },
         {
           text: 'Project permissions',
@@ -226,8 +181,24 @@ export default defineComponent({
       'project',
       'isProjectOwner'
     ]),
-    permissionStates() {
-      return ['owner', 'writer', 'reader']
+    permissionStates(): DropdownOption[] {
+      return [
+        {
+          value: 'owner',
+          label: 'Manage',
+          description: 'Can edit and remove projects in the workspace'
+        },
+        {
+          value: 'writer',
+          label: 'Write',
+          description: 'Can edit projects in the workspace'
+        },
+        {
+          value: 'reader',
+          label: 'Read only',
+          description: 'Can view projects in the workspace'
+        }
+      ]
     },
     displayedValues() {
       const { ownersnames, readersnames, writersnames } = this.modelValue
@@ -298,9 +269,6 @@ export default defineComponent({
       )
     },
     valueChanged(user, permission) {
-      const el = this.$refs['hidden-input']
-      el.value = permission
-      el.dispatchEvent(new Event('click', {}))
       if (permission === 'owner') {
         this.setOwnerPermission(user)
       } else if (permission === 'writer') {
@@ -317,7 +285,7 @@ export default defineComponent({
       } else if (this.project.access.readers.includes(item.user.id)) {
         return 'reader'
       }
-      return ''
+      return undefined
     },
     removeUser(user) {
       // remove user.username from owners, writers and readers
@@ -378,7 +346,7 @@ export default defineComponent({
         'readersnames'
       ])
       const current = {
-        ...pick(this.value, [
+        ...pick(this.modelValue, [
           'ownersnames',
           'writersnames',
           'readersnames',
@@ -402,7 +370,7 @@ export default defineComponent({
       )
     }
   },
-  components: { AppContainer, AppSection }
+  components: { AppContainer, AppSection, AppDropdown }
 })
 </script>
 

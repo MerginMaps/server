@@ -57,8 +57,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 { value: 'write', label: 'Writer' },
                 { value: 'owner', label: 'Owner' }
               ]"
-              option-label="label"
-              option-value="value"
               v-model="permissions[item.id]"
               @change="(e) => permissionsChange(e, item)"
               :disabled="expired(item.expire)"

@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <PPanel
     toggleable
-    v-bind="$props"
     :pt="{
       header(options) {
         return {
@@ -21,13 +20,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         }
       },
       content: {
-        class: 'border-none border-round-bottom-2xl p-4 pt-2'
+        class: 'border-none border-round-bottom-2xl p-4 pt-0'
       }
     }"
   >
-    <template #header>
+    <template v-if="$slots.header" #header>
+      <slot name="header"></slot>
+    </template>
+    <template v-else-if="$slots.title" #header>
       <h3 class="text-color-forest font-semibold m-0">
-        <slot name="header"></slot>
+        <slot name="title"></slot>
       </h3>
     </template>
     <template v-if="$slots.footer" #footer>

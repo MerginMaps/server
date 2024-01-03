@@ -14,7 +14,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     @hide="toggle"
     :pt="{
       root: {
-        class: 'border-transparent w-full bg-transparent'
+        class: 'border-transparent w-full bg-transparent',
+        onclick: (e) => {
+          // if in clickable area, there is problem with bubbling
+          e.stopPropagation()
+        }
       },
       input: {
         class: 'text-xs'
@@ -23,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         return {
           class: [
             'text-color p-2 hover:bg-gray-100',
-            context.focused ? 'bg-gray-200' : 'bg-transparent'
+            context.focused ? 'bg-gray-50' : 'bg-transparent'
           ]
         }
       }
@@ -40,12 +44,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       ></i>
     </template>
     <template #option="{ option }">
-      <div class="flex text-xs align-items-center">
-        <div class="flex flex-column">
-          <p class="font-semibold">{{ option.label }}</p>
-          <span>{{ option.description }}</span>
+      <div class="flex text-xs align-items-center py-2">
+        <div class="flex flex-column mr-6">
+          <p class="font-semibold m-0">{{ option.label }}</p>
+          <span v-if="option.description" class="pt-2">{{
+            option.description
+          }}</span>
         </div>
-        <div class="ml-auto pl-2">
+        <div class="ml-auto px-2">
           <i
             :class="[
               'ti ti-circle-check-filled text-color-forest',

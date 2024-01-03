@@ -56,8 +56,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 { value: 'write', label: 'Writer' },
                 { value: 'owner', label: 'Owner' }
               ]"
-              option-label="label"
-              option-value="value"
               v-model="permissions[item.id]"
               class="w-6 lg:w-4 p-1"
             />
@@ -92,6 +90,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
+import { DataViewPageEvent } from 'primevue/dataview'
 import { defineComponent } from 'vue'
 
 import AppDropdown from '@/common/components/AppDropdown.vue'
@@ -101,7 +100,6 @@ import { GetAccessRequestsPayload } from '@/modules'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
-import { DataViewPageEvent } from 'primevue/dataview'
 
 export default defineComponent({
   data() {

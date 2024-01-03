@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <project-permissions-template
         v-model="settings.access"
         :key="keyProp"
-        @save-project="saveProject(...arguments)"
+        @save-project="saveProject"
       />
     </template>
   </project-settings-view-template>

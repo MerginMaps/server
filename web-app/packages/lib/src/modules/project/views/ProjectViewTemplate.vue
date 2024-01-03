@@ -37,7 +37,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <PButton
             severity="secondary"
             outlined
-            @click="unsubscribeDialog"
+            @click="leaveDialog"
             data-cy="project-leave-btn"
             icon="ti ti-logout"
             label="Leave project"
@@ -68,10 +68,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           }
         }"
       >
-        <PTabPanel header="Files" :pt="ptHeaderAction"></PTabPanel>
+        <PTabPanel :header="tabs[0].header" :pt="ptHeaderAction"></PTabPanel>
         <slot name="map.tab" :ptHeaderAction="ptHeaderAction" />
-        <PTabPanel header="History" :pt="ptHeaderAction"></PTabPanel>
-        <PTabPanel header="Settings" :pt="ptHeaderAction"></PTabPanel>
+        <!-- Render other tabs with header -->
+        <PTabPanel
+          v-for="tab in tabs.slice(1).filter((item) => item.header)"
+          :header="tab.header"
+          :pt="ptHeaderAction"
+          :key="tab.route"
+        ></PTabPanel>
       </PTabView>
       <router-view />
     </template>
@@ -123,7 +128,7 @@ import { defineComponent, PropType } from 'vue'
 import { AppContainer, AppSection } from '@/common'
 import { waitCursor } from '@/common/html_utils'
 import { USER_ROLE_NAME_BY_ROLE, UserRole } from '@/common/permission_utils'
-import { ProjectRouteName } from '@/modules'
+import { ConfirmDialogProps, ProjectRouteName } from '@/modules'
 import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useLayoutStore } from '@/modules/layout/store'
@@ -136,6 +141,7 @@ import { useUserStore } from '@/modules/user/store'
 
 interface TabItem {
   route: string
+  header?: string
 }
 
 export default defineComponent({
@@ -181,31 +187,34 @@ export default defineComponent({
     ...mapState(useUserStore, ['currentWorkspace', 'isLoggedIn']),
 
     tabs(): TabItem[] {
-      const defaultTabs: TabItem[] = [
+      const tabs: TabItem[] = [
         {
-          route: ProjectRouteName.ProjectTree
+          route: ProjectRouteName.ProjectTree,
+          header: 'Files'
         }
       ]
 
       if (this.loggedUser) {
         // If map in slots, add route to map tab
         if (this.$slots['map.tab']) {
-          defaultTabs.push({
+          tabs.push({
             route: this.mapRoute
           })
         }
         if (this.showHistory) {
-          defaultTabs.push({
-            route: ProjectRouteName.ProjectHistory
+          tabs.push({
+            route: ProjectRouteName.ProjectHistory,
+            header: 'History'
           })
         }
         if (this.showSettings) {
-          defaultTabs.push({
-            route: ProjectRouteName.ProjectSettings
+          tabs.push({
+            route: ProjectRouteName.ProjectSettings,
+            header: 'Settings'
           })
         }
       }
-      return defaultTabs
+      return tabs
     },
 
     activeTabIndex(): number {
@@ -335,12 +344,14 @@ export default defineComponent({
           waitCursor(false)
         })
     },
-    unsubscribeDialog() {
+    leaveDialog() {
       const projPath = `${this.namespace}/${this.projectName}`
-      const props = {
-        text: `Are you sure to leave the project <strong>${projPath}</strong>?
-        You will not have access to it anymore.`,
-        confirmText: 'OK'
+      const props: ConfirmDialogProps = {
+        text: `Are you sure to leave the project ${projPath}?`,
+        description: 'You will not have access to it anymore.',
+        severity: 'danger',
+        confirmText: 'Yes',
+        cancelText: 'No'
       }
       const listeners = {
         confirm: async () => {
@@ -355,7 +366,7 @@ export default defineComponent({
         params: {
           props,
           listeners,
-          dialog: { maxWidth: 500, header: 'Leave project' }
+          dialog: { header: 'Leave project' }
         }
       })
     },

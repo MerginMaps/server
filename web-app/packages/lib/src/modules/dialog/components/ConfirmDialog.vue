@@ -74,13 +74,6 @@ const isConfirmed = computed(() => {
     ? props.confirmField.expected === confirmValue.value
     : true
 })
-const src = computed(
-  () =>
-    ({
-      primary: 'map-circle.svg',
-      danger: 'trash.svg'
-    }[props.severity])
-)
 
 const { close } = useDialogStore()
 

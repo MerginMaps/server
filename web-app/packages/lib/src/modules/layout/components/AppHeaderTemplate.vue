@@ -57,7 +57,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <POverlayPanel
           id="app-header-profile"
           ref="menu"
-          :pt="{ root: { class: 'p-2' } }"
+          :pt="{ root: { class: 'p-3' }, content: { class: 'p-0' } }"
         >
           <div class="flex align-items-center mb-2">
             <PAvatar
@@ -66,7 +66,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               shape="circle"
               :pt="{
                 root: {
-                  class: 'surface-ground mr-2',
+                  class: 'surface-ground mr-2 text-color-forest font-semibold',
                   style: {
                     borderRadius: '50%'
                   }
@@ -84,7 +84,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               root: { style: { width: '100%' }, class: 'border-none' },
               label: { class: 'font-semibold' },
               icon: { class: 'text-color text-2xl' },
-              action: { class: 'flex align-items-center pl-0 pr-0' }
+              action: { class: 'flex align-items-center' }
             }"
           ></PMenu>
         </POverlayPanel>
@@ -172,7 +172,7 @@ export default defineComponent({
           location.href = '/'
         }
       } catch (e) {
-        console.log(e)
+        console.error(e)
       }
     }
   }

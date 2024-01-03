@@ -20,7 +20,7 @@ export default defineComponent({
   <li class="p-2">
     <router-link
       :class="[
-        'sidebar-item__link px-3 py-2 flex align-items-center transition-color transition-duration-200 no-underline border-round-lg text-sm',
+        'sidebar-item__link p-3 flex align-items-center transition-color transition-duration-200 no-underline border-round-lg text-sm',
         item.active && 'sidebar-item__link--active'
       ]"
       :to="item.to"
