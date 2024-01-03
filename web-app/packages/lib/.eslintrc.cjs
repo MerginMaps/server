@@ -1,11 +1,9 @@
 module.exports = {
-  env: {
-    node: true
-  },
   extends: [
     'plugin:vue/essential',
     'eslint:recommended',
-    '@vue/typescript/recommended'
+    '@vue/typescript/recommended',
+    '../../.eslintrc.cjs'
   ],
   parser: 'vue-eslint-parser',
   parserOptions: {

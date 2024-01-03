@@ -13,7 +13,7 @@ import {
   LayoutModule,
   InstanceModule,
   useInstanceStore,
-  initCsrfToken,
+  initCsrfToken
 } from '@mergin/lib'
 
 import { createMerginApp } from './app'

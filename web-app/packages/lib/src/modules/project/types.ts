@@ -152,8 +152,7 @@ export interface AccessRequest {
   user: UserSearch
 }
 
-export type ProjectAccessRequestResponse =
-  PaginatedResponse<AccessRequest>
+export type ProjectAccessRequestResponse = PaginatedResponse<AccessRequest>
 
 export interface ProjectAccessRequestParams extends PaginatedRequestParamsApi {
   project_name?: string

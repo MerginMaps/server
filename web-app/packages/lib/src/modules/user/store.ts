@@ -5,7 +5,7 @@
 import isObject from 'lodash/isObject'
 import { defineStore, getActivePinia } from 'pinia'
 import Cookies from 'universal-cookie'
-import { isNavigationFailure, NavigationFailureType } from 'vue-router'
+import { isNavigationFailure } from 'vue-router'
 
 import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'

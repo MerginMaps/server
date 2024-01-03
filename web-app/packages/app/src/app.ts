@@ -6,14 +6,6 @@
 import 'material-icons/iconfont/material-icons.scss'
 import '@fortawesome/fontawesome-free/css/all.css'
 import '@mdi/font/css/materialdesignicons.css'
-import PrimeVue from 'primevue/config';
-import "primevue/resources/primevue.min.css";
-import "primeflex/primeflex.min.css"
-import "@mergin/lib/dist/sass/themes/mm-theme-light/theme.scss"
-import "@tabler/icons-webfont/tabler-icons.min.css"
-
-import '@mergin/lib/dist/style.css'
-
 import {
   dateUtils,
   textUtils,
@@ -22,6 +14,13 @@ import {
   MerginComponentUuidMixin
 } from '@mergin/lib'
 import PortalVue from 'portal-vue'
+import 'primevue/resources/primevue.min.css'
+import 'primeflex/primeflex.min.css'
+import '@mergin/lib/dist/sass/themes/mm-theme-light/theme.scss'
+import '@tabler/icons-webfont/tabler-icons.min.css'
+import '@mergin/lib/dist/style.css'
+import PrimeVue from 'primevue/config'
+import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import { createMetaManager } from 'vue-meta'
 
@@ -31,7 +30,6 @@ import { addRouterToPinia, getPiniaInstance } from './store'
 
 import i18n from '@/plugins/i18n/i18n'
 import vuetify from '@/plugins/vuetify/vuetify'
-import Tooltip from 'primevue/tooltip';
 
 const createMerginApp = () => {
   const pinia = getPiniaInstance()
