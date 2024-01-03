@@ -355,7 +355,7 @@ export default defineComponent({
       return this.items.every((i) => this.selected.includes(i.path))
     },
     dataTableOpen() {
-      return (
+      return !!(
         this.searchFilter !== '' ||
         this.items.length ||
         (this.project && !this.project.permissions.upload) ||
