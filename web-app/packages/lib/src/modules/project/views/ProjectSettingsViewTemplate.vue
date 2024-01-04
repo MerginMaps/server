@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <template #header
           ><h3 class="font-semibold text-color text-sm">Advanced</h3></template
         >
-        <div class="flex text-sm py-2">
+        <div class="flex align-items-center text-sm py-2">
           <div class="flex-grow-1">
             <template v-if="settings.access.public">
               <p class="font-semibold py-1 m-0">This is public project</p>
@@ -54,11 +54,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             </PButton>
           </div>
         </div>
-        <div class="flex text-sm py-2" v-if="$slots.operations">
+        <div
+          class="flex align-items-center text-sm py-2"
+          v-if="$slots.operations"
+        >
           <slot name="operations"></slot>
         </div>
         <div
-          class="flex text-sm py-2"
+          class="flex align-items-center text-sm py-2"
           v-if="project && project.permissions && project.permissions.delete"
         >
           <div class="flex-grow-1">
