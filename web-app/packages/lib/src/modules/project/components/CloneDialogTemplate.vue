@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div class="py-4">
-    <span class="flex p-float-label w-full pb-3">
+    <span class="flex p-float-label w-full">
       <PInputText
         autofocus
         id="name"

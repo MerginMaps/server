@@ -4,6 +4,5 @@
 
 export { default as AppBreadcrumbs } from './AppBreadcrumbs.vue'
 export { default as AppHeaderTemplate } from './AppHeaderTemplate.vue'
-export { default as PageView } from './PageView.vue'
 export { default as SideBarItem } from './SideBarItem.vue'
 export { default as SideBarTemplate } from './SideBarTemplate.vue'

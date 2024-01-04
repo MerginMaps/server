@@ -5,96 +5,121 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-card>
-    <v-card-title>
-      <span class="text-h5">Change password</span>
-    </v-card-title>
-    <v-card-text>
-      <v-form
-        @submit.prevent
-        class="layout column"
-        cy-data="user-change-password-form"
-      >
-        <v-text-field
-          label="Old Password"
-          name="oldPassword"
-          color="inputColor"
-          v-model="oldPassword"
-          cy-data="user-change-password-old"
-          :append-icon="passwordVisible ? 'visibility_off' : 'visibility'"
-          @click:append="passwordVisible = !passwordVisible"
-          :type="passwordVisible ? 'text' : 'password'"
-          :error-messages="errors.old_password"
-        />
-        <v-text-field
-          label="New Password"
-          name="password"
-          color="inputColor"
-          v-model="password"
-          cy-data="user-change-password-new"
-          :type="passwordVisible ? 'text' : 'password'"
-          :error-messages="errors.password"
-          @keyup.enter="changePassword"
-        />
-        <v-text-field
-          label="Confirm New Password"
-          name="confirm"
-          color="inputColor"
-          v-model="confirm"
-          cy-data="user-change-password-confirm"
-          :type="passwordVisible ? 'text' : 'password'"
-          :error-messages="errors.confirm"
-          @keyup.enter="changePassword"
-        />
-        <v-layout row class="d-flex flex-row-reverse">
-          <v-tooltip
-            top
-            color="orange"
-            max-width="350"
-            content-class="form-tooltip"
-          >
-            <template v-slot:activator="{ on }">
-              <v-icon v-on="on" class="ml-1 mb-1" style="margin-right: 1rem"
-                >info
-              </v-icon>
-            </template>
-            <ul>
-              <li>Password must be at least 8 characters long.</li>
-              <li>
-                Password must contain at least 3 character categories among the
-                following:
-                <ul>
-                  <li>Lowercase characters (a-z)</li>
-                  <li>Uppercase characters (A-Z)</li>
-                  <li>Digits (0-9)</li>
-                  <li>Special characters</li>
-                </ul>
-              </li>
-            </ul>
-          </v-tooltip>
-        </v-layout>
+  <div class="flex flex-column p-4 row-gap-1">
+    <span>
+      <label for="oldPassowrd">Old password</label>
+      <PPassword
+        id="oldPassowrd"
+        v-model="oldPassword"
+        cy-data="user-change-password-old"
+        :class="['w-full my-1', errors.old_password ? 'p-invalid' : '']"
+        toggleMask
+        :feedback="false"
+        aria-describedby="old-password-error"
+        :pt="{
+          input: {
+            root: { class: 'w-full border-round-xl' }
+          }
+        }"
+      />
+      <span class="p-error text-xs" id="old-password-error">{{
+        errors.old_password?.[0] || '&nbsp;'
+      }}</span>
+    </span>
 
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            class="text--primary"
-            @click="close"
-            cy-data="user-change-password-close-btn"
-          >
-            Close
-          </v-btn>
-          <v-btn
-            class="primary text--white"
-            :disabled="!password || !oldPassword || !confirm"
-            @click="changePassword"
-            cy-data="user-change-password-change-btn"
-          >
-            Change
-          </v-btn>
-        </v-card-actions>
-      </v-form>
-    </v-card-text>
-  </v-card>
+    <span>
+      <label for="newPassword">New Password</label>
+      <i
+        class="ti ti-info-circle-filled text-color-forest"
+        v-tooltip="{
+          value: `
+            \u2022 Password must be at least 8 characters long.\n
+            \u2022 Password must contain at least 3 character categories among the following:\n
+                  Lowercase characters (a-z)
+                  Uppercase characters (A-Z)
+                  Digits (0-9)
+                  Special characters
+            `
+        }"
+      />
+      <PPassword
+        id="newPassword"
+        v-model="password"
+        :class="['w-full my-1', errors.password ? 'p-invalid' : '']"
+        cy-data="user-change-password-new"
+        aria-describedby="password-error"
+        toggleMask
+        :feedback="false"
+        :pt="{
+          input: {
+            root: { class: 'w-full border-round-xl' }
+          }
+        }"
+      />
+      <span class="p-error text-xs" id="password-error">{{
+        errors.password?.[0] || '&nbsp;'
+      }}</span>
+    </span>
+
+    <span>
+      <label for="confirm">Confirm password</label>
+      <i
+        class="ti ti-info-circle-filled text-color-forest"
+        v-tooltip="{
+          value: `
+            \u2022Password must be at least 8 characters long.\n
+            \u2022Password must contain at least 3 character categories among the
+                following:\n
+                  Lowercase characters (a-z)\n
+                  Uppercase characters (A-Z)\n
+                  Digits (0-9)\n
+                  Special characters\n
+            `
+        }"
+      />
+      <PPassword
+        id="confirm"
+        v-model="confirm"
+        :class="['w-full my-1', errors.confirm ? 'p-invalid' : '']"
+        cy-data="user-change-password-confirm"
+        aria-describedby="confirm-password-error"
+        toggleMask
+        :feedback="false"
+        :pt="{
+          input: {
+            root: { class: 'w-full border-round-xl' }
+          }
+        }"
+      />
+
+      <span class="p-error text-xs" id="confirm-password-error">{{
+        errors.confirm?.[0] || '&nbsp;'
+      }}</span>
+    </span>
+
+    <!-- Footer -->
+    <div
+      class="w-full flex flex-column lg:flex-row justify-content-between align-items-center mt-4"
+    >
+      <PButton
+        severity="secondary"
+        outlined
+        @click="close"
+        class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
+        cy-data="user-change-password-close-btn"
+        >Cancel</PButton
+      >
+
+      <PButton
+        :disabled="!password || !oldPassword || !confirm"
+        @click="changePassword"
+        class="flex w-12 lg:w-6 justify-content-center"
+        cy-data="user-change-password-change-btn"
+      >
+        Save changes
+      </PButton>
+    </div>
+  </div>
 </template>
 
 <script lang="ts">

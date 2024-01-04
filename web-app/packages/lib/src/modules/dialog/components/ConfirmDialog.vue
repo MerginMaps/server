@@ -5,15 +5,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <div class="flex flex-column align-items-center p-4 text-center gap-4">
+  <div class="flex flex-column align-items-center p-4 text-center gap-3">
     <img
       v-if="severity === 'danger'"
       src="@/assets/trash.svg"
       alt="Cover for confirm dialog"
     />
     <img v-else src="@/assets/map-circle.svg" alt="Cover for confirm dialog" />
-    <span class="font-semibold text-color-forest text-xl">{{ text }}</span>
+    <span class="font-semibold text-color-forest text-lg">{{ text }}</span>
     <span class="text-sm opacity-80">{{ description }}</span>
+    <span class="text-base font-semibold">{{ hint }}</span>
     <span v-if="confirmField" class="flex p-float-label w-full">
       <PInputText
         autofocus

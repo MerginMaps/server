@@ -18,7 +18,12 @@ h6 {
 }
 
 .p-dataview-content div {
-  word-break: break-word;
+	word-break: break-word;
+}
+
+// Proper align of floating label for inputs (e.g. ProjectForm)
+.p-float-label {
+  padding-bottom: 0.25rem
 }
 
 .text-color-forest {
