@@ -8,12 +8,17 @@ h5,
 h6 {
   color: $primaryDarkColor;
   font-weight: 600;
+  margin: 0;
 }
 
 // Customization of infinite border of tabs using classes instead pt because, we want to have access to variables
 .p-tabview-nav-content {
   border: $tabviewNavBorder;
   border-width: $tabviewNavBorderWidth;
+}
+
+.p-dataview-content div {
+  word-break: break-word;
 }
 
 .text-color-forest {
