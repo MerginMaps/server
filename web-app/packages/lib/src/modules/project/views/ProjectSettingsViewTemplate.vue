@@ -24,10 +24,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </app-container>
 
     <app-container>
-      <app-panel-toggleable>
-        <template #header
-          ><h3 class="font-semibold text-color text-sm">Advanced</h3></template
-        >
+      <app-section-banner>
+        <template #title>Advanced</template>
         <div class="flex text-sm py-2">
           <div class="flex-grow-1">
             <template v-if="settings.access.public">
@@ -71,7 +69,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             >
           </div>
         </div>
-      </app-panel-toggleable>
+      </app-section-banner>
     </app-container>
   </div>
 </template>
@@ -81,8 +79,8 @@ import { mapActions, mapState } from 'pinia'
 import { PropType, defineComponent } from 'vue'
 
 import AppContainer from '@/common/components/AppContainer.vue'
-import AppPanelToggleable from '@/common/components/AppPanelToggleable.vue'
 import AppSection from '@/common/components/AppSection.vue'
+import AppSectionBanner from '@/common/components/AppSectionBanner.vue'
 import { getErrorMessage } from '@/common/error_utils'
 import { ConfirmDialogProps, ProjectAccess } from '@/modules'
 import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
@@ -98,7 +96,7 @@ export default defineComponent({
     ProjectAccessRequests,
     AppContainer,
     AppSection,
-    AppPanelToggleable
+    AppSectionBanner
   },
   props: {
     namespace: String,

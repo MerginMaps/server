@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div
-    class="drop-area h-full"
+    class="drop-area h-full flex flex-column justify-content-end"
     :class="{ active: dragOver }"
     @dragover.prevent="onDragOver"
     @dragleave.capture="setOver(false)"
@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </div>
     <slot>
       <div
-        class="flex flex-column justify-content-center align-items-center text-center h-full p-4 pt-6"
+        class="flex flex-column justify-content-center align-items-center text-center pt-4 lg:pt-0 pb-4 row-gap-3"
       >
         <div
           class="text-2xl surface-section border-circle p-4 text-color-forest w-5rem h-5rem rotate-180"
@@ -42,7 +42,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <h4 class="text-lg font-semibold text-color-forest">
           Drag and drop files
         </h4>
-        <p class="text-sm opacity-80">
+        <p class="text-sm opacity-80 m-0">
           You can drop files from your computer to start uploading
         </p>
       </div>

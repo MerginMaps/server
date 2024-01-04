@@ -44,7 +44,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           aria-controls="app-header-profile"
           class="text-color p-0"
           @click="toggleMenu"
-          size="small"
         >
           <div class="mr-2">
             <p>{{ getUserFullName }}</p>

@@ -20,6 +20,7 @@ declare module 'vue' {
     PDropdown: typeof import('primevue/dropdown')['default']
     PImage: typeof import('primevue/image')['default']
     PInlineMessage: typeof import('primevue/inlinemessage')['default']
+    PInputSwitch: typeof import('primevue/inputswitch')['default']
     PInputText: typeof import('primevue/inputtext')['default']
     PMenu: typeof import('primevue/menu')['default']
     PMenubar: typeof import('primevue/menubar')['default']

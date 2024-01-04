@@ -35,9 +35,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <template #title>Upload files</template>
         <div class="flex flex-column lg:flex-row">
           <div
-            class="flex flex-column align-items-center w-12 lg:w-6 mb-4 lg:mb-0 lg:mr-4 border-round-xl surface-ground p-4"
+            class="flex flex-column text-center align-items-center w-12 lg:w-6 mb-4 lg:mb-0 lg:mr-4 border-round-xl surface-ground p-4 row-gap-3"
           >
-            <div class="w-full flex justify-content-end">
+            <div class="w-full flex justify-content-end mb-0">
               <PTag severity="success">Recommended</PTag>
             </div>
 
@@ -50,7 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <h4 class="text-lg font-semibold text-color-forest">
               Mergin Maps plugin for QGIS
             </h4>
-            <p class="text-sm opacity-80">
+            <p class="text-sm opacity-80 m-0">
               This is the easiest and recommended way.
               <a
                 target="_blank"
@@ -485,8 +485,4 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss" scoped>
-.p-dataview-content div {
-  word-break: break-word;
-}
-</style>
+<style lang="scss" scoped></style>

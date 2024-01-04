@@ -64,7 +64,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
-import { defineComponent } from 'vue'
+import { PropType, defineComponent } from 'vue'
+
+import { EditUserProfileParams } from '../types'
 
 import { useDialogStore } from '@/modules/dialog/store'
 import { useFormStore } from '@/modules/form/store'
@@ -72,7 +74,7 @@ import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   props: {
-    profile: Object
+    profile: Object as PropType<EditUserProfileParams>
   },
   data() {
     return {

@@ -5,6 +5,150 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
+  <div class="profile-view">
+    <app-container
+      ><section class="flex flex-column lg:flex-row lg:align-items-center">
+        <!-- Title with buttons -->
+        <h1 class="text-2xl text-color font-semibold mb-3 lg:mb-0">
+          Account details
+        </h1>
+        <div
+          class="flex flex-grow-1 align-items-center lg:justify-content-end mb-3 lg:mb-0"
+        >
+          <PButton
+            @click="editProfileDialog"
+            data-cy="action-button-create"
+            icon="ti ti-pencil"
+            label="Edit profile"
+            class="w-auto mr-1"
+            cy-data="profile-edit-btn"
+          />
+          <PButton
+            @click="changePasswordDialog"
+            severity="secondary"
+            outlined
+            cy-data="profile-change-password-btn"
+            class="w-auto"
+            label="Change password"
+          />
+        </div></section
+    ></app-container>
+    <app-container v-if="$slots.additionalBeforeContent"
+      ><slot name="additionalBeforeContent"></slot
+    ></app-container>
+    <app-container v-if="!loggedUser.verified_email">
+      <app-section-banner>
+        <template #header-image
+          ><img width="50" height="50" src="@/assets/warning.svg"
+        /></template>
+        <template #title>Please verify your email</template>
+        <template #description
+          >We sent you a verification email to the account you provided during
+          signup.</template
+        >
+        <template #header-actions
+          ><PButton
+            @click="resendConfirmationEmail"
+            severity="secondary"
+            outlined
+            >Send confirmation email
+          </PButton></template
+        >
+      </app-section-banner>
+    </app-container>
+    <app-container>
+      <app-section class="p-4">
+        <div
+          v-if="loggedUser"
+          class="flex flex-column align-items-center row-gap-3 text-center"
+        >
+          <PAvatar
+            :label="(loggedUser.username ?? '').charAt(0).toUpperCase()"
+            shape="circle"
+            size="xlarge"
+            :pt="{
+              root: {
+                class:
+                  'text-5xl surface-ground font-semibold text-color-forest',
+                style: {
+                  width: '120px',
+                  height: '120px'
+                }
+              }
+            }"
+          />
+          <h3 class="text-4xl" cy-data="profile-username">
+            {{ loggedUser.username }}
+          </h3>
+          <p class="m-0 text-xs" cy-data="profile-email">
+            <i
+              v-if="!loggedUser.verified_email"
+              v-tooltip.top="{
+                value: 'Email verification status'
+              }"
+              class="ti ti-alert-circle-filled"
+              data-cy="project-form-missing-project"
+              style="color: var(--grape-color)"
+            ></i
+            >&nbsp;{{ loggedUser.email }}
+          </p>
+          <dl class="profile-view-detail-list grid grid-nogutter text-sm">
+            <div
+              class="col-6 flex flex-column align-items-start text-left flex-wrap"
+            >
+              <dt class="text-xs opacity-80 mb-2">Full name</dt>
+              <dl class="font-semibold" cy-data="profile-name">
+                {{ loggedUser.name || '-' }}
+              </dl>
+            </div>
+            <div class="col-6 flex flex-column align-items-end">
+              <dt class="text-xs opacity-80 mb-2">Registered</dt>
+              <dl class="font-semibold" cy-data="profile-registered">
+                {{ $filters.date(loggedUser.registration_date) }}
+              </dl>
+            </div>
+          </dl>
+        </div>
+      </app-section>
+    </app-container>
+    <app-container>
+      <app-section-banner>
+        <template #title>Advanced</template>
+        <div class="flex align-items-center text-sm py-2">
+          <div class="flex-grow-1">
+            <p class="font-semibold py-1 m-0">Receive notifications</p>
+            <span class="text-xs opacity-80"
+              >We will send you information about workspace activity and a
+              monthly bulletin email</span
+            >
+          </div>
+          <div class="flex-shrink-0" cy-data="profile-notification">
+            <PInputSwitch
+              :modelValue="loggedUser.receive_notifications"
+              @change="receiveNotificationsChange"
+            />
+          </div>
+        </div>
+        <div class="flex align-items-center text-sm py-2">
+          <div class="flex-grow-1">
+            <p class="font-semibold m-0 py-1">Close account</p>
+            <span class="text-xs opacity-80">All data will be lost</span>
+          </div>
+          <div class="flex-shrink-0">
+            <PButton
+              @click="confirmDeleteUser"
+              severity="danger"
+              cy-data="profile-close-account-btn"
+            >
+              Close account</PButton
+            >
+          </div>
+        </div>
+      </app-section-banner>
+    </app-container>
+    <app-container><slot name="additionalContent"></slot></app-container>
+  </div>
+
   <page-view
     :style="`padding-left: ${
       drawer ? 260 : 20
@@ -163,6 +307,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapState, mapActions } from 'pinia'
 import { defineComponent } from 'vue'
 
+import AppContainer from '@/common/components/AppContainer.vue'
+import AppSection from '@/common/components/AppSection.vue'
+import AppSectionBanner from '@/common/components/AppSectionBanner.vue'
 import { ConfirmDialog, useDialogStore } from '@/modules'
 import PageView from '@/modules/layout/components/PageView.vue'
 import { useLayoutStore } from '@/modules/layout/store'
@@ -175,7 +322,7 @@ export default defineComponent({
   props: {
     name: String
   },
-  components: { PageView },
+  components: { PageView, AppContainer, AppSection, AppSectionBanner },
   data() {
     return {
       dialog: false
@@ -183,10 +330,7 @@ export default defineComponent({
   },
   computed: {
     ...mapState(useLayoutStore, ['drawer']),
-    ...mapState(useUserStore, ['loggedUser']),
-    usage() {
-      return this.loggedUser?.disk_usage / this.loggedUser?.storage
-    }
+    ...mapState(useUserStore, ['loggedUser'])
   },
   created() {
     this.fetchUserProfile()
@@ -201,7 +345,8 @@ export default defineComponent({
     ...mapActions(useUserStore, {
       fetchUserProfile: 'fetchUserProfile',
       resendConfirmationEmailToUser: 'resendConfirmationEmail',
-      closeUserProfile: 'closeUserProfile'
+      closeUserProfile: 'closeUserProfile',
+      editUserProfile: 'editUserProfile'
     }),
 
     resendConfirmationEmail() {
@@ -266,83 +411,25 @@ export default defineComponent({
           dialog
         }
       })
+    },
+    receiveNotificationsChange() {
+      this.editUserProfile({
+        editedUser: {
+          ...this.loggedUser,
+          receive_notifications: !this.loggedUser.receive_notifications
+        },
+        componentId: this.merginComponentUuid
+      })
     }
   }
 })
 </script>
 
 <style lang="scss" scoped>
-.bubble {
-  width: 100%;
-}
-
-.main-content {
-  overflow: unset;
-}
-
-.col-5 {
-  max-width: 100%;
-}
-
-.profile {
-  margin-bottom: 20px;
-
-  h2 {
-    color: #2d4470;
-    margin-bottom: 10px;
-  }
-
-  button {
-    padding-left: 10px;
-    height: 35px;
-    padding-right: 10px;
-    float: right;
-    @media (max-width: 770px) {
-      width: 100%;
-    }
-    @media (min-width: 771px) {
-      width: 60%;
-    }
-  }
-
-  .align-center {
-    padding-top: 10px;
-    padding-bottom: 10px;
-    align-items: flex-start;
-    padding-right: 10px;
-  }
-
-  .section {
-    margin-right: 10px;
-
-    ul {
-      padding-left: 0;
-    }
-
-    li {
-      list-style: none;
-
-      b {
-        width: 150px;
-        display: inline-block;
-      }
-    }
-
-    .v-icon {
-      font-size: 18px;
-    }
-  }
-}
-
-@media (max-width: 480px) {
-  .action-button {
-    width: 135px;
-  }
-}
-
-.action-button {
-  div {
-    display: inline-block;
+.profile-view {
+  &-detail-list {
+    max-width: 640px;
+    width: 100%;
   }
 }
 </style>
