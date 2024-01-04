@@ -16,8 +16,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               'surface-section border-none p-4',
               // Toggle border radius by open / closed panel
               options.state.d_collapsed
-                ? 'border-round-2xl'
-                : 'border-round-top-2xl'
+                ? 'border-round-xl'
+                : 'border-round-top-xl'
             ]
           }
         },
