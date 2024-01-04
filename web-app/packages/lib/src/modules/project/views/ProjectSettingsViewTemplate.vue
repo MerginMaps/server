@@ -6,13 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div>
-    <slot
-      name="permissions"
-      :settings="settings"
-      :key-prop="key"
-      :save-project="saveProject"
-    ></slot>
-    <app-container v-if="showAccessRequests">
+    <app-container v-if="showAccessRequests && accessRequestsCount > 0">
       <app-section
         ><template #title
           >Requests
@@ -22,6 +16,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         ><project-access-requests
       /></app-section>
     </app-container>
+    <slot
+      name="permissions"
+      :settings="settings"
+      :key-prop="key"
+      :save-project="saveProject"
+    ></slot>
 
     <app-container>
       <app-panel-toggleable>
