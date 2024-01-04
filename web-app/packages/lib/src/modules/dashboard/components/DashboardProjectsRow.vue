@@ -9,15 +9,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <app-container>
     <app-section>
       <template #title>Recent active projects</template>
-      <template #default>
-        <projects-table-data-loader
-          :show-namespace="false"
-          :showFooter="false"
-          :public="false"
-          :can-create-project="canCreateProject"
-          :initialOptions="initialOptions"
-        />
-      </template>
+      <projects-table-data-loader
+        :show-namespace="false"
+        :showFooter="false"
+        :public="false"
+        :can-create-project="canCreateProject"
+        :initialOptions="initialOptions"
+      />
     </app-section>
   </app-container>
 </template>
