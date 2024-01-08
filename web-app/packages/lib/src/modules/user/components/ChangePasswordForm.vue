@@ -34,12 +34,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         class="ti ti-info-circle-filled text-color-forest text-base"
         v-tooltip="{
           value: `
-            \u2022 Password must be at least 8 characters long.\n
-            \u2022 Password must contain at least 3 character categories among the following:\n
-                  Lowercase characters (a-z)
-                  Uppercase characters (A-Z)
-                  Digits (0-9)
-                  Special characters
+            \u2022Password must be at least 8 characters long.\n
+            \u2022Password must contain at least 3 character categories among the
+                following:\n
+                  Lowercase characters (a-z)\n
+                  Uppercase characters (A-Z)\n
+                  Digits (0-9)\n
+                  Special characters\n
             `
         }"
       />
