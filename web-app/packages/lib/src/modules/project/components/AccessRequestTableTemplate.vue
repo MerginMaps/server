@@ -52,9 +52,21 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <AppDropdown
               v-if="showAccept"
               :options="[
-                { value: 'read', label: 'Reader' },
-                { value: 'write', label: 'Writer' },
-                { value: 'owner', label: 'Owner' }
+                {
+                  value: 'owner',
+                  label: 'Manage',
+                  description: 'Can edit and remove projects in the workspace'
+                },
+                {
+                  value: 'write',
+                  label: 'Write',
+                  description: 'Can edit projects in the workspace'
+                },
+                {
+                  value: 'read',
+                  label: 'Read only',
+                  description: 'Can view projects in the workspace'
+                }
               ]"
               v-model="permissions[item.id]"
               @change="(e) => permissionsChange(e, item)"

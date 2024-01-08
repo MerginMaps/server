@@ -345,7 +345,9 @@ export default defineComponent({
         })
     },
     leaveDialog() {
-      const projPath = `${this.namespace}/${this.projectName}`
+      const projPath = this.showNamespace
+        ? `${this.namespace}/${this.projectName}`
+        : this.projectName
       const props: ConfirmDialogProps = {
         text: `Are you sure to leave the project ${projPath}?`,
         description: 'You will not have access to it anymore.',

@@ -80,6 +80,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import debounce from 'lodash/debounce'
 import { mapActions, mapState } from 'pinia'
 import { PropType, defineComponent } from 'vue'
 
@@ -165,7 +166,7 @@ export default defineComponent({
       this.settings.access.writersnames = newSettings.access.writersnames
       this.saveSettings(newSettings)
     },
-    saveSettings(newSettings) {
+    saveSettings: debounce(function (newSettings) {
       try {
         this.saveProjectSettings({
           namespace: this.namespace,
@@ -177,7 +178,7 @@ export default defineComponent({
           text: getErrorMessage(err, 'Failed to save project settings')
         })
       }
-    },
+    }, 2000),
     togglePublicPrivate() {
       this.settings.access.public = !this.settings.access.public
       this.saveSettings(this.settings)

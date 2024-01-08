@@ -30,6 +30,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             context.focused ? 'bg-gray-50' : 'bg-transparent'
           ]
         }
+      },
+      trigger(options) {
+        return {
+          class: options.props?.disabled ? 'text-color' : 'text-color-forest'
+        }
       }
     }"
   >
@@ -39,7 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           scope.class,
           'ti',
           isOpen ? 'ti-chevron-up' : 'ti-chevron-down',
-          'text-color-forest font-semibold text-xl'
+          'font-semibold text-base'
         ]"
       ></i>
     </template>
