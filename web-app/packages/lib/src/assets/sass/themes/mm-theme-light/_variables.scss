@@ -52,7 +52,7 @@ $colors: (
     --surface-f:#ffffff;
     --text-color: #{map-get($colors , "night")};
     --text-color-secondary:#aaacad;
-    --primary-color:$primaryColor;
+    --primary-color:#{$primaryColor};
     --primary-color-text:#ffffff;
     --font-family:inherit;
     --surface-0: #ffffff;

@@ -19,6 +19,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :pt="{
       header: {
         class: 'px-4 py-2'
+      },
+      loadingOverlay: {
+        class: 'bg-primary-reverse opacity-50'
       }
     }"
   >
@@ -34,9 +37,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <p class="w-12 lg:w-4 text-xs p-2 lg:p-0">
             User
             <span class="font-semibold">{{ item.requested_by }}</span>
-            wants to transfer project
-            <span class="font-semibold">{{ item.project_name }}</span>
-            to your workspace.
+            requested an access to your project
+            <span class="font-semibold">{{ item.project_name }}.</span>
           </p>
           <div
             class="flex w-12 lg:w-4 align-items-center flex-wrap lg:flex-nowrap"
@@ -47,18 +49,29 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             >
               Expiring in {{ $filters.remainingtime(item.expire) }}
             </p>
-            <PDropdown
+            <AppDropdown
               v-if="showAccept"
               :options="[
-                { value: 'read', label: 'Reader' },
-                { value: 'write', label: 'Writer' },
-                { value: 'owner', label: 'Owner' }
+                {
+                  value: 'owner',
+                  label: 'Manage',
+                  description: 'Can edit and remove projects in the workspace'
+                },
+                {
+                  value: 'write',
+                  label: 'Write',
+                  description: 'Can edit projects in the workspace'
+                },
+                {
+                  value: 'read',
+                  label: 'Read only',
+                  description: 'Can view projects in the workspace'
+                }
               ]"
-              option-label="label"
-              option-value="value"
               v-model="permissions[item.id]"
               @change="(e) => permissionsChange(e, item)"
-              class="w-6 lg:w-4 p-1"
+              :disabled="expired(item.expire)"
+              class="w-6 lg:w-5 p-1"
             />
             <div class="flex justify-content-end w-6 lg:w-4 p-1">
               <PButton
@@ -75,6 +88,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 rounded
                 aria-label="Accept"
                 severity="success"
+                :disabled="expired(item.expire)"
                 @click="acceptRequest(item)"
               />
             </div>
@@ -94,16 +108,18 @@ import { DataViewPageEvent } from 'primevue/dataview'
 import { DropdownChangeEvent } from 'primevue/dropdown'
 import { defineComponent } from 'vue'
 
+import AppDropdown from '@/common/components/AppDropdown.vue'
 import { ProjectPermissionName } from '@/common/permission_utils'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
 import {
-  GetProjectAccessRequestsPayload,
-  ProjectAccessRequest
+  GetAccessRequestsPayload,
+  AccessRequest
 } from '@/modules/project/types'
 
 export default defineComponent({
-  name: 'ProjectAccessRequestTableTemplate',
+  name: 'AccessRequestTableTemplate',
+  components: { AppDropdown },
   props: {
     namespace: {
       type: String,
@@ -157,7 +173,7 @@ export default defineComponent({
     ...mapActions(useProjectStore, [
       'cancelProjectAccessRequest',
       'acceptProjectAccessRequest',
-      'getProjectAccessRequests'
+      'getAccessRequests'
     ]),
     ...mapActions(useNotificationStore, ['error']),
 
@@ -166,7 +182,7 @@ export default defineComponent({
       this.options.itemsPerPage = e.rows
       this.fetchItems()
     },
-    permissionsChange(e: DropdownChangeEvent, item: ProjectAccessRequest) {
+    permissionsChange(e: DropdownChangeEvent, item: AccessRequest) {
       const { value } = e
       const { id } = item
       this.selectedPermissions[id] = value
@@ -206,7 +222,7 @@ export default defineComponent({
     async fetchItems() {
       this.loading = true
       try {
-        const payload: GetProjectAccessRequestsPayload = {
+        const payload: GetAccessRequestsPayload = {
           namespace: this.namespace,
           params: {
             page: this.options.page,
@@ -216,7 +232,7 @@ export default defineComponent({
               `${this.options.sortBy} ${this.options.sortDesc ? 'DESC' : 'ASC'}`
           }
         }
-        await this.getProjectAccessRequests(payload)
+        await this.getAccessRequests(payload)
       } finally {
         this.loading = false
       }

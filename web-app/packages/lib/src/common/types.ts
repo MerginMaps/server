@@ -16,7 +16,7 @@ export type RouteOverrides = Record<
 export interface ModuleService {
   httpService?: HttpService
   routerService?: Router
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export interface BaseModule {
@@ -62,7 +62,7 @@ export interface PaginatedResponse<T> extends PaginatedResponseDefaults {
   items: readonly T[]
 }
 
-export interface ApiRequestSuccessInfo<T = any> {
+export interface ApiRequestSuccessInfo<T> {
   success: boolean
   message?: string
   data?: T

@@ -14,6 +14,10 @@ import {
   SideBarTemplate as SideBar
 } from '@mergin/lib'
 import { Pinia } from 'pinia'
+import {
+  createWebHistory,
+  createRouter as createRouterInstance
+} from 'vue-router'
 
 import DashboardView from '@/modules/dashboard/views/DashboardView.vue'
 import AppHeader from '@/modules/layout/components/AppHeader.vue'
@@ -22,10 +26,6 @@ import ProjectsListView from '@/modules/project/views/ProjectsListView.vue'
 import ProjectView from '@/modules/project/views/ProjectView.vue'
 import LoginView from '@/modules/user/views/LoginView.vue'
 import ProfileView from '@/modules/user/views/ProfileView.vue'
-import {
-  createWebHistory,
-  createRouter as createRouterInstance
-} from 'vue-router'
 
 export const createRouter = (pinia: Pinia) => {
   const router = createRouterInstance({
@@ -146,7 +146,6 @@ export const createRouter = (pinia: Pinia) => {
             }/tree${from.params.location ? `/${from.params.location}` : ''}`,
             query: { file_path: to.params.location }
           })
-          return
         }
       },
       /** Redirect of unused /history/:version_id path to /history?version_id */
@@ -161,7 +160,6 @@ export const createRouter = (pinia: Pinia) => {
             path: `/projects/${to.params.namespace}/${to.params.projectName}/history`,
             query: { version_id: to.params.version_id }
           })
-          return
         }
       },
       {

@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <v-card class="table" v-if="accessRequests && accessRequestsCount > 0" flat>
     <v-card-text>
       <h3>You requested access to this projects</h3>
-      <project-access-request-table />
+      <access-request-table />
     </v-card-text>
   </v-card>
 </template>
@@ -17,12 +17,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
-import ProjectAccessRequestTable from '@/modules/project/components/ProjectAccessRequestTable.vue'
+import AccessRequestTable from '@/modules/project/components/AccessRequestTable.vue'
 import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
   name: 'ProfileAccessRequestsRow',
-  components: { ProjectAccessRequestTable },
+  components: { AccessRequestTable },
   computed: {
     ...mapState(useProjectStore, ['accessRequests', 'accessRequestsCount'])
   },

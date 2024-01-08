@@ -36,7 +36,7 @@ export default defineComponent({
             currentRoute: payload.currentRoute
           })
         }
-      } catch(err) {
+      } catch (err) {
         console.error(err)
       }
     }

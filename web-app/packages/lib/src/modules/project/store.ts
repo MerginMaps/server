@@ -27,9 +27,9 @@ import {
   FetchProjectVersionsPayload,
   ProjectVersion,
   ProjectVersionsPayload,
-  ProjectAccessRequest,
+  AccessRequest,
   GetUserAccessRequestsPayload,
-  GetProjectAccessRequestsPayload,
+  GetAccessRequestsPayload,
   DownloadPayload,
   DeleteProjectPayload,
   ProjectsSortingParams
@@ -45,7 +45,7 @@ export interface UploadFilesPayload {
 }
 
 export interface ProjectState {
-  accessRequests: ProjectAccessRequest[]
+  accessRequests: AccessRequest[]
   accessRequestsCount: number
   project: EnhancedProjectDetail
   projects: ProjectListItem[]
@@ -355,7 +355,7 @@ export const useProjectStore = defineStore('projectModule', {
       }
     },
 
-    async getProjectAccessRequests(payload: GetProjectAccessRequestsPayload) {
+    async getAccessRequests(payload: GetAccessRequestsPayload) {
       if (payload.namespace) {
         await this.fetchNamespaceAccessRequests({
           namespace: payload.namespace,

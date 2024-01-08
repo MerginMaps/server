@@ -21,10 +21,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         class: 'w-10 lg:w-4 border-round-2xl'
       },
       header: {
-        class: 'text-sm border-none border-round-top-2xl',
+        class: 'border-none border-round-top-2xl',
         style: {
           color: 'var(--forest-color)'
         }
+      },
+      title: {
+        class: 'text-base font-semibold'
       },
       closeButton: {
         style: {

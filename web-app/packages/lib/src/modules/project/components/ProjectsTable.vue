@@ -19,6 +19,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
       @row-click="rowClick"
       @page="onPage"
+      :pt="{
+        loadingOverlay: {
+          class: 'bg-primary-reverse opacity-50'
+        },
+        bodyRow: {
+          class: 'text-xs hover:bg-gray-50 cursor-pointer'
+        }
+      }"
     >
       <template v-for="col in columns" :key="col.field">
         <PColumn
@@ -64,7 +72,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 value: $filters.datetime(slotProps.data.updated),
                 pt: { root: { 'data-cy': 'project-form-updated' } }
               }"
-              class="text-color-secondary text-xs mt-0"
+              class="text-color-secondary mt-0"
             >
               Updated {{ $filters.timediff(slotProps.data.updated) }}
             </p>

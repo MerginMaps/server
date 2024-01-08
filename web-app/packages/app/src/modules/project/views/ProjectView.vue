@@ -59,7 +59,11 @@ export default defineComponent({
         namespace: props.namespace,
         project: props.projectName
       }
-      const dialog = { maxWidth: 580, persistent: true, header: 'Clone project' }
+      const dialog = {
+        maxWidth: 580,
+        persistent: true,
+        header: 'Clone project'
+      }
       const listeners = {
         error: (error, data) => {
           formStore.handleError({

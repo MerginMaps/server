@@ -12,11 +12,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       v-slot="{ Component, route }"
       :key="$route.fullPath"
     >
-      <transition name="fade">
-        <div :key="route.name">
-          <component :is="Component" />
-        </div>
-      </transition>
+      <div :key="route.name">
+        <component :is="Component" />
+      </div>
     </router-view>
 
     <main
@@ -31,13 +29,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       ]"
     >
       <router-view name="header" v-slot="{ Component, route }">
-        <transition name="fade">
-          <div :key="route.name">
-            <component :is="Component" />
-          </div>
-        </transition>
+        <div :key="route.name">
+          <component :is="Component" />
+        </div>
       </router-view>
-      <PDivider :pt="{ root: { class: 'm-0'}}"></PDivider>
+      <PDivider :pt="{ root: { class: 'm-0' } }"></PDivider>
       <v-card
         v-if="pingData && pingData.maintenance"
         variant="outlined"
@@ -51,7 +47,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           >
         </v-card-text>
       </v-card>
-      <router-view v-slot="{ Component, route }">
+      <router-view v-slot="{ Component }">
         <transition name="fade">
           <component :is="Component" />
         </transition>
@@ -169,17 +165,8 @@ export default defineComponent({
 </script>
 
 <style lang="scss">
-.fade-leave-active {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.25s;
+.fade-enter-active {
+  transition: opacity ease-in 0.25s;
 }
 
 .fade-enter-from,
