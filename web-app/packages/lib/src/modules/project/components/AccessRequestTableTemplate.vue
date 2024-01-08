@@ -71,7 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               v-model="permissions[item.id]"
               @change="(e) => permissionsChange(e, item)"
               :disabled="expired(item.expire)"
-              class="w-6 lg:w-4 p-1"
+              class="w-6 lg:w-5 p-1"
             />
             <div class="flex justify-content-end w-6 lg:w-4 p-1">
               <PButton
