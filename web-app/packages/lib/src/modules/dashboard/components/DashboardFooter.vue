@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <footer v-if="!layoutStore.isClosedElement(elementId)" :id="elementId">
     <app-container>
       <app-section
-        class="grid grid-nogutter flex align-items-center px-1 py-2 relative"
+        class="grid grid-nogutter flex align-items-center py-2 relative"
       >
         <div
           class="dashboard-view-footer-mobile relative col-12 xl:col-fixed align-self-start mb-2 xl:mb-0 flex justify-content-center"
@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </div>
         <div class="col-12 xl:col-6 mb-2 xl:mb-0 text-center xl:text-left">
           <h2 class="text-color font-semibold text-xs">Download Mergin Maps</h2>
-          <p class="text-color-secondary text-xs">
+          <p class="opacity-80 text-xs">
             Capture geo-info easily through your mobile/tablet with the Mergin
             Maps Input app.
           </p>
@@ -46,6 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             icon="ti ti-x"
             text
             rounded
+            severity="secondary"
             aria-label="Close section"
             @click="closeElement"
           />

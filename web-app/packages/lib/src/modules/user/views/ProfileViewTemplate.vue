@@ -17,7 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             @click="editProfileDialog"
             data-cy="action-button-create"
             icon="ti ti-pencil"
-            label="Edit profile"
+            label="Edit account"
             class="w-auto mr-1"
             cy-data="profile-edit-btn"
           />

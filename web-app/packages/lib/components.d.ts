@@ -41,7 +41,6 @@ declare module 'vue' {
     VCardActions: typeof import('vuetify/components')['VCardActions']
     VCardText: typeof import('vuetify/components')['VCardText']
     VCardTitle: typeof import('vuetify/components')['VCardTitle']
-    VCheckbox: typeof import('vuetify/components')['VCheckbox']
     VChip: typeof import('vuetify/components')['VChip']
     VChipGroup: typeof import('vuetify/components')['VChipGroup']
     VContainer: typeof import('vuetify/components')['VContainer']

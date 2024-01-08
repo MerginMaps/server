@@ -16,6 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         toggleMask
         :feedback="false"
         aria-describedby="old-password-error"
+        placeholder="Please enter your password"
         :pt="{
           input: {
             root: { class: 'w-full border-round-xl' }
@@ -50,6 +51,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         aria-describedby="password-error"
         toggleMask
         :feedback="false"
+        placeholder="Please enter your new password"
         :pt="{
           input: {
             root: { class: 'w-full border-round-xl' }
@@ -85,6 +87,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         aria-describedby="confirm-password-error"
         toggleMask
         :feedback="false"
+        placeholder="Please enter your new password"
         :pt="{
           input: {
             root: { class: 'w-full border-round-xl' }
