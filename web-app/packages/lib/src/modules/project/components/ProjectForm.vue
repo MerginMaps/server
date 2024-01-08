@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div class="py-4">
     <div class="mb-4">
-      <span class="flex p-float-label w-full">
+      <span class="flex p-float-label w-full p-input-filled">
         <PInputText
           autofocus
           id="name"
@@ -17,7 +17,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           aria-describedby="text-error"
           data-cy="project-form-name"
           class="border-round-xl flex-grow-1"
-          :style="{ backgroundColor: 'var(--light-green-color)' }"
         />
         <label for="name">Project name</label>
         <small class="p-error" id="text-error">{{

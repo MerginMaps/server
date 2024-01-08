@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div class="flex flex-column p-4 row-gap-1">
-    <span>
+    <span class="p-input-filled">
       <label for="oldPassowrd">Old password</label>
       <PPassword
         id="oldPassowrd"
@@ -28,10 +28,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       }}</span>
     </span>
 
-    <span>
+    <span class="p-input-filled">
       <label for="newPassword">New Password</label>
       <i
-        class="ti ti-info-circle-filled text-color-forest"
+        class="ti ti-info-circle-filled text-color-forest text-base"
         v-tooltip="{
           value: `
             \u2022 Password must be at least 8 characters long.\n
@@ -63,10 +63,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       }}</span>
     </span>
 
-    <span>
+    <span class="p-input-filled">
       <label for="confirm">Confirm password</label>
       <i
-        class="ti ti-info-circle-filled text-color-forest"
+        class="ti ti-info-circle-filled text-color-forest text-base"
         v-tooltip="{
           value: `
             \u2022Password must be at least 8 characters long.\n

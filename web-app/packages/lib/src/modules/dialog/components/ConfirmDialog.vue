@@ -15,14 +15,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <span class="font-semibold text-color-forest text-lg">{{ text }}</span>
     <span class="text-sm opacity-80">{{ description }}</span>
     <span class="text-base font-semibold">{{ hint }}</span>
-    <span v-if="confirmField" class="flex p-float-label w-full">
+    <span v-if="confirmField" class="flex p-float-label w-full p-input-filled">
       <PInputText
         autofocus
         id="confirmValue"
         v-model="confirmValue"
         type="text"
         class="border-round-xl flex-grow-1"
-        :style="{ backgroundColor: 'var(--light-green-color)' }"
       />
       <label for="confirmValue">{{ confirmField.label }}</label>
     </span>
