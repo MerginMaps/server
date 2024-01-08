@@ -37,9 +37,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <p class="w-12 lg:w-4 text-xs p-2 lg:p-0">
             User
             <span class="font-semibold">{{ item.requested_by }}</span>
-            wants to transfer project
-            <span class="font-semibold">{{ item.project_name }}</span>
-            to your workspace.
+            requested an access to your project
+            <span class="font-semibold">{{ item.project_name }}.</span>
           </p>
           <div
             class="flex w-12 lg:w-4 align-items-center flex-wrap lg:flex-nowrap"
