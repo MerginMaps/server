@@ -21,7 +21,7 @@ services:
     networks:
       - merginmaps
   server:
-    image: lutraconsulting/merginmaps-backend:2023.2.0
+    image: lutraconsulting/merginmaps-backend:2023.6.1
     container_name: merginmaps-server
     restart: always
     user: 901:999
@@ -35,7 +35,7 @@ services:
     networks:
       - merginmaps
   web:
-    image: lutraconsulting/merginmaps-frontend:2023.2.0
+    image: lutraconsulting/merginmaps-frontend:2023.6.1
     container_name: merginmaps-web
     restart: always
     depends_on:
