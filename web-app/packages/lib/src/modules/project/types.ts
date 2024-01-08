@@ -142,7 +142,7 @@ export interface ProjectParams {
   namespace: string
 }
 
-export interface ProjectAccessRequest {
+export interface AccessRequest {
   expire: string
   id: number
   namespace: string
@@ -152,15 +152,14 @@ export interface ProjectAccessRequest {
   user: UserSearch
 }
 
-export type ProjectAccessRequestResponse =
-  PaginatedResponse<ProjectAccessRequest>
+export type ProjectAccessRequestResponse = PaginatedResponse<AccessRequest>
 
 export interface ProjectAccessRequestParams extends PaginatedRequestParamsApi {
   project_name?: string
 }
 
 export interface AccessRequestsPayload extends PaginatedResponseDefaults {
-  accessRequests: ProjectAccessRequest[]
+  accessRequests: AccessRequest[]
 }
 
 export interface GetUserAccessRequestsPayload {
@@ -176,8 +175,7 @@ export interface AcceptProjectAccessRequestData {
   permissions: ProjectPermissionName
 }
 
-export interface GetProjectAccessRequestsPayload
-  extends GetUserAccessRequestsPayload {
+export interface GetAccessRequestsPayload extends GetUserAccessRequestsPayload {
   namespace?: string
 }
 

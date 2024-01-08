@@ -5,65 +5,78 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-layout class="settings column">
+  <div>
+    <app-container v-if="showAccessRequests && accessRequestsCount > 0">
+      <app-section
+        ><template #title
+          >Requests
+          <span class="text-color-secondary"
+            >({{ accessRequestsCount }})</span
+          ></template
+        ><project-access-requests
+      /></app-section>
+    </app-container>
     <slot
       name="permissions"
       :settings="settings"
       :key-prop="key"
       :save-project="saveProject"
     ></slot>
-    <project-access-requests v-if="showAccessRequests" />
-    <v-layout class="public-private-zone">
-      <v-container>
-        <v-row>
-          <v-col>
-            <span class="private-public-text" v-if="settings.access.public">
-              <b>This is public project</b><br />
-              <span class="description-text"
+
+    <app-container>
+      <app-panel-toggleable>
+        <template #header
+          ><h3 class="font-semibold text-color text-sm">Advanced</h3></template
+        >
+        <div class="flex align-items-center text-sm py-2">
+          <div class="flex-grow-1">
+            <template v-if="settings.access.public">
+              <p class="font-semibold py-1 m-0">This is public project</p>
+              <span class="text-xs opacity-80"
                 >Hide this project from everyone.</span
               >
-            </span>
-            <span class="private-public-text" v-else>
-              <b>This is private project</b><br />
-              <span class="description-text"
+            </template>
+            <template v-else>
+              <p class="font-semibold py-1 m-0">This is private project</p>
+              <span class="text-xs opacity-80"
                 >Make this project visible to anyone.</span
               >
-            </span>
-          </v-col>
-          <v-col>
-            <v-btn
+            </template>
+          </div>
+          <div class="flex-shrink-0">
+            <PButton
               @click="confirmPublicPrivate()"
-              class="private-public-btn"
-              variant="outlined"
+              severity="secondary"
+              outlined
             >
-              <span v-if="settings.access.public">Make private</span>
-              <span v-else>Make public</span>
-            </v-btn>
-          </v-col>
-        </v-row>
-        <slot name="operations"></slot>
-        <v-row
+              <template v-if="settings.access.public">Make private</template>
+              <template v-else>Make public</template>
+            </PButton>
+          </div>
+        </div>
+        <div
+          class="flex align-items-center text-sm py-2"
+          v-if="$slots.operations"
+        >
+          <slot name="operations"></slot>
+        </div>
+        <div
+          class="flex align-items-center text-sm py-2"
           v-if="project && project.permissions && project.permissions.delete"
         >
-          <v-col>
-            <span class="private-public-text">
-              <b>Delete project</b><br />
-              <span class="description-text">All data will be lost</span></span
+          <div class="flex-grow-1">
+            <p class="font-semibold m-0 py-1">Delete project</p>
+            <span class="text-xs opacity-80">All data will be lost</span>
+          </div>
+          <div class="flex-shrink-0">
+            <PButton @click="confirmDelete" severity="danger">
+              Delete project</PButton
             >
-          </v-col>
-          <v-col self-align="end">
-            <v-btn
-              @click="confirmDelete"
-              class="private-public-btn"
-              variant="outlined"
-            >
-              <span>Delete</span>
-            </v-btn>
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-layout>
-  </v-layout>
+          </div>
+        </div>
+      </app-panel-toggleable>
+    </app-container>
+  </div>
 </template>
 
 <script lang="ts">
@@ -71,7 +84,11 @@ import debounce from 'lodash/debounce'
 import { mapActions, mapState } from 'pinia'
 import { PropType, defineComponent } from 'vue'
 
+import AppContainer from '@/common/components/AppContainer.vue'
+import AppPanelToggleable from '@/common/components/AppPanelToggleable.vue'
+import AppSection from '@/common/components/AppSection.vue'
 import { getErrorMessage } from '@/common/error_utils'
+import { ConfirmDialogProps, ProjectAccess } from '@/modules'
 import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useNotificationStore } from '@/modules/notification/store'
@@ -82,7 +99,10 @@ import { useUserStore } from '@/modules/user/store'
 export default defineComponent({
   name: 'ProjectSettingsViewTemplate',
   components: {
-    ProjectAccessRequests
+    ProjectAccessRequests,
+    AppContainer,
+    AppSection,
+    AppPanelToggleable
   },
   props: {
     namespace: String,
@@ -99,13 +119,13 @@ export default defineComponent({
   },
   data() {
     return {
-      settings: {},
+      settings: {} as { access?: ProjectAccess },
       key: 0
     }
   },
   computed: {
     ...mapState(useUserStore, ['loggedUser']),
-    ...mapState(useProjectStore, ['project'])
+    ...mapState(useProjectStore, ['project', 'accessRequestsCount'])
   },
   watch: {
     project: {
@@ -133,7 +153,7 @@ export default defineComponent({
   },
   methods: {
     ...mapActions(useProjectStore, ['deleteProject', 'saveProjectSettings']),
-    ...mapActions(useDialogStore, ['show']),
+    ...mapActions(useDialogStore, { showDialog: 'show' }),
     ...mapActions(useNotificationStore, ['error']),
 
     saveProject(newSettingsAccessValues) {
@@ -161,10 +181,13 @@ export default defineComponent({
     }, 2000),
     togglePublicPrivate() {
       this.settings.access.public = !this.settings.access.public
+      this.saveSettings(this.settings)
     },
     confirmDelete() {
-      const props = {
-        text: `Are you sure to delete project: ${this.projectName}? All files will be lost. <br> <br> Type in project name to confirm:`,
+      const props: ConfirmDialogProps = {
+        text: `Are you sure to delete project: ${this.projectName}?`,
+        description: 'All files will be lost. Type in project name to confirm:',
+        severity: 'danger',
         confirmText: 'Delete',
         confirmField: {
           label: 'Project name',
@@ -174,24 +197,39 @@ export default defineComponent({
       const listeners = {
         confirm: () => this.onDeleteProject()
       }
-      this.show({
+      this.showDialog({
         component: ConfirmDialog,
-        params: { props, listeners, dialog: { maxWidth: 500 } }
+        params: {
+          props,
+          listeners,
+          dialog: { header: 'Confirm delete project' }
+        }
       })
     },
     confirmPublicPrivate() {
-      const props = {
+      const props: ConfirmDialogProps = {
         text: `Do you really want to make this project ${
           this.settings.access.public ? 'private' : 'public'
         }?`,
-        confirmText: 'Yes'
+        confirmText: 'Yes',
+        description: this.settings.access.public
+          ? 'Once you make your project private it can not be accessed by the community.'
+          : 'Once you make your project public it can be accessed by the community.'
       }
       const listeners = {
         confirm: () => this.togglePublicPrivate()
       }
-      this.show({
+      this.showDialog({
         component: ConfirmDialog,
-        params: { props, listeners, dialog: { maxWidth: 500 } }
+        params: {
+          props,
+          listeners,
+          dialog: {
+            header: this.settings.access.public
+              ? 'Private project'
+              : 'Public project'
+          }
+        }
       })
     },
     onDeleteProject() {
@@ -203,14 +241,4 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss" scoped>
-.settings {
-  display: flex;
-  flex-direction: column;
-  flex: 1 0 auto;
-}
-
-.actions {
-  flex: 0 0 auto;
-}
-</style>
+<style lang="scss" scoped></style>

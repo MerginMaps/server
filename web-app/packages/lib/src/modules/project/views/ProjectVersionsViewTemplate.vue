@@ -34,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <!-- Visible on lg breakpoint > -->
             <div
               v-for="col in columns.filter((item) => !item.fixed)"
-              :class="['text-xs hidden lg:flex', `col-${col.cols ?? 1}`]"
+              :class="['text-xs hidden lg:flex', `col-${col.cols ?? 2}`]"
               :key="col.text"
             >
               {{ col.text }}
@@ -49,37 +49,29 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <div
             v-for="item in slotProps.items"
             :key="item.id"
-            class="flex align-items-center hover:bg-gray-200 cursor-pointer border-bottom-1 border-gray-200 text-sm px-3 py-2 mt-0"
+            class="flex align-items-center hover:bg-gray-50 cursor-pointer border-bottom-1 border-gray-200 text-sm px-3 py-2 mt-0"
             :style="[rowStyle(item)]"
             @click.prevent="!item.disabled && rowClick(item.name)"
           >
             <div class="flex-grow-1 grid grid-nogutter w-11">
               <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->
-              <template
+              <div
                 v-for="col in columns.filter((item) => !item.fixed)"
                 :key="col.value"
+                :class="[
+                  'flex flex-column justify-content-center col-12',
+                  `lg:col-${col.cols ?? 2}`
+                ]"
               >
-                <div
-                  v-if="col.value === 'name'"
-                  :class="[
-                    'flex flex-column justify-content-center col-12',
-                    `lg:col-${col.cols ?? 1}`
-                  ]"
-                >
+                <template v-if="col.value === 'name'">
                   <p class="text-xs opacity-80 mb-1 lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">
                     {{ item.name }}
                   </span>
-                </div>
-                <div
-                  v-else-if="col.value === 'created'"
-                  :class="[
-                    'flex flex-column justify-content-center col-12',
-                    `lg:col-${col.cols ?? 1}`
-                  ]"
-                >
+                </template>
+                <template v-else-if="col.value === 'created'">
                   <p class="text-xs opacity-80 mb-1 lg:hidden">
                     {{ col.text }}
                   </p>
@@ -91,76 +83,46 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   >
                     {{ $filters.timediff(item.created) }}
                   </span>
-                </div>
-                <div
-                  v-else-if="col.value === 'changes.added'"
-                  :class="[
-                    'flex flex-column justify-content-center col-12',
-                    `lg:col-${col.cols ?? 1}`
-                  ]"
-                >
+                </template>
+                <template v-else-if="col.value === 'changes.added'">
                   <p class="text-xs opacity-80 mb-1 lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">{{
                     item.changes.added.length
                   }}</span>
-                </div>
-                <div
-                  v-else-if="col.value === 'changes.updated'"
-                  :class="[
-                    'flex flex-column justify-content-center col-12',
-                    `lg:col-${col.cols ?? 1}`
-                  ]"
-                >
+                </template>
+                <template v-else-if="col.value === 'changes.updated'">
                   <p class="text-xs opacity-80 mb-1 lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">
                     {{ item.changes.updated.length }}
                   </span>
-                </div>
-                <div
-                  v-else-if="col.value === 'changes.removed'"
-                  :class="[
-                    'flex flex-column justify-content-center col-12',
-                    `lg:col-${col.cols ?? 1}`
-                  ]"
-                >
+                </template>
+                <template v-else-if="col.value === 'changes.removed'">
                   <p class="text-xs opacity-80 mb-1 lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">
                     {{ item.changes.removed.length }}
                   </span>
-                </div>
-                <div
-                  v-else-if="col.value === 'project_size'"
-                  :class="[
-                    'flex flex-column justify-content-center col-12',
-                    `lg:col-${col.cols ?? 1}`
-                  ]"
-                >
+                </template>
+                <template v-else-if="col.value === 'project_size'">
                   <p class="text-xs opacity-80 mb-1 lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">{{
                     $filters.filesize(item.project_size)
                   }}</span>
-                </div>
-                <div
-                  v-else
-                  :class="[
-                    'flex flex-column justify-content-center col-12',
-                    `lg:col-${col.cols ?? 1}`
-                  ]"
-                >
+                </template>
+                <template v-else>
                   <p class="text-xs opacity-80 mb-1 lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">{{ item[col.value] }}</span>
-                </div>
-              </template>
+                </template>
+              </div>
             </div>
             <!-- actions -->
             <div class="flex w-1 flex-shrink-0 justify-content-end">
@@ -252,26 +214,24 @@ export default defineComponent({
         {
           text: 'Version',
           value: 'name',
-          textClass: 'font-semibold white-space-normal'
+          textClass: 'font-semibold white-space-normal',
+          cols: 1
         },
-        { text: 'Created', value: 'created', cols: 2 },
-        { text: 'Author', value: 'author', cols: 2 },
+        { text: 'Created', value: 'created' },
+        { text: 'Author', value: 'author' },
         {
           text: 'Files added',
-          value: 'changes.added',
-          cols: 2
+          value: 'changes.added'
         },
         {
           text: 'Files edited',
-          value: 'changes.updated',
-          cols: 2
+          value: 'changes.updated'
         },
         {
           text: 'Files removed',
-          value: 'changes.removed',
-          cols: 2
+          value: 'changes.removed'
         },
-        { text: 'Size', value: 'project_size' },
+        { text: 'Size', value: 'project_size', cols: 1 },
         { text: '', value: 'archived', fixed: true }
       ].map((item) => ({
         ...item,

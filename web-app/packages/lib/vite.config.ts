@@ -59,6 +59,7 @@ export default defineConfig(({ mode }) => ({
       transformMixedEsModules: true
     },
     // Fix for watching, if watch:lib, disable this
+    // sourcemap: mode !== 'production',
     sourcemap: false,
     lib: {
       // Could also be a dictionary or array of multiple entry points

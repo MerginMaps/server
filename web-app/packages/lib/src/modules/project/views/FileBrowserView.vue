@@ -23,9 +23,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </app-section>
     </app-container>
 
-    <app-container>
+    <app-container
+      v-if="
+        project &&
+        $route.name === 'project-tree' &&
+        project.permissions &&
+        project.permissions.upload
+      "
+    >
       <app-panel-toggleable :collapsed="dataTableOpen">
-        <template #header>Upload files</template>
+        <template #title>Upload files</template>
         <div class="flex flex-column lg:flex-row">
           <div
             class="flex flex-column align-items-center w-12 lg:w-6 mb-4 lg:mb-0 lg:mr-4 border-round-xl surface-ground p-4"
@@ -54,16 +61,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             </p>
           </div>
           <div class="w-12 lg:w-6 border-round-xl surface-ground">
-            <drop-area
-              v-if="
-                project &&
-                $route.name === 'project-tree' &&
-                project.permissions &&
-                project.permissions.upload
-              "
-              :location="location"
-              data-cy="project-drop-area"
-            >
+            <drop-area :location="location" data-cy="project-drop-area">
             </drop-area>
           </div>
         </div>
@@ -103,7 +101,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <div
               v-for="item in slotProps.items"
               :key="item.id"
-              class="grid grid-nogutter px-4 py-2 mt-0 border-bottom-1 border-gray-200 text-sm hover:bg-gray-200 cursor-pointer"
+              class="grid grid-nogutter px-4 py-2 mt-0 border-bottom-1 border-gray-200 text-sm hover:bg-gray-50 cursor-pointer"
               @click.prevent="rowClick(item.link)"
             >
               <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->
