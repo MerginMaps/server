@@ -37,9 +37,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <p class="w-12 lg:w-4 text-xs p-2 lg:p-0">
             User
             <span class="font-semibold">{{ item.requested_by }}</span>
-            wants to transfer project
-            <span class="font-semibold">{{ item.project_name }}</span>
-            to your workspace.
+            requested an access to your project
+            <span class="font-semibold">{{ item.project_name }}.</span>
           </p>
           <div
             class="flex w-12 lg:w-4 align-items-center flex-wrap lg:flex-nowrap"
@@ -52,12 +51,24 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             </p>
             <AppDropdown
               :options="[
-                { value: 'read', label: 'Reader' },
-                { value: 'write', label: 'Writer' },
-                { value: 'owner', label: 'Owner' }
+                {
+                  value: 'owner',
+                  label: 'Manage',
+                  description: 'Can edit and remove projects in the workspace'
+                },
+                {
+                  value: 'write',
+                  label: 'Write',
+                  description: 'Can edit projects in the workspace'
+                },
+                {
+                  value: 'read',
+                  label: 'Read only',
+                  description: 'Can view projects in the workspace'
+                }
               ]"
               v-model="permissions[item.id]"
-              class="w-6 lg:w-4 p-1"
+              class="w-6 lg:w-5 p-1"
             />
             <div class="flex justify-content-end w-6 lg:w-4 p-1">
               <PButton

@@ -73,10 +73,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                       :options="permissionStates"
                       :model-value="actualPermissions(item)"
                       @update:model-value="(e) => valueChanged(item, e)"
-                      :disabled="!isProjectOwner"
+                      :disabled="item.user.id === loggedUser.id"
                       class="w-6 lg:w-full"
                     />
-                    <template v-else>{{ item[col.value] }}</template>
+                    <template v-else
+                      >{{ item[col.value] }}
+                      <span
+                        v-if="
+                          col.value === 'email' &&
+                          item.user.id === loggedUser.id
+                        "
+                        >(me)</span
+                      ></template
+                    >
                   </span>
                 </div>
                 <!-- actions -->
@@ -106,7 +115,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </PDataView>
       </AppSection>
     </AppContainer>
-    <AppContainer v-if="$slots.banner">Hej<slot name="banner" /></AppContainer>
+    <AppContainer v-if="$slots.banner"><slot name="banner" /></AppContainer>
   </div>
 </template>
 
@@ -374,65 +383,4 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss" scoped>
-.no-shrink {
-  flex: 0 0 auto;
-}
-
-label {
-  font-weight: 500;
-}
-
-:deep(*) .v-data-table__overflow {
-  margin: 0.5em 0;
-  border: 1px solid #ddd;
-  border-radius: 3px;
-  padding: 0.5em;
-  background-color: #f9f9f9;
-
-  .v-datatable {
-    background-color: transparent;
-  }
-}
-
-.v-list {
-  :deep(.v-list-item) {
-    min-height: unset;
-  }
-}
-
-.div {
-  b {
-    margin-right: 10px;
-  }
-
-  span {
-    margin-right: 3px;
-    font-size: 12px;
-  }
-}
-
-.private-public-btn {
-  font-size: 12px;
-  padding-left: 20px;
-  padding-right: 20px;
-
-  span {
-    font-weight: 700;
-  }
-}
-
-.private-public-text {
-  font-size: 14px;
-}
-
-.public-private-zone {
-  margin-top: 20px;
-  margin-bottom: 20px;
-
-  button {
-    margin-right: 20px;
-    margin-top: 1px;
-  }
-}
-</style>
+<style lang="scss" scoped></style>

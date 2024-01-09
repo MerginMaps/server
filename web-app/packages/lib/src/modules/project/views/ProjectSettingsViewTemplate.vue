@@ -6,13 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div>
-    <slot
-      name="permissions"
-      :settings="settings"
-      :key-prop="key"
-      :save-project="saveProject"
-    ></slot>
-    <app-container v-if="showAccessRequests">
+    <app-container v-if="showAccessRequests && accessRequestsCount > 0">
       <app-section
         ><template #title
           >Requests
@@ -22,11 +16,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         ><project-access-requests
       /></app-section>
     </app-container>
+    <slot
+      name="permissions"
+      :settings="settings"
+      :key-prop="key"
+      :save-project="saveProject"
+    ></slot>
 
     <app-container>
       <app-section-banner>
         <template #title>Advanced</template>
-        <div class="flex text-sm py-2">
+        <div class="flex align-items-cente text-sm py-2">
           <div class="flex-grow-1">
             <template v-if="settings.access.public">
               <p class="font-semibold py-1 m-0">This is public project</p>
@@ -52,11 +52,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             </PButton>
           </div>
         </div>
-        <div class="flex text-sm py-2" v-if="$slots.operations">
+        <div
+          class="flex align-items-center text-sm py-2"
+          v-if="$slots.operations"
+        >
           <slot name="operations"></slot>
         </div>
         <div
-          class="flex text-sm py-2"
+          class="flex align-items-center text-sm py-2"
           v-if="project && project.permissions && project.permissions.delete"
         >
           <div class="flex-grow-1">
@@ -75,6 +78,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import debounce from 'lodash/debounce'
 import { mapActions, mapState } from 'pinia'
 import { PropType, defineComponent } from 'vue'
 
@@ -160,7 +164,7 @@ export default defineComponent({
       this.settings.access.writersnames = newSettings.access.writersnames
       this.saveSettings(newSettings)
     },
-    saveSettings(newSettings) {
+    saveSettings: debounce(function (newSettings) {
       try {
         this.saveProjectSettings({
           namespace: this.namespace,
@@ -172,7 +176,7 @@ export default defineComponent({
           text: getErrorMessage(err, 'Failed to save project settings')
         })
       }
-    },
+    }, 2000),
     togglePublicPrivate() {
       this.settings.access.public = !this.settings.access.public
       this.saveSettings(this.settings)
