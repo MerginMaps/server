@@ -29,21 +29,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </span>
 
     <span class="p-input-filled">
-      <label for="newPassword">New Password</label>
-      <i
-        class="ti ti-info-circle-filled text-color-forest text-base"
-        v-tooltip="{
-          value: `
-            \u2022Password must be at least 8 characters long.\n
-            \u2022Password must contain at least 3 character categories among the
-                following:\n
-                  Lowercase characters (a-z)\n
-                  Uppercase characters (A-Z)\n
-                  Digits (0-9)\n
-                  Special characters\n
-            `
-        }"
-      />
+      <label class="flex align-items-center" for="newPassword"
+        >New Password&nbsp;<i
+          class="ti ti-info-circle-filled cursor-pointer text-color-medium-green hover:text-color text-base"
+          v-tooltip="{
+            value: passwordTooltip,
+            escape: false
+          }"
+      /></label>
+
       <PPassword
         id="newPassword"
         v-model="password"
@@ -65,21 +59,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </span>
 
     <span class="p-input-filled">
-      <label for="confirm">Confirm password</label>
-      <i
-        class="ti ti-info-circle-filled text-color-forest text-base"
-        v-tooltip="{
-          value: `
-            \u2022Password must be at least 8 characters long.\n
-            \u2022Password must contain at least 3 character categories among the
-                following:\n
-                  Lowercase characters (a-z)\n
-                  Uppercase characters (A-Z)\n
-                  Digits (0-9)\n
-                  Special characters\n
-            `
-        }"
-      />
+      <label class="flex align-items-center" for="confirm"
+        >Confirm password&nbsp;
+        <i
+          class="ti ti-info-circle-filled cursor-pointer text-color-medium-green hover:text-color text-base"
+          :style="{ color: 'var(--medium-green-color)' }"
+          v-tooltip="{
+            value: passwordTooltip,
+            escape: false
+          }"
+      /></label>
+
       <PPassword
         id="confirm"
         v-model="confirm"
@@ -148,6 +138,18 @@ export default defineComponent({
     ...mapState(useFormStore, ['getErrorByComponentId']),
     errors() {
       return this.getErrorByComponentId(this.merginComponentUuid) ?? {}
+    },
+    passwordTooltip() {
+      return `
+      <ul>
+        <li>Password must be at least 8 characters long.</li>
+        <li>Password must contain at least 3 character categories among the following:</li>
+          Lowercase characters (a-z)
+          Uppercase characters (A-Z)
+          Digits (0-9)
+          Special characters
+      </ul>
+      `
     }
   },
   beforeDestroy() {
