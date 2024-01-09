@@ -5,67 +5,63 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <app-container>
-    <template v-if="!namespace">
-      <app-section ground class="pb-3">
-        <!-- Title with buttons -->
-        <header class="flex flex-column lg:flex-row lg:align-items-center">
-          <h1 class="text-3xl font-semibold">
-            {{ header }}
-          </h1>
-          <div
-            class="flex flex-grow-1 align-items-center lg:justify-content-end mb-4 lg:mb-0"
-          >
-            <PButton
-              v-if="canCreateProject && loggedUser && loggedUser.email"
-              @click="newProjectDialog"
-              data-cy="action-button-create"
-              class="w-auto mr-1"
+  <div>
+    <app-container>
+      <template v-if="!namespace">
+        <app-section ground class="pb-3">
+          <!-- Title with buttons -->
+          <header class="flex flex-column lg:flex-row lg:align-items-center">
+            <h1 class="text-3xl font-semibold">
+              {{ header }}
+            </h1>
+            <div
+              class="flex flex-grow-1 align-items-center lg:justify-content-end mb-4 lg:mb-0"
             >
-              Create project
-            </PButton>
-            <PButton
-              v-if="!onlyPublic && loggedUser && loggedUser.email"
-              severity="secondary"
-              @click="findPublicProjects"
-              data-cy="action-button-public-projects"
-              outlined
-              rounded
-              icon="ti ti-world text-xl"
-            />
+              <PButton
+                v-if="canCreateProject && loggedUser && loggedUser.email"
+                @click="newProjectDialog"
+                data-cy="action-button-create"
+                class="w-auto mr-1"
+              >
+                Create project
+              </PButton>
+            </div>
+          </header>
+          <!-- Filters -->
+          <div class="flex align-items-center justify-content-between">
+            <span class="p-input-icon-left flex-grow-1">
+              <i class="ti ti-search text-xl"></i>
+              <PInputText
+                placeholder="Search projects by name"
+                v-model="projectsStore.projectsSearch"
+                :pt="{ root: { class: 'border-round-xl w-full' } }"
+              />
+            </span>
+            <app-menu :items="filterMenuItems" />
           </div>
-        </header>
-        <!-- Filters -->
-        <div class="flex align-items-center justify-content-between">
-          <span class="p-input-icon-left flex-grow-1">
-            <i class="ti ti-search text-xl"></i>
-            <PInputText
-              placeholder="Search projects by name"
-              v-model="projectsStore.projectsSearch"
-              :pt="{ root: { class: 'border-round-xl w-full' } }"
-            />
-          </span>
-          <app-menu :items="filterMenuItems" />
-        </div>
-      </app-section>
-      <app-section>
-        <slot name="projects" :onlyPublic="onlyPublic"></slot>
-      </app-section>
-    </template>
-    <!-- TODO: Do not understand logic here :() -->
-    <AppSection v-else>
-      <span>
-        <b>Namespace not found</b><br />
-        Please check if address is written correctly
-      </span>
-    </AppSection>
-  </app-container>
+        </app-section>
+        <app-section>
+          <slot name="projects" :onlyPublic="onlyPublic"></slot>
+        </app-section>
+      </template>
+      <!-- TODO: Do not understand logic here :() -->
+      <AppSection v-else>
+        <span>
+          <b>Namespace not found</b><br />
+          Please check if address is written correctly
+        </span>
+      </AppSection>
+    </app-container>
+    <community-banner v-if="!onlyPublic && loggedUser && loggedUser.email" />
+  </div>
 </template>
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
 import { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { defineComponent, ref } from 'vue'
+
+import CommunityBanner from '../components/CommunityBanner.vue'
 
 import { AppContainer, AppSection } from '@/common'
 import AppMenu from '@/common/components/AppMenu.vue'
@@ -76,7 +72,7 @@ import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   name: 'ProjectsListView',
-  components: { AppContainer, AppSection, AppMenu },
+  components: { AppContainer, AppSection, AppMenu, CommunityBanner },
   props: {
     namespace: String,
     canCreateProject: Boolean
@@ -138,11 +134,6 @@ export default defineComponent({
     ...mapActions(useDialogStore, ['show']),
     ...mapActions(useProjectStore, ['setProjectsSorting']),
 
-    findPublicProjects() {
-      this.$router.push({
-        name: 'explore'
-      })
-    },
     newProjectDialog() {
       const dialog = { persistent: true, header: 'New project' }
       this.show({

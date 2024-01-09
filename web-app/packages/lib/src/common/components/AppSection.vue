@@ -12,12 +12,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         : 'surface-section border-round-xl overflow-hidden'
     ]"
   >
-    <header
-      v-if="!!$slots.title"
-      class="flex justify-content-between align-items-center p-4"
-    >
-      <h2 class="text-sm text-color m-0"><slot name="title"></slot></h2>
-      <slot name="extra"></slot>
+    <header v-if="!!$slots.title" class="flex align-items-center p-4">
+      <h2 class="text-sm text-color"><slot name="title"></slot></h2>
     </header>
     <slot></slot>
   </section>
