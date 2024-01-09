@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div class="flex flex-column p-4 row-gap-1">
     <span class="p-input-filled">
-      <label for="oldPassowrd">Old password</label>
+      <label class="text-xs" for="oldPassowrd">Old password</label>
       <PPassword
         id="oldPassowrd"
         v-model="oldPassword"
@@ -29,7 +29,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </span>
 
     <span class="p-input-filled">
-      <label for="newPassword">New Password</label>
+      <label class="text-xs" for="newPassword">New Password</label>
       <i
         class="ti ti-info-circle-filled text-color-forest text-base"
         v-tooltip="{
@@ -65,7 +65,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </span>
 
     <span class="p-input-filled">
-      <label for="confirm">Confirm password</label>
+      <label class="text-xs" for="confirm">Confirm password</label>
       <i
         class="ti ti-info-circle-filled text-color-forest text-base"
         v-tooltip="{
@@ -107,7 +107,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     >
       <PButton
         severity="secondary"
-        outlined
         @click="close"
         class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
         cy-data="user-change-password-close-btn"

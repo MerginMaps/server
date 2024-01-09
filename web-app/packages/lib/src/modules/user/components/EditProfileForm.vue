@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <form @submit.prevent="submit" class="flex flex-column p-4 row-gap-1">
     <span class="p-input-filled">
-      <label for="first-name">First name</label>
+      <label class="text-xs" for="first-name">First name</label>
       <PInputText
         id="first-name"
         v-model="editedProfile.first_name"
@@ -26,7 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </span>
 
     <span class="p-input-filled">
-      <label for="last-name">Last name</label>
+      <label class="text-xs" for="last-name">Last name</label>
       <PInputText
         id="last-name"
         v-model="editedProfile.last_name"
@@ -45,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </span>
 
     <span class="p-input-filled">
-      <label for="email">Email</label>
+      <label class="text-xs" for="email">Email</label>
       <PInputText
         id="email"
         v-model="editedProfile.email"
@@ -69,7 +69,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     >
       <PButton
         severity="secondary"
-        outlined
         @click="close"
         class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
         cy-data="profile-edit-close-btn"

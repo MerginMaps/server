@@ -12,10 +12,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         ><PButton
           type="button"
           @click="downloadVersion"
-          severity="secondary"
           icon="ti ti-download"
           text
           rounded
+          plain
           class="p-1 text-2xl"
           data-cy="file-detail-download-btn"
         ></PButton

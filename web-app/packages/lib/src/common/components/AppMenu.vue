@@ -7,8 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div>
     <PButton
-      severity="secondary"
       text
+      plain
+      rounded
       :icon="icon"
       @click="toggleMenu"
       aria-haspopup="true"

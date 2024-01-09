@@ -24,15 +24,15 @@ $buttonBorder: 2px solid $primaryColor;
 
 /// Background of a button in hover state
 /// @group button
-$buttonHoverBg: $primaryColor;
+$buttonHoverBg: $primaryDarkColor;
 
 /// Text color of a button in hover state
 /// @group button
-$buttonTextHoverColor: $primaryTextColor;
+$buttonTextHoverColor: $primaryColor;
 
 /// Border color of a button in hover state
 /// @group button
-$buttonHoverBorderColor: $primaryColor;
+$buttonHoverBorderColor: $primaryDarkColor;
 
 /// Background of a button in pressed state
 /// @group button
@@ -40,7 +40,7 @@ $buttonActiveBg: $primaryColor;
 
 /// Color of a button in pressed state
 /// @group button
-$buttonTextActiveColor: $primaryTextColor;
+$buttonTextActiveColor: $primaryColor;
 
 /// Border color of a button in pressed state
 /// @group button
@@ -68,51 +68,51 @@ $outlinedButtonBorder:2px solid;
 
 /// Text color of a plain text button
 /// @group button
-$plainButtonTextColor:#6c757d;
+$plainButtonTextColor:$primaryDarkColor;
 
 /// Background color of a plain text button in hover state
 /// @group button
-$plainButtonHoverBgColor:#e9ecef;
+$plainButtonHoverBgColor: map-get($colors, "light-green");
 
 /// Background color of a plain text button in active state
 /// @group button
-$plainButtonActiveBgColor:#dee2e6;
+$plainButtonActiveBgColor:map-get($colors, "medium-green");
 
 /// Background of a secondary button
 /// @group button
-$secondaryButtonBg: $primaryDarkColor;
+$secondaryButtonBg: transparent;
 
 /// Text color of a secondary button
 /// @group button
-$secondaryButtonTextColor: #ffffff;
+$secondaryButtonTextColor: $primaryDarkColor;
 
 /// Border of a secondary button
 /// @group button
-$secondaryButtonBorder: 1px solid $primaryDarkColor;
+$secondaryButtonBorder: 2px solid $primaryDarkColor;
 
 /// Background of a secondary button in hover state
 /// @group button
-$secondaryButtonHoverBg: $primaryDarkColor;
+$secondaryButtonHoverBg: $primaryColor;
 
 /// Text color of a secondary button in hover state
 /// @group button
-$secondaryButtonTextHoverColor: #ffffff;
+$secondaryButtonTextHoverColor: $primaryDarkColor;
 
 /// Border color of a secondary button in hover state
 /// @group button
-$secondaryButtonHoverBorderColor: $primaryDarkColor;
+$secondaryButtonHoverBorderColor: $primaryColor;
 
 /// Background of a secondary button in pressed state
 /// @group button
-$secondaryButtonActiveBg: $primaryDarkColor;
+$secondaryButtonActiveBg: $primaryColor;
 
 /// Text color of a secondary button in pressed state
 /// @group button
-$secondaryButtonTextActiveColor: #ffffff;
+$secondaryButtonTextActiveColor: $primaryDarkColor;
 
 /// Border color of a secondary button in pressed state
 /// @group button
-$secondaryButtonActiveBorderColor: $primaryDarkColor;
+$secondaryButtonActiveBorderColor: $primaryColor;
 
 /// Box shadow of a secondary button in focused state
 /// @group button
@@ -180,7 +180,7 @@ $successButtonTextHoverColor: map-get($map: $colors, $key: positive);
 
 /// Border color of a success button in hover state
 /// @group button
-$successButtonHoverBorderColor: #43A047;
+$successButtonHoverBorderColor: $primaryDarkColor;
 
 /// Background of a success button in pressed state
 /// @group button
@@ -288,7 +288,7 @@ $dangerButtonTextColor: map-get($map: $colors, $key: grape);
 
 /// Border of a danger button
 /// @group button
-$dangerButtonBorder: 1px solid map-get($map: $colors, $key: negative);
+$dangerButtonBorder: 2px solid map-get($map: $colors, $key: negative);
 
 /// Background of a danger button in hover state
 /// @group button
@@ -300,11 +300,11 @@ $dangerButtonTextHoverColor: map-get($map: $colors, $key: negative);
 
 /// Border color of a danger button in hover state
 /// @group button
-$dangerButtonHoverBorderColor: #e53935;
+$dangerButtonHoverBorderColor: map-get($map: $colors, $key: grape);
 
 /// Background of a danger button in pressed state
 /// @group button
-$dangerButtonActiveBg: #d32f2f;
+$dangerButtonActiveBg: map-get($map: $colors, $key: grape);
 
 /// Text color of a danger button in pressed state
 /// @group button

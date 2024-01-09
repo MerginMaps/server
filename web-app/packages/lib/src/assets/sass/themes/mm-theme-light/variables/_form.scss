@@ -1,6 +1,6 @@
 /// Padding of an input field, must be defined with a shorthand for vertical and horizontal values e.g. ".5rem .5rem"
 /// @group form
-$inputPadding: .5rem .5rem;
+$inputPadding: .75rem 1.25rem;
 
 /// Background of an input field
 /// @group form
@@ -8,7 +8,7 @@ $inputBg: #ffffff;
 
 /// Font size of an input field
 /// @group form
-$inputTextFontSize: 1rem;
+$inputTextFontSize: 0.90rem;
 
 /// Text color of an input field
 /// @group form
@@ -24,11 +24,11 @@ $inputBorder: 1px solid #ffffff;
 
 /// Border of an input field in hover state
 /// @group form
-$inputHoverBorderColor: $primaryColor;
+$inputHoverBorderColor: $primaryDarkColor;
 
 /// Border of an input field in focus state
 /// @group form
-$inputFocusBorderColor: $primaryColor;
+$inputFocusBorderColor: $primaryDarkColor;
 
 /// Color of an input field in invalid state
 /// @group form

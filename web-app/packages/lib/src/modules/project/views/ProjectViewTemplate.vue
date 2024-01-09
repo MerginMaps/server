@@ -17,7 +17,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </slot>
           <PButton
             severity="secondary"
-            outlined
             @click="downloadArchive({ url: downloadUrl })"
             data-cy="project-download-btn"
             icon="ti ti-download"
@@ -26,7 +25,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           />
           <PButton
             severity="secondary"
-            outlined
             @click="cloneDialog"
             v-if="canCloneProject"
             data-cy="project-clone-btn"
@@ -36,7 +34,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           />
           <PButton
             severity="secondary"
-            outlined
             @click="leaveDialog"
             data-cy="project-leave-btn"
             icon="ti ti-logout"

@@ -46,7 +46,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             icon="ti ti-x"
             text
             rounded
-            severity="secondary"
             aria-label="Close section"
             @click="closeElement"
           />

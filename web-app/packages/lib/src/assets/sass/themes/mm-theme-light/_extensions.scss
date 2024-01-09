@@ -29,3 +29,8 @@ h6 {
 .text-color-forest {
   color: $primaryDarkColor;
 }
+
+// When focusing, there is not layout shift with box shadow (border width have to be 2px)
+.p-inputtext:enabled:focus {
+  box-shadow: inset 0 0 0 1px $primaryDarkColor;
+}

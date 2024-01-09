@@ -11,7 +11,8 @@ import {
   textUtils,
   numberUtils,
   getHttpService,
-  MerginComponentUuidMixin
+  MerginComponentUuidMixin,
+  MMTheme
 } from '@mergin/lib'
 import PortalVue from 'portal-vue'
 import 'primevue/resources/primevue.min.css'
@@ -44,7 +45,7 @@ const createMerginApp = () => {
     .use(i18n)
     .use(PortalVue)
     .use(createMetaManager())
-    .use(PrimeVue)
+    .use(PrimeVue, { pt: MMTheme })
     .directive('tooltip', Tooltip)
 
   app.config.globalProperties.$http = getHttpService()
