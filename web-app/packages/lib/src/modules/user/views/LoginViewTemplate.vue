@@ -6,8 +6,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <section
-    class="login-view flex align-items-center justify-content-center h-full"
+    class="relative login-view flex align-items-center justify-content-center h-full"
   >
+    <aside class="absolute top-0 left-0 m-4">
+      <img src="@/assets/mm-logo.svg" />
+    </aside>
     <div class="login-view-container flex flex-column row-gap-4 p-4 lg:p-0">
       <header class="align-self-center">
         <h1 class="text-6xl">
