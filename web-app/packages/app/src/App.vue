@@ -74,7 +74,6 @@ import {
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 import { useMeta } from 'vue-meta'
-import { useRoute } from 'vue-router'
 
 export default defineComponent({
   name: 'app',
@@ -132,8 +131,6 @@ export default defineComponent({
         { property: 'og:site_name', content: 'Mergin Maps' }
       ]
     })
-    const route = useRoute()
-    console.log(route.matched)
   },
   async created() {
     this.init()
