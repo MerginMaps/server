@@ -29,21 +29,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </span>
 
     <span class="p-input-filled">
-      <label class="text-xs" for="newPassword">New Password</label>
-      <i
-        class="ti ti-info-circle-filled text-color-forest text-base"
-        v-tooltip="{
-          value: `
-            \u2022Password must be at least 8 characters long.\n
-            \u2022Password must contain at least 3 character categories among the
-                following:\n
-                  Lowercase characters (a-z)\n
-                  Uppercase characters (A-Z)\n
-                  Digits (0-9)\n
-                  Special characters\n
-            `
-        }"
-      />
+      <app-password-tooltip for="newPassword"
+        ><template #label>New Password</template>
+      </app-password-tooltip>
+
       <PPassword
         id="newPassword"
         v-model="password"
@@ -65,21 +54,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </span>
 
     <span class="p-input-filled">
-      <label class="text-xs" for="confirm">Confirm password</label>
-      <i
-        class="ti ti-info-circle-filled text-color-forest text-base"
-        v-tooltip="{
-          value: `
-            \u2022Password must be at least 8 characters long.\n
-            \u2022Password must contain at least 3 character categories among the
-                following:\n
-                  Lowercase characters (a-z)\n
-                  Uppercase characters (A-Z)\n
-                  Digits (0-9)\n
-                  Special characters\n
-            `
-        }"
-      />
+      <app-password-tooltip for="confirm">
+        <template #label>Change password</template>
+      </app-password-tooltip>
+
       <PPassword
         id="confirm"
         v-model="confirm"
@@ -129,6 +107,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import AppPasswordTooltip from '@/common/components/AppPasswordTooltip.vue'
 import { waitCursor } from '@/common/html_utils'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useFormStore } from '@/modules/form/store'
@@ -171,6 +150,7 @@ export default defineComponent({
       waitCursor(true)
       this.changePasswordAction({ data, componentId: this.merginComponentUuid })
     }
-  }
+  },
+  components: { AppPasswordTooltip }
 })
 </script>
