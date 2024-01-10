@@ -23,7 +23,7 @@ export interface DialogParams {
   }
   // TODO: clear unknown based on 'on-listener' in template
   listeners?: unknown | Record<string, (...args: unknown[]) => void>
-  props?: unknown | ConfirmDialogProps
+  props?: object | ConfirmDialogProps
 }
 
 export interface DialogPayload {
