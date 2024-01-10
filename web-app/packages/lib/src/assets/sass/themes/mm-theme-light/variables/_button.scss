@@ -116,7 +116,7 @@ $secondaryButtonActiveBorderColor: $primaryColor;
 
 /// Box shadow of a secondary button in focused state
 /// @group button
-$secondaryButtonFocusShadow: 0 0 0 0.2rem #B0BEC5;
+$secondaryButtonFocusShadow: 0 0 0 0.2rem map-get($map: $colors, $key: "medium-green");
 
 /// Background of an info button
 /// @group button
