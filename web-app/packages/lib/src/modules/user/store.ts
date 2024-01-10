@@ -25,7 +25,8 @@ import {
   WorkspaceIdPayload,
   WorkspaceResponse,
   SetWorkspaceIdPayload,
-  UserSearchParams
+  UserSearchParams,
+  EditUserProfileParams
 } from '@/modules/user/types'
 import { UserApi } from '@/modules/user/userApi'
 
@@ -132,7 +133,10 @@ export const useUserStore = defineStore('userModule', {
       this.workspaceId = payload.id
     },
 
-    async editUserProfile(payload) {
+    async editUserProfile(payload: {
+      editedUser: EditUserProfileParams
+      componentId?: string
+    }) {
       const dialogStore = useDialogStore()
       const notificationStore = useNotificationStore()
       const formStore = useFormStore()

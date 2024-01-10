@@ -20,7 +20,6 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.4.2",
-    "@gtm-support/vue2-gtm": "^1.0.0",
     "@mdi/font": "^6.6.96",
     "axios": "^0.26.1",
     "crypto-js": "^3.1.9-1",

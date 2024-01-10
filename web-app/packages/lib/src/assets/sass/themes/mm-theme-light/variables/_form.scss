@@ -20,7 +20,7 @@ $inputIconColor: $textColor;
 
 /// Border of an input field
 /// @group form
-$inputBorder: 1px solid #ced4da;
+$inputBorder: 1px solid #ffffff;
 
 /// Border of an input field in hover state
 /// @group form
@@ -40,7 +40,7 @@ $inputPlaceholderTextColor: #6c757d;
 
 /// Background of a filled input
 /// @group form
-$inputFilledBg:#f8f9fa;
+$inputFilledBg: #{map-get($colors, "light-green")};
 
 /// Background of a filled input in hover state
 /// @group form

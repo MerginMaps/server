@@ -8,14 +8,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <div>
     <app-container>
       <template v-if="!namespace">
-        <app-section ground class="pb-3">
+        <section class="surface-ground pb-3">
           <!-- Title with buttons -->
-          <header class="flex flex-column lg:flex-row lg:align-items-center">
-            <h1 class="text-3xl font-semibold">
+          <header
+            class="flex flex-column lg:flex-row lg:align-items-center mb-0 lg:mb-3"
+          >
+            <h1 class="text-3xl font-semibold mb-3 lg:mb-0">
               {{ header }}
             </h1>
             <div
-              class="flex flex-grow-1 align-items-center lg:justify-content-end mb-4 lg:mb-0"
+              class="flex flex-grow-1 align-items-center lg:justify-content-end mb-3 lg:mb-0"
             >
               <PButton
                 v-if="canCreateProject && loggedUser && loggedUser.email"
@@ -39,7 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             </span>
             <app-menu :items="filterMenuItems" />
           </div>
-        </app-section>
+        </section>
         <app-section>
           <slot name="projects" :onlyPublic="onlyPublic"></slot>
         </app-section>

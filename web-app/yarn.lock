@@ -385,18 +385,6 @@
   resolved "https://registry.yarnpkg.com/@fortawesome/fontawesome-free/-/fontawesome-free-6.4.2.tgz#36b6a9cb5ffbecdf89815c94d0c0ffa489ac5ecb"
   integrity sha512-m5cPn3e2+FDCOgi1mz0RexTUvvQibBebOUlUlW0+YrMjDTPkiJ6VTKukA1GRsvRw+12KyJndNjj0O4AgTxm2Pg==
 
-"@gtm-support/core@1.3.0":
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/@gtm-support/core/-/core-1.3.0.tgz#125bf953795bdbc23fcf123a9010a387f3be1af6"
-  integrity sha512-+dGzsV9hu4XgtlLmUps+nxWuLmnu57ByZuoExBpc9D6KsZ3Q9gk4dFf7H1TxLqcIOtTW2KlrOtO5hPV5Hoo2JA==
-
-"@gtm-support/vue2-gtm@^1.0.0":
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/@gtm-support/vue2-gtm/-/vue2-gtm-1.3.0.tgz#f1eb7a83d71498a9f584aaa0f8993efb211d693d"
-  integrity sha512-yO7+gxSQEEcPH6gWMNcdhRDyj4ApBnG4JHIizP1HfY8y1+8SFNQIWE1icJY8l3wNW6DYVz3wtP+Ri2Wk4aF7Kw==
-  dependencies:
-    "@gtm-support/core" "1.3.0"
-
 "@humanwhocodes/config-array@^0.11.8":
   version "0.11.8"
   resolved "https://registry.yarnpkg.com/@humanwhocodes/config-array/-/config-array-0.11.8.tgz#03595ac2075a4dc0f191cc2131de14fbd7d410b9"

@@ -51,7 +51,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         @tab-click="(e) => tabClick(e.index)"
         :pt="{
           root: {
-            class: 'relative z-auto'
+            class: 'relative z-auto mb-1'
           },
           nav: {
             style: {

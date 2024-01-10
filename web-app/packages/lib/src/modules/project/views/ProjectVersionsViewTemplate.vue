@@ -318,8 +318,4 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss" scoped>
-.p-dataview-content div {
-  word-break: break-word;
-}
-</style>
+<style lang="scss" scoped></style>

@@ -10,6 +10,7 @@ export interface ConfirmDialogProps {
   confirmText?: string
   cancelText?: string
   description?: string
+  hint?: string
   confirmField?: { label: string; expected: string }
 }
 
@@ -22,7 +23,7 @@ export interface DialogParams {
   }
   // TODO: clear unknown based on 'on-listener' in template
   listeners?: unknown | Record<string, (...args: unknown[]) => void>
-  props?: Record<string, unknown> | ConfirmDialogProps
+  props?: unknown | ConfirmDialogProps
 }
 
 export interface DialogPayload {

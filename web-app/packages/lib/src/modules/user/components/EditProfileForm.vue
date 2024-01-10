@@ -5,66 +5,94 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-card v-on:keyup.enter="submit" cy-data="profile-edit-form">
-    <v-card-title>
-      <span class="text-h5">Edit profile</span>
-    </v-card-title>
-    <v-card-text>
-      <v-form @submit.prevent class="layout column">
-        <v-text-field
-          label="First name"
-          v-model="editedProfile.first_name"
-          cy-data="profile-edit-first-name"
-          :error-messages="errors.first_name"
-          @keyup.enter="submit"
-        />
-        <v-text-field
-          label="Last name"
-          v-model="editedProfile.last_name"
-          cy-data="profile-edit-last-name"
-          :error-messages="errors.last_name"
-          @keyup.enter="submit"
-        />
-        <v-text-field
-          label="Email address"
-          v-model="editedProfile.email"
-          cy-data="profile-edit-email"
-          :error-messages="errors.email"
-          @keyup.enter="submit"
-        />
-        <v-checkbox
-          label="Receive notifications"
-          color="orange"
-          cy-data="profile-edit-notification"
-          v-model="editedProfile.receive_notifications"
-          :error-messages="errors.receive_notifications"
-        />
+  <form @submit.prevent="submit" class="flex flex-column p-4 row-gap-1">
+    <span class="p-input-filled">
+      <label for="first-name">First name</label>
+      <PInputText
+        id="first-name"
+        v-model="editedProfile.first_name"
+        cy-data="profile-edit-first-name"
+        :class="[
+          'w-full my-1 border-round-xl',
+          errors.first_name ? 'p-invalid' : ''
+        ]"
+        toggleMask
+        :feedback="false"
+        aria-describedby="first-name-error"
+      />
+      <span class="p-error text-xs" id="first-name-error">{{
+        errors.first_name?.[0] || '&nbsp;'
+      }}</span>
+    </span>
 
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            class="text--primary"
-            @click="close"
-            cy-data="profile-edit-close-btn"
-          >
-            Close
-          </v-btn>
-          <v-btn
-            class="primary white--text"
-            cy-data="profile-edit-save-btn"
-            @click="submit"
-          >
-            Save
-          </v-btn>
-        </v-card-actions>
-      </v-form>
-    </v-card-text>
-  </v-card>
+    <span class="p-input-filled">
+      <label for="last-name">Last name</label>
+      <PInputText
+        id="last-name"
+        v-model="editedProfile.last_name"
+        cy-data="profile-edit-last-name"
+        :class="[
+          'w-full my-1 border-round-xl',
+          errors.last_name ? 'p-invalid' : ''
+        ]"
+        toggleMask
+        :feedback="false"
+        aria-describedby="last-name-error"
+      />
+      <span class="p-error text-xs" id="last-name-error">{{
+        errors.last_name?.[0] || '&nbsp;'
+      }}</span>
+    </span>
+
+    <span class="p-input-filled">
+      <label for="email">Email</label>
+      <PInputText
+        id="email"
+        v-model="editedProfile.email"
+        cy-data="profile-edit-email"
+        :class="[
+          'w-full my-1 border-round-xl',
+          errors.email ? 'p-invalid' : ''
+        ]"
+        toggleMask
+        :feedback="false"
+        aria-describedby="email-error"
+      />
+      <span class="p-error text-xs" id="email-error">{{
+        errors.email?.[0] || '&nbsp;'
+      }}</span>
+    </span>
+
+    <!-- Footer -->
+    <div
+      class="w-full flex flex-column lg:flex-row justify-content-between align-items-center mt-4"
+    >
+      <PButton
+        severity="secondary"
+        outlined
+        @click="close"
+        class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
+        cy-data="profile-edit-close-btn"
+        >Cancel</PButton
+      >
+
+      <PButton
+        type="submit"
+        @click="submit"
+        class="flex w-12 lg:w-6 justify-content-center"
+        cy-data="profile-edit-save-btn"
+      >
+        Save changes
+      </PButton>
+    </div>
+  </form>
 </template>
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
-import { defineComponent } from 'vue'
+import { PropType, defineComponent } from 'vue'
+
+import { EditUserProfileParams } from '../types'
 
 import { useDialogStore } from '@/modules/dialog/store'
 import { useFormStore } from '@/modules/form/store'
@@ -72,7 +100,7 @@ import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   props: {
-    profile: Object
+    profile: Object as PropType<EditUserProfileParams>
   },
   data() {
     return {

@@ -7,8 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <section>
     <PPanel
+      v-bind="$props"
       :toggleable="!!$slots.default"
-      :collapsed="true"
+      :collapsed="$props.collapsed || !$slots.default"
       :pt="{
         header(options) {
           return {
@@ -28,19 +29,31 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     >
       <template v-if="!$slots.header" #header>
         <header
-          class="w-full flex flex-column lg:flex-row align-items-center justify-content-between row-gap-4"
+          :class="[
+            'w-full',
+            $slots['header-actions'] &&
+              'flex flex-column lg:flex-row row-gap-4 align-items-center justify-content-between'
+          ]"
         >
           <div
-            class="flex flex-column lg:flex-row align-items-center row-gap-2"
+            :class="[
+              $slots['header-image'] &&
+                'flex flex-column lg:flex-row row-gap-2 align-items-center'
+            ]"
           >
-            <div class="flex lg:mr-4">
+            <div v-if="$slots['header-image']" class="flex lg:mr-4">
               <slot name="header-image"></slot>
             </div>
-            <div class="flex flex-column gap-2 text-center lg:text-left">
+            <div
+              :class="[
+                'flex flex-column gap-2',
+                $slots['header-image'] && 'text-center lg:text-left'
+              ]"
+            >
               <h3 class="text-color text-sm font-semibold m-0">
                 <slot name="title"></slot>
               </h3>
-              <p class="text-xs m-0 opacity-80">
+              <p v-if="$slots.description" class="text-xs m-0 opacity-80">
                 <slot name="description"></slot>
               </p>
             </div>
@@ -69,4 +82,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   </section>
 </template>
 
-<script lang="ts" setup></script>
+<script lang="ts" setup>
+import { PanelProps } from 'primevue/panel'
+
+defineProps<PanelProps>()
+</script>

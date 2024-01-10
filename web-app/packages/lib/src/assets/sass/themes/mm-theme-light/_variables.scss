@@ -20,6 +20,7 @@ $colors: (
     "red": #FF4032,
     "night": #12181F,
     "light-green": #EFF5F3,
+    "medium-green": #B7CDC4,
     "sun": #F4CB46,
     "sand": #FFF4E2,
     "primary": $primaryColor,
@@ -93,6 +94,7 @@ $colors: (
     --grape-color: #{map-get($colors, "grape")};
     // TODO: use primary-classes primary-100 ... ??
     --light-green-color: #{map-get($colors, "light-green")};
+    --medium-green-color: #{map-get($colors, "medium-green")};
     --deep-ocean-color: #{map-get($colors, "light-ocean")};
     --negative-color: #{map-get($colors, "negative")};
     --warning-color: #{map-get($colors, "warning")};

@@ -7,8 +7,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <!-- Tip from MM -->
   <div class="tip-message flex align-items-center border-round-xl">
-    <img src="@/assets/bulb.svg" aria-label="Bulb" class="p-4" />
-    <div class="p-2">
+    <div class="p-4">
+      <slot name="image">
+        <img src="@/assets/bulb.svg" aria-label="Bulb" />
+      </slot>
+    </div>
+
+    <div class="p-2 pl-0 text-left">
       <p class="tip-message-title text-sm font-semibold">
         <slot name="title">Tip from Mergin Maps</slot>
       </p>

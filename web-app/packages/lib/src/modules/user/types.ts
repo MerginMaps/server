@@ -141,4 +141,8 @@ export interface SetWorkspaceIdPayload {
   skipSavingInCookies?: boolean
 }
 
+export interface DeleteAccountConfirmProps {
+  username: string
+}
+
 /* eslint-enable camelcase */

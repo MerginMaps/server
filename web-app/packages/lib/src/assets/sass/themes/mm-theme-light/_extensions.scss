@@ -8,6 +8,7 @@ h5,
 h6 {
   color: $primaryDarkColor;
   font-weight: 600;
+  margin: 0;
 }
 
 // Customization of infinite border of tabs using classes instead pt because, we want to have access to variables
@@ -16,6 +17,29 @@ h6 {
   border-width: $tabviewNavBorderWidth;
 }
 
+.p-dataview-content div {
+	word-break: break-word;
+}
+
+// Proper align of floating label for inputs (e.g. ProjectForm)
+.p-float-label {
+  padding-bottom: 0.25rem
+}
+
 .text-color-forest {
   color: $primaryDarkColor;
+}
+
+.text-color-medium-green {
+  color: map-get($colors, "medium-green")
+}
+
+.p-tooltip {
+  ul {
+    padding-left: .5rem;
+  }
+
+  .p-tooltip-text {
+    white-space: normal;
+  }
 }
