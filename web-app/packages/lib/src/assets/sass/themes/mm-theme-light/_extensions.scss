@@ -10,9 +10,6 @@ h6 {
   font-weight: 600;
   margin: 0;
 }
-ul {
-  padding-left: .5rem
-}
 
 // Customization of infinite border of tabs using classes instead pt because, we want to have access to variables
 .p-tabview-nav-content {
@@ -35,4 +32,14 @@ ul {
 
 .text-color-medium-green {
   color: map-get($colors, "medium-green")
+}
+
+.p-tooltip {
+  ul {
+    padding-left: .5rem;
+  }
+
+  .p-tooltip-text {
+    white-space: normal;
+  }
 }
