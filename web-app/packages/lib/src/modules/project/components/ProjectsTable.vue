@@ -200,10 +200,6 @@ export default defineComponent({
     }
   },
   watch: {
-    $route: {
-      immediate: false,
-      handler: 'changedRoute'
-    },
     projectsSearch: {
       handler: debounce(function () {
         this.filterData()
@@ -225,10 +221,6 @@ export default defineComponent({
     },
     fetchPage(page: number) {
       this.options.page = page
-      this.fetchProjects()
-    },
-    changedRoute() {
-      this.options.page = 1
       this.fetchProjects()
     },
     fetchProjects() {
