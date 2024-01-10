@@ -93,9 +93,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <div class="w-1 flex justify-content-end">
                 <PButton
                   icon="ti ti-trash"
-                  severity="secondary"
-                  text
                   rounded
+                  plain
+                  text
                   @click.stop="removeUser(item.user)"
                   class="text-xl p-0"
                   :style="{

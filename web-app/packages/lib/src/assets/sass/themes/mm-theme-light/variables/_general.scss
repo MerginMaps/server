@@ -92,7 +92,7 @@ $focusOutlineOffset: 0;
 
 /// Box shadow of a focused element
 /// @group general
-$focusShadow: none;
+$focusShadow: 0 0 0 0.2rem map-get($map: $colors, $key: "medium-green");
 
 /// Width of an action icon
 /// @group general

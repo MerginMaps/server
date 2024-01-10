@@ -52,7 +52,6 @@ declare module 'vue' {
     VListItemSubtitle: typeof import('vuetify/components')['VListItemSubtitle']
     VListItemTitle: typeof import('vuetify/components')['VListItemTitle']
     VProgressCircular: typeof import('vuetify/components')['VProgressCircular']
-    VResponsive: typeof import('vuetify/components')['VResponsive']
     VSnackbar: typeof import('vuetify/components')['VSnackbar']
     VSpacer: typeof import('vuetify/components')['VSpacer']
     VTextField: typeof import('vuetify/components')['VTextField']

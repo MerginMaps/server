@@ -24,7 +24,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <PButton
             @click="changePasswordDialog"
             severity="secondary"
-            outlined
             cy-data="profile-change-password-btn"
             class="w-auto"
             icon="ti ti-lock"
@@ -46,10 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           signup.</template
         >
         <template #header-actions
-          ><PButton
-            @click="resendConfirmationEmail"
-            severity="secondary"
-            outlined
+          ><PButton @click="resendConfirmationEmail" severity="secondary"
             >Send confirmation email
           </PButton></template
         >

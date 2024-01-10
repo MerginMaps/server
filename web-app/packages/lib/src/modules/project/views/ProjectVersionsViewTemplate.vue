@@ -128,7 +128,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <div class="flex w-1 flex-shrink-0 justify-content-end">
               <PButton
                 icon="ti ti-download"
-                severity="secondary"
+                rounded
+                plain
                 text
                 :disabled="item.disabled"
                 :style="[rowStyle(item)]"

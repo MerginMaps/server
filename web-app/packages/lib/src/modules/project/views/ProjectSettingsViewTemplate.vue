@@ -42,11 +42,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             </template>
           </div>
           <div class="flex-shrink-0">
-            <PButton
-              @click="confirmPublicPrivate()"
-              severity="secondary"
-              outlined
-            >
+            <PButton @click="confirmPublicPrivate()" severity="secondary">
               <template v-if="settings.access.public">Make private</template>
               <template v-else>Make public</template>
             </PButton>

@@ -7,14 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div class="grid min-h-screen">
     <dialog-windows />
-    <router-view
-      name="sidebar"
-      v-slot="{ Component, route }"
-      :key="$route.fullPath"
-    >
-      <div :key="route.name">
-        <component :is="Component" />
-      </div>
+    <router-view name="sidebar" v-slot="{ Component }" :key="$route.fullPath">
+      <component :is="Component" />
     </router-view>
 
     <main
@@ -22,18 +16,22 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         'surface-ground',
         'transition-all',
         'transition-duration-500',
-        'col-12',
         'min-h-full',
         'overflow-auto',
-        drawer && !isUnderOverlayBreakpoint && 'xl:col-offset-2 xl:col-10'
+        isSideBar && drawer && !isUnderOverlayBreakpoint
+          ? 'col-offset-2 col-10'
+          : 'col-12'
       ]"
     >
       <router-view name="header" v-slot="{ Component, route }">
         <div :key="route.name">
           <component :is="Component" />
+          <PDivider
+            v-if="Component"
+            :pt="{ root: { class: 'mt-1' } }"
+          ></PDivider>
         </div>
       </router-view>
-      <PDivider :pt="{ root: { class: 'mt-1' } }"></PDivider>
       <v-card
         v-if="pingData && pingData.maintenance"
         variant="outlined"
@@ -94,6 +92,11 @@ export default defineComponent({
 
     error() {
       return this.serverError
+    },
+
+    /** Check if sidebar is occuring in route */
+    isSideBar() {
+      return !!this.$route.matched.find((item) => item.components.sidebar)
     }
   },
   watch: {

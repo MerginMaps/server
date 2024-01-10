@@ -24,8 +24,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <PButton
                 type="button"
                 @click="closeCallback"
-                severity="secondary"
                 icon="ti ti-x"
+                plain
                 text
                 rounded
                 class="p-1 text-2xl"
