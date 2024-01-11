@@ -31,7 +31,12 @@ def flask_app(request):
     from ..sync.db_events import remove_events
 
     application = create_app(
-        ["SERVER_TYPE", "DOCS_URL", "COLLECT_STATISTICS", "USER_SELF_REGISTRATION"]
+        [
+            "SERVER_TYPE",
+            "DOCS_URL",
+            "COLLECT_STATISTICS",
+            "USER_SELF_REGISTRATION",
+        ]
     )
     register(application)
     application.config["TEST_DIR"] = os.path.join(thisdir, "test_projects")
