@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         @item-select="select"
       >
         <template #option="{ option }">
-          <div class="flex align-items-center gap-4">
+          <div :key="option.key" class="flex align-items-center gap-4">
             <PAvatar
               :label="(option.value.username ?? '').charAt(0).toUpperCase()"
               shape="circle"
@@ -90,11 +90,11 @@ import { AutoCompleteItem, useUserStore } from '@/main'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
-import { UserSearchParams } from '@/modules/user/types'
+import { UserSearch, UserSearchParams } from '@/modules/user/types'
 
 interface Data {
-  users: AutoCompleteItem<string>[]
-  selectedUsers: AutoCompleteItem<string>[]
+  users: AutoCompleteItem<UserSearch>[]
+  selectedUsers: AutoCompleteItem<UserSearch>[]
   isPending: boolean
   permission: ProjectRoleName
 }
@@ -124,7 +124,7 @@ const search = async (e: AutoCompleteCompleteEvent) => {
     const response = await userStore.getAuthNotProjectUserSearch(params)
     data.users = response.data.map((item) => ({
       key: item.id,
-      value: item.username,
+      value: item,
       label:
         [item.profile.first_name, item.profile.last_name]
           .filter(Boolean)
