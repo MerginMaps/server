@@ -600,11 +600,9 @@ export const useUserStore = defineStore('userModule', {
 
       const response = await UserApi.getAuthUserSearch(params)
       if (access) {
-        console.log(projectUsers)
         response.data = response.data.filter(
           (item) => !projectUsers.find((id) => id === item.id)
         )
-        console.log(response.data)
       }
       return response
     }
