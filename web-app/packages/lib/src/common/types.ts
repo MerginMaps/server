@@ -67,3 +67,9 @@ export interface ApiRequestSuccessInfo<T> {
   message?: string
   data?: T
 }
+
+export interface AutoCompleteItem<T> {
+  key: string | number
+  value: T
+  label: string
+}

@@ -50,23 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               Expiring in {{ $filters.remainingtime(item.expire) }}
             </p>
             <AppDropdown
-              :options="[
-                {
-                  value: 'owner',
-                  label: 'Manage',
-                  description: 'Can edit and remove projects in the workspace'
-                },
-                {
-                  value: 'write',
-                  label: 'Write',
-                  description: 'Can edit projects in the workspace'
-                },
-                {
-                  value: 'read',
-                  label: 'Read only',
-                  description: 'Can view projects in the workspace'
-                }
-              ]"
+              :options="dropdownPermissions"
               v-model="permissions[item.id]"
               class="w-6 lg:w-5 p-1"
             />
@@ -105,8 +89,13 @@ import { DataViewPageEvent } from 'primevue/dataview'
 import { defineComponent } from 'vue'
 
 import AppDropdown from '@/common/components/AppDropdown.vue'
+import { DropdownOption } from '@/common/components/types'
 import { getErrorMessage } from '@/common/error_utils'
-import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
+import {
+  isAtLeastProjectRole,
+  ProjectPermissionName,
+  ProjectRole
+} from '@/common/permission_utils'
 import { GetAccessRequestsPayload } from '@/modules'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
@@ -133,7 +122,27 @@ export default defineComponent({
       'accessRequests',
       'accessRequestsCount'
     ]),
-    ...mapState(useUserStore, ['loggedUser'])
+    ...mapState(useUserStore, ['loggedUser']),
+
+    dropdownPermissions(): DropdownOption<ProjectPermissionName>[] {
+      return [
+        {
+          value: 'read',
+          label: 'Read only',
+          description: 'Can view project files'
+        },
+        {
+          value: 'write',
+          label: 'Write',
+          description: 'Can edit project files'
+        },
+        {
+          value: 'owner',
+          label: 'Manage',
+          description: 'Can share and remove project'
+        }
+      ]
+    }
   },
   created() {
     this.fetchItems()

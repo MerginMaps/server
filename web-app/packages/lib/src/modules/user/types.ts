@@ -73,13 +73,6 @@ export interface WorkspaceResponse extends UserWorkspace {
   storage: number
 }
 
-export interface UserSearchParams {
-  id?: string
-  names?: string
-  like?: string
-  namespace: string
-}
-
 export interface UserSearch {
   id: number
   profile: {
@@ -91,8 +84,11 @@ export interface UserSearch {
   permission?: string
 }
 
-export interface UserSearchInvite extends UserSearch {
-  isInvite: boolean
+export interface UserSearchParams {
+  id?: string
+  names?: string
+  like?: string
+  namespace: string
 }
 
 export interface ChangePasswordWithTokenParams {

@@ -12,9 +12,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div class="relative z-1">
           <!-- Toolbar -->
           <portal-target name="project-toolbar" class="layout row shrink" />
-          <slot name="shareButton">
-            <project-share-button />
-          </slot>
+          <PButton
+            @click="shareDialog"
+            v-if="loggedUser"
+            icon="ti ti-send"
+            label="Share"
+            class="mr-2"
+          />
           <PButton
             severity="secondary"
             @click="downloadArchive({ url: downloadUrl })"
@@ -130,7 +134,6 @@ import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useLayoutStore } from '@/modules/layout/store'
 import { useNotificationStore } from '@/modules/notification/store'
-import ProjectShareButton from '@/modules/project/components/ProjectShareButton.vue'
 import UploadPanel from '@/modules/project/components/UploadPanel.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
 import { useProjectStore } from '@/modules/project/store'
@@ -144,7 +147,6 @@ interface TabItem {
 export default defineComponent({
   name: 'ProjectViewTemplate',
   components: {
-    ProjectShareButton,
     UploadPanel,
     AppContainer,
     AppSection
@@ -242,6 +244,13 @@ export default defineComponent({
       return this.isLoggedIn && !this.hideCloneButton
     },
 
+    canShareProject() {
+      return (
+        this.project?.workspace_id === this.currentWorkspace?.id &&
+        this.isProjectOwner
+      )
+    },
+
     canLeaveProject() {
       return (
         this.project?.workspace_id === this.currentWorkspace?.id &&
@@ -317,6 +326,9 @@ export default defineComponent({
     },
     cloneDialog() {
       this.$emit('open-clone-dialog')
+    },
+    shareDialog() {
+      this.$emit('open-share-dialog')
     },
     createAccessRequest() {
       waitCursor(true)

@@ -14,19 +14,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     @hide="toggle"
     :pt="{
       root: {
-        class: 'border-transparent w-full bg-transparent',
+        class: 'border-transparent w-full border-round-xl',
         onclick: (e) => {
           // if in clickable area, there is problem with bubbling
           e.stopPropagation()
         }
       },
       input: {
-        class: 'text-xs'
+        class: 'text-xs border-round-xl'
       },
       item({ context }) {
         return {
           class: [
-            'text-color p-2 hover:bg-gray-100',
+            'text-color p-2 hover:bg-gray-100 bg-transparent',
             context.focused ? 'bg-gray-50' : 'bg-transparent'
           ]
         }

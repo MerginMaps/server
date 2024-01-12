@@ -14,12 +14,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :show-settings="isProjectOwner"
     :hide-clone-button="!canCreateProject"
     @open-clone-dialog="openCloneDialog"
+    @open-share-dialog="openShareDialog"
   />
 </template>
 
 <script lang="ts">
 import {
   CloneDialog,
+  ProjectShareDialog,
   ProjectViewTemplate,
   useDialogStore,
   useFormStore,
@@ -83,10 +85,24 @@ export default defineComponent({
       })
     }
 
+    function openShareDialog() {
+      const dialog = {
+        maxWidth: 600,
+        header: 'Share project'
+      }
+      dialogStore.show({
+        component: ProjectShareDialog,
+        params: {
+          dialog
+        }
+      })
+    }
+
     return {
       canCreateProject,
       isProjectOwner,
-      openCloneDialog
+      openCloneDialog,
+      openShareDialog
     }
   }
 })

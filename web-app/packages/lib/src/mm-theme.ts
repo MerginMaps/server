@@ -18,6 +18,23 @@ export default usePassThrough(
               : undefined
         }
       }
+    },
+    autocomplete: {
+      root: {
+        class: 'w-full'
+      },
+      container: {
+        class: 'border-round-xl w-full'
+      },
+      token: {
+        class: 'text-color-forest text-xs font-semibold',
+        style: {
+          backgroundColor: 'var(--medium-green-color)'
+        }
+      },
+      tokenLabel: {
+        class: 'mr-2'
+      }
     }
   },
   {}
