@@ -134,7 +134,11 @@ import AppContainer from '@/common/components/AppContainer.vue'
 import AppDropdown from '@/common/components/AppDropdown.vue'
 import AppSection from '@/common/components/AppSection.vue'
 import { DropdownOption } from '@/common/components/types'
-import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
+import {
+  isAtLeastProjectRole,
+  ProjectRole,
+  ProjectRoleName
+} from '@/common/permission_utils'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
 import { UserSearchParams } from '@/modules/user/types'
@@ -190,22 +194,22 @@ export default defineComponent({
       'project',
       'isProjectOwner'
     ]),
-    permissionStates(): DropdownOption[] {
+    permissionStates(): DropdownOption<ProjectRoleName>[] {
       return [
         {
-          value: 'owner',
-          label: 'Manage',
-          description: 'Can edit and remove projects in the workspace'
+          value: 'reader',
+          label: 'Read only',
+          description: 'Can view project files'
         },
         {
           value: 'writer',
           label: 'Write',
-          description: 'Can edit projects in the workspace'
+          description: 'Can edit project files'
         },
         {
-          value: 'reader',
-          label: 'Read only',
-          description: 'Can view projects in the workspace'
+          value: 'owner',
+          label: 'Manage',
+          description: 'Can share and remove project'
         }
       ]
     },

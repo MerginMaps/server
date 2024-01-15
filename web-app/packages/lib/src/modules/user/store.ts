@@ -572,8 +572,39 @@ export const useUserStore = defineStore('userModule', {
       await UserApi.logout()
     },
 
-    async getAuthUserSearch(payload: UserSearchParams) {
-      return await UserApi.getAuthUserSearch(payload)
+    /**
+     * Searches for authorized users matching the given search parameters.
+     *
+     * @param params - Search parameters to filter users by.
+     * @returns Promise resolving to API response with matching users.
+     */
+    async getAuthUserSearch(params: UserSearchParams) {
+      return await UserApi.getAuthUserSearch(params)
+    },
+
+    /**
+     * Searches for users that match the given search parameters,
+     * filtering out any users that are already members of the current project.
+     *
+     * @param params - Object containing the search parameters
+     * @returns Promise resolving to the filtered API response
+     */
+    async getAuthNotProjectUserSearch(params: UserSearchParams) {
+      const projectStore = useProjectStore()
+      const access = projectStore.project.access
+      const projectUsers = [
+        ...access.readers,
+        ...access.writers,
+        ...access.owners
+      ]
+
+      const response = await UserApi.getAuthUserSearch(params)
+      if (access) {
+        response.data = response.data.filter(
+          (item) => !projectUsers.find((id) => id === item.id)
+        )
+      }
+      return response
     }
   }
 })

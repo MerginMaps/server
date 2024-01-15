@@ -51,23 +51,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             </p>
             <AppDropdown
               v-if="showAccept"
-              :options="[
-                {
-                  value: 'owner',
-                  label: 'Manage',
-                  description: 'Can edit and remove projects in the workspace'
-                },
-                {
-                  value: 'write',
-                  label: 'Write',
-                  description: 'Can edit projects in the workspace'
-                },
-                {
-                  value: 'read',
-                  label: 'Read only',
-                  description: 'Can view projects in the workspace'
-                }
-              ]"
+              :options="dropdownPermissions"
               v-model="permissions[item.id]"
               @change="(e) => permissionsChange(e, item)"
               :disabled="expired(item.expire)"
@@ -109,6 +93,7 @@ import { DropdownChangeEvent } from 'primevue/dropdown'
 import { defineComponent } from 'vue'
 
 import AppDropdown from '@/common/components/AppDropdown.vue'
+import { DropdownOption } from '@/common/components/types'
 import { ProjectPermissionName } from '@/common/permission_utils'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
@@ -167,6 +152,25 @@ export default defineComponent({
         ),
         ...this.selectedPermissions
       }
+    },
+    dropdownPermissions(): DropdownOption<ProjectPermissionName>[] {
+      return [
+        {
+          value: 'read',
+          label: 'Read only',
+          description: 'Can view project files'
+        },
+        {
+          value: 'write',
+          label: 'Write',
+          description: 'Can edit project files'
+        },
+        {
+          value: 'owner',
+          label: 'Manage',
+          description: 'Can share and remove project'
+        }
+      ]
     }
   },
   methods: {

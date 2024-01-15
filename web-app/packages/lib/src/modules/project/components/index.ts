@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-export { default as AccountAutocomplete } from './AccountAutocomplete.vue'
 export { default as CloneDialog } from './CloneDialog.vue'
 export { default as CloneDialogTemplate } from './CloneDialogTemplate.vue'
 export { default as DropArea } from './DropArea.vue'
@@ -15,8 +14,7 @@ export { default as AccessRequestTable } from './AccessRequestTable.vue'
 export { default as ProjectForm } from './ProjectForm.vue'
 export { default as ProjectPermissionsTemplate } from './ProjectPermissionsTemplate.vue'
 export { default as ProjectShareDialog } from './ProjectShareDialog.vue'
-export { default as ProjectShareButton } from './ProjectShareButton.vue'
-export { default as ProjectShareButtonTemplate } from './ProjectShareButtonTemplate.vue'
+export { default as ProjectShareDialogTemplate } from './ProjectShareDialogTemplate.vue'
 export { default as ProjectsTable } from './ProjectsTable.vue'
 export { default as ProjectsTableDataLoader } from './ProjectsTableDataLoader.vue'
 export { default as UploadPanel } from './UploadPanel.vue'

@@ -11,7 +11,12 @@ import { defineStore, getActivePinia } from 'pinia'
 import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
 import { filesDiff } from '@/common/mergin_utils'
-import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
+import {
+  getProjectAccessUsersByRoleName as getProjectAccessKeyByRoleName,
+  isAtLeastProjectRole,
+  ProjectRole,
+  ProjectRoleName
+} from '@/common/permission_utils'
 import { useNotificationStore } from '@/modules/notification/store'
 import { ProjectApi } from '@/modules/project/projectApi'
 import {
@@ -32,7 +37,8 @@ import {
   GetAccessRequestsPayload,
   DownloadPayload,
   DeleteProjectPayload,
-  ProjectsSortingParams
+  ProjectsSortingParams,
+  SaveProjectSettings
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
 
@@ -514,7 +520,11 @@ export const useProjectStore = defineStore('projectModule', {
       }
     },
 
-    async saveProjectSettings(payload): Promise<AxiosResponse<ProjectDetail>> {
+    async saveProjectSettings(payload: {
+      namespace: string
+      newSettings: SaveProjectSettings
+      projectName: string
+    }): Promise<AxiosResponse<ProjectDetail>> {
       const { namespace, newSettings, projectName } = payload
 
       try {
@@ -532,6 +542,39 @@ export const useProjectStore = defineStore('projectModule', {
       } finally {
         waitCursor(false)
       }
+    },
+
+    /**
+     * Saves project access settings for a given role by adding user names.
+     *
+     * @param payload - Object containing:
+     * - namespace: Project namespace
+     * - settings: Project settings object
+     * - userNames: Array of user names to add access for
+     * - projectName: Project name
+     * - roleName: Project role name
+     *
+     * @returns Promise resolving to Axios response containing updated project details
+     */
+    async saveProjectAccessByRoleName(payload: {
+      namespace: string
+      settings: SaveProjectSettings
+      userNames: string[]
+      projectName: string
+      roleName: ProjectRoleName
+    }): Promise<AxiosResponse<ProjectDetail>> {
+      const { namespace, settings, userNames, projectName, roleName } = payload
+
+      const accessKey = getProjectAccessKeyByRoleName(roleName)
+      settings.access = {
+        ...settings.access,
+        [accessKey]: [...settings.access[accessKey], ...userNames]
+      }
+      return this.saveProjectSettings({
+        namespace,
+        newSettings: settings,
+        projectName
+      })
     },
 
     async pushProjectChunks(payload) {

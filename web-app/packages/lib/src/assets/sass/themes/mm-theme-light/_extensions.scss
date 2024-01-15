@@ -18,12 +18,12 @@ h6 {
 }
 
 .p-dataview-content div {
-	word-break: break-word;
+  word-break: break-word;
 }
 
 // Proper align of floating label for inputs (e.g. ProjectForm)
 .p-float-label {
-  padding-bottom: 0.25rem
+  padding-bottom: 0.25rem;
 }
 
 .text-color-forest {
@@ -34,9 +34,16 @@ h6 {
 .p-inputtext:enabled:focus {
   box-shadow: inset 0 0 0 1px $primaryDarkColor;
 }
+.p-autocomplete {
+  &:not(.p-disabled).p-focus {
+    .p-autocomplete-multiple-container {
+      box-shadow: inset 0 0 0 1px $primaryDarkColor;
+    }
+  }
+}
 
 .text-color-medium-green {
-  color: map-get($colors, "medium-green")
+  color: map-get($colors, 'medium-green');
 }
 
 .p-tooltip {

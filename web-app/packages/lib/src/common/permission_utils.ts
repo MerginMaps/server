@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import { ProjectAccess } from '@/modules'
+
 export enum UserRole {
   guest,
   reader,
@@ -147,4 +149,16 @@ export function getProjectPermissionValuesForSelect(
     value: permission,
     label: PROJECT_PERMISSION_LABEL_BY_NAME[permission]
   }))
+}
+
+export function getProjectAccessUsersByRoleName(
+  roleName: ProjectRoleName
+): keyof ProjectAccess {
+  const mapper: Record<ProjectRoleName, keyof ProjectAccess | undefined> = {
+    owner: 'ownersnames',
+    writer: 'writersnames',
+    reader: 'readersnames',
+    none: undefined
+  }
+  return mapper[roleName]
 }
