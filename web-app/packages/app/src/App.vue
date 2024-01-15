@@ -32,20 +32,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           ></PDivider>
         </div>
       </router-view>
-      <v-card
-        v-if="pingData && pingData.maintenance"
-        variant="outlined"
-        class="maintenance_warning"
-      >
-        <v-card-text>
-          <b
-            >The service is currently in read-only mode for maintenance. Upload
-            and update functions are not available at this time. Please try
-            again later.</b
-          >
-        </v-card-text>
-      </v-card>
       <router-view v-slot="{ Component }">
+        <instance-maintenance-message v-if="pingData && pingData.maintenance" />
         <transition name="fade">
           <component :is="Component" />
         </transition>
@@ -69,9 +57,11 @@ import {
   useLayoutStore,
   useNotificationStore,
   useUserStore,
-  AppContainer
+  AppContainer,
+  InstanceMaintenanceMessage
 } from '@mergin/lib'
 import { mapActions, mapState } from 'pinia'
+import { useToast } from 'primevue/usetoast'
 import { defineComponent } from 'vue'
 import { useMeta } from 'vue-meta'
 
@@ -82,7 +72,8 @@ export default defineComponent({
     Notifications,
     DialogWindows,
     GlobalWarning,
-    AppContainer
+    AppContainer,
+    InstanceMaintenanceMessage
   },
   computed: {
     ...mapState(useInstanceStore, ['pingData']),
@@ -131,9 +122,14 @@ export default defineComponent({
         { property: 'og:site_name', content: 'Mergin Maps' }
       ]
     })
+    const toast = useToast()
+    const notificationStore = useNotificationStore()
+
+    notificationStore.init(toast)
   },
   async created() {
     this.init()
+
     await this.fetchConfig()
     if (this.loggedUser) {
       // here is loaded current workspace on startup (and reloaded in watcher when user has changed)
@@ -160,7 +156,9 @@ export default defineComponent({
   methods: {
     ...mapActions(useAppStore, ['setServerError']),
     ...mapActions(useInstanceStore, ['fetchPing', 'fetchConfig', 'initApp']),
-    ...mapActions(useNotificationStore, { notificationError: 'error' }),
+    ...mapActions(useNotificationStore, {
+      notificationError: 'error'
+    }),
     ...mapActions(useUserStore, ['checkCurrentWorkspace', 'updateLoggedUser']),
     ...mapActions(useLayoutStore, ['init'])
   }
@@ -175,17 +173,5 @@ export default defineComponent({
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-.maintenance_warning {
-  margin: auto;
-  width: 100%;
-  background-color: orange !important;
-  color: rgba(0, 0, 0, 0.87) !important;
-  padding-left: 400px;
-  text-align: center;
-  @media (max-width: 960px) {
-    padding-left: 40px;
-  }
 }
 </style>

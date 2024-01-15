@@ -21,6 +21,8 @@ import '@mergin/lib/dist/sass/themes/mm-theme-light/theme.scss'
 import '@tabler/icons-webfont/tabler-icons.min.css'
 import '@mergin/lib/dist/style.css'
 import PrimeVue from 'primevue/config'
+import Toast from 'primevue/toast'
+import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import { createMetaManager } from 'vue-meta'
@@ -46,6 +48,8 @@ const createMerginApp = () => {
     .use(PortalVue)
     .use(createMetaManager())
     .use(PrimeVue, { pt: MMTheme })
+    .use(ToastService)
+    .component('PToast', Toast)
     .directive('tooltip', Tooltip)
 
   app.config.globalProperties.$http = getHttpService()
