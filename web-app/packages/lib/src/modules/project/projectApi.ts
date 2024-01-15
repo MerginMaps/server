@@ -189,7 +189,7 @@ export const ProjectApi = {
     transaction: string,
     chunk: string,
     token: CancelToken,
-    data: any,
+    data: object,
     withRetry?: boolean
   ): Promise<AxiosResponse<void>> {
     return ProjectModule.httpService.post(

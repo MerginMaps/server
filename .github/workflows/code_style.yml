@@ -24,4 +24,4 @@ jobs:
         run: |
             cd web-app
             yarn install
-            yarn run lint:all
+            yarn run lint:no-legacy

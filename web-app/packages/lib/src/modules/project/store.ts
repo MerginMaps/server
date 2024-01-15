@@ -58,7 +58,7 @@ export interface ProjectState {
   projectsCount: number
   projectsSearch: string
   projectsSorting: ProjectsSortingParams
-  uploads: any
+  uploads: object
   currentNamespace: string
   versions: ProjectVersion[]
   versionsCount: number

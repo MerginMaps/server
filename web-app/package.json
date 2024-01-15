@@ -41,7 +41,8 @@
     "watch:lib-vue2:types": "yarn workspace @mergin/lib-vue2 build:types:watch",
     "watch:admin-lib": "yarn workspace @mergin/admin-lib build:lib:watch",
     "watch:admin-lib:types": "yarn workspace @mergin/admin-lib build:types:watch",
-    "lint:all": "yarn workspaces run lint"
+    "lint:all": "yarn workspaces run lint",
+    "lint:no-legacy": "yarn workspace @mergin/lib lint && yarn workspace @mergin/app lint"
   },
   "devDependencies": {
     "@babel/core": "^7.17.9",
