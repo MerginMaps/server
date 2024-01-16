@@ -11,7 +11,7 @@ import {
   PrimeVueResolver
 } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
-import { defineConfig } from 'vite'
+import { defineConfig, splitVendorChunkPlugin } from 'vite'
 
 const serverPort = process.env.FLASK_RUN_PORT ?? 5000
 
@@ -28,7 +28,9 @@ export default defineConfig(({ mode }) => ({
     // }),
     Components({
       resolvers: [Vuetify3Resolver(), PrimeVueResolver({ prefix: 'P' })]
-    })
+    }),
+    /** Creating index , vendor .js/.css for smaller bundle loaded async in browser */
+    splitVendorChunkPlugin()
   ],
 
   resolve: {
@@ -46,6 +48,7 @@ export default defineConfig(({ mode }) => ({
     //   include: [/node_modules/],
     //   transformMixedEsModules: true
     // },
+
     sourcemap: mode !== 'production',
     rollupOptions: {
       plugins: [
