@@ -8,14 +8,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     PDivider: typeof import('primevue/divider')['default']
-    PTabPanel: typeof import('primevue/tabpanel')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    VApp: typeof import('vuetify/components')['VApp']
-    VCard: typeof import('vuetify/components')['VCard']
-    VCardText: typeof import('vuetify/components')['VCardText']
-    VLayout: typeof import('vuetify/lib')['VLayout']
-    VList: typeof import('vuetify/components')['VList']
-    VMain: typeof import('vuetify/components')['VMain']
   }
 }

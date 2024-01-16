@@ -16,11 +16,11 @@ $messageIconFontSize: 1.5rem;
 
 /// Font size of a message text
 /// @group message
-$messageTextFontSize: 1rem;
+$messageTextFontSize: .75rem;
 
 /// Font weight of a message text
 /// @group message
-$messageTextFontWeight: 500;
+$messageTextFontWeight: 400;
 
 /// Padding of an inline message
 /// @group message
@@ -72,7 +72,7 @@ $toastOpacity: .9;
 
 /// Font weight of a toast message title text
 /// @group message
-$toastTitleFontWeight: 700;
+$toastTitleFontWeight: 600;
 
 /// Margin of a toast message detail text
 /// @group message
@@ -96,19 +96,19 @@ $infoMessageIconColor: #ffffff;
 
 /// Background of a success message
 /// @group message
-$successMessageBg: #43A047;
+$successMessageBg: map-get($map: $colors, $key: positive);
 
 /// Border of a success message
 /// @group message
-$successMessageBorder: 0 none;
+$successMessageBorder: 0 solid map-get($map: $colors, $key: forest);
 
 /// Text color of a success message
 /// @group message
-$successMessageTextColor: #ffffff;
+$successMessageTextColor: map-get($map: $colors, $key: forest);
 
 /// Icon color of a success message
 /// @group message
-$successMessageIconColor: #ffffff;
+$successMessageIconColor: map-get($map: $colors, $key: forest);
 
 /// Background of a warning message
 /// @group message
@@ -128,16 +128,16 @@ $warningMessageIconColor: map-get($map: $colors, $key: earth);
 
 /// Background of an error message
 /// @group message
-$errorMessageBg: #E53935;
+$errorMessageBg: map-get($map: $colors, $key: negative);
 
 /// Border of an error message
 /// @group message
-$errorMessageBorder: 0 none;
+$errorMessageBorder: 0 solid map-get($map: $colors, $key: grape);
 
 /// Text color of an error message
 /// @group message
-$errorMessageTextColor: #ffffff;
+$errorMessageTextColor: map-get($map: $colors, $key: grape);
 
 /// Icon color of an error message
 /// @group message
-$errorMessageIconColor: #ffffff;
+$errorMessageIconColor: map-get($map: $colors, $key: grape);

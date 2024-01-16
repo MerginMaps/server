@@ -8,6 +8,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <app-container v-if="open">
     <app-section ground>
       <PMessage severity="warn" @close="open = false">
+        <template #messageicon="slotProps">
+          <i :class="[slotProps.class, 'ti ti-alert-circle-filled']" />
+        </template>
         <p>
           <span class="font-semibold"
             >Your storage is almost full ({{ usage }}%).</span
