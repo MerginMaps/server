@@ -3514,11 +3514,6 @@ vue-tabler-icons@^1.0:
   resolved "https://registry.yarnpkg.com/vue-tabler-icons/-/vue-tabler-icons-1.14.0.tgz#df0027906f225c1501c2d1cfa9d844f8d50bc428"
   integrity sha512-ZFYo5RWXhp9/Ky8CFWUQ65x2oZy0YkwdfB4b2+tT/hPqGdieQfa303UiiFeNMHFYrNSGouDAN1LvpDxaN/4X2g==
 
-vue-tabler-icons@~2.20.0:
-  version "2.20.0"
-  resolved "https://registry.yarnpkg.com/vue-tabler-icons/-/vue-tabler-icons-2.20.0.tgz#5e87d1ccfa3b0217af28bceb00c8c17138c63f1f"
-  integrity sha512-ooTVgEK6OMQdrlqrypfTdi0hxS55P26Ed00TIEw+VepeY3RsCryBO1tHSE+nO/E8jtXd/3J0LnO9zNTdM1ABRw==
-
 vue-template-compiler@^2.7.14:
   version "2.7.14"
   resolved "https://registry.yarnpkg.com/vue-template-compiler/-/vue-template-compiler-2.7.14.tgz#4545b7dfb88090744c1577ae5ac3f964e61634b1"
@@ -3554,11 +3549,6 @@ vue@^3.3.8:
     "@vue/runtime-dom" "3.3.8"
     "@vue/server-renderer" "3.3.8"
     "@vue/shared" "3.3.8"
-
-vuetify@3.4.3, vuetify@^3.4.3:
-  version "3.4.3"
-  resolved "https://registry.yarnpkg.com/vuetify/-/vuetify-3.4.3.tgz#9316582a811136d32ecff2b214b399f400f4af10"
-  integrity sha512-b8yi87Zv4bn2JbaVkkV9uzSRw0fdY/v3ieWne0OTI29w/CNSyLyfHGBCrmx7eD74i562M1j+AwSSRJCX3wF0+Q==
 
 vuetify@^2.6.15:
   version "2.6.15"

@@ -6,10 +6,7 @@ import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfil
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
-import {
-  Vuetify3Resolver,
-  PrimeVueResolver
-} from 'unplugin-vue-components/resolvers'
+import { PrimeVueResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig, splitVendorChunkPlugin } from 'vite'
 
@@ -27,7 +24,7 @@ export default defineConfig(({ mode }) => ({
     //   styles: { configFile: './src/sass/settings.scss' }
     // }),
     Components({
-      resolvers: [Vuetify3Resolver(), PrimeVueResolver({ prefix: 'P' })]
+      resolvers: [PrimeVueResolver({ prefix: 'P' })]
     }),
     /** Creating index , vendor .js/.css for smaller bundle loaded async in browser */
     splitVendorChunkPlugin()
@@ -38,7 +35,7 @@ export default defineConfig(({ mode }) => ({
       '@': resolve(__dirname, './src'),
       url: 'rollup-plugin-node-polyfills/polyfills/url'
     },
-    dedupe: ['vue', 'pinia', 'vue-router', 'vuetify', '@mergin/lib', 'primevue']
+    dedupe: ['vue', 'pinia', 'vue-router', '@mergin/lib', 'primevue']
   },
   // define: {
   //   'process.env': process.env

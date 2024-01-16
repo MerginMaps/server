@@ -6,14 +6,10 @@ import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfil
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
-import {
-  Vuetify3Resolver,
-  PrimeVueResolver
-} from 'unplugin-vue-components/resolvers'
+import { PrimeVueResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
-// import vuetify from 'vite-plugin-vuetify'
 
 import packageJson from './package.json'
 
@@ -23,7 +19,6 @@ export default defineConfig(() => ({
     vue(),
     Components({
       resolvers: [
-        Vuetify3Resolver(),
         PrimeVueResolver({
           prefix: 'P'
         })
@@ -51,7 +46,7 @@ export default defineConfig(() => ({
       https: 'agent-base',
       path: 'rollup-plugin-node-polyfills/polyfills/path'
     },
-    dedupe: ['vue', 'pinia', 'vue-router', 'vuetify']
+    dedupe: ['vue', 'pinia', 'vue-router']
   },
   build: {
     commonjsOptions: {
