@@ -39,7 +39,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </transition>
       </router-view>
     </main>
-    <upload-progress />
     <notifications />
   </div>
 </template>

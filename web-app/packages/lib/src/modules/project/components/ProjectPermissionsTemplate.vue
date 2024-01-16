@@ -8,16 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <div>
     <AppContainer>
       <AppSection>
-        <PDataView
-          :value="displayedValues"
-          :data-key="'id'"
-          :pt="{
-            header: {
-              // small header
-              class: 'px-4 py-2'
-            }
-          }"
-        >
+        <PDataView :value="displayedValues" :data-key="'id'">
           <template #header>
             <div class="w-11 grid grid-nogutter">
               <!-- Visible on lg breakpoint > -->

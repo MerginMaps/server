@@ -15,9 +15,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :pt="{
         root: {
           class: 'border-round-xl'
-        },
-        header: {
-          class: 'px-4 py-2'
         }
       }"
     >

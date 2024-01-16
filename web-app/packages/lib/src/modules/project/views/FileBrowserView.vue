@@ -77,11 +77,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :rows="itemPerPage"
           :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
           data-cy="file-browser-table"
-          :pt="{
-            header: {
-              class: 'px-4 py-2'
-            }
-          }"
         >
           <template #header>
             <div class="grid grid-nogutter">
@@ -136,6 +131,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </app-container>
     <!-- Sidebars -->
     <file-detail-sidebar :namespace="namespace" :project-name="projectName" />
+    <!-- notifications -->
+    <upload-progress />
   </div>
 </template>
 
@@ -163,6 +160,7 @@ import { useInstanceStore } from '@/modules/instance/store'
 import DropArea from '@/modules/project/components/DropArea.vue'
 import FileDetailSidebar from '@/modules/project/components/FileDetailSidebar.vue'
 import FileIcon from '@/modules/project/components/FileIcon.vue'
+import UploadProgress from '@/modules/project/components/UploadProgress.vue'
 import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
@@ -174,7 +172,8 @@ export default defineComponent({
     AppPanelToggleable,
     DropArea,
     FileDetailSidebar,
-    AppMenu
+    AppMenu,
+    UploadProgress
   },
   props: {
     namespace: String,

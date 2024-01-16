@@ -10,6 +10,9 @@ h6 {
   font-weight: 600;
   margin: 0;
 }
+body {
+  margin: 0
+}
 
 // Customization of infinite border of tabs using classes instead pt because, we want to have access to variables
 .p-tabview-nav-content {

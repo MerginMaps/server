@@ -5,104 +5,106 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <custom-page>
-    <v-card
-      style="min-width: 300px"
-      class="text-center"
-      v-on:="changePasswordWithToken"
+  <section
+    class="relative change-password-view flex align-items-center justify-content-center h-full"
+  >
+    <aside class="absolute top-0 left-0 m-4">
+      <img src="@/assets/mm-logo.svg" />
+    </aside>
+    <div
+      class="change-password-view-container flex flex-column row-gap-4 p-4 lg:p-0"
     >
-      <v-card-title class="justify-center text-primary font-weight-bold ml-3">
-        <h3>Change password</h3>
-      </v-card-title>
-      <v-card-text>
-        <v-form @submit.prevent v-if="!success" class="layout column">
-          <v-text-field
-            label="New Password"
-            name="password"
-            color="inputColor"
+      <header class="align-self-center">
+        <h1 class="text-6xl">Change password</h1>
+      </header>
+      <form
+        v-if="!success"
+        @submit.prevent="changePasswordWithToken"
+        class="flex flex-column row-gap-1"
+      >
+        <span>
+          <app-password-tooltip for="newPassword"
+            ><template #label>New Password</template>
+          </app-password-tooltip>
+          <PPassword
+            id="newPassword"
             v-model="password"
-            autocomplete="new-password"
             data-cy="change-password"
-            :append-icon="passwordVisible ? 'visibility_off' : 'visibility'"
-            @click:append-inner="passwordVisible = !passwordVisible"
-            :type="passwordVisible ? 'text' : 'password'"
-            :error-messages="errors.password"
-            v-on="on"
-          >
-            <template v-slot:append-outer>
-              <v-tooltip
-                location="top"
-                color="orange"
-                max-width="350"
-                content-class="form-tooltip"
-              >
-                <template v-slot:activator="{ props }">
-                  <v-icon v-bind="props" class="ml-1 mb-1">info</v-icon>
-                </template>
-                <ul>
-                  <li>Password must be at least 8 characters long.</li>
-                  <li>
-                    Password must contain at least 3 character categories among
-                    the following:
-                    <ul>
-                      <li>Lowercase characters (a-z)</li>
-                      <li>Uppercase characters (A-Z)</li>
-                      <li>Digits (0-9)</li>
-                      <li>Special characters</li>
-                    </ul>
-                  </li>
-                </ul>
-              </v-tooltip>
-            </template>
-          </v-text-field>
-          <v-text-field
-            label="Confirm New Password"
-            name="confirm"
-            color="inputColor"
+            :class="['w-full my-1', errors.old_password ? 'p-invalid' : '']"
+            toggleMask
+            :feedback="false"
+            aria-describedby="password-error"
+            placeholder="Please enter your password"
+            :pt="{
+              input: {
+                root: { class: 'w-full border-round-xl' }
+              }
+            }"
+          />
+          <span class="p-error text-xs" id="password-error">{{
+            errors.password?.[0] || '&nbsp;'
+          }}</span>
+        </span>
+
+        <span>
+          <app-password-tooltip for="confirm">
+            <template #label>Confirm password</template>
+          </app-password-tooltip>
+
+          <PPassword
+            id="confirm"
             v-model="confirm"
+            :class="['w-full my-1', errors.confirm ? 'p-invalid' : '']"
             data-cy="change-password-confirm"
-            :type="passwordVisible ? 'text' : 'password'"
-            :error-messages="errors.confirm"
-            @keyup.enter="changePasswordWithToken"
+            aria-describedby="confirm-password-error"
+            toggleMask
+            :feedback="false"
+            placeholder="Please enter your new password"
+            :pt="{
+              input: {
+                root: { class: 'w-full border-round-xl' }
+              }
+            }"
           />
 
-          <v-card-actions class="justify-center">
-            <v-btn
-              class="bg-primary text-white"
-              data-cy="change-password-btn"
-              :disabled="!password || !confirm"
-              @click="changePasswordWithToken"
-            >
-              Change
-            </v-btn>
-          </v-card-actions>
-        </v-form>
-        <div v-else>
-          <p>Your password was changed. You can now Sign In</p>
-          <v-btn
-            class="align-self-center orange white--text"
-            data-cy="change-password-btn-signin"
-            href="/login"
-            >Sign in
-          </v-btn>
-        </div>
-        <br />
-      </v-card-text>
-    </v-card>
-  </custom-page>
+          <span class="p-error text-xs" id="confirm-password-error">{{
+            errors.confirm?.[0] || '&nbsp;'
+          }}</span>
+        </span>
+
+        <PButton
+          type="submit"
+          class="mt-6"
+          data-cy="change-password-btn"
+          :disabled="!password || !confirm"
+          label="Change"
+        />
+      </form>
+      <div v-else class="flex flex-column align-items-center">
+        <span
+          >Your password was changed. You can now
+          <router-link
+            class="text-sm text-color-forest font-semibold align-self-center"
+            :to="{ name: 'login' }"
+            >Sign in</router-link
+          ></span
+        >
+      </div>
+    </div>
+  </section>
 </template>
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
-import CustomPage from '@/common/components/CustomPage.vue'
+import AppPasswordTooltip from '@/common/components/AppPasswordTooltip.vue'
 import { useFormStore } from '@/modules/form/store'
 import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   name: 'ChangePasswordView',
-  components: { CustomPage },
+  components: { AppPasswordTooltip },
   data() {
     return {
       on: '',
@@ -118,7 +120,7 @@ export default defineComponent({
       return this.getErrorByComponentId(this.merginComponentUuid) ?? {}
     },
     token() {
-      return this.$route.params.token
+      return this.$route.params.token as string
     }
   },
 
@@ -156,32 +158,10 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-.main-window {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
-
-  display: flex;
-  flex-direction: column;
-  z-index: 100;
-  overflow: auto;
-
-  .bg {
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
+.change-password-view {
+  &-container {
+    max-width: 480px;
     width: 100%;
-    object-fit: cover;
-  }
-
-  .container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
   }
 }
 </style>
