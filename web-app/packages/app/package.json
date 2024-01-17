@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vue-demi-switch 3 && vite --port 8080",
     "preview": "vue-demi-switch 3 && vite preview --port 8080",
-    "build": "vue-demi-switch 3 && vite build",
+    "build": "vue-demi-switch 3 && vite build && purgecss -c ./purgecss.config.ts",
     "build:dev": "vue-demi-switch 3 && vite build --mode development",
     "build:lib": "echo 'Not defined script'",
     "build:lib:prod": "echo 'Not defined script'",
