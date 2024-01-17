@@ -34,6 +34,10 @@ $inputFocusBorderColor: $primaryDarkColor;
 /// @group form
 $inputErrorBorderColor: $errorColor;
 
+/// Background of invalid input
+/// @group form
+$inputErrorBackgroundColor: #FEFAF9;
+
 /// Text color of a placeholder
 /// @group form
 $inputPlaceholderTextColor: #6c757d;

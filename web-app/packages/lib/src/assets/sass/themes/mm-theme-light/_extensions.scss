@@ -9,6 +9,7 @@ h6 {
   color: $primaryDarkColor;
   font-weight: 600;
   margin: 0;
+  word-wrap: break-word;
 }
 body {
   margin: 0
@@ -57,4 +58,10 @@ body {
   .p-tooltip-text {
     white-space: normal;
   }
+}
+
+// Color of error messages in inputs ...
+.p-error {
+  color: map-get($map: $colors, $key: grape);
+  font-weight: 600;
 }
