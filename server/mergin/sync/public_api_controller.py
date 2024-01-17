@@ -311,26 +311,41 @@ def download_project_file(
     :rtype: file
     """
     project = require_project(namespace, project_name, ProjectPermissions.Read)
-    files = _project_version_files(project, version)
-    file_path = None
+    if diff and not version:
+        abort(400, f"Changeset must be requested for particular file version")
+
+    lookup_version = version or project.latest_version
+    sql = text(
+        """
+            SELECT
+                expanded.files ->> 'location' AS location,
+                (expanded.files ->> 'diff')::jsonb ->> 'location' as diff_location
+            FROM
+            (
+                SELECT jsonb_array_elements(pv.files::jsonb) AS files
+                FROM project_version pv
+                WHERE pv.name = :version AND project_id = :project_id
+            ) AS expanded
+            WHERE
+                expanded.files @> :json;
+        """
+    )
+    params = {
+        "version": lookup_version,
+        "project_id": project.id,
+        "json": '{"path": "' + file + '"}',
+    }
+    result = db.session.execute(sql, params).fetchone()
+    if not result:
+        abort(404, f"File {file} not found")
+
     if diff and version:
         # get specific version of geodiff file modified in requested version
-        file_obj = next(
-            (f for f in files if f["location"] == os.path.join(version, file)), None
-        )
-        if not file_obj:
-            abort(404, file)
-        if "diff" not in file_obj:
+        if not result["diff_location"]:
             abort(404, f"No diff in particular file {file} version")
-        file_path = file_obj["diff"]["location"]
-    elif diff:
-        abort(400, f"Changeset must be requested for particular file version")
+        file_path = result["diff_location"]
     else:
-        # get latest version of file
-        file_path = next((f["location"] for f in files if f["path"] == file), None)
-
-    if not file_path:
-        abort(404, file)
+        file_path = result["location"]
 
     if version and not diff:
         project.storage.restore_versioned_file(file, version)
