@@ -9,7 +9,7 @@ import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
 import { PrimeVueResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
-import { viteStaticCopy } from 'vite-plugin-static-copy'
+// import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 import packageJson from './package.json'
 
@@ -23,10 +23,6 @@ export default defineConfig(() => ({
           prefix: 'P'
         })
       ]
-    }),
-    viteStaticCopy({
-      // copy sass files to use in other applications
-      targets: [{ src: 'src/sass/**.scss', dest: 'sass' }]
     })
   ],
   publicDir: './src/assets',
@@ -57,6 +53,7 @@ export default defineConfig(() => ({
     // sourcemap: mode !== 'production',
     sourcemap: false,
     lib: {
+      formats: ['es'],
       // Could also be a dictionary or array of multiple entry points
       entry: resolve(__dirname, 'src/main.ts'),
       name: 'lib',
