@@ -6,7 +6,7 @@ module.exports = {
     /^lg:col-([0-9]|10|11|12)/,
     /^col-([0-9]|10|11|12)/,
     /p-button-secondary/,
-    /diff-circle--/
+    /diff-circle/
   ],
   extractors: [
     {
