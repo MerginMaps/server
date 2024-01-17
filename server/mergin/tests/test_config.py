@@ -37,3 +37,8 @@ def test_config(client):
     resp = client.get("/config")
     assert resp.json["server_configured"] is True
     assert resp.json["user_self_registration"] is False
+
+    assert resp.json["build_hash"] == ""
+    client.application.config["BUILD_HASH"] = "abcd1234"
+    resp = client.get("/config")
+    assert resp.json["build_hash"] == "abcd1234"
