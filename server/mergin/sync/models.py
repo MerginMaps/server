@@ -36,7 +36,7 @@ class Project(db.Model):
     )
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
     # metadata for project files (see also FileInfoSchema)
-    files = db.Column(JSONB, default=[])
+    files = db.deferred(db.Column(JSONB, default=[]))
     tags = db.Column(ARRAY(String), server_default="{}")
     disk_usage = db.Column(BIGINT, nullable=False, default=0)
     latest_version = db.Column(db.String, index=True)

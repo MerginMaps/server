@@ -1,21 +1,12 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" width=350 srcset="https://raw.githubusercontent.com/MerginMaps/.github/main/images/MM_logo_HORIZ_COLOR_INVERSE_VECTOR.svg">
+  <img width=350 src="https://raw.githubusercontent.com/MerginMaps/.github/main/images/MM_logo_HORIZ_COLOR_VECTOR.svg">
+</picture>
 
-<p align="center">
-	<a href="https://merginmaps.com/" target="_blank">
-		<picture>
-			<source media="(prefers-color-scheme: dark)" srcset="./doc/mm_logo_bgnd_neg.png" width=350>
-			<source media="(prefers-color-scheme: light)" srcset="./doc/mm_logo_bgnd_pos.jpg" width=350>
-			<img alt="Mergin Maps logo" src="./doc/mm_logo_bgnd_pos.jpg" width=350>
-		</picture>
-	</a>
-</p>
+<img src="https://img.shields.io/badge/License-Dual AGPL3 and MM Commercial licence-blue">
 
-<p align="center">
-	<b>Store and track changes to your geo-data</b> <br /> 
-	<img src="https://img.shields.io/badge/License-Dual AGPL3 and MM Commercial licence-blue">
-</p>
-
-[![Code Layout](https://github.com/MerginMaps/mergin/actions/workflows/code_style.yml/badge.svg)](https://github.com/MerginMaps/mergin/actions/workflows/code_style.yml)
-[![Auto Tests](https://github.com/MerginMaps/mergin/actions/workflows/auto_tests.yml/badge.svg)](https://github.com/MerginMaps/mergin/actions/workflows/auto_tests.yml)
+[![Code Layout](https://github.com/MerginMaps/server/actions/workflows/code_style.yml/badge.svg)](https://github.com/MerginMaps/server/actions/workflows/code_style.yml)
+[![Auto Tests](https://github.com/MerginMaps/server/actions/workflows/auto_tests.yml/badge.svg)](https://github.com/MerginMaps/server/actions/workflows/auto_tests.yml)
 [![Coverage Status](https://coveralls.io/repos/github/MerginMaps/mergin/badge.svg)](https://coveralls.io/github/MerginMaps/mergin)
 
 ## About
@@ -36,7 +27,7 @@ The platform is especially useful when you need:
 - **No coding required.** Everything can be set up with no knowledge of programming.
 
 Mergin Maps organises all data in projects. A project in Mergin Maps is a directory containing various data files - GeoPackages,
-QGIS project files, documents, pictures and more. As soon as a project is uploaded to Mergin Maps, it can be easily accessed directly from the web, from QGIS or from iOS/Android via our [mobile app](https://merginmaps.com/start-for-free).
+QGIS project files, documents, pictures and more. As soon as a project is uploaded to Mergin Maps, it can be easily accessed directly from the web, from QGIS or from iOS/Android via our [mobile app](https://merginmaps.com/).
 
 You are currently browsing repository for Mergin Maps web server and web client. Our mobile app, QGIS plugin and integrations have standalone GitHub repositories, you can [find them here](https://github.com/MerginMaps).
 
@@ -77,8 +68,8 @@ You are currently browsing repository for Mergin Maps web server and web client.
 ## Features
 
 - 🌍 **Store data** - GeoPackages, QGIS project files, GeoTIFFs, pictures or any other data easily
-- 📱 **Mobile devices** - Great for working on field surveys, thanks to our mobile app based on QGIS, for [iOS and Android](https://github.com/lutraconsulting/input)
-- 🌟 **QGIS integration** - [Mergin Maps plugin](https://github.com/lutraconsulting/qgis-mergin-plugin) is available to help with project setup and seamless syncing within QGIS
+- 📱 **Mobile devices** - Great for working on field surveys, thanks to our mobile app based on QGIS, for [iOS and Android](https://github.com/merginmaps/input)
+- 🌟 **QGIS integration** - [Mergin Maps plugin](https://github.com/merginmaps/qgis-mergin-plugin) is available to help with project setup and seamless syncing within QGIS
 - 👥 **Multi-user editing** - Changes to vector/attribute data from multiple users are automatically merged
 - 📖 **Data versioning** - Keeping history of all changes, allowing to go back if needed
 - 🔌 **Offline editing** - Clients do not need to be online all the time - only when syncing changes
@@ -86,10 +77,10 @@ You are currently browsing repository for Mergin Maps web server and web client.
 - 🏰 **Permission system** - Decide who can read, write or manage projects
 - 🌈 **Web interface** - Simple user interface to view and manage projects
 - ⚡️ **Fast** - Efficient sync protocol transfering data between clients and server
-- 🧑‍💻 **Developer friendly** - Mergin Maps is open platform. CLI tools and client libraries are available for [Python](https://github.com/lutraconsulting/mergin-py-client) and [C++](https://github.com/lutraconsulting/mergin-cpp-client)
-- :camera: **Sync images** - Supporting sync of photos with common cloud storage using [mergin-media-sync](https://github.com/lutraconsulting/mergin-media-sync) tool
-- 💽 **Sync with database** - Supporting two-way sync of data with PostGIS using [mergin-db-sync](https://github.com/lutraconsulting/mergin-db-sync) tool
-- 👷‍♀️ **Work packages** - Split main database to smaller chunks for teams using [mergin-work-packages](https://github.com/lutraconsulting/mergin-work-packages) tool
+- 🧑‍💻 **Developer friendly** - Mergin Maps is open platform. CLI tools and client libraries are available for [Python](https://github.com/MerginMaps/python-api-client) and [C++](https://github.com/MerginMaps/cpp-api-client)
+- :camera: **Sync images** - Supporting sync of photos with common cloud storage using [mergin-media-sync](https://github.com/MerginMaps/media-sync) tool
+- 💽 **Sync with database** - Supporting two-way sync of data with PostGIS using [mergin-db-sync](https://github.com/MerginMaps/db-sync) tool
+- 👷‍♀️ **Work packages** - Split main database to smaller chunks for teams using [mergin-work-packages](https://github.com/MerginMaps/work-packages) tool
 
 Mergin Maps offers a unique combination of features that other tools do not provide out of the box:
 
@@ -134,14 +125,14 @@ Contributions are welcome!
 More information for developers can be found in the dedicated [development](development.md) page.
 
 Client side modules:
-- [Python](https://github.com/lutraconsulting/mergin-py-client) client library + CLI
-- [C++](https://github.com/lutraconsulting/mergin-cpp-client) client library + CLI
+- [Python](https://github.com/MerginMaps/python-api-client) client library + CLI
+- [C++](https://github.com/MerginMaps/cpp-api-client) client library + CLI
 
 More related tools:
-- [mergin-db-sync](https://github.com/lutraconsulting/mergin-db-sync) - set up two-way sync between Mergin Maps and PostGIS database
-- [mergin-work-packages](https://github.com/lutraconsulting/mergin-work-packages) - split data for teams to work packages
+- [mergin-db-sync](https://github.com/MerginMaps/db-sync) - set up two-way sync between Mergin Maps and PostGIS database
+- [mergin-work-packages](https://github.com/MerginMaps/work-packages) - split data for teams to work packages
 
-Learn more about [geodiff](https://github.com/lutraconsulting/geodiff) - the low-level library providing seamless merging of changes from multiple sources.
+Learn more about [geodiff](https://github.com/merginmaps/geodiff) - the low-level library providing seamless merging of changes from multiple sources.
 
 ## License
 
