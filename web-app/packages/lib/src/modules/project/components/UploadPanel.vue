@@ -41,7 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             `upload-panel-diff-circle--${key}`
           ]"
         >
-          <i :class="['ti', `ti-${diffIcon[key]}`]" class="text-xl"></i>
+          <i :class="['ti', `${diffIcon[key]}`]" class="text-xl"></i>
         </div>
         <span class="text-sm opacity-80 capitalize">{{ key }}</span>
         <div
@@ -121,9 +121,9 @@ export default defineComponent({
     },
     diffIcon() {
       const icons: Record<DiffKeys, string> = {
-        removed: 'trash',
-        added: 'plus',
-        updated: 'pencil'
+        removed: 'ti-trash',
+        added: 'ti-plus',
+        updated: 'ti-pencil'
       }
       return icons
     }
