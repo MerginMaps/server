@@ -29,6 +29,8 @@
 
 @mixin invalid-input() {
 	border-color: $inputErrorBorderColor;
+  background-color: $inputErrorBackgroundColor;
+  box-shadow: inset 0 0 0 1px $inputErrorBorderColor;
 }
 
 @mixin menuitem {
@@ -45,12 +47,12 @@
             .p-menuitem-text {
                 color: $menuitemTextColor;
             }
-        
+
             .p-menuitem-icon {
                 color: $menuitemIconColor;
                 margin-right: $inlineSpacing;
             }
-            
+
             .p-submenu-icon {
                 color: $menuitemIconColor;
             }
@@ -85,12 +87,12 @@
             > .p-menuitem-content {
                 color: $menuitemTextFocusColor;
                 background: $menuitemFocusBg;
-    
+
                 .p-menuitem-link {
                     .p-menuitem-text {
                         color: $menuitemTextFocusColor;
                     }
-                
+
                     .p-menuitem-icon, .p-submenu-icon {
                         color: $menuitemIconFocusColor;
                     }
@@ -102,12 +104,12 @@
             &:hover {
                 color: $menuitemTextHoverColor;
                 background: $menuitemHoverBg;
-    
+
                 .p-menuitem-link {
                     .p-menuitem-text {
                         color: $menuitemTextHoverColor;
                     }
-    
+
                     .p-menuitem-icon, .p-submenu-icon {
                         color: $menuitemIconHoverColor;
                     }
@@ -130,12 +132,12 @@
             .p-menuitem-text {
                 color: $horizontalMenuRootMenuitemTextColor;
             }
-        
+
             .p-menuitem-icon {
                 color: $horizontalMenuRootMenuitemIconColor;
                 margin-right: $inlineSpacing;
             }
-            
+
             .p-submenu-icon {
                 color: $horizontalMenuRootMenuitemIconColor;
                 margin-left: $inlineSpacing;
@@ -148,12 +150,12 @@
             &:hover {
                 color: $horizontalMenuRootMenuitemTextHoverColor;
                 background: $horizontalMenuRootMenuitemHoverBg;
-    
+
                 .p-menuitem-link {
                     .p-menuitem-text {
                         color: $horizontalMenuRootMenuitemTextHoverColor;
                     }
-    
+
                     .p-menuitem-icon, .p-submenu-icon {
                         color: $horizontalMenuRootMenuitemIconHoverColor;
                     }
@@ -193,7 +195,7 @@
                 .p-menuitem-link {
                     padding-left: $val * ($index + 1);
                 }
-    
+
             }
             @if $index < $length {
                 @include nested-submenu-indents($val, $index + 2, $length);

@@ -29,7 +29,7 @@ export const useNotificationStore = defineStore('notificationModule', {
       this.toast = toast
     },
     show(payload: NotificationShowPayload) {
-      this.toast.add({
+      this.toast?.add({
         severity: payload.severity ?? 'success',
         summary: payload.text,
         detail: payload.detail,

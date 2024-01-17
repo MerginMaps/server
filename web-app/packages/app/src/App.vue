@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <div class="grid min-h-screen">
+  <div class="grid grid-nogutter min-h-screen">
     <dialog-windows />
     <router-view name="sidebar" v-slot="{ Component }" :key="$route.fullPath">
       <component :is="Component" />
@@ -18,6 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         'transition-duration-500',
         'min-h-full',
         'overflow-auto',
+        'pb-4',
         isSideBar && drawer && !isUnderOverlayBreakpoint
           ? 'col-offset-2 col-10'
           : 'col-12'
@@ -39,7 +40,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </transition>
       </router-view>
     </main>
-    <upload-progress />
     <notifications />
   </div>
 </template>

@@ -17,6 +17,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       }
     }"
   >
+    <template #separator>
+      <i class="ti ti-chevron-right" />
+    </template>
     <template #item="{ item, props }">
       <router-link
         v-if="item.path"

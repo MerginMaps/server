@@ -12,12 +12,10 @@
   "types": "types/main.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/lib.js",
-      "require": "./dist/lib.umd.cjs"
+      "import": "./dist/lib.js"
     },
     "./dist/": {
-      "import": "./dist/",
-      "require": "./dist/"
+      "import": "./dist/"
     }
   },
   "scripts": {
@@ -48,15 +46,12 @@
     "primevue": "^3.43.0",
     "universal-cookie": "^4.0.4",
     "vue": "^3.3.8",
-    "vue-router": "4.2.5",
-    "vue-tabler-icons": "~2.20.0",
-    "vuetify": "^3.4.3"
+    "vue-router": "4.2.5"
   },
   "peerDependencies": {
     "pinia": ">=2.x",
     "portal-vue": "3.x",
-    "vue": "3.x",
-    "vuetify": "3.x"
+    "vue": "3.x"
   },
   "devDependencies": {}
 }

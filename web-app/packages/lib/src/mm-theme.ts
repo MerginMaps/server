@@ -1,4 +1,8 @@
+import { AutoCompletePassThroughOptions } from 'primevue/autocomplete'
+import { ButtonPassThroughOptions } from 'primevue/button'
+import { DataViewPassThroughOptions } from 'primevue/dataview'
 import { usePassThrough } from 'primevue/passthrough'
+import { ToastPassThroughOptions } from 'primevue/toast'
 
 export default usePassThrough(
   {
@@ -18,7 +22,7 @@ export default usePassThrough(
               : undefined
         }
       }
-    },
+    } as ButtonPassThroughOptions,
     autocomplete: {
       root: {
         class: 'w-full'
@@ -35,7 +39,23 @@ export default usePassThrough(
       tokenLabel: {
         class: 'mr-2'
       }
-    }
+    } as AutoCompletePassThroughOptions,
+    toast: {
+      root: {
+        style: {
+          maxWidth: '40rem',
+          width: '80%'
+        }
+      }
+    } as ToastPassThroughOptions,
+    dataview: {
+      header: {
+        class: 'px-4 py-2'
+      },
+      loadingOverlay: {
+        class: 'bg-primary-reverse opacity-50'
+      }
+    } as DataViewPassThroughOptions
   },
   {}
 )

@@ -26,7 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           {{ stateText }}
         </PInlineMessage>
 
-        <dl class="grid grid-nogutter">
+        <dl class="grid grid-nogutter row-gap-1">
           <div class="col-12">
             <dt class="text-xs opacity-80 mb-1">File</dt>
             <dl>
@@ -35,6 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               </h3>
             </dl>
           </div>
+          <PDivider />
           <div class="col-6">
             <dt class="text-xs opacity-80 mb-1">Modified</dt>
             <dl>

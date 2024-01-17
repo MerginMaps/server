@@ -2,10 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-// styles must be imported first (at least before imports of our libs)
-import 'material-icons/iconfont/material-icons.scss'
-import '@fortawesome/fontawesome-free/css/all.css'
-import '@mdi/font/css/materialdesignicons.css'
 import {
   dateUtils,
   textUtils,
@@ -32,7 +28,6 @@ import { createRouter } from './router'
 import { addRouterToPinia, getPiniaInstance } from './store'
 
 import i18n from '@/plugins/i18n/i18n'
-import vuetify from '@/plugins/vuetify/vuetify'
 
 const createMerginApp = () => {
   const pinia = getPiniaInstance()
@@ -43,7 +38,6 @@ const createMerginApp = () => {
     .mixin(MerginComponentUuidMixin)
     .use(pinia)
     .use(router)
-    .use(vuetify)
     .use(i18n)
     .use(PortalVue)
     .use(createMetaManager())

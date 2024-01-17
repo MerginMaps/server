@@ -16,14 +16,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
     size="small"
     @page="onPage"
-    :pt="{
-      header: {
-        class: 'px-4 py-2'
-      },
-      loadingOverlay: {
-        class: 'bg-primary-reverse opacity-50'
-      }
-    }"
   >
     <template #header>
       <h3 class="font-semibold text-xs text-color m-0">Access requests</h3>
@@ -47,7 +39,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               v-tooltip.top="{ value: $filters.datetime(item.expire) }"
               class="opacity-80 text-xs w-12 lg:w-4 p-2 lg:p-1"
             >
-              Expiring in {{ $filters.remainingtime(item.expire) }}
+              <template v-if="$filters.remainingtime(item.expire) === 'expired'"
+                >Expired</template
+              >
+              <template v-else
+                >Expiring in {{ $filters.remainingtime(item.expire) }}</template
+              >
             </p>
             <AppDropdown
               :options="dropdownPermissions"

@@ -8,7 +8,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <section>
     <PPanel
       v-bind="$props"
-      :toggleable="!!$slots.default"
       :collapsed="$props.collapsed || !$slots.default"
       :pt="{
         header(options) {

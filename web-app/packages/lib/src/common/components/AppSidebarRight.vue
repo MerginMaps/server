@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       v-model:visible="model"
       :modal="true"
       position="right"
-      class="w-11 lg:w-4"
+      class="w-11 lg:w-5 xl:w-3"
     >
       <template #container="{ closeCallback }">
         <div class="flex flex-column h-full">
@@ -18,7 +18,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <div
             class="flex align-items-center justify-content-between px-4 py-0"
           >
-            <h4 class="flex-grow-1"><slot name="title"></slot></h4>
+            <h4 class="flex-grow-1 w-10">
+              <slot v-if="isScrollingContent" name="title"></slot>
+            </h4>
             <div class="flex-shrink-0">
               <slot name="headerButtons"></slot>
               <PButton
@@ -34,7 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </div>
 
           <!-- content -->
-          <div class="overflow-y-auto p-4 pt-6">
+          <div class="overflow-y-auto p-4 pt-6" @scroll="scrollContent">
             <slot></slot>
           </div>
 
@@ -49,12 +51,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps<{
   modelValue: boolean
 }>()
 const emitModelValue = defineEmits(['update:modelValue'])
+
+const isScrollingContent = ref(false)
+
 const model = computed({
   get() {
     return props.modelValue
@@ -63,6 +68,10 @@ const model = computed({
     return emitModelValue('update:modelValue', value)
   }
 })
+
+function scrollContent(e) {
+  isScrollingContent.value = !!e.currentTarget.scrollTop
+}
 </script>
 
 <style lang="scss" scoped></style>
