@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </span>
     </template>
     <template v-else>
-      <i :class="['ti p-1', `ti-${mdi}`]" />
+      <i :class="['ti p-1', `${mdi}`]" />
     </template>
   </div>
 </template>
@@ -28,9 +28,9 @@ import mIconZip from '@/assets/qgis-icons/mIconZip.svg'
 import providerQgis from '@/assets/qgis-icons/providerQgis.svg'
 
 const mdiByExtensionDict = {
-  jpg: 'photo',
-  jpeg: 'photo',
-  png: 'photo'
+  jpg: 'ti-photo',
+  jpeg: 'ti-photo',
+  png: 'ti-photo'
 }
 
 const iconByExtensionDict = {
@@ -69,12 +69,12 @@ export default defineComponent({
       let mdi
       if (file.type === 'folder') {
         if (file.name !== '..') {
-          mdi = 'folder'
+          mdi = 'ti-folder'
         }
       } else {
         const splittedName = file.name.split('.')
         const ext = splittedName[splittedName.length - 1].toLowerCase()
-        mdi = mdiByExtensionDict[ext] ? mdiByExtensionDict[ext] : 'file'
+        mdi = mdiByExtensionDict[ext] ? mdiByExtensionDict[ext] : 'ti-file'
       }
       return mdi
     }

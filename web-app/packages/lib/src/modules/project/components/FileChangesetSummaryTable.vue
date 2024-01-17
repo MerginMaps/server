@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <div v-for="col in columns" class="col-3 text-xs" :key="col.text">
             <i
               v-if="col.icon"
-              :class="['ti', `ti-${col.icon}`]"
+              :class="['ti', `${col.icon}`]"
               v-tooltip.top="col.text"
             ></i>
             <span v-else>{{ col.text }}</span>
@@ -65,11 +65,11 @@ export default defineComponent({
         { text: 'Layer', value: 'table' },
         {
           text: 'Inserts',
-          icon: 'plus',
+          icon: 'ti-plus',
           value: 'insert'
         },
-        { text: 'Updates', icon: 'pencil', value: 'update' },
-        { text: 'Deletes', icon: 'trash', value: 'delete' }
+        { text: 'Updates', icon: 'ti-pencil', value: 'update' },
+        { text: 'Deletes', icon: 'ti-trash', value: 'delete' }
       ],
       itemsPerPage: 10
     }

@@ -83,7 +83,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 `version-detail-diff-circle version-detail-diff-circle--${item.key}`
               ]"
             >
-              <i :class="['ti', `ti-${item.icon}`]"></i>
+              <i :class="['ti', `${item.icon}`]"></i>
             </div>
             <span class="text-sm opacity-80">{{ item.text }}</span>
             <div
@@ -176,9 +176,9 @@ export default defineComponent({
     ...mapState(useProjectStore, ['project', 'versions']),
     changeTabs() {
       return [
-        { key: 'added', text: 'Files added', icon: 'plus' },
-        { key: 'updated', text: 'Files edited', icon: 'pencil' },
-        { key: 'removed', text: 'Files removed', icon: 'trash' }
+        { key: 'added', text: 'Files added', icon: 'ti-plus' },
+        { key: 'updated', text: 'Files edited', icon: 'ti-pencil' },
+        { key: 'removed', text: 'Files removed', icon: 'ti-trash' }
       ]
     },
     changes() {

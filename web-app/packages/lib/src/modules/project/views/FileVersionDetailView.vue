@@ -43,7 +43,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   <i
                     :class="[
                       'ti',
-                      `ti-${actions[slotProps.data[col.value]].icon}`
+                      `${actions[slotProps.data[col.value]].icon}`
                     ]"
                   ></i>
                 </div>
@@ -123,9 +123,9 @@ export default defineComponent({
       > | null,
       loading: true,
       actions: {
-        insert: { icon: 'plus' },
-        update: { icon: 'pen' },
-        delete: { icon: 'trash' }
+        insert: { icon: 'ti-plus' },
+        update: { icon: 'ti-pen' },
+        delete: { icon: 'ti-trash' }
       },
       itemsPerPage: 10
     }
