@@ -34,11 +34,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :field="col.field"
           :header="col.header"
           style="width: 40%"
-          class="pl-4"
+          class="pl-4 py-3"
           :pt="ptColumn"
         >
           <template #body="slotProps">
-            <p class="font-semibold text-sm mb-1">
+            <p class="font-semibold text-sm mb-2 m-0">
               <template v-if="showNamespace"
                 >{{ slotProps.data.namespace }} /</template
               >{{ slotProps.data.name
@@ -72,7 +72,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 value: $filters.datetime(slotProps.data.updated),
                 pt: { root: { 'data-cy': 'project-form-updated' } }
               }"
-              class="text-color-secondary mt-0"
+              class="opacity-80 m-0"
             >
               Updated {{ $filters.timediff(slotProps.data.updated) }}
             </p>

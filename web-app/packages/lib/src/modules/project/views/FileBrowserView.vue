@@ -100,12 +100,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               @click.prevent="rowClick(item.link)"
             >
               <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->
-              <div class="flex align-items-center col-12 lg:col-4">
-                <p class="font-semibold">
+              <div class="flex align-items-center col-12 lg:col-4 py-2">
+                <p class="font-semibold mb-2 lg:mb-0 m-0">
                   <file-icon :file="item" />{{ item.name }}
                 </p>
               </div>
-              <div class="flex align-items-center col-12 lg:col-4">
+              <div class="flex align-items-center col-12 lg:col-4 py-2">
                 <span
                   v-if="item.mtime"
                   v-tooltip.bottom="{ value: $filters.datetime(item.mtime) }"
@@ -114,7 +114,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   {{ $filters.timediff(item.mtime) }}
                 </span>
               </div>
-              <div class="flex align-items-center col-12 lg:col-4">
+              <div class="flex align-items-center col-12 lg:col-4 py-2">
                 <span class="opacity-80" v-if="item.size">{{
                   $filters.filesize(item.size)
                 }}</span>

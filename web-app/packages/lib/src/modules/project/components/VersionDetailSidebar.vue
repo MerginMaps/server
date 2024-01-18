@@ -20,37 +20,37 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           data-cy="file-detail-download-btn"
         ></PButton
       ></template>
-      <dl class="grid">
+      <dl class="grid grid-nogutter row-gap-4">
         <div class="col-12">
-          <dt class="text-xs opacity-80 mb-1">Version</dt>
+          <dt class="text-xs opacity-80 mb-2">Version</dt>
           <dl>
             <h3 class="text-2xl mt-0">
               {{ version.name }}
             </h3>
           </dl>
-          <PDivider />
         </div>
+        <PDivider class="m-0" />
         <div class="col-6">
-          <dt class="text-xs opacity-80 mb-1">Author</dt>
-          <dl>
+          <dt class="text-xs opacity-80 mb-2">Author</dt>
+          <dl class="font-semibold text-sm">
             {{ version.author }}
           </dl>
         </div>
         <div class="col-6 flex flex-column align-items-end">
-          <dt class="text-xs opacity-80 mb-1">Project size</dt>
-          <dl>
+          <dt class="text-xs opacity-80 mb-2">Project size</dt>
+          <dl class="font-semibold text-sm">
             {{ $filters.filesize(version.project_size) }}
           </dl>
         </div>
         <div class="col-12">
-          <dt class="text-xs opacity-80 mb-1">Created</dt>
-          <dl>
+          <dt class="text-xs opacity-80 mb-2">Created</dt>
+          <dl class="font-semibold text-sm">
             {{ $filters.datetime(version.created) }}
           </dl>
         </div>
         <div class="col-12">
-          <dt class="text-xs opacity-80 mb-1">User agent</dt>
-          <dl>
+          <dt class="text-xs opacity-80 mb-2">User agent</dt>
+          <dl class="font-semibold text-sm">
             {{ version.user_agent }}
           </dl>
         </div>

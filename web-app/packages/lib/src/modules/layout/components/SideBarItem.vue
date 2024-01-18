@@ -4,16 +4,17 @@ Copyright (C) Lutra Consulting Limited
 SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
-<script lang="ts">
-import { PropType, defineComponent } from 'vue'
-
+<script setup lang="ts">
+import { useLayoutStore } from '../store'
 import { SideBarItemModel } from '../types'
 
-export default defineComponent({
-  props: {
-    item: Object as PropType<SideBarItemModel>
-  }
-})
+defineProps<{ item: SideBarItemModel }>()
+const layoutStore = useLayoutStore()
+
+function closeDrawer() {
+  layoutStore.isUnderOverlayBreakpoint &&
+    layoutStore.setDrawer({ drawer: false })
+}
 </script>
 
 <template>
@@ -24,6 +25,7 @@ export default defineComponent({
         item.active && 'sidebar-item__link--active'
       ]"
       :to="item.to"
+      @click.native="closeDrawer"
       ><div class="mr-2"><i :class="['text-xl', item.icon]"></i></div>
       <span>{{ item.title }}</span></router-link
     >

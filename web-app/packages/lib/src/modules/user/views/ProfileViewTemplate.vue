@@ -108,7 +108,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <template #title>Advanced</template>
         <div class="flex align-items-center text-sm py-2">
           <div class="flex-grow-1">
-            <p class="font-semibold mb-1 mt-0">Receive notifications</p>
+            <p class="font-semibold my-2">Receive notifications</p>
             <span class="text-xs opacity-80"
               >We will send you information about workspace activity and a
               monthly bulletin email</span
@@ -126,7 +126,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </div>
         <div class="flex align-items-center text-sm py-2">
           <div class="flex-grow-1">
-            <p class="font-semibold mb-1 mt-0">Close account</p>
+            <p class="font-semibold my-2">Close account</p>
             <span class="text-xs opacity-80"
               >Your account will be closed. In case you are an owner of a
               workspace, you might need to transfer the ownership first or close

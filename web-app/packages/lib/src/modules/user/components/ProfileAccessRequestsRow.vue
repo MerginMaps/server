@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <app-section v-if="accessRequests && accessRequestsCount > 0">
-    <template #title>You requested access to this projects</template>
+    <template #title>You requested access to these projects</template>
     <access-request-table />
   </app-section>
 </template>
