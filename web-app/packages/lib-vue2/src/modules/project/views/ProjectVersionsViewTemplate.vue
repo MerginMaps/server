@@ -31,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :loading="versionsLoading"
       no-data-text="No project history"
       color="primary"
-      data-cy="project-verision-table"
+      data-cy="project-verison-table"
     >
       <!-- headers -->
       <template v-slot:header.changes.added="{ header }">

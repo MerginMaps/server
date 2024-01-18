@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <PInputText
         id="first-name"
         v-model="editedProfile.first_name"
-        cy-data="profile-edit-first-name"
+        data-cy="profile-edit-first-name"
         :class="[
           'w-full my-1 border-round-xl',
           errors.first_name ? 'p-invalid' : ''
@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <PInputText
         id="last-name"
         v-model="editedProfile.last_name"
-        cy-data="profile-edit-last-name"
+        data-cy="profile-edit-last-name"
         :class="[
           'w-full my-1 border-round-xl',
           errors.last_name ? 'p-invalid' : ''
@@ -49,7 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <PInputText
         id="email"
         v-model="editedProfile.email"
-        cy-data="profile-edit-email"
+        data-cy="profile-edit-email"
         :class="[
           'w-full my-1 border-round-xl',
           errors.email ? 'p-invalid' : ''
@@ -71,7 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         severity="secondary"
         @click="close"
         class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
-        cy-data="profile-edit-close-btn"
+        data-cy="profile-edit-close-btn"
         >Cancel</PButton
       >
 
@@ -79,7 +79,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         type="submit"
         @click="submit"
         class="flex w-12 lg:w-6 justify-content-center"
-        cy-data="profile-edit-save-btn"
+        data-cy="profile-edit-save-btn"
       >
         Save changes
       </PButton>

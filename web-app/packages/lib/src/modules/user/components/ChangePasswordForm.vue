@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <PPassword
         id="oldPassowrd"
         v-model="oldPassword"
-        cy-data="user-change-password-old"
+        data-cy="user-change-password-old"
         :class="['w-full my-1', errors.old_password ? 'p-invalid' : '']"
         toggleMask
         :feedback="false"
@@ -37,7 +37,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         id="newPassword"
         v-model="password"
         :class="['w-full my-1', errors.password ? 'p-invalid' : '']"
-        cy-data="user-change-password-new"
+        data-cy="user-change-password-new"
         aria-describedby="password-error"
         toggleMask
         :feedback="false"
@@ -62,7 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         id="confirm"
         v-model="confirm"
         :class="['w-full my-1', errors.confirm ? 'p-invalid' : '']"
-        cy-data="user-change-password-confirm"
+        data-cy="user-change-password-confirm"
         aria-describedby="confirm-password-error"
         toggleMask
         :feedback="false"
@@ -87,7 +87,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         severity="secondary"
         @click="close"
         class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
-        cy-data="user-change-password-close-btn"
+        data-cy="user-change-password-close-btn"
         >Cancel</PButton
       >
 
@@ -95,7 +95,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         :disabled="!password || !oldPassword || !confirm"
         @click="changePassword"
         class="flex w-12 lg:w-6 justify-content-center"
-        cy-data="user-change-password-change-btn"
+        data-cy="user-change-password-change-btn"
       >
         Save changes
       </PButton>
