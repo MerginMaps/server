@@ -19,12 +19,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             icon="ti ti-pencil"
             label="Edit account"
             class="w-auto mr-1"
-            cy-data="profile-edit-btn"
+            data-cy="profile-edit-btn"
           />
           <PButton
             @click="changePasswordDialog"
             severity="secondary"
-            cy-data="profile-change-password-btn"
+            data-cy="profile-change-password-btn"
             class="w-auto"
             icon="ti ti-lock"
             label="Change password"
@@ -45,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           signup.</template
         >
         <template #header-actions
-          ><PButton @click="resendConfirmationEmail" severity="secondary"
+          ><PButton @click="resendConfirmationEmail" severity="secondary" data-cy="profile-send-email-btn"
             >Send confirmation email
           </PButton></template
         >
@@ -69,10 +69,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               }
             }"
           />
-          <h3 class="text-4xl" cy-data="profile-username">
+          <h3 class="text-4xl" data-cy="profile-username">
             {{ loggedUser.username }}
           </h3>
-          <p class="m-0 text-xs" cy-data="profile-email">
+          <p class="m-0 text-xs" data-cy="profile-email">
             <i
               v-if="!loggedUser.verified_email"
               v-tooltip.top="{
@@ -89,13 +89,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               class="col-6 flex flex-column align-items-start text-left flex-wrap"
             >
               <dt class="text-xs opacity-80 mb-2">Full name</dt>
-              <dl class="font-semibold" cy-data="profile-name">
+              <dl class="font-semibold" data-cy="profile-name">
                 {{ loggedUser.name || '-' }}
               </dl>
             </div>
             <div class="col-6 flex flex-column align-items-end">
               <dt class="text-xs opacity-80 mb-2">Registered</dt>
-              <dl class="font-semibold" cy-data="profile-registered">
+              <dl class="font-semibold" data-cy="profile-registered">
                 {{ $filters.date(loggedUser.registration_date) }}
               </dl>
             </div>
@@ -116,7 +116,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </div>
           <div
             class="flex align-items-center flex-shrink-0"
-            cy-data="profile-notification"
+            data-cy="profile-notification"
           >
             <PInputSwitch
               :modelValue="loggedUser.receive_notifications"
@@ -137,7 +137,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <PButton
               @click="confirmDeleteUser"
               severity="danger"
-              cy-data="profile-close-account-btn"
+              data-cy="profile-close-account-btn"
             >
               Close account</PButton
             >

@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div v-if="version">
-    <AppSidebarRight v-model="sidebarVisible">
+    <AppSidebarRight v-model="sidebarVisible" data-cy="app-right-sidebar">
       <template #title>{{ queryId }}</template>
       <template #headerButtons
         ><PButton

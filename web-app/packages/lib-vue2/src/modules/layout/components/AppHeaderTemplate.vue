@@ -46,7 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             dark
             :ripple="false"
             class="icon-btn"
-            cy-data="app-header-btn"
+            data-cy="app-header-btn"
           >
             <div class="mr-2" style="position: relative; align-self: flex-end">
               <v-icon size="35">account_circle</v-icon>
@@ -79,12 +79,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               name: 'user_profile',
               params: { name: loggedUser.username }
             }"
-            cy-data="app-header-profile"
+            data-cy="app-header-profile"
             class="menuItemProfile"
           >
             Your Profile
           </v-list-item>
-          <v-list-item @click="logout" cy-data="app-header-logout">
+          <v-list-item @click="logout" data-cy="app-header-logout">
             <span class="menuItem"> Sign Out </span>
           </v-list-item>
           <slot name="menuItems"></slot>
