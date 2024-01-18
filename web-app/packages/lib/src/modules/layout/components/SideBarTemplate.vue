@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </header>
 
         <nav>
-          <ul class="list-none p-0 m-0">
+          <ul class="list-none p-0 m-0" data-cy="side-bar">
             <template v-for="item in initialSidebarItems" :key="item.to">
               <side-bar-item :item="item"></side-bar-item>
             </template>
