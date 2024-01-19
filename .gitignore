@@ -21,3 +21,5 @@ gen
 # pyenv
 .python-version
 web-app/.node-version
+
+.env
