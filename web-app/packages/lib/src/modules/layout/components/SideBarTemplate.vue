@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :class="[
       'sidebar',
       'fixed',
-      'w-full',
+      'w-11',
       'h-screen',
       'top-0',
       'left-0',
@@ -22,8 +22,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   >
     <div class="flex flex-column justify-content-between h-screen">
       <div>
-        <header class="p-2 lg:p-4">
-          <div class="xl:hidden flex justify-content-end">
+        <header class="p-2 lg:p-4 mb-2">
+          <div class="lg:hidden flex justify-content-end">
             <PButton
               plain
               icon="ti ti-x"

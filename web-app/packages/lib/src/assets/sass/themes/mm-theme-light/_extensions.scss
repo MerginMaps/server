@@ -17,6 +17,10 @@ body {
 p, span {
   overflow-wrap: break-word;
 }
+a {
+  text-decoration: inherit;
+  color: inherit;
+}
 
 // Customization of infinite border of tabs using classes instead pt because, we want to have access to variables
 .p-tabview-nav-content {

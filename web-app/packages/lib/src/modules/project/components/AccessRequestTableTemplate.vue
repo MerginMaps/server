@@ -26,25 +26,26 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div
           class="flex flex-column lg:flex-row align-items-center justify-content-between px-4 py-2 mt-0 border-bottom-1 border-gray-200"
         >
-          <p class="w-12 lg:w-4 text-xs p-2 lg:p-0">
+          <p class="w-12 lg:w-4 text-xs m-0">
             User
             <span class="font-semibold">{{ item.requested_by }}</span>
             requested an access to your project
             <span class="font-semibold">{{ item.project_name }}.</span>
           </p>
           <div
-            class="flex w-12 lg:w-4 align-items-center flex-wrap lg:flex-nowrap"
+            class="flex w-12 lg:w-4 align-items-center flex-wrap lg:flex-nowrap row-gap-2"
           >
-            <p
-              v-tooltip.top="{ value: $filters.datetime(item.expire) }"
-              class="opacity-80 text-xs w-12 lg:w-4 p-2 lg:p-1"
-            >
-              <template v-if="$filters.remainingtime(item.expire) === 'expired'"
-                >Expired</template
-              >
-              <template v-else
-                >Expiring in {{ $filters.remainingtime(item.expire) }}</template
-              >
+            <p class="opacity-80 text-xs w-12">
+              <span v-tooltip.right="{ value: $filters.datetime(item.expire) }">
+                <template
+                  v-if="$filters.remainingtime(item.expire) === 'expired'"
+                  >Expired</template
+                >
+                <template v-else
+                  >Expiring in
+                  {{ $filters.remainingtime(item.expire) }}</template
+                >
+              </span>
             </p>
             <AppDropdown
               v-if="showAccept"
@@ -52,9 +53,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               v-model="permissions[item.id]"
               @change="(e) => permissionsChange(e, item)"
               :disabled="expired(item.expire)"
-              class="w-6 lg:w-5 p-1"
+              class="w-6 lg:w-5"
             />
-            <div class="flex justify-content-end w-6 lg:w-4 p-1">
+            <div class="flex justify-content-end w-6 lg:w-4">
               <PButton
                 icon="ti ti-x"
                 rounded

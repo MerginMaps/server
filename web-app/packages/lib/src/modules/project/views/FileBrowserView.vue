@@ -83,7 +83,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <!-- Visible on lg breakpoint > -->
               <div
                 v-for="col in columns"
-                class="col-4 text-xs hidden lg:flex"
+                :class="[`col-${col.cols ?? 3}`, 'text-xs hidden lg:flex']"
                 :key="col.text"
               >
                 {{ col.text }}
@@ -96,26 +96,32 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <div
               v-for="item in slotProps.items"
               :key="item.id"
-              class="grid grid-nogutter px-4 py-2 mt-0 border-bottom-1 border-gray-200 text-sm hover:bg-gray-50 cursor-pointer"
+              class="grid grid-nogutter px-4 py-3 mt-0 border-bottom-1 border-gray-200 text-sm hover:bg-gray-50 cursor-pointer row-gap-2"
               @click.prevent="rowClick(item.link)"
             >
               <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->
-              <div class="flex align-items-center col-12 lg:col-4 py-2">
-                <p class="font-semibold mb-2 lg:mb-0 m-0">
-                  <file-icon :file="item" />{{ item.name }}
-                </p>
-              </div>
-              <div class="flex align-items-center col-12 lg:col-4 py-2">
+              <div
+                v-for="col in columns"
+                :class="[
+                  `lg:col-${col.cols ?? 3}`,
+                  'flex align-items-center col-12'
+                ]"
+                :key="col.key"
+              >
                 <span
-                  v-if="item.mtime"
+                  v-if="col.key === 'name'"
+                  class="font-semibold mb-2 lg:mb-0 m-0"
+                >
+                  <file-icon :file="item" />{{ item.name }}
+                </span>
+                <span
+                  v-else-if="col.key === 'mtime'"
                   v-tooltip.bottom="{ value: $filters.datetime(item.mtime) }"
                   class="opacity-80"
                 >
                   {{ $filters.timediff(item.mtime) }}
                 </span>
-              </div>
-              <div class="flex align-items-center col-12 lg:col-4 py-2">
-                <span class="opacity-80" v-if="item.size">{{
+                <span v-else class="opacity-80">{{
                   $filters.filesize(item.size)
                 }}</span>
               </div>
@@ -199,7 +205,11 @@ export default defineComponent({
       searchFilter: '',
       filter: '',
       selected: [],
-      columns: [{ text: 'Name' }, { text: 'Modified' }, { text: 'Size' }]
+      columns: [
+        { text: 'Name', key: 'name', cols: 6 },
+        { text: 'Modified', key: 'mtime' },
+        { text: 'Size', key: 'size' }
+      ]
     }
   },
   computed: {
