@@ -194,6 +194,7 @@ class ProjectSchema(ma.SQLAlchemyAutoSchema):
 
 class ProjectListSchema(ma.SQLAlchemyAutoSchema):
     id = fields.UUID()
+    storage_params = fields.Dict()
     name = fields.Str()
     namespace = fields.Method("get_workspace_name")
     access = fields.Nested(ProjectAccessSchema())
