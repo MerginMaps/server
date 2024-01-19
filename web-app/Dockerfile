@@ -6,6 +6,7 @@ COPY . /mergin/web-app
 WORKDIR /mergin/web-app
 RUN yarn install --frozen-lockfile
 RUN yarn link:dependencies
+RUN npx browserslist@latest --update-db
 RUN yarn build:all
 RUN PUBLIC_PATH=/admin/ yarn build:all:admin
 
