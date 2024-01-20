@@ -98,8 +98,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             class="py-2 text-xs"
           >
             <div class="flex align-items-center justify-content-between mb-2">
-              <span class="font-semibold">{{ change.path }}</span>
-              <span>{{
+              <span class="w-10 font-semibold">{{ change.path }}</span>
+              <span class="flex-shrink-0">{{
                 $filters.filesize(
                   version.changesets[change.path]
                     ? version.changesets[change.path]['size']

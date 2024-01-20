@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         style: {
           backgroundColor: 'transparent'
         },
-        class: 'border-none p-2'
+        class: 'border-none p-2 w-full overflow-x-auto'
       }
     }"
   >
