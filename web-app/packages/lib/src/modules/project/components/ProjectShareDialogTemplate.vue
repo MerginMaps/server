@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <aside class="flex flex-column row-gap-4 p-4">
+  <aside class="flex flex-column row-gap-4">
     <div class="flex flex-column row-gap-4">
       <div class="flex flex-column row-gap-1 p-input-filled">
         <slot name="accountsInput"></slot>
@@ -29,7 +29,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
     <!-- Footer -->
     <div
-      class="flex flex-column lg:flex-row justify-content-between align-items-center pt-3"
+      class="flex flex-column lg:flex-row justify-content-between align-items-center py-4"
     >
       <PButton
         severity="secondary"
