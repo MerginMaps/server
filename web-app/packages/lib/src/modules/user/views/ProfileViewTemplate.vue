@@ -106,7 +106,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <app-container>
       <app-section-banner>
         <template #title>Advanced</template>
-        <div class="flex align-items-center text-sm py-2">
+        <div
+          :class="[
+            'flex flex-column align-items-start text-sm py-2',
+            'row-gap-2',
+            'md:align-items-center md:flex-row'
+          ]"
+        >
           <div class="flex-grow-1">
             <p class="font-semibold my-2">Receive notifications</p>
             <span class="text-xs opacity-80"
@@ -124,7 +130,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             />
           </div>
         </div>
-        <div class="flex align-items-center text-sm py-2">
+        <div
+          :class="[
+            'flex flex-column align-items-start text-sm py-2',
+            'row-gap-2',
+            'md:align-items-center md:flex-row'
+          ]"
+        >
           <div class="flex-grow-1">
             <p class="font-semibold my-2">Close account</p>
             <span class="text-xs opacity-80"
