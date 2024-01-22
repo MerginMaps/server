@@ -54,8 +54,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts" setup>
-import { PanelProps } from 'primevue/panel';
-import { ref } from 'vue';
+import { PanelProps } from 'primevue/panel'
+import { ref } from 'vue'
 
 const props = defineProps<PanelProps>()
 const collapsed = ref(props.collapsed)
