@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <form @submit.prevent="submit" class="flex flex-column p-4 row-gap-1">
+  <form @submit.prevent="submit" class="flex flex-column pb-4 row-gap-1">
     <span class="p-input-filled">
       <label class="text-xs" for="first-name">First name</label>
       <PInputText

@@ -6,13 +6,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <PMenubar
-    class="app-header pt-0 px-2"
+    class="app-header p-2"
     :pt="{
       start: {
         class: 'w-10'
       },
       end: {
-        class: 'align-self-start lg:align-self-center'
+        class: 'align-self-start lg:align-self-center flex-wrap'
       }
     }"
   >
@@ -36,20 +36,20 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </template>
 
     <template #end>
-      <div>
+      <div class="flex align-items-center">
         <slot name="invitationsIcon"></slot>
         <PButton
           text
+          plain
           aria-haspopup="true"
           aria-controls="app-header-profile"
-          class="text-color p-0"
           @click="toggleMenu"
         >
-          <div class="mr-2">
-            <p>{{ getUserFullName }}</p>
-            <p v-if="renderNamespace" class="font-normal">
+          <div class="mr-2 max-w-80">
+            <span :style="{ whiteSpace: 'nowrap' }">{{ userName }}</span>
+            <span v-if="renderNamespace" class="font-normal">
               {{ currentNamespace || 'no workspace' }}
-            </p>
+            </span>
           </div>
           <i class="ti ti-chevron-down"></i
         ></PButton>
@@ -155,7 +155,12 @@ export default defineComponent({
       ] as MenuItem[]
     },
     avatarLabel() {
-      return this.getUserFullName.charAt(0).toUpperCase()
+      return this.loggedUser?.username?.charAt(0).toUpperCase()
+    },
+    userName() {
+      return this.getUserFullName.length > 15
+        ? `${this.getUserFullName.substring(0, 15)}...`
+        : this.getUserFullName
     }
   },
   methods: {

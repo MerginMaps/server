@@ -26,27 +26,27 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           {{ stateText }}
         </PInlineMessage>
 
-        <dl class="grid grid-nogutter row-gap-1">
+        <dl class="grid grid-nogutter row-gap-4">
           <div class="col-12">
-            <dt class="text-xs opacity-80 mb-1">File</dt>
-            <dl>
+            <dt class="text-xs opacity-80 mb-2">File</dt>
+            <dl class="font-semibold">
               <h3 class="text-2xl mt-0">
                 <FileIcon :file="{ ...file, name: fileName }" />{{ fileName }}
               </h3>
             </dl>
           </div>
-          <PDivider />
+          <PDivider class="m-0" />
           <div class="col-6">
-            <dt class="text-xs opacity-80 mb-1">Modified</dt>
-            <dl>
+            <dt class="text-xs opacity-80 mb-2">Modified</dt>
+            <dl class="font-semibold text-sm">
               <span v-tooltip="$filters.datetime(file.mtime)">{{
                 $filters.timediff(file.mtime)
               }}</span>
             </dl>
           </div>
           <div class="col-6 flex flex-column align-items-end">
-            <dt class="text-xs opacity-80 mb-1">Size</dt>
-            <dl>
+            <dt class="text-xs opacity-80 mb-2">Size</dt>
+            <dl class="font-semibold text-sm">
               {{ $filters.filesize(file.size) }}
               <span v-if="state === 'updated'"
                 >(new:

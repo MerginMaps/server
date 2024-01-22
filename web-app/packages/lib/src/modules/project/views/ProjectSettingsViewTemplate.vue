@@ -26,7 +26,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <app-container>
       <app-section-banner>
         <template #title>Advanced</template>
-        <div class="flex align-items-cente text-sm py-2">
+        <div
+          :class="[
+            'flex flex-column align-items-start text-sm py-2',
+            'row-gap-2',
+            'md:align-items-center md:flex-row'
+          ]"
+        >
           <div class="flex-grow-1">
             <template v-if="settings.access.public">
               <p class="font-semibold py-1 m-0">This is public project</p>
@@ -49,13 +55,21 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </div>
         </div>
         <div
-          class="flex align-items-center text-sm py-2"
+          :class="[
+            'flex flex-column align-items-start text-sm py-2',
+            'row-gap-2',
+            'md:align-items-center md:flex-row'
+          ]"
           v-if="$slots.operations"
         >
           <slot name="operations"></slot>
         </div>
         <div
-          class="flex align-items-center text-sm py-2"
+          :class="[
+            'flex flex-column align-items-start text-sm py-2',
+            'row-gap-2',
+            'md:align-items-center md:flex-row'
+          ]"
           v-if="project && project.permissions && project.permissions.delete"
         >
           <div class="flex-grow-1">
@@ -127,7 +141,7 @@ export default defineComponent({
       handler(project) {
         if (
           JSON.stringify(this.settings.access) !==
-          JSON.stringify(this.project.access)
+          JSON.stringify(this.project?.access)
         ) {
           this.settings = {
             access: JSON.parse(JSON.stringify(project.access))

@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         style: {
           backgroundColor: 'transparent'
         },
-        class: 'border-none'
+        class: 'border-none p-2 w-full overflow-x-auto'
       }
     }"
   >
@@ -46,35 +46,39 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script setup lang="ts">
 import { MenuItem } from 'primevue/menuitem'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 type EnhancedMenuItem = MenuItem & { path: string; active?: boolean }
 
 const route = useRoute()
 // Merge all matched meta.breadcrumps with current route breadcrumps
-const items = [
-  ...route.matched.reduce<EnhancedMenuItem[]>((acc, curr) => {
-    if (curr.name === route.name) return acc
 
-    return [
-      ...acc,
-      ...(curr.meta?.breadcrump ?? []).map((item) => ({
-        label: item.title,
-        path: item.path
-      }))
-    ]
-  }, []),
-  // adding current route wich is not in matched meta
-  ...(route.meta.breadcrump ?? []).map((item) => ({
-    label: item.title,
-    path: item.path
-  }))
-]
-  // last will be active
-  .map((item, index, items) => ({
-    ...item,
-    active: index === items.length - 1
-  }))
+const items = computed(() =>
+  [
+    ...route.matched.reduce<EnhancedMenuItem[]>((acc, curr) => {
+      if (curr.name === route.name) return acc
+
+      return [
+        ...acc,
+        ...(curr.meta?.breadcrump ?? []).map((item) => ({
+          label: item.title,
+          path: item.path
+        }))
+      ]
+    }, []),
+    // adding current route wich is not in matched meta
+    ...(route.meta.breadcrump ?? []).map((item) => ({
+      label: item.title,
+      path: item.path
+    }))
+  ]
+    // last will be active
+    .map((item, index, items) => ({
+      ...item,
+      active: index === items.length - 1
+    }))
+)
 </script>
 
 <style scoped lang="scss"></style>

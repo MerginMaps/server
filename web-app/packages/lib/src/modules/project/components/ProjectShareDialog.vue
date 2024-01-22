@@ -53,14 +53,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </template>
         <template #empty>
           <p class="px-2">
-            <i class="text-color-forest ti ti-info-circle-filled"></i>No matches
-            found - Try using their emails instead
+            <i class="text-color-forest ti ti-info-circle-filled"></i
+            >{{ ' ' }}No matches found - Try using their emails instead
           </p></template
         >
         <template v-if="data.users.length" #footer
           ><p class="px-2">
-            <i class="text-color-forest ti ti-info-circle-filled"></i>Not the
-            right person? Try typing their email instead
+            <i class="text-color-forest ti ti-info-circle-filled"></i
+            >{{ ' ' }}Not the right person? Try typing their email instead
           </p></template
         >
         <template #removetokenicon="slotProps"

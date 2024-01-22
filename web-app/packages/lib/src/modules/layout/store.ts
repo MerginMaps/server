@@ -53,7 +53,7 @@ export const useLayoutStore = defineStore('layoutModule', {
       this.drawer = !isSmall
       this.isUnderOverlayBreakpoint = isSmall
     },
-    setDrawer(payload) {
+    setDrawer(payload: { drawer: boolean }) {
       this.drawer = payload.drawer
     },
     getClosedElements() {

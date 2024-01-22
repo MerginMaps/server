@@ -92,7 +92,10 @@ export const createRouter = (pinia: Pinia) => {
       {
         path: '/profile',
         name: 'user_profile',
-        meta: { allowedForNoWorkspace: true, title: 'Profile' },
+        meta: {
+          allowedForNoWorkspace: true,
+          breadcrump: [{ title: 'Profile', path: '/profile' }]
+        },
         components: {
           default: ProfileView,
           header: AppHeader,
@@ -122,7 +125,10 @@ export const createRouter = (pinia: Pinia) => {
             name: 'explore',
             component: ProjectsListView,
             props: true,
-            meta: { public: true }
+            meta: {
+              public: true,
+              breadcrump: [{ title: 'Explore', path: '/projects/explore' }]
+            }
           },
           {
             path: ':namespace',
