@@ -127,7 +127,7 @@ export default defineComponent({
       handler(project) {
         if (
           JSON.stringify(this.settings.access) !==
-          JSON.stringify(this.project.access)
+          JSON.stringify(this.project?.access)
         ) {
           this.settings = {
             access: JSON.parse(JSON.stringify(project.access))
