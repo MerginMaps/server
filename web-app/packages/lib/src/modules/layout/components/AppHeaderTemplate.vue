@@ -44,8 +44,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           aria-haspopup="true"
           aria-controls="app-header-profile"
           @click="toggleMenu"
+          class="p-2 shadow-none"
         >
-          <div class="mr-2 max-w-80">
+          <div class="mr-2 max-w-80 flex flex-column align-items-start">
             <span :style="{ whiteSpace: 'nowrap' }">{{ userName }}</span>
             <span v-if="renderNamespace" class="font-normal">
               {{ currentNamespace || 'no workspace' }}
@@ -77,6 +78,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <p class="text-sm">{{ loggedUser.email }}</p>
             </div>
           </div>
+          <slot></slot>
           <PMenu
             :model="[...(menuItems ?? []), ...profileMenuItems]"
             :pt="{

@@ -34,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :field="col.field"
           :header="col.header"
           style="width: 40%"
-          class="pl-4 py-3"
+          class="pl-4"
           :pt="ptColumn"
         >
           <template #body="slotProps">
@@ -197,7 +197,11 @@ export default defineComponent({
     },
     ptColumn() {
       return {
+        bodyCell: {
+          class: 'pl-4 py-3'
+        },
         headerCell: {
+          class: 'pl-4 py-2',
           style: {
             backgroundColor: '#F8F9FA'
           }
