@@ -8,9 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <dashboard-view-template>
     <template #usageInfo>
       <dashboard-usage-info-row />
-      <dashboard-full-storage-warning-row v-slot="{ usage }">
-        <full-storage-warning :usage="usage" />
-      </dashboard-full-storage-warning-row>
+      <full-storage-warning />
     </template>
     <template #content>
       <dashboard-access-requests-row v-if="userStore.isGlobalWorkspaceAdmin">
@@ -27,7 +25,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import {
   DashboardViewTemplate,
   DashboardUsageInfoRow,
-  DashboardFullStorageWarningRow,
   DashboardAccessRequestsRow,
   AccessRequestTable,
   FullStorageWarning,
@@ -41,7 +38,6 @@ export default defineComponent({
   components: {
     DashboardViewTemplate,
     DashboardAccessRequestsRow,
-    DashboardFullStorageWarningRow,
     DashboardUsageInfoRow,
     AccessRequestTable,
     FullStorageWarning,

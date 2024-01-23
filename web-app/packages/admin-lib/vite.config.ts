@@ -49,7 +49,8 @@ export default defineConfig(({ mode }) => ({
         'vue',
         'pinia',
         ...Object.keys(packageJson.dependencies),
-        '@mergin/lib-vue2'
+        '@mergin/lib-vue2',
+        '@vue/babel-helper-vue-jsx-merge-props'
       ],
       output: {
         exports: 'named',
