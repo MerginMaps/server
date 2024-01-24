@@ -7,7 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div
     :class="[
-      'circle border-circle p-2 w-2rem h-2rem text-center text-color-forest text-base',
+      'circle border-circle text-center text-color-forest',
+      sizeClasses,
       severityClass
     ]"
   >
@@ -16,9 +17,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed } from 'vue'
 
-const props = defineProps<{ severity?: 'danger' | 'warn' | 'success' }>()
+const props =
+  defineProps<{ severity?: 'danger' | 'warn' | 'success'; size?: 'small' }>()
 
 const severityClass = computed(
   () =>
@@ -27,6 +29,11 @@ const severityClass = computed(
       warn: 'circle--warn',
       success: 'circle--success'
     }[props.severity])
+)
+const sizeClasses = computed(
+  () =>
+    ({ small: 'circle--small text-xs p-1' }[props.size] ||
+    'w-2rem h-2rem text-base p-2')
 )
 </script>
 
@@ -41,6 +48,10 @@ const severityClass = computed(
   }
   &--success {
     background-color: var(--positive-color);
+  }
+  &--small {
+    width: 22px;
+    height: 22px
   }
 }
 </style>
