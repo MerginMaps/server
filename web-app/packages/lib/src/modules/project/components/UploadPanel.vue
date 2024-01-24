@@ -35,20 +35,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         v-for="key in ['added', 'updated', 'removed']"
         :key="key"
       >
-        <div
-          :class="[
-            'border-circle p-2 mr-1 upload-panel-diff-circle text-center',
-            `upload-panel-diff-circle--${key}`
-          ]"
-        >
-          <i :class="['ti', `${diffIcon[key]}`]" class="text-xl"></i>
-        </div>
+        <app-circle :severity="circleSeverity[key]" class="mr-2"
+          ><i :class="['ti', `${diffIcon[key]}`]"></i
+        ></app-circle>
         <span class="text-sm opacity-80 capitalize">{{ key }}</span>
-        <div
-          class="upload-panel-diff-count border-circle p-2 w-2rem h-2rem ml-auto text-center text-color-forest"
-        >
-          {{ upload.diff[key].length }}
-        </div>
+        <app-circle class="ml-auto">{{ upload.diff[key].length }}</app-circle>
       </div>
       <div class="py-4 w-full">
         <PButton
@@ -70,6 +61,7 @@ import pick from 'lodash/pick'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import AppCircle from '@/common/components/AppCircle.vue'
 import { CHUNK_SIZE, isVersionedFile } from '@/common/mergin_utils'
 import {
   ConfirmDialog,
@@ -99,7 +91,6 @@ export default defineComponent({
       },
       set(visible) {
         if (visible) return visible
-
         this.resetUpload()
       }
     },
@@ -126,6 +117,14 @@ export default defineComponent({
         updated: 'ti-pencil'
       }
       return icons
+    },
+    circleSeverity() {
+      const severities: Record<DiffKeys, 'success' | 'warn' | 'danger'> = {
+        removed: 'danger',
+        added: 'success',
+        updated: 'warn'
+      }
+      return severities
     }
   },
   methods: {
@@ -140,7 +139,6 @@ export default defineComponent({
       'pushFinishTransaction',
       'pushCancelTransaction'
     ]),
-
     resetUpload() {
       this.discardUpload({ projectPath: this.project.path })
       if (this.source) {
@@ -162,7 +160,6 @@ export default defineComponent({
           pick(this.upload.files[path], fileInfoFields)
         )
       }
-
       const projectPath = this.project.path
       const version = this.project.version || 'v0'
       const resp = await this.pushProjectChanges({
@@ -178,7 +175,6 @@ export default defineComponent({
         this.setProject({ project: resp.data })
         return
       }
-
       this.source = axios.CancelToken.source()
       const promises = []
       added.concat(updated).forEach((path) => {
@@ -199,7 +195,6 @@ export default defineComponent({
           promises.push(p)
         })
       })
-
       // fire up chunks uploads
       this.startUpload()
       Promise.all(promises)
@@ -226,7 +221,6 @@ export default defineComponent({
       const listeners = {
         confirm: () => this.uploadChanges()
       }
-
       if (this.upload.diff.updated.filter((i) => isVersionedFile(i)).length) {
         this.showDialog({
           component: ConfirmDialog,
@@ -236,25 +230,9 @@ export default defineComponent({
         this.uploadChanges()
       }
     }
-  }
+  },
+  components: { AppCircle }
 })
 </script>
 
-<style lang="scss" scoped>
-.upload-panel {
-  &-diff-count {
-    background-color: var(--light-green-color);
-  }
-  &-diff-circle {
-    &--removed {
-      background-color: var(--negative-color);
-    }
-    &--updated {
-      background-color: var(--warning-color);
-    }
-    &--added {
-      background-color: var(--positive-color);
-    }
-  }
-}
-</style>
+<style lang="scss" scoped></style>

@@ -77,20 +77,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :disabled="!changes[item.key].length"
         >
           <template #header>
-            <div
-              :class="[
-                'border-circle mr-1 text-center text-xs flex flex-column justify-content-center',
-                `version-detail-diff-circle version-detail-diff-circle--${item.key}`
-              ]"
-            >
+            <app-circle :severity="item.severity" class="mr-2">
               <i :class="['ti', `${item.icon}`]"></i>
-            </div>
+            </app-circle>
             <span class="text-sm opacity-80">{{ item.text }}</span>
-            <div
-              class="version-detail-diff-count border-circle p-2 w-2rem h-2rem ml-auto text-center text-color-forest text-xs"
-            >
+            <app-circle class="ml-auto">
               {{ changes[item.key].length }}
-            </div></template
+            </app-circle></template
           >
           <div
             v-for="change in changes[item.key]"
@@ -150,6 +143,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import AppCircle from '@/common/components/AppCircle.vue'
 import AppSidebarRight from '@/common/components/AppSidebarRight.vue'
 import { getErrorMessage } from '@/common/error_utils'
 import { ProjectVersion } from '@/modules'
@@ -160,7 +154,7 @@ import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
   name: 'VersionDetailView',
-  components: { FileChangesetSummaryTable, AppSidebarRight },
+  components: { FileChangesetSummaryTable, AppSidebarRight, AppCircle },
   props: {
     asAdmin: {
       type: Boolean,
@@ -174,11 +168,31 @@ export default defineComponent({
   },
   computed: {
     ...mapState(useProjectStore, ['project', 'versions']),
-    changeTabs() {
+    changeTabs(): {
+      key: 'added' | 'updated' | 'removed'
+      severity: 'success' | 'warn' | 'danger'
+      text: string
+      icon: string
+    }[] {
       return [
-        { key: 'added', text: 'Files added', icon: 'ti-plus' },
-        { key: 'updated', text: 'Files edited', icon: 'ti-pencil' },
-        { key: 'removed', text: 'Files removed', icon: 'ti-trash' }
+        {
+          key: 'added',
+          severity: 'success',
+          text: 'Files added',
+          icon: 'ti-plus'
+        },
+        {
+          key: 'updated',
+          severity: 'warn',
+          text: 'Files edited',
+          icon: 'ti-pencil'
+        },
+        {
+          key: 'removed',
+          severity: 'danger',
+          text: 'Files removed',
+          icon: 'ti-trash'
+        }
       ]
     },
     changes() {
@@ -259,26 +273,4 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss" scoped>
-// TODO:  add circles to own component
-.version-detail {
-  &-diff-count {
-    background-color: var(--light-green-color);
-    width: 24px;
-    height: 24px;
-  }
-  &-diff-circle {
-    width: 24px;
-    height: 24px;
-    &--removed {
-      background-color: var(--negative-color);
-    }
-    &--updated {
-      background-color: var(--warning-color);
-    }
-    &--added {
-      background-color: var(--positive-color);
-    }
-  }
-}
-</style>
+<style lang="scss" scoped></style>
