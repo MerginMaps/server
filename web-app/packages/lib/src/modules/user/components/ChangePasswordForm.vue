@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
     <span class="p-input-filled">
       <app-password-tooltip for="newPassword"
-        ><template #label>New Password</template>
+        ><template #label>New password</template>
       </app-password-tooltip>
 
       <PPassword
@@ -45,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
     <span class="p-input-filled">
       <app-password-tooltip for="confirm">
-        <template #label>Change password</template>
+        <template #label>Confirm password</template>
       </app-password-tooltip>
 
       <PPassword

@@ -32,7 +32,7 @@ const icon = (severity: ToastMessageOptions['severity']) => {
   const mapper: Record<ToastMessageOptions['severity'], string> = {
     success: 'ti ti-circle-check-filled',
     info: 'ti ti-info-circle-filled',
-    warn: 'ti ti-alert-circle-filled',
+    warn: 'ti ti-alert-triangle-filled',
     error: 'ti ti-alert-circle-filled'
   }
 
