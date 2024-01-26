@@ -4,6 +4,7 @@
 
 export { default as AppCircle } from './AppCircle.vue'
 export { default as AppSection } from './AppSection.vue'
+export { default as AppSectionBanner } from './AppSectionBanner.vue'
 export { default as AppContainer } from './AppContainer.vue'
 export { default as AppPanelToggleable } from './AppPanelToggleable.vue'
 export { default as AppsidebarRight } from './AppSidebarRight.vue'
