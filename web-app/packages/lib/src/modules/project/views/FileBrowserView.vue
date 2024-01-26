@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <PInputText
               placeholder="Search files"
               v-model="searchFilter"
-              :pt="{ root: { class: 'border-round-xl w-full' } }"
+              :pt="{ root: { class: 'w-full' } }"
             />
           </span>
           <AppMenu :items="filterMenuItems" />

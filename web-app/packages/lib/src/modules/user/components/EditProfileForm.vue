@@ -12,10 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         id="first-name"
         v-model="editedProfile.first_name"
         cy-data="profile-edit-first-name"
-        :class="[
-          'w-full my-1 border-round-xl',
-          errors.first_name ? 'p-invalid' : ''
-        ]"
+        :class="['w-full my-1', errors.first_name ? 'p-invalid' : '']"
         toggleMask
         :feedback="false"
         aria-describedby="first-name-error"
@@ -31,10 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         id="last-name"
         v-model="editedProfile.last_name"
         cy-data="profile-edit-last-name"
-        :class="[
-          'w-full my-1 border-round-xl',
-          errors.last_name ? 'p-invalid' : ''
-        ]"
+        :class="['w-full my-1', errors.last_name ? 'p-invalid' : '']"
         toggleMask
         :feedback="false"
         aria-describedby="last-name-error"
@@ -50,10 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         id="email"
         v-model="editedProfile.email"
         cy-data="profile-edit-email"
-        :class="[
-          'w-full my-1 border-round-xl',
-          errors.email ? 'p-invalid' : ''
-        ]"
+        :class="['w-full my-1', errors.email ? 'p-invalid' : '']"
         toggleMask
         :feedback="false"
         aria-describedby="email-error"

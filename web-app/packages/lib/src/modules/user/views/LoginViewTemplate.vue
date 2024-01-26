@@ -31,10 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             color="inputColor"
             data-cy="reset-form-email"
             v-model="email"
-            :class="[
-              'w-full my-1 border-round-xl',
-              errors.email ? 'p-invalid' : ''
-            ]"
+            :class="['w-full my-1', errors.email ? 'p-invalid' : '']"
           />
           <span class="p-error text-xs" id="login-error">{{
             errors.email?.[0] || '&nbsp;'
@@ -67,10 +64,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             name="login"
             v-model="login"
             data-cy="login-form-login"
-            :class="[
-              'w-full my-1 border-round-xl',
-              errors.login ? 'p-invalid' : ''
-            ]"
+            :class="['w-full my-1', errors.login ? 'p-invalid' : '']"
             aria-describedby="login-error"
             placeholder="Please enter username or email"
             :inputProps="{ autocomplete: 'on' }"
