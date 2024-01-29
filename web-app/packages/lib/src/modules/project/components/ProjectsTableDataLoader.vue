@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     >
       <template #empty>
         <div class="flex flex-column align-items-center p-4 text-center">
-          <img src="@mergin/lib/dist/map-circle.svg" alt="No projects" />
+          <img src="@/assets/map-circle.svg" alt="No projects" />
           <p class="font-semibold m-0 p-4">
             <template v-if="projectsSearch"
               >We couldn't find any projects matching your search
