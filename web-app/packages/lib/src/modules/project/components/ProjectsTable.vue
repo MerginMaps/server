@@ -39,11 +39,20 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :pt="ptColumn"
         >
           <template #body="slotProps">
-            <p class="font-semibold text-sm mb-1">
-              <template v-if="showNamespace"
-                >{{ slotProps.data.namespace }} /</template
-              >{{ slotProps.data.name
-              }}<PTag
+            <p class="font-semibold text-sm mb-2 m-0">
+              <router-link
+                :to="{
+                  name: 'project',
+                  params: {
+                    namespace: slotProps.data.namespace,
+                    projectName: slotProps.data.name
+                  }
+                }"
+              >
+                <template v-if="showNamespace"
+                  >{{ slotProps.data.namespace }} /</template
+                >{{ slotProps.data.name }}</router-link
+              ><PTag
                 v-if="slotProps.data.access.public && !onlyPublic"
                 severity="success"
                 :pt="{ root: { class: 'p-1 ml-1' } }"
@@ -68,15 +77,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 data-cy="project-form-conflict-file"
               ></i>
             </p>
-            <p
-              v-tooltip.bottom="{
+            <span
+              v-tooltip.right="{
                 value: $filters.datetime(slotProps.data.updated),
                 pt: { root: { 'data-cy': 'project-form-updated' } }
               }"
-              class="text-color-secondary mt-0"
+              class="opacity-80 m-0"
             >
               Updated {{ $filters.timediff(slotProps.data.updated) }}
-            </p>
+            </span>
           </template>
         </PColumn>
         <PColumn
@@ -189,7 +198,11 @@ export default defineComponent({
     },
     ptColumn() {
       return {
+        bodyCell: {
+          class: 'pl-4 py-3'
+        },
         headerCell: {
+          class: 'pl-4 py-2',
           style: {
             backgroundColor: '#F8F9FA'
           }

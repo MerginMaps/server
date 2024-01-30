@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :class="[
       'sidebar',
       'fixed',
-      'w-full',
+      'w-11',
       'h-screen',
       'top-0',
       'left-0',
@@ -22,12 +22,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   >
     <div class="flex flex-column justify-content-between h-screen">
       <div>
-        <header>
-          <div class="xl:hidden flex justify-content-end">
-            <PButton icon="ti ti-x" text rounded @click="onCloseClick" />
+        <header class="p-2 lg:p-4 mb-2">
+          <div class="lg:hidden flex justify-content-end">
+            <PButton
+              plain
+              icon="ti ti-x"
+              text
+              rounded
+              @click="onCloseClick"
+              class="p-1 text-2xl"
+            />
           </div>
 
-          <div class="flex justify-content-center p-4">
+          <div class="flex justify-content-center">
             <img src="@/assets/mm-logo.svg" />
           </div>
         </header>
@@ -91,7 +98,7 @@ const initialSidebarItems = computed<SideBarItemModel[]>(() => {
 const isOpen = computed<boolean>(() => layoutStore.drawer)
 
 const onCloseClick = () => {
-  layoutStore.setDrawer(false)
+  layoutStore.setDrawer({ drawer: false })
 }
 </script>
 

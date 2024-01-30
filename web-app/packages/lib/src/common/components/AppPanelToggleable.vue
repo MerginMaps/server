@@ -6,17 +6,20 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <PPanel
+    v-bind="$props"
     toggleable
+    :collapsed="collapsed"
     :pt="{
       header(options) {
         return {
           class: [
-            'surface-section border-none p-4',
+            'surface-section border-none p-4 cursor-pointer',
             // Toggle border radius by open / closed panel
             options.state.d_collapsed
               ? 'border-round-2xl'
               : 'border-round-top-2xl'
-          ]
+          ],
+          onclick: headerClick
         }
       },
       content: {
@@ -51,4 +54,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   </PPanel>
 </template>
 
-<script lang="ts" setup></script>
+<script lang="ts" setup>
+import { PanelProps } from 'primevue/panel'
+import { ref } from 'vue'
+
+const props = defineProps<PanelProps>()
+const collapsed = ref(props.collapsed)
+
+function headerClick() {
+  collapsed.value = !collapsed.value
+}
+</script>

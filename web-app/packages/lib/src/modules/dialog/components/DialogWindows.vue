@@ -18,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         style: {
           maxWidth: `${dialogProps.maxWidth}px`
         },
-        class: 'w-10 lg:w-4 border-round-2xl'
+        class: 'w-10 md:w-8 lg:w-6 xl:w-4 max-w-30rem border-round-2xl'
       },
       header: {
         class: 'border-none border-round-top-2xl',

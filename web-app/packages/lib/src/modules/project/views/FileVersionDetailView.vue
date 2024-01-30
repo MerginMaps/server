@@ -32,13 +32,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               :pt="ptColumn"
             >
               <template #body="slotProps">
-                <div
-                  :class="[
-                    'border-circle mr-1 text-center text-xs flex flex-column justify-content-center',
-                    `file-version-detail-diff-circle file-version-detail-diff-circle--${
-                      slotProps.data[col.value]
-                    }`
-                  ]"
+                <app-circle
+                  class="mr-1"
+                  :severity="actions[slotProps.data[col.value]].severity"
                 >
                   <i
                     :class="[
@@ -46,7 +42,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                       `${actions[slotProps.data[col.value]].icon}`
                     ]"
                   ></i>
-                </div>
+                </app-circle>
               </template>
             </PColumn>
             <!-- else show data -->
@@ -95,6 +91,7 @@ import isArray from 'lodash/isArray'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import AppCircle from '@/common/components/AppCircle.vue'
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppSection from '@/common/components/AppSection.vue'
 import { waitCursor } from '@/common/html_utils'
@@ -123,9 +120,9 @@ export default defineComponent({
       > | null,
       loading: true,
       actions: {
-        insert: { icon: 'ti-plus' },
-        update: { icon: 'ti-pen' },
-        delete: { icon: 'ti-trash' }
+        insert: { icon: 'ti-plus', severity: 'success' },
+        update: { icon: 'ti-pen', severity: 'warn' },
+        delete: { icon: 'ti-trash', severity: 'danger' }
       },
       itemsPerPage: 10
     }
@@ -232,23 +229,7 @@ export default defineComponent({
         })
     }
   },
-  components: { AppContainer, AppSection }
+  components: { AppContainer, AppSection, AppCircle }
 })
 </script>
-<style lang="scss" scoped>
-.file-version-detail {
-  &-diff-circle {
-    width: 24px;
-    height: 24px;
-    &--delete {
-      background-color: var(--negative-color);
-    }
-    &--update {
-      background-color: var(--warning-color);
-    }
-    &--insert {
-      background-color: var(--positive-color);
-    }
-  }
-}
-</style>
+<style lang="scss" scoped></style>

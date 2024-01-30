@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <div class="flex flex-column align-items-center p-4 text-center gap-3">
+  <div class="flex flex-column align-items-center pb-4 text-center gap-3">
     <img
       v-if="severity === 'danger'"
       src="@/assets/trash.svg"
@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         id="confirmValue"
         v-model="confirmValue"
         type="text"
-        class="border-round-xl flex-grow-1"
+        class="flex-grow-1"
       />
       <label for="confirmValue">{{ confirmField.label }}</label>
     </span>

@@ -16,9 +16,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div class="flex flex-column h-full">
           <!-- Header -->
           <div
-            class="flex align-items-center justify-content-between px-4 py-0"
+            class="flex align-items-center justify-content-between py-2 px-3"
           >
-            <h4 class="flex-grow-1 w-10">
+            <h4 class="w-9">
               <slot v-if="isScrollingContent" name="title"></slot>
             </h4>
             <div class="flex-shrink-0">

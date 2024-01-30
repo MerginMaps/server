@@ -7,7 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div>
     <template v-if="project">
-      <app-container class="flex justify-content-end xl:pb-1 lg:-mb-6">
+      <app-container
+        class="flex justify-content-start lg:justify-content-end xl:pb-1 lg:-mb-6"
+      >
         <!-- Z indexes based on minus margin, its not possible to add additional buttons to tab view -->
         <div class="relative z-1">
           <!-- Toolbar -->
@@ -54,20 +56,20 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         data-cy="project-tab-nav"
         :pt="{
           root: {
-            class: 'relative z-auto mb-1'
+            class: 'relative z-auto'
           },
           nav: {
             style: {
               backgroundColor: 'transparent',
               maxWidth: '1120px'
             },
-            class: 'mx-auto border-transparent'
+            class: 'mx-auto px-3 lg:px-0 border-transparent'
           },
           panelContainer: {
             style: {
               backgroundColor: 'transparent'
             },
-            class: 'p-0'
+            class: 'py-0 px-3'
           }
         }"
       >

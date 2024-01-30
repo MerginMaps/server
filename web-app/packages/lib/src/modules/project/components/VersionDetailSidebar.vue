@@ -20,37 +20,37 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           data-cy="file-detail-download-btn"
         ></PButton
       ></template>
-      <dl class="grid">
+      <dl class="grid grid-nogutter row-gap-4">
         <div class="col-12">
-          <dt class="text-xs opacity-80 mb-1">Version</dt>
+          <dt class="text-xs opacity-80 mb-2">Version</dt>
           <dl>
             <h3 class="text-2xl mt-0">
               {{ version.name }}
             </h3>
           </dl>
-          <PDivider />
         </div>
+        <PDivider class="m-0" />
         <div class="col-6">
-          <dt class="text-xs opacity-80 mb-1">Author</dt>
-          <dl>
+          <dt class="text-xs opacity-80 mb-2">Author</dt>
+          <dl class="font-semibold text-sm">
             {{ version.author }}
           </dl>
         </div>
         <div class="col-6 flex flex-column align-items-end">
-          <dt class="text-xs opacity-80 mb-1">Project size</dt>
-          <dl>
+          <dt class="text-xs opacity-80 mb-2">Project size</dt>
+          <dl class="font-semibold text-sm">
             {{ $filters.filesize(version.project_size) }}
           </dl>
         </div>
         <div class="col-12">
-          <dt class="text-xs opacity-80 mb-1">Created</dt>
-          <dl>
+          <dt class="text-xs opacity-80 mb-2">Created</dt>
+          <dl class="font-semibold text-sm">
             {{ $filters.datetime(version.created) }}
           </dl>
         </div>
         <div class="col-12">
-          <dt class="text-xs opacity-80 mb-1">User agent</dt>
-          <dl>
+          <dt class="text-xs opacity-80 mb-2">User agent</dt>
+          <dl class="font-semibold text-sm">
             {{ version.user_agent }}
           </dl>
         </div>
@@ -77,20 +77,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :disabled="!changes[item.key].length"
         >
           <template #header>
-            <div
-              :class="[
-                'border-circle mr-1 text-center text-xs flex flex-column justify-content-center',
-                `version-detail-diff-circle version-detail-diff-circle--${item.key}`
-              ]"
-            >
+            <app-circle :severity="item.severity" class="mr-2">
               <i :class="['ti', `${item.icon}`]"></i>
-            </div>
+            </app-circle>
             <span class="text-sm opacity-80">{{ item.text }}</span>
-            <div
-              class="version-detail-diff-count border-circle p-2 w-2rem h-2rem ml-auto text-center text-color-forest text-xs"
-            >
+            <app-circle class="ml-auto">
               {{ changes[item.key].length }}
-            </div></template
+            </app-circle></template
           >
           <div
             v-for="change in changes[item.key]"
@@ -98,8 +91,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             class="py-2 text-xs"
           >
             <div class="flex align-items-center justify-content-between mb-2">
-              <span class="font-semibold">{{ change.path }}</span>
-              <span>{{
+              <span class="w-10 font-semibold">{{ change.path }}</span>
+              <span class="flex-shrink-0">{{
                 $filters.filesize(
                   version.changesets[change.path]
                     ? version.changesets[change.path]['size']
@@ -150,6 +143,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import AppCircle from '@/common/components/AppCircle.vue'
 import AppSidebarRight from '@/common/components/AppSidebarRight.vue'
 import { getErrorMessage } from '@/common/error_utils'
 import { ProjectVersion } from '@/modules'
@@ -160,7 +154,7 @@ import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
   name: 'VersionDetailView',
-  components: { FileChangesetSummaryTable, AppSidebarRight },
+  components: { FileChangesetSummaryTable, AppSidebarRight, AppCircle },
   props: {
     asAdmin: {
       type: Boolean,
@@ -174,11 +168,31 @@ export default defineComponent({
   },
   computed: {
     ...mapState(useProjectStore, ['project', 'versions']),
-    changeTabs() {
+    changeTabs(): {
+      key: 'added' | 'updated' | 'removed'
+      severity: 'success' | 'warn' | 'danger'
+      text: string
+      icon: string
+    }[] {
       return [
-        { key: 'added', text: 'Files added', icon: 'ti-plus' },
-        { key: 'updated', text: 'Files edited', icon: 'ti-pencil' },
-        { key: 'removed', text: 'Files removed', icon: 'ti-trash' }
+        {
+          key: 'added',
+          severity: 'success',
+          text: 'Files added',
+          icon: 'ti-plus'
+        },
+        {
+          key: 'updated',
+          severity: 'warn',
+          text: 'Files edited',
+          icon: 'ti-pencil'
+        },
+        {
+          key: 'removed',
+          severity: 'danger',
+          text: 'Files removed',
+          icon: 'ti-trash'
+        }
       ]
     },
     changes() {
@@ -259,26 +273,4 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss" scoped>
-// TODO:  add circles to own component
-.version-detail {
-  &-diff-count {
-    background-color: var(--light-green-color);
-    width: 24px;
-    height: 24px;
-  }
-  &-diff-circle {
-    width: 24px;
-    height: 24px;
-    &--removed {
-      background-color: var(--negative-color);
-    }
-    &--updated {
-      background-color: var(--warning-color);
-    }
-    &--added {
-      background-color: var(--positive-color);
-    }
-  }
-}
-</style>
+<style lang="scss" scoped></style>

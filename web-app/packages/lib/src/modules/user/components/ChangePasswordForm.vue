@@ -5,23 +5,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <div class="flex flex-column p-4 row-gap-1">
+  <div class="flex flex-column pb-4 row-gap-1">
     <span class="p-input-filled">
       <label class="text-xs" for="oldPassowrd">Old password</label>
       <PPassword
         id="oldPassowrd"
         v-model="oldPassword"
         data-cy="user-change-password-old"
-        :class="['w-full my-1', errors.old_password ? 'p-invalid' : '']"
+        :class="['my-1', errors.old_password ? 'p-invalid' : '']"
         toggleMask
         :feedback="false"
         aria-describedby="old-password-error"
         placeholder="Please enter your password"
-        :pt="{
-          input: {
-            root: { class: 'w-full border-round-xl' }
-          }
-        }"
       />
       <span class="p-error text-xs" id="old-password-error">{{
         errors.old_password?.[0] || '&nbsp;'
@@ -30,23 +25,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
     <span class="p-input-filled">
       <app-password-tooltip for="newPassword"
-        ><template #label>New Password</template>
+        ><template #label>New password</template>
       </app-password-tooltip>
 
       <PPassword
         id="newPassword"
         v-model="password"
-        :class="['w-full my-1', errors.password ? 'p-invalid' : '']"
+        :class="['my-1', errors.password ? 'p-invalid' : '']"
         data-cy="user-change-password-new"
         aria-describedby="password-error"
         toggleMask
         :feedback="false"
         placeholder="Please enter your new password"
-        :pt="{
-          input: {
-            root: { class: 'w-full border-round-xl' }
-          }
-        }"
       />
       <span class="p-error text-xs" id="password-error">{{
         errors.password?.[0] || '&nbsp;'
@@ -55,23 +45,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
     <span class="p-input-filled">
       <app-password-tooltip for="confirm">
-        <template #label>Change password</template>
+        <template #label>Confirm password</template>
       </app-password-tooltip>
 
       <PPassword
         id="confirm"
         v-model="confirm"
-        :class="['w-full my-1', errors.confirm ? 'p-invalid' : '']"
+        :class="['my-1', errors.confirm ? 'p-invalid' : '']"
         data-cy="user-change-password-confirm"
         aria-describedby="confirm-password-error"
         toggleMask
         :feedback="false"
         placeholder="Please enter your new password"
-        :pt="{
-          input: {
-            root: { class: 'w-full border-round-xl' }
-          }
-        }"
       />
 
       <span class="p-error text-xs" id="confirm-password-error">{{

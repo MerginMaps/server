@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :class="{ 'p-invalid': errors.detail }"
           aria-describedby="text-error"
           data-cy="project-form-name"
-          class="border-round-xl flex-grow-1"
+          class="flex-grow-1"
         />
         <label for="name">Project name</label>
         <small class="p-error" id="text-error">{{

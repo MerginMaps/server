@@ -26,6 +26,7 @@ export * as pathUtils from './path_utils'
 export * as permissionUtils from './permission_utils'
 export * as textUtils from './text_utils'
 export * as routeUtils from './route_utils'
+export * as errorUtils from './error_utils'
 
 export interface ComponentCustomPropertyFilters {
   filesize: typeof formatFileSize

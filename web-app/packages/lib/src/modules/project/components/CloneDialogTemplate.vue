@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         type="text"
         aria-describedby="text-error"
         data-cy="clone-dialog-project-name"
-        class="border-round-xl flex-grow-1"
+        class="flex-grow-1"
       />
       <label for="name">Project name</label>
     </span>

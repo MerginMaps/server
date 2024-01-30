@@ -64,7 +64,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                       :options="permissionStates"
                       :model-value="actualPermissions(item)"
                       @update:model-value="(e) => valueChanged(item, e)"
-                      :disabled="item.user.id === loggedUser.id"
+                      :disabled="
+                        item.user.id === loggedUser.id ||
+                        item.user.id === project.creator
+                      "
                       class="w-6 lg:w-full"
                     />
                     <template v-else
@@ -180,11 +183,7 @@ export default defineComponent({
   },
   computed: {
     ...mapState(useUserStore, ['loggedUser']),
-    ...mapState(useProjectStore, [
-      'currentNamespace',
-      'project',
-      'isProjectOwner'
-    ]),
+    ...mapState(useProjectStore, ['currentNamespace', 'project']),
     permissionStates(): DropdownOption<ProjectRoleName>[] {
       return [
         {
