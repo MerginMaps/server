@@ -12,16 +12,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         id="oldPassowrd"
         v-model="oldPassword"
         cy-data="user-change-password-old"
-        :class="['w-full my-1', errors.old_password ? 'p-invalid' : '']"
+        :class="['my-1', errors.old_password ? 'p-invalid' : '']"
         toggleMask
         :feedback="false"
         aria-describedby="old-password-error"
         placeholder="Please enter your password"
-        :pt="{
-          input: {
-            root: { class: 'w-full border-round-xl' }
-          }
-        }"
       />
       <span class="p-error text-xs" id="old-password-error">{{
         errors.old_password?.[0] || '&nbsp;'
@@ -30,23 +25,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
     <span class="p-input-filled">
       <app-password-tooltip for="newPassword"
-        ><template #label>New Password</template>
+        ><template #label>New password</template>
       </app-password-tooltip>
 
       <PPassword
         id="newPassword"
         v-model="password"
-        :class="['w-full my-1', errors.password ? 'p-invalid' : '']"
+        :class="['my-1', errors.password ? 'p-invalid' : '']"
         cy-data="user-change-password-new"
         aria-describedby="password-error"
         toggleMask
         :feedback="false"
         placeholder="Please enter your new password"
-        :pt="{
-          input: {
-            root: { class: 'w-full border-round-xl' }
-          }
-        }"
       />
       <span class="p-error text-xs" id="password-error">{{
         errors.password?.[0] || '&nbsp;'
@@ -55,23 +45,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
     <span class="p-input-filled">
       <app-password-tooltip for="confirm">
-        <template #label>Change password</template>
+        <template #label>Confirm password</template>
       </app-password-tooltip>
 
       <PPassword
         id="confirm"
         v-model="confirm"
-        :class="['w-full my-1', errors.confirm ? 'p-invalid' : '']"
+        :class="['my-1', errors.confirm ? 'p-invalid' : '']"
         cy-data="user-change-password-confirm"
         aria-describedby="confirm-password-error"
         toggleMask
         :feedback="false"
         placeholder="Please enter your new password"
-        :pt="{
-          input: {
-            root: { class: 'w-full border-round-xl' }
-          }
-        }"
       />
 
       <span class="p-error text-xs" id="confirm-password-error">{{

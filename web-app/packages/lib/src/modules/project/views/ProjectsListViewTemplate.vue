@@ -36,7 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <PInputText
                 placeholder="Search projects by name"
                 v-model="projectsStore.projectsSearch"
-                :pt="{ root: { class: 'border-round-xl w-full' } }"
+                :pt="{ root: { class: 'w-full' } }"
               />
             </span>
             <app-menu :items="filterMenuItems" />

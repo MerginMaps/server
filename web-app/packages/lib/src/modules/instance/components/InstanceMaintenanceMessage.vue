@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <section>
       <PMessage severity="warn" @close="open = false">
         <template #messageicon="slotProps">
-          <i :class="[slotProps.class, 'ti ti-alert-circle-filled']" />
+          <i :class="[slotProps.class, 'ti ti-alert-triangle-filled']" />
         </template>
         <p>
           The service is currently in read-only mode for maintenance. Upload and

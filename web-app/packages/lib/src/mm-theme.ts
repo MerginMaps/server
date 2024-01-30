@@ -1,7 +1,10 @@
 import { AutoCompletePassThroughOptions } from 'primevue/autocomplete'
 import { ButtonPassThroughOptions } from 'primevue/button'
 import { DataViewPassThroughOptions } from 'primevue/dataview'
+import { InputTextPassThroughOptions } from 'primevue/inputtext'
 import { usePassThrough } from 'primevue/passthrough'
+import { PasswordPassThroughOptions } from 'primevue/password'
+import { ProgressBarPassThroughOptions } from 'primevue/progressbar'
 import { ToastPassThroughOptions } from 'primevue/toast'
 
 export default usePassThrough(
@@ -55,7 +58,32 @@ export default usePassThrough(
       loadingOverlay: {
         class: 'bg-primary-reverse opacity-50'
       }
-    } as DataViewPassThroughOptions
+    } as DataViewPassThroughOptions,
+    inputText: {
+      root: {
+        class: 'border-round-xl'
+      }
+    } as InputTextPassThroughOptions,
+    password: {
+      root: {
+        class: 'w-full'
+      },
+      input: { root: { class: 'w-full border-round-xl' } }
+    } as PasswordPassThroughOptions,
+    progressBar: {
+      root: {
+        style: {
+          backgroundColor: 'var(--primary-color)',
+          borderRadius: '20px'
+        }
+      },
+      value: {
+        style: {
+          backgroundColor: 'var(--forest-color)',
+          borderRadius: '20px'
+        }
+      }
+    } as ProgressBarPassThroughOptions
   },
   {}
 )
