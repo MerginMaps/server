@@ -48,7 +48,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             </template>
           </div>
           <div class="flex-shrink-0">
-            <PButton @click="confirmPublicPrivate()" severity="secondary" data-cy="settings-public-btn">
+            <PButton
+              @click="confirmPublicPrivate()"
+              severity="secondary"
+              data-cy="settings-public-btn"
+            >
               <template v-if="settings.access.public">Make private</template>
               <template v-else>Make public</template>
             </PButton>
@@ -77,7 +81,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <span class="text-xs opacity-80">All data will be lost</span>
           </div>
           <div class="flex-shrink-0">
-            <PButton @click="confirmDelete" severity="danger" data-cy="settings-delete-btn">
+            <PButton
+              @click="confirmDelete"
+              severity="danger"
+              data-cy="settings-delete-btn"
+            >
               Delete project</PButton
             >
           </div>

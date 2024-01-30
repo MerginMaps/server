@@ -15,7 +15,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div class="flex flex-grow-1 align-items-center lg:justify-content-end">
           <PButton
             @click="editProfileDialog"
-            data-cy="action-button-create"
             icon="ti ti-pencil"
             label="Edit account"
             class="w-auto mr-1"
@@ -45,7 +44,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           signup.</template
         >
         <template #header-actions
-          ><PButton @click="resendConfirmationEmail" severity="secondary" data-cy="profile-send-email-btn"
+          ><PButton
+            @click="resendConfirmationEmail"
+            severity="secondary"
+            data-cy="profile-send-email-btn"
             >Send confirmation email
           </PButton></template
         >

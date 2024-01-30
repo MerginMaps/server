@@ -51,7 +51,7 @@ const sizeClasses = computed(
   }
   &--small {
     width: 22px;
-    height: 22px
+    height: 22px;
   }
 }
 </style>
