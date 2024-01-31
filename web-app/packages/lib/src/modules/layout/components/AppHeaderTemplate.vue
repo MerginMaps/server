@@ -43,6 +43,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           plain
           aria-haspopup="true"
           aria-controls="app-header-profile"
+          data-cy="app-header-profile-btn"
           @click="toggleMenu"
           class="p-2 shadow-none"
         >
@@ -56,6 +57,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         ></PButton>
         <POverlayPanel
           id="app-header-profile"
+          data-cy="app-header-profile"
           ref="menu"
           :pt="{ root: { class: 'p-3' }, content: { class: 'p-0' } }"
         >

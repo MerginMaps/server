@@ -11,7 +11,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <img width="50" height="50" src="@/assets/globe.svg" />
       </template>
       <template #header-actions
-        ><PButton label="Browse community projects" @click.stop="click"
+        ><PButton
+          label="Browse community projects"
+          @click.stop="click"
+          data-cy="community-project-btn"
       /></template>
       <template #title>Community projects</template>
       <template #description

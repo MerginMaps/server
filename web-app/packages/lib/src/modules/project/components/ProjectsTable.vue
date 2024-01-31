@@ -17,6 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       :lazy="true"
       size="small"
       :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
+      data-cy="project-table"
       @row-click="rowClick"
       @page="onPage"
       :pt="{

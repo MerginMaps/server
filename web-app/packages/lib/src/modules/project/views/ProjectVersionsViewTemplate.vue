@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         :rows="options.itemsPerPage"
         :totalRecords="versionsCount"
         :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
-        data-cy="project-verision-table"
+        data-cy="project-version-table"
         lazy
         @page="onPage"
         :pt="{

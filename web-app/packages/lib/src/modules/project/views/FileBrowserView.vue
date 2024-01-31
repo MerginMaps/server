@@ -14,6 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <i class="ti ti-search text-xl"></i>
             <PInputText
               placeholder="Search files"
+              data-cy="search-files-field"
               v-model="searchFilter"
               :pt="{ root: { class: 'w-full' } }"
             />

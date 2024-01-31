@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-card v-on:keyup.enter="submit" cy-data="profile-edit-form">
+  <v-card v-on:keyup.enter="submit" data-cy="profile-edit-form">
     <v-card-title>
       <span class="text-h5">Edit profile</span>
     </v-card-title>
@@ -14,28 +14,28 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <v-text-field
           label="First name"
           v-model="editedProfile.first_name"
-          cy-data="profile-edit-first-name"
+          data-cy="profile-edit-first-name"
           :error-messages="errors.first_name"
           @keyup.enter="submit"
         />
         <v-text-field
           label="Last name"
           v-model="editedProfile.last_name"
-          cy-data="profile-edit-last-name"
+          data-cy="profile-edit-last-name"
           :error-messages="errors.last_name"
           @keyup.enter="submit"
         />
         <v-text-field
           label="Email address"
           v-model="editedProfile.email"
-          cy-data="profile-edit-email"
+          data-cy="profile-edit-email"
           :error-messages="errors.email"
           @keyup.enter="submit"
         />
         <v-checkbox
           label="Receive notifications"
           color="orange"
-          cy-data="profile-edit-notification"
+          data-cy="profile-edit-notification"
           v-model="editedProfile.receive_notifications"
           :error-messages="errors.receive_notifications"
         />
@@ -45,13 +45,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <v-btn
             class="text--primary"
             @click="close"
-            cy-data="profile-edit-close-btn"
+            data-cy="profile-edit-close-btn"
           >
             Close
           </v-btn>
           <v-btn
             class="primary white--text"
-            cy-data="profile-edit-save-btn"
+            data-cy="profile-edit-save-btn"
             @click="submit"
           >
             Save

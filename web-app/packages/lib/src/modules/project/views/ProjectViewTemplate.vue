@@ -19,6 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             v-if="loggedUser"
             icon="ti ti-send"
             label="Share"
+            data-cy="project-share-btn"
             class="mr-2"
           />
           <PButton
@@ -52,6 +53,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <PTabView
         :active-index="activeTabIndex"
         @tab-click="(e) => tabClick(e.index)"
+        data-cy="project-tab-nav"
         :pt="{
           root: {
             class: 'relative z-auto'

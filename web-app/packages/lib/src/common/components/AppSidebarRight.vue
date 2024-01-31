@@ -31,6 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 text
                 rounded
                 class="p-1 text-2xl"
+                data-cy="right-sidebar-close-btn"
               ></PButton>
             </div>
           </div>

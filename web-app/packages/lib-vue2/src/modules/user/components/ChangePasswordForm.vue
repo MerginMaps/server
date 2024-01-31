@@ -13,14 +13,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <v-form
         @submit.prevent
         class="layout column"
-        cy-data="user-change-password-form"
+        data-cy="user-change-password-form"
       >
         <v-text-field
           label="Old Password"
           name="oldPassword"
           color="inputColor"
           v-model="oldPassword"
-          cy-data="user-change-password-old"
+          data-cy="user-change-password-old"
           :append-icon="passwordVisible ? 'visibility_off' : 'visibility'"
           @click:append="passwordVisible = !passwordVisible"
           :type="passwordVisible ? 'text' : 'password'"
@@ -31,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           name="password"
           color="inputColor"
           v-model="password"
-          cy-data="user-change-password-new"
+          data-cy="user-change-password-new"
           :type="passwordVisible ? 'text' : 'password'"
           :error-messages="errors.password"
           @keyup.enter="changePassword"
@@ -41,7 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           name="confirm"
           color="inputColor"
           v-model="confirm"
-          cy-data="user-change-password-confirm"
+          data-cy="user-change-password-confirm"
           :type="passwordVisible ? 'text' : 'password'"
           :error-messages="errors.confirm"
           @keyup.enter="changePassword"
@@ -79,7 +79,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <v-btn
             class="text--primary"
             @click="close"
-            cy-data="user-change-password-close-btn"
+            data-cy="user-change-password-close-btn"
           >
             Close
           </v-btn>
@@ -87,7 +87,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             class="primary text--white"
             :disabled="!password || !oldPassword || !confirm"
             @click="changePassword"
-            cy-data="user-change-password-change-btn"
+            data-cy="user-change-password-change-btn"
           >
             Change
           </v-btn>

@@ -47,15 +47,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                     <v-row>
                       <v-col>
                         <!-- Render profile -->
-                        <div class="section" cy-data="profile-info">
+                        <div class="section" data-cy="profile-info">
                           <ul v-if="loggedUser">
-                            <li cy-data="profile-username">
+                            <li data-cy="profile-username">
                               <b> Username: </b>{{ loggedUser.username }}
                             </li>
-                            <li cy-data="profile-name">
+                            <li data-cy="profile-name">
                               <b> Name: </b>{{ loggedUser.name }}
                             </li>
-                            <li cy-data="profile-email">
+                            <li data-cy="profile-email">
                               <b> Email: </b>{{ loggedUser.email }}
                               <v-tooltip
                                 top
@@ -77,7 +77,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                                 <span>Email verification status</span>
                               </v-tooltip>
                             </li>
-                            <li cy-data="profile-notification">
+                            <li data-cy="profile-notification">
                               <b> Receive notifications: </b>
                               <v-icon
                                 v-if="loggedUser.receive_notifications"
@@ -86,7 +86,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                               >
                               <v-icon v-else color="red">clear</v-icon>
                             </li>
-                            <li cy-data="profile-registered">
+                            <li data-cy="profile-registered">
                               <b> Registered: </b
                               >{{ loggedUser.registration_date | date }}
                             </li>
@@ -102,7 +102,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                             <v-btn
                               @click="changePasswordDialog"
                               class="primary--text"
-                              cy-data="profile-change-password-btn"
+                              data-cy="profile-change-password-btn"
                             >
                               <v-icon small class="mr-2">lock</v-icon>
                               Change password
@@ -112,7 +112,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                             <v-btn
                               @click="editProfileDialog"
                               class="primary--text"
-                              cy-data="profile-edit-btn"
+                              data-cy="profile-edit-btn"
                             >
                               <v-icon small class="mr-2">edit</v-icon>
                               Edit profile
@@ -123,7 +123,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                               @click="showConfirmationDialog"
                               class="primary--text"
                               :disabled="loggedUser?.verified_profile"
-                              cy-data="profile-verify-email-btn"
+                              data-cy="profile-verify-email-btn"
                             >
                               <v-icon small class="mr-2">send</v-icon>
                               Verify email
@@ -135,7 +135,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                               class="white--text"
                               depressed
                               color="red"
-                              cy-data="profile-close-account-btn"
+                              data-cy="profile-close-account-btn"
                             >
                               <v-icon small class="mr-2">remove_circle</v-icon>
                               Close my account
