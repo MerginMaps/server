@@ -57,9 +57,8 @@ import { computed } from 'vue'
 
 import AppDropdown from '@/common/components/AppDropdown.vue'
 import TipMessage from '@/common/components/TipMessage.vue'
-import { DropdownOption } from '@/common/components/types'
 import { ProjectRoleName } from '@/common/permission_utils'
-import { useInstanceStore } from '@/main'
+import { permissionUtils, useInstanceStore } from '@/main'
 
 const instanceStore = useInstanceStore()
 const props = defineProps<{ modelValue: ProjectRoleName; disabled: boolean }>()
@@ -69,23 +68,7 @@ const emit = defineEmits<{
   submit: []
 }>()
 
-const permissionStates: DropdownOption<ProjectRoleName>[] = [
-  {
-    value: 'reader',
-    label: 'Read only',
-    description: 'Can view project files'
-  },
-  {
-    value: 'writer',
-    label: 'Write',
-    description: 'Can edit project files'
-  },
-  {
-    value: 'owner',
-    label: 'Manage',
-    description: 'Can share and remove project'
-  }
-]
+const permissionStates = permissionUtils.getProjectRoleNameValues()
 const docsUrl = `${instanceStore.configData?.docs_url ?? ''}/manage/permissions`
 // define proxyValue for modelValue to emit update:modelValue
 const permission = computed({

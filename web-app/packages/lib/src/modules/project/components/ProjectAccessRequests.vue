@@ -50,7 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <AppDropdown
               :options="dropdownPermissions"
               v-model="permissions[item.id]"
-              class="w-6 lg:w-5"
+              class="w-6 lg:w-5 lg:mr-2"
             />
             <div class="flex justify-content-end w-6 lg:w-4">
               <PButton
@@ -86,14 +86,10 @@ import { mapActions, mapState } from 'pinia'
 import { DataViewPageEvent } from 'primevue/dataview'
 import { defineComponent } from 'vue'
 
+import { permissionUtils } from '@/common'
 import AppDropdown from '@/common/components/AppDropdown.vue'
-import { DropdownOption } from '@/common/components/types'
 import { getErrorMessage } from '@/common/error_utils'
-import {
-  isAtLeastProjectRole,
-  ProjectPermissionName,
-  ProjectRole
-} from '@/common/permission_utils'
+import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
 import { GetAccessRequestsPayload } from '@/modules'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
@@ -122,24 +118,8 @@ export default defineComponent({
     ]),
     ...mapState(useUserStore, ['loggedUser']),
 
-    dropdownPermissions(): DropdownOption<ProjectPermissionName>[] {
-      return [
-        {
-          value: 'read',
-          label: 'Read only',
-          description: 'Can view project files'
-        },
-        {
-          value: 'write',
-          label: 'Write',
-          description: 'Can edit project files'
-        },
-        {
-          value: 'owner',
-          label: 'Manage',
-          description: 'Can share and remove project'
-        }
-      ]
+    dropdownPermissions() {
+      return permissionUtils.getProjectPermissionsValues()
     }
   },
   created() {
