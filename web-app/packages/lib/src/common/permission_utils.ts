@@ -50,13 +50,6 @@ export const PROJECT_ROLE_NAME_BY_ROLE: Record<ProjectRole, ProjectRoleName> = {
   [ProjectRole.owner]: 'owner'
 }
 
-export const PROJECT_ROLE_LABEL_BY_NAME: Record<ProjectRoleName, string> = {
-  none: 'None',
-  reader: 'Reader',
-  writer: 'Writer',
-  owner: 'Owner'
-}
-
 export const PROJECT_ROLE_BY_NAME: Record<ProjectRoleName, ProjectRole> = {
   none: ProjectRole.none,
   reader: ProjectRole.reader,
@@ -165,6 +158,18 @@ export function getProjectAccessUsersByRoleName(
     owner: 'ownersnames',
     writer: 'writersnames',
     reader: 'readersnames',
+    none: undefined
+  }
+  return mapper[roleName]
+}
+
+export function getProjectPermissionByRoleName(
+  roleName: ProjectRoleName
+): ProjectPermissionName {
+  const mapper: Record<ProjectRoleName, ProjectPermissionName | undefined> = {
+    owner: 'owner',
+    writer: 'write',
+    reader: 'read',
     none: undefined
   }
   return mapper[roleName]
