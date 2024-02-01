@@ -91,11 +91,11 @@ class ProjectStorage:
             ]
             z = zipfly.ZipFly(mode="w", paths=paths)
             response = Response(z.generator(), mimetype="application/zip")
-            response.headers[
-                "Content-Disposition"
-            ] = "attachment; filename={}{}.zip".format(
-                quote(self.project.name.encode("utf-8")),
-                "-" + version if version else "",
+            response.headers["Content-Disposition"] = (
+                "attachment; filename={}{}.zip".format(
+                    quote(self.project.name.encode("utf-8")),
+                    "-" + version if version else "",
+                )
             )
             return response
         files_dict = {}
