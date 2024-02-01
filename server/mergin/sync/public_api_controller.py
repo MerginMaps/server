@@ -360,9 +360,9 @@ def download_project_file(
         # encoding for nginx to be able to download file with non-ascii chars
         encoded_file_path = quote(file_path.encode("utf-8"))
         resp = make_response()
-        resp.headers[
-            "X-Accel-Redirect"
-        ] = f"/download/{project.storage_params['location']}/{encoded_file_path}"
+        resp.headers["X-Accel-Redirect"] = (
+            f"/download/{project.storage_params['location']}/{encoded_file_path}"
+        )
         resp.headers["X-Accel-Buffering"] = True
         resp.headers["X-Accel-Expires"] = "off"
     else:
@@ -716,9 +716,9 @@ def project_push(namespace, project_name):
     version = request.json["version"]
     changes = request.json["changes"]
     project = require_project(namespace, project_name, ProjectPermissions.Upload)
-    request.view_args[
-        "project"
-    ] = project  # pass full project object to request for later use
+    request.view_args["project"] = (
+        project  # pass full project object to request for later use
+    )
     push_triggered.send(project)
     pv = ProjectVersion.query.filter_by(
         project_id=project.id, name=project.latest_version
