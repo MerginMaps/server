@@ -35,6 +35,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         return {
           class: options.props?.disabled ? 'text-color' : 'text-color-forest'
         }
+      },
+      panel: {
+        style: {
+          zIndex: 2101
+        }
       }
     }"
   >

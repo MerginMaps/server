@@ -19,32 +19,25 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
     <slot></slot>
 
-    <tip-message>
-      <template #title> Mergin Maps permission system </template>
-      <template #description>
-        Learn more about permission system
-        <a :href="docsUrl" target="_blank" class="text-color-forest">here</a>.
-      </template>
-    </tip-message>
-
     <!-- Footer -->
     <div
       class="flex flex-column lg:flex-row justify-content-between align-items-center py-4"
     >
-      <PButton
-        severity="secondary"
-        @click.prevent="$emit('close')"
-        class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
-        data-cy="clone-dialog-close-btn"
-        >Cancel</PButton
-      >
+      <a
+        :href="docsUrl"
+        target="_blank"
+        class="text-color-forest w-12 lg:w-8 font-semibold"
+        ><i class="ti ti-info-circle-filled mr-2" /><span class="underline"
+          >Learn more about permission system</span
+        ></a
+      >.
 
       <PButton
         id="share-project-btn"
         :disabled="disabled"
         @click.prevent="$emit('submit')"
         data-cy="project-form-create-btn"
-        class="flex w-12 lg:w-6 justify-content-center"
+        class="flex w-12 lg:w-4 justify-content-center"
       >
         Share
       </PButton>
@@ -52,11 +45,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   </aside>
 </template>
 
-<script setup lang="ts" generic="T extends ">
+<script setup lang="ts">
 import { computed } from 'vue'
 
 import AppDropdown from '@/common/components/AppDropdown.vue'
-import TipMessage from '@/common/components/TipMessage.vue'
 import {
   ProjectRoleName,
   getProjectRoleNameValues
