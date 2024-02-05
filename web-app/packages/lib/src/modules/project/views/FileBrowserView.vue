@@ -38,7 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             class="flex flex-column text-center align-items-center w-12 lg:w-6 mb-4 lg:mb-0 lg:mr-4 border-round-xl surface-ground p-4 row-gap-3"
           >
             <div class="w-full flex justify-content-end mb-0">
-              <PTag severity="success">Recommended</PTag>
+              <PTag>Recommended</PTag>
             </div>
 
             <div
