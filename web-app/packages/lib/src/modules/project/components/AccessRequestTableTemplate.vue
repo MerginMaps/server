@@ -53,7 +53,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               v-model="permissions[item.id]"
               @change="(e) => permissionsChange(e, item)"
               :disabled="expired(item.expire)"
-              class="w-6 lg:w-5"
+              class="w-6 lg:w-5 lg:mr-2"
             />
             <div class="flex justify-content-end w-6 lg:w-4">
               <PButton
@@ -91,8 +91,10 @@ import { DropdownChangeEvent } from 'primevue/dropdown'
 import { defineComponent } from 'vue'
 
 import AppDropdown from '@/common/components/AppDropdown.vue'
-import { DropdownOption } from '@/common/components/types'
-import { ProjectPermissionName } from '@/common/permission_utils'
+import {
+  ProjectPermissionName,
+  getProjectPermissionsValues
+} from '@/common/permission_utils'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
 import {
@@ -151,24 +153,8 @@ export default defineComponent({
         ...this.selectedPermissions
       }
     },
-    dropdownPermissions(): DropdownOption<ProjectPermissionName>[] {
-      return [
-        {
-          value: 'read',
-          label: 'Read only',
-          description: 'Can view project files'
-        },
-        {
-          value: 'write',
-          label: 'Write',
-          description: 'Can edit project files'
-        },
-        {
-          value: 'owner',
-          label: 'Manage',
-          description: 'Can share and remove project'
-        }
-      ]
+    dropdownPermissions() {
+      return getProjectPermissionsValues()
     }
   },
   methods: {

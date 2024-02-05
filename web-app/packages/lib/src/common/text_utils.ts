@@ -17,5 +17,8 @@ export function isValidEmail(email: string) {
   return emailPattern.test(email)
 }
 
-export const EMAIL_LIST_SEPARATORS = /[;, ]/
+/**
+ * The regular expression to split on. Splits a string into parts separated by whitespace or , and ;.
+ */
+export const EMAIL_LIST_SEPARATORS = /\s+|[,;]/
 export const EMAIL_LIST_DEFAULT_SEPARATOR = ';'

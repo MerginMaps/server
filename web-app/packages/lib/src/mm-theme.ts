@@ -77,10 +77,15 @@ export default usePassThrough(
           borderRadius: '20px'
         }
       },
-      value: {
-        style: {
-          backgroundColor: 'var(--forest-color)',
-          borderRadius: '20px'
+      value(options) {
+        return {
+          style: {
+            backgroundColor:
+              options.props.value > 100
+                ? 'var(--negative-color)'
+                : 'var(--forest-color)',
+            borderRadius: '20px'
+          }
         }
       }
     } as ProgressBarPassThroughOptions

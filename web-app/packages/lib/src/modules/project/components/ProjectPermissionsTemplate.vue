@@ -131,11 +131,10 @@ import { defineComponent } from 'vue'
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppDropdown from '@/common/components/AppDropdown.vue'
 import AppSection from '@/common/components/AppSection.vue'
-import { DropdownOption } from '@/common/components/types'
 import {
   isAtLeastProjectRole,
   ProjectRole,
-  ProjectRoleName
+  getProjectRoleNameValues
 } from '@/common/permission_utils'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
@@ -188,24 +187,8 @@ export default defineComponent({
   computed: {
     ...mapState(useUserStore, ['loggedUser']),
     ...mapState(useProjectStore, ['currentNamespace', 'project']),
-    permissionStates(): DropdownOption<ProjectRoleName>[] {
-      return [
-        {
-          value: 'reader',
-          label: 'Read only',
-          description: 'Can view project files'
-        },
-        {
-          value: 'writer',
-          label: 'Write',
-          description: 'Can edit project files'
-        },
-        {
-          value: 'owner',
-          label: 'Manage',
-          description: 'Can share and remove project'
-        }
-      ]
+    permissionStates() {
+      return getProjectRoleNameValues()
     },
     displayedValues() {
       const { ownersnames, readersnames, writersnames } = this.modelValue

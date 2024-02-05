@@ -22,6 +22,7 @@ $colors: (
     "light-green": #EFF5F3,
     "medium-green": #B7CDC4,
     "sun": #F4CB46,
+    "sunset": #FFB673,
     "sand": #FFF4E2,
     "primary": $primaryColor,
     "grape": #5A2740,
@@ -100,5 +101,6 @@ $colors: (
     --negative-color: #{map-get($colors, "negative")};
     --warning-color: #{map-get($colors, "warning")};
     --positive-color: #{map-get($colors, "positive")};
+    --sunset-color: #{map-get($colors, "sunset")};
     color-scheme: light;
 }
