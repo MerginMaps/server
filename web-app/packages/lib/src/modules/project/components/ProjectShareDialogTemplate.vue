@@ -53,17 +53,21 @@ import {
   ProjectRoleName,
   getProjectRoleNameValues
 } from '@/common/permission_utils'
-import { useInstanceStore } from '@/main'
+import { DropdownOption, useInstanceStore } from '@/main'
 
 const instanceStore = useInstanceStore()
-const props = defineProps<{ modelValue: ProjectRoleName; disabled: boolean }>()
+const props = defineProps<{
+  modelValue: ProjectRoleName
+  disabled: boolean
+  permissions?: DropdownOption<ProjectRoleName>
+}>()
 const emit = defineEmits<{
   'update:modelValue': [value: ProjectRoleName]
   close: []
   submit: []
 }>()
 
-const permissionStates = getProjectRoleNameValues()
+const permissionStates = props.permissions || getProjectRoleNameValues()
 const docsUrl = `${instanceStore.configData?.docs_url ?? ''}/manage/permissions`
 // define proxyValue for modelValue to emit update:modelValue
 const permission = computed({
