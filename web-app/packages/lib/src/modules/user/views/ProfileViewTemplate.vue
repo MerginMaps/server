@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <div class="profile-view">
+  <article class="profile-view">
     <app-container
       ><section
         class="flex flex-column lg:flex-row lg:align-items-center row-gap-3"
@@ -160,7 +160,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </app-section-banner>
     </app-container>
     <app-container><slot name="additionalContent"></slot></app-container>
-  </div>
+  </article>
 </template>
 
 <script lang="ts">

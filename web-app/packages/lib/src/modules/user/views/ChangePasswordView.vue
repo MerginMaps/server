@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <section
+  <article
     class="relative change-password-view flex align-items-center justify-content-center h-full"
   >
     <aside class="absolute top-0 left-0 m-4">
@@ -91,7 +91,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         >
       </div>
     </div>
-  </section>
+  </article>
 </template>
 
 <script lang="ts">
