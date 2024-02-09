@@ -65,7 +65,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 ]"
               >
                 <template v-if="col.value === 'name'">
-                  <p class="opacity-80 font-semibold lg:hidden">
+                  <p class="opacity-80 font-semibold font-semibold lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">
@@ -73,7 +73,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   </span>
                 </template>
                 <template v-else-if="col.value === 'created'">
-                  <p class="text-xs opacity-80 mb-1 lg:hidden">
+                  <p class="text-xs opacity-80 font-semibold lg:hidden">
                     {{ col.text }}
                   </p>
                   <span
@@ -86,7 +86,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   </span>
                 </template>
                 <template v-else-if="col.value === 'changes.added'">
-                  <p class="text-xs opacity-80 mb-1 lg:hidden">
+                  <p class="text-xs opacity-80 font-semibold lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">{{
@@ -94,7 +94,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   }}</span>
                 </template>
                 <template v-else-if="col.value === 'changes.updated'">
-                  <p class="text-xs opacity-80 mb-1 lg:hidden">
+                  <p class="text-xs opacity-80 font-semibold lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">
@@ -102,7 +102,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   </span>
                 </template>
                 <template v-else-if="col.value === 'changes.removed'">
-                  <p class="text-xs opacity-80 mb-1 lg:hidden">
+                  <p class="text-xs opacity-80 font-semibold lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">
@@ -110,7 +110,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   </span>
                 </template>
                 <template v-else-if="col.value === 'project_size'">
-                  <p class="text-xs opacity-80 mb-1 lg:hidden">
+                  <p class="text-xs opacity-80 font-semibold lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">{{
@@ -118,7 +118,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   }}</span>
                 </template>
                 <template v-else>
-                  <p class="text-xs opacity-80 mb-1 lg:hidden">
+                  <p class="text-xs opacity-80 font-semibold lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">{{ item[col.value] }}</span>
