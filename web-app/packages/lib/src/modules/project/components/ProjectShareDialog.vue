@@ -55,7 +55,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </div>
         </template>
         <template #empty>
-          <p class="px-2">
+          <p class="p-2">
             <i class="text-color-forest ti ti-info-circle-filled"></i
             >{{ ' ' }}No matches found - Try using their emails instead
           </p></template
