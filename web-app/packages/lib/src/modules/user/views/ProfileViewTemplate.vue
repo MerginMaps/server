@@ -59,11 +59,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <PAvatar
             :label="(loggedUser.username ?? '').charAt(0).toUpperCase()"
             shape="circle"
-            size="xlarge"
             :pt="{
               root: {
-                class:
-                  'text-5xl surface-ground font-semibold text-color-forest',
+                class: 'text-5xl font-semibold text-color-forest',
                 style: {
                   width: '120px',
                   height: '120px'

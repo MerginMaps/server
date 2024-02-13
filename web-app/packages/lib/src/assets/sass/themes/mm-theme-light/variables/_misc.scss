@@ -80,7 +80,7 @@ $progressSpinnerColorFour:$warningMessageTextColor !default;
 
 /// Background of an avatar
 /// @group misc
-$avatarBg:#dee2e6;
+$avatarBg: map-get($map: $colors, $key: medium-green);
 
 /// Text color of an avatar
 /// @group misc
