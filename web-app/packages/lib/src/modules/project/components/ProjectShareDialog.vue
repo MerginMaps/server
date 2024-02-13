@@ -25,6 +25,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         input-id="accounts"
         data-key="key"
         @item-select="select"
+        :minLength="0"
+        forceSelection
+        completeOnFocus
       >
         <template #option="{ option }">
           <div :key="option.key" class="flex align-items-center gap-4">
