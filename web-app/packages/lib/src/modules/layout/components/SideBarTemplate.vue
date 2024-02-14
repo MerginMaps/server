@@ -17,6 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       'surface-section',
       'transition-all',
       'transition-duration-500',
+      'z-5',
       !isOpen ? '-translate-x-100' : 'xl:translate-x-0'
     ]"
   >
@@ -106,8 +107,6 @@ const onCloseClick = () => {
 .sidebar {
   // Based on <main> grid values
   max-width: 16.66%;
-  // TODO: Clean it to normal values after VUETIFY
-  z-index: 1004;
 }
 
 @media screen and (max-width: $lg) {

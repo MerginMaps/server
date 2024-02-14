@@ -6,6 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <PDialog
+    :auto-z-index="false"
     v-model:visible="dialogStore.isDialogOpen"
     modal
     :dismissableMask="!dialogProps.persistent"
@@ -36,6 +37,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       },
       content: {
         class: 'border-round-bottom-2xl'
+      },
+      mask: {
+        style: { zIndex: 7 }
       }
     }"
   >

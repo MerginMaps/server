@@ -330,3 +330,5 @@ export interface ProjectVersionFileChange {
   table: string
   type: 'insert' | 'update' | 'delete'
 }
+
+export type ErrorCodes = 'UpdateProjectAccessError'

@@ -1,5 +1,5 @@
 /* Customizations to the designer theme should be defined here */
-
+/** CSS reset */
 h1,
 h2,
 h3,
@@ -10,8 +10,9 @@ h6 {
   font-weight: 600;
   margin: 0;
   overflow-wrap: break-word;
+  min-width: 0;
 }
-body {
+body, p {
   margin: 0
 }
 p, span {
@@ -21,6 +22,12 @@ a {
   text-decoration: inherit;
   color: inherit;
 }
+/** In browsers is hardcoded min width for inputs... */
+input, textarea {
+  min-width: 0;
+}
+
+/** Primevue overrides */
 
 // Customization of infinite border of tabs using classes instead pt because, we want to have access to variables
 .p-tabview-nav-content {
@@ -52,6 +59,13 @@ a {
     }
   }
 }
+.p-chips {
+    &:not(.p-disabled).p-focus {
+      .p-chips-multiple-container {
+        box-shadow: inset 0 0 0 1px $primaryDarkColor;
+      }
+    }
+  }
 
 .text-color-medium-green {
   color: map-get($colors, 'medium-green');

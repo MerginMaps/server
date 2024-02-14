@@ -68,7 +68,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               shape="circle"
               :pt="{
                 root: {
-                  class: 'surface-ground mr-2 text-color-forest font-semibold',
+                  class: 'mr-2 text-color-forest font-semibold',
                   style: {
                     borderRadius: '50%'
                   }

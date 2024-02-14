@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <div class="profile-view">
+  <article class="profile-view">
     <app-container
       ><section
         class="flex flex-column lg:flex-row lg:align-items-center row-gap-3"
@@ -59,11 +59,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <PAvatar
             :label="(loggedUser.username ?? '').charAt(0).toUpperCase()"
             shape="circle"
-            size="xlarge"
             :pt="{
               root: {
-                class:
-                  'text-5xl surface-ground font-semibold text-color-forest',
+                class: 'text-5xl font-semibold text-color-forest',
                 style: {
                   width: '120px',
                   height: '120px'
@@ -160,7 +158,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </app-section-banner>
     </app-container>
     <app-container><slot name="additionalContent"></slot></app-container>
-  </div>
+  </article>
 </template>
 
 <script lang="ts">

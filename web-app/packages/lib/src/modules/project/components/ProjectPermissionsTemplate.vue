@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <div
               v-for="item in slotProps.items"
               :key="item.id"
-              class="flex align-items-center hover:bg-gray-50 border-bottom-1 border-gray-200 text-sm px-4 py-2 mt-0"
+              class="flex align-items-center hover:bg-gray-50 border-bottom-1 border-gray-200 text-xs px-4 py-2 mt-0"
             >
               <div class="w-11 grid grid-nogutter">
                 <!-- Columns, we are using data view instead table, it is better handling of responsive state -->
@@ -41,11 +41,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   v-for="col in columns.filter((item) => !item.fixed)"
                   :key="col.value"
                   :class="[
-                    'flex flex-column justify-content-center col-12',
-                    `lg:col-${col.cols ?? 4}`
+                    'flex flex-column justify-content-center col-12 gap-1 py-2',
+                    `lg:col-${col.cols ?? 4}`,
+                    'lg:py-0'
                   ]"
                 >
-                  <p class="text-xs opacity-80 mb-1 lg:hidden">
+                  <p class="opacity-80 lg:hidden font-semibold">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">
@@ -55,8 +56,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                       shape="circle"
                       :pt="{
                         root: {
-                          class:
-                            'surface-ground mr-2 font-semibold text-color-forest',
+                          class: 'mr-2 font-semibold text-color-forest',
                           style: {
                             borderRadius: '50%'
                           }

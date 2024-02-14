@@ -200,27 +200,27 @@ $successButtonFocusShadow: 0 0 0 0.2rem lighten($successButtonBg, 35%);
 
 /// Background of a warning button
 /// @group button
-$warningButtonBg: map-get($colors, sand);
+$warningButtonBg: map-get($colors, warning);
 
 /// Text color of a warning button
 /// @group button
-$warningButtonTextColor: map-get($colors, warning);
+$warningButtonTextColor: map-get($colors, earth);
 
 /// Border of a warning button
 /// @group button
-$warningButtonBorder: 1px solid map-get($colors, sand);
+$warningButtonBorder: 1px solid map-get($colors, warning);
 
 /// Background of a warning button in hover state
 /// @group button
-$warningButtonHoverBg: #FFB300;
+$warningButtonHoverBg: map-get($colors, earth);
 
 /// Text color of a warning button in hover state
 /// @group button
-$warningButtonTextHoverColor: $textColor;
+$warningButtonTextHoverColor: map-get($colors, warning);
 
 /// Border color of a warning button in hover state
 /// @group button
-$warningButtonHoverBorderColor: #FFB300;
+$warningButtonHoverBorderColor: map-get($colors, earth);
 
 /// Background of a warning button in pressed state
 /// @group button

@@ -59,7 +59,7 @@ const instanceStore = useInstanceStore()
 const props = defineProps<{
   modelValue: ProjectRoleName
   disabled: boolean
-  permissions?: DropdownOption<ProjectRoleName>
+  permissions?: DropdownOption<ProjectRoleName>[]
 }>()
 const emit = defineEmits<{
   'update:modelValue': [value: ProjectRoleName]

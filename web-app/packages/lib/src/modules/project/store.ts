@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import { AxiosResponse } from 'axios'
+import { AxiosError, AxiosResponse } from 'axios'
 import FileSaver from 'file-saver'
 import keyBy from 'lodash/keyBy'
 import omit from 'lodash/omit'
@@ -38,7 +38,8 @@ import {
   DownloadPayload,
   DeleteProjectPayload,
   ProjectsSortingParams,
-  SaveProjectSettings
+  SaveProjectSettings,
+  ErrorCodes
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
 
@@ -520,12 +521,15 @@ export const useProjectStore = defineStore('projectModule', {
       }
     },
 
+
     async saveProjectSettings(payload: {
       namespace: string
       newSettings: SaveProjectSettings
       projectName: string
     }): Promise<AxiosResponse<ProjectDetail>> {
       const { namespace, newSettings, projectName } = payload
+
+      const notificationStore = useNotificationStore()
 
       try {
         waitCursor(true)
@@ -539,6 +543,19 @@ export const useProjectStore = defineStore('projectModule', {
         this.setProject({ project: saveProjectSettingsResponse.data })
         waitCursor(false)
         return saveProjectSettingsResponse
+      } catch (err) {
+        const error = err as AxiosError
+        const code = error?.response?.data?.code as ErrorCodes
+        // First handle specific error code from BE
+        if (code === 'UpdateProjectAccessError') {
+          notificationStore.warn({
+            life: 1000000,
+            text: 'Unable to share project with the following users',
+            detail: (error.response.data?.invalid_usernames ?? []).join(', ')
+          })
+        }
+        // else push error to handling of components
+        throw err
       } finally {
         waitCursor(false)
       }

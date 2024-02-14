@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               placeholder="Search files"
               data-cy="search-files-field"
               v-model="searchFilter"
-              :pt="{ root: { class: 'w-full' } }"
+              class="w-full"
             />
           </span>
           <AppMenu :items="filterMenuItems" />
@@ -97,7 +97,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <div
               v-for="item in slotProps.items"
               :key="item.id"
-              class="grid grid-nogutter px-4 py-3 mt-0 border-bottom-1 border-gray-200 text-sm hover:bg-gray-50 cursor-pointer row-gap-2"
+              class="grid grid-nogutter px-4 py-3 mt-0 border-bottom-1 border-gray-200 text-xs hover:bg-gray-50 cursor-pointer row-gap-2"
               @click.prevent="rowClick(item.link)"
             >
               <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->

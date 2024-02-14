@@ -8,40 +8,32 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <div>
     <app-container>
       <template v-if="!namespace">
-        <section class="surface-ground pb-3">
-          <!-- Title with buttons -->
-          <header
-            class="flex flex-column lg:flex-row lg:align-items-center mb-0 lg:mb-3"
-          >
-            <h1 class="text-3xl font-semibold mb-3 lg:mb-0">
+        <app-section ground class="mb-3">
+          <template #header>
+            <h1 class="text-3xl">
               {{ header }}
             </h1>
-            <div
-              class="flex flex-grow-1 align-items-center lg:justify-content-end mb-3 lg:mb-0"
-            >
-              <PButton
-                v-if="canCreateProject && loggedUser && loggedUser.email"
-                @click="newProjectDialog"
-                data-cy="action-button-create"
-                class="w-auto mr-1"
-              >
-                Create project
-              </PButton>
-            </div>
-          </header>
-          <!-- Filters -->
-          <div class="flex align-items-center justify-content-between">
+          </template>
+          <template #headerActions>
+            <PButton
+              v-if="canCreateProject && loggedUser && loggedUser.email"
+              @click="newProjectDialog"
+              data-cy="action-button-create"
+              label="Create project"
+            />
+          </template>
+          <div class="flex align-items-center justify-content-between mt-3">
             <span class="p-input-icon-left flex-grow-1">
               <i class="ti ti-search text-xl"></i>
               <PInputText
                 placeholder="Search projects by name"
                 v-model="projectsStore.projectsSearch"
-                :pt="{ root: { class: 'w-full' } }"
+                class="w-full"
               />
             </span>
             <app-menu :items="filterMenuItems" />
           </div>
-        </section>
+        </app-section>
         <app-section>
           <slot name="projects" :onlyPublic="onlyPublic"></slot>
         </app-section>

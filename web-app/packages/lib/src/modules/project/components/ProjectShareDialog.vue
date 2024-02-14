@@ -25,6 +25,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         input-id="accounts"
         data-key="key"
         @item-select="select"
+        :minLength="0"
+        forceSelection
+        completeOnFocus
       >
         <template #option="{ option }">
           <div :key="option.key" class="flex align-items-center gap-4">
@@ -33,7 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               shape="circle"
               :pt="{
                 root: {
-                  class: 'surface-ground font-semibold text-color-forest mr-2',
+                  class: 'font-semibold text-color-forest mr-2',
                   style: {
                     borderRadius: '50%'
                   }
@@ -52,7 +55,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </div>
         </template>
         <template #empty>
-          <p class="px-2">
+          <p class="p-2">
             <i class="text-color-forest ti ti-info-circle-filled"></i
             >{{ ' ' }}No matches found - Try using their emails instead
           </p></template

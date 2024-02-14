@@ -22,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           }
         },
         content: {
-          class: 'border-none border-round-bottom-2xl p-4 pt-2'
+          class: 'border-none border-round-bottom-2xl p-4 pt-0'
         }
       }"
     >
