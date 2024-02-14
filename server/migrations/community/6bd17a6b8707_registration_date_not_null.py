@@ -27,15 +27,9 @@ def upgrade():
     conn.execute(
         sa.text(
             """
-    with null_registration_date as (
-        select *
-        from user_profile
-        where registration_date is Null
-        )
-    update user_profile up
+    update user_profile
     set registration_date = '2000-01-01 10:00:00.0'
-    from null_registration_date
-    where up.user_id = null_registration_date.user_id
+    where registration_date is Null
     """
         )
     )
