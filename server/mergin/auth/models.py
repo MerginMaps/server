@@ -142,7 +142,7 @@ class UserProfile(db.Model):
     last_name = db.Column(db.String(256), nullable=True, info={"label": "Last name"})
     registration_date = db.Column(
         db.DateTime(),
-        nullable=True,
+        nullable=False,
         info={"label": "Date of creation of user account"},
         default=datetime.datetime.utcnow,
     )
