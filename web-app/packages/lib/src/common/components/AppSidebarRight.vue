@@ -7,10 +7,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <aside>
     <PSidebar
+      :auto-z-index="false"
       v-model:visible="model"
       :modal="true"
       position="right"
       class="w-11 lg:w-5 xl:w-3"
+      :pt="{
+        mask: {
+          style: {
+            // < then dialog zindex (7)
+            zIndex: 6
+          }
+        }
+      }"
     >
       <template #container="{ closeCallback }">
         <div class="flex flex-column h-full">

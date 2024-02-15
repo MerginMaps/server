@@ -13,6 +13,7 @@ import {
   SetFormErrorPayload
 } from '@/modules/form/types'
 import { useNotificationStore } from '@/modules/notification/store'
+import axios from 'axios'
 
 export interface FormState {
   errors: Record<MerginComponentUuid, FormErrors>
@@ -45,9 +46,18 @@ export const useFormStore = defineStore('formModule', {
       }
     },
     async handleError(payload: HandleErrorPayload) {
-      let errorMessage
+      let errorMessage =
+        payload.generalMessage ?? (payload?.error as string) ?? 'Error'
       const notificationStore = useNotificationStore()
-      if (typeof payload.error?.response?.data === 'object') {
+      if (!axios.isAxiosError(payload.error)) {
+        await notificationStore.error({ text: errorMessage })
+        return
+      }
+
+      if (
+        axios.isAxiosError(payload.error) &&
+        typeof payload.error?.response?.data === 'object'
+      ) {
         // two types of error responses
         // TODO: Get data from HTTP status code, handle formError not standard error with detail
         if (
@@ -62,11 +72,7 @@ export const useFormStore = defineStore('formModule', {
           })
         }
       } else {
-        errorMessage =
-          payload?.error?.response?.data ??
-          payload.generalMessage ??
-          payload?.error ??
-          'Error'
+        errorMessage = payload?.error?.response?.data ?? errorMessage
       }
       if (errorMessage) {
         // show error message in notification component

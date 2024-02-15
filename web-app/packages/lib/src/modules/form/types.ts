@@ -25,6 +25,6 @@ export interface ClearErrorsPayload extends MerginComponentUuidPayload {
 }
 
 export interface HandleErrorPayload extends MerginComponentUuidPayload {
-  error: AxiosError<FormErrorsData>
+  error: AxiosError<FormErrorsData> | Error | unknown
   generalMessage: FormErrorMessage
 }
