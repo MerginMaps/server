@@ -152,7 +152,7 @@ export default defineComponent({
           JSON.stringify(this.project?.access)
         ) {
           this.settings = {
-            access: JSON.parse(JSON.stringify(project?.access))
+            access: JSON.parse(JSON.stringify(project?.access ?? {}))
           }
         }
         this.key++
