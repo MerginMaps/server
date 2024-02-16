@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <div class="grid grid-nogutter min-h-screen">
     <dialog-windows />
     <router-view name="sidebar" v-slot="{ Component }" :key="$route.fullPath">
-      <component :is="Component" />
+      <component :is="Component" v-if="isSideBar" />
     </router-view>
 
     <main
@@ -84,7 +84,10 @@ export default defineComponent({
 
     /** Check if sidebar is occuring in route */
     isSideBar() {
-      return !!this.$route.matched.find((item) => item.components.sidebar)
+      return (
+        !!this.$route.matched.find((item) => item.components.sidebar) &&
+        !!this.loggedUser?.id
+      )
     }
   },
   watch: {
