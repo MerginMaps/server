@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <app-container v-if="$slots.additionalBeforeContent"
       ><slot name="additionalBeforeContent"></slot
     ></app-container>
-    <app-container v-if="!loggedUser.verified_email">
+    <app-container v-if="!loggedUser?.verified_email">
       <app-section-banner>
         <template #header-image
           ><img width="50" height="50" src="@/assets/warning.svg"
@@ -57,7 +57,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <app-section class="p-4">
         <div class="flex flex-column align-items-center row-gap-3 text-center">
           <PAvatar
-            :label="(loggedUser.username ?? '').charAt(0).toUpperCase()"
+            :label="(loggedUser?.username ?? '').charAt(0).toUpperCase()"
             shape="circle"
             :pt="{
               root: {
@@ -70,11 +70,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             }"
           />
           <h3 class="text-4xl" data-cy="profile-username">
-            {{ loggedUser.username }}
+            {{ loggedUser?.username }}
           </h3>
           <p class="m-0 text-xs" data-cy="profile-email">
             <i
-              v-if="!loggedUser.verified_email"
+              v-if="!loggedUser?.verified_email"
               v-tooltip.top="{
                 value: 'Email verification status'
               }"
@@ -82,7 +82,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               data-cy="project-form-missing-project"
               style="color: var(--grape-color)"
             ></i
-            >&nbsp;{{ loggedUser.email }}
+            >&nbsp;{{ loggedUser?.email }}
           </p>
           <dl class="profile-view-detail-list grid grid-nogutter text-sm">
             <div
@@ -90,13 +90,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             >
               <dt class="text-xs opacity-80 mb-2">Full name</dt>
               <dl class="font-semibold" data-cy="profile-name">
-                {{ loggedUser.name || '-' }}
+                {{ loggedUser?.name || '-' }}
               </dl>
             </div>
             <div class="col-6 flex flex-column align-items-end">
               <dt class="text-xs opacity-80 mb-2">Registered</dt>
               <dl class="font-semibold" data-cy="profile-registered">
-                {{ $filters.date(loggedUser.registration_date) }}
+                {{ $filters.date(loggedUser?.registration_date) }}
               </dl>
             </div>
           </dl>
@@ -125,7 +125,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             data-cy="profile-notification"
           >
             <PInputSwitch
-              :modelValue="loggedUser.receive_notifications"
+              :modelValue="loggedUser?.receive_notifications"
               @change="receiveNotificationsChange"
             />
           </div>
@@ -213,7 +213,7 @@ export default defineComponent({
     },
     confirmDeleteUser() {
       const props: DeleteAccountConfirmProps = {
-        username: this.loggedUser.username
+        username: this.loggedUser?.username
       }
       const listeners = {
         confirm: async () => await this.closeUserProfile()
@@ -251,7 +251,7 @@ export default defineComponent({
       this.editUserProfile({
         editedUser: {
           ...this.loggedUser,
-          receive_notifications: !this.loggedUser.receive_notifications
+          receive_notifications: !this.loggedUser?.receive_notifications
         },
         componentId: this.merginComponentUuid
       })

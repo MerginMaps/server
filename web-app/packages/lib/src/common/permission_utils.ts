@@ -27,6 +27,8 @@ export type ProjectRoleName =
   | Extract<UserRoleName, 'reader' | 'writer' | 'owner'>
   | 'none'
 
+export type ProjectPermissionName = 'owner' | 'write' | 'read'
+
 export const USER_ROLE_NAME_BY_ROLE: Record<UserRole, UserRoleName> = {
   [UserRole.guest]: 'guest',
   [UserRole.reader]: 'reader',
@@ -67,8 +69,6 @@ export enum ProjectPermission {
   write,
   owner
 }
-
-export type ProjectPermissionName = 'owner' | 'write' | 'read'
 
 export const PROJECT_PERMISSION_NAME_BY_PERMISSION: Record<
   ProjectPermission,

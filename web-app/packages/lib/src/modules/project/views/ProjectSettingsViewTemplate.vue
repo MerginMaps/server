@@ -152,7 +152,7 @@ export default defineComponent({
           JSON.stringify(this.project?.access)
         ) {
           this.settings = {
-            access: JSON.parse(JSON.stringify(project.access))
+            access: JSON.parse(JSON.stringify(project?.access ?? {}))
           }
         }
         this.key++
@@ -164,7 +164,7 @@ export default defineComponent({
       this.$router.push('/projects')
     }
     this.settings = {
-      access: JSON.parse(JSON.stringify(this.project.access))
+      access: JSON.parse(JSON.stringify(this.project?.access))
     }
   },
   methods: {
@@ -182,7 +182,7 @@ export default defineComponent({
       this.settings.access.writersnames = newSettings.access.writersnames
       this.saveSettings(newSettings)
     },
-    saveSettings: debounce(function (newSettings) {
+    _saveSettings(newSettings) {
       try {
         this.saveProjectSettings({
           namespace: this.namespace,
@@ -194,10 +194,13 @@ export default defineComponent({
           text: getErrorMessage(err, 'Failed to save project settings')
         })
       }
-    }, 2000),
+    },
+    saveSettings: debounce(function (newSettings) {
+      this._saveSettings(newSettings)
+    }, 1000),
     togglePublicPrivate() {
       this.settings.access.public = !this.settings.access.public
-      this.saveSettings(this.settings)
+      this._saveSettings(this.settings)
     },
     confirmDelete() {
       const props: ConfirmDialogProps = {

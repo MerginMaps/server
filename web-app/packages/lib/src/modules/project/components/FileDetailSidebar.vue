@@ -171,7 +171,7 @@ export default defineComponent({
     },
     sidebarVisible: {
       get() {
-        return !!this.filePath
+        return !!this.filePath && !!this.file
       },
       set(visible: boolean) {
         if (visible) {

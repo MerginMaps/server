@@ -317,15 +317,11 @@ export default defineComponent({
       this.fetchProjectsResponseStatus = status
     },
     async getProject() {
-      await new Promise((resolve) => {
-        resolve(
-          this.fetchProjectDetail({
-            callbackStatus: this.setFetchProjectResponseStatus,
-            projectName: this.projectName,
-            namespace: this.namespace,
-            isLoggedUser: !!this.loggedUser
-          })
-        )
+      this.fetchProjectDetail({
+        callbackStatus: this.setFetchProjectResponseStatus,
+        projectName: this.projectName,
+        namespace: this.namespace,
+        isLoggedUser: !!this.loggedUser
       })
     },
     cloneDialog() {
