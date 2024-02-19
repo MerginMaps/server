@@ -164,7 +164,7 @@ export default defineComponent({
       this.$router.push('/projects')
     }
     this.settings = {
-      access: JSON.parse(JSON.stringify(this.project.access))
+      access: JSON.parse(JSON.stringify(this.project?.access))
     }
   },
   methods: {
