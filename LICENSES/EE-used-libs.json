@@ -1,13 +1,5 @@
 [
     {
-        "library": "aiohttp",
-        "version": "3.9.1"
-    },
-    {
-        "library": "aiosignal",
-        "version": "1.3.1"
-    },
-    {
         "library": "alembic",
         "version": "1.12.0"
     },
@@ -16,24 +8,12 @@
         "version": "5.1.1"
     },
     {
-        "library": "astroid",
-        "version": "2.13.5"
-    },
-    {
         "library": "async-timeout",
         "version": "4.0.3"
     },
     {
-        "library": "atomicwrites",
-        "version": "1.4.0"
-    },
-    {
         "library": "attrs",
         "version": "23.1.0"
-    },
-    {
-        "library": "backports.zoneinfo",
-        "version": "0.2.1"
     },
     {
         "library": "bcrypt",
@@ -46,10 +26,6 @@
     {
         "library": "binaryornot",
         "version": "0.4.4"
-    },
-    {
-        "library": "black",
-        "version": "23.12.0"
     },
     {
         "library": "blinker",
@@ -66,10 +42,6 @@
     {
         "library": "certifi",
         "version": "2023.7.22"
-    },
-    {
-        "library": "cffi",
-        "version": "1.15.1"
     },
     {
         "library": "chardet",
@@ -108,16 +80,8 @@
         "version": "2.14.1"
     },
     {
-        "library": "coverage",
-        "version": "7.3.0"
-    },
-    {
         "library": "Deprecated",
         "version": "1.2.14"
-    },
-    {
-        "library": "dill",
-        "version": "0.3.7"
     },
     {
         "library": "distro",
@@ -168,16 +132,12 @@
         "version": "1.0.1"
     },
     {
-        "library": "frozenlist",
-        "version": "1.4.0"
-    },
-    {
         "library": "gevent",
         "version": "23.9.1"
     },
     {
         "library": "greenlet",
-        "version": "3.0.1"
+        "version": "3.0.0"
     },
     {
         "library": "gunicorn",
@@ -192,24 +152,8 @@
         "version": "4.12.0"
     },
     {
-        "library": "importlib-resources",
-        "version": "6.0.1"
-    },
-    {
         "library": "inflection",
         "version": "0.5.1"
-    },
-    {
-        "library": "iniconfig",
-        "version": "2.0.0"
-    },
-    {
-        "library": "isodate",
-        "version": "0.6.1"
-    },
-    {
-        "library": "isort",
-        "version": "5.12.0"
     },
     {
         "library": "itsdangerous",
@@ -236,10 +180,6 @@
         "version": "5.3.2"
     },
     {
-        "library": "lazy-object-proxy",
-        "version": "1.9.0"
-    },
-    {
         "library": "Mako",
         "version": "1.2.4"
     },
@@ -256,32 +196,8 @@
         "version": "0.28.1"
     },
     {
-        "library": "mccabe",
-        "version": "0.7.0"
-    },
-    {
-        "library": "multidict",
-        "version": "6.0.4"
-    },
-    {
-        "library": "mypy-extensions",
-        "version": "1.0.0"
-    },
-    {
-        "library": "openapi-schema-validator",
-        "version": "0.1.6"
-    },
-    {
-        "library": "openapi-spec-validator",
-        "version": "0.3.3"
-    },
-    {
         "library": "packaging",
         "version": "23.2"
-    },
-    {
-        "library": "pathspec",
-        "version": "0.12.1"
     },
     {
         "library": "pathvalidate",
@@ -289,23 +205,7 @@
     },
     {
         "library": "pip",
-        "version": "22.2.2"
-    },
-    {
-        "library": "pkgutil_resolve_name",
-        "version": "1.3.10"
-    },
-    {
-        "library": "platformdirs",
-        "version": "3.10.0"
-    },
-    {
-        "library": "playwright",
-        "version": "1.40.0"
-    },
-    {
-        "library": "pluggy",
-        "version": "1.2.0"
+        "version": "22.3"
     },
     {
         "library": "prompt-toolkit",
@@ -320,44 +220,8 @@
         "version": "2.9.3"
     },
     {
-        "library": "py",
-        "version": "1.11.0"
-    },
-    {
-        "library": "pycparser",
-        "version": "2.21"
-    },
-    {
-        "library": "pyee",
-        "version": "11.0.1"
-    },
-    {
         "library": "pygeodiff",
         "version": "1.0.4"
-    },
-    {
-        "library": "pylint",
-        "version": "2.15.0"
-    },
-    {
-        "library": "pyparsing",
-        "version": "3.0.9"
-    },
-    {
-        "library": "pyrsistent",
-        "version": "0.19.2"
-    },
-    {
-        "library": "pytest",
-        "version": "7.1.2"
-    },
-    {
-        "library": "pytest-cov",
-        "version": "3.0.0"
-    },
-    {
-        "library": "pytest-dotenv",
-        "version": "0.5.2"
     },
     {
         "library": "python-dateutil",
@@ -396,10 +260,6 @@
         "version": "0.9.1"
     },
     {
-        "library": "responses",
-        "version": "0.21.0"
-    },
-    {
         "library": "result",
         "version": "0.5.0"
     },
@@ -424,10 +284,6 @@
         "version": "1.8.4"
     },
     {
-        "library": "sib-api-v3-sdk",
-        "version": "7.6.0"
-    },
-    {
         "library": "six",
         "version": "1.16.0"
     },
@@ -436,24 +292,8 @@
         "version": "1.4.45"
     },
     {
-        "library": "stripe",
-        "version": "2.48.0"
-    },
-    {
         "library": "swagger-ui-bundle",
         "version": "0.0.9"
-    },
-    {
-        "library": "toml",
-        "version": "0.10.2"
-    },
-    {
-        "library": "tomli",
-        "version": "2.0.1"
-    },
-    {
-        "library": "tomlkit",
-        "version": "0.12.1"
     },
     {
         "library": "typing_extensions",
@@ -462,10 +302,6 @@
     {
         "library": "typish",
         "version": "1.9.3"
-    },
-    {
-        "library": "tzdata",
-        "version": "2023.3"
     },
     {
         "library": "urllib3",
@@ -500,10 +336,6 @@
         "version": "0.3.5"
     },
     {
-        "library": "yarl",
-        "version": "1.9.4"
-    },
-    {
         "library": "zipfly",
         "version": "6.0.3"
     },
@@ -528,10 +360,6 @@
         "version": "7.17.9"
     },
     {
-        "library": "regenerator-runtime",
-        "version": "0.13.4"
-    },
-    {
         "library": "fortawesome/fontawesome-free",
         "version": "6.4.2"
     },
@@ -544,10 +372,6 @@
         "version": "1.2.1"
     },
     {
-        "library": "gtm-support/core",
-        "version": "1.1.0"
-    },
-    {
         "library": "mapbox/jsonlint-lines-primitives",
         "version": "2.0.2"
     },
@@ -556,38 +380,6 @@
         "version": "13.28.0"
     },
     {
-        "library": "mapbox/jsonlint-lines-primitives",
-        "version": "2.0.2"
-    },
-    {
-        "library": "mapbox/point-geometry",
-        "version": "0.1.0"
-    },
-    {
-        "library": "mapbox/unitbezier",
-        "version": "0.0.0"
-    },
-    {
-        "library": "csscolorparser",
-        "version": "1.0.2"
-    },
-    {
-        "library": "json-stringify-pretty-compact",
-        "version": "2.0.0"
-    },
-    {
-        "library": "minimist",
-        "version": "1.2.6"
-    },
-    {
-        "library": "rw",
-        "version": "1.3.3"
-    },
-    {
-        "library": "sort-object",
-        "version": "0.3.2"
-    },
-    {
         "library": "mapbox/point-geometry",
         "version": "0.1.0"
     },
@@ -598,418 +390,6 @@
     {
         "library": "mdi/font",
         "version": "6.6.96"
-    },
-    {
-        "library": "mergin-ext/ee-admin-app",
-        "version": "1.0.0"
-    },
-    {
-        "library": "fortawesome/fontawesome-free",
-        "version": "6.4.2"
-    },
-    {
-        "library": "gtm-support/vue2-gtm",
-        "version": "1.0.0"
-    },
-    {
-        "library": "mdi/font",
-        "version": "6.6.96"
-    },
-    {
-        "library": "axios",
-        "version": "0.26.1"
-    },
-    {
-        "library": "crypto-js",
-        "version": "3.1.9-1"
-    },
-    {
-        "library": "date-fns",
-        "version": "2.28.0"
-    },
-    {
-        "library": "file-saver",
-        "version": "2.0.5"
-    },
-    {
-        "library": "lodash",
-        "version": "4.17.21"
-    },
-    {
-        "library": "material-icons",
-        "version": "0.2.3"
-    },
-    {
-        "library": "pdfjs-dist",
-        "version": "2.5.207"
-    },
-    {
-        "library": "pinia",
-        "version": "2.1.4"
-    },
-    {
-        "library": "portal-vue",
-        "version": "2.1.7"
-    },
-    {
-        "library": "vue-country-region-select",
-        "version": "2.0.16"
-    },
-    {
-        "library": "vue-i18n",
-        "version": "8.28.2"
-    },
-    {
-        "library": "vue-meta",
-        "version": "2.4.0"
-    },
-    {
-        "library": "vue-router",
-        "version": "3.6.5"
-    },
-    {
-        "library": "vue-tabler-icons",
-        "version": "1.13.0"
-    },
-    {
-        "library": "vue",
-        "version": "2.7.14"
-    },
-    {
-        "library": "vuetify",
-        "version": "2.6.15"
-    },
-    {
-        "library": "mergin-ext/ee-admin-lib",
-        "version": "0.1.0"
-    },
-    {
-        "library": "axios-retry",
-        "version": "3.2.4"
-    },
-    {
-        "library": "axios",
-        "version": "0.26.1"
-    },
-    {
-        "library": "lodash",
-        "version": "4.17.21"
-    },
-    {
-        "library": "universal-cookie",
-        "version": "4.0.4"
-    },
-    {
-        "library": "mergin-ext/ee-app",
-        "version": "1.0.0"
-    },
-    {
-        "library": "fortawesome/fontawesome-free",
-        "version": "6.4.2"
-    },
-    {
-        "library": "gtm-support/vue2-gtm",
-        "version": "1.0.0"
-    },
-    {
-        "library": "mdi/font",
-        "version": "6.6.96"
-    },
-    {
-        "library": "vue/babel-helper-vue-jsx-merge-props",
-        "version": "1.4.0"
-    },
-    {
-        "library": "axios",
-        "version": "0.26.1"
-    },
-    {
-        "library": "crypto-js",
-        "version": "3.1.9-1"
-    },
-    {
-        "library": "date-fns",
-        "version": "2.28.0"
-    },
-    {
-        "library": "file-saver",
-        "version": "2.0.5"
-    },
-    {
-        "library": "lodash",
-        "version": "4.17.21"
-    },
-    {
-        "library": "material-icons",
-        "version": "0.2.3"
-    },
-    {
-        "library": "pdfjs-dist",
-        "version": "2.5.207"
-    },
-    {
-        "library": "pinia",
-        "version": "2.1.4"
-    },
-    {
-        "library": "portal-vue",
-        "version": "2.1.7"
-    },
-    {
-        "library": "vue-country-region-select",
-        "version": "2.0.16"
-    },
-    {
-        "library": "vue-i18n",
-        "version": "8.28.2"
-    },
-    {
-        "library": "vue-meta",
-        "version": "2.4.0"
-    },
-    {
-        "library": "vue-router",
-        "version": "3.6.5"
-    },
-    {
-        "library": "vue-tabler-icons",
-        "version": "1.13.0"
-    },
-    {
-        "library": "vue",
-        "version": "2.7.14"
-    },
-    {
-        "library": "vuetify",
-        "version": "2.6.15"
-    },
-    {
-        "library": "mergin-ext/ee-lib",
-        "version": "0.1.0"
-    },
-    {
-        "library": "axios-retry",
-        "version": "3.2.4"
-    },
-    {
-        "library": "axios",
-        "version": "0.26.1"
-    },
-    {
-        "library": "lodash",
-        "version": "4.17.21"
-    },
-    {
-        "library": "universal-cookie",
-        "version": "4.0.4"
-    },
-    {
-        "library": "mergin-ext/saas-admin-app",
-        "version": "1.0.0"
-    },
-    {
-        "library": "fortawesome/fontawesome-free",
-        "version": "6.4.2"
-    },
-    {
-        "library": "gtm-support/vue2-gtm",
-        "version": "1.0.0"
-    },
-    {
-        "library": "mdi/font",
-        "version": "6.6.96"
-    },
-    {
-        "library": "axios",
-        "version": "0.26.1"
-    },
-    {
-        "library": "crypto-js",
-        "version": "3.1.9-1"
-    },
-    {
-        "library": "date-fns",
-        "version": "2.28.0"
-    },
-    {
-        "library": "file-saver",
-        "version": "2.0.5"
-    },
-    {
-        "library": "lodash",
-        "version": "4.17.21"
-    },
-    {
-        "library": "material-icons",
-        "version": "0.2.3"
-    },
-    {
-        "library": "pdfjs-dist",
-        "version": "2.5.207"
-    },
-    {
-        "library": "pinia",
-        "version": "2.1.4"
-    },
-    {
-        "library": "portal-vue",
-        "version": "2.1.7"
-    },
-    {
-        "library": "vue-country-region-select",
-        "version": "2.0.16"
-    },
-    {
-        "library": "vue-i18n",
-        "version": "8.28.2"
-    },
-    {
-        "library": "vue-meta",
-        "version": "2.4.0"
-    },
-    {
-        "library": "vue-router",
-        "version": "3.6.5"
-    },
-    {
-        "library": "vue-tabler-icons",
-        "version": "1.13.0"
-    },
-    {
-        "library": "vue",
-        "version": "2.7.14"
-    },
-    {
-        "library": "vuetify",
-        "version": "2.6.15"
-    },
-    {
-        "library": "mergin-ext/saas-app",
-        "version": "1.0.0"
-    },
-    {
-        "library": "fortawesome/fontawesome-free",
-        "version": "6.4.2"
-    },
-    {
-        "library": "gtm-support/vue2-gtm",
-        "version": "1.0.0"
-    },
-    {
-        "library": "mdi/font",
-        "version": "6.6.96"
-    },
-    {
-        "library": "axios",
-        "version": "0.26.1"
-    },
-    {
-        "library": "crypto-js",
-        "version": "3.1.9-1"
-    },
-    {
-        "library": "date-fns",
-        "version": "2.28.0"
-    },
-    {
-        "library": "file-saver",
-        "version": "2.0.5"
-    },
-    {
-        "library": "lodash",
-        "version": "4.17.21"
-    },
-    {
-        "library": "material-icons",
-        "version": "0.2.3"
-    },
-    {
-        "library": "pdfjs-dist",
-        "version": "2.5.207"
-    },
-    {
-        "library": "pinia",
-        "version": "2.1.6"
-    },
-    {
-        "library": "pinia",
-        "version": "2.1.6"
-    },
-    {
-        "library": "vue/devtools-api",
-        "version": "6.5.0"
-    },
-    {
-        "library": "vue-demi",
-        "version": "0.14.5"
-    },
-    {
-        "library": "portal-vue",
-        "version": "2.1.7"
-    },
-    {
-        "library": "vue-country-region-select",
-        "version": "2.0.16"
-    },
-    {
-        "library": "vue-i18n",
-        "version": "8.28.2"
-    },
-    {
-        "library": "vue-meta",
-        "version": "2.4.0"
-    },
-    {
-        "library": "vue-router",
-        "version": "3.6.5"
-    },
-    {
-        "library": "vue-tabler-icons",
-        "version": "1.13.0"
-    },
-    {
-        "library": "vue",
-        "version": "2.7.14"
-    },
-    {
-        "library": "vuetify",
-        "version": "2.6.15"
-    },
-    {
-        "library": "mergin-ext/saas-lib",
-        "version": "0.1.0"
-    },
-    {
-        "library": "axios-retry",
-        "version": "3.2.4"
-    },
-    {
-        "library": "axios",
-        "version": "0.26.1"
-    },
-    {
-        "library": "country-region-data",
-        "version": "3.0.0"
-    },
-    {
-        "library": "lodash",
-        "version": "4.17.21"
-    },
-    {
-        "library": "ol-mapbox-style",
-        "version": "8.0.4"
-    },
-    {
-        "library": "ol",
-        "version": "6.13.0"
-    },
-    {
-        "library": "universal-cookie",
-        "version": "4.0.4"
-    },
-    {
-        "library": "vue-router",
-        "version": "3.6.5"
     },
     {
         "library": "petamoriken/float16",
@@ -1028,18 +408,6 @@
         "version": "2.7.14"
     },
     {
-        "library": "babel/parser",
-        "version": "7.18.4"
-    },
-    {
-        "library": "postcss",
-        "version": "8.4.14"
-    },
-    {
-        "library": "source-map",
-        "version": "0.6.1"
-    },
-    {
         "library": "vue/devtools-api",
         "version": "6.5.0"
     },
@@ -1048,20 +416,8 @@
         "version": "3.2.5"
     },
     {
-        "library": "babel/runtime",
-        "version": "7.15.4"
-    },
-    {
-        "library": "is-retry-allowed",
-        "version": "2.2.0"
-    },
-    {
         "library": "axios",
         "version": "0.26.1"
-    },
-    {
-        "library": "follow-redirects",
-        "version": "1.14.8"
     },
     {
         "library": "cookie",
@@ -1104,34 +460,6 @@
         "version": "2.0.7"
     },
     {
-        "library": "petamoriken/float16",
-        "version": "3.4.7"
-    },
-    {
-        "library": "lerc",
-        "version": "3.0.0"
-    },
-    {
-        "library": "pako",
-        "version": "2.0.4"
-    },
-    {
-        "library": "parse-headers",
-        "version": "2.0.2"
-    },
-    {
-        "library": "quick-lru",
-        "version": "6.1.1"
-    },
-    {
-        "library": "web-worker",
-        "version": "1.2.0"
-    },
-    {
-        "library": "xml-utils",
-        "version": "1.0.2"
-    },
-    {
         "library": "ieee754",
         "version": "1.2.1"
     },
@@ -1168,58 +496,6 @@
         "version": "3.3.6"
     },
     {
-        "library": "ol-mapbox-style",
-        "version": "8.0.4"
-    },
-    {
-        "library": "mapbox/mapbox-gl-style-spec",
-        "version": "13.23.1"
-    },
-    {
-        "library": "mapbox-to-css-font",
-        "version": "2.4.1"
-    },
-    {
-        "library": "webfont-matcher",
-        "version": "1.1.0"
-    },
-    {
-        "library": "ol",
-        "version": "6.13.0"
-    },
-    {
-        "library": "geotiff",
-        "version": "2.0.2"
-    },
-    {
-        "library": "ol-mapbox-style",
-        "version": "7.0.0"
-    },
-    {
-        "library": "ol-mapbox-style",
-        "version": "7.1.1"
-    },
-    {
-        "library": "mapbox/mapbox-gl-style-spec",
-        "version": "13.20.1"
-    },
-    {
-        "library": "mapbox-to-css-font",
-        "version": "2.4.1"
-    },
-    {
-        "library": "webfont-matcher",
-        "version": "1.1.0"
-    },
-    {
-        "library": "pbf",
-        "version": "3.2.1"
-    },
-    {
-        "library": "rbush",
-        "version": "3.0.1"
-    },
-    {
         "library": "pako",
         "version": "2.1.0"
     },
@@ -1230,14 +506,6 @@
     {
         "library": "pbf",
         "version": "3.2.1"
-    },
-    {
-        "library": "ieee754",
-        "version": "1.1.12"
-    },
-    {
-        "library": "resolve-protobuf-schema",
-        "version": "2.1.0"
     },
     {
         "library": "pdfjs-dist",
@@ -1252,32 +520,12 @@
         "version": "2.1.4"
     },
     {
-        "library": "vue/devtools-api",
-        "version": "6.5.0"
-    },
-    {
-        "library": "vue-demi",
-        "version": "0.14.5"
-    },
-    {
         "library": "portal-vue",
         "version": "2.1.7"
     },
     {
         "library": "postcss",
         "version": "8.4.27"
-    },
-    {
-        "library": "nanoid",
-        "version": "3.3.6"
-    },
-    {
-        "library": "picocolors",
-        "version": "1.0.0"
-    },
-    {
-        "library": "source-map-js",
-        "version": "1.0.2"
     },
     {
         "library": "protocol-buffers-schema",
@@ -1296,20 +544,12 @@
         "version": "3.0.1"
     },
     {
-        "library": "quickselect",
-        "version": "2.0.0"
-    },
-    {
         "library": "regenerator-runtime",
         "version": "0.13.9"
     },
     {
         "library": "resolve-protobuf-schema",
         "version": "2.1.0"
-    },
-    {
-        "library": "protocol-buffers-schema",
-        "version": "3.3.1"
     },
     {
         "library": "rw",
@@ -1328,14 +568,6 @@
         "version": "0.3.2"
     },
     {
-        "library": "sort-asc",
-        "version": "0.1.0"
-    },
-    {
-        "library": "sort-desc",
-        "version": "0.1.1"
-    },
-    {
         "library": "source-map-js",
         "version": "1.0.2"
     },
@@ -1348,24 +580,8 @@
         "version": "4.0.4"
     },
     {
-        "library": "types/cookie",
-        "version": "0.3.3"
-    },
-    {
-        "library": "cookie",
-        "version": "0.4.0"
-    },
-    {
         "library": "vue-country-region-select",
         "version": "2.0.16"
-    },
-    {
-        "library": "vue",
-        "version": "2.5.17"
-    },
-    {
-        "library": "vue",
-        "version": "2.6.14"
     },
     {
         "library": "vue-demi",
@@ -1380,10 +596,6 @@
         "version": "2.4.0"
     },
     {
-        "library": "deepmerge",
-        "version": "4.2.2"
-    },
-    {
         "library": "vue-router",
         "version": "3.6.5"
     },
@@ -1394,14 +606,6 @@
     {
         "library": "vue",
         "version": "2.7.14"
-    },
-    {
-        "library": "vue/compiler-sfc",
-        "version": "2.7.14"
-    },
-    {
-        "library": "csstype",
-        "version": "3.1.0"
     },
     {
         "library": "vuetify",
