@@ -329,16 +329,37 @@ paths:
         "404":
           $ref: "#/components/responses/NotFoundResp"
   /project/{id}/access:
+    parameters:
+      - name: id
+        in: path
+        description: Project uuid
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - project
+      summary: Get project access
+      operationId: get_project_access
+      responses:
+        "200":
+          description: Project access details
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectAccessDetail"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+      x-openapi-router-controller: mergin.sync.private_api_controller
     patch:
       summary: Update direct project access (sharing)
       operationId: update_project_access
-      parameters:
-        - name: id
-          in: path
-          description: project uuid
-          required: true
-          schema:
-            type: string
       requestBody:
         description: Request data
         required: true
@@ -527,3 +548,33 @@ components:
           items:
             type: object
             example: 1
+    ProjectAccessDetail:
+      type: object
+      required:
+        - id
+        - type
+        - email
+        - username
+        - project_permission
+      properties:
+        id:
+          description: User id
+          type: integer
+          example: 1
+        type:
+          type: string
+          enum:
+            - user
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        username:
+          type: string
+          example: john.doe
+        project_permission:
+          type: string
+          enum:
+            - owner
+            - writer
+            - reader
