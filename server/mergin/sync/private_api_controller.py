@@ -293,42 +293,43 @@ def update_project_access(id: str):
 
 @auth_required
 def get_project_access(id: str):
-    """Get list of users with access to project
-
-    :param id: Project uuid
-    """
+    """Get list of users with access to project"""
     project = require_project_by_uuid(id, ProjectPermissions.Read)
-    accesses = []
-    for user_ids, role in (
+    global_role = None
+    accesses = (
         (project.access.owners, "owner"),
         (project.access.writers, "writer"),
         (project.access.readers, "reader"),
-    ):
-        for user_id in user_ids:
-            user = User.query.get_or_404(user_id, f"User {user_id} not found")
-            accesses.append(
-                {
-                    "id": user_id,
-                    "type": "user",
-                    "email": user.email,
-                    "username": user.username,
-                    "project_permission": role,
-                }
-            )
-    global_role = None
+    )
     if Configuration.GLOBAL_ADMIN:
         global_role = "owner"
+        accesses = ()
     elif Configuration.GLOBAL_WRITE:
         global_role = "writer"
+        accesses = accesses[:1]
     elif Configuration.GLOBAL_READ:
         global_role = "reader"
+        accesses = accesses[:2]
+    result = []
+    processed_ids = set()
+    for user_ids, role in accesses:
+        for user_id in user_ids:
+            if user_id not in processed_ids:
+                user = User.query.get(user_id)
+                result.append(
+                    {
+                        "id": user_id,
+                        "type": "user",
+                        "email": user.email,
+                        "username": user.username,
+                        "project_permission": role,
+                    }
+                )
+                processed_ids.add(user_id)
     if global_role:
-        processed_ids = set(
-            project.access.owners + project.access.writers + project.access.readers
-        )
         for user in User.query.all():
             if user.id not in processed_ids:
-                accesses.append(
+                result.append(
                     {
                         "id": user.id,
                         "type": "user",
@@ -337,4 +338,4 @@ def get_project_access(id: str):
                         "project_permission": global_role,
                     }
                 )
-    return accesses, 200
+    return result, 200

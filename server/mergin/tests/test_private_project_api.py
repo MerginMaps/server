@@ -441,3 +441,52 @@ def test_admin_project_list(client):
 
     resp = client.get("/app/admin/projects?page=1&per_page=15&workspace=mergin")
     assert len(resp.json["projects"]) == 15
+
+
+def test_get_project_access(client):
+    workspace = create_workspace()
+    user = User.query.filter(User.username == "mergin").first()
+    project = create_project("test-project", workspace, user)
+    url = f"/app/project/{project.id}/access"
+    users = []
+    for i in range(5):
+        users.append(add_user(str(i), str(i)))
+    Configuration.GLOBAL_ADMIN = False
+    Configuration.GLOBAL_WRITE = False
+    Configuration.GLOBAL_READ = False
+    resp = client.get(url)
+    assert resp.status_code == 200
+    assert len(resp.json) == 1
+    assert resp.json[0]["project_permission"] == "owner"
+    project.access.set_role(users[0].id, ProjectRole.OWNER)
+    project.access.set_role(users[1].id, ProjectRole.WRITER)
+    project.access.set_role(users[2].id, ProjectRole.READER)
+    db.session.add(project.access)
+    db.session.commit()
+    resp = client.get(url)
+    assert resp.status_code == 200
+    assert len(resp.json) == 4
+    assert sum(map(lambda x: int(x["project_permission"] == "owner"), resp.json)) == 2
+    assert sum(map(lambda x: int(x["project_permission"] == "writer"), resp.json)) == 1
+    assert sum(map(lambda x: int(x["project_permission"] == "reader"), resp.json)) == 1
+    Configuration.GLOBAL_READ = True
+    resp = client.get(url)
+    assert resp.status_code == 200
+    assert len(resp.json) == 6
+    assert sum(map(lambda x: int(x["project_permission"] == "owner"), resp.json)) == 2
+    assert sum(map(lambda x: int(x["project_permission"] == "writer"), resp.json)) == 1
+    assert sum(map(lambda x: int(x["project_permission"] == "reader"), resp.json)) == 3
+    Configuration.GLOBAL_WRITE = True
+    resp = client.get(url)
+    assert resp.status_code == 200
+    assert len(resp.json) == 6
+    assert sum(map(lambda x: int(x["project_permission"] == "owner"), resp.json)) == 2
+    assert sum(map(lambda x: int(x["project_permission"] == "writer"), resp.json)) == 4
+    assert sum(map(lambda x: int(x["project_permission"] == "reader"), resp.json)) == 0
+    Configuration.GLOBAL_ADMIN = True
+    resp = client.get(url)
+    assert resp.status_code == 200
+    assert len(resp.json) == 6
+    assert sum(map(lambda x: int(x["project_permission"] == "owner"), resp.json)) == 6
+    assert sum(map(lambda x: int(x["project_permission"] == "writer"), resp.json)) == 0
+    assert sum(map(lambda x: int(x["project_permission"] == "reader"), resp.json)) == 0
