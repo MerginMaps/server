@@ -6,6 +6,9 @@ MAINTAINER Martin Varga "martin.varga@lutraconsulting.co.uk"
 ENV TZ=Europe/London
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+ARG BUILD_HASH="unknown"
+ENV BUILD_HASH=${BUILD_HASH}
+
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends\
     musl-dev \

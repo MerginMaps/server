@@ -264,16 +264,18 @@ class DiskStorage(ProjectStorage):
                     logging.info(f"Changeset applied in {geodiff_apply_time} s")
                 except (GeoDiffLibError, GeoDiffLibConflictError):
                     project_workspace = self.project.workspace.name
-                    sync_errors[
-                        f["path"]
-                    ] = f"project: {project_workspace}/{self.project.name}, {self.gediff_log.getvalue()}"
+                    sync_errors[f["path"]] = (
+                        f"project: {project_workspace}/{self.project.name}, {self.gediff_log.getvalue()}"
+                    )
                     continue
 
                 f["diff"]["location"] = os.path.join(
                     version,
-                    f["diff"]["sanitized_path"]
-                    if "sanitized_path" in f["diff"]
-                    else mergin_secure_filename(f["diff"]["path"]),
+                    (
+                        f["diff"]["sanitized_path"]
+                        if "sanitized_path" in f["diff"]
+                        else mergin_secure_filename(f["diff"]["path"])
+                    ),
                 )
 
                 # we can now replace old basefile metadata with the new one (patchedfile)
@@ -323,9 +325,11 @@ class DiskStorage(ProjectStorage):
                 f.pop("chunks")
             f["location"] = os.path.join(
                 version,
-                f["sanitized_path"]
-                if "sanitized_path" in f
-                else mergin_secure_filename(f["path"]),
+                (
+                    f["sanitized_path"]
+                    if "sanitized_path" in f
+                    else mergin_secure_filename(f["path"])
+                ),
             )
             if not sync_errors:
                 old_item.update(f)
@@ -350,9 +354,11 @@ class DiskStorage(ProjectStorage):
                     "mtime": item["mtime"],
                     "location": os.path.join(
                         version,
-                        item["sanitized_path"]
-                        if "sanitized_path" in item
-                        else mergin_secure_filename(item["path"]),
+                        (
+                            item["sanitized_path"]
+                            if "sanitized_path" in item
+                            else mergin_secure_filename(item["path"])
+                        ),
                     ),
                 }
             )
