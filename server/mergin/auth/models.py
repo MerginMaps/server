@@ -6,7 +6,7 @@ from __future__ import annotations
 import datetime
 from typing import List, Optional
 import bcrypt
-from flask import current_app
+from flask import current_app, request
 from .. import db
 from ..sync.utils import get_user_agent, get_ip
 
@@ -162,23 +162,28 @@ class UserProfile(db.Model):
 class LoginHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime(), default=datetime.datetime.utcnow, index=True)
-    username = db.Column(db.String, index=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     user_agent = db.Column(db.String, index=True)
     ip_address = db.Column(db.String, index=True)
     ip_geolocation_country = db.Column(db.String, index=True)
 
-    def __init__(self, username, ua, ip):
-        self.username = username
+    def __init__(self, user_id: int, ua: str, ip: str):
+        self.user_id = user_id
         self.user_agent = ua
         self.ip_address = ip
 
     @staticmethod
-    def add_record(username, request):
-        ua = get_user_agent(request)
-        ip = get_ip(request)
+    def add_record(user_id: int, req: request) -> None:
+        ua = get_user_agent(req)
+        ip = get_ip(req)
         # ignore login attempts coming from urllib - related to db sync tool
         if "DB-sync" in ua:
             return
-        lh = LoginHistory(username, ua, ip)
+        lh = LoginHistory(user_id, ua, ip)
         db.session.add(lh)
         db.session.commit()

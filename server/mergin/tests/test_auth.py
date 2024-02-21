@@ -50,8 +50,9 @@ def test_login(client, data, headers, expected):
     )
     assert resp.status_code == expected
     if expected == 200:
+        user = User.query.filter_by(username=DEFAULT_USER[0]).first()
         login_history = (
-            LoginHistory.query.filter_by(username="mergin")
+            LoginHistory.query.filter_by(user_id=user.id)
             .order_by(desc(LoginHistory.timestamp))
             .first()
         )
@@ -349,8 +350,9 @@ def test_api_login(client, data, headers, expected):
     resp = client.post("/v1/auth/login", data=json.dumps(data), headers=headers)
     assert resp.status_code == expected
     if expected == 200:
+        user = User.query.filter_by(username=DEFAULT_USER[0]).first()
         login_history = (
-            LoginHistory.query.filter_by(username="mergin")
+            LoginHistory.query.filter_by(user_id=user.id)
             .order_by(desc(LoginHistory.timestamp))
             .first()
         )
@@ -366,8 +368,9 @@ def test_api_login_from_urllib(client):
             headers=json_headers,
         )
         assert resp.status_code == 200
+        user = User.query.filter_by(username=DEFAULT_USER[0]).first()
         login_history = (
-            LoginHistory.query.filter_by(username="mergin")
+            LoginHistory.query.filter_by(user_id=user.id)
             .order_by(desc(LoginHistory.timestamp))
             .first()
         )

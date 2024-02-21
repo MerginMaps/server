@@ -150,7 +150,7 @@ def login_public():  # noqa: E501
 
             data = user_profile(user)
             data["session"] = {"token": token, "expire": expire}
-            LoginHistory.add_record(user.username, request)
+            LoginHistory.add_record(user.id, request)
             return data
         else:
             abort(401, "Invalid username or password")
@@ -219,7 +219,7 @@ def login():  # pylint: disable=W0613,W0612
         if user and user.active:
             login_user(user)
             if not os.path.isfile(current_app.config["MAINTENANCE_FILE"]):
-                LoginHistory.add_record(user.username, request)
+                LoginHistory.add_record(user.id, request)
             return "", 200
         else:
             abort(401, "Invalid username or password")
