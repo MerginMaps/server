@@ -23,6 +23,12 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean)
     verified_email = db.Column(db.Boolean, default=False)
     inactive_since = db.Column(db.DateTime(), nullable=True, index=True)
+    registration_date = db.Column(
+        db.DateTime(),
+        nullable=False,
+        info={"label": "Date of creation of user account"},
+        default=datetime.datetime.utcnow,
+    )
 
     def __init__(self, username, email, passwd, is_admin=False):
         self.username = username
@@ -140,12 +146,6 @@ class UserProfile(db.Model):
     receive_notifications = db.Column(db.Boolean, default=True, index=True)
     first_name = db.Column(db.String(256), nullable=True, info={"label": "First name"})
     last_name = db.Column(db.String(256), nullable=True, info={"label": "Last name"})
-    registration_date = db.Column(
-        db.DateTime(),
-        nullable=False,
-        info={"label": "Date of creation of user account"},
-        default=datetime.datetime.utcnow,
-    )
 
     user = db.relationship(
         "User",

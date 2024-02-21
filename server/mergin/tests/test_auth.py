@@ -136,14 +136,14 @@ def test_confirm_email(app, client):
     user = User.query.filter_by(username="mergin").first()
     # tests with old registered user
     user.verified_email = False
-    user.profile.registration_date = datetime.utcnow() - timedelta(days=1)
+    user.registration_date = datetime.utcnow() - timedelta(days=1)
     db.session.commit()
     resp = client.post(url_for("/.mergin_auth_controller_confirm_email", token=token))
     assert resp.status_code == 200
 
     # try again with freshly registered user
     user.verified_email = False
-    user.profile.registration_date = datetime.utcnow()
+    user.registration_date = datetime.utcnow()
     db.session.add(user)
     db.session.commit()
     resp = client.post(url_for("/.mergin_auth_controller_confirm_email", token=token))

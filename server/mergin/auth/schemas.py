@@ -94,7 +94,7 @@ class UserInfoSchema(ma.SQLAlchemyAutoSchema):
     first_name = fields.String(attribute="profile.first_name")
     last_name = fields.String(attribute="profile.last_name")
     receive_notifications = fields.Boolean(attribute="profile.receive_notifications")
-    registration_date = DateTimeWithZ(attribute="profile.registration_date")
+    registration_date = DateTimeWithZ(attribute="registration_date")
     name = fields.Function(lambda obj: obj.profile.name())
 
     class Meta:

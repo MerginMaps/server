@@ -66,7 +66,7 @@ def user_profile(user, return_all=True):
                 "receive_notifications": user.profile.receive_notifications,
                 "verified_email": user.verified_email,
                 "tier": "free",
-                "registration_date": user.profile.registration_date,
+                "registration_date": user.registration_date,
             }
         )
     return data
