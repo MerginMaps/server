@@ -11,7 +11,7 @@ from sqlalchemy import desc
 from unittest.mock import patch
 
 from ..auth.models import User, UserProfile, LoginHistory
-from ..auth.tasks import prune_removed_users
+from ..auth.tasks import anonymize_removed_users
 from .. import db
 from ..sync.models import Project
 from . import (
@@ -318,11 +318,11 @@ def test_remove_user(client):
         url_for("/.mergin_auth_controller_delete_user", username=user.username)
     )
     assert resp.status_code == 204
-    # user object removed from db
     assert not User.query.filter_by(username="tests").count()
+    assert user.username.startswith("deleted_") and not user.active
 
     resp = client.delete(
-        url_for("/.mergin_auth_controller_delete_user", username=user.username)
+        url_for("/.mergin_auth_controller_delete_user", username="tests")
     )
     assert resp.status_code == 404
 
@@ -563,8 +563,9 @@ def test_csrf_refresh_token(client):
 
 def test_close_user_account(client):
     """Test closing user account via public API call and admin actions to enable/ban user"""
-    user = add_user("alice", "pwd")
-    login(client, user.username, "pwd")
+    username = "alice"
+    user = add_user(username, "pwd")
+    login(client, username, "pwd")
     # user closes account
     resp = client.delete("/v1/user")
     assert resp.status_code == 204
@@ -622,10 +623,11 @@ def test_close_user_account(client):
     assert not user.inactive_since
     # admin can force delete user
     resp = client.delete(
-        url_for("/.mergin_auth_controller_delete_user", username=user.username)
+        url_for("/.mergin_auth_controller_delete_user", username=username)
     )
     assert resp.status_code == 204
-    assert not User.query.filter_by(username=user.username).first()
+    assert not User.query.filter_by(username=username).first()
+    assert user.username.startswith("deleted_") and not user.active
 
     user = User.query.filter_by(username=DEFAULT_USER[0]).first()
     # check default project
@@ -653,8 +655,10 @@ def test_close_user_account(client):
         client.application.config["ACCOUNT_EXPIRATION"] + 1
     )
     db.session.commit()
-    prune_removed_users()
+    users_number = User.query.count()
+    anonymize_removed_users()
     assert not User.query.filter_by(username=DEFAULT_USER[0]).first()
+    assert User.query.count() == users_number
 
 
 def test_paginate_users(client):

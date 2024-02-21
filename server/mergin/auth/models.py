@@ -7,6 +7,8 @@ import datetime
 from typing import List, Optional
 import bcrypt
 from flask import current_app, request
+from sqlalchemy import or_
+
 from .. import db
 from ..sync.utils import get_user_agent, get_ip
 
@@ -137,6 +139,44 @@ class User(db.Model):
         return self.inactive_since + datetime.timedelta(
             days=current_app.config["ACCOUNT_EXPIRATION"]
         )
+
+    def inactivate(self) -> None:
+        """Inactivate user account and remove explicitly shared projects as well clean references to created projects.
+        User is then safe to be removed.
+        """
+        from ..sync.models import Project, ProjectAccess
+
+        shared_projects = Project.query.filter(
+            or_(
+                Project.access.has(ProjectAccess.owners.contains([self.id])),
+                Project.access.has(ProjectAccess.writers.contains([self.id])),
+                Project.access.has(ProjectAccess.readers.contains([self.id])),
+            )
+        ).all()
+
+        for p in shared_projects:
+            for key in ("owners", "writers", "readers"):
+                value = set(getattr(p.access, key))
+                if self.id in value:
+                    value.remove(self.id)
+                setattr(p.access, key, list(value))
+            db.session.add(p)
+
+        # inactivate user account to prevent login and mark for clean up
+        self.active = False
+        self.inactive_since = datetime.datetime.utcnow()
+        db.session.commit()
+
+    def anonymize(self):
+        """Anonymize user object in database - remove personal information"""
+        ts = round(datetime.datetime.utcnow().timestamp() * 1000)
+        del_str = f"deleted_{ts}"
+        self.username = del_str
+        self.email = None
+        self.passwd = None
+        self.profile.first_name = None
+        self.profile.last_name = None
+        db.session.commit()
 
 
 class UserProfile(db.Model):

@@ -19,9 +19,7 @@ from .app import (
     send_confirmation_email,
     confirm_token,
     generate_confirmation_token,
-    inactivate_user,
     user_created,
-    force_delete_user,
     user_account_closed,
 )
 from .bearer import encode_token
@@ -163,7 +161,7 @@ def close_user_account():
     Closing user account effectively means to inactivate user (will be removed by cron job) and remove explicitly
     shared projects as well clean references to created projects.
     """
-    inactivate_user(current_user)
+    current_user.inactivate()
     # emit signal to be caught elsewhere
     user_account_closed.send(current_user)
     return NoContent, 204
@@ -423,10 +421,10 @@ def update_user(username):  # pylint: disable=W0613,W0612
 @auth_required(permissions=["admin"])
 def delete_user(username):  # pylint: disable=W0613,W0612
     user = User.query.filter_by(username=username).first_or_404("User not found")
-    inactivate_user(user)
+    user.inactivate()
     user_account_closed.send(user)
-    # emit signal that we want to do immediate deletion
-    force_delete_user.send(user)
+    # force 'delete' user
+    user.anonymize()
     return "", 204
 
 

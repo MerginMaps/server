@@ -2020,15 +2020,16 @@ def test_orphan_project(client):
         url_for("/.mergin_auth_controller_delete_user", username=user.username)
     )
     assert resp.status_code == 204
-    assert not User.query.filter_by(id=user_id).count()
+    assert User.query.filter_by(id=user_id).count()
+    assert user.username.startswith("deleted_") and not user.active
     # project still exists (it belongs to workspace)
     p = Project.query.filter_by(name="orphan").first()
-    assert not p.creator_id
+    assert p.creator_id
     assert p.access.owners == []
 
     # superuser as workspace owner has access to project and can assign new writer/owner
     resp = client.get(f"/v1/project/{test_workspace.name}/{p.name}")
-    assert not resp.json["creator"]
+    assert resp.json["creator"] == p.creator_id
     assert resp.json["access"]["owners"] == []
     assert resp.json["role"] == "owner"
 
@@ -2058,7 +2059,7 @@ def test_orphan_project(client):
         == 200
     )
     resp = client.get(f"/v1/project/{test_workspace.name}/{p.name}")
-    assert not resp.json["creator"]
+    assert resp.json["creator"]
     assert resp.json["access"]["owners"] == [admin.id]
 
     # project will however not be listed as 'created' projects
