@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div
     :class="[
+      'flex align-items-center justify-content-center',
       'circle border-circle text-center text-color-forest',
       sizeClasses,
       severityClass

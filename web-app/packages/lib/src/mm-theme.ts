@@ -6,6 +6,7 @@ import { usePassThrough } from 'primevue/passthrough'
 import { PasswordPassThroughOptions } from 'primevue/password'
 import { ProgressBarPassThroughOptions } from 'primevue/progressbar'
 import { ToastPassThroughOptions } from 'primevue/toast'
+import { TreePassThroughOptions } from 'primevue/tree'
 
 export default usePassThrough(
   {
@@ -88,7 +89,25 @@ export default usePassThrough(
           }
         }
       }
-    } as ProgressBarPassThroughOptions
+    } as ProgressBarPassThroughOptions,
+    tree: {
+      root: 'surface-ground border-none p-0',
+      content(options) {
+        return {
+          class: [
+            'border-round-xl font-semibold p-2 text-sm',
+            options.context.selected
+              ? 'text-white'
+              : 'surface-section hover:surface-50'
+          ],
+          style: {
+            backgroundColor: options.context.selected
+              ? 'var(--forest-color)'
+              : undefined
+          }
+        }
+      }
+    } as TreePassThroughOptions
   },
   {}
 )

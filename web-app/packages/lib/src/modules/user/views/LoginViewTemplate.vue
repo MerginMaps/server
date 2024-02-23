@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </h1>
     </template>
 
-    <!-- Passing slots to aother components -->
+    <!-- Passing slots to another components -->
     <template v-if="$slots.aside" #aside><slot name="aside"></slot></template>
     <template v-if="$slots.logo" #logo><slot name="logo"></slot></template>
 

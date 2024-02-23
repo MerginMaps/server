@@ -1,14 +1,20 @@
 <template>
   <article :class="['relative', 'grid grid-nogutter', 'h-full']">
     <!-- Logo -->
-    <aside class="absolute top-0 left-0 m-4">
+    <aside class="fixed top-0 left-0 m-4 z-1">
       <slot name="logo">
         <img src="@/assets/mm-logo.svg" />
       </slot>
     </aside>
 
-    <!-- Side content if defined -->
-    <aside v-if="$slots.aside" class="col-3">
+    <!-- Side content if defined is displayed on tablets > -->
+    <aside
+      v-if="$slots.aside"
+      :class="[
+        'hidden md:block md:col-3',
+        'fixed top-0 left-0 bottom-0 z-0 h-full'
+      ]"
+    >
       <slot name="aside"></slot>
     </aside>
 
@@ -17,17 +23,16 @@
       :class="[
         'flex flex-column row-gap-4 align-items-center justify-content-center',
         'p-4 lg:p-0',
-        $slots.aside ? 'col-9' : 'col-12'
+        $slots.aside ? 'col-12 md:col-9 md:col-offset-3' : 'col-12'
       ]"
     >
-      <header class="align-self-center text-center">
-        <slot name="header"></slot>
-      </header>
-
       <section
         class="flex flex-column gap-4 w-full"
         :style="{ maxWidth: contentMaxWidth }"
       >
+        <header class="align-self-center text-center">
+          <slot name="header"></slot>
+        </header>
         <slot></slot>
       </section>
     </div>
