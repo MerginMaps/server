@@ -668,7 +668,7 @@ def catch_sync_failure(f):
     def wrapper(*args, **kwargs):
         try:
             return f(*args, **kwargs)
-        except HTTPException as e:
+        except (HTTPException, IntegrityError) as e:
             if e.code in [401, 403, 404]:
                 raise  # nothing to do, just propagate downstream
 
@@ -720,6 +720,7 @@ def project_push(namespace, project_name):
         project  # pass full project object to request for later use
     )
     push_triggered.send(project)
+    logging.info(f"Push started for project: {project.id}, version: {version}.")
     pv = ProjectVersion.query.filter_by(
         project_id=project.id, name=project.latest_version
     ).first()
@@ -807,6 +808,7 @@ def project_push(namespace, project_name):
     try:
         # Creating upload transaction with different project's version is possible.
         db.session.commit()
+        logging.info(f"Upload transaction created: {upload.id}")
     except IntegrityError:
         db.session.rollback()
         # check and clean dangling uploads or abort
@@ -835,6 +837,7 @@ def project_push(namespace, project_name):
         db.session.add(upload)
         try:
             db.session.commit()
+            logging.info(f"Upload transaction created: {upload.id}")
             move_to_tmp(upload_dir)
         except IntegrityError as err:
             logging.error(f"Failed to create upload session: {str(err)}")
@@ -845,7 +848,7 @@ def project_push(namespace, project_name):
     os.makedirs(folder)
     open(os.path.join(folder, "lockfile"), "w").close()
 
-    # Update immediately without uploading of new/modified files, and remove transaction/lockfile
+    # Update immediately without uploading of new/modified files and remove transaction/lockfile after successful commit
     if not (changes["added"] or changes["updated"]):
         next_version = "v{}".format(num_version + 1)
         project.storage.apply_changes(changes, next_version, upload.id)
@@ -864,11 +867,21 @@ def project_push(namespace, project_name):
         project.latest_version = next_version
         db.session.add(pv)
         db.session.add(project)
-        db.session.delete(upload)
-        db.session.commit()
-        project_version_created.send(pv)
-        move_to_tmp(folder)
-        return jsonify(ProjectSchema().dump(project)), 200
+        try:
+            db.session.commit()
+            logging.info(
+                f"A project version {pv.id} for project: {project.id} created. No upload."
+            )
+            project_version_created.send(pv)
+            push_cancel(upload.id)
+            return jsonify(ProjectSchema().dump(project)), 200
+        except IntegrityError as err:
+            db.session.rollback()
+            push_cancel(upload.id)
+            logging.exception(
+                f"Failed to save project version due to version conflict: {str(err)}"
+            )
+            abort(422, "Version conflict. Please try later.")
 
     return {"transaction": upload.id}
 
@@ -1023,14 +1036,21 @@ def push_finish(transaction_id):
         project.latest_version = next_version
         db.session.add(pv)
         db.session.add(project)
-        db.session.delete(upload)
         db.session.commit()
+        logging.info(
+            f"Push finished for project: {project.id}, project version: {pv.id}, nothing to upload."
+        )
         project_version_created.send(pv)
         # remove artifacts
-        move_to_tmp(upload_dir, transaction_id)
+        push_cancel(transaction_id)
     except (psycopg2.Error, FileNotFoundError, DataSyncError) as err:
-        move_to_tmp(upload_dir)
+        push_cancel(transaction_id)
         abort(422, "Failed to create new version: {}".format(str(err)))
+    except IntegrityError as err:
+        db.session.rollback()
+        push_cancel(transaction_id)
+        logging.exception(f"Failed to finish push due to version conflict: {str(err)}")
+        abort(422, "Version conflict. Please try later.")
 
     num_version = int_version(project.latest_version)
     # do not optimize on every version, every 10th is just fine
@@ -1041,19 +1061,19 @@ def push_finish(transaction_id):
 
 @auth_required
 def push_cancel(transaction_id):
-    """Cancel upload transaction
+    """Clean upload.
 
-    Cancel ongoing upload. Uploaded files are removed and another upload can be started. # noqa: E501
+    Uploaded files are removed and another upload can be started. # noqa: E501
 
     :param transaction_id: Transaction id.
-    :type transaction_id: str
+    :type transaction_id: Str
 
     :rtype: None
     """
     upload, upload_dir = get_upload(transaction_id)
     db.session.delete(upload)
     db.session.commit()
-    move_to_tmp(upload_dir)
+    move_to_tmp(upload_dir, transaction_id)
     return NoContent, 200
 
 
