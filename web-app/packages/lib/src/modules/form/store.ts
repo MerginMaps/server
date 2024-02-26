@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import axios from 'axios'
 import { defineStore } from 'pinia'
 
 import {
@@ -13,7 +14,6 @@ import {
   SetFormErrorPayload
 } from '@/modules/form/types'
 import { useNotificationStore } from '@/modules/notification/store'
-import axios from 'axios'
 
 export interface FormState {
   errors: Record<MerginComponentUuid, FormErrors>

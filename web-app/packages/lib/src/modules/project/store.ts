@@ -521,7 +521,6 @@ export const useProjectStore = defineStore('projectModule', {
       }
     },
 
-
     async saveProjectSettings(payload: {
       namespace: string
       newSettings: SaveProjectSettings
