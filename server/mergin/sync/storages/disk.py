@@ -264,9 +264,9 @@ class DiskStorage(ProjectStorage):
                     logging.info(f"Changeset applied in {geodiff_apply_time} s")
                 except (GeoDiffLibError, GeoDiffLibConflictError):
                     project_workspace = self.project.workspace.name
-                    sync_errors[f["path"]] = (
-                        f"project: {project_workspace}/{self.project.name}, {self.gediff_log.getvalue()}"
-                    )
+                    sync_errors[
+                        f["path"]
+                    ] = f"project: {project_workspace}/{self.project.name}, {self.gediff_log.getvalue()}"
                     continue
 
                 f["diff"]["location"] = os.path.join(

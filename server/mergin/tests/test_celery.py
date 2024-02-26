@@ -75,7 +75,7 @@ def test_send_email_from_flask(send_email_mock, client):
         AccessRequest.project_id == p.id
     ).first()
     assert resp.status_code == 200
-    assert access_request.user.username == "test_user"
+    assert access_request.requested_by == user2.id
 
     assert send_email_mock.called
     call_args, _ = send_email_mock.call_args

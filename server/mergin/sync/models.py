@@ -9,9 +9,10 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, List, Dict, Set
 
+from flask_login import current_user
 from pygeodiff import GeoDiff
 from sqlalchemy import text
-from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.types import String
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -531,24 +532,44 @@ class Upload(db.Model):
         self.user_id = user_id
 
 
+class RequestStatus(Enum):
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
+
+    @classmethod
+    def values(cls):
+        return [member.value for member in cls.__members__.values()]
+
+
 class AccessRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(
-        db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), index=True
-    )
     project_id = db.Column(
         UUID(as_uuid=True), db.ForeignKey("project.id", ondelete="CASCADE"), index=True
     )
-    expire = db.Column(db.DateTime)
-
-    user = db.relationship("User", uselist=False)
+    requested_by = db.Column(
+        db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), nullable=False
+    )
+    requested_at = db.Column(
+        db.DateTime, default=datetime.utcnow, index=True, nullable=False
+    )
+    resolved_by = db.Column(
+        db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), nullable=True
+    )
+    resolved_at = db.Column(db.DateTime, nullable=True, index=True)
+    # how request was resolved: accepted / declined
+    status = db.Column(
+        ENUM(*RequestStatus.values(), name="request_status", nullable=True, index=True)
+    )
 
     project = db.relationship("Project", uselist=False)
 
     def __init__(self, project, user_id):
         self.project_id = project.id
-        self.user_id = user_id
-        self.expire = datetime.utcnow() + timedelta(
+        self.requested_by = user_id
+
+    @property
+    def expire(self):
+        return self.requested_at + timedelta(
             seconds=current_app.config["PROJECT_ACCESS_REQUEST"]
         )
 
@@ -558,16 +579,18 @@ class AccessRequest(db.Model):
         readers = project_access.readers.copy()
         writers = project_access.writers.copy()
         owners = project_access.owners.copy()
-        readers.append(self.user_id)
+        readers.append(self.requested_by)
         project_access.readers = readers
         if permissions == "write" or permissions == "owner":
-            writers.append(self.user_id)
+            writers.append(self.requested_by)
             project_access.writers = writers
         if permissions == "owner":
-            owners.append(self.user_id)
+            owners.append(self.requested_by)
             project_access.owners = owners
 
-        db.session.delete(self)
+        self.resolved_at = datetime.utcnow()
+        self.resolved_by = current_user.id
+        self.status = RequestStatus.ACCEPTED.value
         db.session.commit()
 
 

@@ -157,15 +157,19 @@ class ProjectSchemaForVersion(ma.SQLAlchemyAutoSchema):
 
 
 class ProjectAccessRequestSchema(ma.SQLAlchemyAutoSchema):
-    requested_by = fields.Function(lambda obj: obj.user.username)
+    requested_by = fields.Method("_requested_by")
     project_name = fields.Function(lambda obj: obj.project.name)
     namespace = fields.Function(lambda obj: obj.project.workspace.name)
     expire = DateTimeWithZ()
-    user = fields.Nested(UserSearchSchema(exclude=("email",)))
+
+    def _requested_by(self, obj):
+        u = User.query.get(obj.requested_by)
+        return u.username if u else ""
 
     class Meta:
         model = AccessRequest
         load_instance = True
+        exclude = ("resolved_by", "resolved_at", "status", "requested_at")
 
 
 class ProjectSchema(ma.SQLAlchemyAutoSchema):
