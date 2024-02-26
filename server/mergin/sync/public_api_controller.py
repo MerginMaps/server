@@ -65,12 +65,11 @@ from .utils import (
     gpkg_wkb_to_wkt,
     is_versioned_file,
     is_valid_gpkg,
-)
-from .utils import (
     is_name_allowed,
     mergin_secure_filename,
     get_path_from_files,
     get_project_path,
+    clean_upload,
 )
 from .errors import StorageLimitHit
 from ..utils import format_time_delta
@@ -720,7 +719,6 @@ def project_push(namespace, project_name):
         project  # pass full project object to request for later use
     )
     push_triggered.send(project)
-    logging.info(f"Push started for project: {project.id}, version: {version}.")
     pv = ProjectVersion.query.filter_by(
         project_id=project.id, name=project.latest_version
     ).first()
@@ -808,7 +806,9 @@ def project_push(namespace, project_name):
     try:
         # Creating upload transaction with different project's version is possible.
         db.session.commit()
-        logging.info(f"Upload transaction created: {upload.id}")
+        logging.info(
+            f"Upload transaction {upload.id} created for project: {project.id}, version: {version}"
+        )
     except IntegrityError:
         db.session.rollback()
         # check and clean dangling uploads or abort
@@ -837,7 +837,9 @@ def project_push(namespace, project_name):
         db.session.add(upload)
         try:
             db.session.commit()
-            logging.info(f"Upload transaction created: {upload.id}")
+            logging.info(
+                f"Upload transaction {upload.id} created for project: {project.id}, version: {version}"
+            )
             move_to_tmp(upload_dir)
         except IntegrityError as err:
             logging.error(f"Failed to create upload session: {str(err)}")
@@ -873,11 +875,11 @@ def project_push(namespace, project_name):
                 f"A project version {pv.id} for project: {project.id} created. No upload."
             )
             project_version_created.send(pv)
-            push_cancel(upload.id)
+            clean_upload(upload.id)
             return jsonify(ProjectSchema().dump(project)), 200
         except IntegrityError as err:
             db.session.rollback()
-            push_cancel(upload.id)
+            clean_upload(upload.id)
             logging.exception(
                 f"Failed to save project version due to version conflict: {str(err)}"
             )
@@ -1038,17 +1040,17 @@ def push_finish(transaction_id):
         db.session.add(project)
         db.session.commit()
         logging.info(
-            f"Push finished for project: {project.id}, project version: {pv.id}, nothing to upload."
+            f"Push finished for project: {project.id}, project version: {next_version}, transaction id: {transaction_id}."
         )
         project_version_created.send(pv)
         # remove artifacts
-        push_cancel(transaction_id)
+        clean_upload(transaction_id)
     except (psycopg2.Error, FileNotFoundError, DataSyncError) as err:
-        push_cancel(transaction_id)
+        clean_upload(transaction_id)
         abort(422, "Failed to create new version: {}".format(str(err)))
     except IntegrityError as err:
         db.session.rollback()
-        push_cancel(transaction_id)
+        clean_upload(transaction_id)
         logging.exception(f"Failed to finish push due to version conflict: {str(err)}")
         abort(422, "Version conflict. Please try later.")
 
@@ -1061,19 +1063,19 @@ def push_finish(transaction_id):
 
 @auth_required
 def push_cancel(transaction_id):
-    """Clean upload.
+    """Cancel upload transaction
 
-    Uploaded files are removed and another upload can be started. # noqa: E501
+    Cancel ongoing upload. Uploaded files are removed and another upload can be started. # noqa: E501
 
     :param transaction_id: Transaction id.
-    :type transaction_id: Str
+    :type transaction_id: str
 
     :rtype: None
     """
     upload, upload_dir = get_upload(transaction_id)
     db.session.delete(upload)
     db.session.commit()
-    move_to_tmp(upload_dir, transaction_id)
+    move_to_tmp(upload_dir)
     return NoContent, 200
 
 
