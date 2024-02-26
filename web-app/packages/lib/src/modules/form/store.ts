@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import axios from 'axios'
 import { defineStore } from 'pinia'
 
 import {
@@ -13,7 +14,6 @@ import {
   SetFormErrorPayload
 } from '@/modules/form/types'
 import { useNotificationStore } from '@/modules/notification/store'
-import axios from 'axios'
 
 export interface FormState {
   errors: Record<MerginComponentUuid, FormErrors>
@@ -47,7 +47,7 @@ export const useFormStore = defineStore('formModule', {
     },
     async handleError(payload: HandleErrorPayload) {
       let errorMessage =
-        payload.generalMessage ?? (payload?.error as string) ?? 'Error'
+        (payload?.error as string) ?? payload.generalMessage ?? 'Error'
       const notificationStore = useNotificationStore()
       if (!axios.isAxiosError(payload.error)) {
         await notificationStore.error({ text: errorMessage })
@@ -70,6 +70,7 @@ export const useFormStore = defineStore('formModule', {
             componentId: payload.componentId,
             errors: payload.error.response.data
           })
+          return
         }
       } else {
         errorMessage = payload?.error?.response?.data ?? errorMessage

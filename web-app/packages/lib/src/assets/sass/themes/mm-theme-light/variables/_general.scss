@@ -80,7 +80,7 @@ $errorColor: map-get($map: $colors, $key: negative);
 
 /// Outline color of a focused element
 /// @group general
-$focusOutlineColor: #bfd1f6;
+$focusOutlineColor: map-get($map: $colors, $key: "medium-green");
 
 /// Outline of a focused element
 /// @group general

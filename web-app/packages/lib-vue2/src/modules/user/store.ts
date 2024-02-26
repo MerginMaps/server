@@ -483,15 +483,17 @@ export const useUserStore = defineStore('userModule', {
           // ignore
         }
 
-        delete value[this.loggedUser?.username]
-        const strValue = JSON.stringify(value)
+        if (value) {
+          delete value[this.loggedUser?.username]
+          const strValue = JSON.stringify(value)
 
-        const expires = new Date()
-        // cookies expire in one year
-        expires.setFullYear(expires.getFullYear() + 1)
-        cookies.set(COOKIES_CURRENT_WORKSPACE, strValue, {
-          expires
-        })
+          const expires = new Date()
+          // cookies expire in one year
+          expires.setFullYear(expires.getFullYear() + 1)
+          cookies.set(COOKIES_CURRENT_WORKSPACE, strValue, {
+            expires
+          })
+        }
       }
       await projectStore.setCurrentNamespace({
         currentNamespace: ''
