@@ -55,7 +55,11 @@ def add_commands(app: Flask):
         """Download files for project at particular version"""
         ws, name = split_project_path(project_name)
         workspace = current_app.ws_handler.get_by_name(ws)
-        project = Project.query.filter_by(workspace_id=workspace.id, name=name).first()
+        project = (
+            Project.query.filter_by(workspace_id=workspace.id, name=name)
+            .filter(Project.storage_params.isnot(None))
+            .first()
+        )
         if not project:
             print("ERROR: Project does not exist")
             return
@@ -89,7 +93,11 @@ def add_commands(app: Flask):
         if not workspace:
             print("ERROR: Workspace does not exist")
             return
-        project = Project.query.filter_by(workspace_id=workspace.id, name=name).first()
+        project = (
+            Project.query.filter_by(workspace_id=workspace.id, name=name)
+            .filter(Project.storage_params.isnot(None))
+            .first()
+        )
         if not project:
             print("ERROR: Project does not exist")
             return

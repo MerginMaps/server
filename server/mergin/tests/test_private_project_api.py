@@ -455,3 +455,8 @@ def test_admin_project_list(client):
 
     resp = client.get("/app/admin/projects?page=1&per_page=15&workspace=mergin")
     assert len(resp.json["projects"]) == 15
+
+    # delete project permanently
+    p.delete()
+    resp = client.get("/app/admin/projects?page=1&per_page=15&workspace=mergin")
+    assert len(resp.json["projects"]) == 14

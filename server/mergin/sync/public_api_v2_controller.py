@@ -40,8 +40,7 @@ def delete_project_now(id_):
     :type id_: str
     """
     project = require_project_by_uuid(id_, ProjectPermissions.Delete, scheduled=True)
-    db.session.delete(project)
-    db.session.commit()
+    project.delete()
 
     return NoContent, 204
 

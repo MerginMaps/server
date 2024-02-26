@@ -11,7 +11,7 @@ from typing import Optional, List, Dict, Set
 
 from flask_login import current_user
 from pygeodiff import GeoDiff
-from sqlalchemy import text
+from sqlalchemy import text, null
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.types import String
@@ -60,6 +60,8 @@ class Project(db.Model):
 
     @property
     def storage(self):
+        if not self.storage_params:
+            return
         if not hasattr(self, "_storage"):  # best approach, seriously
             StorageBackend = Storages[self.storage_params["type"]]
             self._storage = StorageBackend(self)  # pylint: disable=W0201
@@ -289,6 +291,25 @@ class Project(db.Model):
         This time should be used to remove all local copies of the file."""
         initial = timedelta(days=current_app.config["DELETED_PROJECT_EXPIRATION"])
         return initial - (datetime.utcnow() - self.removed_at)
+
+    def delete(self):
+        """Mark project as permanently deleted (but keep in db)
+        - rename (to free up the same name)
+        - remove associated files and project versions
+        - reset project_access
+        """
+        self.name = f"{self.name}_{str(self.id)}"
+        # make sure remove_at is not null as it is used as filter for APIs
+        if not self.removed_at:
+            self.removed_at = datetime.utcnow()
+        # Null in storage params serves as permanent deletion flag
+        self.storage.delete()
+        self.storage_params = null()
+        self.files = null()
+        pv_table = ProjectVersion.__table__
+        db.session.execute(pv_table.delete().where(pv_table.c.project_id == self.id))
+        self.access.owners = self.access.writers = self.access.readers = []
+        db.session.commit()
 
 
 class ProjectRole(Enum):

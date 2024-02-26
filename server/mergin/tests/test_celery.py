@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 from .. import db
 from ..config import Configuration
-from ..sync.models import Project, AccessRequest
+from ..sync.models import Project, AccessRequest, ProjectVersion
 from ..celery import send_email_async
 from ..sync.tasks import remove_temp_files, remove_projects_backups
 from ..sync.storages.disk import move_to_tmp
@@ -120,3 +120,18 @@ def test_remove_deleted_project_backups(client):
         workspace_id=test_workspace_id, name=test_project
     ).count()
     assert not os.path.exists(rp_dir)
+    # project still exists in db
+    rm_project = Project.query.get(rp.id)
+    assert (
+        rm_project.removed_at
+        and not rm_project.storage_params
+        and not rm_project.files
+        and rm_project.access.owners == []
+    )
+    assert (
+        not Project.query.filter_by(id=rm_project.id)
+        .filter(Project.storage_params.isnot(None))
+        .first()
+    )
+    assert ProjectVersion.query.filter_by(project_id=rm_project.id).count() == 0
+    assert str(rm_project.id) in rm_project.name

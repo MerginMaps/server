@@ -40,6 +40,7 @@ class UserProfileSchema(ma.SQLAlchemyAutoSchema):
         if ws:
             projects_count = (
                 Project.query.filter(Project.creator_id == obj.user.id)
+                .filter(Project.removed_at.is_(None))
                 .filter_by(workspace_id=ws.id)
                 .count()
             )

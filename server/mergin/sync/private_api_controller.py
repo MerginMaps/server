@@ -215,7 +215,11 @@ def list_projects(
 @auth_required(permissions=["admin"])
 def restore_project(id):  # noqa: E501
     """Restore project marked for removal"""
-    project = Project.query.get_or_404(id)
+    project = (
+        Project.query.filter_by(id=id)
+        .filter(Project.storage_params.isnot(None))
+        .first_or_404()
+    )
     if not project.removed_at:
         return "", 201
     if not project.workspace.is_active:
@@ -228,11 +232,14 @@ def restore_project(id):  # noqa: E501
 
 @auth_required(permissions=["admin"])
 def force_project_delete(id):  # noqa: E501
-    project = Project.query.get_or_404(id)
+    project = (
+        Project.query.filter_by(id=id)
+        .filter(Project.storage_params.isnot(None))
+        .first_or_404()
+    )
     if not project.removed_at:
         abort(400, "Failed to remove: Project is still active")
-    db.session.delete(project)
-    db.session.commit()
+    project.delete()
     return "", 204
 
 

@@ -75,7 +75,11 @@ def app(flask_app, request):
     def teardown():
         # remove all project files
         with flask_app.app_context():
-            dirs = [p.storage.project_dir for p in Project.query.all()]
+            dirs = [
+                p.storage.project_dir
+                for p in Project.query.all()
+                if p.storage is not None
+            ]
             cleanup(flask_app.test_client(), dirs)
 
     request.addfinalizer(teardown)

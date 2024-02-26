@@ -489,6 +489,11 @@ def test_delete_project(client):
         workspace_id=test_workspace_id, name=test_project
     ).count()
     assert not os.path.exists(project_dir)
+    rm_project = Project.query.get(project.id)
+    assert rm_project.removed_at and not rm_project.storage_params
+    # try to delete again
+    resp = client.delete(f"/app/project/removed-project/{rm_project.id}")
+    assert resp.status_code == 404
 
 
 test_project_data = [
