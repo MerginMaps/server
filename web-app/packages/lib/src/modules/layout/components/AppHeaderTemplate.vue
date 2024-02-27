@@ -91,6 +91,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             }"
           ></PMenu>
         </POverlayPanel>
+        <AppMenu :items="_helpMenuItems" :icon="'ti ti-help'" />
       </div>
     </template>
   </PMenubar>
@@ -103,6 +104,7 @@ import { defineComponent, ref, PropType } from 'vue'
 
 import { AppBreadcrumbs } from '.'
 
+import { AppMenu, useInstanceStore } from '@/main'
 import { useLayoutStore } from '@/modules/layout/store'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
@@ -110,7 +112,8 @@ import { useUserStore } from '@/modules/user/store'
 export default defineComponent({
   name: 'app-header-template',
   components: {
-    AppBreadcrumbs
+    AppBreadcrumbs,
+    AppMenu
   },
   props: {
     renderNamespace: {
@@ -118,6 +121,9 @@ export default defineComponent({
       default: false
     },
     menuItems: {
+      type: Array as PropType<MenuItem[]>
+    },
+    helpMenuItems: {
       type: Array as PropType<MenuItem[]>
     }
   },
@@ -134,6 +140,7 @@ export default defineComponent({
     }
   },
   computed: {
+    ...mapState(useInstanceStore, ['configData']),
     ...mapState(useLayoutStore, ['drawer']),
     ...mapState(useUserStore, ['loggedUser', 'getUserFullName']),
     ...mapState(useProjectStore, ['currentNamespace']),
@@ -157,6 +164,19 @@ export default defineComponent({
           }
         }
       ] as MenuItem[]
+    },
+    _helpMenuItems() {
+      return [
+        {
+          label: 'Documentation',
+          url: this.configData?.docs_url
+        },
+        {
+          label: 'Community chat',
+          url: import.meta.env.VITE_VUE_APP_JOIN_COMMUNITY_LINK
+        },
+        ...(this.helpMenuItems ?? [])
+      ].map((item) => ({ ...item, class: 'font-semibold p-1' })) as MenuItem[]
     },
     avatarLabel() {
       return this.loggedUser?.username?.charAt(0).toUpperCase()
