@@ -2238,10 +2238,10 @@ def test_project_version_integrity(client):
     # try to finish the transaction
     resp = client.post("/v1/project/push/finish/{}".format(upload.id))
     assert resp.status_code == 422
-    assert resp.json["detail"] == "Version conflict. Please try later."
+    assert "Failed to create new version" in resp.json["detail"]
     failure = SyncFailuresHistory.query.filter_by(project_id=upload.project.id).first()
     assert failure.error_type == "push_finish"
-    assert failure.error_details == "Version conflict. Please try later."
+    assert "Failed to create new version" in failure.error_details
     db.session.delete(pv)
     db.session.delete(failure)
     db.session.commit()
@@ -2264,12 +2264,12 @@ def test_project_version_integrity(client):
             headers=json_headers,
         )
         assert resp.status_code == 422
-        assert resp.json["detail"] == "Version conflict. Please try later."
+        assert "Failed to upload a new project version" in resp.json["detail"]
         failure = SyncFailuresHistory.query.filter_by(
             project_id=upload.project.id
         ).first()
         assert failure.error_type == "push_start"
-        assert failure.error_details == "Version conflict. Please try later."
+        assert "Failed to upload a new project version" in failure.error_details
         db.session.delete(pv)
         db.session.commit()
 

@@ -872,7 +872,8 @@ def project_push(namespace, project_name):
         try:
             db.session.commit()
             logging.info(
-                f"A project version {pv.id} for project: {project.id} created. No upload."
+                f"A project version {next_version} for project: {project.id} created. "
+                f"Transaction id: {upload.id}. No upload."
             )
             project_version_created.send(pv)
             clean_upload(upload.id)
@@ -881,9 +882,9 @@ def project_push(namespace, project_name):
             db.session.rollback()
             clean_upload(upload.id)
             logging.exception(
-                f"Failed to save project version due to version conflict: {str(err)}"
+                f"Failed to upload a new project version using transaction id: {upload.id}: {str(err)}"
             )
-            abort(422, "Version conflict. Please try later.")
+            abort(422, "Failed to upload a new project version. Please try later.")
 
     return {"transaction": upload.id}
 
@@ -1045,14 +1046,14 @@ def push_finish(transaction_id):
         project_version_created.send(pv)
         # remove artifacts
         clean_upload(transaction_id)
-    except (psycopg2.Error, FileNotFoundError, DataSyncError) as err:
-        clean_upload(transaction_id)
-        abort(422, "Failed to create new version: {}".format(str(err)))
-    except IntegrityError as err:
+    except (psycopg2.Error, FileNotFoundError, DataSyncError, IntegrityError) as err:
         db.session.rollback()
         clean_upload(transaction_id)
-        logging.exception(f"Failed to finish push due to version conflict: {str(err)}")
-        abort(422, "Version conflict. Please try later.")
+        logging.exception(
+            f"Failed to finish push for project: {project.id}, project version: {next_version}, "
+            f"transaction id: {transaction_id}.: {str(err)}"
+        )
+        abort(422, "Failed to create new version: {}".format(str(err)))
 
     num_version = int_version(project.latest_version)
     # do not optimize on every version, every 10th is just fine
