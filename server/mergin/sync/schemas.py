@@ -301,7 +301,14 @@ class AdminProjectSchema(ma.SQLAlchemyAutoSchema):
     created = DateTimeWithZ(attribute="Project.created")
     updated = DateTimeWithZ(attribute="Project.updated")
     removed_at = DateTimeWithZ(attribute="Project.removed_at")
-    removed_by = fields.String(attribute="Project.removed_by")
+    removed_by = fields.Method("_removed_by_user")
+
+    def _removed_by_user(self, obj):
+        if not obj.Project.removed_by:
+            return
+        user = User.query.get(obj.Project.removed_by)
+        if user:
+            return user.username
 
     def _workspace_name(self, obj):
         name = getattr(obj, "workspace_name", None)

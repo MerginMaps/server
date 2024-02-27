@@ -252,7 +252,7 @@ def delete_project(namespace, project_name):  # noqa: E501
     """
     project = require_project(namespace, project_name, ProjectPermissions.Delete)
     project.removed_at = datetime.utcnow()
-    project.removed_by = current_user.username
+    project.removed_by = current_user.id
     db.session.commit()
     return NoContent, 200
 

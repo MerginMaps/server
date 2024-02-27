@@ -416,7 +416,7 @@ def test_admin_project_list(client):
     # mark as inactive
     p = Project.query.get(resp.json["projects"][0]["id"])
     p.removed_at = datetime.datetime.utcnow()
-    p.removed_by = user.username
+    p.removed_by = user.id
     db.session.commit()
 
     # add more projects

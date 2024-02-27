@@ -102,6 +102,6 @@ def add_commands(app: Flask):
             print("ERROR: Project does not exist")
             return
         project.removed_at = datetime.utcnow()
-        project.removed_by = "mergin CLI"
+        project.removed_by = None
         db.session.commit()
         print("Project removed successfully")

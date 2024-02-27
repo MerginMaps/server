@@ -471,13 +471,14 @@ def test_delete_project(client):
     )
 
     # remove project
+    admin = User.query.filter_by(username="mergin").first()
     resp = client.delete("/v1/project/{}/{}".format(test_workspace_name, test_project))
     assert resp.status_code == 200
     rp = Project.query.filter_by(
         workspace_id=test_workspace_id, name=test_project
     ).first()
     assert rp.removed_at
-    assert rp.removed_by == "mergin"
+    assert rp.removed_by == admin.id
     assert os.path.exists(
         project_dir
     )  # files not deleted yet, since there is possibility of restore

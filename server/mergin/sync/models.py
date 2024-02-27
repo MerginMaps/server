@@ -43,9 +43,13 @@ class Project(db.Model):
     latest_version = db.Column(db.String, index=True)
     workspace_id = db.Column(db.Integer, index=True, nullable=False)
     removed_at = db.Column(db.DateTime, index=True)
-    removed_by = db.Column(db.String, index=True)
+    removed_by = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=True, index=True
+    )
 
-    creator = db.relationship("User", uselist=False, backref=db.backref("projects"))
+    creator = db.relationship(
+        "User", uselist=False, backref=db.backref("projects"), foreign_keys=[creator_id]
+    )
 
     __table_args__ = (db.UniqueConstraint("name", "workspace_id"),)
 

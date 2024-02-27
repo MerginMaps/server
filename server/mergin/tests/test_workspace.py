@@ -55,7 +55,7 @@ def test_workspace_implementation(client):
     assert ws.disk_usage() == 1024
     # mark project for removal
     project.removed_at = datetime.datetime.utcnow()
-    project.removed_by = user.username
+    project.removed_by = user.id
     db.session.commit()
     assert ws.disk_usage() == 0
 
