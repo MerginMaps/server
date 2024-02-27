@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <h2 class="text-color font-semibold text-xs">Download Mergin Maps</h2>
           <p class="opacity-80 text-xs">
             Capture geo-info easily through your mobile/tablet with the Mergin
-            Maps Input app.
+            Maps mobile app.
           </p>
         </div>
         <div class="col-12 xl:col-2 flex justify-content-center">

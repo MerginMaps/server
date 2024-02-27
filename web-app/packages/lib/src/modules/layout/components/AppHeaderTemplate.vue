@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         >
           <PButton
             class="mr-2"
-            icon="ti ti-menu-2"
+            :icon="menuButtonIcon"
             plain
             text
             rounded
@@ -141,7 +141,7 @@ export default defineComponent({
   },
   computed: {
     ...mapState(useInstanceStore, ['configData']),
-    ...mapState(useLayoutStore, ['drawer']),
+    ...mapState(useLayoutStore, ['drawer', 'isUnderOverlayBreakpoint']),
     ...mapState(useUserStore, ['loggedUser', 'getUserFullName']),
     ...mapState(useProjectStore, ['currentNamespace']),
     profileMenuItems() {
@@ -185,6 +185,15 @@ export default defineComponent({
       return this.getUserFullName.length > 15
         ? `${this.getUserFullName.substring(0, 15)}...`
         : this.getUserFullName
+    },
+    menuButtonIcon() {
+      if (this.isUnderOverlayBreakpoint) {
+        return 'ti ti-menu-2'
+      }
+
+      return this.drawer
+        ? 'ti ti-layout-sidebar-left-collapse'
+        : 'ti ti-layout-sidebar-left-expand'
     }
   },
   methods: {
