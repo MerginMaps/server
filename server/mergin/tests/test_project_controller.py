@@ -2201,3 +2201,81 @@ def test_get_project_version(client, diff_project):
     # invalid project identifier
     resp = client.get(f"/v1/project/version/1234/v10")
     assert resp.status_code == 404
+
+
+def add_project_version(project, changes, version=2):
+    pv = ProjectVersion(
+        project,
+        f"v{version}",
+        "mergin",
+        changes,
+        project.files,
+        "123",
+    )
+    db.session.add(pv)
+    db.session.commit()
+    return pv
+
+
+def test_project_version_integrity(client):
+    # changes with an upload
+    # create transaction and upload chunks
+    changes = _get_changes_with_diff(test_project_dir)
+    upload, upload_dir = create_transaction("mergin", changes)
+    upload_chunks(upload_dir, upload.changes)
+    # manually create an identical project version in db
+    next_version = "v{}".format(upload.version + 1)
+    pv = ProjectVersion(
+        upload.project,
+        next_version,
+        "mergin",
+        changes,
+        upload.project.files,
+        "123",
+    )
+    db.session.add(pv)
+    db.session.commit()
+    # try to finish the transaction
+    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    assert resp.status_code == 422
+    assert "Failed to create new version" in resp.json["detail"]
+    failure = SyncFailuresHistory.query.filter_by(project_id=upload.project.id).first()
+    assert failure.error_type == "push_finish"
+    assert "Failed to create new version" in failure.error_details
+    db.session.delete(pv)
+    db.session.delete(failure)
+    db.session.commit()
+
+    # changes without an upload
+    # to insert an identical project version when no upload (only one endpoint used),
+    # we need to pretend side effect of a function called just before project version insertion
+    with patch("mergin.sync.utils.get_user_agent") as mock:
+        project = Project.query.filter_by(
+            name=test_project, workspace_id=test_workspace_id
+        ).first()
+        url = "/v1/project/push/{}/{}".format(test_workspace_name, test_project)
+        changes = _get_changes(test_project_dir)
+        changes["added"] = changes["updated"] = []  # only deleted files
+        data = {"version": "v1", "changes": changes}
+        pv = mock.side_effect = add_project_version(project, changes)
+        resp = client.post(
+            url,
+            data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
+            headers=json_headers,
+        )
+        assert resp.status_code == 422
+        assert "Failed to upload a new project version" in resp.json["detail"]
+        failure = SyncFailuresHistory.query.filter_by(
+            project_id=upload.project.id
+        ).first()
+        assert failure.error_type == "push_start"
+        assert "Failed to upload a new project version" in failure.error_details
+        db.session.delete(pv)
+        db.session.commit()
+
+    # check infrastructure is clean for successful push if no version conflict occur
+    changes = _get_changes(test_project_dir)
+    upload, upload_dir = create_transaction("mergin", changes)
+    upload_chunks(upload_dir, upload.changes)
+    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    assert resp.status_code == 200

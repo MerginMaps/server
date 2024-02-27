@@ -9,7 +9,7 @@ import re
 import secrets
 from threading import Timer
 from uuid import UUID
-from datetime import timedelta
+from connexion import NoContent
 from pathvalidate import sanitize_filename
 from shapely import wkb
 from shapely.errors import WKBReadingError
@@ -356,3 +356,24 @@ def split_project_path(project_path):
 def is_valid_gpkg(file_meta):
     """Check if diff file is valid"""
     return file_meta["size"] != 0
+
+
+def clean_upload(transaction_id):
+    """Clean upload infrastructure
+
+    Uploaded files and table records are removed, and another upload can be started.
+
+    :param transaction_id: Transaction id.
+    :type transaction_id: Str
+
+    :rtype: None
+    """
+    from mergin.sync.permissions import get_upload
+    from mergin.sync.storages.disk import move_to_tmp
+    from .. import db
+
+    upload, upload_dir = get_upload(transaction_id)
+    db.session.delete(upload)
+    db.session.commit()
+    move_to_tmp(upload_dir, transaction_id)
+    return NoContent, 200
