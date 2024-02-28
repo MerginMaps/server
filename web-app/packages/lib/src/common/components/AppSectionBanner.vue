@@ -31,24 +31,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :class="[
             'w-full',
             $slots['header-actions'] &&
-              'flex flex-column lg:flex-row row-gap-4 align-items-center justify-content-between'
+              'flex flex-column lg:flex-row gap-4 lg:align-items-center justify-content-between'
           ]"
         >
           <div
             :class="[
               $slots['header-image'] &&
-                'flex flex-column lg:flex-row row-gap-2 align-items-center'
+                'flex flex-column lg:flex-row gap-4 lg:align-items-center'
             ]"
           >
-            <div v-if="$slots['header-image']" class="flex lg:mr-4">
+            <div v-if="$slots['header-image']">
               <slot name="header-image"></slot>
             </div>
-            <div
-              :class="[
-                'flex flex-column gap-2',
-                $slots['header-image'] && 'text-center lg:text-left'
-              ]"
-            >
+            <div :class="['flex flex-column gap-3 lg:gap-2']">
               <h3 class="text-color text-sm font-semibold m-0">
                 <slot name="title"></slot>
               </h3>
