@@ -47,7 +47,7 @@ export const useFormStore = defineStore('formModule', {
     },
     async handleError(payload: HandleErrorPayload) {
       let errorMessage =
-        (payload?.error as string) ?? payload.generalMessage ?? 'Error'
+        payload.generalMessage ?? (payload?.error as string) ?? 'Error'
       const notificationStore = useNotificationStore()
       if (!axios.isAxiosError(payload.error)) {
         await notificationStore.error({ text: errorMessage })
