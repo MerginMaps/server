@@ -97,12 +97,11 @@ def test_close_user_account(client, diff_project):
 
 
 def test_remove_project(client, diff_project):
-    """Test project is successfully removed incl:
-    - pending transfer
-    - pending upload
-    - project access
-    - project versions
-    - associated files
+    """Test project is successfully marked as removed incl:
+    - pending upload deleted
+    - project access reset
+    - project versions deleted
+    - associated files deleted
     """
     # set up
     mergin_user = User.query.filter_by(username=DEFAULT_USER[0]).first()
@@ -114,10 +113,9 @@ def test_remove_project(client, diff_project):
     project_id = diff_project.id
 
     # remove project
-    db.session.delete(diff_project)
-    db.session.commit()
-    assert not Project.query.filter_by(id=project_id).count()
+    diff_project.delete()
+    assert Project.query.filter_by(id=project_id).count()
     assert not Upload.query.filter_by(project_id=project_id).count()
     assert not ProjectVersion.query.filter_by(project_id=project_id).count()
-    assert not ProjectAccess.query.filter_by(project_id=project_id).count()
+    assert ProjectAccess.query.filter_by(project_id=project_id).count()
     cleanup(client, [project_dir])

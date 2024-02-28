@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-from server.mergin.sync.config import Configuration
+from mergin.sync.config import Configuration
 
 # revision identifiers, used by Alembic.
 revision = "46fedf98dca5"

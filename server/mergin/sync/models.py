@@ -312,6 +312,10 @@ class Project(db.Model):
         self.files = null()
         pv_table = ProjectVersion.__table__
         db.session.execute(pv_table.delete().where(pv_table.c.project_id == self.id))
+        upload_table = Upload.__table__
+        db.session.execute(
+            upload_table.delete().where(upload_table.c.project_id == self.id)
+        )
         self.access.owners = self.access.writers = self.access.readers = []
         db.session.commit()
 

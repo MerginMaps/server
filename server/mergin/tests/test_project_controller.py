@@ -934,7 +934,7 @@ def test_download_fail(app, client):
     p = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
     ).first()
-    db.session.delete(p)
+    p.delete()
     db.session.commit()
     resp = client.get(
         "/v1/project/raw/{}/{}?file={}".format(
