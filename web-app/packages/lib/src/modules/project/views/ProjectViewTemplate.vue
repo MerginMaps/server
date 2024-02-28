@@ -87,7 +87,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </template>
     <app-container v-else-if="fetchProjectsResponseStatus">
       <app-section v-if="fetchProjectsResponseStatus === 403">
-        <div class="flex flex-column align-items-center p-4 text-center">
+        <div class="flex flex-column align-items-center p-4 text-center gap-4">
           <img src="@/assets/map-circle.svg" alt="No project" />
           <p class="font-semibold">This is a private project</p>
           <p class="text-sm opacity-80 mt-2 mb-4">
@@ -99,7 +99,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </div>
       </app-section>
       <app-section v-else-if="fetchProjectsResponseStatus === 404">
-        <div class="flex flex-column align-items-center p-4 text-center">
+        <div class="flex flex-column align-items-center p-4 text-center gap-4">
           <img src="@/assets/map-circle.svg" alt="No project" />
           <p class="font-semibold">Project not found</p>
           <p class="text-sm opacity-80 mt-2 mb-4">
@@ -108,7 +108,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </div>
       </app-section>
       <app-section v-else-if="fetchProjectsResponseStatus === 409">
-        <div class="flex flex-column align-items-center p-4 text-center">
+        <div class="flex flex-column align-items-center p-4 text-center gap-4">
           <img src="@/assets/map-circle.svg" alt="No project" />
           <p class="font-semibold">
             You don't have permission to access this project
