@@ -9,18 +9,24 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <template #header>
       <h1 class="text-6xl">Email confirmation</h1>
     </template>
-
-    <template v-if="verified"
-      ><img src="@/assets/neutral.svg" alt="MerginMaps neutral" />Your email
-      address has been verified.</template
-    >
-    <template v-else
-      ><img src="@/assets/negative.svg" alt="MerginMaps negative" />Invalid
-      token</template
-    >
-    <PButton data-cy="verify-email-btn" @click="$router.push({ name: 'home' })"
-      >Continue
-    </PButton>
+    <div class="flex flex-column gap-4 align-items-center">
+      <template v-if="verified"
+        ><img src="@/assets/neutral.svg" alt="MerginMaps neutral" /><span
+          class="opacity-80 text-sm"
+          >Your email address has been verified.</span
+        ></template
+      >
+      <template v-else
+        ><img src="@/assets/negative.svg" alt="MerginMaps negative" />Invalid
+        token</template
+      >
+      <PButton
+        data-cy="verify-email-btn"
+        @click="$router.push({ name: 'home' })"
+        class="w-full"
+        label="Continue"
+      />
+    </div>
   </app-onboarding-page>
 </template>
 
