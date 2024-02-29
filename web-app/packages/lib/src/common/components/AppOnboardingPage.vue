@@ -1,7 +1,12 @@
 <template>
   <article :class="['relative', 'grid grid-nogutter', 'h-full']">
     <!-- Logo -->
-    <aside class="fixed top-0 left-0 m-4 z-1">
+    <aside
+      :class="[
+        'fixed top-0 left-0 p-3 z-1 w-full md:w-auto surface-ground',
+        { 'onborading-page-logo': $slots.aside }
+      ]"
+    >
       <slot name="logo">
         <img src="@/assets/mm-logo.svg" />
       </slot>
@@ -30,7 +35,7 @@
         class="flex flex-column gap-4 w-full"
         :style="{ maxWidth: contentMaxWidth }"
       >
-        <header class="align-self-center text-center">
+        <header class="align-self-center text-center mt-5 md:mt-0">
           <slot name="header"></slot>
         </header>
         <slot></slot>
@@ -45,4 +50,11 @@ withDefaults(defineProps<{ contentMaxWidth?: string }>(), {
 })
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+@media screen and (min-width: $md) {
+  .onborading-page-logo {
+    // reset background on tablet > screens
+    background-color: transparent !important;
+  }
+}
+</style>
