@@ -16,14 +16,26 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         >
           <img
             src="@/assets/footer-mobile.png"
-            class="absolute top-0 left-2rem"
+            class="absolute top-0 left-2rem z-1"
           />
+
+          <!-- Circle -->
+          <div
+            :class="[
+              'dashboard-view-footer-mobile-circle',
+              'border-circle absolute bottom-0 left-0 w-full'
+            ]"
+          ></div>
         </div>
-        <div class="col-12 xl:col-6 mb-2 xl:mb-0 text-center xl:text-left">
-          <h2 class="text-color font-semibold text-xs">Download Mergin Maps</h2>
-          <p class="opacity-80 text-xs">
-            Capture geo-info easily through your mobile/tablet with the Mergin
-            Maps mobile app.
+        <div
+          class="col-12 xl:col-5 mb-2 xl:mb-0 text-center xl:text-left text-xs"
+        >
+          <h2 class="text-color text-sm mb-3">
+            Download Mergin Maps to your phone
+          </h2>
+          <p class="opacity-60">
+            Capture geo-info easily through your mobile/tablet with our mobile
+            app.
           </p>
         </div>
         <div class="col-12 xl:col-2 flex justify-content-center">
@@ -46,6 +58,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             icon="ti ti-x"
             text
             rounded
+            plain
             aria-label="Close section"
             @click="closeElement"
           />
@@ -71,7 +84,12 @@ function closeElement() {
 .dashboard-view-footer-mobile {
   margin-top: -1.5rem;
   min-height: 100px;
-  width: 250px;
+  width: 350px;
+
+  &-circle {
+    height: 350px;
+    background-color: var(--primary-color);
+  }
 }
 @media screen and (max-width: $xl) {
   .dashboard-view-footer-mobile {
@@ -79,8 +97,8 @@ function closeElement() {
   }
   .dashboard-view-footer-close {
     position: absolute;
-    right: 0;
-    top: 0;
+    right: 5px;
+    top: 5px;
   }
 }
 </style>
