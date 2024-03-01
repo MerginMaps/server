@@ -1,6 +1,7 @@
 import { AutoCompletePassThroughOptions } from 'primevue/autocomplete'
 import { ButtonPassThroughOptions } from 'primevue/button'
 import { DataViewPassThroughOptions } from 'primevue/dataview'
+import { DialogPassThroughOptions } from 'primevue/dialog'
 import { InlineMessagePassThroughOptions } from 'primevue/inlinemessage'
 import { InputTextPassThroughOptions } from 'primevue/inputtext'
 import { usePassThrough } from 'primevue/passthrough'
@@ -111,7 +112,26 @@ export default usePassThrough(
     } as TreePassThroughOptions,
     inlineMessage: {
       root: 'justify-content-start font-semibold'
-    } as InlineMessagePassThroughOptions
+    } as InlineMessagePassThroughOptions,
+    dialog: {
+      header: {
+        class: 'border-none border-round-top-2xl',
+        style: {
+          color: 'var(--forest-color)'
+        }
+      },
+      title: {
+        class: 'text-base font-semibold'
+      },
+      closeButton:
+        'text-2xl hover:surface-ground text-color-forest hover:text-color',
+      content: {
+        class: 'border-round-bottom-2xl'
+      },
+      mask: {
+        style: { zIndex: 7 }
+      }
+    } as DialogPassThroughOptions
   },
   {}
 )

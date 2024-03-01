@@ -8,18 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <PDialog
     v-model:visible="visible"
     :position="isUnderOverlayBreakpoint ? 'topleft' : 'bottomright'"
-    class="upload-panel"
-    :pt="{
-      root: {
-        class: 'w-8 lg:w-3 mr-4 mb-4'
-      },
-      header: {
-        class: 'border-none py-2'
-      },
-      closeButton: {
-        class: 'text-color-forest'
-      }
-    }"
+    class="upload-panel w-8 lg:w-3 mr-4 mb-4"
   >
     <template #header>
       <p class="font-semibold">
