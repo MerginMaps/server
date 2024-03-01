@@ -6,18 +6,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <dashboard-view-template>
-    <template #usageInfo>
-      <dashboard-usage-info-row />
-      <full-storage-warning />
-    </template>
-    <template #content>
-      <dashboard-access-requests-row v-if="userStore.isGlobalWorkspaceAdmin">
-        <template v-slot:table="{ namespace }">
-          <access-request-table :namespace="namespace" />
-        </template>
-      </dashboard-access-requests-row>
-      <dashboard-projects-row :canCreateProject="canCreateProject" />
-    </template>
+    <full-storage-warning />
+    <dashboard-access-requests-row v-if="userStore.isGlobalWorkspaceAdmin">
+      <template v-slot:table="{ namespace }">
+        <access-request-table :namespace="namespace" />
+      </template>
+    </dashboard-access-requests-row>
+    <dashboard-projects-row :canCreateProject="canCreateProject" />
   </dashboard-view-template>
 </template>
 

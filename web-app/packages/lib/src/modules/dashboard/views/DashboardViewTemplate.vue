@@ -6,8 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div>
-    <slot name="usageInfo" />
-    <slot name="content"></slot>
+    <slot></slot>
     <community-banner />
     <dashboard-footer />
   </div>
