@@ -9,13 +9,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <footer v-if="!layoutStore.isClosedElement(elementId)" :id="elementId">
     <app-container>
       <app-section
-        class="grid grid-nogutter flex align-items-center py-2 relative"
+        class="grid grid-nogutter flex align-items-center py-4 relative"
       >
         <div
           class="dashboard-view-footer-mobile relative col-12 xl:col-fixed align-self-start mb-2 xl:mb-0 flex justify-content-center"
         >
           <img
-            src="@/assets/footer-mobile.png"
+            src="@/assets/footer-mobile.webp"
             class="absolute top-0 left-2rem z-1"
           />
 
@@ -27,17 +27,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ]"
           ></div>
         </div>
-        <div
-          class="col-12 xl:col-5 mb-2 xl:mb-0 text-center xl:text-left text-xs"
-        >
+
+        <div class="col-12 xl:col-5 mb-2 xl:mb-0 text-center xl:text-left">
           <h2 class="text-color text-sm mb-3">
             Download Mergin Maps to your phone
           </h2>
-          <p class="opacity-60">
+          <p class="opacity-60 text-xs">
             Capture geo-info easily through your mobile/tablet with our mobile
             app.
           </p>
         </div>
+
         <div class="col-12 xl:col-2 flex justify-content-center">
           <a
             href="https://apps.apple.com/us/app/input/id1478603559?ls=1&utm_source=mergin-website&utm_medium=banner&utm_campaign=input"
@@ -51,6 +51,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ><img src="@/assets/googleplay.jpg"
           /></a>
         </div>
+
         <div
           class="dashboard-view-footer-close col-12 xl:col-1 flex justify-content-end"
         >
@@ -61,6 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             plain
             aria-label="Close section"
             @click="closeElement"
+            class="text-2xl"
           />
         </div> </app-section
     ></app-container>

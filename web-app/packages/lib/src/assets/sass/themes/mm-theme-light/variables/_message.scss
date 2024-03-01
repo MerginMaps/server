@@ -24,7 +24,7 @@ $messageTextFontWeight: 400;
 
 /// Padding of an inline message
 /// @group message
-$inlineMessagePadding: $inputPadding;
+$inlineMessagePadding: 0.25em 0.75em;
 
 /// Margin of an inline message
 /// @group message

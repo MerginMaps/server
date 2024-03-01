@@ -1,6 +1,7 @@
 import { AutoCompletePassThroughOptions } from 'primevue/autocomplete'
 import { ButtonPassThroughOptions } from 'primevue/button'
 import { DataViewPassThroughOptions } from 'primevue/dataview'
+import { InlineMessagePassThroughOptions } from 'primevue/inlinemessage'
 import { InputTextPassThroughOptions } from 'primevue/inputtext'
 import { usePassThrough } from 'primevue/passthrough'
 import { PasswordPassThroughOptions } from 'primevue/password'
@@ -107,7 +108,10 @@ export default usePassThrough(
           }
         }
       }
-    } as TreePassThroughOptions
+    } as TreePassThroughOptions,
+    inlineMessage: {
+      root: 'justify-content-start font-semibold'
+    } as InlineMessagePassThroughOptions
   },
   {}
 )
