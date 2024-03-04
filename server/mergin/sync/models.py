@@ -452,6 +452,7 @@ class ProjectVersion(db.Model):
         "Project",
         uselist=False,
     )
+    __table_args__ = (db.UniqueConstraint("project_id", "name"),)
 
     def __init__(self, project, name, author, changes, files, ip, user_agent=None):
         self.project_id = project.id

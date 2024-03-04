@@ -4,7 +4,7 @@
 """use user_id in login history
 
 Revision ID: 8c785127e4c3
-Revises: 6bd17a6b8707
+Revises: 90ee95d638f1
 Create Date: 2024-02-21 08:28:00.731970
 
 """
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "8c785127e4c3"
-down_revision = "6bd17a6b8707"
+down_revision = "90ee95d638f1"
 branch_labels = None
 depends_on = None
 
