@@ -6,7 +6,8 @@ module.exports = {
     /^lg:col-([0-9]|10|11|12)/,
     /^col-([0-9]|10|11|12)/,
     /p-button-secondary/,
-    /p-message(.*)/
+    /p-message(.*)/,
+    /fade-(.*)/
   ],
   extractors: [
     {
