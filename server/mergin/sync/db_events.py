@@ -7,31 +7,6 @@ from flask import current_app, abort
 from sqlalchemy import event
 
 from .. import db
-from ..auth.models import User
-from .models import Project, ProjectAccess
-
-
-def remove_user_references(mapper, connection, user):  # pylint: disable=W0612
-    q = (
-        Project.access.has(ProjectAccess.owners.contains([user.id]))
-        | Project.access.has(ProjectAccess.readers.contains([user.id]))
-        | Project.access.has(ProjectAccess.readers.contains([user.id]))
-    )
-    projects = Project.query.filter(q).all()
-
-    def filter_user(ids):
-        return filter(lambda i: i != user.id, ids)
-
-    if projects:
-        pa_table = ProjectAccess.__table__
-        for p in projects:
-            pa = p.access
-            connection.execute(
-                pa_table.update().where(pa_table.c.project_id == p.id),
-                owners=filter_user(pa.owners),
-                writers=filter_user(pa.writers),
-                readers=filter_user(pa.readers),
-            )
 
 
 def check(session):
@@ -40,10 +15,8 @@ def check(session):
 
 
 def register_events():
-    event.listen(User, "before_delete", remove_user_references)
     event.listen(db.session, "before_commit", check)
 
 
 def remove_events():
-    event.remove(User, "before_delete", remove_user_references)
     event.remove(db.session, "before_commit", check)
