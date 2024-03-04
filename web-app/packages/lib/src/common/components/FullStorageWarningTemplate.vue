@@ -6,8 +6,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <app-container v-if="open">
-    <app-section ground>
-      <PMessage severity="warn" @close="open = false">
+    <slot :usage="usage">
+      <PMessage severity="warn" @close="open = false" class="m-0">
         <template #messageicon="slotProps">
           <i :class="[slotProps.class, 'ti ti-alert-triangle-filled']" />
         </template>
@@ -16,16 +16,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             >Your storage is almost full ({{ usage }}%).</span
           >
           Soon you will not be able to sync your projects.
-          <slot name="buttons"></slot></p
-      ></PMessage>
-    </app-section>
+        </p></PMessage
+      >
+    </slot>
   </app-container>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { AppContainer, AppSection } from '@/common/components'
+import { AppContainer } from '@/common/components'
 import { useUserStore } from '@/main'
 
 const userStore = useUserStore()

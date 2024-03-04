@@ -44,7 +44,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import {
   DialogWindows,
-  GlobalWarning,
   initRequestInterceptors,
   initResponseInterceptors,
   Notifications,
@@ -68,7 +67,6 @@ export default defineComponent({
     UploadProgress,
     Notifications,
     DialogWindows,
-    GlobalWarning,
     AppContainer,
     InstanceMaintenanceMessage
   },

@@ -17,13 +17,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               // Toggle border radius by open / closed panel
               options.state.d_collapsed
                 ? 'border-round-xl'
-                : 'border-round-top-xl'
+                : 'border-round-top-xl border-bottom-2 surface-border'
             ]
           }
         },
-        content: {
-          class: 'border-none border-round-bottom-2xl p-4 pt-0'
-        }
+        icons: 'flex align-items-center ml-1 gap-1',
+        content: 'border-none border-round-bottom-2xl p-4'
       }"
     >
       <template v-if="!$slots.header" #header>
@@ -31,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :class="[
             'w-full',
             $slots['header-actions'] &&
-              'flex flex-column lg:flex-row gap-4 lg:align-items-center justify-content-between'
+              'flex flex-column lg:flex-row lg:align-items-center justify-content-between gap-4'
           ]"
         >
           <div
@@ -57,7 +56,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </template>
       <!-- Header without additional styles -->
       <template v-else #header><slot name="header"></slot></template>
-      <slot></slot>
+      <div class="line-height-4"><slot></slot></div>
+
       <template v-if="$slots.footer" #footer>
         <slot name="footer"></slot>
       </template>

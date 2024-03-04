@@ -20,26 +20,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           maxWidth: `${dialogProps.maxWidth}px`
         },
         class: 'w-10 md:w-8 lg:w-6 xl:w-4 max-w-30rem border-round-2xl'
-      },
-      header: {
-        class: 'border-none border-round-top-2xl',
-        style: {
-          color: 'var(--forest-color)'
-        }
-      },
-      title: {
-        class: 'text-base font-semibold'
-      },
-      closeButton: {
-        style: {
-          backgroundColor: 'var(--light-green-color)'
-        }
-      },
-      content: {
-        class: 'border-round-bottom-2xl'
-      },
-      mask: {
-        style: { zIndex: 7 }
       }
     }"
   >
@@ -75,3 +55,5 @@ export default defineComponent({
   }
 })
 </script>
+
+<style scoped lang="scss"></style>
