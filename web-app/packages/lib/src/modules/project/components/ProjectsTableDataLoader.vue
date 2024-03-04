@@ -8,7 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <div>
     <projects-table
       v-bind="$props"
-      :show-footer="showFooter && projectsCount > initialOptions.itemsPerPage"
+      v-model="options"
+      :show-footer="showFooter && projectsCount > options.itemsPerPage"
       :projects="projects"
       :numberOfItems="projectsCount"
       @fetch-projects="fetchProjects"
@@ -87,6 +88,11 @@ export default defineComponent({
       type: Boolean as PropType<boolean>
     }
   },
+  data() {
+    return {
+      options: { ...this.initialOptions }
+    }
+  },
   computed: {
     ...mapState(useProjectStore, [
       'projects',
@@ -100,10 +106,11 @@ export default defineComponent({
     ...mapActions(useDialogStore, ['show']),
     async fetchProjects(
       projectGridState: ProjectGridState,
-      gridOptions: PaginatedGridOptions,
+      additionalGridOptions: PaginatedGridOptions,
       onFinish?: () => void
     ) {
       const params = {} as PaginatedProjectsParams
+      const gridOptions = { ...this.options, ...additionalGridOptions }
       if (
         this.$route.name === 'shared_projects' ||
         this.$route.name === 'my_projects'
