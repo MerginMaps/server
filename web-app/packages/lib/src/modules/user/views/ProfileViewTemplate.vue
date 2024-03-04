@@ -116,8 +116,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <div class="flex-grow-1">
             <p class="font-semibold my-2">Receive notifications</p>
             <span class="text-xs opacity-80"
-              >We will send you information about workspace activity and a
-              monthly bulletin email</span
+              >We will send you information about workspace activity</span
             >
           </div>
           <div

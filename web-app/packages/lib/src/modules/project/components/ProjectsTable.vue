@@ -10,8 +10,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       v-if="numberOfItems > 0"
       :value="projects"
       :paginator="showFooter"
-      :rows="options.itemsPerPage"
-      :currentPage="options.page"
+      :rows="modelValue?.itemsPerPage"
+      :first="(modelValue?.page - 1) * (modelValue?.itemsPerPage ?? 1)"
       :totalRecords="numberOfItems"
       :loading="loading"
       :lazy="true"
@@ -166,7 +166,7 @@ export default defineComponent({
       type: Boolean,
       default: true
     },
-    initialOptions: {
+    modelValue: {
       type: Object as PropType<PaginatedGridOptions>
     },
     numberOfItems: {
@@ -177,7 +177,6 @@ export default defineComponent({
   },
   data() {
     return {
-      options: { ...this.initialOptions },
       loading: false
     }
   },
@@ -230,13 +229,6 @@ export default defineComponent({
     this.filterData()
   },
   methods: {
-    paginating(options: PaginatedGridOptions) {
-      this.options = options
-    },
-    fetchPage(page: number) {
-      this.options.page = page
-      this.fetchProjects()
-    },
     fetchProjects() {
       this.loading = true
       this.$emit(
@@ -245,14 +237,14 @@ export default defineComponent({
           searchFilterByProjectName: this.projectsSearch,
           namespace: this.namespace
         },
-        { ...this.options, ...this.projectsSorting },
+        { ...this.projectsSorting },
         () => {
           this.loading = false
         }
       )
     },
     filterData() {
-      this.options.page = 1
+      this.$emit('update:modelValue', { ...this.modelValue, page: 1 })
       this.fetchProjects()
     },
     rowClick(e: DataTableRowClickEvent) {
@@ -266,8 +258,11 @@ export default defineComponent({
       })
     },
     onPage(e: DataTablePageEvent) {
-      this.options.page = e.page + 1
-      this.options.itemsPerPage = e.rows
+      this.$emit('update:modelValue', {
+        ...this.modelValue,
+        page: e.page + 1,
+        itemsPerPage: e.rows
+      })
       this.fetchProjects()
     }
   }

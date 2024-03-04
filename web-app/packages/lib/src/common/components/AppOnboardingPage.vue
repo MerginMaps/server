@@ -3,7 +3,7 @@
     <!-- Logo -->
     <aside
       :class="[
-        'fixed top-0 left-0 p-3 z-1 w-full md:w-auto surface-ground',
+        'fixed top-0 left-0 p-3 md:p-4 z-1 w-full md:w-auto surface-ground',
         { 'onborading-page-logo': $slots.aside }
       ]"
     >
