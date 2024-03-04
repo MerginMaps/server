@@ -19,7 +19,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import {
   DashboardViewTemplate,
-  DashboardUsageInfoRow,
   DashboardAccessRequestsRow,
   AccessRequestTable,
   FullStorageWarning,
@@ -33,7 +32,6 @@ export default defineComponent({
   components: {
     DashboardViewTemplate,
     DashboardAccessRequestsRow,
-    DashboardUsageInfoRow,
     AccessRequestTable,
     FullStorageWarning,
     DashboardProjectsRow
