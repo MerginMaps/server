@@ -5,7 +5,8 @@ module.exports = {
   safelist: [
     /^lg:col-([0-9]|10|11|12)/,
     /^col-([0-9]|10|11|12)/,
-    /p-button-secondary/
+    /p-button-secondary/,
+    /p-message(.*)/
   ],
   extractors: [
     {
