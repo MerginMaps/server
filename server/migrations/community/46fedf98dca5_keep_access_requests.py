@@ -49,6 +49,12 @@ def upgrade():
         ["resolved_at"],
         unique=False,
     )
+    op.create_index(
+        op.f("ix_access_request_status"),
+        "access_request",
+        ["status"],
+        unique=False,
+    )
     op.create_foreign_key(
         op.f("fk_access_request_resolved_by_user"),
         "access_request",
@@ -132,6 +138,7 @@ def downgrade():
     )
     op.drop_index(op.f("ix_access_request_resolved_at"), table_name="access_request")
     op.drop_index(op.f("ix_access_request_requested_at"), table_name="access_request")
+    op.drop_index(op.f("ix_access_request_status"), table_name="access_request")
     op.drop_column("access_request", "status")
     op.drop_column("access_request", "resolved_at")
     op.drop_column("access_request", "resolved_by")

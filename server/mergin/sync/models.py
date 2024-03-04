@@ -587,7 +587,7 @@ class AccessRequest(db.Model):
     resolved_at = db.Column(db.DateTime, nullable=True, index=True)
     # how request was resolved: accepted / declined
     status = db.Column(
-        ENUM(*RequestStatus.values(), name="request_status", nullable=True, index=True)
+        ENUM(*RequestStatus.values(), name="request_status"), nullable=True, index=True
     )
 
     project = db.relationship("Project", uselist=False)
