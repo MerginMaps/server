@@ -618,10 +618,14 @@ class AccessRequest(db.Model):
             owners.append(self.requested_by)
             project_access.owners = owners
 
-        self.resolved_at = datetime.utcnow()
-        self.resolved_by = current_user.id
-        self.status = RequestStatus.ACCEPTED.value
+        self.resolve(RequestStatus.ACCEPTED, current_user.id)
         db.session.commit()
+
+    def resolve(self, status: RequestStatus, resolved_by=None):
+        """Resolve request"""
+        self.status = status.value
+        self.resolved_by = resolved_by
+        self.resolved_at = datetime.utcnow()
 
 
 class SyncFailuresHistory(db.Model):

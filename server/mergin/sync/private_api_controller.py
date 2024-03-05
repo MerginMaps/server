@@ -1,7 +1,6 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
-from datetime import datetime
 from blinker import signal
 from connexion import NoContent
 from flask import render_template, request, current_app, jsonify, abort
@@ -93,9 +92,7 @@ def decline_project_access_request(request_id):  # noqa: E501
         or current_user.id == access_request.project.creator
         or current_user.id == access_request.requested_by
     ):
-        access_request.resolved_at = datetime.utcnow()
-        access_request.resolved_by = current_user.id
-        access_request.status = RequestStatus.DECLINED.value
+        access_request.resolve(RequestStatus.DECLINED, current_user.id)
         db.session.commit()
         return "", 200
     abort(403, "You don't have permissions to remove project access request")
