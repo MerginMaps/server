@@ -9,7 +9,7 @@ import os
 from flask import url_for
 
 from .. import db
-from ..sync.models import AccessRequest, Project, ProjectRole
+from ..sync.models import AccessRequest, Project, ProjectRole, RequestStatus
 from ..auth.models import User
 from ..config import Configuration
 from . import json_headers
@@ -61,7 +61,7 @@ def test_project_access_request(client):
         AccessRequest.project_id == p.id
     ).first()
     assert resp.status_code == 200
-    assert access_request.user.username == "test_user"
+    assert access_request.requested_by == user2.id
 
     # already exists
     resp = client.post(
@@ -76,23 +76,26 @@ def test_project_access_request(client):
     resp_data = json.loads(resp.data)
     assert resp_data["items"][0]["requested_by"] == "test_user"
 
-    # remove access request
+    # decline access request
     resp = client.delete(
         f"/app/project/access-request/{access_request.id}", headers=json_headers
     )
     assert resp.status_code == 200
-    assert not AccessRequest.query.filter(AccessRequest.project_id == p.id).first()
+    assert AccessRequest.query.filter(AccessRequest.project_id == p.id).first()
+    assert access_request.status == RequestStatus.DECLINED.value
+    assert access_request.resolved_by == user2.id
 
-    # recreate request again
+    # recreate request again - a new row will be created
     resp = client.post(
         f"/app/project/access-request/{test_workspace.name}/{p.name}",
         headers=json_headers,
     )
     assert resp.status_code == 200
-    access_request = AccessRequest.query.filter(
-        AccessRequest.project_id == p.id
+    access_request2 = AccessRequest.query.filter(
+        AccessRequest.project_id == p.id, AccessRequest.status.is_(None)
     ).first()
-    assert access_request.user.username == "test_user"
+    assert access_request != access_request2
+    assert access_request2.requested_by == user2.id
 
     # user can not list incoming namespace access requests
     Configuration.GLOBAL_ADMIN = False
@@ -107,7 +110,7 @@ def test_project_access_request(client):
     # user can not accept its own access request
     data = {"permissions": "write"}
     resp = client.post(
-        f"/app/project/access-request/accept/{access_request.id}",
+        f"/app/project/access-request/accept/{access_request2.id}",
         headers=json_headers,
         data=json.dumps(data),
     )
@@ -125,14 +128,25 @@ def test_project_access_request(client):
     assert access_requests[0]["requested_by"] == "test_user"
     assert access_requests[0]["namespace"] == test_workspace.name
 
-    # accept request
+    # try to accept already declined request
     resp = client.post(
         f"/app/project/access-request/accept/{access_request.id}",
         headers=json_headers,
         data=json.dumps(data),
     )
+    assert resp.status_code == 404
+
+    # accept request
+    resp = client.post(
+        f"/app/project/access-request/accept/{access_request2.id}",
+        headers=json_headers,
+        data=json.dumps(data),
+    )
     assert resp.status_code == 200
-    assert not AccessRequest.query.filter(AccessRequest.project_id == p.id).first()
+    assert access_request2.status == RequestStatus.ACCEPTED.value
+    admin = User.query.filter_by(username="mergin").first()
+    assert access_request2.resolved_by == admin.id
+    assert access_request2.resolved_at is not None
     project = Project.query.filter(
         Project.name == "testx", Project.workspace_id == test_workspace.id
     ).first()
@@ -233,7 +247,7 @@ def test_get_project_access_requests(client):
     resp = client.get("/app/project/access-requests?page=1&per_page=10")
     assert resp.json["items"][0]["id"] == 1
     resp = client.get(
-        "/app/project/access-requests?page=1&per_page=10&order_params=expire DESC"
+        "/app/project/access-requests?page=1&per_page=10&order_params=requested_at DESC"
     )
     assert resp.json["items"][0]["id"] == 12
 
@@ -275,7 +289,7 @@ def test_list_namespace_project_access_requests(client):
 
     # test order params
     resp = client.get(
-        f"/app/project/access-request/{test_workspace.name}?page=1&per_page=15&order_params=expire DESC"
+        f"/app/project/access-request/{test_workspace.name}?page=1&per_page=15&order_params=requested_at DESC"
     )
     assert resp.json["items"][0]["id"] == 10
 
@@ -402,7 +416,7 @@ def test_admin_project_list(client):
     # mark as inactive
     p = Project.query.get(resp.json["projects"][0]["id"])
     p.removed_at = datetime.datetime.utcnow()
-    p.removed_by = user.username
+    p.removed_by = user.id
     db.session.commit()
 
     # add more projects
@@ -441,3 +455,8 @@ def test_admin_project_list(client):
 
     resp = client.get("/app/admin/projects?page=1&per_page=15&workspace=mergin")
     assert len(resp.json["projects"]) == 15
+
+    # delete project permanently
+    p.delete()
+    resp = client.get("/app/admin/projects?page=1&per_page=15&workspace=mergin")
+    assert len(resp.json["projects"]) == 14

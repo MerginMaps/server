@@ -12,7 +12,7 @@ from unittest.mock import MagicMock
 
 from .. import db
 from ..sync.utils import parse_gpkgb_header_size, gpkg_wkb_to_wkt, is_name_allowed
-from ..auth.models import LoginHistory
+from ..auth.models import LoginHistory, User
 from . import json_headers
 from .utils import login
 
@@ -30,8 +30,9 @@ def test_maintenance_mode(client):
         file = open(main_file, "w+")
         login(client, "mergin", "ilovemergin")
 
+        user = User.query.filter_by(username="mergin").first()
         login_history = (
-            LoginHistory.query.filter_by(username="mergin")
+            LoginHistory.query.filter_by(user_id=user.id)
             .order_by(desc(LoginHistory.timestamp))
             .first()
         )
@@ -53,7 +54,7 @@ def test_maintenance_mode(client):
 
         login(client, "mergin", "ilovemergin")
         login_history = (
-            LoginHistory.query.filter_by(username="mergin")
+            LoginHistory.query.filter_by(user_id=user.id)
             .order_by(desc(LoginHistory.timestamp))
             .first()
         )

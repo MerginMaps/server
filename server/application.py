@@ -19,7 +19,7 @@ if not os.getenv("NO_MONKEY_PATCH", False):
 
 from celery.schedules import crontab
 from mergin.app import create_app
-from mergin.auth.tasks import prune_removed_users
+from mergin.auth.tasks import anonymize_removed_users
 from mergin.sync.tasks import remove_temp_files, remove_projects_backups
 from mergin.celery import celery, configure_celery
 from mergin.stats.config import Configuration
@@ -45,7 +45,9 @@ configure_celery(celery, application, ["mergin.auth", "mergin.sync", "mergin.sta
 @celery.on_after_finalize.connect
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(
-        crontab(hour=1, minute=0), prune_removed_users, name="remove inactive users"
+        crontab(hour=1, minute=0),
+        anonymize_removed_users,
+        name="anonymize inactive users",
     )
     sender.add_periodic_task(
         crontab(hour=2, minute=0), remove_temp_files, name="clean temp files"

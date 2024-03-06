@@ -9,9 +9,10 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, List, Dict, Set
 
+from flask_login import current_user
 from pygeodiff import GeoDiff
-from sqlalchemy import text
-from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB
+from sqlalchemy import text, null
+from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.types import String
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -42,9 +43,13 @@ class Project(db.Model):
     latest_version = db.Column(db.String, index=True)
     workspace_id = db.Column(db.Integer, index=True, nullable=False)
     removed_at = db.Column(db.DateTime, index=True)
-    removed_by = db.Column(db.String, index=True)
+    removed_by = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=True, index=True
+    )
 
-    creator = db.relationship("User", uselist=False, backref=db.backref("projects"))
+    creator = db.relationship(
+        "User", uselist=False, backref=db.backref("projects"), foreign_keys=[creator_id]
+    )
 
     __table_args__ = (db.UniqueConstraint("name", "workspace_id"),)
 
@@ -59,6 +64,8 @@ class Project(db.Model):
 
     @property
     def storage(self):
+        if not self.storage_params:
+            return
         if not hasattr(self, "_storage"):  # best approach, seriously
             StorageBackend = Storages[self.storage_params["type"]]
             self._storage = StorageBackend(self)  # pylint: disable=W0201
@@ -288,6 +295,29 @@ class Project(db.Model):
         This time should be used to remove all local copies of the file."""
         initial = timedelta(days=current_app.config["DELETED_PROJECT_EXPIRATION"])
         return initial - (datetime.utcnow() - self.removed_at)
+
+    def delete(self):
+        """Mark project as permanently deleted (but keep in db)
+        - rename (to free up the same name)
+        - remove associated files and project versions
+        - reset project_access
+        """
+        self.name = f"{self.name}_{str(self.id)}"
+        # make sure remove_at is not null as it is used as filter for APIs
+        if not self.removed_at:
+            self.removed_at = datetime.utcnow()
+        # Null in storage params serves as permanent deletion flag
+        self.storage.delete()
+        self.storage_params = null()
+        self.files = null()
+        pv_table = ProjectVersion.__table__
+        db.session.execute(pv_table.delete().where(pv_table.c.project_id == self.id))
+        upload_table = Upload.__table__
+        db.session.execute(
+            upload_table.delete().where(upload_table.c.project_id == self.id)
+        )
+        self.access.owners = self.access.writers = self.access.readers = []
+        db.session.commit()
 
 
 class ProjectRole(Enum):
@@ -532,24 +562,44 @@ class Upload(db.Model):
         self.user_id = user_id
 
 
+class RequestStatus(Enum):
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
+
+    @classmethod
+    def values(cls):
+        return [member.value for member in cls.__members__.values()]
+
+
 class AccessRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(
-        db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), index=True
-    )
     project_id = db.Column(
         UUID(as_uuid=True), db.ForeignKey("project.id", ondelete="CASCADE"), index=True
     )
-    expire = db.Column(db.DateTime)
-
-    user = db.relationship("User", uselist=False)
+    requested_by = db.Column(
+        db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), nullable=False
+    )
+    requested_at = db.Column(
+        db.DateTime, default=datetime.utcnow, index=True, nullable=False
+    )
+    resolved_by = db.Column(
+        db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), nullable=True
+    )
+    resolved_at = db.Column(db.DateTime, nullable=True, index=True)
+    # how request was resolved: accepted / declined
+    status = db.Column(
+        ENUM(*RequestStatus.values(), name="request_status"), nullable=True, index=True
+    )
 
     project = db.relationship("Project", uselist=False)
 
     def __init__(self, project, user_id):
         self.project_id = project.id
-        self.user_id = user_id
-        self.expire = datetime.utcnow() + timedelta(
+        self.requested_by = user_id
+
+    @property
+    def expire(self):
+        return self.requested_at + timedelta(
             seconds=current_app.config["PROJECT_ACCESS_REQUEST"]
         )
 
@@ -559,17 +609,23 @@ class AccessRequest(db.Model):
         readers = project_access.readers.copy()
         writers = project_access.writers.copy()
         owners = project_access.owners.copy()
-        readers.append(self.user_id)
+        readers.append(self.requested_by)
         project_access.readers = readers
         if permissions == "write" or permissions == "owner":
-            writers.append(self.user_id)
+            writers.append(self.requested_by)
             project_access.writers = writers
         if permissions == "owner":
-            owners.append(self.user_id)
+            owners.append(self.requested_by)
             project_access.owners = owners
 
-        db.session.delete(self)
+        self.resolve(RequestStatus.ACCEPTED, current_user.id)
         db.session.commit()
+
+    def resolve(self, status: RequestStatus, resolved_by=None):
+        """Resolve request"""
+        self.status = status.value
+        self.resolved_by = resolved_by
+        self.resolved_at = datetime.utcnow()
 
 
 class SyncFailuresHistory(db.Model):

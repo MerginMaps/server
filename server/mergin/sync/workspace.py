@@ -100,6 +100,7 @@ class GlobalWorkspace(AbstractWorkspace):
         return (
             db.session.query(Project.disk_usage)
             .filter(Project.workspace_id == self.id)
+            .filter(Project.removed_at.is_(None))
             .count()
         )
 
@@ -156,7 +157,9 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
         only_public=False,
     ):
         if only_public:
-            projects = Project.query.filter(Project.access.has(public=only_public))
+            projects = Project.query.filter(
+                Project.access.has(public=only_public)
+            ).filter(Project.storage_params.isnot(None))
         else:
             projects = projects_query(
                 ProjectPermissions.Read, as_admin=as_admin, public=public
@@ -246,7 +249,9 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
 
     def projects_query(self, name=None, workspace=None):
         ws = self.factory_method()
-        query = db.session.query(Project, literal(ws.name).label("workspace_name"))
+        query = db.session.query(
+            Project, literal(ws.name).label("workspace_name")
+        ).filter(Project.storage_params.isnot(None))
 
         if name:
             query = query.filter(Project.name.ilike(f"%{name}%"))
