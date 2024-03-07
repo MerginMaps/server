@@ -564,7 +564,7 @@ components:
         type:
           type: string
           enum:
-            - user
+            - member
         email:
           type: string
           format: email

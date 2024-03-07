@@ -341,7 +341,7 @@ def get_project_access(id: str):
                 result.append(
                     {
                         "id": user_id,
-                        "type": "user",
+                        "type": "member",
                         "email": user.email,
                         "username": user.username,
                         "project_permission": role,
@@ -354,7 +354,7 @@ def get_project_access(id: str):
                 result.append(
                     {
                         "id": user.id,
-                        "type": "user",
+                        "type": "member",
                         "email": user.email,
                         "username": user.username,
                         "project_permission": global_role,
