@@ -12,7 +12,7 @@ import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
 import { filesDiff } from '@/common/mergin_utils'
 import {
-  getProjectAccessUsersByRoleName as getProjectAccessKeyByRoleName,
+  getProjectAccessKeyByRoleName,
   isAtLeastProjectRole,
   ProjectRole,
   ProjectRoleName
@@ -37,9 +37,11 @@ import {
   GetAccessRequestsPayload,
   DownloadPayload,
   DeleteProjectPayload,
-  ProjectsSortingParams,
+  SortingParams,
   SaveProjectSettings,
-  ErrorCodes
+  ErrorCodes,
+  ProjectAccessDetail,
+  UpdateProjectAccessParams
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
 
@@ -58,12 +60,15 @@ export interface ProjectState {
   projects: ProjectListItem[]
   projectsCount: number
   projectsSearch: string
-  projectsSorting: ProjectsSortingParams
+  projectsSorting: SortingParams
   uploads: object
-  currentNamespace: string
   versions: ProjectVersion[]
   versionsCount: number
   versionsLoading: boolean
+  access: ProjectAccessDetail[]
+  accessLoading: boolean
+  accessSearch: string
+  accessSorting: SortingParams
 }
 
 export const useProjectStore = defineStore('projectModule', {
@@ -74,7 +79,6 @@ export const useProjectStore = defineStore('projectModule', {
     projectsCount: 0,
     projects: undefined,
     uploads: {},
-    currentNamespace: null,
     versions: [],
     versionsCount: 0,
     versionsLoading: false,
@@ -82,7 +86,11 @@ export const useProjectStore = defineStore('projectModule', {
     projectsSorting: {
       sortBy: 'updated',
       sortDesc: true
-    }
+    },
+    access: [],
+    accessLoading: false,
+    accessSearch: '',
+    accessSorting: undefined
   }),
 
   getters: {
@@ -92,6 +100,22 @@ export const useProjectStore = defineStore('projectModule', {
       return (payload) => {
         return state.projects?.find((project) => project.name === payload.name)
       }
+    },
+
+    /**
+     * Checks if the current user can remove the given project access detail.
+     *
+     * The user must be at least a project owner, and the access detail ID cannot
+     * be the same as the project creator ID.
+     *
+     * @param payload - The project access detail to check
+     * @returns True if the current user can remove the given access, false otherwise
+     */
+    canRemoveProjectAccess: (state) => (payload: ProjectAccessDetail) => {
+      return (
+        isAtLeastProjectRole(state.project?.role, ProjectRole.owner) &&
+        payload.id !== state.project?.creator
+      )
     }
   },
 
@@ -227,10 +251,6 @@ export const useProjectStore = defineStore('projectModule', {
         }
       })
       upload.diff = filesDiff(this.project.files, upload.files)
-    },
-
-    setCurrentNamespace(payload) {
-      this.currentNamespace = payload.currentNamespace
     },
 
     async initProjects(payload: PaginatedProjectsPayload) {
@@ -430,7 +450,7 @@ export const useProjectStore = defineStore('projectModule', {
       const notificationStore = useNotificationStore()
 
       try {
-        const projectResponse = await ProjectApi.fetchProject(
+        const projectResponse = await ProjectApi.getProject(
           payload.namespace,
           payload.projectName
         )
@@ -462,7 +482,7 @@ export const useProjectStore = defineStore('projectModule', {
 
       const { callbackStatus, namespace, projectName, isLoggedUser } = payload
       try {
-        const projectResponse = await ProjectApi.fetchProject(
+        const projectResponse = await ProjectApi.getProject(
           payload.namespace,
           payload.projectName
         )
@@ -679,8 +699,81 @@ export const useProjectStore = defineStore('projectModule', {
       )
     },
 
-    setProjectsSorting(payload: ProjectsSortingParams) {
+    setProjectsSorting(payload: SortingParams) {
       this.projectsSorting = payload
+    },
+
+    async getProjectAccess(projectId: string) {
+      const notificationStore = useNotificationStore()
+
+      try {
+        this.accessLoading = true
+        const response = await ProjectApi.getProjectAccess(projectId)
+        this.access = response.data
+      } catch {
+        notificationStore.error({
+          text: 'Failed to get project access'
+        })
+      } finally {
+        this.accessLoading = false
+      }
+    },
+
+    /**
+     * Removes the given user's access to the current project.
+     *
+     * @param item - The project access detail object for the user to remove.
+     */
+    async removeProjectAccess(item: ProjectAccessDetail) {
+      const notificationStore = useNotificationStore()
+      this.accessLoading = true
+      try {
+        const response = await ProjectApi.updateProjectAccess(this.project.id, {
+          user_id: item.id,
+          role: 'none'
+        })
+        this.access = this.access.filter((access) => access.id !== item.id)
+        this.project.access = response.data
+      } catch {
+        notificationStore.error({
+          text: `Failed to update project access for user ${item.username}`
+        })
+      } finally {
+        this.accessLoading = false
+      }
+    },
+
+    /**
+     * Updates the access for a user in the given project by their role name.
+     *
+     * @param payload - Object containing the project ID and access update parameters.
+     * @returns Promise resolving when the access update completes.
+     */
+    async updateProjectAccess(payload: {
+      projectId: string
+      data: UpdateProjectAccessParams
+    }) {
+      const notificationStore = useNotificationStore()
+      this.accessLoading = true
+      try {
+        const response = await ProjectApi.updateProjectAccess(
+          payload.projectId,
+          payload.data
+        )
+        this.access = this.access.map((access) => {
+          if (access.id === payload.data.user_id) {
+            access.project_permission = payload.data.role
+          }
+          return access
+        })
+        this.project.access = response.data
+      } catch {
+        notificationStore.error({
+          text: `Failed to update project access`
+        })
+      } finally {
+        this.accessLoading = false
+      }
     }
   }
 })

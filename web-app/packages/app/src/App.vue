@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <router-view name="header" v-slot="{ Component, route }">
         <div :key="route.name">
           <component :is="Component" />
-          <PDivider v-if="Component" class="mt-1"></PDivider>
+          <PDivider v-if="Component" class="m-0"></PDivider>
         </div>
       </router-view>
       <router-view v-slot="{ Component }">

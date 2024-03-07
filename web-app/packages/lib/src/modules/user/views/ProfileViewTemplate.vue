@@ -104,57 +104,59 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </app-section>
     </app-container>
     <app-container>
-      <app-section-banner>
+      <app-section>
         <template #title>Advanced</template>
-        <div
-          :class="[
-            'flex flex-column align-items-start text-sm py-2',
-            'row-gap-2',
-            'md:align-items-center md:flex-row'
-          ]"
-        >
-          <div class="flex-grow-1">
-            <p class="font-semibold my-2">Receive notifications</p>
-            <span class="text-xs opacity-80"
-              >We will send you information about workspace activity</span
+        <div class="flex flex-column row-gap-3 text-sm px-4 pb-4">
+          <div
+            :class="[
+              'flex flex-column align-items-start',
+              'row-gap-2',
+              'md:align-items-center md:flex-row'
+            ]"
+          >
+            <div class="flex-grow-1">
+              <p class="font-semibold my-2">Receive notifications</p>
+              <span class="text-xs opacity-80"
+                >We will send you information about workspace activity</span
+              >
+            </div>
+            <div
+              class="flex align-items-center flex-shrink-0"
+              data-cy="profile-notification"
             >
+              <PInputSwitch
+                :modelValue="loggedUser?.receive_notifications"
+                @change="receiveNotificationsChange"
+              />
+            </div>
           </div>
           <div
-            class="flex align-items-center flex-shrink-0"
-            data-cy="profile-notification"
+            :class="[
+              'flex flex-column align-items-start',
+              'row-gap-2',
+              'md:align-items-center md:flex-row'
+            ]"
           >
-            <PInputSwitch
-              :modelValue="loggedUser?.receive_notifications"
-              @change="receiveNotificationsChange"
-            />
+            <div class="flex-grow-1">
+              <p class="font-semibold my-2">Close account</p>
+              <span class="text-xs opacity-80"
+                >Your account will be closed. In case you are an owner of a
+                workspace, you might need to transfer the ownership first or
+                close the workspace.</span
+              >
+            </div>
+            <div class="flex-shrink-0">
+              <PButton
+                @click="confirmDeleteUser"
+                severity="danger"
+                data-cy="profile-close-account-btn"
+              >
+                Close account</PButton
+              >
+            </div>
           </div>
         </div>
-        <div
-          :class="[
-            'flex flex-column align-items-start text-sm py-2',
-            'row-gap-2',
-            'md:align-items-center md:flex-row'
-          ]"
-        >
-          <div class="flex-grow-1">
-            <p class="font-semibold my-2">Close account</p>
-            <span class="text-xs opacity-80"
-              >Your account will be closed. In case you are an owner of a
-              workspace, you might need to transfer the ownership first or close
-              the workspace.</span
-            >
-          </div>
-          <div class="flex-shrink-0">
-            <PButton
-              @click="confirmDeleteUser"
-              severity="danger"
-              data-cy="profile-close-account-btn"
-            >
-              Close account</PButton
-            >
-          </div>
-        </div>
-      </app-section-banner>
+      </app-section>
     </app-container>
     <app-container><slot name="additionalContent"></slot></app-container>
   </article>
@@ -168,7 +170,6 @@ import DeleteAccountDialog from '../components/DeleteAccountConfirm.vue'
 
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppSection from '@/common/components/AppSection.vue'
-import AppSectionBanner from '@/common/components/AppSectionBanner.vue'
 import { DeleteAccountConfirmProps, useDialogStore } from '@/modules'
 import { useLayoutStore } from '@/modules/layout/store'
 import ChangePasswordForm from '@/modules/user/components/ChangePasswordForm.vue'
@@ -180,7 +181,7 @@ export default defineComponent({
   props: {
     name: String
   },
-  components: { AppContainer, AppSection, AppSectionBanner },
+  components: { AppContainer, AppSection },
   data() {
     return {
       dialog: false

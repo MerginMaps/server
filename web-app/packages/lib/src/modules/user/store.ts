@@ -81,6 +81,7 @@ export const useUserStore = defineStore('userModule', {
         const workspace = payload?.id
           ? this.getWorkspaceById({ id: payload.id })
           : this.currentWorkspace
+        console.log(workspace?.role)
         return isAtLeastRole(workspace?.role, UserRole.admin)
       }
     },
@@ -162,7 +163,6 @@ export const useUserStore = defineStore('userModule', {
     },
 
     async fetchUserProfile() {
-      const projectStore = useProjectStore()
       const notificationStore = useNotificationStore()
 
       let resp
@@ -172,15 +172,6 @@ export const useUserStore = defineStore('userModule', {
         this.updateVerifiedEmail({
           verifiedEmail: resp.data.verified_email
         })
-        if (!projectStore.currentNamespace) {
-          // set current namespace only if not set
-          const preferredWorkspace = this.getPreferredWorkspace
-          if (preferredWorkspace?.name) {
-            projectStore.setCurrentNamespace({
-              currentNamespace: preferredWorkspace.name
-            })
-          }
-        }
       } catch {
         await notificationStore.error({
           text: "Failed to fetch user's profile"
@@ -402,19 +393,12 @@ export const useUserStore = defineStore('userModule', {
     },
 
     async setWorkspace(payload: SetWorkspaceIdPayload) {
-      const projectStore = useProjectStore()
-
       if (this.workspaceId === payload.workspaceId) {
         return
       }
       // 'setWorkspaceId' and 'projectModule/setCurrentNamespace' has to be called together synchronously.
       // In case when there is some async call between their calls, the watchers can be updated incorrectly
       this.setWorkspaceId({ id: payload.workspaceId })
-      if (this.currentWorkspace) {
-        projectStore.setCurrentNamespace({
-          currentNamespace: this.currentWorkspace.name
-        })
-      }
       if (!payload.skipSavingInCookies) {
         return await this.setUserWorkspaceToCookies({
           id: payload.workspaceId
@@ -467,8 +451,6 @@ export const useUserStore = defineStore('userModule', {
     },
 
     async removeUserWorkspaceFromCookies() {
-      const projectStore = useProjectStore()
-
       if (this.loggedUser?.username) {
         let value: Record<string, string>
         try {
@@ -489,9 +471,6 @@ export const useUserStore = defineStore('userModule', {
           })
         }
       }
-      await projectStore.setCurrentNamespace({
-        currentNamespace: ''
-      })
     },
 
     async setUserWorkspaceToCookies(payload) {

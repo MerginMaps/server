@@ -27,17 +27,26 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts" setup>
+import { computed, watch } from 'vue'
+
 import { AppContainer, AppSection } from '@/common/components'
 import { useUserStore } from '@/main'
 import { useProjectStore } from '@/modules/project/store'
 
 const projectStore = useProjectStore()
 const userStore = useUserStore()
-
-if (userStore.currentWorkspace) {
-  projectStore.initNamespaceAccessRequests({
-    namespace: userStore.currentWorkspace.name,
-    params: null
-  })
-}
+const workspaceId = computed(() => userStore.currentWorkspace?.id)
+// Every dashboard table have to load data on orkspace change
+watch(
+  workspaceId,
+  (value) => {
+    if (value && userStore.isWorkspaceAdmin()) {
+      projectStore.initNamespaceAccessRequests({
+        namespace: userStore.currentWorkspace.name,
+        params: null
+      })
+    }
+  },
+  { immediate: true }
+)
 </script>

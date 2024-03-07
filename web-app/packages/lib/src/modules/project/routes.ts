@@ -32,6 +32,7 @@ export enum ProjectRouteName {
   ProjectTree = 'project-tree',
   ProjectSettings = 'project-settings',
   ProjectHistory = 'project-versions',
+  ProjectCollaborators = 'project-collaborators',
   /** @deprecated */
   VersionDetail = 'project-versions-detail',
   FileVersionDetail = 'file-version-detail'

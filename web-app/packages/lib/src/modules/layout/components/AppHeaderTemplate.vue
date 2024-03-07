@@ -50,7 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <div class="mr-2 max-w-80 flex flex-column align-items-start">
             <span :style="{ whiteSpace: 'nowrap' }">{{ userName }}</span>
             <span v-if="renderNamespace" class="font-normal">
-              {{ currentNamespace || 'no workspace' }}
+              {{ currentWorkspace?.name || 'no workspace' }}
             </span>
           </div>
           <i class="ti ti-chevron-down"></i
@@ -106,7 +106,6 @@ import { AppBreadcrumbs } from '.'
 
 import { AppMenu, useInstanceStore } from '@/main'
 import { useLayoutStore } from '@/modules/layout/store'
-import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
@@ -142,8 +141,11 @@ export default defineComponent({
   computed: {
     ...mapState(useInstanceStore, ['configData']),
     ...mapState(useLayoutStore, ['drawer', 'isUnderOverlayBreakpoint']),
-    ...mapState(useUserStore, ['loggedUser', 'getUserFullName']),
-    ...mapState(useProjectStore, ['currentNamespace']),
+    ...mapState(useUserStore, [
+      'loggedUser',
+      'getUserFullName',
+      'currentWorkspace'
+    ]),
     profileMenuItems() {
       return [
         {

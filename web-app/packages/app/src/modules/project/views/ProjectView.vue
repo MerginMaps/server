@@ -9,8 +9,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :show-namespace="false"
     :namespace="namespace"
     :projectName="projectName"
-    :asAdmin="asAdmin"
-    :location="location"
     :show-settings="isProjectOwner"
     :hide-clone-button="!canCreateProject"
     @open-clone-dialog="openCloneDialog"
@@ -37,15 +35,7 @@ export default defineComponent({
   },
   props: {
     namespace: String,
-    projectName: String,
-    asAdmin: {
-      type: Boolean,
-      default: false
-    },
-    location: {
-      type: String,
-      default: ''
-    }
+    projectName: String
   },
   setup(props) {
     const userStore = useUserStore()

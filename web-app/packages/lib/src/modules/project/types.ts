@@ -279,8 +279,9 @@ export type EnhancedProjectDetail = ProjectDetail & {
 }
 
 export interface UpdateProjectAccessParams {
-  user_id: number
-  role: ProjectRoleName
+  user_id?: number
+  role?: ProjectRoleName
+  public?: boolean
 }
 
 export interface DownloadPayload {
@@ -316,7 +317,7 @@ export interface VDataIteratorOptions {
   sortBy?: Array<{ key: string; order?: boolean | 'asc' | 'desc' }>
 }
 
-export interface ProjectsSortingParams {
+export interface SortingParams {
   sortBy: string
   sortDesc: boolean
 }
@@ -332,3 +333,11 @@ export interface ProjectVersionFileChange {
 }
 
 export type ErrorCodes = 'UpdateProjectAccessError'
+
+export interface ProjectAccessDetail {
+  id: number
+  type: 'user'
+  email: number
+  username: string
+  project_permission: ProjectRoleName
+}
