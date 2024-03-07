@@ -471,13 +471,14 @@ def test_delete_project(client):
     )
 
     # remove project
+    admin = User.query.filter_by(username="mergin").first()
     resp = client.delete("/v1/project/{}/{}".format(test_workspace_name, test_project))
     assert resp.status_code == 200
     rp = Project.query.filter_by(
         workspace_id=test_workspace_id, name=test_project
     ).first()
     assert rp.removed_at
-    assert rp.removed_by == "mergin"
+    assert rp.removed_by == admin.id
     assert os.path.exists(
         project_dir
     )  # files not deleted yet, since there is possibility of restore
@@ -489,6 +490,11 @@ def test_delete_project(client):
         workspace_id=test_workspace_id, name=test_project
     ).count()
     assert not os.path.exists(project_dir)
+    rm_project = Project.query.get(project.id)
+    assert rm_project.removed_at and not rm_project.storage_params
+    # try to delete again
+    resp = client.delete(f"/app/project/removed-project/{rm_project.id}")
+    assert resp.status_code == 404
 
 
 test_project_data = [
@@ -928,7 +934,7 @@ def test_download_fail(app, client):
     p = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
     ).first()
-    db.session.delete(p)
+    p.delete()
     db.session.commit()
     resp = client.get(
         "/v1/project/raw/{}/{}?file={}".format(
@@ -2020,15 +2026,16 @@ def test_orphan_project(client):
         url_for("/.mergin_auth_controller_delete_user", username=user.username)
     )
     assert resp.status_code == 204
-    assert not User.query.filter_by(id=user_id).count()
+    assert User.query.filter_by(id=user_id).count()
+    assert user.username.startswith("deleted_") and not user.active
     # project still exists (it belongs to workspace)
     p = Project.query.filter_by(name="orphan").first()
-    assert not p.creator_id
+    assert p.creator_id
     assert p.access.owners == []
 
     # superuser as workspace owner has access to project and can assign new writer/owner
     resp = client.get(f"/v1/project/{test_workspace.name}/{p.name}")
-    assert not resp.json["creator"]
+    assert resp.json["creator"] == p.creator_id
     assert resp.json["access"]["owners"] == []
     assert resp.json["role"] == "owner"
 
@@ -2058,7 +2065,7 @@ def test_orphan_project(client):
         == 200
     )
     resp = client.get(f"/v1/project/{test_workspace.name}/{p.name}")
-    assert not resp.json["creator"]
+    assert resp.json["creator"]
     assert resp.json["access"]["owners"] == [admin.id]
 
     # project will however not be listed as 'created' projects

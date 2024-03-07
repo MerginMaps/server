@@ -1,7 +1,6 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
-
 from blinker import signal
 from connexion import NoContent
 from flask import render_template, request, current_app, jsonify, abort
@@ -13,13 +12,8 @@ from .. import db
 from ..auth import auth_required
 from ..auth.models import User, UserProfile
 from .forms import AccessPermissionForm
-from .models import Project, AccessRequest, ProjectRole
-from .schemas import (
-    ProjectListSchema,
-    ProjectAccessRequestSchema,
-    AdminProjectSchema,
-    ProjectAccessSchema,
-)
+from .models import Project, AccessRequest, ProjectRole, RequestStatus
+from .schemas import ProjectListSchema, ProjectAccessRequestSchema, AdminProjectSchema, ProjectAccessSchema
 from .permissions import (
     require_project_by_uuid,
     ProjectPermissions,
@@ -44,9 +38,13 @@ def create_project_access_request(namespace, project_name):  # noqa: E501
     if current_user.id in project.access.readers:
         abort(409, "You already have access to project")
 
-    access_request = AccessRequest.query.filter_by(
-        project_id=project.id, user_id=current_user.id
-    ).first()
+    access_request = (
+        AccessRequest.query.filter_by(
+            project_id=project.id, requested_by=current_user.id
+        )
+        .filter(AccessRequest.resolved_at.is_(None))
+        .first()
+    )
     if access_request:
         abort(409, "Project access request already exists")
 
@@ -79,19 +77,23 @@ def create_project_access_request(namespace, project_name):  # noqa: E501
 
 
 @auth_required
-def delete_project_access_request(request_id):  # noqa: E501
+def decline_project_access_request(request_id):  # noqa: E501
     access_request = (
         AccessRequest.query.join(AccessRequest.project)
-        .filter(AccessRequest.id == request_id, Project.removed_at.is_(None))
+        .filter(
+            AccessRequest.id == request_id,
+            AccessRequest.resolved_at.is_(None),
+            Project.removed_at.is_(None),
+        )
         .first_or_404()
     )
 
     if (
         current_user.id in access_request.project.access.owners
         or current_user.id == access_request.project.creator
-        or current_user.id == access_request.user_id
+        or current_user.id == access_request.requested_by
     ):
-        AccessRequest.query.filter(AccessRequest.id == request_id).delete()
+        access_request.resolve(RequestStatus.DECLINED, current_user.id)
         db.session.commit()
         return "", 200
     abort(403, "You don't have permissions to remove project access request")
@@ -106,7 +108,11 @@ def accept_project_access_request(request_id):
     permission = form.permissions.data
     access_request = (
         AccessRequest.query.join(AccessRequest.project)
-        .filter(AccessRequest.id == request_id, Project.removed_at.is_(None))
+        .filter(
+            AccessRequest.id == request_id,
+            AccessRequest.resolved_at.is_(None),
+            Project.removed_at.is_(None),
+        )
         .first_or_404()
     )
     if (
@@ -114,7 +120,7 @@ def accept_project_access_request(request_id):
         or current_user.id == access_request.project.creator
     ):
         project_access_granted.send(
-            access_request.project, user_id=access_request.user_id
+            access_request.project, user_id=access_request.requested_by
         )
         access_request.accept(permission)
         return "", 200
@@ -123,9 +129,11 @@ def accept_project_access_request(request_id):
 
 @auth_required
 def get_project_access_requests(page, per_page, order_params=None, project_name=None):
-    """Paginated list of project access requests initiated by current user in session"""
+    """Paginated list of active project access requests initiated by current user in session"""
     access_requests = AccessRequest.query.join(AccessRequest.project).filter(
-        AccessRequest.user_id == current_user.id, Project.removed_at.is_(None)
+        AccessRequest.requested_by == current_user.id,
+        AccessRequest.resolved_at.is_(None),
+        Project.removed_at.is_(None),
     )
 
     if project_name:
@@ -146,12 +154,14 @@ def get_project_access_requests(page, per_page, order_params=None, project_name=
 def list_namespace_project_access_requests(
     namespace, page, per_page, order_params=None, project_name=None
 ):
-    """Paginated list of incoming project access requests to workspace"""
+    """Paginated list of active incoming project access requests to workspace"""
     if not check_workspace_permissions(namespace, current_user, "admin"):
         abort(403, "You don't have permissions to list project access requests")
     ws = current_app.ws_handler.get_by_name(namespace)
     access_requests = AccessRequest.query.join(AccessRequest.project).filter(
-        Project.workspace_id == ws.id, Project.removed_at.is_(None)
+        Project.workspace_id == ws.id,
+        AccessRequest.resolved_at.is_(None),
+        Project.removed_at.is_(None),
     )
 
     if project_name:
@@ -203,7 +213,11 @@ def list_projects(
 @auth_required(permissions=["admin"])
 def restore_project(id):  # noqa: E501
     """Restore project marked for removal"""
-    project = Project.query.get_or_404(id)
+    project = (
+        Project.query.filter_by(id=id)
+        .filter(Project.storage_params.isnot(None))
+        .first_or_404()
+    )
     if not project.removed_at:
         return "", 201
     if not project.workspace.is_active:
@@ -216,11 +230,14 @@ def restore_project(id):  # noqa: E501
 
 @auth_required(permissions=["admin"])
 def force_project_delete(id):  # noqa: E501
-    project = Project.query.get_or_404(id)
+    project = (
+        Project.query.filter_by(id=id)
+        .filter(Project.storage_params.isnot(None))
+        .first_or_404()
+    )
     if not project.removed_at:
         abort(400, "Failed to remove: Project is still active")
-    db.session.delete(project)
-    db.session.commit()
+    project.delete()
     return "", 204
 
 
@@ -328,7 +345,7 @@ def get_project_access(id: str):
                 result.append(
                     {
                         "id": user_id,
-                        "type": "user",
+                        "type": "member",
                         "email": user.email,
                         "username": user.username,
                         "project_permission": role,
@@ -341,7 +358,7 @@ def get_project_access(id: str):
                 result.append(
                     {
                         "id": user.id,
-                        "type": "user",
+                        "type": "member",
                         "email": user.email,
                         "username": user.username,
                         "project_permission": global_role,

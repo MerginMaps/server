@@ -4,8 +4,8 @@
 
 import os
 from pathlib import Path
-
 from sqlalchemy.orm.attributes import flag_modified
+
 from ..sync.models import (
     Project,
     ProjectVersion,
@@ -13,11 +13,10 @@ from ..sync.models import (
     ProjectAccess,
     SyncFailuresHistory,
 )
-from ..auth.models import User, UserProfile
+from ..auth.models import User
 from .. import db
 from . import DEFAULT_USER
 from .utils import add_user, create_project, create_workspace, cleanup
-from ..auth.app import inactivate_user
 
 
 def test_close_user_account(client, diff_project):
@@ -44,7 +43,7 @@ def test_close_user_account(client, diff_project):
     pv.project = diff_project
     db.session.add(pv)
     db.session.add(diff_project)
-    # user has it's own project
+    # user has its own project
     test_workspace = create_workspace()
     p = create_project(user_project, test_workspace, user)
     db.session.commit()
@@ -72,13 +71,14 @@ def test_close_user_account(client, diff_project):
         user.id,
     )
     # now remove user
-    inactivate_user(user)
-    db.session.delete(user)
-    db.session.commit()
+    user.inactivate()
+    user.anonymize()
     assert not User.query.filter_by(username="user").count()
-    assert not UserProfile.query.filter_by(
-        user_id=user_id
-    ).count()  # handled as backreference
+    assert user.username.startswith("deleted_")
+    assert user.email is None
+    assert user.passwd is None
+    assert user.profile
+    assert user.profile.first_name == user.profile.last_name is None
     # project still exists as it belongs to workspace, not to user
     assert (
         Project.query.filter_by(
@@ -93,16 +93,15 @@ def test_close_user_account(client, diff_project):
         SyncFailuresHistory.project_id == diff_project.id
     ).all()
     assert len(sync_fail_history) == 1
-    assert sync_fail_history[0].user_id is None
+    assert sync_fail_history[0].user_id == user.id
 
 
 def test_remove_project(client, diff_project):
-    """Test project is successfully removed incl:
-    - pending transfer
-    - pending upload
-    - project access
-    - project versions
-    - associated files
+    """Test project is successfully marked as removed incl:
+    - pending upload deleted
+    - project access reset
+    - project versions deleted
+    - associated files deleted
     """
     # set up
     mergin_user = User.query.filter_by(username=DEFAULT_USER[0]).first()
@@ -114,10 +113,9 @@ def test_remove_project(client, diff_project):
     project_id = diff_project.id
 
     # remove project
-    db.session.delete(diff_project)
-    db.session.commit()
-    assert not Project.query.filter_by(id=project_id).count()
+    diff_project.delete()
+    assert Project.query.filter_by(id=project_id).count()
     assert not Upload.query.filter_by(project_id=project_id).count()
     assert not ProjectVersion.query.filter_by(project_id=project_id).count()
-    assert not ProjectAccess.query.filter_by(project_id=project_id).count()
+    assert ProjectAccess.query.filter_by(project_id=project_id).count()
     cleanup(client, [project_dir])

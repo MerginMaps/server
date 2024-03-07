@@ -80,9 +80,9 @@ paths:
     delete:
       tags:
         - project
-      summary: Delete project access request for project specified with request id
-      description: Delete project access request for project specified with request id
-      operationId: mergin.sync.private_api_controller.delete_project_access_request
+      summary: Decline project access request for project specified with request id
+      description: Decline project access request for project specified with request id
+      operationId: mergin.sync.private_api_controller.decline_project_access_request
       parameters:
         - name: request_id
           in: path
@@ -564,7 +564,7 @@ components:
         type:
           type: string
           enum:
-            - user
+            - member
         email:
           type: string
           format: email

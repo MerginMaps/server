@@ -12,16 +12,14 @@ from .config import Configuration
 
 
 @celery.task
-def prune_removed_users():
-    """Permanently delete users marked for removal"""
-    db.session.info = {"msg": "prune_removed_users"}
+def anonymize_removed_users():
+    """Permanently 'delete' users marked for removal by removing personal information"""
+    db.session.info = {"msg": "anonymize_removed_users"}
     before_expiration = datetime.today() - timedelta(Configuration.ACCOUNT_EXPIRATION)
-    users = (
-        db.session.query(User.id)
-        .filter(isnot(User.active, True), User.inactive_since <= before_expiration)
-        .all()
-    )
-    users_ids = [u.id for u in users]
-
-    db.session.execute(User.__table__.delete().where(User.id.in_(users_ids)))
-    db.session.commit()
+    users = User.query.filter(
+        isnot(User.active, True),
+        User.inactive_since <= before_expiration,
+        User.username.op("~")("^(?!deleted_\d{13})"),
+    ).all()
+    for user in users:
+        user.anonymize()
