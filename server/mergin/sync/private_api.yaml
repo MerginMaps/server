@@ -367,12 +367,12 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - user_id
-                - role
               properties:
                 user_id:
                   type: integer
+                public:
+                  type: boolean
+                  nullable: true
                 role:
                   type: string
                   enum:
@@ -380,10 +380,10 @@ paths:
                     - writer
                     - reader
                     - none
-                  example: write
+                  example: writer
       responses:
         "200":
-          description: OK
+          $ref: "#/components/schemas/ProjectAccessUpdated"
         "400":
           $ref: "#/components/responses/BadStatusResp"
         "401":
@@ -578,3 +578,45 @@ components:
             - owner
             - writer
             - reader
+    ProjectAccessUpdated:
+      type: object
+      properties:
+        ownersnames:
+          type: array
+          nullable: false
+          items:
+            type: string
+          example: [ john.doe ]
+        writersnames:
+          type: array
+          nullable: false
+          items:
+            type: string
+          example: [ john.doe ]
+        readersnames:
+          nullable: false
+          type: array
+          items:
+            type: string
+          example: [ john.doe ]
+        public:
+          type: boolean
+          example: true
+        owners:
+          type: array
+          nullable: false
+          items:
+            type: integer
+          example: [1]
+        writers:
+          type: array
+          nullable: false
+          items:
+            type: integer
+          example: [1]
+        readers:
+          type: array
+          nullable: false
+          items:
+            type: integer
+            example: [1]

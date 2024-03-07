@@ -356,6 +356,13 @@ def test_update_project_access(client, diff_project):
     assert user.id not in diff_project.access.readers
     assert user.id not in diff_project.access.writers
 
+    # update public parameter => public: True
+    data["public"] = True
+    resp = client.patch(url, headers=json_headers, data=json.dumps(data))
+    assert resp.status_code == 200
+    assert diff_project.public == True
+
+
     # access of project creator can not be removed
     data["user_id"] = diff_project.creator_id
     resp = client.patch(
