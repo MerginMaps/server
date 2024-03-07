@@ -14,6 +14,7 @@ def test_schedule_delete_project(client):
     assert response.status_code == 204
     updated = Project.query.get(project.id)
     assert updated.removed_at and updated.removed_by
+    assert updated.storage_params
     response = client.post(f"v2/projects/{project.id}/scheduleDelete")
     assert response.status_code == 404
 
@@ -24,7 +25,8 @@ def test_delete_project_now(client):
     ).first()
     response = client.delete(f"v2/projects/{project.id}")
     assert response.status_code == 204
-    assert not Project.query.get(project.id)
+    project = Project.query.get(project.id)
+    assert project.removed_at and not project.storage_params and not project.files
     response = client.delete(f"v2/projects/{project.id}")
     assert response.status_code == 404
 

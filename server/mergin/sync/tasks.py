@@ -52,6 +52,7 @@ def remove_projects_backups():
                 < datetime.utcnow()
                 - timedelta(days=current_app.config["DELETED_PROJECT_EXPIRATION"])
             )
+            .filter(Project.storage_params.isnot(None))
             .order_by(Project.removed_at.asc())
             .limit(100)
             .all()
@@ -61,8 +62,7 @@ def remove_projects_backups():
             break
 
         for p in projects:
-            db.session.delete(p)
-            db.session.commit()
+            p.delete()
 
 
 @celery.task
@@ -73,7 +73,11 @@ def optimize_storage(project_id):
     It applies only on files that can be recreated when needed.
     """
     db.session.info = {"msg": "optimize_storage"}
-    project = Project.query.get(project_id)
+    project = (
+        Project.query.filter_by(id=project_id)
+        .filter(Project.storage_params.isnot(None))
+        .first()
+    )
     if not project:
         return
 

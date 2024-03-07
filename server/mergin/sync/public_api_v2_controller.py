@@ -26,7 +26,7 @@ def schedule_delete_project(id_):
     """
     project = require_project_by_uuid(id_, ProjectPermissions.Delete)
     project.removed_at = datetime.utcnow()
-    project.removed_by = current_user.username
+    project.removed_by = current_user.id
     db.session.commit()
 
     return NoContent, 204
@@ -40,8 +40,7 @@ def delete_project_now(id_):
     :type id_: str
     """
     project = require_project_by_uuid(id_, ProjectPermissions.Delete, scheduled=True)
-    db.session.delete(project)
-    db.session.commit()
+    project.delete()
 
     return NoContent, 204
 
