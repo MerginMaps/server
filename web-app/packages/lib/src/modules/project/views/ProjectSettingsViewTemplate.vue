@@ -44,10 +44,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 @click="confirmPublicPrivate()"
                 severity="secondary"
                 data-cy="settings-public-btn"
-              >
-                <template v-if="project.access.public">Make private</template>
-                <template v-else>Make public</template>
-              </PButton>
+                :label="project.access.public ? 'Make private' : 'Make public'"
+              />
             </div>
           </div>
           <div
@@ -77,9 +75,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 @click="confirmDelete"
                 severity="danger"
                 data-cy="settings-delete-btn"
-              >
-                Delete project</PButton
-              >
+                label="Delete project"
+              />
             </div>
           </div>
         </div>

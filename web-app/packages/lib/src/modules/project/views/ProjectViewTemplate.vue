@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <div>
     <template v-if="project">
       <app-container
-        class="flex justify-content-start lg:justify-content-end xl:pb-1 lg:-mb-6"
+        class="project-view-actions flex justify-content-start lg:justify-content-end"
       >
         <!-- Z indexes based on minus margin, its not possible to add additional buttons to tab view -->
         <div class="relative z-1">
@@ -386,4 +386,8 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.project-view-actions {
+  margin-bottom: -2.75rem;
+}
+</style>

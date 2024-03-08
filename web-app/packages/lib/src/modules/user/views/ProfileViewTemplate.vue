@@ -150,9 +150,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 @click="confirmDeleteUser"
                 severity="danger"
                 data-cy="profile-close-account-btn"
-              >
-                Close account</PButton
-              >
+                label="Close account"
+              />
             </div>
           </div>
         </div>
