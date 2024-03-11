@@ -206,9 +206,10 @@ export default defineComponent({
     confirmUpload() {
       const props: ConfirmDialogProps = {
         text: `Are you really sure you want to continue?`,
-        description: 'Changes from other users may get lost when uploading data from browser. It is highly recommended to use Mergin Maps QGIS plugin instead.',
+        description:
+          'Changes from other users may get lost when uploading data from browser. It is highly recommended to use Mergin Maps QGIS plugin instead.',
         confirmText: 'Update',
-        cancelText: 'No'
+        cancelText: 'Cancel'
       }
       const listeners = {
         confirm: () => this.uploadChanges()
