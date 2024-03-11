@@ -144,7 +144,7 @@ class User(db.Model):
         """Inactivate user account and remove explicitly shared projects as well clean references to created projects.
         User is then safe to be removed.
         """
-        from ..sync.models import Project, ProjectAccess
+        from ..sync.models import Project, ProjectAccess, AccessRequest, RequestStatus
 
         shared_projects = Project.query.filter(
             or_(
@@ -161,6 +161,14 @@ class User(db.Model):
                     value.remove(self.id)
                 setattr(p.access, key, list(value))
             db.session.add(p)
+
+        # decline all access requests
+        for req in (
+            AccessRequest.query.filter_by(requested_by=self.id)
+            .filter(AccessRequest.status.is_(None))
+            .all()
+        ):
+            req.resolve(RequestStatus.DECLINED, resolved_by=self.id)
 
         # inactivate user account to prevent login and mark for clean up
         self.active = False

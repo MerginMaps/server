@@ -296,16 +296,19 @@ class Project(db.Model):
         initial = timedelta(days=current_app.config["DELETED_PROJECT_EXPIRATION"])
         return initial - (datetime.utcnow() - self.removed_at)
 
-    def delete(self):
+    def delete(self, removed_by: int = None):
         """Mark project as permanently deleted (but keep in db)
         - rename (to free up the same name)
         - remove associated files and project versions
         - reset project_access
+        - decline pending project access requests
         """
         self.name = f"{self.name}_{str(self.id)}"
         # make sure remove_at is not null as it is used as filter for APIs
         if not self.removed_at:
             self.removed_at = datetime.utcnow()
+        if not self.removed_by:
+            self.removed_by = removed_by
         # Null in storage params serves as permanent deletion flag
         self.storage.delete()
         self.storage_params = null()
@@ -317,6 +320,13 @@ class Project(db.Model):
             upload_table.delete().where(upload_table.c.project_id == self.id)
         )
         self.access.owners = self.access.writers = self.access.readers = []
+        access_requests = (
+            AccessRequest.query.filter_by(project_id=self.id)
+            .filter(AccessRequest.status.is_(None))
+            .all()
+        )
+        for req in access_requests:
+            req.resolve(status=RequestStatus.DECLINED, resolved_by=self.removed_by)
         db.session.commit()
 
 

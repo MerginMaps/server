@@ -12,6 +12,8 @@ from ..sync.models import (
     Upload,
     ProjectAccess,
     SyncFailuresHistory,
+    AccessRequest,
+    RequestStatus,
 )
 from ..auth.models import User
 from .. import db
@@ -54,6 +56,12 @@ def test_close_user_account(client, diff_project):
     assert user.id in proj_resp.json["access"]["writers"]
     assert user.username in proj_resp.json["access"]["writersnames"]
 
+    # add pending project access request
+    admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
+    p2 = create_project("access_request", test_workspace, admin)
+    access_request = AccessRequest(p2, user.id)
+    db.session.add(access_request)
+
     # deactivate user first (direct hack in db to mimic inconsistency)
     user.active = False
     db.session.commit()
@@ -94,6 +102,7 @@ def test_close_user_account(client, diff_project):
     ).all()
     assert len(sync_fail_history) == 1
     assert sync_fail_history[0].user_id == user.id
+    assert access_request.status == RequestStatus.DECLINED.value
 
 
 def test_remove_project(client, diff_project):
@@ -109,8 +118,11 @@ def test_remove_project(client, diff_project):
     changes = {"added": [], "removed": [], "updated": []}
     upload = Upload(diff_project, 10, changes, mergin_user.id)
     db.session.add(upload)
-    db.session.commit()
     project_id = diff_project.id
+    user = add_user("user", "user")
+    access_request = AccessRequest(diff_project, user.id)
+    db.session.add(access_request)
+    db.session.commit()
 
     # remove project
     diff_project.delete()
@@ -119,3 +131,4 @@ def test_remove_project(client, diff_project):
     assert not ProjectVersion.query.filter_by(project_id=project_id).count()
     assert ProjectAccess.query.filter_by(project_id=project_id).count()
     cleanup(client, [project_dir])
+    assert access_request.status == RequestStatus.DECLINED.value

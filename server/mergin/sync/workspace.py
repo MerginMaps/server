@@ -9,7 +9,7 @@ from sqlalchemy import or_, and_, Column, literal
 from sqlalchemy.orm import joinedload
 
 from .errors import UpdateProjectAccessError
-from .models import Project, ProjectAccess
+from .models import Project, ProjectAccess, AccessRequest
 from .permissions import projects_query, ProjectPermissions
 from .public_api_controller import parse_project_access_update_request
 from .. import db
@@ -274,3 +274,8 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
                 parsed_access["invalid_usernames"], parsed_access["invalid_ids"]
             )
         return id_diffs, error
+
+    @staticmethod
+    def access_requests_query():
+        """Project access base query"""
+        return AccessRequest.query.join(Project)
