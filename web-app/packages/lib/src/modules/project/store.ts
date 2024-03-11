@@ -181,6 +181,8 @@ export const useProjectStore = defineStore('projectModule', {
     },
 
     uploadFiles(payload: UploadFilesPayload) {
+      const notificationStore = useNotificationStore()
+
       let files = payload.files
       files = keyBy(files, 'path')
       const chunks = Object.values(files)
@@ -195,6 +197,16 @@ export const useProjectStore = defineStore('projectModule', {
         loaded: 0,
         total: chunks
       }
+
+      // Check if there are any changes to upload
+      if (upload.diff.changes < 1) {
+        notificationStore.error({
+          text: 'No changes detected. File already exists?'
+        })
+        this.discardUpload({ projectPath: this.project.path })
+        return
+      }
+
       this.uploads[this.project.path] = upload
     },
 
