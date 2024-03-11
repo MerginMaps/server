@@ -13,7 +13,12 @@ from ..auth import auth_required
 from ..auth.models import User, UserProfile
 from .forms import AccessPermissionForm
 from .models import Project, AccessRequest, ProjectRole, RequestStatus
-from .schemas import ProjectListSchema, ProjectAccessRequestSchema, AdminProjectSchema, ProjectAccessSchema
+from .schemas import (
+    ProjectListSchema,
+    ProjectAccessRequestSchema,
+    AdminProjectSchema,
+    ProjectAccessSchema,
+)
 from .permissions import (
     require_project_by_uuid,
     ProjectPermissions,

@@ -81,7 +81,6 @@ export const useUserStore = defineStore('userModule', {
         const workspace = payload?.id
           ? this.getWorkspaceById({ id: payload.id })
           : this.currentWorkspace
-        console.log(workspace?.role)
         return isAtLeastRole(workspace?.role, UserRole.admin)
       }
     },
