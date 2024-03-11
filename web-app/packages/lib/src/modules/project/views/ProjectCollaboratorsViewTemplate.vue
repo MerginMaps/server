@@ -7,9 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div>
     <!-- Searching -->
-    <app-container
-      v-if="projectStore.accessSearch !== '' || projectStore.access.length > 0"
-    >
+    <app-container>
       <app-section ground>
         <div class="flex align-items-center gap-2">
           <span class="p-input-icon-left flex-grow-1">

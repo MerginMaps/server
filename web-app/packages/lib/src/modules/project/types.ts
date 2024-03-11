@@ -336,8 +336,8 @@ export type ErrorCodes = 'UpdateProjectAccessError'
 
 export interface ProjectAccessDetail {
   id: number
-  type: 'user'
-  email: number
+  type: 'member'
+  email: string
   username: string
   project_permission: ProjectRoleName
 }

@@ -134,6 +134,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 text
                 :disabled="item.disabled"
                 :style="[rowStyle(item)]"
+                class="text-xl"
                 data-cy="project-versions-download-btn"
                 @click.stop="
                   downloadArchive({

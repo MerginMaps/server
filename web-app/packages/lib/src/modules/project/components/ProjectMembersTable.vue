@@ -53,7 +53,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 <p class="opacity-80 lg:hidden font-semibold">
                   {{ col.text }}
                 </p>
-                <span :class="col.textClass">
+                <div
+                  :class="[
+                    col.textClass || 'opacity-80',
+                    // Center texts with additional content Avatar - text
+                    'flex align-items-center'
+                  ]"
+                >
                   <PAvatar
                     v-if="col.value === 'email'"
                     :label="(item.username ?? '').charAt(0).toUpperCase()"
@@ -84,7 +90,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                       >(me)</span
                     ></template
                   >
-                </span>
+                </div>
               </div>
               <!-- actions -->
             </div>
@@ -97,7 +103,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 @click.stop="removeMember(item)"
                 class="text-xl p-0"
                 :style="{
-                  visibility: projectStore.canRemoveProjectAccess(item.id)
+                  visibility: projectStore.canRemoveProjectAccess(item)
                     ? 'visible'
                     : 'hidden'
                 }"
@@ -130,6 +136,7 @@ import {
 } from '@/common/permission_utils'
 import { useUserStore } from '@/main'
 
+// TODO: Externalize to AppCol element
 interface ColumnItem {
   text: string
   value: string

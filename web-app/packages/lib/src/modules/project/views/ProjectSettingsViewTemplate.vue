@@ -16,8 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </app-container>
     <app-container>
       <app-section>
-        <template #title>Advanced</template>
-        <div class="flex flex-column row-gap-3 text-sm px-4 pb-4">
+        <div class="flex flex-column row-gap-3 text-sm p-4">
           <div
             :class="[
               'flex flex-column align-items-start',
