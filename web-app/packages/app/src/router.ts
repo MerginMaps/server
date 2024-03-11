@@ -129,7 +129,9 @@ export const createRouter = (pinia: Pinia) => {
             props: true,
             meta: {
               public: true,
-              breadcrump: [{ title: 'Explore', path: '/projects/explore' }]
+              breadcrump: [
+                { title: 'Public projects', path: '/projects/explore' }
+              ]
             }
           },
           {

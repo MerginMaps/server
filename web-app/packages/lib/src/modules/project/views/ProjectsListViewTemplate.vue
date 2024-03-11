@@ -12,6 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <template #header>
             <h1 class="text-3xl">
               {{ header }}
+              <span class="text-color-medium-green">({{ projectsCount }})</span>
             </h1>
           </template>
           <template #headerActions>
@@ -80,9 +81,9 @@ export default defineComponent({
   computed: {
     ...mapState(useUserStore, ['loggedUser']),
     ...mapState(useLayoutStore, ['drawer']),
-    ...mapState(useProjectStore, ['projectsSorting']),
+    ...mapState(useProjectStore, ['projectsSorting', 'projectsCount']),
     header() {
-      return this.onlyPublic ? 'Mergin Maps public projects' : 'My projects'
+      return this.onlyPublic ? 'Public projects' : 'My projects'
     },
     onlyPublic() {
       return this.$route.name === 'explore' || !this.loggedUser?.email
