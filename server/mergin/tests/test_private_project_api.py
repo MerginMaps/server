@@ -374,7 +374,7 @@ def test_update_project_access(client, diff_project):
     data["public"] = True
     resp = client.patch(url, headers=json_headers, data=json.dumps(data))
     assert resp.status_code == 200
-    assert diff_project.public == True
+    assert diff_project.access.public == True
 
 
     # access of project creator can not be removed
