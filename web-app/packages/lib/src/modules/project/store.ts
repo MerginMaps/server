@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import { AxiosError, AxiosResponse } from 'axios'
+import axios, { AxiosError, AxiosResponse } from 'axios'
 import FileSaver from 'file-saver'
 import keyBy from 'lodash/keyBy'
 import omit from 'lodash/omit'
@@ -488,6 +488,12 @@ export const useProjectStore = defineStore('projectModule', {
         )
         this.setProject({ project: projectResponse.data })
       } catch (e) {
+        if (!axios.isAxiosError(e)) {
+          notificationStore.error({
+            text: 'Failed to load project data'
+          })
+          return
+        }
         callbackStatus(e.response.status)
 
         if (e.response.status !== 404 && e.response.status !== 403) {
@@ -680,12 +686,14 @@ export const useProjectStore = defineStore('projectModule', {
         FileSaver.saveAs(resp.data, fileName)
       } catch (e) {
         // parse error details from blob
-        let resp
-        const blob = new Blob([e.response.data], { type: 'text/plain' })
-        blob.text().then((text) => {
-          resp = JSON.parse(text)
-          notificationStore.error({ text: resp.detail })
-        })
+        if (axios.isAxiosError(e)) {
+          let resp
+          const blob = new Blob([e.response.data], { type: 'text/plain' })
+          blob.text().then((text) => {
+            resp = JSON.parse(text)
+            notificationStore.error({ text: resp.detail })
+          })
+        }
       }
     },
 
@@ -724,7 +732,9 @@ export const useProjectStore = defineStore('projectModule', {
      *
      * @param item - The project access detail object for the user to remove.
      */
-    async removeProjectAccess(item: ProjectAccessDetail) {
+    async removeProjectAccess(
+      item: Pick<ProjectAccessDetail, 'id' | 'username'>
+    ) {
       const notificationStore = useNotificationStore()
       this.accessLoading = true
       try {
@@ -744,10 +754,10 @@ export const useProjectStore = defineStore('projectModule', {
     },
 
     /**
-     * Updates the access for a user in the given project by their role name.
+     * Updates the access for a user on the given project. `project.access` contains also public attribute. This attribute can be changed also.
      *
-     * @param payload - Object containing the project ID and access update parameters.
-     * @returns Promise resolving when the access update completes.
+     * @param payload - Object containing the project ID and access update details.
+     * @returns Promise resolving when the API call completes.
      */
     async updateProjectAccess(payload: {
       projectId: string
