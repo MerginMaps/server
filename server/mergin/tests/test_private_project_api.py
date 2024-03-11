@@ -376,7 +376,6 @@ def test_update_project_access(client, diff_project):
     assert resp.status_code == 200
     assert diff_project.access.public == True
 
-
     # access of project creator can not be removed
     data["user_id"] = diff_project.creator_id
     resp = client.patch(
@@ -467,6 +466,7 @@ def test_admin_project_list(client):
     p.delete()
     resp = client.get("/app/admin/projects?page=1&per_page=15&workspace=mergin")
     assert len(resp.json["projects"]) == 14
+
 
 def test_get_project_access(client):
     workspace = create_workspace()
