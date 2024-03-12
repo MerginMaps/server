@@ -157,9 +157,11 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
         only_public=False,
     ):
         if only_public:
-            projects = Project.query.filter(
-                Project.access.has(public=only_public)
-            ).filter(Project.storage_params.isnot(None))
+            projects = (
+                Project.query.filter(Project.access.has(public=only_public))
+                .filter(Project.storage_params.isnot(None))
+                .filter(Project.removed_at.is_(None))
+            )
         else:
             projects = projects_query(
                 ProjectPermissions.Read, as_admin=as_admin, public=public
