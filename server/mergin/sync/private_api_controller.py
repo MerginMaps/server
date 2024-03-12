@@ -129,7 +129,8 @@ def accept_project_access_request(request_id):
 @auth_required
 def get_project_access_requests(page, per_page, order_params=None, project_name=None):
     """Paginated list of active project access requests initiated by current user in session"""
-    access_requests = AccessRequest.query.join(AccessRequest.project).filter(
+    requests_query = current_app.ws_handler.access_requests_query()
+    access_requests = requests_query.filter(
         AccessRequest.requested_by == current_user.id,
         AccessRequest.resolved_at.is_(None),
         Project.removed_at.is_(None),
