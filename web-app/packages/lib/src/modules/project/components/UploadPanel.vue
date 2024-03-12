@@ -54,6 +54,7 @@ import AppCircle from '@/common/components/AppCircle.vue'
 import { CHUNK_SIZE, isVersionedFile } from '@/common/mergin_utils'
 import {
   ConfirmDialog,
+  ConfirmDialogProps,
   useDialogStore,
   useLayoutStore,
   useNotificationStore
@@ -203,9 +204,12 @@ export default defineComponent({
         })
     },
     confirmUpload() {
-      const props = {
-        text: 'Changes from other users <strong> may get lost </strong> when uploading data from browser. It is highly recommended to use Mergin Maps QGIS plugin instead. <br> <br> Are you really sure you want to continue?',
-        confirmText: 'Update'
+      const props: ConfirmDialogProps = {
+        text: `Are you really sure you want to continue?`,
+        description:
+          'Changes from other users may get lost when uploading data from browser. It is highly recommended to use Mergin Maps QGIS plugin instead.',
+        confirmText: 'Update',
+        cancelText: 'Cancel'
       }
       const listeners = {
         confirm: () => this.uploadChanges()
@@ -213,7 +217,11 @@ export default defineComponent({
       if (this.upload.diff.updated.filter((i) => isVersionedFile(i)).length) {
         this.showDialog({
           component: ConfirmDialog,
-          params: { props, listeners, dialog: { maxWidth: 500 } }
+          params: {
+            props,
+            listeners,
+            dialog: { maxWidth: 500, header: 'Confirm continue upload' }
+          }
         })
       } else {
         this.uploadChanges()

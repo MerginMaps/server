@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import { AxiosError, AxiosResponse } from 'axios'
+import axios, { AxiosError, AxiosResponse } from 'axios'
 import FileSaver from 'file-saver'
 import keyBy from 'lodash/keyBy'
 import omit from 'lodash/omit'
@@ -12,7 +12,7 @@ import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
 import { filesDiff } from '@/common/mergin_utils'
 import {
-  getProjectAccessUsersByRoleName as getProjectAccessKeyByRoleName,
+  getProjectAccessKeyByRoleName,
   isAtLeastProjectRole,
   ProjectRole,
   ProjectRoleName
@@ -37,9 +37,11 @@ import {
   GetAccessRequestsPayload,
   DownloadPayload,
   DeleteProjectPayload,
-  ProjectsSortingParams,
+  SortingParams,
   SaveProjectSettings,
-  ErrorCodes
+  ErrorCodes,
+  ProjectAccessDetail,
+  UpdateProjectAccessParams
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
 
@@ -58,12 +60,15 @@ export interface ProjectState {
   projects: ProjectListItem[]
   projectsCount: number
   projectsSearch: string
-  projectsSorting: ProjectsSortingParams
+  projectsSorting: SortingParams
   uploads: object
-  currentNamespace: string
   versions: ProjectVersion[]
   versionsCount: number
   versionsLoading: boolean
+  access: ProjectAccessDetail[]
+  accessLoading: boolean
+  accessSearch: string
+  accessSorting: SortingParams
 }
 
 export const useProjectStore = defineStore('projectModule', {
@@ -74,7 +79,6 @@ export const useProjectStore = defineStore('projectModule', {
     projectsCount: 0,
     projects: undefined,
     uploads: {},
-    currentNamespace: null,
     versions: [],
     versionsCount: 0,
     versionsLoading: false,
@@ -82,7 +86,11 @@ export const useProjectStore = defineStore('projectModule', {
     projectsSorting: {
       sortBy: 'updated',
       sortDesc: true
-    }
+    },
+    access: [],
+    accessLoading: false,
+    accessSearch: '',
+    accessSorting: undefined
   }),
 
   getters: {
@@ -92,6 +100,22 @@ export const useProjectStore = defineStore('projectModule', {
       return (payload) => {
         return state.projects?.find((project) => project.name === payload.name)
       }
+    },
+
+    /**
+     * Checks if the current user can remove the given project access detail.
+     *
+     * The user must be at least a project owner, and the access detail ID cannot
+     * be the same as the project creator ID.
+     *
+     * @param payload - The project access detail to check
+     * @returns True if the current user can remove the given access, false otherwise
+     */
+    canRemoveProjectAccess: (state) => (payload: ProjectAccessDetail) => {
+      return (
+        isAtLeastProjectRole(state.project?.role, ProjectRole.owner) &&
+        payload.id !== state.project?.creator
+      )
     }
   },
 
@@ -157,6 +181,8 @@ export const useProjectStore = defineStore('projectModule', {
     },
 
     uploadFiles(payload: UploadFilesPayload) {
+      const notificationStore = useNotificationStore()
+
       let files = payload.files
       files = keyBy(files, 'path')
       const chunks = Object.values(files)
@@ -171,6 +197,16 @@ export const useProjectStore = defineStore('projectModule', {
         loaded: 0,
         total: chunks
       }
+
+      // Check if there are any changes to upload
+      if (upload.diff.changes < 1) {
+        notificationStore.error({
+          text: 'No changes detected. File already exists?'
+        })
+        this.discardUpload({ projectPath: this.project.path })
+        return
+      }
+
       this.uploads[this.project.path] = upload
     },
 
@@ -227,10 +263,6 @@ export const useProjectStore = defineStore('projectModule', {
         }
       })
       upload.diff = filesDiff(this.project.files, upload.files)
-    },
-
-    setCurrentNamespace(payload) {
-      this.currentNamespace = payload.currentNamespace
     },
 
     async initProjects(payload: PaginatedProjectsPayload) {
@@ -430,7 +462,7 @@ export const useProjectStore = defineStore('projectModule', {
       const notificationStore = useNotificationStore()
 
       try {
-        const projectResponse = await ProjectApi.fetchProject(
+        const projectResponse = await ProjectApi.getProject(
           payload.namespace,
           payload.projectName
         )
@@ -462,12 +494,18 @@ export const useProjectStore = defineStore('projectModule', {
 
       const { callbackStatus, namespace, projectName, isLoggedUser } = payload
       try {
-        const projectResponse = await ProjectApi.fetchProject(
+        const projectResponse = await ProjectApi.getProject(
           payload.namespace,
           payload.projectName
         )
         this.setProject({ project: projectResponse.data })
       } catch (e) {
+        if (!axios.isAxiosError(e)) {
+          notificationStore.error({
+            text: 'Failed to load project data'
+          })
+          return
+        }
         callbackStatus(e.response.status)
 
         if (e.response.status !== 404 && e.response.status !== 403) {
@@ -660,12 +698,14 @@ export const useProjectStore = defineStore('projectModule', {
         FileSaver.saveAs(resp.data, fileName)
       } catch (e) {
         // parse error details from blob
-        let resp
-        const blob = new Blob([e.response.data], { type: 'text/plain' })
-        blob.text().then((text) => {
-          resp = JSON.parse(text)
-          notificationStore.error({ text: resp.detail })
-        })
+        if (axios.isAxiosError(e)) {
+          let resp
+          const blob = new Blob([e.response.data], { type: 'text/plain' })
+          blob.text().then((text) => {
+            resp = JSON.parse(text)
+            notificationStore.error({ text: resp.detail })
+          })
+        }
       }
     },
 
@@ -679,8 +719,83 @@ export const useProjectStore = defineStore('projectModule', {
       )
     },
 
-    setProjectsSorting(payload: ProjectsSortingParams) {
+    setProjectsSorting(payload: SortingParams) {
       this.projectsSorting = payload
+    },
+
+    async getProjectAccess(projectId: string) {
+      const notificationStore = useNotificationStore()
+
+      try {
+        this.accessLoading = true
+        const response = await ProjectApi.getProjectAccess(projectId)
+        this.access = response.data
+      } catch {
+        notificationStore.error({
+          text: 'Failed to get project access'
+        })
+      } finally {
+        this.accessLoading = false
+      }
+    },
+
+    /**
+     * Removes the given user's access to the current project.
+     *
+     * @param item - The project access detail object for the user to remove.
+     */
+    async removeProjectAccess(
+      item: Pick<ProjectAccessDetail, 'id' | 'username'>
+    ) {
+      const notificationStore = useNotificationStore()
+      this.accessLoading = true
+      try {
+        const response = await ProjectApi.updateProjectAccess(this.project.id, {
+          user_id: item.id,
+          role: 'none'
+        })
+        this.access = this.access.filter((access) => access.id !== item.id)
+        this.project.access = response.data
+      } catch {
+        notificationStore.error({
+          text: `Failed to update project access for user ${item.username}`
+        })
+      } finally {
+        this.accessLoading = false
+      }
+    },
+
+    /**
+     * Updates the access for a user on the given project. `project.access` contains also public attribute. This attribute can be changed also.
+     *
+     * @param payload - Object containing the project ID and access update details.
+     * @returns Promise resolving when the API call completes.
+     */
+    async updateProjectAccess(payload: {
+      projectId: string
+      data: UpdateProjectAccessParams
+    }) {
+      const notificationStore = useNotificationStore()
+      this.accessLoading = true
+      try {
+        const response = await ProjectApi.updateProjectAccess(
+          payload.projectId,
+          payload.data
+        )
+        this.access = this.access.map((access) => {
+          if (access.id === payload.data.user_id) {
+            access.project_permission = payload.data.role
+          }
+          return access
+        })
+        this.project.access = response.data
+      } catch {
+        notificationStore.error({
+          text: `Failed to update project access`
+        })
+      } finally {
+        this.accessLoading = false
+      }
     }
   }
 })

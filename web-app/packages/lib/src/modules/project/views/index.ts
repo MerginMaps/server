@@ -9,3 +9,4 @@ export { default as ProjectSettingsViewTemplate } from './ProjectSettingsViewTem
 export { default as ProjectVersionsView } from './ProjectVersionsView.vue'
 export { default as ProjectViewTemplate } from './ProjectViewTemplate.vue'
 export { default as ProjectVersionsViewTemplate } from './ProjectVersionsViewTemplate.vue'
+export { default as ProjectCollaboratorsViewTemplate } from './ProjectCollaboratorsViewTemplate.vue'

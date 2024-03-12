@@ -63,6 +63,7 @@ import { TipMessage } from '@/common/components'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useFormStore } from '@/modules/form/store'
 import { useProjectStore } from '@/modules/project/store'
+import { useUserStore } from '@/main'
 
 export default defineComponent({
   name: 'new-project-form',
@@ -75,7 +76,7 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState(useProjectStore, ['currentNamespace']),
+    ...mapState(useUserStore, ['currentWorkspace']),
     ...mapState(useFormStore, ['getErrorByComponentId']),
     errors() {
       return this.getErrorByComponentId(this.merginComponentUuid) ?? {}
@@ -103,7 +104,7 @@ export default defineComponent({
         }
         await this.createProject({
           data,
-          namespace: this.currentNamespace
+          namespace: this.currentWorkspace?.name
         })
         await this.close()
         this.$emit('success')

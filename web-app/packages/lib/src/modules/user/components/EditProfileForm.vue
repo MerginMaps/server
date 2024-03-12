@@ -68,7 +68,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
       <PButton
         type="submit"
-        @click="submit"
         class="flex w-12 lg:w-6 justify-content-center"
         data-cy="profile-edit-save-btn"
       >

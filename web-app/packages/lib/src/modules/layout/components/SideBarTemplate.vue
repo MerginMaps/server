@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   >
     <div class="flex flex-column justify-content-between h-screen">
       <div>
-        <header class="p-2 lg:p-4 mb-2">
+        <header class="p-2 lg:p-5 mb-2">
           <div class="lg:hidden flex justify-content-end">
             <PButton
               plain

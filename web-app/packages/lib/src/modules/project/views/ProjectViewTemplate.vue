@@ -8,20 +8,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <div>
     <template v-if="project">
       <app-container
-        class="flex justify-content-start lg:justify-content-end xl:pb-1 lg:-mb-6"
+        class="project-view-actions flex justify-content-start lg:justify-content-end"
       >
         <!-- Z indexes based on minus margin, its not possible to add additional buttons to tab view -->
         <div class="relative z-1">
-          <!-- Toolbar -->
-          <portal-target name="project-toolbar" class="layout row shrink" />
-          <PButton
-            @click="shareDialog"
-            v-if="loggedUser"
-            icon="ti ti-send"
-            label="Share"
-            data-cy="project-share-btn"
-            class="mr-2"
-          />
           <PButton
             severity="secondary"
             @click="downloadArchive({ url: downloadUrl })"
@@ -163,10 +153,6 @@ export default defineComponent({
     },
     namespace: String,
     projectName: String,
-    location: {
-      type: String,
-      default: ''
-    },
     showSettings: Boolean as PropType<boolean>,
     showHistory: { type: Boolean as PropType<boolean>, default: true },
     hideCloneButton: {
@@ -212,6 +198,10 @@ export default defineComponent({
         }
         if (this.showSettings) {
           tabs.push({
+            route: ProjectRouteName.ProjectCollaborators,
+            header: 'Collaborators'
+          })
+          tabs.push({
             route: ProjectRouteName.ProjectSettings,
             header: 'Settings'
           })
@@ -238,7 +228,10 @@ export default defineComponent({
                 ? 'var(--forest-color)'
                 : 'transparent'
             },
-            class: ['hover:border-400', { 'text-color-forest': context.active }]
+            class: [
+              'hover:border-400 pb-4',
+              { 'text-color-forest': context.active }
+            ]
           }
         }
       }
@@ -327,9 +320,6 @@ export default defineComponent({
     cloneDialog() {
       this.$emit('open-clone-dialog')
     },
-    shareDialog() {
-      this.$emit('open-share-dialog')
-    },
     createAccessRequest() {
       waitCursor(true)
       ProjectApi.createProjectAccessRequest(
@@ -396,4 +386,8 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.project-view-actions {
+  margin-bottom: -2.75rem;
+}
+</style>

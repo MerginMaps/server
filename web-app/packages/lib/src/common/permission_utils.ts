@@ -151,7 +151,7 @@ export function getProjectPermissionsValues(): DropdownOption<ProjectPermissionN
   ]
 }
 
-export function getProjectAccessUsersByRoleName(
+export function getProjectAccessKeyByRoleName(
   roleName: ProjectRoleName
 ): keyof ProjectAccess {
   const mapper: Record<ProjectRoleName, keyof ProjectAccess | undefined> = {

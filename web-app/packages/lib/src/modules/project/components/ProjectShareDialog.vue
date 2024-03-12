@@ -121,7 +121,7 @@ const search = async (e: AutoCompleteCompleteEvent) => {
   try {
     data.isPending = true
     const params: UserSearchParams = {
-      namespace: projectStore.currentNamespace,
+      namespace: userStore.currentWorkspace?.name,
       like: e.query
     }
     const response = await userStore.getAuthNotProjectUserSearch(params)
@@ -149,7 +149,7 @@ const share = async () => {
   } = projectStore.project.access
   try {
     await projectStore.saveProjectAccessByRoleName({
-      namespace: projectStore.currentNamespace,
+      namespace: userStore.currentWorkspace?.name,
       settings: {
         access: {
           ownersnames,
@@ -162,6 +162,7 @@ const share = async () => {
       roleName: data.permission,
       projectName: projectStore.project.name
     })
+    await projectStore.getProjectAccess(projectStore.project?.id)
     dialogStore.close()
   } catch (err) {
     notificationStore.error({

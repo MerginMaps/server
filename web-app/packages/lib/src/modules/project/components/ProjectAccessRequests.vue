@@ -54,7 +54,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             />
             <div class="flex justify-content-end w-6 lg:w-4">
               <PButton
-                :disabled="!canCancelAccessRequest(item.user.id)"
+                :disabled="!canCancelAccessRequest(item.user?.id)"
                 icon="ti ti-x"
                 rounded
                 aria-label="Disallow"
@@ -63,7 +63,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 @click="cancelRequest(item)"
               />
               <PButton
-                :disabled="!canAcceptAccessRequest(item.user.id, item.expire)"
+                :disabled="!canAcceptAccessRequest(item.user?.id, item.expire)"
                 icon="ti ti-check"
                 rounded
                 aria-label="Accept"

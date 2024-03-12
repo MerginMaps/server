@@ -11,7 +11,8 @@ import {
   VerifyEmailView,
   routeUtils,
   useUserStore,
-  SideBarTemplate as SideBar
+  SideBarTemplate as SideBar,
+  ProjectRouteName
 } from '@mergin/lib'
 import { Pinia } from 'pinia'
 import {
@@ -21,6 +22,7 @@ import {
 
 import DashboardView from '@/modules/dashboard/views/DashboardView.vue'
 import AppHeader from '@/modules/layout/components/AppHeader.vue'
+import ProjectCollaboratorsView from '@/modules/project/views/ProjectCollaboratorsView.vue'
 import ProjectSettingsView from '@/modules/project/views/ProjectSettingsView.vue'
 import ProjectsListView from '@/modules/project/views/ProjectsListView.vue'
 import ProjectView from '@/modules/project/views/ProjectView.vue'
@@ -127,7 +129,9 @@ export const createRouter = (pinia: Pinia) => {
             props: true,
             meta: {
               public: true,
-              breadcrump: [{ title: 'Explore', path: '/projects/explore' }]
+              breadcrump: [
+                { title: 'Public projects', path: '/projects/explore' }
+              ]
             }
           },
           {
@@ -202,6 +206,12 @@ export const createRouter = (pinia: Pinia) => {
             path: 'history',
             name: 'project-versions',
             component: ProjectVersionsView,
+            props: true
+          },
+          {
+            path: 'collaborators',
+            name: ProjectRouteName.ProjectCollaborators,
+            component: ProjectCollaboratorsView,
             props: true
           },
           {

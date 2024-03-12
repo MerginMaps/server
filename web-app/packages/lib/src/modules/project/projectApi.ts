@@ -22,11 +22,13 @@ import {
   PushProjectChangesResponse,
   SaveProjectSettings,
   UpdateProjectAccessParams,
-  ProjectVersion
+  ProjectVersion,
+  ProjectAccessDetail,
+  ProjectAccess
 } from '@/modules/project/types'
 
 export const ProjectApi = {
-  async fetchProject(
+  async getProject(
     namespace: string,
     projectName: string
   ): Promise<AxiosResponse<ProjectDetail>> {
@@ -168,11 +170,11 @@ export const ProjectApi = {
     )
   },
 
-  async updateProjectAccessForUser(
+  async updateProjectAccess(
     id: string,
     data: UpdateProjectAccessParams,
     withRetry?: boolean
-  ): Promise<AxiosResponse<void>> {
+  ): Promise<AxiosResponse<ProjectAccess>> {
     return ProjectModule.httpService.patch(`/app/project/${id}/access`, data, {
       ...(withRetry ? getDefaultRetryOptions() : {})
     })
@@ -266,5 +268,11 @@ export const ProjectApi = {
 
   async downloadFile(url: string): Promise<AxiosResponse<Blob>> {
     return ProjectModule.httpService.get(url, { responseType: 'blob' })
+  },
+
+  async getProjectAccess(
+    projectId: string
+  ): Promise<AxiosResponse<ProjectAccessDetail[]>> {
+    return ProjectModule.httpService.get(`/app/project/${projectId}/access`)
   }
 }
