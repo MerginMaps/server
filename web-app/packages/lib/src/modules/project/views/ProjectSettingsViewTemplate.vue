@@ -6,14 +6,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div>
-    <app-container v-if="showAccessRequests && accessRequestsCount > 0">
-      <app-section
-        ><template #title
-          >Requests
-          <span class="opacity-80">({{ accessRequestsCount }})</span></template
-        ><project-access-requests
-      /></app-section>
-    </app-container>
     <app-container>
       <app-section>
         <div class="flex flex-column row-gap-3 text-sm p-4">
@@ -93,13 +85,11 @@ import AppSection from '@/common/components/AppSection.vue'
 import { ConfirmDialogProps } from '@/modules'
 import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 import { useDialogStore } from '@/modules/dialog/store'
-import ProjectAccessRequests from '@/modules/project/components/ProjectAccessRequests.vue'
 import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
   name: 'ProjectSettingsViewTemplate',
   components: {
-    ProjectAccessRequests,
     AppContainer,
     AppSection
   },
