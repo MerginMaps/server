@@ -390,4 +390,10 @@ export default defineComponent({
 .project-view-actions {
   margin-bottom: -2.75rem;
 }
+
+@media screen and (max-width: $lg) {
+  .project-view-actions {
+    margin-bottom: 0px;
+  }
+}
 </style>

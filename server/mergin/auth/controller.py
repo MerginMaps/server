@@ -282,7 +282,7 @@ def password_reset():  # pylint: disable=W0613,W0612
         func.lower(User.email) == func.lower(form.email.data.strip())
     ).one_or_none()
     if not user:
-        return jsonify({"email": ["Account with given email does not exists"]}), 404
+        return jsonify({"email": ["Account with given email does not exist"]}), 404
     if not user.active:
         # user should confirm email first
         return jsonify({"email": ["Account is not active"]}), 400
