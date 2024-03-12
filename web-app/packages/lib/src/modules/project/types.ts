@@ -16,9 +16,7 @@ import { UserSearch } from '@/modules/user/types'
 
 export interface ProjectGridState {
   searchFilterByProjectName: string
-  searchFilterByNamespace: string
   namespace: string
-  searchFilterByDay: number
 }
 
 export interface PaginatedProjectsParams extends PaginatedRequestParamsApi {
@@ -118,6 +116,7 @@ export interface ProjectListItemFiles extends FileInfo, HistoryFileInfo {
 export interface ProjectDetail extends ProjectListItem {
   role: ProjectRoleName
   files?: ProjectListItemFiles[]
+  workspace_id: number
 }
 
 export interface PaginatedProjectsResponse extends PaginatedResponseDefaults {
@@ -143,7 +142,7 @@ export interface ProjectParams {
   namespace: string
 }
 
-export interface ProjectAccessRequest {
+export interface AccessRequest {
   expire: string
   id: number
   namespace: string
@@ -153,15 +152,14 @@ export interface ProjectAccessRequest {
   user: UserSearch
 }
 
-export type ProjectAccessRequestResponse =
-  PaginatedResponse<ProjectAccessRequest>
+export type ProjectAccessRequestResponse = PaginatedResponse<AccessRequest>
 
 export interface ProjectAccessRequestParams extends PaginatedRequestParamsApi {
   project_name?: string
 }
 
 export interface AccessRequestsPayload extends PaginatedResponseDefaults {
-  accessRequests: ProjectAccessRequest[]
+  accessRequests: AccessRequest[]
 }
 
 export interface GetUserAccessRequestsPayload {
@@ -177,8 +175,7 @@ export interface AcceptProjectAccessRequestData {
   permissions: ProjectPermissionName
 }
 
-export interface GetProjectAccessRequestsPayload
-  extends GetUserAccessRequestsPayload {
+export interface GetAccessRequestsPayload extends GetUserAccessRequestsPayload {
   namespace?: string
 }
 
@@ -246,6 +243,7 @@ export interface ProjectVersion {
   namespace: string
   user_agent: string
   changesets: ChangesetSuccess | ChangesetError
+  project_size: number
 }
 
 export interface PaginatedProjectVersionsResponse
@@ -281,8 +279,9 @@ export type EnhancedProjectDetail = ProjectDetail & {
 }
 
 export interface UpdateProjectAccessParams {
-  user_id: number
-  role: ProjectRoleName
+  user_id?: number
+  role?: ProjectRoleName
+  public?: boolean
 }
 
 export interface DownloadPayload {
@@ -302,12 +301,43 @@ export interface ProjectVersionsItem extends ProjectVersion {
 }
 
 export interface TableDataHeader {
-  text: string
-  value: string
+  header: string
+  field: string
   sortable?: boolean
   width?: number
 }
 
 export interface DeleteProjectPayload {
   projectId: string
+}
+
+export interface VDataIteratorOptions {
+  page: number
+  itemsPerPage: number
+  sortBy?: Array<{ key: string; order?: boolean | 'asc' | 'desc' }>
+}
+
+export interface SortingParams {
+  sortBy: string
+  sortDesc: boolean
+}
+
+export interface ProjectVersionFileChange {
+  changes: {
+    columns: number
+    name: string
+    new: string
+  }[]
+  table: string
+  type: 'insert' | 'update' | 'delete'
+}
+
+export type ErrorCodes = 'UpdateProjectAccessError'
+
+export interface ProjectAccessDetail {
+  id: number
+  type: 'member'
+  email: string
+  username: string
+  project_permission: ProjectRoleName
 }

@@ -5,28 +5,49 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-card
-    class="bubble mt-3"
-    style="background-color: #fce8e6; color: rgba(0, 0, 0, 0.87)"
-    outlined
-  >
-    <span>
-      <b>Your storage is almost full ({{ usage }}%).</b> Soon you will not be
-      able to sync your projects.
-      <slot name="buttons"></slot>
-    </span>
-  </v-card>
+  <app-container v-if="open">
+    <slot :usage="usage">
+      <PMessage severity="warn" @close="open = false" class="m-0">
+        <template #messageicon="slotProps">
+          <i :class="[slotProps.class, 'ti ti-alert-triangle-filled']" />
+        </template>
+        <p>
+          <span class="font-semibold"
+            >Your storage is almost full ({{ usage }}%).</span
+          >
+          Soon you will not be able to sync your projects.
+        </p></PMessage
+      >
+    </slot>
+  </app-container>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { computed, ref } from 'vue'
 
-export default defineComponent({
-  name: 'FullStorageWarningTemplate',
-  props: {
-    usage: Number
+import { AppContainer } from '@/common/components'
+import { useUserStore } from '@/main'
+
+const userStore = useUserStore()
+
+const usage = computed(() =>
+  Math.floor(
+    (userStore.currentWorkspace?.disk_usage /
+      userStore.currentWorkspace?.storage) *
+      100
+  )
+)
+
+/** Handle open state with connection to message close button */
+const isOver = computed({
+  get() {
+    return usage.value > 90
+  },
+  set(value) {
+    open.value = value
   }
 })
+const open = ref(isOver)
 </script>
 
 <style scoped></style>

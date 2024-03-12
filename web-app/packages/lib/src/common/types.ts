@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import VueRouter, { RouteRecord } from 'vue-router'
+import { RouteRecordRaw, Router } from 'vue-router'
 
 import { HttpService } from '@/common/http'
 
@@ -10,13 +10,13 @@ export type RouteName = string
 export type RouteOverrides = Record<
   RouteName,
   // do not allow to override children
-  Partial<Omit<RouteRecord, 'children'>>
+  Partial<Omit<RouteRecordRaw, 'children'>>
 >
 
 export interface ModuleService {
   httpService?: HttpService
-  routerService?: VueRouter
-  [key: string]: any
+  routerService?: Router
+  [key: string]: unknown
 }
 
 export interface BaseModule {
@@ -28,8 +28,8 @@ export interface BaseModule {
 export interface Module extends BaseModule, ModuleService {}
 
 export interface PaginatedGridOptions {
-  sortBy: string[]
-  sortDesc: boolean[]
+  sortBy: string
+  sortDesc: boolean
   itemsPerPage: number
   page: number
 }
@@ -62,8 +62,14 @@ export interface PaginatedResponse<T> extends PaginatedResponseDefaults {
   items: readonly T[]
 }
 
-export interface ApiRequestSuccessInfo<T = any> {
+export interface ApiRequestSuccessInfo<T> {
   success: boolean
   message?: string
   data?: T
+}
+
+export interface AutoCompleteItem<T> {
+  key: string | number
+  value: T
+  label: string
 }

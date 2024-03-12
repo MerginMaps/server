@@ -5,95 +5,127 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <custom-page class="login-window">
-    <v-card>
-      <mergin-logo-light @click="navigateHome" />
-      <v-card-text>
-        <v-form @submit.prevent class="login-form">
-          <template v-if="forgotPassword">
-            <v-text-field
-              placeholder="Email"
-              name="email"
-              color="inputColor"
-              data-cy="reset-form-email"
-              v-model="email"
-              :error-messages="errors.email"
-              @keyup.enter="reset"
-            />
-            <v-btn
-              :dark="email !== ''"
-              color="secondary"
-              data-cy="reset-form-btn"
-              :disabled="!email"
-              @click="reset"
-            >
-              Reset Password
-            </v-btn>
-          </template>
-          <template v-else>
-            <v-text-field
-              placeholder="Username or email"
-              data-cy="login-form-login"
-              name="login"
-              color="inputColor"
-              v-model="login"
-              :error-messages="errors.login"
-              @keyup.enter="loginUser"
-            />
-            <v-text-field
-              placeholder="Password"
-              data-cy="login-form-password"
-              name="password"
-              color="inputColor"
-              v-model="password"
-              :append-icon="passwordVisible ? 'visibility_off' : 'visibility'"
-              @click:append="passwordVisible = !passwordVisible"
-              :type="passwordVisible ? 'text' : 'password'"
-              :error-messages="errors.password"
-              @keyup.enter="loginUser"
-            />
-            <v-btn
-              :dark="Boolean(login && password)"
-              :disabled="!login || !password"
-              data-cy="login-form-btn-login"
-              color="secondary"
-              class="mx-0 mt-3"
-              id="login-btn"
-              @click="loginUser"
-            >
-              Sign In
-            </v-btn>
-          </template>
-        </v-form>
-        <div class="d-flex justify-space-between">
-          <v-btn
-            v-if="!forgotPassword"
-            text
-            small
-            data-cy="login-form-btn-reset"
-            color="primary"
-            class="reset"
-            :to="{ name: 'login', params: { reset: 'reset' } }"
-            >Forgot password?
-          </v-btn>
-          <slot name="additionalButtons"></slot>
-        </div>
-      </v-card-text>
-    </v-card>
-  </custom-page>
+  <app-onboarding-page>
+    <template #header>
+      <h1 class="text-6xl">
+        <template v-if="forgotPassword">Reset password</template
+        ><template v-else>Sign in</template>
+      </h1>
+    </template>
+
+    <!-- Passing slots to another components -->
+    <template v-if="$slots.aside" #aside><slot name="aside"></slot></template>
+    <template v-if="$slots.logo" #logo><slot name="logo"></slot></template>
+
+    <form
+      v-if="forgotPassword"
+      @submit.prevent="reset"
+      class="flex flex-column row-gap-1"
+    >
+      <div>
+        <label class="text-xs" for="login">Email</label>
+        <PInputText
+          placeholder="Type your email"
+          name="email"
+          color="inputColor"
+          data-cy="reset-form-email"
+          v-model="email"
+          :class="['w-full my-1', errors.email ? 'p-invalid' : '']"
+        />
+        <span class="p-error text-xs" id="login-error">{{
+          errors.email?.[0] || '&nbsp;'
+        }}</span>
+      </div>
+
+      <router-link
+        class="text-sm text-color-forest font-semibold align-self-center"
+        :to="{ name: 'login' }"
+        >Back to login</router-link
+      >
+
+      <PButton
+        class="mt-6"
+        data-cy="reset-form-btn"
+        :disabled="!email"
+        @click="reset"
+        label="Reset password"
+      />
+    </form>
+    <form v-else @submit.prevent="loginUser" class="flex flex-column row-gap-1">
+      <div>
+        <label class="text-xs" for="login">Username or email</label>
+        <PInputText
+          id="login"
+          name="login"
+          v-model="login"
+          data-cy="login-form-login"
+          :class="['w-full my-1', errors.login ? 'p-invalid' : '']"
+          aria-describedby="login-error"
+          placeholder="Please enter username or email"
+          :inputProps="{ autocomplete: 'on' }"
+          autofocus
+        />
+        <span class="p-error text-xs" id="login-error">{{
+          errors.login?.[0] || '&nbsp;'
+        }}</span>
+      </div>
+
+      <div>
+        <label class="text-xs" for="password">Password</label>
+        <PPassword
+          id="password"
+          name="password"
+          v-model="password"
+          :class="['w-full my-1', errors.password ? 'p-invalid' : '']"
+          data-cy="login-form-password"
+          aria-describedby="password-error"
+          toggleMask
+          :feedback="false"
+          placeholder="Please enter your password"
+          :pt="{
+            input: {
+              root: {
+                class: 'w-full border-round-xl',
+                autocomplete: 'current-password'
+              }
+            }
+          }"
+        />
+        <span class="p-error text-xs" id="password-error">{{
+          errors.password?.[0] || '&nbsp;'
+        }}</span>
+      </div>
+
+      <router-link
+        class="text-sm text-color-forest font-semibold align-self-center"
+        :to="{ name: 'login', params: { reset: 'reset' } }"
+        >Forgot password?</router-link
+      >
+
+      <PButton
+        type="submit"
+        :disabled="!login || !password"
+        data-cy="login-form-btn-login"
+        id="login-btn"
+        class="mt-6 w-full"
+        label="Sign in"
+      />
+    </form>
+    <div class="flex flex-column align-items-center">
+      <slot name="additionalButtons"> </slot>
+    </div>
+  </app-onboarding-page>
 </template>
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
 
-import CustomPage from '@/common/components/CustomPage.vue'
-import MerginLogoLight from '@/common/components/MerginLogoLight.vue'
+import AppOnboardingPage from '@/common/components/AppOnboardingPage.vue'
 import { useFormStore } from '@/modules/form/store'
 import { useUserStore } from '@/modules/user/store'
 
 export default {
   name: 'LoginViewTemplate',
-  components: { MerginLogoLight, CustomPage },
   props: {
     presetLogin: {
       type: String,
@@ -160,111 +192,9 @@ export default {
     navigateHome() {
       this.$router.push('/')
     }
-  }
+  },
+  components: { AppOnboardingPage }
 }
 </script>
 
-<style lang="scss" scoped>
-.login-window {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
-
-  display: flex;
-  flex-direction: column;
-  z-index: 100;
-  overflow: auto;
-
-  .bg {
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 100%;
-    object-fit: cover;
-  }
-
-  .container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-  }
-
-  ::v-deep(.v-card) {
-    min-width: 300px;
-    max-width: 400px;
-    flex: 1;
-
-    .v-responsive__content {
-      display: flex;
-      flex-direction: row;
-      justify-content: center;
-      margin-left: 5px;
-      cursor: pointer;
-
-      img {
-        height: 4em;
-        width: auto;
-      }
-    }
-
-    .v-card__text {
-      display: flex;
-      flex-direction: column;
-    }
-
-    form {
-      display: flex;
-      flex-direction: column;
-
-      input {
-        padding-left: 0.25em;
-      }
-
-      .input-group label:after {
-        /* Remove asterisk from required fields */
-        display: none;
-      }
-
-      .v-input__append-inner {
-        .v-icon {
-          color: #ccc !important;
-        }
-      }
-    }
-
-    .version {
-      margin: 1em 0 0.5em 0;
-      text-align: center;
-      opacity: 0.6;
-      font-size: 90%;
-    }
-  }
-
-  .copyright {
-    position: absolute;
-    right: -1em;
-    bottom: 0.25em;
-    padding: 0 2em 0 2em;
-    color: #fff;
-    text-shadow: 1px 1px 3px #333;
-    opacity: 0.7;
-    user-select: none;
-
-    b {
-      font-weight: 500;
-    }
-  }
-
-  ::v-deep(.v-btn) {
-    text-transform: none;
-
-    &.reset {
-      align-self: center;
-    }
-  }
-}
-</style>
+<style lang="scss" scoped></style>

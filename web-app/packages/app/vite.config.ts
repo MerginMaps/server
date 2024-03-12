@@ -3,13 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
-import vue from '@vitejs/plugin-vue2'
+import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
-import { VuetifyResolver } from 'unplugin-vue-components/resolvers'
+import { PrimeVueResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
-import { defineConfig } from 'vite'
-// import vuetify from 'vite-plugin-vuetify'
+import { defineConfig, splitVendorChunkPlugin } from 'vite'
 
 const serverPort = process.env.FLASK_RUN_PORT ?? 5000
 
@@ -21,9 +20,14 @@ export default defineConfig(({ mode }) => ({
       : '/',
   plugins: [
     vue(),
+    // vuetify({
+    //   styles: { configFile: './src/sass/settings.scss' }
+    // }),
     Components({
-      resolvers: [VuetifyResolver()]
-    }) /*, vuetify() */
+      resolvers: [PrimeVueResolver({ prefix: 'P' })]
+    }),
+    /** Creating index , vendor .js/.css for smaller bundle loaded async in browser */
+    splitVendorChunkPlugin()
   ],
 
   resolve: {
@@ -31,7 +35,7 @@ export default defineConfig(({ mode }) => ({
       '@': resolve(__dirname, './src'),
       url: 'rollup-plugin-node-polyfills/polyfills/url'
     },
-    dedupe: ['vue', 'pinia', 'vue-router', 'vuetify', '@mergin/lib']
+    dedupe: ['vue', 'pinia', 'vue-router', '@mergin/lib', 'primevue']
   },
   // define: {
   //   'process.env': process.env
@@ -41,6 +45,7 @@ export default defineConfig(({ mode }) => ({
     //   include: [/node_modules/],
     //   transformMixedEsModules: true
     // },
+
     sourcemap: mode !== 'production',
     rollupOptions: {
       plugins: [
@@ -51,7 +56,7 @@ export default defineConfig(({ mode }) => ({
     }
   },
   optimizeDeps: {
-    exclude: ['vue', '@mergin'],
+    exclude: ['vue', '@mergin', 'vue-demi'],
     esbuildOptions: {
       define: {
         global: 'globalThis'

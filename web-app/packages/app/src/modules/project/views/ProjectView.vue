@@ -9,17 +9,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :show-namespace="false"
     :namespace="namespace"
     :projectName="projectName"
-    :asAdmin="asAdmin"
-    :location="location"
     :show-settings="isProjectOwner"
     :hide-clone-button="!canCreateProject"
     @open-clone-dialog="openCloneDialog"
+    @open-share-dialog="openShareDialog"
   />
 </template>
 
 <script lang="ts">
 import {
   CloneDialog,
+  ProjectShareDialog,
   ProjectViewTemplate,
   useDialogStore,
   useFormStore,
@@ -35,15 +35,7 @@ export default defineComponent({
   },
   props: {
     namespace: String,
-    projectName: String,
-    asAdmin: {
-      type: Boolean,
-      default: false
-    },
-    location: {
-      type: String,
-      default: ''
-    }
+    projectName: String
   },
   setup(props) {
     const userStore = useUserStore()
@@ -59,7 +51,11 @@ export default defineComponent({
         namespace: props.namespace,
         project: props.projectName
       }
-      const dialog = { maxWidth: 580, persistent: true }
+      const dialog = {
+        maxWidth: 580,
+        persistent: true,
+        header: 'Clone project'
+      }
       const listeners = {
         error: (error, data) => {
           formStore.handleError({
@@ -79,10 +75,24 @@ export default defineComponent({
       })
     }
 
+    function openShareDialog() {
+      const dialog = {
+        maxWidth: 600,
+        header: 'Share project'
+      }
+      dialogStore.show({
+        component: ProjectShareDialog,
+        params: {
+          dialog
+        }
+      })
+    }
+
     return {
       canCreateProject,
       isProjectOwner,
-      openCloneDialog
+      openCloneDialog,
+      openShareDialog
     }
   }
 })

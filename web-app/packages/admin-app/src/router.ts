@@ -13,7 +13,7 @@ import {
   VersionDetailView,
   FileVersionDetailView,
   useUserStore
-} from '@mergin/lib'
+} from '@mergin/lib-vue2'
 import Vue from 'vue'
 
 import {

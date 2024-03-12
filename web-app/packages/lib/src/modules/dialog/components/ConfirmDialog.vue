@@ -5,71 +5,79 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-card>
-    <v-card-title class="text-h5">{{ headline }}</v-card-title>
-    <v-card-text v-html="text" />
-    <v-card-actions>
-      <v-text-field
-        v-if="confirmField"
+  <div class="flex flex-column align-items-center pb-4 text-center gap-3">
+    <img
+      v-if="severity === 'danger'"
+      src="@/assets/trash.svg"
+      alt="Cover for confirm dialog"
+    />
+    <img v-else src="@/assets/map-circle.svg" alt="Cover for confirm dialog" />
+    <span class="font-semibold text-color-forest text-lg">{{ text }}</span>
+    <span class="text-sm opacity-80">{{ description }}</span>
+    <span class="text-base font-semibold">{{ hint }}</span>
+    <span v-if="confirmField" class="flex p-float-label w-full p-input-filled">
+      <PInputText
         autofocus
-        :label="confirmField.label"
+        id="confirmValue"
         v-model="confirmValue"
-        style="margin-left: 15px"
+        type="text"
+        class="flex-grow-1"
       />
-      <v-spacer />
-      <v-btn text @click="close">
-        {{ cancelText }}
-      </v-btn>
-      <v-btn :disabled="!isConfirmed" color="primary" @click="confirm">
+      <label for="confirmValue">{{ confirmField.label }}</label>
+    </span>
+
+    <slot></slot>
+
+    <!-- Footer -->
+    <div
+      class="w-full flex flex-column lg:flex-row justify-content-between align-items-center mt-4"
+    >
+      <PButton
+        severity="secondary"
+        @click="close"
+        class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
+        data-cy="clone-dialog-close-btn"
+        >{{ cancelText }}</PButton
+      >
+
+      <PButton
+        :disabled="!isConfirmed"
+        @click="confirm"
+        :severity="severity"
+        class="flex w-12 lg:w-6 justify-content-center"
+      >
         {{ confirmText }}
-      </v-btn>
-    </v-card-actions>
-  </v-card>
+      </PButton>
+    </div>
+  </div>
 </template>
 
-<script lang="ts">
-import { mapActions } from 'pinia'
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { ref, computed, defineEmits, withDefaults } from 'vue'
+
+import { ConfirmDialogProps } from '../types'
 
 import { useDialogStore } from '@/modules/dialog/store'
 
-export default defineComponent({
-  name: 'confirm-dialog',
-  props: {
-    text: String,
-    confirmField: Object,
-    confirmText: {
-      type: String,
-      default: 'Ok'
-    },
-    cancelText: {
-      type: String,
-      default: 'Cancel'
-    },
-    headline: {
-      type: String,
-      default: 'Confirm'
-    }
-  },
-  data() {
-    return {
-      confirmValue: ''
-    }
-  },
-  computed: {
-    isConfirmed() {
-      return this.confirmField
-        ? this.confirmField.expected === this.confirmValue
-        : true
-    }
-  },
-  methods: {
-    ...mapActions(useDialogStore, ['close']),
-
-    confirm() {
-      this.close()
-      this.$emit('confirm')
-    }
-  }
+const props = withDefaults(defineProps<ConfirmDialogProps>(), {
+  confirmText: 'Ok',
+  cancelText: 'Cancel',
+  severity: 'primary'
 })
+
+const confirmValue = ref('')
+const emit = defineEmits(['confirm'])
+
+const isConfirmed = computed(() => {
+  return props.confirmField
+    ? props.confirmField.expected === confirmValue.value
+    : true
+})
+
+const { close } = useDialogStore()
+
+function confirm() {
+  close()
+  emit('confirm')
+}
 </script>

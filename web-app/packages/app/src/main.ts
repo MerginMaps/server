@@ -12,13 +12,11 @@ import {
   ProjectModule,
   LayoutModule,
   InstanceModule,
-  useAppStore,
   useInstanceStore,
-  initCsrfToken,
+  initCsrfToken
 } from '@mergin/lib'
 
 import { createMerginApp } from './app'
-import { createRouter } from './router'
 import { createPiniaInstance, getPiniaInstance } from './store'
 
 async function main() {
@@ -45,13 +43,7 @@ async function main() {
   const instanceStore = useInstanceStore(pinia)
   const response = await instanceStore.initApp()
   initCsrfToken(response)
-  const router = createRouter(pinia)
-  createMerginApp().$mount('#app')
-
-  router.onError((e) => {
-    const appStore = useAppStore()
-    appStore.setServerError(e.message)
-  })
+  createMerginApp().mount('#app')
 }
 
 main()

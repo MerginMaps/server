@@ -28,14 +28,12 @@ export interface ResetPasswordData {
 
 /* eslint-disable camelcase */
 export interface UserProfileResponse {
-  disk_usage: number
   first_name: string
   has_project: boolean
   last_name: string
   name: string
   receive_notifications: boolean
   registration_date: string
-  storage: number
 }
 
 export interface UserResponse {
@@ -75,13 +73,6 @@ export interface WorkspaceResponse extends UserWorkspace {
   storage: number
 }
 
-export interface UserSearchParams {
-  id?: string
-  names?: string
-  like?: string
-  namespace: string
-}
-
 export interface UserSearch {
   id: number
   profile: {
@@ -93,8 +84,11 @@ export interface UserSearch {
   permission?: string
 }
 
-export interface UserSearchInvite extends UserSearch {
-  isInvite: boolean
+export interface UserSearchParams {
+  id?: string
+  names?: string
+  like?: string
+  namespace: string
 }
 
 export interface ChangePasswordWithTokenParams {
@@ -141,6 +135,10 @@ export interface IsWorkspaceAdminPayload {
 export interface SetWorkspaceIdPayload {
   workspaceId: number
   skipSavingInCookies?: boolean
+}
+
+export interface DeleteAccountConfirmProps {
+  username: string
 }
 
 /* eslint-enable camelcase */

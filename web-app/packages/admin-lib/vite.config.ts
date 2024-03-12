@@ -19,12 +19,19 @@ export default defineConfig(({ mode }) => ({
     }) /*, vuetify() */
   ],
   publicDir: './src/assets',
+  css: {
+    preprocessorOptions: {
+      sass: {
+        quietDeps: true
+      }
+    }
+  },
 
   resolve: {
     alias: {
       '@': resolve(__dirname, './src')
     },
-    dedupe: ['vue', 'pinia', 'vue-router', 'vuetify', '@mergin/lib']
+    dedupe: ['vue', 'pinia', 'vue-router', 'vuetify', '@mergin/lib-vue2']
   },
   build: {
     sourcemap: mode !== 'production',
@@ -42,7 +49,8 @@ export default defineConfig(({ mode }) => ({
         'vue',
         'pinia',
         ...Object.keys(packageJson.dependencies),
-        '@mergin/lib'
+        '@mergin/lib-vue2',
+        '@vue/babel-helper-vue-jsx-merge-props'
       ],
       output: {
         exports: 'named',

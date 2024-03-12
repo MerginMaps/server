@@ -2,6 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import { DropdownOption } from './components/types'
+
+import { ProjectAccess } from '@/modules'
+
 export enum UserRole {
   guest,
   reader,
@@ -23,20 +27,14 @@ export type ProjectRoleName =
   | Extract<UserRoleName, 'reader' | 'writer' | 'owner'>
   | 'none'
 
+export type ProjectPermissionName = 'owner' | 'write' | 'read'
+
 export const USER_ROLE_NAME_BY_ROLE: Record<UserRole, UserRoleName> = {
   [UserRole.guest]: 'guest',
   [UserRole.reader]: 'reader',
   [UserRole.writer]: 'writer',
   [UserRole.admin]: 'admin',
   [UserRole.owner]: 'owner'
-}
-
-export const USER_ROLE_LABEL_BY_NAME: Record<UserRoleName, string> = {
-  guest: 'Guest',
-  reader: 'Reader',
-  writer: 'Writer',
-  admin: 'Admin',
-  owner: 'Owner'
 }
 
 export const USER_ROLE_BY_NAME: Record<UserRoleName, UserRole> = {
@@ -52,13 +50,6 @@ export const PROJECT_ROLE_NAME_BY_ROLE: Record<ProjectRole, ProjectRoleName> = {
   [ProjectRole.reader]: 'reader',
   [ProjectRole.writer]: 'writer',
   [ProjectRole.owner]: 'owner'
-}
-
-export const PROJECT_ROLE_LABEL_BY_NAME: Record<ProjectRoleName, string> = {
-  none: 'None',
-  reader: 'Reader',
-  writer: 'Writer',
-  owner: 'Owner'
 }
 
 export const PROJECT_ROLE_BY_NAME: Record<ProjectRoleName, ProjectRole> = {
@@ -79,8 +70,6 @@ export enum ProjectPermission {
   owner
 }
 
-export type ProjectPermissionName = 'owner' | 'write' | 'read'
-
 export const PROJECT_PERMISSION_NAME_BY_PERMISSION: Record<
   ProjectPermission,
   ProjectPermissionName
@@ -88,15 +77,6 @@ export const PROJECT_PERMISSION_NAME_BY_PERMISSION: Record<
   [ProjectPermission.read]: 'read',
   [ProjectPermission.write]: 'write',
   [ProjectPermission.owner]: 'owner'
-}
-
-export const PROJECT_PERMISSION_LABEL_BY_NAME: Record<
-  ProjectPermissionName,
-  string
-> = {
-  read: 'Read',
-  write: 'Write',
-  owner: 'Owner'
 }
 
 export const PROJECT_PERMISSION_BY_NAME: Record<
@@ -131,20 +111,66 @@ export function isAtLeastProjectPermission(
   return PROJECT_PERMISSION_BY_NAME[permissionName] >= permission
 }
 
-export function getUserRoleValuesForSelect(
-  roles: UserRoleName[]
-): UserRoleValueForSelect[] {
-  return roles.map((role) => ({
-    value: role,
-    label: USER_ROLE_LABEL_BY_NAME[role]
-  }))
+export function getProjectRoleNameValues(): DropdownOption<ProjectRoleName>[] {
+  return [
+    {
+      value: 'reader',
+      label: 'Reader',
+      description: 'Can view project files'
+    },
+    {
+      value: 'writer',
+      label: 'Writer',
+      description: 'Can edit project files'
+    },
+    {
+      value: 'owner',
+      label: 'Owner',
+      description: 'Can share and remove project'
+    }
+  ]
 }
 
-export function getProjectPermissionValuesForSelect(
-  permissions: ProjectPermissionName[]
-): ProjectPermissionValueForSelect[] {
-  return permissions.map((permission) => ({
-    value: permission,
-    label: PROJECT_PERMISSION_LABEL_BY_NAME[permission]
-  }))
+export function getProjectPermissionsValues(): DropdownOption<ProjectPermissionName>[] {
+  return [
+    {
+      value: 'read',
+      label: 'Reader',
+      description: 'Can view project files'
+    },
+    {
+      value: 'write',
+      label: 'Writer',
+      description: 'Can edit project files'
+    },
+    {
+      value: 'owner',
+      label: 'Owner',
+      description: 'Can share and remove project'
+    }
+  ]
+}
+
+export function getProjectAccessKeyByRoleName(
+  roleName: ProjectRoleName
+): keyof ProjectAccess {
+  const mapper: Record<ProjectRoleName, keyof ProjectAccess | undefined> = {
+    owner: 'ownersnames',
+    writer: 'writersnames',
+    reader: 'readersnames',
+    none: undefined
+  }
+  return mapper[roleName]
+}
+
+export function getProjectPermissionByRoleName(
+  roleName: ProjectRoleName
+): ProjectPermissionName {
+  const mapper: Record<ProjectRoleName, ProjectPermissionName | undefined> = {
+    owner: 'owner',
+    writer: 'write',
+    reader: 'read',
+    none: undefined
+  }
+  return mapper[roleName]
 }

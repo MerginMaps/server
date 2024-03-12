@@ -42,7 +42,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           />
         </v-list-item-avatar>
 
-        <v-list-item-content>
+        <div>
           <v-list-item-subtitle class="font-weight-bold"
             >Admin panel</v-list-item-subtitle
           >
@@ -50,7 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             class="text-h6 font-weight-bold"
             v-text="username"
           />
-        </v-list-item-content>
+        </div>
       </v-list-item>
     </v-list>
 
@@ -80,7 +80,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 // Utilities
-import { BaseItem, useLayoutStore, useUserStore } from '@mergin/lib'
+import { BaseItem, useLayoutStore, useUserStore } from '@mergin/lib-vue2'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 

@@ -5,115 +5,113 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-navigation-drawer
-    class="user-side-bar d-flex align-start flex-column mb-6"
-    id="core-navigation-drawer-user"
-    v-model="drawer"
-    :expand-on-hover="expandOnHover"
-    :right="$vuetify.rtl"
-    mobile-breakpoint="960"
-    :dark="barColor !== 'rgba(228, 226, 226, 1), rgba(255, 255, 255, 0.7)'"
-    app
-    width="200"
-    v-bind="$attrs"
-    v-if="loggedUser"
-    data-cy="side-bar"
+  <aside
+    :class="[
+      'sidebar',
+      'fixed',
+      'w-11',
+      'h-screen',
+      'top-0',
+      'left-0',
+      'overflow-auto',
+      'surface-section',
+      'transition-all',
+      'transition-duration-500',
+      'z-5',
+      !isOpen ? '-translate-x-100' : 'xl:translate-x-0'
+    ]"
   >
-    <div style="height: 100%">
-      <v-card
-        class="d-flex flex-column"
-        flat
-        tile
-        style="height: 100%; width: 200px"
-        :outlined="true"
-      >
-        <v-card class="pa-2" tile :outlined="true" style="margin-top: 40px">
-          <slot name="items"></slot>
-          <v-divider style="width: 90%; margin: 5px 0 5px 0" />
-          <v-list nav flat>
-            <side-bar-item
-              id="item-userProfile"
-              key="item-userProfile"
-              :item="profileItem"
-            >
-              <template #icon>
-                <component :is="profileItem.tablerIcon"></component>
-              </template>
-            </side-bar-item>
-          </v-list>
-        </v-card>
-        <slot name="footer"></slot>
-      </v-card>
+    <div class="flex flex-column justify-content-between h-screen">
+      <div>
+        <header class="p-2 lg:p-5 mb-2">
+          <div class="lg:hidden flex justify-content-end">
+            <PButton
+              plain
+              icon="ti ti-x"
+              text
+              rounded
+              @click="onCloseClick"
+              class="p-1 text-2xl"
+            />
+          </div>
+
+          <div class="flex justify-content-center">
+            <img src="@/assets/mm-logo.svg" />
+          </div>
+        </header>
+
+        <nav>
+          <ul class="list-none p-0 m-0" data-cy="side-bar">
+            <template v-for="item in initialSidebarItems" :key="item.to">
+              <side-bar-item :item="item"></side-bar-item>
+            </template>
+            <slot name="items">
+              <!-- sidebar items -->
+            </slot>
+          </ul>
+        </nav>
+      </div>
+      <div>
+        <slot name="footer">
+          <!-- footer content -->
+        </slot>
+      </div>
     </div>
-  </v-navigation-drawer>
+  </aside>
 </template>
 
-<script lang="ts">
-import { mapActions, mapState } from 'pinia'
-import { defineComponent } from 'vue'
-import { UserIcon } from 'vue-tabler-icons'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 
+import { SideBarItemModel } from '../types'
+
+import { DashboardRouteName } from '@/main'
 import SideBarItem from '@/modules/layout/components/SideBarItem.vue'
 import { useLayoutStore } from '@/modules/layout/store'
-import { useUserStore } from '@/modules/user/store'
+import { ProjectRouteName } from '@/modules/project'
 
-export default defineComponent({
-  name: 'SideBarTemplate',
-  components: {
-    SideBarItem,
-    UserIcon
-  },
-  props: {
-    expandOnHover: {
-      type: Boolean,
-      default: false
+const route = useRoute()
+const layoutStore = useLayoutStore()
+
+const initialSidebarItems = computed<SideBarItemModel[]>(() => {
+  return [
+    {
+      active: route.matched.some(
+        (item) => item.name === DashboardRouteName.Dashboard
+      ),
+      title: 'Dashboard',
+      to: '/dashboard',
+      icon: 'ti ti-home'
+    },
+    {
+      active: route.matched.some(
+        (item) =>
+          item.name === ProjectRouteName.Projects ||
+          item.name === ProjectRouteName.Project
+      ),
+      title: 'Projects',
+      to: '/projects',
+      icon: 'ti ti-article'
     }
-  },
-  data: function () {
-    return {
-      profileItem: {
-        title: 'User profile',
-        to: '/profile',
-        tablerIcon: 'user-icon'
-      }
-    }
-  },
-  computed: {
-    ...mapState(useUserStore, ['loggedUser']),
-    ...mapState(useLayoutStore, {
-      barColor: 'barColor',
-      drawerState: 'drawer'
-    }),
-    drawer: {
-      get() {
-        return this.drawerState
-      },
-      set(val) {
-        this.setDrawer({ drawer: val })
-      }
-    }
-  },
-  methods: {
-    ...mapActions(useLayoutStore, ['setDrawer'])
-  }
+  ]
 })
+const isOpen = computed<boolean>(() => layoutStore.drawer)
+
+const onCloseClick = () => {
+  layoutStore.setDrawer({ drawer: false })
+}
 </script>
 
 <style lang="scss" scoped>
-.theme--dark.v-navigation-drawer {
-  background-color: #eaebef !important;
+.sidebar {
+  // Based on <main> grid values
+  max-width: 16.66%;
 }
 
-.theme--dark.v-navigation-drawer .v-divider {
-  border-color: #f3f4f8;
-}
-
-.theme--dark.v-card {
-  background-color: #eaebef !important;
-}
-
-.v-application .white--text {
-  color: #2d4470 !important;
-  caret-color: #2d4470 !important;
+@media screen and (max-width: $lg) {
+  .sidebar {
+    max-width: 400px;
+  }
 }
 </style>

@@ -5,8 +5,7 @@
 import isObject from 'lodash/isObject'
 import { defineStore, getActivePinia } from 'pinia'
 import Cookies from 'universal-cookie'
-// import { isNavigationFailure, NavigationFailureType } from 'vue-router'
-import Vue from 'vue'
+import { isNavigationFailure } from 'vue-router'
 
 import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
@@ -26,7 +25,8 @@ import {
   WorkspaceIdPayload,
   WorkspaceResponse,
   SetWorkspaceIdPayload,
-  UserSearchParams
+  UserSearchParams,
+  EditUserProfileParams
 } from '@/modules/user/types'
 import { UserApi } from '@/modules/user/userApi'
 
@@ -122,7 +122,7 @@ export const useUserStore = defineStore('userModule', {
     },
 
     updateVerifiedEmail(payload) {
-      Vue.set(this.loggedUser, 'verified_email', payload.verifiedEmail)
+      this.loggedUser.verified_email = payload.verifiedEmail
     },
 
     setWorkspaces(payload) {
@@ -133,7 +133,10 @@ export const useUserStore = defineStore('userModule', {
       this.workspaceId = payload.id
     },
 
-    async editUserProfile(payload) {
+    async editUserProfile(payload: {
+      editedUser: EditUserProfileParams
+      componentId?: string
+    }) {
       const dialogStore = useDialogStore()
       const notificationStore = useNotificationStore()
       const formStore = useFormStore()
@@ -159,7 +162,6 @@ export const useUserStore = defineStore('userModule', {
     },
 
     async fetchUserProfile() {
-      const projectStore = useProjectStore()
       const notificationStore = useNotificationStore()
 
       let resp
@@ -169,15 +171,6 @@ export const useUserStore = defineStore('userModule', {
         this.updateVerifiedEmail({
           verifiedEmail: resp.data.verified_email
         })
-        if (!projectStore.currentNamespace) {
-          // set current namespace only if not set
-          const preferredWorkspace = this.getPreferredWorkspace
-          if (preferredWorkspace?.name) {
-            projectStore.setCurrentNamespace({
-              currentNamespace: preferredWorkspace.name
-            })
-          }
-        }
       } catch {
         await notificationStore.error({
           text: "Failed to fetch user's profile"
@@ -212,22 +205,15 @@ export const useUserStore = defineStore('userModule', {
       try {
         getActivePinia()
           .router.push(payload.currentRoute.query.redirect)
-          // TODO: V3_UPGRADE - probably not needed anymore in vue-router v4 - check needed
           .catch((e) => {
-            //   if (!isNavigationFailure(e, NavigationFailureType.redirected)) {
-            Promise.reject(e)
-            //   }
+            if (!isNavigationFailure(e)) {
+              Promise.reject(e)
+            }
           })
       } catch (e) {
-        // TODO: V3_UPGRADE - probably not needed anymore in vue-router v4 - check needed
-        // if (isNavigationFailure(e, NavigationFailureType.redirected)) {
-        //   // expected redirect
-        //   //   https://router.vuejs.org/guide/advanced/navigation-failures.html#detecting-navigation-failures
-        // } else {
         await notificationStore.error({
           text: e
         })
-        // }
       }
     },
 
@@ -236,10 +222,9 @@ export const useUserStore = defineStore('userModule', {
         getActivePinia()
           .router.push({ path: '/' })
           .catch((e) => {
-            // TODO: V3_UPGRADE - probably not needed anymore in vue-router v4 - check needed
-            // if (!isNavigationFailure(e, NavigationFailureType.redirected)) {
-            Promise.reject(e)
-            // }
+            if (!isNavigationFailure(e)) {
+              Promise.reject(e)
+            }
           })
       }
     },
@@ -268,8 +253,7 @@ export const useUserStore = defineStore('userModule', {
         await UserApi.resetPassword({ email: payload.email })
         await getActivePinia().router.push({ path: '/login' })
         await notificationStore.show({
-          text: 'Email with password reset link was sent to your email address',
-          timeout: 3000
+          text: 'Email with password reset link was sent to your email address'
         })
       } catch (error) {
         await formStore.handleError({
@@ -408,19 +392,12 @@ export const useUserStore = defineStore('userModule', {
     },
 
     async setWorkspace(payload: SetWorkspaceIdPayload) {
-      const projectStore = useProjectStore()
-
       if (this.workspaceId === payload.workspaceId) {
         return
       }
       // 'setWorkspaceId' and 'projectModule/setCurrentNamespace' has to be called together synchronously.
       // In case when there is some async call between their calls, the watchers can be updated incorrectly
       this.setWorkspaceId({ id: payload.workspaceId })
-      if (this.currentWorkspace) {
-        projectStore.setCurrentNamespace({
-          currentNamespace: this.currentWorkspace.name
-        })
-      }
       if (!payload.skipSavingInCookies) {
         return await this.setUserWorkspaceToCookies({
           id: payload.workspaceId
@@ -473,8 +450,6 @@ export const useUserStore = defineStore('userModule', {
     },
 
     async removeUserWorkspaceFromCookies() {
-      const projectStore = useProjectStore()
-
       if (this.loggedUser?.username) {
         let value: Record<string, string>
         try {
@@ -483,19 +458,18 @@ export const useUserStore = defineStore('userModule', {
           // ignore
         }
 
-        delete value[this.loggedUser?.username]
-        const strValue = JSON.stringify(value)
+        if (value) {
+          delete value[this.loggedUser?.username]
+          const strValue = JSON.stringify(value)
 
-        const expires = new Date()
-        // cookies expire in one year
-        expires.setFullYear(expires.getFullYear() + 1)
-        cookies.set(COOKIES_CURRENT_WORKSPACE, strValue, {
-          expires
-        })
+          const expires = new Date()
+          // cookies expire in one year
+          expires.setFullYear(expires.getFullYear() + 1)
+          cookies.set(COOKIES_CURRENT_WORKSPACE, strValue, {
+            expires
+          })
+        }
       }
-      await projectStore.setCurrentNamespace({
-        currentNamespace: ''
-      })
     },
 
     async setUserWorkspaceToCookies(payload) {
@@ -577,8 +551,39 @@ export const useUserStore = defineStore('userModule', {
       await UserApi.logout()
     },
 
-    async getAuthUserSearch(payload: UserSearchParams) {
-      return await UserApi.getAuthUserSearch(payload)
+    /**
+     * Searches for authorized users matching the given search parameters.
+     *
+     * @param params - Search parameters to filter users by.
+     * @returns Promise resolving to API response with matching users.
+     */
+    async getAuthUserSearch(params: UserSearchParams) {
+      return await UserApi.getAuthUserSearch(params)
+    },
+
+    /**
+     * Searches for users that match the given search parameters,
+     * filtering out any users that are already members of the current project.
+     *
+     * @param params - Object containing the search parameters
+     * @returns Promise resolving to the filtered API response
+     */
+    async getAuthNotProjectUserSearch(params: UserSearchParams) {
+      const projectStore = useProjectStore()
+      const access = projectStore.project.access
+      const projectUsers = [
+        ...access.readers,
+        ...access.writers,
+        ...access.owners
+      ]
+
+      const response = await UserApi.getAuthUserSearch(params)
+      if (access) {
+        response.data = response.data.filter(
+          (item) => !projectUsers.find((id) => id === item.id)
+        )
+      }
+      return response
     }
   }
 })

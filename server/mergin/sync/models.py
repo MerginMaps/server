@@ -335,6 +335,18 @@ class ProjectRole(Enum):
     WRITER = "writer"
     READER = "reader"
 
+    def __gt__(self, other):
+        """
+        Compare project roles
+
+        https://docs.python.org/3/library/enum.html#enum.EnumType.__members__
+        """
+        members = list(ProjectRole.__members__)
+        if members.index(self.name) < members.index(other.name):
+            return True
+        else:
+            return False
+
 
 class ProjectAccess(db.Model):
     project_id = db.Column(

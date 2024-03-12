@@ -10,7 +10,7 @@ import {
   useInstanceStore,
   useNotificationStore,
   UserResponse
-} from '@mergin/lib'
+} from '@mergin/lib-vue2'
 import { defineStore, getActivePinia } from 'pinia'
 import Cookies from 'universal-cookie'
 import { AdminApi } from '@/modules/admin/adminApi'

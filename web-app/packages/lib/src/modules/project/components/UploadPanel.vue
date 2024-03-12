@@ -5,74 +5,43 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-card>
-    <v-toolbar dense text dark color="primary">
-      <v-toolbar-title>Data Sync</v-toolbar-title>
-      <v-spacer />
-      <v-btn icon @click="resetUpload">
-        <v-icon>close</v-icon>
-      </v-btn>
-    </v-toolbar>
-
-    <v-card-text v-if="upload.diff && upload.diff.changes">
-      <v-layout class="stats-line">
-        <label>Removed files:</label>
-        <v-spacer />
-        <span class="red--text">{{ upload.diff.removed.length }}</span>
-        <v-icon small color="red">delete</v-icon>
-      </v-layout>
-      <v-layout class="stats-line">
-        <label>Added files:</label>
-        <v-spacer />
-        <span class="green--text">{{ upload.diff.added.length }}</span>
-        <v-icon small color="green">add_circle</v-icon>
-      </v-layout>
-      <v-layout class="stats-line">
-        <label>Modified files:</label>
-        <v-spacer />
-        <span class="orange--text">{{ upload.diff.updated.length }}</span>
-        <v-icon small color="orange">edit</v-icon>
-      </v-layout>
-      <v-layout class="stats-line">
-        <label>Upload data size:</label>
-        <v-spacer />
-        <span>{{ uploadSize | filesize }}</span>
-      </v-layout>
-    </v-card-text>
-    <v-card-text v-else-if="upload.diff">
-      All files are up to date!
-    </v-card-text>
-
-    <v-card-text v-if="remainingAnalyzingFiles">
-      <v-layout row>
-        <v-progress-circular
-          :size="30"
-          :width="3"
-          color="primary"
-          indeterminate
-        />
-        <v-spacer />
-        <span style="padding-right: 30px"
-          >Remaining files: {{ remainingAnalyzingFiles }}</span
+  <PDialog
+    v-model:visible="visible"
+    :position="isUnderOverlayBreakpoint ? 'topleft' : 'bottomright'"
+    class="upload-panel w-8 lg:w-3 mr-4 mb-4"
+  >
+    <template #header>
+      <p class="font-semibold">
+        Data Sync
+        <span v-if="upload.diff" class="text-color-secondary"
+          >({{ $filters.filesize(uploadSize) }})</span
         >
-      </v-layout>
-    </v-card-text>
-
-    <v-card-actions v-if="upload.diff && upload.diff.changes">
-      <v-spacer />
-      <action-button
-        id="update-files-btn"
-        @click="confirmUpload"
-        :disabled="upload.running || remainingAnalyzingFiles > 0"
+      </p>
+    </template>
+    <div v-if="upload.diff && upload.diff.changes">
+      <div
+        class="flex py-1 align-items-center"
+        v-for="key in ['added', 'updated', 'removed']"
+        :key="key"
       >
-        <template #icon>
-          <cloud-upload-icon />
-        </template>
-        Update
-      </action-button>
-      <v-spacer />
-    </v-card-actions>
-  </v-card>
+        <app-circle :severity="circleSeverity[key]" class="mr-2"
+          ><i :class="['ti', `${diffIcon[key]}`]"></i
+        ></app-circle>
+        <span class="text-sm opacity-80 capitalize">{{ key }}</span>
+        <app-circle class="ml-auto">{{ upload.diff[key].length }}</app-circle>
+      </div>
+      <div class="py-4 w-full">
+        <PButton
+          id="update-files-btn"
+          @click="confirmUpload"
+          :disabled="upload.running || remainingAnalyzingFiles > 0"
+          class="flex justify-content-center w-full text-center"
+        >
+          Update Changes
+        </PButton>
+      </div>
+    </div>
+  </PDialog>
 </template>
 
 <script lang="ts">
@@ -80,12 +49,19 @@ import axios from 'axios'
 import pick from 'lodash/pick'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
-import { CloudUploadIcon } from 'vue-tabler-icons'
 
-import ActionButton from '@/common/components/ActionButton.vue'
+import AppCircle from '@/common/components/AppCircle.vue'
 import { CHUNK_SIZE, isVersionedFile } from '@/common/mergin_utils'
-import { ConfirmDialog, useDialogStore, useNotificationStore } from '@/modules'
+import {
+  ConfirmDialog,
+  ConfirmDialogProps,
+  useDialogStore,
+  useLayoutStore,
+  useNotificationStore
+} from '@/modules'
 import { useProjectStore } from '@/modules/project/store'
+
+type DiffKeys = 'removed' | 'added' | 'updated'
 
 export default defineComponent({
   data() {
@@ -96,13 +72,18 @@ export default defineComponent({
   props: {
     namespace: String
   },
-  components: {
-    ActionButton,
-    CloudUploadIcon
-  },
   computed: {
     ...mapState(useProjectStore, ['project', 'uploads']),
-
+    ...mapState(useLayoutStore, ['isUnderOverlayBreakpoint']),
+    visible: {
+      get() {
+        return !!this.upload
+      },
+      set(visible) {
+        if (visible) return visible
+        this.resetUpload()
+      }
+    },
     upload() {
       return this.uploads[this.project.path]
     },
@@ -118,6 +99,22 @@ export default defineComponent({
     remainingAnalyzingFiles() {
       const list = (this.upload && this.upload.analysingFiles) || []
       return list.length
+    },
+    diffIcon() {
+      const icons: Record<DiffKeys, string> = {
+        removed: 'ti-trash',
+        added: 'ti-plus',
+        updated: 'ti-pencil'
+      }
+      return icons
+    },
+    circleSeverity() {
+      const severities: Record<DiffKeys, 'success' | 'warn' | 'danger'> = {
+        removed: 'danger',
+        added: 'success',
+        updated: 'warn'
+      }
+      return severities
     }
   },
   methods: {
@@ -132,7 +129,6 @@ export default defineComponent({
       'pushFinishTransaction',
       'pushCancelTransaction'
     ]),
-
     resetUpload() {
       this.discardUpload({ projectPath: this.project.path })
       if (this.source) {
@@ -154,7 +150,6 @@ export default defineComponent({
           pick(this.upload.files[path], fileInfoFields)
         )
       }
-
       const projectPath = this.project.path
       const version = this.project.version || 'v0'
       const resp = await this.pushProjectChanges({
@@ -170,7 +165,6 @@ export default defineComponent({
         this.setProject({ project: resp.data })
         return
       }
-
       this.source = axios.CancelToken.source()
       const promises = []
       added.concat(updated).forEach((path) => {
@@ -191,7 +185,6 @@ export default defineComponent({
           promises.push(p)
         })
       })
-
       // fire up chunks uploads
       this.startUpload()
       Promise.all(promises)
@@ -211,49 +204,32 @@ export default defineComponent({
         })
     },
     confirmUpload() {
-      const props = {
-        text: 'Changes from other users <strong> may get lost </strong> when uploading data from browser. It is highly recommended to use Mergin Maps QGIS plugin instead. <br> <br> Are you really sure you want to continue?',
-        confirmText: 'Update'
+      const props: ConfirmDialogProps = {
+        text: `Are you really sure you want to continue?`,
+        description:
+          'Changes from other users may get lost when uploading data from browser. It is highly recommended to use Mergin Maps QGIS plugin instead.',
+        confirmText: 'Update',
+        cancelText: 'Cancel'
       }
       const listeners = {
         confirm: () => this.uploadChanges()
       }
-
       if (this.upload.diff.updated.filter((i) => isVersionedFile(i)).length) {
         this.showDialog({
           component: ConfirmDialog,
-          params: { props, listeners, dialog: { maxWidth: 500 } }
+          params: {
+            props,
+            listeners,
+            dialog: { maxWidth: 500, header: 'Confirm continue upload' }
+          }
         })
       } else {
         this.uploadChanges()
       }
     }
-  }
+  },
+  components: { AppCircle }
 })
 </script>
 
-<style lang="scss" scoped>
-.v-card {
-  min-width: 240px;
-}
-
-.stats-line {
-  align-items: center;
-  margin: 0.75em 0;
-
-  label {
-    font-weight: 500;
-    color: #555;
-  }
-
-  .spacer {
-    height: 1em;
-    border-bottom: 1px dotted #ccc;
-    margin: 0 0.5em;
-  }
-
-  .v-icon {
-    margin: 0 0.25em;
-  }
-}
-</style>
+<style lang="scss" scoped></style>

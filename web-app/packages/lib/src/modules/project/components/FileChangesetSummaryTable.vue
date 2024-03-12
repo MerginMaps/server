@@ -5,69 +5,73 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <div>
-    <v-data-table
-      :headers="headers"
-      :items="displayedChangeset"
-      footer-props.items-per-page-options='[10, 25, {"text": "c$vuetify.dataIterator.rowsPerPageAll","value": -1}]'
-      :hide-default-footer="displayedChangeset.length <= 10"
+  <div class="mt-2">
+    <PDataView
+      :value="displayedChangeset"
+      :data-key="'table'"
+      :paginator="displayedChangeset.length > itemsPerPage"
+      :rows="itemsPerPage"
+      :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
+      :pt="{
+        root: {
+          class: 'border-round-xl'
+        }
+      }"
     >
-      <!-- headers -->
-      <template v-slot:header.insert="{ header }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <v-icon v-on="on" small :color="header.color"
-              >{{ header.icon }}
-            </v-icon>
-          </template>
-          <span>Added</span>
-        </v-tooltip>
+      <template #header>
+        <div class="grid grid-nogutter">
+          <div v-for="col in columns" class="col-3 text-xs" :key="col.text">
+            <i
+              v-if="col.icon"
+              :class="['ti', `${col.icon}`]"
+              v-tooltip.top="col.text"
+            ></i>
+            <span v-else>{{ col.text }}</span>
+          </div>
+        </div>
       </template>
-      <template v-slot:header.delete="{ header }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <v-icon v-on="on" small :color="header.color"
-              >{{ header.icon }}
-            </v-icon>
-          </template>
-          <span>Deleted</span>
-        </v-tooltip>
+      <template #list="slotProps">
+        <div
+          v-for="item in slotProps.items"
+          :key="item.id"
+          class="grid grid-nogutter px-4 py-2 mt-0 border-bottom-1 border-gray-200 text-sm hover:bg-gray-200"
+        >
+          <div
+            v-for="col in columns"
+            class="flex align-items-center col-3"
+            :key="col.value"
+          >
+            {{ item[col.value] }}
+          </div>
+        </div>
       </template>
-      <template v-slot:header.update="{ header }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <v-icon v-on="on" small :color="header.color"
-              >{{ header.icon }}
-            </v-icon>
-          </template>
-          <span>Modified</span>
-        </v-tooltip>
-      </template>
-    </v-data-table>
+    </PDataView>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { PropType, defineComponent } from 'vue'
+
+import { ChangesetSuccessSummaryItem } from '../types'
 
 export default defineComponent({
   name: 'file-changeset-summary-table',
   props: {
-    changesets: Array
+    changesets: Array as PropType<ChangesetSuccessSummaryItem[]>
   },
   data() {
     return {
-      headers: [
-        { text: 'Table', value: 'table' },
+      columns: [
+        { text: 'Layer', value: 'table' },
         {
           text: 'Inserts',
-          icon: 'add_circle',
-          color: 'green',
+          icon: 'ti-plus',
           value: 'insert'
         },
-        { text: 'Updates', icon: 'edit', color: 'orange', value: 'update' },
-        { text: 'Deletes', icon: 'delete', color: 'red', value: 'delete' }
-      ]
+        { text: 'Updates', icon: 'ti-pencil', value: 'update' },
+        { text: 'Deletes', icon: 'ti-trash', value: 'delete' }
+      ],
+      itemsPerPage: 10
     }
   },
   computed: {

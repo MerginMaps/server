@@ -6,92 +6,140 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div>
-    <v-layout class="column">
-      <v-row>
-        <v-col class="pa-0">
-          <v-text-field
-            class="search"
-            placeholder="Find file"
-            append-icon="search"
-            v-model="searchFilter"
-            hide-details
-            style="padding-left: 7px; padding-bottom: 10px"
-            v-if="searchFilter !== '' || items.length > 0"
-          />
-        </v-col>
-      </v-row>
-      <v-data-table
-        v-if="
-          searchFilter !== '' ||
-          items.length ||
-          (project && !project.permissions.upload) ||
-          filter !== ''
-        "
-        class="file-table"
-        :headers="header"
-        :items="items"
-        color="primary"
-        no-data-text="No files found."
-        :items-per-page="itemPerPage"
-        :hide-default-footer="items.length <= itemPerPage"
-        :options="options"
-        v-model="selected"
-        item-key="path"
-        data-cy="file-browser-table"
-      >
-        <template #item.name="{ item }">
-          <router-link :to="item.link">
-            <file-icon :file="item" />
-            <span data-cy="file-browser-item">{{ item.name }}</span>
-          </router-link>
-          <v-spacer />
-          <folder-diff v-if="item.diffStats" v-bind="item.diffStats" />
-        </template>
-        <template #item.mtime="{ value }">
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on }">
-              <span v-on="on">
-                <template v-if="value">
-                  {{ value | timediff }}
-                </template>
-              </span>
-            </template>
-            <span>
-              <template v-if="value">
-                {{ value | datetime }}
-              </template>
-            </span>
-          </v-tooltip>
-        </template>
-        <template #item.size="{ value }">
-          <template v-if="value !== undefined">
-            {{ value | filesize }}
-          </template>
-        </template>
-      </v-data-table>
-      <v-card v-else style="-webkit-box-shadow: none; box-shadow: none">
-        <v-card-title style="padding-left: 0"
-          ><strong>
-            Well done! The next step is adding some data.
-          </strong></v-card-title
+    <!-- Searching -->
+    <app-container v-if="searchFilter !== '' || items.length > 0">
+      <app-section ground>
+        <div class="flex align-items-center">
+          <span class="p-input-icon-left flex-grow-1">
+            <i class="ti ti-search text-xl"></i>
+            <PInputText
+              placeholder="Search files"
+              data-cy="search-files-field"
+              v-model="searchFilter"
+              class="w-full"
+            />
+          </span>
+          <AppMenu :items="filterMenuItems" />
+        </div>
+      </app-section>
+    </app-container>
+
+    <app-container
+      v-if="
+        project &&
+        $route.name === 'project-tree' &&
+        project.permissions &&
+        project.permissions.upload
+      "
+    >
+      <app-panel-toggleable :collapsed="dataTableOpen">
+        <template #title>Upload files</template>
+        <div class="flex flex-column lg:flex-row">
+          <div
+            class="flex flex-column text-center align-items-center w-12 lg:w-6 mb-4 lg:mb-0 lg:mr-4 border-round-xl surface-ground p-4 row-gap-3"
+          >
+            <div class="w-full flex justify-content-end mb-0">
+              <PTag>Recommended</PTag>
+            </div>
+
+            <div
+              class="flex align-items-center justify-content-center text-2xl surface-section border-circle p-4 text-color-forest w-5rem h-5rem"
+            >
+              <img src="@/assets/Icon/24/QGIS.svg" width="24" height="24" />
+            </div>
+
+            <h4 class="text-lg font-semibold text-color-forest">
+              Mergin Maps plugin for QGIS
+            </h4>
+            <p class="text-sm opacity-80 m-0">
+              This is the easiest and recommended way.
+              <a
+                target="_blank"
+                class="text-color-forest font-semibold no-underline"
+                :href="docsLinkManageCreateProject"
+                >Learn how to use it.</a
+              >
+            </p>
+          </div>
+          <div class="w-12 lg:w-6 border-round-xl surface-ground">
+            <drop-area :location="location" data-cy="project-drop-area">
+            </drop-area>
+          </div>
+        </div>
+      </app-panel-toggleable>
+    </app-container>
+
+    <app-container v-if="dataTableOpen">
+      <app-section>
+        <PDataView
+          :value="items"
+          :data-key="'path'"
+          :paginator="items.length > itemPerPage"
+          :rows="itemPerPage"
+          :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
+          data-cy="file-browser-table"
         >
-        <v-card-text style="padding-left: 0">
-          There are two options: <br />
-          <br />
-          1. Use the Mergin Maps plugin for QGIS to upload data. This is the
-          easiest and <strong>recommended</strong> way. See the documentation on
-          <a target="_blank" :href="docsLinkManageCreateProject"
-            >how to install and use the plugin</a
-          >. <br />
-          <br />
-          2. Drag and drop files from your computer to the lower part of this
-          page. This option is convenient if your project files are already
-          fully prepared and only need uploading.
-        </v-card-text>
-      </v-card>
-      <v-spacer />
-      <file-menu ref="menu" />
-    </v-layout>
+          <template #header>
+            <div class="grid grid-nogutter">
+              <!-- Visible on lg breakpoint > -->
+              <div
+                v-for="col in columns"
+                :class="[`col-${col.cols ?? 3}`, 'text-xs hidden lg:flex']"
+                :key="col.text"
+              >
+                {{ col.text }}
+              </div>
+              <!-- else -->
+              <div class="col-12 flex lg:hidden">Files</div>
+            </div>
+          </template>
+          <template #list="slotProps">
+            <div
+              v-for="item in slotProps.items"
+              :key="item.id"
+              class="grid grid-nogutter px-4 py-3 mt-0 border-bottom-1 border-gray-200 text-xs hover:bg-gray-50 cursor-pointer row-gap-2"
+              @click.prevent="rowClick(item.link)"
+            >
+              <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->
+              <div
+                v-for="col in columns"
+                :class="[
+                  `lg:col-${col.cols ?? 3}`,
+                  'flex align-items-center col-12'
+                ]"
+                :key="col.key"
+              >
+                <span
+                  v-if="col.key === 'name'"
+                  class="font-semibold mb-2 lg:mb-0 m-0"
+                >
+                  <file-icon :file="item" />{{ item.name }}
+                </span>
+                <span
+                  v-else-if="col.key === 'mtime'"
+                  v-tooltip.bottom="{ value: $filters.datetime(item.mtime) }"
+                  class="opacity-80"
+                >
+                  {{ $filters.timediff(item.mtime) }}
+                </span>
+                <span v-else class="opacity-80">{{
+                  $filters.filesize(item.size)
+                }}</span>
+              </div>
+            </div>
+          </template>
+          <template #empty>
+            <div class="w-full text-center p-4">
+              <span>No files found.</span>
+            </div>
+          </template>
+        </PDataView>
+      </app-section>
+    </app-container>
+    <!-- Sidebars -->
+    <file-detail-sidebar :namespace="namespace" :project-name="projectName" />
+    <!-- notifications -->
+    <upload-progress />
   </div>
 </template>
 
@@ -103,20 +151,37 @@ import orderBy from 'lodash/orderBy'
 import union from 'lodash/union'
 import Path from 'path'
 import { mapState } from 'pinia'
+import { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { defineComponent } from 'vue'
 
+import {
+  AppSection,
+  AppContainer,
+  AppPanelToggleable
+} from '@/common/components'
+import AppMenu from '@/common/components/AppMenu.vue'
 import { formatDateTime } from '@/common/date_utils'
 import { dirname } from '@/common/path_utils'
 import { removeAccents } from '@/common/text_utils'
 import { useInstanceStore } from '@/modules/instance/store'
+import DropArea from '@/modules/project/components/DropArea.vue'
+import FileDetailSidebar from '@/modules/project/components/FileDetailSidebar.vue'
 import FileIcon from '@/modules/project/components/FileIcon.vue'
-import FileMenu from '@/modules/project/components/FileMenu.vue'
-import FolderDiff from '@/modules/project/components/FolderDiff.vue'
+import UploadProgress from '@/modules/project/components/UploadProgress.vue'
 import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
   name: 'FileBrowserView',
-  components: { FileIcon, FolderDiff, FileMenu },
+  components: {
+    FileIcon,
+    AppSection,
+    AppContainer,
+    AppPanelToggleable,
+    DropArea,
+    FileDetailSidebar,
+    AppMenu,
+    UploadProgress
+  },
   props: {
     namespace: String,
     projectName: String,
@@ -132,17 +197,19 @@ export default defineComponent({
   data() {
     return {
       options: {
-        rowsPerPage: -1
+        rowsPerPage: -1,
+        descending: false,
+        sortBy: 'name'
       },
+      // Setup this to lower number in case of testing
       itemPerPage: 50,
-      sortBy: 'name',
       searchFilter: '',
       filter: '',
       selected: [],
-      header: [
-        { text: 'Name', value: 'name' },
-        { text: 'Modified', value: 'mtime' },
-        { text: 'Size', value: 'size' }
+      columns: [
+        { text: 'Name', key: 'name', cols: 6 },
+        { text: 'Modified', key: 'mtime' },
+        { text: 'Size', key: 'size' }
       ]
     }
   },
@@ -153,14 +220,14 @@ export default defineComponent({
       return `${this.configData?.docs_url ?? ''}/manage/create-project`
     },
     upload() {
-      return this.uploads[this.project?.path]
+      return this.uploads[this.project.path]
     },
     projectFiles() {
-      let files = this.project?.files
+      let files = this.project.files
       if (this.upload && this.diff) {
         files = { ...files, ...this.upload.files }
       }
-      return files ? Object.values(files).map(this.fileTreeView) : []
+      return Object.values(files).map(this.fileTreeView)
     },
     directoryFiles() {
       return this.projectFiles.filter(
@@ -207,27 +274,25 @@ export default defineComponent({
         list.push(
           ...orderBy(
             removed
-              .map((path) => this.project?.files[path])
+              .map((path) => this.project.files[path])
               .map(this.fullPathView),
-            this.sortBy,
+            this.options.sortBy,
             this.options.descending ? 'desc' : 'asc'
           )
         )
         list.push(
           ...orderBy(
-            added
-              .map((path) => this.upload?.files[path])
-              .map(this.fullPathView),
-            this.sortBy,
+            added.map((path) => this.upload.files[path]).map(this.fullPathView),
+            this.options.sortBy,
             this.options.descending ? 'desc' : 'asc'
           )
         )
         list.push(
           ...orderBy(
             updated
-              .map((path) => this.upload?.files[path])
+              .map((path) => this.upload.files[path])
               .map(this.fullPathView),
-            this.sortBy,
+            this.options.sortBy,
             this.options.descending ? 'desc' : 'asc'
           )
         )
@@ -251,11 +316,12 @@ export default defineComponent({
           escapeRegExp(removeAccents(this.searchFilter)),
           'i'
         )
+        // TODO: Replace with DataView sorting instead this order_by with lodash
         return orderBy(
           this.filterByLocation(this.projectFiles).filter(
             (f) => f.path.search(regex) !== -1
           ),
-          this.sortBy,
+          this.options.sortBy,
           this.options.descending ? 'desc' : 'asc'
         )
       }
@@ -264,21 +330,21 @@ export default defineComponent({
         items.push({
           name: '..',
           type: 'folder',
-          link: Path.normalize(Path.join(this.$route.path, '@/')),
+          link: Path.normalize(Path.join(this.$route.path, '..')),
           mtime: ''
         })
       }
       items.push(
         ...orderBy(
           this.folders,
-          this.sortBy,
+          this.options.sortBy,
           this.options.descending ? 'desc' : 'asc'
         )
       )
       items.push(
         ...orderBy(
           this.directoryFiles,
-          this.sortBy,
+          this.options.sortBy,
           this.options.descending ? 'desc' : 'asc'
         )
       )
@@ -295,6 +361,46 @@ export default defineComponent({
     },
     allSelected() {
       return this.items.every((i) => this.selected.includes(i.path))
+    },
+    dataTableOpen() {
+      return !!(
+        this.searchFilter !== '' ||
+        this.items.length ||
+        (this.project && !this.project.permissions.upload) ||
+        this.filter !== ''
+      )
+    },
+    filterMenuItems(): MenuItem[] {
+      return [
+        {
+          label: 'Sort by name A-Z',
+          key: 'name',
+          sortDesc: false
+        },
+        {
+          label: 'Sort by name Z-A',
+          key: 'name',
+          sortDesc: true
+        },
+        {
+          label: 'Sort by last modified',
+          key: 'mtime',
+          sortDesc: true
+        },
+        {
+          label: 'Sort by file size',
+          key: 'size',
+          sortDesc: true
+        }
+      ].map((item) => ({
+        ...item,
+        command: (e: MenuItemCommandEvent) => this.menuItemClick(e),
+        class:
+          this.options.sortBy === item.key &&
+          this.options.descending === item.sortDesc
+            ? 'bg-primary-400'
+            : ''
+      }))
     }
   },
   methods: {
@@ -363,10 +469,6 @@ export default defineComponent({
       }
       return files.map((f) => ({ ...f, name: f.path.slice(dirPrefix.length) }))
     },
-    openMenu(evt, file) {
-      // TODO: highlight
-      this.$refs.menu.open(evt, file)
-    },
     toggleAll(selected) {
       const fn = selected ? union : difference
       this.selected = fn(
@@ -375,97 +477,22 @@ export default defineComponent({
       )
     },
     changeSort(column) {
-      if (this.sortBy === column) {
+      if (this.options.sortBy === column) {
         this.options.descending = !this.options.descending
       } else {
-        this.sortBy = column
+        this.options.sortBy = column
         this.options.descending = false
       }
+    },
+    rowClick(path: string) {
+      this.$router.push({ path })
+    },
+    menuItemClick(e: MenuItemCommandEvent) {
+      this.options.sortBy = e.item.key
+      this.options.descending = e.item.sortDesc
     }
   }
 })
 </script>
 
-<style lang="scss" scoped>
-.search {
-  max-width: 260px;
-  margin: 0 0.25em;
-}
-
-.v-menu__content {
-  .v-list__tile__title {
-    text-align: right;
-  }
-}
-
-::v-deep(.v-data-table) {
-  tr {
-    color: #555;
-
-    &.updated {
-      color: orange;
-    }
-
-    &.removed,
-    &.rmoved {
-      color: red;
-    }
-
-    &.added,
-    &.nmoved {
-      color: green;
-    }
-
-    a,
-    .v-icon {
-      color: inherit;
-    }
-
-    .v-icon {
-      opacity: 0.75;
-    }
-  }
-
-  td {
-    text-align: left;
-
-    a {
-      text-decoration: none;
-
-      .v-icon {
-        line-height: 18px;
-        margin-right: 4px;
-      }
-    }
-  }
-
-  th,
-  tr {
-    min-width: 0;
-
-    .v-input--checkbox {
-      opacity: 0.75;
-      align-items: flex-end;
-      justify-content: flex-end;
-
-      .v-input--selection-controls__input {
-        margin: 0;
-      }
-
-      .v-icon {
-        pointer-events: none;
-      }
-    }
-  }
-}
-
-.v-speed-dial {
-  position: absolute;
-}
-
-.v-data-table {
-  ::v-deep(.v-data-footer__select) {
-    display: none;
-  }
-}
-</style>
+<style lang="scss" scoped></style>

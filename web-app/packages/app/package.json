@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "vite --port 8080",
-    "preview": "vite preview --port 8080",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
+    "dev": "vue-demi-switch 3 && vite --port 8080",
+    "preview": "vue-demi-switch 3 && vite preview --port 8080",
+    "build": "vue-demi-switch 3 && vite build && purgecss -c ./purgecss.config.ts",
+    "build:dev": "vue-demi-switch 3 && vite build --mode development",
     "build:lib": "echo 'Not defined script'",
     "build:lib:prod": "echo 'Not defined script'",
     "build:types": "echo 'Not defined script'",
@@ -19,24 +19,20 @@
     "i18n:report": "vue-cli-service i18n:report --src './src/admin/**/*.?(js|vue)' --locales './src/admin/locales/**/*.json'"
   },
   "dependencies": {
-    "@fortawesome/fontawesome-free": "^6.4.2",
-    "@gtm-support/vue2-gtm": "^1.0.0",
-    "@mdi/font": "^6.6.96",
-    "@vue/babel-helper-vue-jsx-merge-props": "^1.4.0",
+    "@tabler/icons-webfont": "^2.42.0",
     "axios": "^0.26.1",
     "crypto-js": "^3.1.9-1",
     "date-fns": "^2.28.0",
     "file-saver": "^2.0.5",
     "lodash": "^4.17.21",
-    "material-icons": "^0.2.3",
     "pdfjs-dist": "2.5.207",
-    "pinia": "^2.1.4",
-    "portal-vue": "^2.1.7",
-    "vue": "^2.7.14",
-    "vue-i18n": "^8.28.2",
-    "vue-meta": "^2.4.0",
-    "vue-router": "^3.6.5",
-    "vue-tabler-icons": "~1.13.0",
-    "vuetify": "^2.6.15"
+    "pinia": "^2.1.7",
+    "portal-vue": "^3.0.0",
+    "primeflex": "^3.3.1",
+    "primevue": "^3.43.0",
+    "vue": "^3.3.8",
+    "vue-i18n": "^9.7.1",
+    "vue-meta": "^3.0.0-alpha.10",
+    "vue-router": "4.2.5"
   }
 }

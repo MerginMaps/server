@@ -6,223 +6,149 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div>
-    <v-data-iterator
-      :options="options"
-      :items="projects"
-      :server-items-length="numberOfItems"
-      v-on:update:options="paginating"
-      item-key="updated"
+    <PDataTable
+      v-if="numberOfItems > 0"
+      :value="projects"
+      :paginator="showFooter"
+      :rows="modelValue?.itemsPerPage"
+      :first="(modelValue?.page - 1) * (modelValue?.itemsPerPage ?? 1)"
+      :totalRecords="numberOfItems"
       :loading="loading"
-      :hide-default-footer="true"
-      style="background-color: #ffffff"
-      flat
-      no-data-text="No projects found"
+      :lazy="true"
+      size="small"
+      :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
+      data-cy="project-table"
+      @row-click="rowClick"
+      @page="onPage"
+      :pt="{
+        loadingOverlay: {
+          class: 'bg-primary-reverse opacity-50'
+        },
+        bodyRow: {
+          class: 'text-xs hover:bg-gray-50 cursor-pointer'
+        }
+      }"
     >
-      <template v-slot:header>
-        <v-toolbar color="" class="mb-1" flat v-if="showHeader">
-          <v-text-field
-            v-model="searchFilterByProjectName"
-            clearable
-            flat
-            hide-details
-            prepend-inner-icon="mdi-magnify"
-            label="Search projects"
-            @input="filterData"
-            style="margin-right: 8px"
-            data-cy="project-table-search-bar"
-          >
-          </v-text-field>
-          <template v-if="$vuetify.breakpoint.smAndUp">
-            <v-select
-              v-model="options.sortBy[0]"
-              @change="paginating(options)"
-              flat
-              hide-details
-              :items="selectKeys"
-              prepend-inner-icon="sort_by_alpha"
-              data-cy="project-table-sort-type"
-            ></v-select>
-            <v-spacer></v-spacer>
-            <v-btn-toggle
-              v-model="options.sortDesc[0]"
-              @change="paginating(options)"
-              mandatory
-            >
-              <v-btn
-                large
-                depressed
-                color="#ffffff"
-                :value="false"
-                data-cy="project-table-sort-btn-up"
-              >
-                <v-icon>mdi-arrow-up</v-icon>
-              </v-btn>
-              <v-btn
-                large
-                depressed
-                color="#ffffff"
-                :value="true"
-                data-cy="project-table-sort-btn-down"
-              >
-                <v-icon>mdi-arrow-down</v-icon>
-              </v-btn>
-            </v-btn-toggle>
-          </template>
-        </v-toolbar>
-      </template>
-      <template v-slot:item="{ item }">
-        <v-card
-          :outlined="false"
-          class="mx-auto"
-          data-cy="project-table-card"
-          flat
+      <template v-for="col in columns" :key="col.field">
+        <PColumn
+          v-if="col.field === 'name'"
+          :field="col.field"
+          :header="col.header"
+          style="width: 40%"
+          class="pl-4"
+          :pt="ptColumn"
         >
-          <v-list-item three-line>
-            <v-list-item-content>
-              <v-list-item-title class="text-h5 mb-1">
-                <router-link
-                  :to="{
-                    name: 'project',
-                    params: {
-                      namespace: item.namespace,
-                      projectName: item.name
-                    }
-                  }"
-                  ><b>
-                    <span v-if="showNamespace">{{ item.namespace }} /</span>
-                    {{ item.name }}</b
-                  ></router-link
-                >
-                <v-chip
-                  elevation="0"
-                  v-if="item.access.public && !onlyPublic"
-                  style="margin-left: 8px"
-                  outlined
-                  color="primary"
-                >
-                  Public
-                </v-chip>
-              </v-list-item-title>
-              <v-list-item-subtitle
-                >{{ item.description }}
-              </v-list-item-subtitle>
-              <div style="font-size: smaller">
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on }">
-                    <span
-                      v-on="on"
-                      style="margin-right: 20px"
-                      data-cy="project-form-collaborators"
-                      ><v-icon class="icon" size="20">share</v-icon
-                      >{{ item.access.readers.length }}</span
-                    >
-                  </template>
-                  <span>collaborators</span>
-                </v-tooltip>
-                <v-tooltip bottom v-if="item.version">
-                  <template v-slot:activator="{ on }">
-                    <span
-                      v-on="on"
-                      style="margin-right: 20px"
-                      data-cy="project-form-history"
-                    >
-                      <router-link
-                        :to="{
-                          name: 'project-versions',
-                          params: {
-                            namespace: item.namespace,
-                            projectName: item.name
-                          }
-                        }"
-                      >
-                        <span style="font-size: smaller"
-                          ><v-icon class="icon" size="20">history</v-icon
-                          >{{ item.version.substr(1) }}</span
-                        >
-                      </router-link>
-                    </span>
-                  </template>
-                  <span>versions</span>
-                </v-tooltip>
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on }">
-                    <span
-                      v-on="on"
-                      style="margin-right: 20px"
-                      data-cy="project-form-project-size"
-                      ><v-icon class="icon" size="20">folder</v-icon
-                      >{{ item.disk_usage | filesize('MB', 1) }}</span
-                    >
-                  </template>
-                  <span>project size</span>
-                </v-tooltip>
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on }">
-                    <span
-                      v-on="on"
-                      style="margin-right: 20px"
-                      data-cy="project-form-updated"
-                      >Updated {{ item.updated | timediff }}</span
-                    >
-                  </template>
-                  <span>{{ item.updated | datetime }}</span>
-                </v-tooltip>
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on }">
-                    <span
-                      v-if="!item.tags.includes('valid_qgis')"
-                      v-on="on"
-                      style="margin-right: 20px"
-                      data-cy="project-form-missing-project"
-                      ><v-icon color="#fb8c0087" size="20"
-                        >warning</v-icon
-                      ></span
-                    >
-                  </template>
-                  <span>Missing QGIS project file</span>
-                </v-tooltip>
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on }">
-                    <span
-                      v-if="item.has_conflict"
-                      v-on="on"
-                      style="margin-right: 20px"
-                      data-cy="project-form-conflict-file"
-                      ><v-icon color="#fb8c0087" size="20">error</v-icon></span
-                    >
-                  </template>
-                  <span>There is conflict file in project</span>
-                </v-tooltip>
-              </div>
-            </v-list-item-content>
-          </v-list-item>
-          <v-divider style="color: black" />
-        </v-card>
+          <template #body="slotProps">
+            <p class="font-semibold text-sm mb-2 m-0">
+              <router-link
+                :to="{
+                  name: 'project',
+                  params: {
+                    namespace: slotProps.data.namespace,
+                    projectName: slotProps.data.name
+                  }
+                }"
+              >
+                <template v-if="showNamespace"
+                  >{{ slotProps.data.namespace }} /</template
+                >{{ slotProps.data.name }}</router-link
+              ><PTag
+                v-if="slotProps.data.access.public && !onlyPublic"
+                severity="success"
+                :pt="{ root: { class: 'p-1 ml-1' } }"
+                >Public</PTag
+              >
+              <i
+                v-if="!slotProps.data.tags.includes('valid_qgis')"
+                v-tooltip.right="{
+                  value: 'Failed to find a QGIS project file'
+                }"
+                class="ti ti-alert-circle-filled ml-1"
+                data-cy="project-form-missing-project"
+                style="color: var(--grape-color)"
+              ></i>
+              <i
+                v-if="slotProps.data.has_conflict"
+                v-tooltip.right="{
+                  value: 'Conflicting file in project'
+                }"
+                class="ti ti-alert-triangle-filled ml-1"
+                style="margin-right: 20px"
+                data-cy="project-form-conflict-file"
+              ></i>
+            </p>
+            <span
+              v-tooltip.right="{
+                value: $filters.datetime(slotProps.data.updated),
+                pt: { root: { 'data-cy': 'project-form-updated' } }
+              }"
+              class="opacity-80 m-0"
+            >
+              Updated {{ $filters.timediff(slotProps.data.updated) }}
+            </span>
+          </template>
+        </PColumn>
+        <PColumn
+          v-else-if="col.field === 'version'"
+          :field="col.field"
+          :header="col.header"
+          :pt="ptColumn"
+        >
+          <template #body="slotProps"
+            ><span class="opacity-80" data-cy="project-form-history">{{
+              slotProps.data.version.substr(1)
+            }}</span></template
+          ></PColumn
+        >
+        <PColumn
+          v-else-if="col.field === 'meta.size'"
+          :field="col.field"
+          :header="col.header"
+          :pt="ptColumn"
+        >
+          <template #body="slotProps"
+            ><span class="opacity-80" data-cy="project-form-project-size">{{
+              $filters.filesize(slotProps.data.disk_usage, 'MB', 1)
+            }}</span></template
+          ></PColumn
+        >
+        <PColumn
+          v-else-if="col.field === 'access.readers'"
+          :field="col.field"
+          :header="col.header"
+          style="width: 15%"
+          :pt="ptColumn"
+        >
+          <template #body="slotProps"
+            ><span class="opacity-80" data-cy="project-form-project-size">{{
+              slotProps.data.access.readers.length
+            }}</span></template
+          ></PColumn
+        >
+
+        <PColumn
+          v-else
+          :field="col.field"
+          :header="col.header"
+          :pt="ptColumn"
+        ></PColumn>
       </template>
-      <template v-slot:footer="{ options }">
-        <div class="text-center">
-          <v-pagination
-            v-if="showFooter && numberOfItems > options.itemsPerPage"
-            v-model="options.page"
-            :length="Math.ceil(numberOfItems / options.itemsPerPage)"
-            :total-visible="7"
-            circle
-            color="primary"
-            @input="fetchPage"
-          ></v-pagination>
-        </div>
-      </template>
-    </v-data-iterator>
+    </PDataTable>
+    <!-- Empty state -->
+    <slot v-else name="empty"></slot>
   </div>
 </template>
 
 <script lang="ts">
 import debounce from 'lodash/debounce'
+import { mapState } from 'pinia'
+import { DataTablePageEvent, DataTableRowClickEvent } from 'primevue/datatable'
 import { defineComponent, PropType } from 'vue'
 
+import { useProjectStore } from '../store'
+
 import { PaginatedGridOptions } from '@/common'
-import { formatToTitle } from '@/common/text_utils'
-import { ProjectListItem } from '@/modules/project/types'
+import { ProjectListItem, TableDataHeader } from '@/modules/project/types'
 
 export default defineComponent({
   name: 'projects-table',
@@ -236,26 +162,12 @@ export default defineComponent({
       type: Boolean,
       default: true
     },
-    sortable: {
-      type: Boolean,
-      default: true
-    },
-    showHeader: {
-      type: Boolean,
-      default: true
-    },
     showFooter: {
       type: Boolean,
       default: true
     },
-    initialOptions: {
-      type: Object as PropType<PaginatedGridOptions>,
-      default: () => ({
-        sortBy: ['updated'],
-        sortDesc: [true],
-        itemsPerPage: 25,
-        page: 1
-      })
+    modelValue: {
+      type: Object as PropType<PaginatedGridOptions>
     },
     numberOfItems: {
       type: Number,
@@ -265,148 +177,96 @@ export default defineComponent({
   },
   data() {
     return {
-      options: Object.assign({}, this.initialOptions),
-      searchFilterByProjectName: '',
-      searchFilterByNamespace: '',
-      searchFilterByDay: '',
-      loading: false,
-      keys: ['name', 'updated', 'disk_usage'],
-      sortBy: ''
+      loading: false
     }
   },
   computed: {
-    header() {
-      let header = []
-      if (this.showNamespace) {
-        header.push({
-          text: 'Owner',
-          value: 'namespace',
-          sortable: this.sortable
-        })
-      }
-      header = header.concat(
-        { text: 'Name', value: 'name', sortable: this.sortable },
-        { text: '', width: 90, sortable: false },
-        { text: 'Last Update', value: 'updated', sortable: this.sortable },
-        { text: 'Size', value: 'meta.size', sortable: this.sortable }
+    ...mapState(useProjectStore, ['projectsSearch', 'projectsSorting']),
+    columns(): TableDataHeader[] {
+      let columns = []
+      columns = columns.concat(
+        { header: 'Project name', field: 'name' },
+        { header: 'Versions', field: 'version' },
+        { header: 'Size', field: 'meta.size' },
+        {
+          header: 'Collaborators',
+          field: 'access.readers'
+        }
       )
-      return header
+      return columns
     },
-    selectKeys() {
-      return this.keys.map((i) => {
-        return { text: formatToTitle(i), value: i }
-      })
+    ptColumn() {
+      return {
+        bodyCell: {
+          class: 'pl-4 py-3'
+        },
+        headerCell: {
+          class: 'pl-4 py-2',
+          style: {
+            backgroundColor: '#F8F9FA'
+          }
+        },
+        headerTitle: {
+          class: 'text-xs'
+        }
+      }
     }
   },
   watch: {
-    $route: {
-      immediate: false,
-      handler: 'changedRoute'
+    projectsSearch: {
+      handler: debounce(function () {
+        this.filterData()
+      }, 500)
+    },
+    projectsSorting: {
+      deep: true,
+      handler() {
+        this.fetchProjects()
+      }
     }
   },
   created() {
-    this.filterData = debounce(this.filterData, 3000)
+    this.filterData()
   },
   methods: {
-    paginating(options) {
-      this.options = options
-      this.fetchProjects()
-    },
-    fetchPage(number) {
-      this.options.page = number
-      this.fetchProjects()
-    },
-    changedRoute() {
-      this.options.page = 1
-      this.fetchProjects()
-    },
     fetchProjects() {
       this.loading = true
       this.$emit(
         'fetch-projects',
         {
-          searchFilterByProjectName: this.searchFilterByProjectName,
-          searchFilterByNamespace: this.searchFilterByNamespace,
-          namespace: this.namespace,
-          searchFilterByDay: this.searchFilterByDay
+          searchFilterByProjectName: this.projectsSearch,
+          namespace: this.namespace
         },
-        this.options,
+        { ...this.projectsSorting },
         () => {
           this.loading = false
         }
       )
     },
     filterData() {
-      this.options.page = 1
+      this.$emit('update:modelValue', { ...this.modelValue, page: 1 })
+      this.fetchProjects()
+    },
+    rowClick(e: DataTableRowClickEvent) {
+      const { data } = e
+      this.$router.push({
+        name: 'project',
+        params: {
+          namespace: data.namespace,
+          projectName: data.name
+        }
+      })
+    },
+    onPage(e: DataTablePageEvent) {
+      this.$emit('update:modelValue', {
+        ...this.modelValue,
+        page: e.page + 1,
+        itemsPerPage: e.rows
+      })
       this.fetchProjects()
     }
   }
 })
 </script>
 
-<style lang="scss" scoped>
-.v-data-iterator {
-  td {
-    text-align: left;
-
-    &.flags {
-      .v-icon {
-        margin: 0 1px;
-        cursor: default;
-      }
-    }
-  }
-
-  a {
-    text-decoration: none;
-    font-size: 1rem;
-  }
-
-  .v-chip {
-    margin: 0;
-    margin-right: 0.5em;
-    height: 1.3em;
-
-    ::v-deep(.v-chip__content) {
-      padding: 0 0.2em;
-      font-size: 85%;
-    }
-  }
-
-  .hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
-}
-
-.icon {
-  margin-right: 5px;
-}
-
-.v-input {
-  padding-top: 0 !important;
-  margin-top: 0 !important;
-}
-
-.v-toolbar {
-  ::v-deep(.v-toolbar__content) {
-    padding-left: 0;
-  }
-}
-
-.v-list-item {
-  padding-left: 0;
-}
-
-.v-list__tile__title {
-  width: 110px;
-  font-weight: 800;
-}
-
-.filter-menu {
-  .activate {
-    border: 1px solid black;
-    border-radius: 5px;
-  }
-}
-</style>
+<style lang="scss" scoped></style>

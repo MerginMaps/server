@@ -13,13 +13,19 @@ from ..auth import auth_required
 from ..auth.models import User, UserProfile
 from .forms import AccessPermissionForm
 from .models import Project, AccessRequest, ProjectRole, RequestStatus
-from .schemas import ProjectListSchema, ProjectAccessRequestSchema, AdminProjectSchema
+from .schemas import (
+    ProjectListSchema,
+    ProjectAccessRequestSchema,
+    AdminProjectSchema,
+    ProjectAccessSchema,
+)
 from .permissions import (
     require_project_by_uuid,
     ProjectPermissions,
     check_workspace_permissions,
 )
 from ..utils import parse_order_params, split_order_param, get_order_param
+from mergin.config import Configuration
 
 project_access_granted = signal("project_access_granted")
 
@@ -294,20 +300,74 @@ def update_project_access(id: str):
     """Modify shared project access
 
     :param id: Project uuid
-    :rtype: None
     """
     project = require_project_by_uuid(id, ProjectPermissions.Update)
-    user = User.query.filter_by(id=request.json["user_id"], active=True).first_or_404(
-        "User does not exist"
-    )
-    # prevent to remove ownership of project creator
-    if user.id == project.creator_id:
-        abort(400, "Ownership of project creator cannot be removed")
 
-    if request.json["role"] == "none":
-        project.access.unset_role(user.id)
-    else:
-        project.access.set_role(user.id, ProjectRole(request.json["role"]))
-        project_access_granted.send(project, user_id=user.id)
+    if "public" in request.json:
+        project.access.public = request.json["public"]
+
+    if "user_id" in request.json and "role" in request.json:
+        user = User.query.filter_by(
+            id=request.json["user_id"], active=True
+        ).first_or_404("User does not exist")
+        # prevent to remove ownership of project creator
+        if user.id == project.creator_id:
+            abort(400, "Ownership of project creator cannot be removed")
+
+        if request.json["role"] == "none":
+            project.access.unset_role(user.id)
+        else:
+            project.access.set_role(user.id, ProjectRole(request.json["role"]))
+            project_access_granted.send(project, user_id=user.id)
     db.session.commit()
-    return NoContent, 200
+    return ProjectAccessSchema().dump(project.access), 200
+
+
+@auth_required
+def get_project_access(id: str):
+    """Get list of users with access to project"""
+    project = require_project_by_uuid(id, ProjectPermissions.Read)
+    global_role = None
+    accesses = (
+        (project.access.owners, "owner"),
+        (project.access.writers, "writer"),
+        (project.access.readers, "reader"),
+    )
+    if Configuration.GLOBAL_ADMIN:
+        global_role = "owner"
+        accesses = ()
+    elif Configuration.GLOBAL_WRITE:
+        global_role = "writer"
+        accesses = accesses[:1]
+    elif Configuration.GLOBAL_READ:
+        global_role = "reader"
+        accesses = accesses[:2]
+    result = []
+    processed_ids = set()
+    for user_ids, role in accesses:
+        for user_id in user_ids:
+            if user_id not in processed_ids:
+                user = User.query.get(user_id)
+                result.append(
+                    {
+                        "id": user_id,
+                        "type": "member",
+                        "email": user.email,
+                        "username": user.username,
+                        "project_permission": role,
+                    }
+                )
+                processed_ids.add(user_id)
+    if global_role:
+        for user in User.query.all():
+            if user.id not in processed_ids:
+                result.append(
+                    {
+                        "id": user.id,
+                        "type": "member",
+                        "email": user.email,
+                        "username": user.username,
+                        "project_permission": global_role,
+                    }
+                )
+    return result, 200
