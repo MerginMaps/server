@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, List, Dict, Set
 
+from blinker import signal
 from flask_login import current_user
 from pygeodiff import GeoDiff
 from sqlalchemy import text, null
@@ -25,6 +26,7 @@ from .storages import DiskStorage
 from .utils import int_version, is_versioned_file
 
 Storages = {"local": DiskStorage}
+project_deleted = signal("project_deleted")
 
 
 class Project(db.Model):
@@ -328,6 +330,7 @@ class Project(db.Model):
         for req in access_requests:
             req.resolve(status=RequestStatus.DECLINED, resolved_by=self.removed_by)
         db.session.commit()
+        project_deleted.send(self)
 
 
 class ProjectRole(Enum):
