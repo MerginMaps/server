@@ -5,7 +5,7 @@
 """Drop namespace related objects
 
 Revision ID: 1fcbea2a0f2c
-Revises: 0ab6a1fbf974
+Revises: 35af0c8be41e
 Create Date: 2022-12-20 15:38:57.825712
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "1fcbea2a0f2c"
-down_revision = "0ab6a1fbf974"
+down_revision = "35af0c8be41e"
 branch_labels = None
 depends_on = None
 
