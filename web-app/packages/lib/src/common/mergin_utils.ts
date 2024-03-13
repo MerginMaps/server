@@ -153,8 +153,8 @@ export function calculateChunks(fileSize) {
  * of the first and last word. Otherwise it will use the first two letters
  * of the email.
  */
-export function getAvatar(email, username = '') {
-  const splited = username.split(' ')
+export function getAvatar(email, name = '') {
+  const splited = name.split(' ')
   if (splited.length > 1) {
     return `${splited[0].charAt(0)}${splited[splited.length - 1]?.charAt(
       0

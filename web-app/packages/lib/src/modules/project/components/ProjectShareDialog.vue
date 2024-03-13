@@ -128,10 +128,7 @@ const search = async (e: AutoCompleteCompleteEvent) => {
     data.users = response.data.map((item) => ({
       key: item.id,
       value: item,
-      label:
-        [item.profile.first_name, item.profile.last_name]
-          .filter(Boolean)
-          .join(' ') || item.username
+      label: item.name || item.username
     }))
   } finally {
     data.isPending = false
