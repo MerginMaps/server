@@ -76,7 +76,10 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
 class UserSearchSchema(ma.SQLAlchemyAutoSchema):
     """User schema for public search queries"""
 
-    profile = fields.Nested(UserProfileSchema(), only=("first_name", "last_name"))
+    name = fields.Method("_name", dump_only=True)
+
+    def _name(self, obj):
+        return obj.profile.name()
 
     class Meta:
         model = User
@@ -84,7 +87,7 @@ class UserSearchSchema(ma.SQLAlchemyAutoSchema):
             "id",
             "username",
             "email",
-            "profile",
+            "name",
         )
         load_instance = True
 

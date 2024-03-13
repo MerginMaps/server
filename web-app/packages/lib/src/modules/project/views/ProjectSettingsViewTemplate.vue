@@ -149,6 +149,7 @@ export default defineComponent({
           this.project?.access.public ? 'private' : 'public'
         }?`,
         confirmText: 'Yes',
+        cancelText: 'No',
         description: this.project?.access.public
           ? 'Once you make your project private it can not be accessed by the community.'
           : 'Once you make your project public it can be accessed by the community.'

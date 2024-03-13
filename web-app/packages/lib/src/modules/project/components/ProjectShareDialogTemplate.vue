@@ -26,8 +26,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <a
         :href="docsUrl"
         target="_blank"
-        class="text-color-forest w-12 lg:w-8 font-semibold"
-        ><i class="ti ti-info-circle-filled mr-2" /><span class="underline"
+        class="text-color-forest w-12 lg:w-8 font-semibold flex align-items-center"
+        ><i class="ti ti-info-circle-filled mr-2 text-base" /><span
+          class="underline"
           >Learn more about permission system</span
         ></a
       >.

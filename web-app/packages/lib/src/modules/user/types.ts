@@ -75,10 +75,7 @@ export interface WorkspaceResponse extends UserWorkspace {
 
 export interface UserSearch {
   id: number
-  profile: {
-    first_name: string
-    last_name: string
-  }
+  name: string
   username: string
   email: string
   permission?: string

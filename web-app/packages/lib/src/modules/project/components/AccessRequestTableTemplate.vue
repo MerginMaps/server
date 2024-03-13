@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <template v-for="item in slotProps.items" :key="item.id">
         <!-- Row -->
         <div
-          class="flex flex-column lg:flex-row align-items-center justify-content-between px-4 py-2 mt-0 border-bottom-1 border-gray-200"
+          class="flex flex-column lg:flex-row align-items-center justify-content-between px-4 py-2 mt-0 border-bottom-1 border-gray-200 gap-2"
         >
           <p class="w-12 lg:w-4 text-xs m-0">
             User

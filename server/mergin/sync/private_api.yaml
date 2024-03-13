@@ -572,6 +572,9 @@ components:
         username:
           type: string
           example: john.doe
+        name:
+          type: string
+          example: John Doe
         project_permission:
           type: string
           enum:
