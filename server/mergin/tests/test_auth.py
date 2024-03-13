@@ -492,7 +492,7 @@ def test_search_user(client):
     url = f"/app/auth/user/search?namespace={ws}"
     resp = client.get(url + "&like=erg")
     assert "mer" in resp.json[0]["username"]
-    assert set(resp.json[0].keys()) == {"id", "profile", "username", "email"}
+    assert set(resp.json[0].keys()) == {"id", "name", "username", "email"}
 
     # search by email
     resp = client.get(url + f"&like={user.email}")
