@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <template #option="{ option }">
           <div :key="option.key" class="flex align-items-center gap-4">
             <PAvatar
-              :label="(option.value.username ?? '').charAt(0).toUpperCase()"
+              :label="$filters.getAvatar((option.value as UserSearch).email, [option.value.profile?.first_name, option.value.profile?.last_name].filter(Boolean).join(' '))"
               shape="circle"
               :pt="{
                 root: {

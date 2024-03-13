@@ -10,6 +10,7 @@ import {
 } from '@/common/date_utils'
 import { formatFileSize, formatToCurrency } from '@/common/number_utils'
 import { formatToTitle } from '@/common/text_utils'
+import { getAvatar } from './mergin_utils'
 
 export * from './components'
 export * from './errors'
@@ -36,4 +37,5 @@ export interface ComponentCustomPropertyFilters {
   remainingtime: typeof formatRemainingTime
   totitle: typeof formatToTitle
   currency: typeof formatToCurrency
+  getAvatar: typeof getAvatar
 }

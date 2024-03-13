@@ -63,12 +63,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         >
           <div class="flex align-items-center mb-2">
             <PAvatar
-              :label="avatarLabel"
+              :label="$filters.getAvatar(loggedUser.email, loggedUser.name)"
               size="xlarge"
               shape="circle"
               :pt="{
                 root: {
-                  class: 'mr-2 text-color-forest font-semibold flex-shrink-0',
+                  class: 'mr-2 text-color-forest font-semibold',
                   style: {
                     borderRadius: '50%'
                   }
@@ -179,9 +179,6 @@ export default defineComponent({
         },
         ...(this.helpMenuItems ?? [])
       ].map((item) => ({ ...item, class: 'font-semibold p-1' })) as MenuItem[]
-    },
-    avatarLabel() {
-      return this.loggedUser?.username?.charAt(0).toUpperCase()
     },
     userName() {
       return this.getUserFullName.length > 15

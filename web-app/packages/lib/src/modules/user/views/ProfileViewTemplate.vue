@@ -57,7 +57,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <app-section class="p-4">
         <div class="flex flex-column align-items-center row-gap-3 text-center">
           <PAvatar
-            :label="(loggedUser?.username ?? '').charAt(0).toUpperCase()"
+            :label="$filters.getAvatar(loggedUser.email, loggedUser.name)"
             shape="circle"
             :pt="{
               root: {

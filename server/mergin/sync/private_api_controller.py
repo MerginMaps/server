@@ -355,6 +355,7 @@ def get_project_access(id: str):
                         "email": user.email,
                         "username": user.username,
                         "project_permission": role,
+                        "name": user.profile.name(),
                     }
                 )
                 processed_ids.add(user_id)
@@ -368,6 +369,7 @@ def get_project_access(id: str):
                         "email": user.email,
                         "username": user.username,
                         "project_permission": global_role,
+                        "name": user.profile.name(),
                     }
                 )
     return result, 200

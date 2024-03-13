@@ -144,3 +144,22 @@ export function calculateChunks(fileSize) {
   }
   return chunks
 }
+
+/**
+ * Generates an avatar string composed of the first letters of the provided
+ * email and/or username.
+ *
+ * If a username with multiple words is provided, it will use the first letter
+ * of the first and last word. Otherwise it will use the first two letters
+ * of the email.
+ */
+export function getAvatar(email, username = '') {
+  const splited = username.split(' ')
+  if (splited.length > 1) {
+    return `${splited[0].charAt(0)}${splited[splited.length - 1]?.charAt(
+      0
+    )}`.toUpperCase()
+  }
+
+  return email.slice(0, 2).toUpperCase()
+}

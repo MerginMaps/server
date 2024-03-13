@@ -62,11 +62,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 >
                   <PAvatar
                     v-if="col.value === 'email'"
-                    :label="(item.username ?? '').charAt(0).toUpperCase()"
+                    :label="$filters.getAvatar(item.email, item.name)"
                     shape="circle"
                     :pt="{
                       root: {
-                        class: 'mr-2 font-semibold text-color-forest flex-shrink-0',
+                        class:
+                          'mr-2 font-semibold text-color-forest flex-shrink-0',
                         style: {
                           borderRadius: '50%'
                         }

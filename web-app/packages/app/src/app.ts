@@ -8,7 +8,8 @@ import {
   numberUtils,
   getHttpService,
   MerginComponentUuidMixin,
-  MMTheme
+  MMTheme,
+  merginUtils
 } from '@mergin/lib'
 import PortalVue from 'portal-vue'
 import 'primevue/resources/primevue.min.css'
@@ -55,7 +56,8 @@ const createMerginApp = () => {
     timediff: dateUtils.formatTimeDiff,
     remainingtime: dateUtils.formatRemainingTime,
     totitle: textUtils.formatToTitle,
-    currency: numberUtils.formatToCurrency
+    currency: numberUtils.formatToCurrency,
+    getAvatar: merginUtils.getAvatar
   }
 
   return app
