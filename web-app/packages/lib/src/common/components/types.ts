@@ -6,4 +6,5 @@ export interface DropdownOption<T = string> {
   value: T
   label: string
   description?: string
+  disabled?: boolean
 }

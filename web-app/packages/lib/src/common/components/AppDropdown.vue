@@ -91,6 +91,13 @@ const model = computed({
     return props.modelValue
   },
   set(value) {
+    if (
+      props.options.find(
+        (item) => item.disabled === true && item.value === value
+      )
+    ) {
+      return
+    }
     return emitModelValue('update:modelValue', value)
   }
 })

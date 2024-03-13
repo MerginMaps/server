@@ -71,6 +71,10 @@ input, textarea {
   color: map-get($colors, 'medium-green');
 }
 
+.overflow-wrap-anywhere {
+  overflow-wrap: anywhere;
+}
+
 .p-tooltip {
   ul {
     padding-left: .5rem;
