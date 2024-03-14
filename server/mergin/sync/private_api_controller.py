@@ -23,6 +23,7 @@ from .permissions import (
     require_project_by_uuid,
     ProjectPermissions,
     check_workspace_permissions,
+    get_user_project_role,
 )
 from ..utils import parse_order_params, split_order_param, get_order_param
 from mergin.config import Configuration
@@ -92,10 +93,10 @@ def decline_project_access_request(request_id):  # noqa: E501
         )
         .first_or_404()
     )
-
+    project = access_request.project
+    project_role = get_user_project_role(project, current_user)
     if (
-        current_user.id in access_request.project.access.owners
-        or current_user.id == access_request.project.creator
+        project_role == ProjectRole.OWNER.value
         or current_user.id == access_request.requested_by
     ):
         access_request.resolve(RequestStatus.DECLINED, current_user.id)
@@ -120,10 +121,9 @@ def accept_project_access_request(request_id):
         )
         .first_or_404()
     )
-    if (
-        current_user.id in access_request.project.access.owners
-        or current_user.id == access_request.project.creator
-    ):
+    project = access_request.project
+    project_role = get_user_project_role(project, current_user)
+    if project_role == ProjectRole.OWNER.value:
         project_access_granted.send(
             access_request.project, user_id=access_request.requested_by
         )
