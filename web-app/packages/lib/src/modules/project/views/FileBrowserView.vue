@@ -75,6 +75,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :value="items"
           :data-key="'path'"
           :paginator="items.length > itemPerPage"
+          :sort-field="options.sortBy"
+          :sort-order="options.sortDesc"
           :rows="itemPerPage"
           :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
           data-cy="file-browser-table"
@@ -198,7 +200,8 @@ export default defineComponent({
       options: {
         rowsPerPage: -1,
         descending: false,
-        sortBy: 'name'
+        sortBy: 'name',
+        sortDesc: 1
       },
       // Setup this to lower number in case of testing
       itemPerPage: 50,
@@ -487,6 +490,7 @@ export default defineComponent({
     menuItemClick(e: MenuItemCommandEvent) {
       this.options.sortBy = e.item.key
       this.options.descending = e.item.sortDesc
+      this.options.sortDesc = e.item.sortDesc ? -1 : 1
     }
   }
 })
