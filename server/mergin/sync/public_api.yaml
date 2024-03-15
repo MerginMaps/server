@@ -1011,7 +1011,7 @@ components:
         - $ref: '#/components/schemas/CustomError'
       example:
         code: TrialExpired
-        detail: Failed to push changes. Ask the project workspace owner to log in to their Mergin Maps dashboard
+        detail: Failed to push changes. Ask the workspace owner to log in to their Mergin Maps dashboard
     CustomError:
       type: object
       properties:
