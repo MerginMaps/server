@@ -160,7 +160,6 @@ import {
   AppPanelToggleable
 } from '@/common/components'
 import AppMenu from '@/common/components/AppMenu.vue'
-import { formatDateTime } from '@/common/date_utils'
 import { dirname } from '@/common/path_utils'
 import { removeAccents } from '@/common/text_utils'
 import { useInstanceStore } from '@/modules/instance/store'
@@ -436,7 +435,6 @@ export default defineComponent({
         ...file,
         name: file.path,
         link: this.fileLink(file),
-        mtime: formatDateTime(file.mtime),
         flags: this.fileFlags(file)
       }
     },
@@ -447,7 +445,6 @@ export default defineComponent({
         type: 'file',
         name: filename,
         link: this.fileLink(file),
-        mtime: formatDateTime(file.mtime),
         flags: this.fileFlags(file)
       }
     },
