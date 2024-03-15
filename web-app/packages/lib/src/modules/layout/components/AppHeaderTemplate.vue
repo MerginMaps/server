@@ -64,20 +64,24 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <div class="flex align-items-center mb-2">
               <PAvatar
                 :label="$filters.getAvatar(loggedUser.email, loggedUser.name)"
-                size="xlarge"
+                size="large"
                 shape="circle"
                 :pt="{
                   root: {
-                    class: 'mr-2 text-color-forest font-semibold',
+                    class: 'mr-2 text-color-forest font-semibold flex-shrink-0',
                     style: {
                       borderRadius: '50%'
                     }
                   }
                 }"
               />
-              <div>
-                <p class="font-semibold text-sm">{{ getUserFullName }}</p>
-                <p class="text-sm">{{ loggedUser.email }}</p>
+              <div class="flex flex-column gap-2 text-xs">
+                <p class="font-semibold overflow-wrap-anywhere">
+                  {{ getUserFullName }}
+                </p>
+                <p class="overflow-wrap-anywhere">
+                  {{ loggedUser.email }}
+                </p>
               </div>
             </div>
             <slot></slot>

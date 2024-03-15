@@ -55,9 +55,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </template>
     <template #option="{ option }">
       <div class="flex text-xs align-items-center py-2">
-        <div class="flex flex-column mr-6">
-          <p class="font-semibold m-0">{{ option.label }}</p>
-          <span v-if="option.description" class="pt-2">{{
+        <div class="flex flex-column mr-6 gap-2">
+          <p
+            :class="[
+              option.description && 'font-semibold',
+              'overflow-wrap-anywhere'
+            ]"
+          >
+            {{ option.label }}
+          </p>
+          <span v-if="option.description" class="overflow-wrap-anywhere">{{
             option.description
           }}</span>
         </div>
