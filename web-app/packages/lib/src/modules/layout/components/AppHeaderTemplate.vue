@@ -5,96 +5,99 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <PMenubar
-    class="app-header p-2"
-    :pt="{
-      start: {
-        class: 'w-10'
-      },
-      end: {
-        class: 'align-self-start lg:align-self-center flex-wrap'
-      }
-    }"
-  >
-    <template #start
-      ><slot name="menu">
-        <div
-          class="flex flex-column lg:flex-row align-items-start lg:align-items-center"
-        >
-          <PButton
-            class="mr-2"
-            :icon="menuButtonIcon"
-            plain
-            text
-            rounded
-            @click="setDrawer({ drawer: !drawer })"
-            :pt="{ icon: { class: 'text-3xl' } }"
-          />
-          <app-breadcrumbs></app-breadcrumbs>
-        </div>
-      </slot>
-    </template>
-
-    <template #end>
-      <div class="flex align-items-center">
-        <slot name="invitationsIcon"></slot>
-        <PButton
-          text
-          plain
-          aria-haspopup="true"
-          aria-controls="app-header-profile"
-          data-cy="app-header-profile-btn"
-          @click="toggleMenu"
-          class="p-2 shadow-none"
-        >
-          <div class="mr-2 max-w-80 flex flex-column align-items-start">
-            <span :style="{ whiteSpace: 'nowrap' }">{{ userName }}</span>
-            <span v-if="renderNamespace" class="font-normal">
-              {{ currentWorkspace?.name || 'no workspace' }}
-            </span>
-          </div>
-          <i class="ti ti-chevron-down"></i
-        ></PButton>
-        <POverlayPanel
-          id="app-header-profile"
-          data-cy="app-header-profile"
-          ref="menu"
-          :pt="{ root: { class: 'p-3' }, content: { class: 'p-0' } }"
-        >
-          <div class="flex align-items-center mb-2">
-            <PAvatar
-              :label="$filters.getAvatar(loggedUser.email, loggedUser.name)"
-              size="xlarge"
-              shape="circle"
-              :pt="{
-                root: {
-                  class: 'mr-2 text-color-forest font-semibold',
-                  style: {
-                    borderRadius: '50%'
-                  }
-                }
-              }"
+  <div>
+    <PMenubar
+      class="app-header py-1"
+      :pt="{
+        menu: 'justify-content-between',
+        start: {
+          class: 'w-7'
+        },
+        end: {
+          class: 'align-self-start lg:align-self-center flex-shrink-0'
+        }
+      }"
+    >
+      <template #start
+        ><slot name="menu">
+          <div class="flex flex-column lg:flex-row lg:align-items-center gap-2">
+            <PButton
+              :icon="menuButtonIcon"
+              plain
+              text
+              rounded
+              @click="setDrawer({ drawer: !drawer })"
+              :pt="{ icon: { class: 'text-3xl' } }"
             />
-            <div>
-              <p class="font-semibold text-sm">{{ getUserFullName }}</p>
-              <p class="text-sm">{{ loggedUser.email }}</p>
-            </div>
+            <!-- Show inline with collapse / menu button only on large screens -->
+            <app-breadcrumbs class="hidden lg:flex"></app-breadcrumbs>
           </div>
-          <slot></slot>
-          <PMenu
-            :model="[...(menuItems ?? []), ...profileMenuItems]"
-            :pt="{
-              root: { style: { width: '100%' }, class: 'border-none' },
-              label: { class: 'font-semibold' },
-              icon: { class: 'text-color text-2xl' },
-              action: { class: 'flex align-items-center' }
-            }"
-          ></PMenu>
-        </POverlayPanel>
-        <AppMenu :items="_helpMenuItems" :icon="'ti ti-help'" />
-      </div>
-    </template>
-  </PMenubar>
+        </slot>
+      </template>
+
+      <template #end>
+        <div class="flex align-items-center flex-shrink-0">
+          <slot name="invitationsIcon"></slot>
+          <PButton
+            text
+            plain
+            aria-haspopup="true"
+            aria-controls="app-header-profile"
+            data-cy="app-header-profile-btn"
+            @click="toggleMenu"
+            class="p-2 shadow-none"
+          >
+            <div class="mr-2 max-w-80 flex flex-column align-items-start">
+              <span :style="{ whiteSpace: 'nowrap' }">{{ userName }}</span>
+              <span v-if="renderNamespace" class="font-normal">
+                {{ currentWorkspace?.name || 'no workspace' }}
+              </span>
+            </div>
+            <i class="ti ti-chevron-down"></i
+          ></PButton>
+          <POverlayPanel
+            id="app-header-profile"
+            data-cy="app-header-profile"
+            ref="menu"
+            :pt="{ root: { class: 'p-3' }, content: { class: 'p-0' } }"
+          >
+            <div class="flex align-items-center mb-2">
+              <PAvatar
+                :label="$filters.getAvatar(loggedUser.email, loggedUser.name)"
+                size="xlarge"
+                shape="circle"
+                :pt="{
+                  root: {
+                    class: 'mr-2 text-color-forest font-semibold',
+                    style: {
+                      borderRadius: '50%'
+                    }
+                  }
+                }"
+              />
+              <div>
+                <p class="font-semibold text-sm">{{ getUserFullName }}</p>
+                <p class="text-sm">{{ loggedUser.email }}</p>
+              </div>
+            </div>
+            <slot></slot>
+            <PMenu
+              :model="[...(menuItems ?? []), ...profileMenuItems]"
+              :pt="{
+                root: { style: { width: '100%' }, class: 'border-none' },
+                label: { class: 'font-semibold' },
+                icon: { class: 'text-color text-2xl' },
+                action: { class: 'flex align-items-center' }
+              }"
+            ></PMenu>
+          </POverlayPanel>
+          <AppMenu :items="_helpMenuItems" :icon="'ti ti-help'" />
+        </div>
+      </template>
+    </PMenubar>
+    <!-- Show breadcrumps under menu in smaller screens -->
+    <app-breadcrumbs class="lg:hidden px-3 pb-3 pt-0"></app-breadcrumbs>
+  </div>
 </template>
 
 <script lang="ts">
