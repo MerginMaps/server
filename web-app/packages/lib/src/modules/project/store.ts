@@ -616,18 +616,24 @@ export const useProjectStore = defineStore('projectModule', {
       userNames: string[]
       projectName: string
       roleName: ProjectRoleName
-    }): Promise<AxiosResponse<ProjectDetail>> {
+    }): Promise<void> {
       const { namespace, settings, userNames, projectName, roleName } = payload
+      const notificationStore = useNotificationStore()
 
       const accessKey = getProjectAccessKeyByRoleName(roleName)
       settings.access = {
         ...settings.access,
         [accessKey]: [...settings.access[accessKey], ...userNames]
       }
-      return this.saveProjectSettings({
+      await this.saveProjectSettings({
         namespace,
         newSettings: settings,
         projectName
+      })
+
+      notificationStore.show({
+        text: 'Following users have been added to the project',
+        detail: userNames.join(', ')
       })
     },
 

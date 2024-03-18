@@ -169,6 +169,7 @@ import DeleteAccountDialog from '../components/DeleteAccountConfirm.vue'
 
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppSection from '@/common/components/AppSection.vue'
+import AppSectionBanner from '@/common/components/AppSectionBanner.vue'
 import { DeleteAccountConfirmProps, useDialogStore } from '@/modules'
 import { useLayoutStore } from '@/modules/layout/store'
 import ChangePasswordForm from '@/modules/user/components/ChangePasswordForm.vue'
@@ -180,7 +181,7 @@ export default defineComponent({
   props: {
     name: String
   },
-  components: { AppContainer, AppSection },
+  components: { AppContainer, AppSection, AppSectionBanner },
   data() {
     return {
       dialog: false

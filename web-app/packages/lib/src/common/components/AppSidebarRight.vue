@@ -79,8 +79,16 @@ const model = computed({
   }
 })
 
+/**
+ * Handles scrolling of sidebar content area.
+ * Sets isScrollingContent ref to true if scroll position is past
+ * first child element.
+ */
 function scrollContent(e) {
-  isScrollingContent.value = !!e.currentTarget.scrollTop
+  const childRect = e.target.firstElementChild?.getBoundingClientRect()
+  isScrollingContent.value = childRect?.y
+    ? (e.currentTarget.scrollTop ?? 0) > childRect.y
+    : !!e.currentTarget.scrollTop
 }
 </script>
 

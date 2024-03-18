@@ -75,6 +75,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :value="items"
           :data-key="'path'"
           :paginator="items.length > itemPerPage"
+          :sort-field="options.sortBy"
+          :sort-order="options.sortDesc"
           :rows="itemPerPage"
           :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
           data-cy="file-browser-table"
@@ -160,7 +162,6 @@ import {
   AppPanelToggleable
 } from '@/common/components'
 import AppMenu from '@/common/components/AppMenu.vue'
-import { formatDateTime } from '@/common/date_utils'
 import { dirname } from '@/common/path_utils'
 import { removeAccents } from '@/common/text_utils'
 import { useInstanceStore } from '@/modules/instance/store'
@@ -199,7 +200,8 @@ export default defineComponent({
       options: {
         rowsPerPage: -1,
         descending: false,
-        sortBy: 'name'
+        sortBy: 'name',
+        sortDesc: 1
       },
       // Setup this to lower number in case of testing
       itemPerPage: 50,
@@ -436,7 +438,6 @@ export default defineComponent({
         ...file,
         name: file.path,
         link: this.fileLink(file),
-        mtime: formatDateTime(file.mtime),
         flags: this.fileFlags(file)
       }
     },
@@ -447,7 +448,6 @@ export default defineComponent({
         type: 'file',
         name: filename,
         link: this.fileLink(file),
-        mtime: formatDateTime(file.mtime),
         flags: this.fileFlags(file)
       }
     },
@@ -490,6 +490,7 @@ export default defineComponent({
     menuItemClick(e: MenuItemCommandEvent) {
       this.options.sortBy = e.item.key
       this.options.descending = e.item.sortDesc
+      this.options.sortDesc = e.item.sortDesc ? -1 : 1
     }
   }
 })
