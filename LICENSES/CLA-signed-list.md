@@ -3,6 +3,7 @@ Please add your GitHub username and date to the lists below to sign that:
 A/ You have read and agree to the individual CLA: https://merginmaps.com/licenses/individual-cla
 
 * `alhirzel`, 20th December 2023
+* `uprel`, 18th March 2024
 
 B/ I have read and agree with entity CLA for my company: https://merginmaps.com/licenses/entity-cla
 
