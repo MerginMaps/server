@@ -34,6 +34,9 @@ application = create_app(
         "SERVER_TYPE",
         "COLLECT_STATISTICS",
         "USER_SELF_REGISTRATION",
+        "GLOBAL_ADMIN",
+        "GLOBAL_READ",
+        "GLOBAL_WRITE"
     ]
 )
 register_stats(application)
