@@ -17,7 +17,7 @@ const CLOSED_ELEMENTS_KEY = 'mm-closed-elements'
 
 export const useLayoutStore = defineStore('layoutModule', {
   state: (): LayoutState => ({
-    overlayBreakpoint: 992,
+    overlayBreakpoint: 1200,
     drawer: false,
     isUnderOverlayBreakpoint: false,
     closedElements: []
