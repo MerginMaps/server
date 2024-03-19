@@ -60,10 +60,10 @@ import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
 import { TipMessage } from '@/common/components'
+import { useUserStore } from '@/main'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useFormStore } from '@/modules/form/store'
 import { useProjectStore } from '@/modules/project/store'
-import { useUserStore } from '@/main'
 
 export default defineComponent({
   name: 'new-project-form',

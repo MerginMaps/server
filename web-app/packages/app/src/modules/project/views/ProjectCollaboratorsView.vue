@@ -8,6 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <project-collaborators-view-template
     v-if="isProjectOwner"
     @share="openShareDialog"
+    :allow-share="!instanceStore.globalRolesEnabled"
     :show-access-requests="userStore.isGlobalWorkspaceAdmin"
   />
 </template>
@@ -18,13 +19,15 @@ import {
   ProjectCollaboratorsViewTemplate,
   useDialogStore,
   useProjectStore,
-  useUserStore
+  useUserStore,
+  useInstanceStore
 } from '@mergin/lib'
 import { computed } from 'vue'
 
 const projectStore = useProjectStore()
 const dialogStore = useDialogStore()
 const userStore = useUserStore()
+const instanceStore = useInstanceStore()
 
 const isProjectOwner = computed(() => projectStore.isProjectOwner)
 
