@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import { getAvatar } from './mergin_utils'
+
 import {
   formatDate,
   formatDateTime,
@@ -10,7 +12,6 @@ import {
 } from '@/common/date_utils'
 import { formatFileSize, formatToCurrency } from '@/common/number_utils'
 import { formatToTitle } from '@/common/text_utils'
-import { getAvatar } from './mergin_utils'
 
 export * from './components'
 export * from './errors'
