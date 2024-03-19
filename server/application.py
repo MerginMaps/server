@@ -36,7 +36,7 @@ application = create_app(
         "USER_SELF_REGISTRATION",
         "GLOBAL_ADMIN",
         "GLOBAL_READ",
-        "GLOBAL_WRITE"
+        "GLOBAL_WRITE",
     ]
 )
 register_stats(application)
