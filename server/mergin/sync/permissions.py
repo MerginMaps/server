@@ -10,7 +10,7 @@ from flask_login import current_user
 
 from .utils import is_valid_uuid
 from ..auth.models import User
-from .models import ProjectAccess, Project, Upload
+from .models import ProjectAccess, Project, Upload, ProjectRole
 
 
 def _is_superuser(f):
@@ -239,3 +239,27 @@ def get_user_project_role(project: Project, user: User) -> Optional[str]:
         return "writer"
     if ProjectPermissions.Read.check(project, user):
         return "reader"
+
+
+def project_admin_permissions(workspace_id, user: User) -> bool:
+    """Check if the user has admin permissions for workspace or a project in the workspace
+    True if user is either workspace admin or owner of a project in the workspace, False otherwise
+
+    :param workspace_id: workspace id
+    :type workspace_id: int
+    :param user: user
+    :type user: User
+    :rtype bool
+    """
+    if user.is_anonymous or not user.active:
+        return False
+    workspace = current_app.ws_handler.get(workspace_id)
+    if not workspace:
+        return False
+    if workspace.user_has_permissions(current_user, "admin"):
+        return True
+    projects = Project.query.filter_by(workspace_id=workspace.id).all()
+    for project in projects:
+        if get_user_project_role(project, user) == ProjectRole.OWNER.value:
+            return True
+    return False
