@@ -26,7 +26,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div
           class="flex flex-column lg:flex-row align-items-center justify-content-between px-4 py-2 mt-0 border-bottom-1 border-gray-200 gap-2"
         >
-          <p class="w-12 lg:w-4 paragraph-p6 m-0">
+          <p
+            v-if="loggedUser.username === item.requested_by"
+            class="w-12 lg:w-4 paragraph-p6"
+          >
+            You requested an access to project
+            <span class="font-semibold">{{ item.project_name }}</span> in
+            workspace <span class="font-semibold">{{ item.namespace }}</span
+            >.
+          </p>
+          <p v-else class="w-12 lg:w-4 paragraph-p6">
             User
             <span class="font-semibold">{{ item.requested_by }}</span>
             requested an access to your project
@@ -95,6 +104,7 @@ import {
   ProjectPermissionName,
   getProjectPermissionsValues
 } from '@/common/permission_utils'
+import { useUserStore } from '@/main'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
 import {
@@ -126,20 +136,9 @@ export default defineComponent({
   },
   computed: {
     ...mapState(useProjectStore, ['accessRequests', 'accessRequestsCount']),
+    ...mapState(useUserStore, ['loggedUser']),
     showAccept() {
       return this.namespace != null
-    },
-    ptColumn() {
-      return {
-        headerCell: {
-          style: {
-            backgroundColor: '#F8F9FA'
-          }
-        },
-        headerTitle: {
-          class: 'paragraph-p6'
-        }
-      }
     },
     permissions(): Record<number, ProjectPermissionName> {
       return {
