@@ -15,11 +15,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </slot>
     </div>
 
-    <div class="text-center md:text-left line-height-4">
-      <p class="tip-message-title text-sm font-semibold m-0 mb-1">
+    <div class="text-center md:text-left">
+      <p class="tip-message-title title-t3 mb-1">
         <slot name="title">Tip from Mergin Maps</slot>
       </p>
-      <p class="opacity-80 text-sm m-0">
+      <p class="opacity-80 paragraph-p5">
         <slot name="description"></slot>
       </p>
     </div>

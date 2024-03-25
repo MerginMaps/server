@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         }
       },
       input: {
-        class: 'text-xs border-round-xl'
+        class: 'paragraph-p6 border-round-xl'
       },
       item({ context }) {
         return {
@@ -49,13 +49,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           scope.class,
           'ti',
           isOpen ? 'ti-chevron-up' : 'ti-chevron-down',
-          'font-semibold text-base'
+          'font-semibold title-t2'
         ]"
       ></i>
     </template>
     <template #option="{ option }">
-      <div class="flex text-xs align-items-center py-2">
-        <div class="flex flex-column mr-6 gap-2">
+      <div class="flex paragraph-p6 align-items-center py-2">
+        <div class="flex flex-column mr-6 gap-1">
           <p
             :class="[
               option.description && 'font-semibold',

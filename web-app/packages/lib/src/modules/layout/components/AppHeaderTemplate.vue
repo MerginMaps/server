@@ -48,8 +48,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             class="p-2 shadow-none"
           >
             <div class="mr-2 max-w-80 flex flex-column align-items-start">
-              <span :style="{ whiteSpace: 'nowrap' }">{{ userName }}</span>
-              <span v-if="renderNamespace" class="font-normal">
+              <span class="title-t4" :style="{ whiteSpace: 'nowrap' }">{{
+                userName
+              }}</span>
+              <span v-if="renderNamespace" class="paragraph-p6 opacity-80">
                 {{ currentWorkspace?.name || 'no workspace' }}
               </span>
             </div>
@@ -61,7 +63,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ref="menu"
             :pt="{ root: { class: 'p-3' }, content: { class: 'p-0' } }"
           >
-            <div class="flex align-items-center mb-2">
+            <div class="flex align-items-center mb-3">
               <PAvatar
                 :label="$filters.getAvatar(loggedUser.email, loggedUser.name)"
                 size="large"
@@ -75,11 +77,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   }
                 }"
               />
-              <div class="flex flex-column gap-2 text-xs">
-                <p class="font-semibold overflow-wrap-anywhere">
+              <div class="flex flex-column">
+                <p class="title-t4 overflow-wrap-anywhere">
                   {{ getUserFullName }}
                 </p>
-                <p class="overflow-wrap-anywhere">
+                <p class="paragraph-p6 overflow-wrap-anywhere">
                   {{ loggedUser.email }}
                 </p>
               </div>

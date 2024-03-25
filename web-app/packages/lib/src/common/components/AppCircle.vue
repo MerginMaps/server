@@ -33,8 +33,8 @@ const severityClass = computed(
 )
 const sizeClasses = computed(
   () =>
-    ({ small: 'circle--small text-xs p-1' }[props.size] ||
-    'w-2rem h-2rem text-base p-2')
+    ({ small: 'circle--small paragraph-p6 p-1' }[props.size] ||
+    'w-2rem h-2rem paragraph-p4 p-2')
 )
 </script>
 

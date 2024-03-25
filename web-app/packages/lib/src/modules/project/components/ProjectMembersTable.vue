@@ -22,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <!-- Visible on lg breakpoint > -->
             <div
               v-for="col in columns.filter((item) => !item.fixed)"
-              :class="['text-xs hidden lg:flex', `col-${col.cols ?? 4}`]"
+              :class="['paragraph-p6 hidden lg:flex', `col-${col.cols ?? 4}`]"
               :key="col.text"
             >
               {{ col.text }}
@@ -37,7 +37,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <div
             v-for="item in slotProps.items"
             :key="item.id"
-            class="flex align-items-center hover:bg-gray-50 border-bottom-1 border-gray-200 text-xs px-4 py-2 mt-0"
+            class="flex align-items-center hover:bg-gray-50 border-bottom-1 border-gray-200 paragraph-p6 px-4 py-2 mt-0"
           >
             <div class="w-11 grid grid-nogutter">
               <!-- Columns, we are using data view instead table, it is better handling of responsive state -->
@@ -102,7 +102,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 plain
                 text
                 @click.stop="removeMember(item)"
-                class="text-xl p-0"
+                class="paragraph-p3 p-0"
                 :style="{
                   visibility: projectStore.canRemoveProjectAccess(item)
                     ? 'visible'

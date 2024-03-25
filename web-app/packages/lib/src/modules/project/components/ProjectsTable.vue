@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           class: 'bg-primary-reverse opacity-50'
         },
         bodyRow: {
-          class: 'text-xs hover:bg-gray-50 cursor-pointer'
+          class: 'paragraph-p6 hover:bg-gray-50 cursor-pointer'
         }
       }"
     >
@@ -39,7 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :pt="ptColumn"
         >
           <template #body="slotProps">
-            <p class="font-semibold text-sm mb-2 m-0">
+            <p class="font-semibold paragraph-p5">
               <router-link
                 :to="{
                   name: 'project',
@@ -207,7 +207,7 @@ export default defineComponent({
           }
         },
         headerTitle: {
-          class: 'text-xs'
+          class: 'paragraph-p6'
         }
       }
     }

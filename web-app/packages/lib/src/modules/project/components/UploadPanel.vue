@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <app-circle :severity="circleSeverity[key]" class="mr-2"
           ><i :class="['ti', `${diffIcon[key]}`]"></i
         ></app-circle>
-        <span class="text-sm opacity-80 capitalize">{{ key }}</span>
+        <span class="paragraph-p5 opacity-80 capitalize">{{ key }}</span>
         <app-circle class="ml-auto">{{ upload.diff[key].length }}</app-circle>
       </div>
       <div class="py-4 w-full">

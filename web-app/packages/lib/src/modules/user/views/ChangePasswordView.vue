@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <app-onboarding-page>
-    <template #header><h1 class="text-6xl">Change password</h1></template>
+    <template #header><h1 class="headline-h1">Change password</h1></template>
 
     <form
       v-if="!success"
@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             }
           }"
         />
-        <span class="p-error text-xs" id="password-error">{{
+        <span class="p-error paragraph-p6" id="password-error">{{
           errors.password?.[0] || '&nbsp;'
         }}</span>
       </span>
@@ -58,7 +58,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           }"
         />
 
-        <span class="p-error text-xs" id="confirm-password-error">{{
+        <span class="p-error paragraph-p6" id="confirm-password-error">{{
           errors.confirm?.[0] || '&nbsp;'
         }}</span>
       </span>
@@ -76,7 +76,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <span
         >Your password was changed. You can now
         <router-link
-          class="text-sm text-color-forest font-semibold align-self-center"
+          class="text-color-forest title-t3 align-self-center"
           :to="{ name: 'login' }"
           >Sign in</router-link
         ></span

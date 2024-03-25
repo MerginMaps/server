@@ -18,15 +18,17 @@ function closeDrawer() {
 </script>
 
 <template>
-  <li class="p-2">
+  <li class="px-2">
     <router-link
       :class="[
-        'sidebar-item__link p-3 flex align-items-center transition-color transition-duration-200 no-underline border-round-lg text-sm',
+        'sidebar-item__link p-3 flex align-items-center transition-color transition-duration-200 no-underline border-round-lg paragraph-p5',
         item.active && 'sidebar-item__link--active'
       ]"
       :to="item.to"
       @click.native="closeDrawer"
-      ><div class="mr-2"><i :class="['text-xl', item.icon]"></i></div>
+      ><div class="mr-2 flex align-items-center">
+        <i :class="['paragraph-p3', item.icon]"></i>
+      </div>
       <span>{{ item.title }}</span></router-link
     >
   </li>
