@@ -5,162 +5,126 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-layout class="settings column">
-    <slot
-      name="permissions"
-      :settings="settings"
-      :key-prop="key"
-      :save-project="saveProject"
-    ></slot>
-    <project-access-requests v-if="showAccessRequests" />
-    <v-layout class="public-private-zone">
-      <v-container>
-        <v-row>
-          <v-col>
-            <span class="private-public-text" v-if="settings.access.public">
-              <b>This is public project</b><br />
-              <span class="description-text"
-                >Hide this project from everyone.</span
-              >
-            </span>
-            <span class="private-public-text" v-else>
-              <b>This is private project</b><br />
-              <span class="description-text"
-                >Make this project visible to anyone.</span
-              >
-            </span>
-          </v-col>
-          <v-col>
-            <v-btn
-              @click="confirmPublicPrivate()"
-              class="private-public-btn"
-              outlined
-            >
-              <span v-if="settings.access.public">Make private</span>
-              <span v-else>Make public</span>
-            </v-btn>
-          </v-col>
-        </v-row>
-        <slot name="operations"></slot>
-        <v-row
-          v-if="project && project.permissions && project.permissions.delete"
-        >
-          <v-col>
-            <span class="private-public-text">
-              <b>Delete project</b><br />
-              <span class="description-text">All data will be lost</span></span
-            >
-          </v-col>
-          <v-col self-align="end">
-            <v-btn @click="confirmDelete" class="private-public-btn" outlined>
-              <span>Delete</span>
-            </v-btn>
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-layout>
-  </v-layout>
+  <div>
+    <app-container>
+      <app-section>
+        <div class="flex flex-column row-gap-3 text-sm p-4">
+          <div
+            :class="[
+              'flex flex-column align-items-start',
+              'row-gap-2',
+              'md:align-items-center md:flex-row'
+            ]"
+          >
+            <div class="flex-grow-1">
+              <template v-if="project.access.public">
+                <p class="font-semibold my-2">This is public project</p>
+                <span class="text-xs opacity-80"
+                  >Hide this project from everyone.</span
+                >
+              </template>
+              <template v-else>
+                <p class="font-semibold my-2">This is private project</p>
+                <span class="text-xs opacity-80"
+                  >Make this project visible to anyone.</span
+                >
+              </template>
+            </div>
+            <div class="flex-shrink-0">
+              <PButton
+                @click="confirmPublicPrivate()"
+                severity="secondary"
+                data-cy="settings-public-btn"
+                :label="project.access.public ? 'Make private' : 'Make public'"
+              />
+            </div>
+          </div>
+          <div
+            :class="[
+              'flex flex-column align-items-start',
+              'row-gap-2',
+              'md:align-items-center md:flex-row'
+            ]"
+            v-if="$slots.operations"
+          >
+            <slot name="operations"></slot>
+          </div>
+          <div
+            :class="[
+              'flex flex-column align-items-start',
+              'row-gap-2',
+              'md:align-items-center md:flex-row'
+            ]"
+            v-if="project && project.permissions && project.permissions.delete"
+          >
+            <div class="flex-grow-1">
+              <p class="font-semibold my-2">Delete project</p>
+              <span class="text-xs opacity-80">All data will be lost</span>
+            </div>
+            <div class="flex-shrink-0">
+              <PButton
+                @click="confirmDelete"
+                severity="danger"
+                data-cy="settings-delete-btn"
+                label="Delete project"
+              />
+            </div>
+          </div>
+        </div>
+      </app-section>
+    </app-container>
+  </div>
 </template>
 
 <script lang="ts">
-import debounce from 'lodash/debounce'
 import { mapActions, mapState } from 'pinia'
 import { PropType, defineComponent } from 'vue'
 
-import { getErrorMessage } from '@/common/error_utils'
+import AppContainer from '@/common/components/AppContainer.vue'
+import AppSection from '@/common/components/AppSection.vue'
+import { ConfirmDialogProps } from '@/modules'
 import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 import { useDialogStore } from '@/modules/dialog/store'
-import { useNotificationStore } from '@/modules/notification/store'
-import ProjectAccessRequests from '@/modules/project/components/ProjectAccessRequests.vue'
 import { useProjectStore } from '@/modules/project/store'
-import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   name: 'ProjectSettingsViewTemplate',
   components: {
-    ProjectAccessRequests
+    AppContainer,
+    AppSection
   },
   props: {
-    namespace: String,
     projectName: String,
-    asAdmin: {
-      type: Boolean,
-      default: false
-    },
     showSettings: Boolean,
     showAccessRequests: {
       type: Boolean as PropType<boolean>,
       default: false
     }
   },
-  data() {
-    return {
-      settings: {},
-      key: 0
-    }
-  },
   computed: {
-    ...mapState(useUserStore, ['loggedUser']),
-    ...mapState(useProjectStore, ['project'])
-  },
-  watch: {
-    project: {
-      immediate: true,
-      handler(project) {
-        if (
-          JSON.stringify(this.settings.access) !==
-          JSON.stringify(this.project.access)
-        ) {
-          this.settings = {
-            access: JSON.parse(JSON.stringify(project.access))
-          }
-        }
-        this.key++
-      }
-    }
+    ...mapState(useProjectStore, ['project', 'accessRequestsCount'])
   },
   created() {
     if (!this.showSettings) {
       this.$router.push('/projects')
     }
-    this.settings = {
-      access: JSON.parse(JSON.stringify(this.project.access))
-    }
   },
   methods: {
-    ...mapActions(useProjectStore, ['deleteProject', 'saveProjectSettings']),
-    ...mapActions(useDialogStore, ['show']),
-    ...mapActions(useNotificationStore, ['error']),
-
-    saveProject(newSettingsAccessValues) {
-      const newSettings = {
-        ...this.settings,
-        access: { ...this.settings.access, ...newSettingsAccessValues }
-      }
-      this.settings.access.readersnames = newSettings.access.readersnames
-      this.settings.access.ownersnames = newSettings.access.ownersnames
-      this.settings.access.writersnames = newSettings.access.writersnames
-      this.saveSettings(newSettings)
-    },
-    saveSettings: debounce(function (newSettings) {
-      try {
-        this.saveProjectSettings({
-          namespace: this.namespace,
-          newSettings,
-          projectName: this.projectName
-        })
-      } catch (err) {
-        this.error({
-          text: getErrorMessage(err, 'Failed to save project settings')
-        })
-      }
-    }, 2000),
+    ...mapActions(useProjectStore, ['deleteProject', 'updateProjectAccess']),
+    ...mapActions(useDialogStore, { showDialog: 'show' }),
     togglePublicPrivate() {
-      this.settings.access.public = !this.settings.access.public
+      this.updateProjectAccess({
+        projectId: this.project.id,
+        data: {
+          public: !this.project.access.public
+        }
+      })
     },
     confirmDelete() {
-      const props = {
-        text: `Are you sure to delete project: ${this.projectName}? All files will be lost. <br> <br> Type in project name to confirm:`,
+      const props: ConfirmDialogProps = {
+        text: `Are you sure to delete project: ${this.projectName}?`,
+        description: 'All files will be lost. Type in project name to confirm:',
+        severity: 'danger',
         confirmText: 'Delete',
         confirmField: {
           label: 'Project name',
@@ -170,24 +134,40 @@ export default defineComponent({
       const listeners = {
         confirm: () => this.onDeleteProject()
       }
-      this.show({
+      this.showDialog({
         component: ConfirmDialog,
-        params: { props, listeners, dialog: { maxWidth: 500 } }
+        params: {
+          props,
+          listeners,
+          dialog: { header: 'Confirm delete project' }
+        }
       })
     },
     confirmPublicPrivate() {
-      const props = {
+      const props: ConfirmDialogProps = {
         text: `Do you really want to make this project ${
-          this.settings.access.public ? 'private' : 'public'
+          this.project?.access.public ? 'private' : 'public'
         }?`,
-        confirmText: 'Yes'
+        confirmText: 'Yes',
+        cancelText: 'No',
+        description: this.project?.access.public
+          ? 'Once you make your project private it can not be accessed by the community.'
+          : 'Once you make your project public it can be accessed by the community.'
       }
       const listeners = {
         confirm: () => this.togglePublicPrivate()
       }
-      this.show({
+      this.showDialog({
         component: ConfirmDialog,
-        params: { props, listeners, dialog: { maxWidth: 500 } }
+        params: {
+          props,
+          listeners,
+          dialog: {
+            header: this.project?.access.public
+              ? 'Private project'
+              : 'Public project'
+          }
+        }
       })
     },
     onDeleteProject() {
@@ -199,16 +179,4 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss" scoped>
-@use '@/sass/project';
-
-.settings {
-  display: flex;
-  flex-direction: column;
-  flex: 1 0 auto;
-}
-
-.actions {
-  flex: 0 0 auto;
-}
-</style>
+<style lang="scss" scoped></style>

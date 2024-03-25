@@ -31,6 +31,10 @@ class ProjectPermissions:
         @classmethod
         def check(cls, project: Project, user: User) -> bool:
             """Basic check for any permission"""
+            # this means project was permanently 'removed'
+            if project.storage_params is None:
+                return False
+
             if not user.is_authenticated:
                 return False
 
@@ -75,7 +79,11 @@ class ProjectPermissions:
                         ProjectAccess.readers.contains([user.id])
                         | Project.workspace_id.in_(user_workspace_ids)
                     )
-            return Project.query.filter(query).filter(Project.removed_at.is_(None))
+            return (
+                Project.query.filter(query)
+                .filter(Project.storage_params.isnot(None))
+                .filter(Project.removed_at.is_(None))
+            )
 
     class Upload(Base):
         @classmethod
@@ -130,6 +138,7 @@ def require_project(ws, project_name, permission):
         abort(404, "Workspace doesn't exist")
     project = (
         Project.query.filter_by(name=project_name, workspace_id=workspace.id)
+        .filter(Project.storage_params.isnot(None))
         .filter(Project.removed_at.is_(None))
         .first_or_404()
     )
@@ -142,7 +151,9 @@ def require_project_by_uuid(uuid, permission, scheduled=False):
     if not is_valid_uuid(uuid):
         abort(404)
 
-    project = Project.query.filter_by(id=uuid)
+    project = Project.query.filter_by(id=uuid).filter(
+        Project.storage_params.isnot(None)
+    )
     if not scheduled:
         project = project.filter(Project.removed_at.is_(None))
     project = project.first_or_404()

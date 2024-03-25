@@ -3,30 +3,37 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
-import vue from '@vitejs/plugin-vue2'
+import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
-import { VuetifyResolver } from 'unplugin-vue-components/resolvers'
+import { PrimeVueResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
-import { viteStaticCopy } from 'vite-plugin-static-copy'
-// import vuetify from 'vite-plugin-vuetify'
+// import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 import packageJson from './package.json'
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(() => ({
   plugins: [
     vue(),
     Components({
-      resolvers: [VuetifyResolver()]
-    }) /*, vuetify() */ /*, dts() */,
-    viteStaticCopy({
-      // copy sass files to use in other applications
-      targets: [{ src: 'src/sass/**.scss', dest: 'sass' }]
+      resolvers: [
+        PrimeVueResolver({
+          prefix: 'P'
+        })
+      ]
     })
   ],
   publicDir: './src/assets',
+
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: `@import "primeflex/core/_variables.scss";`
+      }
+    }
+  },
 
   resolve: {
     alias: {
@@ -35,15 +42,18 @@ export default defineConfig(({ mode }) => ({
       https: 'agent-base',
       path: 'rollup-plugin-node-polyfills/polyfills/path'
     },
-    dedupe: ['vue', 'pinia', 'vue-router', 'vuetify']
+    dedupe: ['vue', 'pinia', 'vue-router']
   },
   build: {
     commonjsOptions: {
       //   include: [/node_modules/],
       transformMixedEsModules: true
     },
-    sourcemap: mode !== 'production',
+    // Fix for watching, if watch:lib, disable this
+    // sourcemap: mode !== 'production',
+    sourcemap: false,
     lib: {
+      formats: ['es'],
       // Could also be a dictionary or array of multiple entry points
       entry: resolve(__dirname, 'src/main.ts'),
       name: 'lib',
@@ -71,7 +81,7 @@ export default defineConfig(({ mode }) => ({
     }
   },
   optimizeDeps: {
-    exclude: ['vue', '@mergin'],
+    exclude: ['vue', '@mergin', 'vue-demi'],
     esbuildOptions: {
       define: {
         global: 'globalThis'

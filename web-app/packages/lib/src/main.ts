@@ -4,3 +4,4 @@
 
 export * from '@/common'
 export * from '@/modules'
+export { default as MMTheme } from '@/mm-theme'

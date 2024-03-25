@@ -16,10 +16,13 @@ Monorepo for mergin frontend stuff:
 Application constist of several packages in `packages` directory:
 
 - @mergin/lib - Shared library for common features
+- @mergin/lib-vue2 - Shared library for common features with vuetify and vue 2.7
 - @mergin/admin-lib - Shared library for admin
 - @mergin/app - Web appliacation
 - @mergin/admin-app - Web application for administration
 
 Library packages with *-lib* name are containing shared code for *-app* applications.
+
+Web application *@mergin/app* is using shared library *@mergin/lib*. Web application for administratio *admin-app* is using shared libraries with vue 2.7 *@mergin/admin-lib* and *@mergin/lib-vue2*.
 
 For details about development follow instructions in [development guide](../development.md).

@@ -5,25 +5,70 @@
 import { defineStore } from 'pinia'
 
 export interface LayoutState {
-  barColor: string
-  barImage: string
+  overlayBreakpoint: number
   drawer: boolean
+  /** If sidebar is in overlay mode (on mobile is flying over content) */
+  isUnderOverlayBreakpoint: boolean
+  /** Parsed closed elements from local storage and pushed back to local storage */
+  closedElements: string[]
 }
+
+const CLOSED_ELEMENTS_KEY = 'mm-closed-elements'
 
 export const useLayoutStore = defineStore('layoutModule', {
   state: (): LayoutState => ({
-    barColor: 'rgba(176, 177, 181 1), rgba(176, 177, 181 1)', // TODO: global - check if necessary and useful, MV-2022-06-30: I would probably get rid of this if possible
-    barImage:
-      'https://demos.creative-tim.com/material-dashboard/assets/img/sidebar-1.jpg', // TODO: global - check if necessary and useful, MV-2022-06-30: I would probably get rid of this if possible
-    drawer: null
+    overlayBreakpoint: 1200,
+    drawer: false,
+    isUnderOverlayBreakpoint: false,
+    closedElements: []
   }),
-
+  getters: {
+    /**
+     * Checks if an element ID is in the list of closed elements.
+     *
+     * @param state - The layout store state
+     * @param elementId - The element ID to check
+     * @returns True if the element ID is in the closed elements list
+     */
+    isClosedElement(state) {
+      const { closedElements } = state
+      return (elementId: string) => closedElements.includes(elementId)
+    }
+  },
   actions: {
-    setBarImage(payload) {
-      this.barImage = payload.barImage
+    init() {
+      this.updateScreenParams()
+      window?.addEventListener('resize', this.updateScreenParams)
+
+      this.getClosedElements()
     },
-    setDrawer(payload) {
+    updateScreenParams() {
+      const width = window.innerWidth
+      const isSmall =
+        window.matchMedia !== undefined
+          ? window.matchMedia(
+              `screen and (max-width: ${this.overlayBreakpoint}px)`
+            ).matches
+          : width < this.overlayBreakpoint
+      this.drawer = !isSmall
+      this.isUnderOverlayBreakpoint = isSmall
+    },
+    setDrawer(payload: { drawer: boolean }) {
       this.drawer = payload.drawer
+    },
+    getClosedElements() {
+      const storageValue = window?.localStorage?.getItem(CLOSED_ELEMENTS_KEY)
+      const parsed = JSON.parse(storageValue) ?? []
+      this.closedElements = parsed
+    },
+    closeElement(elementId: string) {
+      const storageValue = window?.localStorage?.getItem(CLOSED_ELEMENTS_KEY)
+      const parsed = JSON.parse(storageValue) ?? []
+      if (parsed.includes(elementId)) return
+
+      parsed.push(elementId)
+      window?.localStorage?.setItem(CLOSED_ELEMENTS_KEY, JSON.stringify(parsed))
+      this.closedElements = parsed
     }
   }
 })

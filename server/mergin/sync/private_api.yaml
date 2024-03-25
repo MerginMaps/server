@@ -80,9 +80,9 @@ paths:
     delete:
       tags:
         - project
-      summary: Delete project access request for project specified with request id
-      description: Delete project access request for project specified with request id
-      operationId: mergin.sync.private_api_controller.delete_project_access_request
+      summary: Decline project access request for project specified with request id
+      description: Decline project access request for project specified with request id
+      operationId: mergin.sync.private_api_controller.decline_project_access_request
       parameters:
         - name: request_id
           in: path
@@ -329,16 +329,37 @@ paths:
         "404":
           $ref: "#/components/responses/NotFoundResp"
   /project/{id}/access:
+    parameters:
+      - name: id
+        in: path
+        description: Project uuid
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - project
+      summary: Get project access
+      operationId: get_project_access
+      responses:
+        "200":
+          description: Project access details
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectAccessDetail"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+      x-openapi-router-controller: mergin.sync.private_api_controller
     patch:
       summary: Update direct project access (sharing)
       operationId: update_project_access
-      parameters:
-        - name: id
-          in: path
-          description: project uuid
-          required: true
-          schema:
-            type: string
       requestBody:
         description: Request data
         required: true
@@ -346,12 +367,12 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - user_id
-                - role
               properties:
                 user_id:
                   type: integer
+                public:
+                  type: boolean
+                  nullable: true
                 role:
                   type: string
                   enum:
@@ -359,10 +380,10 @@ paths:
                     - writer
                     - reader
                     - none
-                  example: write
+                  example: writer
       responses:
         "200":
-          description: OK
+          $ref: "#/components/schemas/ProjectAccessUpdated"
         "400":
           $ref: "#/components/responses/BadStatusResp"
         "401":
@@ -527,3 +548,78 @@ components:
           items:
             type: object
             example: 1
+    ProjectAccessDetail:
+      type: object
+      required:
+        - id
+        - type
+        - email
+        - username
+        - project_permission
+      properties:
+        id:
+          description: User id
+          type: integer
+          example: 1
+        type:
+          type: string
+          enum:
+            - member
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        username:
+          type: string
+          example: john.doe
+        name:
+          type: string
+          example: John Doe
+        project_permission:
+          type: string
+          enum:
+            - owner
+            - writer
+            - reader
+    ProjectAccessUpdated:
+      type: object
+      properties:
+        ownersnames:
+          type: array
+          nullable: false
+          items:
+            type: string
+          example: [ john.doe ]
+        writersnames:
+          type: array
+          nullable: false
+          items:
+            type: string
+          example: [ john.doe ]
+        readersnames:
+          nullable: false
+          type: array
+          items:
+            type: string
+          example: [ john.doe ]
+        public:
+          type: boolean
+          example: true
+        owners:
+          type: array
+          nullable: false
+          items:
+            type: integer
+          example: [1]
+        writers:
+          type: array
+          nullable: false
+          items:
+            type: integer
+          example: [1]
+        readers:
+          type: array
+          nullable: false
+          items:
+            type: integer
+            example: [1]

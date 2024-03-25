@@ -38,7 +38,7 @@ Before installing the web applications, make sure you have Node.js installed in 
 $ cd web-app
 $ yarn install
 $ yarn link:dependencies # link dependencies
-$ yarn build:libs # bild libraries @mergin/lib @mergin/admin-lib
+$ yarn build:libs # bild libraries @mergin/lib @mergin/admin-lib @mergin/lib-vue2
 $ yarn dev  # development client web application dev server on port 8080 (package @mergin/app)
 $ yarn dev:admin  # development admin appplication dev server on port 8081 (package @mergin/admin-app)
 ```

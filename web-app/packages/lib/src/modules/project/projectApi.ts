@@ -21,11 +21,14 @@ import {
   PushProjectChangesParams,
   PushProjectChangesResponse,
   SaveProjectSettings,
-  UpdateProjectAccessParams
+  UpdateProjectAccessParams,
+  ProjectVersion,
+  ProjectAccessDetail,
+  ProjectAccess
 } from '@/modules/project/types'
 
 export const ProjectApi = {
-  async fetchProject(
+  async getProject(
     namespace: string,
     projectName: string
   ): Promise<AxiosResponse<ProjectDetail>> {
@@ -167,11 +170,11 @@ export const ProjectApi = {
     )
   },
 
-  async updateProjectAccessForUser(
+  async updateProjectAccess(
     id: string,
     data: UpdateProjectAccessParams,
     withRetry?: boolean
-  ): Promise<AxiosResponse<void>> {
+  ): Promise<AxiosResponse<ProjectAccess>> {
     return ProjectModule.httpService.patch(`/app/project/${id}/access`, data, {
       ...(withRetry ? getDefaultRetryOptions() : {})
     })
@@ -188,7 +191,7 @@ export const ProjectApi = {
     transaction: string,
     chunk: string,
     token: CancelToken,
-    data: any,
+    data: object,
     withRetry?: boolean
   ): Promise<AxiosResponse<void>> {
     return ProjectModule.httpService.post(
@@ -253,7 +256,7 @@ export const ProjectApi = {
   async getProjectVersion(
     projectId: string,
     versionName: string
-  ): Promise<AxiosResponse<string>> {
+  ): Promise<AxiosResponse<ProjectVersion>> {
     return ProjectModule.httpService.get(
       `/v1/project/version/${projectId}/${versionName}`
     )
@@ -265,5 +268,11 @@ export const ProjectApi = {
 
   async downloadFile(url: string): Promise<AxiosResponse<Blob>> {
     return ProjectModule.httpService.get(url, { responseType: 'blob' })
+  },
+
+  async getProjectAccess(
+    projectId: string
+  ): Promise<AxiosResponse<ProjectAccessDetail[]>> {
+    return ProjectModule.httpService.get(`/app/project/${projectId}/access`)
   }
 }

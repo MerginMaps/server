@@ -5,49 +5,48 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-row v-if="currentNamespace && accessRequests && accessRequestsCount > 0">
-    <v-card class="bubble mt-3">
-      <h3>Project access requests</h3>
-      <v-card-text>
-        <slot name="table" :namespace="currentNamespace"></slot>
-      </v-card-text>
-    </v-card>
-  </v-row>
+  <app-container
+    v-if="
+      userStore.currentWorkspace &&
+      projectStore.accessRequests &&
+      projectStore.accessRequestsCount > 0
+    "
+  >
+    <app-section>
+      <template #title
+        >Requests
+        <span class="text-color-medium-green"
+          >({{ projectStore.accessRequestsCount }})</span
+        ></template
+      >
+      <template #default>
+        <slot name="table" :namespace="userStore.currentWorkspace.name"></slot>
+      </template>
+    </app-section>
+  </app-container>
 </template>
 
-<script lang="ts">
-import { mapActions, mapState } from 'pinia'
-import { defineComponent } from 'vue'
+<script lang="ts" setup>
+import { computed, watch } from 'vue'
 
+import { AppContainer, AppSection } from '@/common/components'
+import { useUserStore } from '@/main'
 import { useProjectStore } from '@/modules/project/store'
 
-export default defineComponent({
-  name: 'DashboardAccessRequestsRow',
-  computed: {
-    ...mapState(useProjectStore, [
-      'accessRequests',
-      'accessRequestsCount',
-      'currentNamespace'
-    ])
-  },
-  watch: {
-    currentNamespace: {
-      immediate: true,
-      async handler(value) {
-        if (value) {
-          await this.initNamespaceAccessRequests({
-            namespace: value
-          })
-        }
-      }
+const projectStore = useProjectStore()
+const userStore = useUserStore()
+const workspaceId = computed(() => userStore.currentWorkspace?.id)
+// Every dashboard table have to load data on orkspace change
+watch(
+  workspaceId,
+  (value) => {
+    if (value && userStore.isWorkspaceAdmin()) {
+      projectStore.initNamespaceAccessRequests({
+        namespace: userStore.currentWorkspace.name,
+        params: null
+      })
     }
   },
-  methods: {
-    ...mapActions(useProjectStore, ['initNamespaceAccessRequests'])
-  }
-})
+  { immediate: true }
+)
 </script>
-
-<style scoped lang="scss">
-@use '@/sass/dashboard';
-</style>

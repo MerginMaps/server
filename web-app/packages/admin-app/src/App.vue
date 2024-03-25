@@ -57,7 +57,7 @@ import {
   useNotificationStore,
   useUserStore
   // UploadProgress
-} from '@mergin/lib'
+} from '@mergin/lib-vue2'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 

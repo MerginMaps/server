@@ -343,6 +343,21 @@ def test_get_paginated_projects(client):
     assert resp_desc.status_code == 200
     assert len(resp_desc.json["projects"]) == 1
 
+    # mark public project as deleted
+    project.removed_at = datetime.datetime.utcnow()
+    db.session.commit()
+    resp = client.get(
+        "/v1/project/paginated?page=1&per_page=10&only_public=true&order_params=namespace_asc"
+    )
+    assert resp.json.get("count") == 0
+    # delete permanently
+    project.delete()
+    db.session.commit()
+    resp = client.get(
+        "/v1/project/paginated?page=1&per_page=10&only_public=true&order_params=namespace_asc"
+    )
+    assert resp.json.get("count") == 0
+
 
 def test_get_projects_by_names(client):
     user = User.query.filter_by(username="mergin").first()
@@ -471,13 +486,14 @@ def test_delete_project(client):
     )
 
     # remove project
+    admin = User.query.filter_by(username="mergin").first()
     resp = client.delete("/v1/project/{}/{}".format(test_workspace_name, test_project))
     assert resp.status_code == 200
     rp = Project.query.filter_by(
         workspace_id=test_workspace_id, name=test_project
     ).first()
     assert rp.removed_at
-    assert rp.removed_by == "mergin"
+    assert rp.removed_by == admin.id
     assert os.path.exists(
         project_dir
     )  # files not deleted yet, since there is possibility of restore
@@ -489,6 +505,11 @@ def test_delete_project(client):
         workspace_id=test_workspace_id, name=test_project
     ).count()
     assert not os.path.exists(project_dir)
+    rm_project = Project.query.get(project.id)
+    assert rm_project.removed_at and not rm_project.storage_params
+    # try to delete again
+    resp = client.delete(f"/app/project/removed-project/{rm_project.id}")
+    assert resp.status_code == 404
 
 
 test_project_data = [
@@ -928,7 +949,7 @@ def test_download_fail(app, client):
     p = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
     ).first()
-    db.session.delete(p)
+    p.delete()
     db.session.commit()
     resp = client.get(
         "/v1/project/raw/{}/{}?file={}".format(
@@ -2020,15 +2041,16 @@ def test_orphan_project(client):
         url_for("/.mergin_auth_controller_delete_user", username=user.username)
     )
     assert resp.status_code == 204
-    assert not User.query.filter_by(id=user_id).count()
+    assert User.query.filter_by(id=user_id).count()
+    assert user.username.startswith("deleted_") and not user.active
     # project still exists (it belongs to workspace)
     p = Project.query.filter_by(name="orphan").first()
-    assert not p.creator_id
+    assert p.creator_id
     assert p.access.owners == []
 
     # superuser as workspace owner has access to project and can assign new writer/owner
     resp = client.get(f"/v1/project/{test_workspace.name}/{p.name}")
-    assert not resp.json["creator"]
+    assert resp.json["creator"] == p.creator_id
     assert resp.json["access"]["owners"] == []
     assert resp.json["role"] == "owner"
 
@@ -2058,7 +2080,7 @@ def test_orphan_project(client):
         == 200
     )
     resp = client.get(f"/v1/project/{test_workspace.name}/{p.name}")
-    assert not resp.json["creator"]
+    assert resp.json["creator"]
     assert resp.json["access"]["owners"] == [admin.id]
 
     # project will however not be listed as 'created' projects
@@ -2201,3 +2223,81 @@ def test_get_project_version(client, diff_project):
     # invalid project identifier
     resp = client.get(f"/v1/project/version/1234/v10")
     assert resp.status_code == 404
+
+
+def add_project_version(project, changes, version=2):
+    pv = ProjectVersion(
+        project,
+        f"v{version}",
+        "mergin",
+        changes,
+        project.files,
+        "123",
+    )
+    db.session.add(pv)
+    db.session.commit()
+    return pv
+
+
+def test_project_version_integrity(client):
+    # changes with an upload
+    # create transaction and upload chunks
+    changes = _get_changes_with_diff(test_project_dir)
+    upload, upload_dir = create_transaction("mergin", changes)
+    upload_chunks(upload_dir, upload.changes)
+    # manually create an identical project version in db
+    next_version = "v{}".format(upload.version + 1)
+    pv = ProjectVersion(
+        upload.project,
+        next_version,
+        "mergin",
+        changes,
+        upload.project.files,
+        "123",
+    )
+    db.session.add(pv)
+    db.session.commit()
+    # try to finish the transaction
+    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    assert resp.status_code == 422
+    assert "Failed to create new version" in resp.json["detail"]
+    failure = SyncFailuresHistory.query.filter_by(project_id=upload.project.id).first()
+    assert failure.error_type == "push_finish"
+    assert "Failed to create new version" in failure.error_details
+    db.session.delete(pv)
+    db.session.delete(failure)
+    db.session.commit()
+
+    # changes without an upload
+    # to insert an identical project version when no upload (only one endpoint used),
+    # we need to pretend side effect of a function called just before project version insertion
+    with patch("mergin.sync.utils.get_user_agent") as mock:
+        project = Project.query.filter_by(
+            name=test_project, workspace_id=test_workspace_id
+        ).first()
+        url = "/v1/project/push/{}/{}".format(test_workspace_name, test_project)
+        changes = _get_changes(test_project_dir)
+        changes["added"] = changes["updated"] = []  # only deleted files
+        data = {"version": "v1", "changes": changes}
+        pv = mock.side_effect = add_project_version(project, changes)
+        resp = client.post(
+            url,
+            data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
+            headers=json_headers,
+        )
+        assert resp.status_code == 422
+        assert "Failed to upload a new project version" in resp.json["detail"]
+        failure = SyncFailuresHistory.query.filter_by(
+            project_id=upload.project.id
+        ).first()
+        assert failure.error_type == "push_start"
+        assert "Failed to upload a new project version" in failure.error_details
+        db.session.delete(pv)
+        db.session.commit()
+
+    # check infrastructure is clean for successful push if no version conflict occur
+    changes = _get_changes(test_project_dir)
+    upload, upload_dir = create_transaction("mergin", changes)
+    upload_chunks(upload_dir, upload.changes)
+    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    assert resp.status_code == 200

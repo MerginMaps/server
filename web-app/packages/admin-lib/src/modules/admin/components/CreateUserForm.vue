@@ -87,7 +87,7 @@ import {
   useDialogStore,
   useNotificationStore,
   useFormStore
-} from '@mergin/lib'
+} from '@mergin/lib-vue2'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 

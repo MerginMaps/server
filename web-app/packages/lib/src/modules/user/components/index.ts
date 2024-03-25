@@ -5,4 +5,4 @@
 export { default as ChangePasswordForm } from './ChangePasswordForm.vue'
 export { default as EditProfileForm } from './EditProfileForm.vue'
 export { default as ProfileAccessRequestsRow } from './ProfileAccessRequestsRow.vue'
-export { default as UserSearchChip } from './UserSearchChip.vue'
+export { default as DeleteAccountConfirm } from './DeleteAccountConfirm.vue'

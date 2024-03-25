@@ -28,6 +28,19 @@ export const useInstanceStore = defineStore('instanceModule', {
     configData: undefined
   }),
 
+  getters: {
+    /**
+     * Checks if global roles are enabled based on the config data.
+     * Returns true if any of the global role flags are truthy, false otherwise.
+     */
+    globalRolesEnabled(state): boolean {
+      // eslint-disable-next-line camelcase
+      const { global_read, global_write, global_admin } = state.configData
+      // eslint-disable-next-line camelcase
+      return [global_read, global_write, global_admin].some((r) => !!r)
+    }
+  },
+
   actions: {
     setConfigData(payload: ConfigResponse) {
       this.configData = payload

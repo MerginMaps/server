@@ -4,4 +4,5 @@
 
 export * from './module'
 export * from './store'
+export * from './types'
 export { default as MerginComponentUuidMixin } from './MerginComponentUuidMixin'

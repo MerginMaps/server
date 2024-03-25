@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <FullStorageWarningTemplate :usage="usage"></FullStorageWarningTemplate>
+  <FullStorageWarningTemplate></FullStorageWarningTemplate>
 </template>
 
 <script lang="ts">
@@ -15,11 +15,7 @@ import FullStorageWarningTemplate from './FullStorageWarningTemplate.vue'
 
 export default defineComponent({
   name: 'FullStorageWarning',
-  components: { FullStorageWarningTemplate },
-  props: {
-    usage: Number,
-    username: String
-  }
+  components: { FullStorageWarningTemplate }
 })
 </script>
 

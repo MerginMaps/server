@@ -5,36 +5,39 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <custom-page>
-    <v-card style="min-width: 300px" class="text-center">
-      <v-card-title class="justify-center primary--text font-weight-bold ml-3">
-        <h3>Email confirmation</h3>
-      </v-card-title>
-      <v-card-text>
-        <p v-if="verified">Your email address has been verified.</p>
-        <p v-else class="error--text">Invalid token</p>
-        <br />
-        <v-btn
-          data-cy="verify-email-btn"
-          class="align-self-center orange white--text"
-          href="/"
-          >Continue
-        </v-btn>
-      </v-card-text>
-    </v-card>
-  </custom-page>
+  <app-onboarding-page>
+    <template #header>
+      <h1 class="text-6xl">Email confirmation</h1>
+    </template>
+    <div class="flex flex-column gap-4 align-items-center">
+      <template v-if="verified"
+        ><img src="@/assets/neutral.svg" alt="MerginMaps neutral" /><span
+          class="opacity-80 text-sm"
+          >Your email address has been verified.</span
+        ></template
+      >
+      <template v-else
+        ><img src="@/assets/negative.svg" alt="MerginMaps negative" />Invalid
+        token</template
+      >
+      <PButton
+        data-cy="verify-email-btn"
+        @click="$router.push({ name: 'home' })"
+        class="w-full"
+        label="Continue"
+      />
+    </div>
+  </app-onboarding-page>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
 
-import CustomPage from '@/common/components/CustomPage.vue'
+import AppOnboardingPage from '@/common/components/AppOnboardingPage.vue'
 import { UserApi } from '@/modules/user/userApi'
 
-// TODO: deprecated?
 export default defineComponent({
   name: 'VerifyEmailView',
-  components: { CustomPage },
   data() {
     return {
       verified: false
@@ -42,7 +45,7 @@ export default defineComponent({
   },
   computed: {
     token() {
-      return this.$route.params.token
+      return this.$route.params.token as string
     }
   },
   async created() {
@@ -52,8 +55,9 @@ export default defineComponent({
     } catch (e) {
       this.verified = false
     }
-  }
+  },
+  components: { AppOnboardingPage }
 })
 </script>
 
-<style scoped></style>
+<style scoped lang="scss"></style>

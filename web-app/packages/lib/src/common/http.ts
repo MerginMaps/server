@@ -10,7 +10,7 @@ import { CustomError } from '@/common/errors'
 
 export interface HttpService extends AxiosInstance {
   absUrl?: (url: string) => string
-  appendParams?: (url: string, params: Record<string, any>) => string
+  appendParams?: (url: string, params: Record<string, string>) => string
 }
 
 const HTTP: HttpService = axios.create({

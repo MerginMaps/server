@@ -1,7 +1,8 @@
 module.exports = {
   root: true,
   env: {
-    es2021: true
+    es2021: true,
+    browser: true
   },
   extends: [
     'plugin:vue/essential',
@@ -42,7 +43,6 @@ module.exports = {
       {
         allowModifiers: true
       }
-    ],
-    'vue/multi-word-component-names': 'off'
+    ]
   }
 }

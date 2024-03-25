@@ -9,7 +9,7 @@ from sqlalchemy import or_, and_, Column, literal
 from sqlalchemy.orm import joinedload
 
 from .errors import UpdateProjectAccessError
-from .models import Project, ProjectAccess
+from .models import Project, ProjectAccess, AccessRequest
 from .permissions import projects_query, ProjectPermissions
 from .public_api_controller import parse_project_access_update_request
 from .. import db
@@ -100,6 +100,7 @@ class GlobalWorkspace(AbstractWorkspace):
         return (
             db.session.query(Project.disk_usage)
             .filter(Project.workspace_id == self.id)
+            .filter(Project.removed_at.is_(None))
             .count()
         )
 
@@ -156,7 +157,11 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
         only_public=False,
     ):
         if only_public:
-            projects = Project.query.filter(Project.access.has(public=only_public))
+            projects = (
+                Project.query.filter(Project.access.has(public=only_public))
+                .filter(Project.storage_params.isnot(None))
+                .filter(Project.removed_at.is_(None))
+            )
         else:
             projects = projects_query(
                 ProjectPermissions.Read, as_admin=as_admin, public=public
@@ -246,7 +251,9 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
 
     def projects_query(self, name=None, workspace=None):
         ws = self.factory_method()
-        query = db.session.query(Project, literal(ws.name).label("workspace_name"))
+        query = db.session.query(
+            Project, literal(ws.name).label("workspace_name")
+        ).filter(Project.storage_params.isnot(None))
 
         if name:
             query = query.filter(Project.name.ilike(f"%{name}%"))
@@ -269,3 +276,8 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
                 parsed_access["invalid_usernames"], parsed_access["invalid_ids"]
             )
         return id_diffs, error
+
+    @staticmethod
+    def access_requests_query():
+        """Project access base query"""
+        return AccessRequest.query.join(Project)

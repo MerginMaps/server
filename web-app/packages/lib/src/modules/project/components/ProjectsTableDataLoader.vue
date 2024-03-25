@@ -5,20 +5,43 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <projects-table
-    v-bind="$props"
-    :projects="projects"
-    :numberOfItems="numberOfItems"
-    :onlyPublic="onlyPublic"
-    @fetch-projects="fetchProjects"
-  />
+  <div>
+    <projects-table
+      v-bind="$props"
+      v-model="options"
+      :show-footer="showFooter && projectsCount > options.itemsPerPage"
+      :projects="projects"
+      :numberOfItems="projectsCount"
+      @fetch-projects="fetchProjects"
+    >
+      <template #empty>
+        <div class="flex flex-column align-items-center p-4 text-center">
+          <img src="@/assets/map-circle.svg" alt="No projects" />
+          <p class="font-semibold m-0 p-4">
+            <template v-if="projectsSearch"
+              >We couldn't find any projects matching your search
+              criteria.</template
+            >
+            <template v-else>You don't have any projects yet.</template>
+          </p>
+          <template v-if="canCreateProject">
+            <p class="text-sm opacity-80 pb-4">
+              Let’s start by creating a first one!
+            </p>
+            <PButton @click="newProjectDialog">Create new project</PButton>
+          </template>
+        </div>
+      </template>
+    </projects-table>
+  </div>
 </template>
 
 <script lang="ts">
-import { mapActions } from 'pinia'
+import { mapState, mapActions } from 'pinia'
 import { defineComponent, PropType } from 'vue'
 
 import { PaginatedGridOptions } from '@/common'
+import { ProjectForm, useDialogStore } from '@/modules'
 import { useNotificationStore } from '@/modules/notification/store'
 import ProjectsTable from '@/modules/project/components/ProjectsTable.vue'
 import { useProjectStore } from '@/modules/project/store'
@@ -37,10 +60,6 @@ export default defineComponent({
       default: false
     },
     namespace: String,
-    sortable: {
-      type: Boolean,
-      default: true
-    },
     asAdmin: {
       type: Boolean,
       default: false
@@ -60,54 +79,59 @@ export default defineComponent({
     initialOptions: {
       type: Object as PropType<PaginatedGridOptions>,
       default: () => ({
-        sortBy: ['updated'],
-        sortDesc: [true],
         itemsPerPage: 25,
         page: 1
       })
+    },
+    /** Whether the user can create a new project */
+    canCreateProject: {
+      type: Boolean as PropType<boolean>
     }
   },
   data() {
     return {
-      numberOfItems: 0,
-      projects: []
+      options: { ...this.initialOptions }
     }
+  },
+  computed: {
+    ...mapState(useProjectStore, [
+      'projects',
+      'projectsCount',
+      'projectsSearch'
+    ])
   },
   methods: {
     ...mapActions(useProjectStore, ['getProjects']),
     ...mapActions(useNotificationStore, ['error']),
+    ...mapActions(useDialogStore, ['show']),
     async fetchProjects(
       projectGridState: ProjectGridState,
-      gridOptions: PaginatedGridOptions,
+      additionalGridOptions: PaginatedGridOptions,
       onFinish?: () => void
     ) {
       const params = {} as PaginatedProjectsParams
+      const gridOptions = { ...this.options, ...additionalGridOptions }
       if (
         this.$route.name === 'shared_projects' ||
         this.$route.name === 'my_projects'
       ) {
-        params.flag = this.$route.meta.flag
+        params.flag = this.$route.meta.flag as string
       }
       params.page = gridOptions.page
       params.per_page = gridOptions.itemsPerPage
-      if (gridOptions.sortBy[0]) {
+      if (gridOptions.sortBy) {
         let orderParam = ''
-        if (gridOptions.sortBy[0] === 'meta.size') {
+        if (gridOptions.sortBy === 'meta.size') {
           orderParam = 'disk_usage'
         } else {
           orderParam =
-            gridOptions.sortBy[0] === 'owner'
-              ? 'namespace'
-              : gridOptions.sortBy[0]
+            gridOptions.sortBy === 'owner' ? 'namespace' : gridOptions.sortBy
         }
         params.order_params =
-          orderParam + (gridOptions.sortDesc[0] ? '_desc' : '_asc')
+          orderParam + (gridOptions.sortDesc ? '_desc' : '_asc')
       }
       if (projectGridState.searchFilterByProjectName) {
         params.name = projectGridState.searchFilterByProjectName.trim()
-      }
-      if (projectGridState.searchFilterByNamespace) {
-        params.namespace = projectGridState.searchFilterByNamespace.trim()
       }
       if (projectGridState.namespace) {
         params.only_namespace = projectGridState.namespace
@@ -121,16 +145,8 @@ export default defineComponent({
       if (this.onlyPublic) {
         params.only_public = true
       }
-      if (
-        projectGridState.searchFilterByDay &&
-        projectGridState.searchFilterByDay >= 0
-      ) {
-        params.last_updated_in = projectGridState.searchFilterByDay
-      }
       try {
-        const response = await this.getProjects({ params })
-        this.projects = response.data?.projects
-        this.numberOfItems = response.data?.count
+        await this.getProjects({ params })
         if (onFinish) {
           onFinish()
         }
@@ -140,6 +156,18 @@ export default defineComponent({
         }
         await this.error({ text: 'Failed to fetch list of projects' })
       }
+    },
+    newProjectDialog() {
+      const dialog = { persistent: true, header: 'New project' }
+      this.show({
+        component: ProjectForm,
+        params: {
+          dialog,
+          listeners: {
+            error: (err, data) => this.$emit('new-project-error', err, data)
+          }
+        }
+      })
     }
   }
 })

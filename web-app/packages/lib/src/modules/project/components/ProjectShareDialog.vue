@@ -5,213 +5,173 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-card>
-    <v-card-title>
-      <span class="text-h5 primary--text font-weight-bold"
-        >Share project {{ project.name }}</span
+  <project-share-template
+    v-model="data.permission"
+    :disabled="data.isPending || data.selectedUsers.length === 0"
+    @close="dialogStore.close"
+    @submit="share"
+  >
+    <template #accountsInput
+      ><label class="text-xs" for="accounts">Share with</label
+      ><PAutoComplete
+        @complete="search"
+        v-model="data.selectedUsers"
+        multiple
+        optionLabel="label"
+        :suggestions="data.users"
+        :placeholder="
+          data.selectedUsers.length ? '' : 'Search users by username or email'
+        "
+        input-id="accounts"
+        data-key="key"
+        @item-select="select"
+        :minLength="0"
+        forceSelection
+        completeOnFocus
       >
-    </v-card-title>
-    <v-card-text>
-      <v-layout mt-2 column>
-        <h4 class="primary--text">
-          {{
-            readonly
-              ? `Project ${project.name} will be shared with following people`
-              : 'Share with'
-          }}
-        </h4>
-        <v-layout v-if="readonly" mx-0 mb-2 row align-center>
-          <v-chip-group active-class="primary--text" column>
-            <user-search-chip
-              v-for="user in addedUsers.slice(0, 5)"
-              :item="user"
-              :key="user.id"
+        <template #option="{ option }">
+          <div :key="option.key" class="flex align-items-center gap-4">
+            <PAvatar
+              :label="$filters.getAvatar((option.value as UserSearch).email, [option.value.profile?.first_name, option.value.profile?.last_name].filter(Boolean).join(' '))"
+              shape="circle"
+              :pt="{
+                root: {
+                  class: 'font-semibold text-color-forest mr-2',
+                  style: {
+                    borderRadius: '50%'
+                  }
+                }
+              }"
             />
-          </v-chip-group>
-          <h4 class="primary--text" v-if="addedUsers && addedUsers.length > 5">
-            and {{ addedUsers.length - 5 }} more ...
-          </h4>
-        </v-layout>
-        <v-layout v-else mb-10 column>
-          <account-autocomplete
-            :inputUsers="addedUsers"
-            :filterUsers="projectUsers"
-            @update="onAutocompleteUpdate"
-            :allowInvite="allowInvite"
-          />
-          <span class="mt-2" v-if="invitedEmails.length > 0"
-            >You will add new people to your workspace in the next step</span
-          >
-        </v-layout>
-      </v-layout>
-    </v-card-text>
-    <v-card-actions class="flex-row flex flex-wrap">
-      <permission-info />
-      <v-spacer />
-      <div class="flex-row">
-        <v-btn @click="closeDialog" outlined>{{
-          readonly ? 'Back' : 'Cancel'
-        }}</v-btn>
-        <v-btn
-          id="share-project-btn"
-          class="primary"
-          :disabled="
-            isPending ||
-            !addedUsers ||
-            addedUsers.length === 0 ||
-            !isProjectOwner
-          "
-          @click="onShare"
+
+            <div class="flex flex-column">
+              <span class="tip-message-title text-sm font-semibold">
+                {{ option.value.username }}
+              </span>
+              <span class="opacity-80 text-sm line-height-4">
+                {{ option.value.email }}
+              </span>
+            </div>
+          </div>
+        </template>
+        <template #empty>
+          <p class="p-2">
+            <i class="text-color-forest ti ti-info-circle-filled"></i
+            >{{ ' ' }}No matches found - Try using their emails instead
+          </p></template
         >
-          {{ invitedEmails.length === 0 || readonly ? 'Share' : 'Next' }}
-        </v-btn>
-      </div>
-    </v-card-actions>
-  </v-card>
+        <template v-if="data.users.length" #footer
+          ><p class="px-2">
+            <i class="text-color-forest ti ti-info-circle-filled"></i
+            >{{ ' ' }}Not the right person? Try typing their email instead
+          </p></template
+        >
+        <template #removetokenicon="slotProps"
+          ><i
+            class="ti ti-x cursor-pointer"
+            @click.stop="slotProps.removeCallback"
+        /></template> </PAutoComplete
+    ></template>
+  </project-share-template>
 </template>
 
-<script lang="ts">
-import isEqual from 'lodash/isEqual'
-import omit from 'lodash/omit'
-import { mapActions, mapState } from 'pinia'
-import { PropType, defineComponent } from 'vue'
+<script setup lang="ts">
+/**
+ * ProjectShareDialog component.
+ *
+ * Allows sharing a project with other users by adding them to project access.
+ * Can find users and update project access.
+ */
+import { AutoCompleteCompleteEvent } from 'primevue/autocomplete'
+import { reactive } from 'vue'
 
-import AccountAutocomplete from './AccountAutocomplete.vue'
-import PermissionInfo from './PermissionInfo.vue'
+import ProjectShareTemplate from './ProjectShareDialogTemplate.vue'
 
 import { getErrorMessage } from '@/common/error_utils'
+import { ProjectRoleName } from '@/common/permission_utils'
+import { AutoCompleteItem, useUserStore } from '@/main'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
-import UserSearchChip from '@/modules/user/components/UserSearchChip.vue'
-import { UserSearch, UserSearchInvite } from '@/modules/user/types'
+import { UserSearch, UserSearchParams } from '@/modules/user/types'
 
 interface Data {
-  addedUsers: Array<UserSearchInvite | UserSearch>
+  users: AutoCompleteItem<UserSearch>[]
+  selectedUsers: AutoCompleteItem<UserSearch>[]
   isPending: boolean
+  permission: ProjectRoleName
 }
 
-export default defineComponent({
-  name: 'ProjectShareDialog',
-  components: { PermissionInfo, UserSearchChip, AccountAutocomplete },
-  props: {
-    allowInvite: Boolean,
-    inputUsers: Array as PropType<Data['addedUsers']>,
-    readonly: Boolean,
-    name: String
-  },
-  data(): Data {
-    return {
-      addedUsers: [],
-      isPending: false
-    }
-  },
-  computed: {
-    ...mapState(useProjectStore, [
-      'currentNamespace',
-      'project',
-      'isProjectOwner'
-    ]),
-
-    projectAccess() {
-      return this.project?.access
-    },
-    projectUsers() {
-      return [
-        ...this.projectAccess.readersnames,
-        ...this.projectAccess.writersnames,
-        ...this.projectAccess.ownersnames
-      ]
-    },
-    invitedEmails(): UserSearchInvite[] {
-      return this.addedUsers
-        ? this.addedUsers.filter((addedUserItem) => addedUserItem.isInvite)
-        : []
-    }
-  },
-
-  created() {
-    this.addedUsers = this.inputUsers ?? []
-  },
-
-  methods: {
-    ...mapActions(useDialogStore, ['close']),
-    ...mapActions(useProjectStore, ['saveProjectSettings']),
-    ...mapActions(useNotificationStore, ['error']),
-
-    onAutocompleteUpdate(event) {
-      this.addedUsers = event
-    },
-
-    getNewProjectAccess: function () {
-      const addedUsers = this.addedUsers
-        .filter((addedUserItem) => !addedUserItem.isInvite)
-        .map((addedUserItem) => omit(addedUserItem, ['isInvite']))
-      const addedUserNames = addedUsers.map((addedUser) => addedUser.username)
-      return {
-        access: {
-          ...this.projectAccess,
-          readersnames: this.projectAccess.readersnames.concat(addedUserNames)
-        }
-      }
-    },
-
-    hasAccessChanged(newAccess, oldAccess) {
-      return !isEqual(oldAccess.readersnames, newAccess.readersnames)
-    },
-
-    async onShare() {
-      if (this.addedUsers && this.addedUsers.length > 0) {
-        if (this.allowInvite && this.invitedEmails.length > 0) {
-          if (this.readonly) {
-            const newProjectAccess = this.getNewProjectAccess()
-            this.$emit(
-              'on-share',
-              newProjectAccess,
-              this.hasAccessChanged(newProjectAccess.access, this.projectAccess)
-            )
-          } else {
-            this.$emit(
-              'on-invite',
-              this.invitedEmails.map((item) => item.email),
-              this.addedUsers
-            )
-          }
-          this.isPending = true
-        } else {
-          const newProjectAccess = this.getNewProjectAccess()
-          if (
-            this.hasAccessChanged(newProjectAccess.access, this.projectAccess)
-          ) {
-            try {
-              // save only if access has changed
-              await this.saveProjectSettings({
-                namespace: this.currentNamespace,
-                newSettings: newProjectAccess,
-                projectName: this.project.name
-              })
-              this.close()
-            } catch (err) {
-              this.error({
-                text: getErrorMessage(err, 'Failed to save project settings')
-              })
-            }
-          }
-          this.addedUsers = []
-        }
-      }
-    },
-    closeDialog() {
-      if (this.readonly) {
-        this.$emit(
-          'cancel',
-          this.invitedEmails.map((item) => item.email),
-          this.addedUsers
-        )
-      } else {
-        this.close()
-      }
-    }
-  }
+const data = reactive<Data>({
+  users: [],
+  selectedUsers: [],
+  isPending: false,
+  permission: 'reader'
 })
+
+const projectStore = useProjectStore()
+const userStore = useUserStore()
+const dialogStore = useDialogStore()
+const notificationStore = useNotificationStore()
+
+const search = async (e: AutoCompleteCompleteEvent) => {
+  if (data.isPending) {
+    return
+  }
+  try {
+    data.isPending = true
+    const params: UserSearchParams = {
+      namespace: userStore.currentWorkspace?.name,
+      like: e.query
+    }
+    const response = await userStore.getAuthNotProjectUserSearch(params)
+    data.users = response.data.map((item) => ({
+      key: item.id,
+      value: item,
+      label: item.name || item.username
+    }))
+  } finally {
+    data.isPending = false
+  }
+}
+
+const share = async () => {
+  if (!data.selectedUsers.length) return
+
+  const {
+    ownersnames,
+    readersnames,
+    writersnames,
+    public: publicProject
+  } = projectStore.project.access
+  try {
+    await projectStore.saveProjectAccessByRoleName({
+      namespace: userStore.currentWorkspace?.name,
+      settings: {
+        access: {
+          ownersnames,
+          readersnames,
+          writersnames,
+          public: publicProject
+        }
+      },
+      userNames: data.selectedUsers.map((item) => item.value.username),
+      roleName: data.permission,
+      projectName: projectStore.project.name
+    })
+    await projectStore.getProjectAccess(projectStore.project?.id)
+    dialogStore.close()
+  } catch (err) {
+    notificationStore.error({
+      text: getErrorMessage(err, 'Failed to save project settings')
+    })
+  }
+}
+
+function select(e) {
+  const founded = data.selectedUsers.filter((item) => item.key === e.value.key)
+  if (founded.length > 1) {
+    data.selectedUsers = data.selectedUsers.slice(0, -1)
+  }
+}
 </script>

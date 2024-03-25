@@ -3,76 +3,49 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import { defineStore } from 'pinia'
+import { ToastServiceMethods } from 'primevue/toastservice'
 
-const SNACK_BAR_ERROR_DEFAULT_PARAMS = {
-  color: 'red darken-4'
-}
-const SNACK_BAR_WARN_DEFAULT_PARAMS = {
-  color: 'orange',
-  buttonColor: 'black'
-}
+import {
+  NotificationPayload,
+  NotificationShowPayload,
+  NotificationState
+} from './types'
 
-export interface NotificationState {
-  isOpen: boolean
-  text: string
-  params: {
-    action?: {
-      text: string
-      handler: () => void
-    }
-    timeout?: number
-  }
-}
-
+/**
+ * Defines a Pinia store for managing notifications.
+ * In future - it should be possible to remove this store and use this.$toast or useToast in all components.
+ *
+ * The store exposes state for the current toast notification,
+ * showing/adding new notifications, warning, error,
+ * and displaying results.
+ */
 export const useNotificationStore = defineStore('notificationModule', {
   state: (): NotificationState => ({
-    isOpen: false,
-    text: '',
-    params: null
+    toast: null
   }),
 
   actions: {
-    openNotification(payload) {
-      this.isOpen = true
-      this.text = payload.text
-      this.params = payload.params
+    init(toast: ToastServiceMethods) {
+      this.toast = toast
     },
-    closeNotification() {
-      this.isOpen = false
-      this.text = ''
-      this.params = null
-    },
-    show(payload) {
-      if (this.isOpen) {
-        if (this.text === payload.text) {
-          // ignore same notifications
-          return
-        }
-        // previous notification is open, close it first
-        this.closeNotification()
-        // show new notification after some time
-        setTimeout(() => {
-          this.show({ text: payload.text, params: payload.params })
-        }, 300)
-      } else {
-        this.openNotification({
-          text: payload.text,
-          params: payload.params?.timeout
-            ? { ...payload.params, timeout: payload.params.timeout }
-            : { ...payload.params }
-        })
-      }
-    },
-    warn(payload) {
-      this.show({
-        ...payload,
-        params: { ...payload.params, ...SNACK_BAR_WARN_DEFAULT_PARAMS }
+    show(payload: NotificationShowPayload) {
+      this.toast?.add({
+        severity: payload.severity ?? 'success',
+        summary: payload.text,
+        detail: payload.detail,
+        life: payload.life ?? 3000
       })
     },
-    error(payload) {
+    warn(payload: NotificationPayload) {
       this.show({
-        ...payload,
-        params: { ...payload.params, ...SNACK_BAR_ERROR_DEFAULT_PARAMS }
+        severity: 'warn',
+        ...payload
+      })
+    },
+    error(payload: NotificationPayload) {
+      this.show({
+        severity: 'error',
+        ...payload
       })
     },
     displayResult(payload) {
@@ -81,9 +54,12 @@ export const useNotificationStore = defineStore('notificationModule', {
       } else {
         this.error({
           text: payload?.result?.message,
-          params: { timeout: 5000 }
+          life: 5000
         })
       }
+    },
+    closeNotification() {
+      this.toast.removeAllGroups()
     }
   }
 })

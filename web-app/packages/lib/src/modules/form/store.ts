@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import axios from 'axios'
 import { defineStore } from 'pinia'
-import Vue from 'vue'
 
 import {
   ClearErrorsPayload,
@@ -32,10 +32,10 @@ export const useFormStore = defineStore('formModule', {
 
   actions: {
     setFormErrors(payload: SetFormErrorPayload) {
-      Vue.set(this.errors, payload.componentId, payload.errors)
+      this.errors[payload.componentId] = payload.errors
     },
     resetFormErrors(payload: MerginComponentUuidPayload) {
-      Vue.delete(this.errors, payload.componentId)
+      delete this.errors[payload.componentId]
     },
     clearErrors(payload: ClearErrorsPayload) {
       const notificationStore = useNotificationStore()
@@ -46,9 +46,18 @@ export const useFormStore = defineStore('formModule', {
       }
     },
     async handleError(payload: HandleErrorPayload) {
-      let errorMessage
+      let errorMessage =
+        payload.generalMessage ?? (payload?.error as string) ?? 'Error'
       const notificationStore = useNotificationStore()
-      if (typeof payload.error?.response?.data === 'object') {
+      if (!axios.isAxiosError(payload.error)) {
+        await notificationStore.error({ text: errorMessage })
+        return
+      }
+
+      if (
+        axios.isAxiosError(payload.error) &&
+        typeof payload.error?.response?.data === 'object'
+      ) {
         // two types of error responses
         // TODO: Get data from HTTP status code, handle formError not standard error with detail
         if (
@@ -61,13 +70,10 @@ export const useFormStore = defineStore('formModule', {
             componentId: payload.componentId,
             errors: payload.error.response.data
           })
+          return
         }
       } else {
-        errorMessage =
-          payload?.error?.response?.data ??
-          payload.generalMessage ??
-          payload?.error ??
-          'Error'
+        errorMessage = payload?.error?.response?.data ?? errorMessage
       }
       if (errorMessage) {
         // show error message in notification component

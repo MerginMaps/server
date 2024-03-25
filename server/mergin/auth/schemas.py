@@ -40,6 +40,7 @@ class UserProfileSchema(ma.SQLAlchemyAutoSchema):
         if ws:
             projects_count = (
                 Project.query.filter(Project.creator_id == obj.user.id)
+                .filter(Project.removed_at.is_(None))
                 .filter_by(workspace_id=ws.id)
                 .count()
             )
@@ -75,7 +76,10 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
 class UserSearchSchema(ma.SQLAlchemyAutoSchema):
     """User schema for public search queries"""
 
-    profile = fields.Nested(UserProfileSchema(), only=("first_name", "last_name"))
+    name = fields.Method("_name", dump_only=True)
+
+    def _name(self, obj):
+        return obj.profile.name()
 
     class Meta:
         model = User
@@ -83,7 +87,7 @@ class UserSearchSchema(ma.SQLAlchemyAutoSchema):
             "id",
             "username",
             "email",
-            "profile",
+            "name",
         )
         load_instance = True
 
@@ -94,7 +98,7 @@ class UserInfoSchema(ma.SQLAlchemyAutoSchema):
     first_name = fields.String(attribute="profile.first_name")
     last_name = fields.String(attribute="profile.last_name")
     receive_notifications = fields.Boolean(attribute="profile.receive_notifications")
-    registration_date = DateTimeWithZ(attribute="profile.registration_date")
+    registration_date = DateTimeWithZ(attribute="registration_date")
     name = fields.Function(lambda obj: obj.profile.name())
 
     class Meta:

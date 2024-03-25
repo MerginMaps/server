@@ -6,7 +6,9 @@ from __future__ import annotations
 import datetime
 from typing import List, Optional
 import bcrypt
-from flask import current_app
+from flask import current_app, request
+from sqlalchemy import or_
+
 from .. import db
 from ..sync.utils import get_user_agent, get_ip
 
@@ -23,6 +25,12 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean)
     verified_email = db.Column(db.Boolean, default=False)
     inactive_since = db.Column(db.DateTime(), nullable=True, index=True)
+    registration_date = db.Column(
+        db.DateTime(),
+        nullable=False,
+        info={"label": "Date of creation of user account"},
+        default=datetime.datetime.utcnow,
+    )
 
     def __init__(self, username, email, passwd, is_admin=False):
         self.username = username
@@ -132,6 +140,52 @@ class User(db.Model):
             days=current_app.config["ACCOUNT_EXPIRATION"]
         )
 
+    def inactivate(self) -> None:
+        """Inactivate user account and remove explicitly shared projects as well clean references to created projects.
+        User is then safe to be removed.
+        """
+        from ..sync.models import Project, ProjectAccess, AccessRequest, RequestStatus
+
+        shared_projects = Project.query.filter(
+            or_(
+                Project.access.has(ProjectAccess.owners.contains([self.id])),
+                Project.access.has(ProjectAccess.writers.contains([self.id])),
+                Project.access.has(ProjectAccess.readers.contains([self.id])),
+            )
+        ).all()
+
+        for p in shared_projects:
+            for key in ("owners", "writers", "readers"):
+                value = set(getattr(p.access, key))
+                if self.id in value:
+                    value.remove(self.id)
+                setattr(p.access, key, list(value))
+            db.session.add(p)
+
+        # decline all access requests
+        for req in (
+            AccessRequest.query.filter_by(requested_by=self.id)
+            .filter(AccessRequest.status.is_(None))
+            .all()
+        ):
+            req.resolve(RequestStatus.DECLINED, resolved_by=self.id)
+
+        # inactivate user account to prevent login and mark for clean up
+        self.active = False
+        self.inactive_since = datetime.datetime.utcnow()
+        db.session.commit()
+
+    def anonymize(self):
+        """Anonymize user object in database - remove personal information"""
+        ts = round(datetime.datetime.utcnow().timestamp() * 1000)
+        del_str = f"deleted_{ts}"
+        self.username = del_str
+        self.email = None
+        self.passwd = None
+        self.profile.first_name = None
+        self.profile.last_name = None
+        db.session.commit()
+
 
 class UserProfile(db.Model):
     user_id = db.Column(
@@ -140,12 +194,6 @@ class UserProfile(db.Model):
     receive_notifications = db.Column(db.Boolean, default=True, index=True)
     first_name = db.Column(db.String(256), nullable=True, info={"label": "First name"})
     last_name = db.Column(db.String(256), nullable=True, info={"label": "Last name"})
-    registration_date = db.Column(
-        db.DateTime(),
-        nullable=True,
-        info={"label": "Date of creation of user account"},
-        default=datetime.datetime.utcnow,
-    )
 
     user = db.relationship(
         "User",
@@ -162,23 +210,28 @@ class UserProfile(db.Model):
 class LoginHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime(), default=datetime.datetime.utcnow, index=True)
-    username = db.Column(db.String, index=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     user_agent = db.Column(db.String, index=True)
     ip_address = db.Column(db.String, index=True)
     ip_geolocation_country = db.Column(db.String, index=True)
 
-    def __init__(self, username, ua, ip):
-        self.username = username
+    def __init__(self, user_id: int, ua: str, ip: str):
+        self.user_id = user_id
         self.user_agent = ua
         self.ip_address = ip
 
     @staticmethod
-    def add_record(username, request):
-        ua = get_user_agent(request)
-        ip = get_ip(request)
+    def add_record(user_id: int, req: request) -> None:
+        ua = get_user_agent(req)
+        ip = get_ip(req)
         # ignore login attempts coming from urllib - related to db sync tool
         if "DB-sync" in ua:
             return
-        lh = LoginHistory(username, ua, ip)
+        lh = LoginHistory(user_id, ua, ip)
         db.session.add(lh)
         db.session.commit()

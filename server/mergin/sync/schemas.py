@@ -157,15 +157,19 @@ class ProjectSchemaForVersion(ma.SQLAlchemyAutoSchema):
 
 
 class ProjectAccessRequestSchema(ma.SQLAlchemyAutoSchema):
-    requested_by = fields.Function(lambda obj: obj.user.username)
+    requested_by = fields.Method("_requested_by")
     project_name = fields.Function(lambda obj: obj.project.name)
     namespace = fields.Function(lambda obj: obj.project.workspace.name)
     expire = DateTimeWithZ()
-    user = fields.Nested(UserSearchSchema(exclude=("email",)))
+
+    def _requested_by(self, obj):
+        u = User.query.get(obj.requested_by)
+        return u.username if u else ""
 
     class Meta:
         model = AccessRequest
         load_instance = True
+        exclude = ("resolved_by", "resolved_at", "status", "requested_at")
 
 
 class ProjectSchema(ma.SQLAlchemyAutoSchema):
@@ -297,7 +301,14 @@ class AdminProjectSchema(ma.SQLAlchemyAutoSchema):
     created = DateTimeWithZ(attribute="Project.created")
     updated = DateTimeWithZ(attribute="Project.updated")
     removed_at = DateTimeWithZ(attribute="Project.removed_at")
-    removed_by = fields.String(attribute="Project.removed_by")
+    removed_by = fields.Method("_removed_by_user")
+
+    def _removed_by_user(self, obj):
+        if not obj.Project.removed_by:
+            return
+        user = User.query.get(obj.Project.removed_by)
+        if user:
+            return user.username
 
     def _workspace_name(self, obj):
         name = getattr(obj, "workspace_name", None)
