@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <span :class="[item.icon, 'text-color']" />
           <span
             :class="[
-              'opacity-80 text-sm',
+              'opacity-80 paragraph-p5',
               item.active ? 'text-color-forest font-semibold' : 'text-color'
             ]"
             >{{ item.label }}</span

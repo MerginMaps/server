@@ -18,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     @page="onPage"
   >
     <template #header>
-      <h3 class="font-semibold text-xs text-color m-0">Access requests</h3>
+      <h3 class="font-semibold paragraph-p6 text-color m-0">Access requests</h3>
     </template>
     <template #list="slotProps">
       <template v-for="item in slotProps.items" :key="item.id">
@@ -26,7 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div
           class="flex flex-column lg:flex-row align-items-center justify-content-between px-4 py-2 mt-0 border-bottom-1 border-gray-200 gap-2"
         >
-          <p class="w-12 lg:w-4 text-xs m-0">
+          <p class="w-12 lg:w-4 paragraph-p6 m-0">
             User
             <span class="font-semibold">{{ item.requested_by }}</span>
             requested an access to your project
@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <div
             class="flex w-12 lg:w-4 align-items-center flex-wrap lg:flex-nowrap row-gap-2"
           >
-            <p class="opacity-80 text-xs w-12">
+            <p class="opacity-80 paragraph-p6 w-12">
               <span v-tooltip.right="{ value: $filters.datetime(item.expire) }">
                 <template
                   v-if="$filters.remainingtime(item.expire) === 'expired'"
@@ -137,7 +137,7 @@ export default defineComponent({
           }
         },
         headerTitle: {
-          class: 'text-xs'
+          class: 'paragraph-p6'
         }
       }
     },

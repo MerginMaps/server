@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <app-section ground>
         <div class="flex align-items-center gap-2">
           <span class="p-input-icon-left flex-grow-1">
-            <i class="ti ti-search text-xl"></i>
+            <i class="ti ti-search paragraph-p3"></i>
             <PInputText
               placeholder="Search members"
               data-cy="search-members-field"

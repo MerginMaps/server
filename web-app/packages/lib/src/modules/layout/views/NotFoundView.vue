@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       class="not-found-view-container flex flex-column align-items-center text-center row-gap-4 p-4 lg:p-0"
     >
       <header>
-        <h1 class="text-6xl">Ooops, it seems the GPS has lost its way.</h1>
+        <h1 class="headline-h1">Ooops, it seems the GPS has lost its way.</h1>
       </header>
       <img src="@/assets/map-circle.svg" alt="Not found" />
       This page does not exist, check your url for mistakes, please.

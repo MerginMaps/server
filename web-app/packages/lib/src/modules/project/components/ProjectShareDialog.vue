@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     @submit="share"
   >
     <template #accountsInput
-      ><label class="text-xs" for="accounts">Share with</label
+      ><label class="paragraph-p6" for="accounts">Share with</label
       ><PAutoComplete
         @complete="search"
         v-model="data.selectedUsers"
@@ -45,10 +45,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             />
 
             <div class="flex flex-column">
-              <span class="tip-message-title text-sm font-semibold">
+              <span class="tip-message-title title-t3">
                 {{ option.value.username }}
               </span>
-              <span class="opacity-80 text-sm line-height-4">
+              <span class="opacity-80 paragraph-p5">
                 {{ option.value.email }}
               </span>
             </div>

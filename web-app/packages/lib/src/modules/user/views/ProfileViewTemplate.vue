@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         class="flex flex-column lg:flex-row lg:align-items-center row-gap-3"
       >
         <!-- Title with buttons -->
-        <h1 class="text-2xl text-color font-semibold">Account details</h1>
+        <h1 class="headline-h3 text-color font-semibold">Account details</h1>
         <div class="flex flex-grow-1 align-items-center lg:justify-content-end">
           <PButton
             @click="editProfileDialog"
@@ -48,9 +48,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             @click="resendConfirmationEmail"
             severity="secondary"
             data-cy="profile-send-email-btn"
-            >Send confirmation email
-          </PButton></template
-        >
+            label="Send confirmation email"
+        /></template>
       </app-section-banner>
     </app-container>
     <app-container>
@@ -69,10 +68,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               }
             }"
           />
-          <h3 class="text-4xl" data-cy="profile-username">
+          <h3 class="headline-h2" data-cy="profile-username">
             {{ loggedUser?.username }}
           </h3>
-          <p class="m-0 text-xs overflow-wrap-anywhere" data-cy="profile-email">
+          <p
+            class="m-0 paragraph-p6 overflow-wrap-anywhere"
+            data-cy="profile-email"
+          >
             <i
               v-if="!loggedUser?.verified_email"
               v-tooltip.top="{
@@ -84,17 +86,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ></i
             >&nbsp;{{ loggedUser?.email }}
           </p>
-          <dl class="profile-view-detail-list grid grid-nogutter text-sm">
+          <dl class="profile-view-detail-list grid grid-nogutter paragraph-p5">
             <div
               class="col-6 flex flex-column align-items-start text-left flex-wrap"
             >
-              <dt class="text-xs opacity-80 mb-2">Full name</dt>
+              <dt class="paragraph-p6 opacity-80 mb-2">Full name</dt>
               <dl class="font-semibold" data-cy="profile-name">
                 {{ loggedUser?.name || '-' }}
               </dl>
             </div>
             <div class="col-6 flex flex-column align-items-end">
-              <dt class="text-xs opacity-80 mb-2">Registered</dt>
+              <dt class="paragraph-p6 opacity-80 mb-2">Registered</dt>
               <dl class="font-semibold" data-cy="profile-registered">
                 {{ $filters.date(loggedUser?.registration_date) }}
               </dl>
@@ -106,7 +108,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <app-container>
       <app-section>
         <template #title>Advanced</template>
-        <div class="flex flex-column row-gap-3 text-sm px-4 pb-4">
+        <div class="flex flex-column row-gap-3 paragraph-p5 px-4 pb-4">
           <div
             :class="[
               'flex flex-column align-items-start',
@@ -115,8 +117,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ]"
           >
             <div class="flex-grow-1">
-              <p class="font-semibold my-2">Receive notifications</p>
-              <span class="text-xs opacity-80"
+              <p class="title-t3">Receive notifications</p>
+              <span class="paragraph-p6 opacity-80"
                 >We will send you information about workspace activity</span
               >
             </div>
@@ -138,8 +140,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ]"
           >
             <div class="flex-grow-1">
-              <p class="font-semibold my-2">Close account</p>
-              <span class="text-xs opacity-80"
+              <p class="title-t3">Close account</p>
+              <span class="paragraph-p6 opacity-80"
                 >Your account will be closed. In case you are an owner of a
                 workspace, you might need to transfer the ownership first or
                 close the workspace.</span

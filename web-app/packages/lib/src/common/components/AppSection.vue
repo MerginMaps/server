@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         $slots.title ? 'p-4' : ''
       ]"
     >
-      <h2 v-if="!!$slots.title" class="text-sm text-color">
+      <h2 v-if="!!$slots.title" class="paragraph-p5 text-color">
         <slot name="title"></slot>
       </h2>
       <slot v-else-if="$slots.header" name="header"></slot>

@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div class="flex flex-column pb-4 row-gap-1">
     <span class="p-input-filled">
-      <label class="text-xs" for="oldPassowrd">Old password</label>
+      <label class="paragraph-p6" for="oldPassowrd">Old password</label>
       <PPassword
         id="oldPassowrd"
         v-model="oldPassword"
@@ -18,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         aria-describedby="old-password-error"
         placeholder="Please enter your password"
       />
-      <span class="p-error text-xs" id="old-password-error">{{
+      <span class="p-error paragraph-p6" id="old-password-error">{{
         errors.old_password?.[0] || '&nbsp;'
       }}</span>
     </span>
@@ -38,7 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         :feedback="false"
         placeholder="Please enter your new password"
       />
-      <span class="p-error text-xs" id="password-error">{{
+      <span class="p-error paragraph-p6" id="password-error">{{
         errors.password?.[0] || '&nbsp;'
       }}</span>
     </span>
@@ -59,7 +59,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         placeholder="Please enter your new password"
       />
 
-      <span class="p-error text-xs" id="confirm-password-error">{{
+      <span class="p-error paragraph-p6" id="confirm-password-error">{{
         errors.confirm?.[0] || '&nbsp;'
       }}</span>
     </span>
