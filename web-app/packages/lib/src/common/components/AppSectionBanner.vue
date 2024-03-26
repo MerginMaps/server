@@ -56,7 +56,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </template>
       <!-- Header without additional styles -->
       <template v-else #header><slot name="header"></slot></template>
-      <div><slot></slot></div>
+      <div class="paragraph-p6 opacity-80"><slot></slot></div>
 
       <template v-if="$slots.footer" #footer>
         <slot name="footer"></slot>

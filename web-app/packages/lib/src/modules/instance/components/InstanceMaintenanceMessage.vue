@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <app-container>
+  <app-container class="relative z-5">
     <PMessage severity="warn" :closable="false" class="m-0">
       <template #messageicon="slotProps">
         <i :class="[slotProps.class, 'ti ti-alert-triangle-filled']" />
