@@ -39,7 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :pt="ptColumn"
         >
           <template #body="slotProps">
-            <p class="font-semibold paragraph-p5">
+            <p class="title-t4">
               <router-link
                 :to="{
                   name: 'project',
@@ -82,7 +82,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 value: $filters.datetime(slotProps.data.updated),
                 pt: { root: { 'data-cy': 'project-form-updated' } }
               }"
-              class="opacity-80 m-0"
+              class="opacity-80 m-0 paragraph-p7"
             >
               Updated {{ $filters.timediff(slotProps.data.updated) }}
             </span>
