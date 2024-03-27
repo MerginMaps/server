@@ -5,14 +5,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <div class="flex flex-column pb-4 row-gap-1">
+  <div class="flex flex-column pb-4">
     <span class="p-input-filled">
       <label class="paragraph-p6" for="oldPassowrd">Old password</label>
       <PPassword
         id="oldPassowrd"
         v-model="oldPassword"
         data-cy="user-change-password-old"
-        :class="['my-1', errors.old_password ? 'p-invalid' : '']"
+        :class="[errors.old_password ? 'p-invalid' : '']"
         toggleMask
         :feedback="false"
         aria-describedby="old-password-error"
@@ -31,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <PPassword
         id="newPassword"
         v-model="password"
-        :class="['my-1', errors.password ? 'p-invalid' : '']"
+        :class="[errors.password ? 'p-invalid' : '']"
         data-cy="user-change-password-new"
         aria-describedby="password-error"
         toggleMask
@@ -51,7 +51,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <PPassword
         id="confirm"
         v-model="confirm"
-        :class="['my-1', errors.confirm ? 'p-invalid' : '']"
+        :class="[errors.confirm ? 'p-invalid' : '']"
         data-cy="user-change-password-confirm"
         aria-describedby="confirm-password-error"
         toggleMask

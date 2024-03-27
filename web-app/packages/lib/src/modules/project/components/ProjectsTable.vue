@@ -198,10 +198,10 @@ export default defineComponent({
     ptColumn() {
       return {
         bodyCell: {
-          class: 'pl-4 py-3'
+          class: 'pl-4 py-2'
         },
         headerCell: {
-          class: 'pl-4 py-2',
+          class: 'pl-4 py-1',
           style: {
             backgroundColor: '#F8F9FA'
           }

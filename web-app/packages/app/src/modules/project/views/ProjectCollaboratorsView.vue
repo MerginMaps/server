@@ -20,14 +20,17 @@ import {
   useDialogStore,
   useProjectStore,
   useUserStore,
-  useInstanceStore
+  useInstanceStore,
+  useNotificationStore
 } from '@mergin/lib'
+import { getErrorMessage } from '@mergin/lib/types/common/error_utils';
 import { computed } from 'vue'
 
 const projectStore = useProjectStore()
 const dialogStore = useDialogStore()
 const userStore = useUserStore()
 const instanceStore = useInstanceStore()
+const notificationStore = useNotificationStore()
 
 const isProjectOwner = computed(() => projectStore.isProjectOwner)
 
@@ -39,7 +42,14 @@ function openShareDialog() {
   dialogStore.show({
     component: ProjectShareDialog,
     params: {
-      dialog
+      dialog,
+      listeners: {
+        onShareError: (err) => {
+          notificationStore.error({
+            text: getErrorMessage(err, 'Failed to save project settings')
+          })
+        }
+      }
     }
   })
 }

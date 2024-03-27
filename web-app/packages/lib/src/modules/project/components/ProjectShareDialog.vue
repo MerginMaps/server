@@ -87,11 +87,9 @@ import { reactive } from 'vue'
 
 import ProjectShareTemplate from './ProjectShareDialogTemplate.vue'
 
-import { getErrorMessage } from '@/common/error_utils'
 import { ProjectRoleName } from '@/common/permission_utils'
 import { AutoCompleteItem, useUserStore } from '@/main'
 import { useDialogStore } from '@/modules/dialog/store'
-import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
 import { UserSearch, UserSearchParams } from '@/modules/user/types'
 
@@ -109,10 +107,13 @@ const data = reactive<Data>({
   permission: 'reader'
 })
 
+const emit = defineEmits<{
+  onShareError: [error: Error]
+}>()
+
 const projectStore = useProjectStore()
 const userStore = useUserStore()
 const dialogStore = useDialogStore()
-const notificationStore = useNotificationStore()
 
 const search = async (e: AutoCompleteCompleteEvent) => {
   if (data.isPending) {
@@ -162,9 +163,7 @@ const share = async () => {
     await projectStore.getProjectAccess(projectStore.project?.id)
     dialogStore.close()
   } catch (err) {
-    notificationStore.error({
-      text: getErrorMessage(err, 'Failed to save project settings')
-    })
+    emit('onShareError', err as Error)
   }
 }
 

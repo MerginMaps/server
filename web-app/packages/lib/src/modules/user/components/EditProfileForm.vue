@@ -5,14 +5,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <form @submit.prevent="submit" class="flex flex-column pb-4 row-gap-1">
+  <form @submit.prevent="submit" class="flex flex-column pb-4">
     <span class="p-input-filled">
       <label class="paragraph-p6" for="first-name">First name</label>
       <PInputText
         id="first-name"
         v-model="editedProfile.first_name"
         data-cy="profile-edit-first-name"
-        :class="['w-full my-1', errors.first_name ? 'p-invalid' : '']"
+        :class="['w-full', errors.first_name ? 'p-invalid' : '']"
         toggleMask
         :feedback="false"
         aria-describedby="first-name-error"
@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         id="last-name"
         v-model="editedProfile.last_name"
         data-cy="profile-edit-last-name"
-        :class="['w-full my-1', errors.last_name ? 'p-invalid' : '']"
+        :class="['w-full', errors.last_name ? 'p-invalid' : '']"
         toggleMask
         :feedback="false"
         aria-describedby="last-name-error"
@@ -44,7 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         id="email"
         v-model="editedProfile.email"
         data-cy="profile-edit-email"
-        :class="['w-full my-1', errors.email ? 'p-invalid' : '']"
+        :class="['w-full', errors.email ? 'p-invalid' : '']"
         toggleMask
         :feedback="false"
         aria-describedby="email-error"

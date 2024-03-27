@@ -54,8 +54,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       ></i>
     </template>
     <template #option="{ option }">
-      <div class="flex paragraph-p6 align-items-center py-2">
-        <div class="flex flex-column mr-6 gap-1">
+      <div class="flex paragraph-p6 align-items-center">
+        <div class="flex flex-column mr-6">
           <p
             :class="[
               option.description && 'font-semibold',

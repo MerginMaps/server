@@ -7,11 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <aside class="flex flex-column row-gap-4">
     <div class="flex flex-column row-gap-4">
-      <div class="flex flex-column row-gap-1 p-input-filled">
+      <div class="flex flex-column p-input-filled">
         <slot name="accountsInput"></slot>
       </div>
 
-      <div class="flex flex-column row-gap-1 p-input-filled">
+      <div class="flex flex-column p-input-filled">
         <label class="paragraph-p6">Project permission</label>
         <app-dropdown :options="permissionStates" v-model="permission" />
       </div>

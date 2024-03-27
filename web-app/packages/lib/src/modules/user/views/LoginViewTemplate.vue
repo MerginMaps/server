@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <form
       v-if="forgotPassword"
       @submit.prevent="reset"
-      class="flex flex-column row-gap-1"
+      class="flex flex-column"
     >
       <div>
         <label class="paragraph-p6" for="login">Email</label>
@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           color="inputColor"
           data-cy="reset-form-email"
           v-model="email"
-          :class="['w-full my-1', errors.email ? 'p-invalid' : '']"
+          :class="['w-full', errors.email ? 'p-invalid' : '']"
         />
         <span class="p-error paragraph-p6" id="login-error">{{
           errors.email?.[0] || '&nbsp;'
@@ -51,7 +51,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         label="Reset password"
       />
     </form>
-    <form v-else @submit.prevent="loginUser" class="flex flex-column row-gap-1">
+    <form v-else @submit.prevent="loginUser" class="flex flex-column">
       <div>
         <label class="paragraph-p6" for="login">Username or email</label>
         <PInputText
@@ -59,7 +59,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           name="login"
           v-model="login"
           data-cy="login-form-login"
-          :class="['w-full my-1', errors.login ? 'p-invalid' : '']"
+          :class="['w-full', errors.login ? 'p-invalid' : '']"
           aria-describedby="login-error"
           placeholder="Please enter username or email"
           :inputProps="{ autocomplete: 'on' }"
@@ -76,7 +76,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           id="password"
           name="password"
           v-model="password"
-          :class="['w-full my-1', errors.password ? 'p-invalid' : '']"
+          :class="['w-full', errors.password ? 'p-invalid' : '']"
           data-cy="login-form-password"
           aria-describedby="password-error"
           toggleMask
