@@ -42,7 +42,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <div v-if="$slots['header-image']" class="flex align-items-center">
               <slot name="header-image"></slot>
             </div>
-            <div :class="['flex flex-column gap-2 lg:gap-1']">
+            <div :class="['flex flex-column gap-2 lg:gap-0']">
               <h3 class="text-color title-t3">
                 <slot name="title"></slot>
               </h3>
