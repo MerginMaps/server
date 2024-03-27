@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <form
       v-if="!success"
       @submit.prevent="changePasswordWithToken"
-      class="flex flex-column row-gap-1"
+      class="flex flex-column"
     >
       <span>
         <app-password-tooltip for="newPassword"
@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           id="newPassword"
           v-model="password"
           data-cy="change-password"
-          :class="['w-full my-1', errors.old_password ? 'p-invalid' : '']"
+          :class="['w-full', errors.old_password ? 'p-invalid' : '']"
           toggleMask
           :feedback="false"
           aria-describedby="password-error"
@@ -45,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <PPassword
           id="confirm"
           v-model="confirm"
-          :class="['w-full my-1', errors.confirm ? 'p-invalid' : '']"
+          :class="['w-full', errors.confirm ? 'p-invalid' : '']"
           data-cy="change-password-confirm"
           aria-describedby="confirm-password-error"
           toggleMask

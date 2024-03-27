@@ -57,7 +57,7 @@ export default usePassThrough(
     } as ToastPassThroughOptions,
     dataview: {
       header: {
-        class: 'px-4 py-2'
+        class: 'px-4 py-1'
       },
       loadingOverlay: {
         class: 'bg-primary-reverse opacity-50'
