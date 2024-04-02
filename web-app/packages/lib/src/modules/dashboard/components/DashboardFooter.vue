@@ -43,12 +43,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             href="https://apps.apple.com/us/app/input/id1478603559?ls=1&utm_source=mergin-website&utm_medium=banner&utm_campaign=input"
             target="_blank"
             class="mr-1"
-            ><img src="@/assets/appstore.jpg"
+            ><img :style="{ width: '100%' }" src="@/assets/appstore.jpg"
           /></a>
           <a
             href="https://play.google.com/store/apps/details?id=uk.co.lutraconsulting&utm_source=mergin-website&utm_medium=banner&utm_campaign=input"
             target="_blank"
-            ><img src="@/assets/googleplay.jpg"
+            ><img :style="{ width: '100%' }" src="@/assets/googleplay.jpg"
           /></a>
         </div>
 
@@ -86,10 +86,10 @@ function closeElement() {
 .dashboard-view-footer-mobile {
   margin-top: -1.5rem;
   min-height: 100px;
-  width: 350px;
+  width: 320px;
 
   &-circle {
-    height: 350px;
+    height: 320px;
     background-color: var(--primary-color);
   }
 }

@@ -125,7 +125,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   {{ $filters.timediff(item.mtime) }}
                 </span>
                 <span v-else class="opacity-80">{{
-                  $filters.filesize(item.size)
+                  item.size !== undefined ? $filters.filesize(item.size) : ''
                 }}</span>
               </div>
             </div>
