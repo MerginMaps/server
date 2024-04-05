@@ -51,9 +51,6 @@ export const useInstanceStore = defineStore('instanceModule', {
     setPingData(payload: PingResponse) {
       this.pingData = payload
     },
-    setInitialized() {
-      this.initialized = true
-    },
     async initApp() {
       const notificationStore = useNotificationStore()
       try {
@@ -64,7 +61,6 @@ export const useInstanceStore = defineStore('instanceModule', {
           // fetch user profile if user is logged in
           await userStore.fetchUserProfile()
         }
-        this.setInitialized()
         return response
       } catch {
         notificationStore.error({ text: 'Failed to init application.' })
