@@ -131,7 +131,7 @@ export interface IsWorkspaceAdminPayload {
 
 export interface SetWorkspaceIdPayload {
   workspaceId: number
-  skipSavingInCookies?: boolean
+  skipStorage?: boolean
 }
 
 export interface DeleteAccountConfirmProps {

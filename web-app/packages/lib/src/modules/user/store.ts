@@ -386,7 +386,7 @@ export const useUserStore = defineStore('userModule', {
         return
       }
       this.setWorkspaceId({ id: payload.workspaceId })
-      if (!payload.skipSavingInCookies) {
+      if (!payload.skipStorage) {
         // Append current workspace with last seen parameter
         this.lastWorkspaces.value = [
           ...this.lastWorkspaces.value.filter(
@@ -426,18 +426,18 @@ export const useUserStore = defineStore('userModule', {
     /**
      * Checks the current workspace that the user is in.
      *
-     * Tries to get the current workspace ID from the cookies.
+     * Tries to get the current workspace ID from the local storage array of last seen ws.
      * If not found, tries to use the preferred workspace ID from the user profile.
      * If still not found, defaults to using the first workspace in the user's list of workspaces.
      *
-     * Sets the current workspace in the store, and saves to cookies if needed.
+     * Sets the current workspace in the store, and saves to local storage if needed.
      */
     async checkCurrentWorkspace() {
       try {
         await this.getWorkspaces()
         let foundWorkspace = this.getLastWorkspaceFromStorage()
         if (this.workspaces.length > 0) {
-          let skipSavingInCookies = true
+          let skipStorage = true
           if (!foundWorkspace) {
             // try to use preferred_workspace from user profile response
             const preferredWorkspaceId = this.loggedUser?.preferred_workspace
@@ -445,8 +445,8 @@ export const useUserStore = defineStore('userModule', {
               id: preferredWorkspaceId
             })
             if (foundWorkspace?.id) {
-              // do not skip saving in cookies when using preferredWorkspace
-              skipSavingInCookies = false
+              // do not skip saving in local storage when using preferredWorkspace
+              skipStorage = false
             }
           }
           // use id from found workspace, if not found fallback to first workspace from user workspaces
@@ -455,9 +455,9 @@ export const useUserStore = defineStore('userModule', {
           await this.setWorkspace({
             workspaceId: currentWorkspaceIdToSet,
             // do not save workspaceId to storage as it could be:
-            // * already there, if was loaded from cookies
+            // * already there, if was loaded from local storage
             // * used the first user workspace as fallback, then it is not a user choice
-            skipSavingInCookies
+            skipStorage
           })
         } else {
           await this.cleanupLastSeenWorkspaces()
