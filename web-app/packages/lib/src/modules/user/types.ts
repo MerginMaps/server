@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import { Route } from 'vue-router'
+import { RouteRecordRaw } from 'vue-router'
 
 import { PaginatedRequestParams } from '@/common'
 import { UserRoleName } from '@/common/permission_utils'
@@ -15,7 +15,7 @@ export interface LoginData {
 
 export interface LoginPayload extends MerginComponentUuidPayload {
   data: LoginData
-  currentRoute: Route
+  currentRoute: RouteRecordRaw
 }
 
 export interface ResetPasswordPayload extends MerginComponentUuidPayload {
@@ -131,11 +131,18 @@ export interface IsWorkspaceAdminPayload {
 
 export interface SetWorkspaceIdPayload {
   workspaceId: number
-  skipSavingInCookies?: boolean
+  skipStorage?: boolean
 }
 
 export interface DeleteAccountConfirmProps {
   username: string
 }
+
+export interface LastSeenWorkspace {
+  userId: number
+  id: number
+  lastSeen: number
+}
+
 
 /* eslint-enable camelcase */

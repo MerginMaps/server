@@ -28,14 +28,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         >
           <p
             v-if="loggedUser.username === item.requested_by"
-            class="w-12 lg:w-4 paragraph-p6"
+            class="w-12 lg:w-6 paragraph-p6"
           >
             You requested an access to project
             <span class="font-semibold">{{ item.project_name }}</span> in
             workspace <span class="font-semibold">{{ item.namespace }}</span
             >.
           </p>
-          <p v-else class="w-12 lg:w-4 paragraph-p6">
+          <p v-else class="w-12 lg:w-6 paragraph-p6">
             User
             <span class="font-semibold">{{ item.requested_by }}</span>
             requested an access to your project

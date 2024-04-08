@@ -51,7 +51,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <span class="title-t4" :style="{ whiteSpace: 'nowrap' }">{{
                 userName
               }}</span>
-              <span v-if="renderNamespace" class="paragraph-p6 opacity-80">
+              <span
+                v-if="renderNamespace"
+                class="paragraph-p6 opacity-80 font-normal"
+              >
                 {{ currentWorkspace?.name || 'no workspace' }}
               </span>
             </div>
