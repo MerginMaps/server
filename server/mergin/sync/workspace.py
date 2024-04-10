@@ -65,7 +65,8 @@ class GlobalWorkspace(AbstractWorkspace):
         )
         return sum(p.disk_usage for p in projects_usage_list)
 
-    def user_has_permissions(self, user, permissions):
+    # EDITOR changes for v2, project ignored in CE
+    def user_has_permissions(self, user, permissions, project):
         role = self.get_user_role(user)
         # mergin super-user has all permissions
         if role == "owner":
@@ -73,7 +74,8 @@ class GlobalWorkspace(AbstractWorkspace):
 
         if permissions == "read":
             return role in ["admin", "writer", "reader"]
-        elif permissions == "write":
+        # EDITOR for CE WS edit same as write
+        elif permissions in ("edit", "write"):
             return role in ["admin", "writer"]
         elif permissions == "admin":
             return role == "admin"
@@ -83,6 +85,7 @@ class GlobalWorkspace(AbstractWorkspace):
     def user_is_member(self, user):
         return True
 
+    # EDITOR add global var and return role?
     def get_user_role(self, user):
         if user.is_admin:
             return "owner"

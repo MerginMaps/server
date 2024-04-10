@@ -102,10 +102,14 @@ def parse_project_access_update_request(access: Dict) -> Dict:
     names = set(
         access.get("ownersnames", [])
         + access.get("writersnames", [])
+        + access.get("editorsnames", [])
         + access.get("readersnames", [])
     )
     ids = set(
-        access.get("owners", []) + access.get("writers", []) + access.get("readers", [])
+        access.get("owners", [])
+        + access.get("writers", [])
+        + access.get("editors", [])
+        + access.get("readers", [])
     )
     # get only valid user entries from database
     valid_users = (
@@ -118,7 +122,7 @@ def parse_project_access_update_request(access: Dict) -> Dict:
     valid_usernames = valid_users_map.keys()
     valid_ids = valid_users_map.values()
 
-    for key in ("owners", "writers", "readers"):
+    for key in ("owners", "writers", "editors", "readers"):
         # transform usernames from client request to ids, which has precedence over ids in request
         if key + "names" in access:
             parsed_access[key] = [
@@ -698,6 +702,11 @@ def catch_sync_failure(f):
     return wrapper
 
 
+# EDITOR
+def get_required_perm(changes):
+    return ProjectPermissions.Upload
+
+
 @auth_required
 @catch_sync_failure
 def project_push(namespace, project_name):
@@ -714,7 +723,8 @@ def project_push(namespace, project_name):
     """
     version = request.json["version"]
     changes = request.json["changes"]
-    project = require_project(namespace, project_name, ProjectPermissions.Upload)
+    required_perm = get_required_perm(changes)
+    project = require_project(namespace, project_name, required_perm)
     request.view_args["project"] = (
         project  # pass full project object to request for later use
     )

@@ -330,6 +330,7 @@ def get_project_access(id: str):
     accesses = (
         (project.access.owners, "owner"),
         (project.access.writers, "writer"),
+        (project.access.editors, "editor"),
         (project.access.readers, "reader"),
     )
     if Configuration.GLOBAL_ADMIN:
@@ -340,7 +341,7 @@ def get_project_access(id: str):
         accesses = accesses[:1]
     elif Configuration.GLOBAL_READ:
         global_role = "reader"
-        accesses = accesses[:2]
+        accesses = accesses[:3]
     result = []
     processed_ids = set()
     for user_ids, role in accesses:

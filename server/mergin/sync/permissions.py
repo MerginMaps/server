@@ -81,6 +81,18 @@ class ProjectPermissions:
                 .filter(Project.removed_at.is_(None))
             )
 
+    class Edit(Base):
+        @classmethod
+        @_is_superuser
+        def check(cls, project, user):
+            return super().check(project, user) and (
+                (
+                    user.id
+                    in project.access.writers  # EDITOR version 1: user.id in project.access.editors
+                    or check_project_workspace_permissions(project, user, "edit")
+                )
+            )
+
     class Upload(Base):
         @classmethod
         @_is_superuser
@@ -199,7 +211,7 @@ def check_project_workspace_permissions(project, user, permissions):
     workspace = project.workspace
     if not workspace:
         return False
-    return workspace.user_has_permissions(user, permissions)
+    return workspace.user_has_permissions(user, permissions, project)
 
 
 def check_workspace_permissions(ws, user, permissions):
@@ -233,5 +245,7 @@ def get_user_project_role(project: Project, user: User) -> Optional[str]:
         return "owner"
     if ProjectPermissions.Upload.check(project, user):
         return "writer"
+    if ProjectPermissions.Edit.check(project, user):
+        return "editor"
     if ProjectPermissions.Read.check(project, user):
         return "reader"

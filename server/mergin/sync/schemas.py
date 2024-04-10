@@ -22,6 +22,7 @@ from ..auth.schemas import UserSearchSchema
 class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
     owners = fields.List(fields.Integer())
     writers = fields.List(fields.Integer())
+    editors = fields.List(fields.Integer())
     readers = fields.List(fields.Integer())
     public = fields.Boolean()
 
@@ -42,7 +43,7 @@ class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
                 ).all()
             }
 
-        for field in ("owners", "writers", "readers"):
+        for field in ("owners", "writers", "editors", "readers"):
             new_key = field + "names"
             data[new_key] = []
             users_ids = data[field]
@@ -58,6 +59,7 @@ class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
 def project_user_permissions(project):
     return {
         "upload": ProjectPermissions.Upload.check(project, current_user),
+        "edit": ProjectPermissions.Edit.check(project, current_user),
         "update": ProjectPermissions.Update.check(project, current_user),
         "delete": ProjectPermissions.Delete.check(project, current_user),
     }

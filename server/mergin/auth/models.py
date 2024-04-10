@@ -150,6 +150,7 @@ class User(db.Model):
             or_(
                 Project.access.has(ProjectAccess.owners.contains([self.id])),
                 Project.access.has(ProjectAccess.writers.contains([self.id])),
+                Project.access.has(ProjectAccess.editors.contains([self.id])),
                 Project.access.has(ProjectAccess.readers.contains([self.id])),
             )
         ).all()
