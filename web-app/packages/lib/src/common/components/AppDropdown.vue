@@ -56,7 +56,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       ></i>
     </template>
     <template #value="{ value, placeholder }">{{
-      options.find((item) => item.value === value).label ??
+      options?.find((item) => item.value === value)?.label ??
       placeholder ??
       '&nbsp;'
     }}</template>
