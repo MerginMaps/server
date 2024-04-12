@@ -26,7 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div
           class="flex flex-column lg:flex-row align-items-center justify-content-between px-4 py-2 mt-0 border-bottom-1 border-gray-200"
         >
-          <p class="w-12 lg:w-4 paragraph-p6 m-0">
+          <p class="w-12 lg:w-6 paragraph-p6 m-0">
             User
             <span class="font-semibold">{{ item.requested_by }}</span>
             requested an access to your project

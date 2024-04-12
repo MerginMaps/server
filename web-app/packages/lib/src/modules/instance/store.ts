@@ -12,6 +12,7 @@ import {
 } from '@/modules/instance/types'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useUserStore } from '@/modules/user/store'
+import { GlobalRole, isAtLeastGlobalRole } from '@/common/permission_utils'
 
 export interface InstanceState {
   initData: InitResponse
@@ -30,14 +31,22 @@ export const useInstanceStore = defineStore('instanceModule', {
 
   getters: {
     /**
-     * Checks if global roles are enabled based on the config data.
-     * Returns true if any of the global role flags are truthy, false otherwise.
+     * Retrieves the current global role from the instance configuration data.
+     *
+     * The global role is determined by checking the `global_read`, `global_write`, and `global_admin` flags in the configuration data.
+     * If none of the flags are set, `undefined` is returned, otherwise the index of the first set flag is returned as the global role.
+     *
+     * @param state - The current instance state.
+     * @returns The current global role, or `undefined` if no global role is set.
      */
-    globalRolesEnabled(state): boolean {
+    currentGlobalRole(state): GlobalRole | undefined {
       // eslint-disable-next-line camelcase
       const { global_read, global_write, global_admin } = state.configData
       // eslint-disable-next-line camelcase
-      return [global_read, global_write, global_admin].some((r) => !!r)
+      const foundIndex = [global_read, global_write, global_admin].findIndex(
+        (r) => !!r
+      )
+      return foundIndex < 0 ? undefined : foundIndex
     }
   },
 

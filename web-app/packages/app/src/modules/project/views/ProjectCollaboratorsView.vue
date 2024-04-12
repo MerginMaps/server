@@ -8,9 +8,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <project-collaborators-view-template
     v-if="isProjectOwner"
     @share="openShareDialog"
-    :allow-share="!instanceStore.globalRolesEnabled"
+    :allow-share="instanceStore.currentGlobalRole === undefined"
     :show-access-requests="userStore.isGlobalWorkspaceAdmin"
-  />
+  >
+    <project-members-table
+      :allow-remove="instanceStore.currentGlobalRole === undefined"
+    />
+  </project-collaborators-view-template>
 </template>
 
 <script setup lang="ts">
@@ -22,7 +26,8 @@ import {
   useUserStore,
   useInstanceStore,
   useNotificationStore,
-  errorUtils
+  errorUtils,
+  ProjectMembersTable
 } from '@mergin/lib'
 import { computed } from 'vue'
 

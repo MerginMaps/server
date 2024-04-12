@@ -21,6 +21,12 @@ export enum ProjectRole {
   owner
 }
 
+export enum GlobalRole {
+  global_read,
+  global_write,
+  global_admin
+}
+
 export type UserRoleName = 'guest' | 'reader' | 'writer' | 'admin' | 'owner'
 
 export type ProjectRoleName =
@@ -59,11 +65,6 @@ export const PROJECT_ROLE_BY_NAME: Record<ProjectRoleName, ProjectRole> = {
   owner: ProjectRole.owner
 }
 
-export interface UserRoleValueForSelect {
-  label: string
-  value: UserRoleName
-}
-
 export enum ProjectPermission {
   read,
   write,
@@ -88,11 +89,6 @@ export const PROJECT_PERMISSION_BY_NAME: Record<
   owner: ProjectPermission.owner
 }
 
-export interface ProjectPermissionValueForSelect {
-  label: string
-  value: ProjectPermissionName
-}
-
 export function isAtLeastRole(roleName: UserRoleName, role: UserRole): boolean {
   return USER_ROLE_BY_NAME[roleName] >= role
 }
@@ -111,12 +107,21 @@ export function isAtLeastProjectPermission(
   return PROJECT_PERMISSION_BY_NAME[permissionName] >= permission
 }
 
+export function isAtLeastGlobalRole(
+  roleName: ProjectRoleName,
+  globalRole: GlobalRole
+): boolean {
+  // We have also none role, so we need to add 1 to the global role
+  return PROJECT_ROLE_BY_NAME[roleName] >= globalRole + 1
+}
+
 export function getProjectRoleNameValues(): DropdownOption<ProjectRoleName>[] {
   return [
     {
       value: 'reader',
       label: 'Reader',
-      description: 'Can view project files'
+      description: 'Can view project files',
+      disabled: true
     },
     {
       value: 'writer',

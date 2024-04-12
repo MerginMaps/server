@@ -95,28 +95,7 @@ export const useProjectStore = defineStore('projectModule', {
 
   getters: {
     isProjectOwner: (state) =>
-      isAtLeastProjectRole(state.project?.role, ProjectRole.owner),
-    getProjectByName(state) {
-      return (payload) => {
-        return state.projects?.find((project) => project.name === payload.name)
-      }
-    },
-
-    /**
-     * Checks if the current user can remove the given project access detail.
-     *
-     * The user must be at least a project owner, and the access detail ID cannot
-     * be the same as the project creator ID.
-     *
-     * @param payload - The project access detail to check
-     * @returns True if the current user can remove the given access, false otherwise
-     */
-    canRemoveProjectAccess: (state) => (payload: ProjectAccessDetail) => {
-      return (
-        isAtLeastProjectRole(state.project?.role, ProjectRole.owner) &&
-        payload.id !== state.project?.creator
-      )
-    }
+      isAtLeastProjectRole(state.project?.role, ProjectRole.owner)
   },
 
   actions: {
