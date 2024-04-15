@@ -144,5 +144,4 @@ export interface LastSeenWorkspace {
   lastSeen: number
 }
 
-
 /* eslint-enable camelcase */

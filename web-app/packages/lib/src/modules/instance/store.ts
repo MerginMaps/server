@@ -4,6 +4,7 @@
 
 import { defineStore } from 'pinia'
 
+import { GlobalRole } from '@/common/permission_utils'
 import { InstanceApi } from '@/modules/instance/instanceApi'
 import {
   ConfigResponse,
@@ -12,7 +13,6 @@ import {
 } from '@/modules/instance/types'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useUserStore } from '@/modules/user/store'
-import { GlobalRole, isAtLeastGlobalRole } from '@/common/permission_utils'
 
 export interface InstanceState {
   initData: InitResponse
