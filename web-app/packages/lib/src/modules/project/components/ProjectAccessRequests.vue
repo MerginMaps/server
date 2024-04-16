@@ -26,7 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div
           class="flex flex-column lg:flex-row align-items-center justify-content-between px-4 py-2 mt-0 border-bottom-1 border-gray-200"
         >
-          <p class="w-12 lg:w-4 paragraph-p6 m-0">
+          <p class="w-12 lg:w-6 paragraph-p6 m-0">
             User
             <span class="font-semibold">{{ item.requested_by }}</span>
             requested an access to your project
@@ -54,7 +54,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             />
             <div class="flex justify-content-end w-6 lg:w-4">
               <PButton
-                :disabled="!canCancelAccessRequest(item.user?.id)"
+                :disabled="!canCancelAccessRequest()"
                 icon="ti ti-x"
                 rounded
                 aria-label="Disallow"
@@ -63,7 +63,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 @click="cancelRequest(item)"
               />
               <PButton
-                :disabled="!canAcceptAccessRequest(item.user?.id, item.expire)"
+                :disabled="!canAcceptAccessRequest(item.expire)"
                 icon="ti ti-check"
                 rounded
                 aria-label="Accept"
@@ -145,18 +145,14 @@ export default defineComponent({
       }
       await this.fetchItems()
     },
-    canAcceptAccessRequest(userId: number, expire: string) {
+    canAcceptAccessRequest(expire: string) {
       return (
         !this.expired(expire) &&
-        this.project.creator !== userId &&
         isAtLeastProjectRole(this.project.role, ProjectRole.owner)
       )
     },
-    canCancelAccessRequest(userId: number) {
-      return (
-        this.project.creator !== userId &&
-        isAtLeastProjectRole(this.project.role, ProjectRole.owner)
-      )
+    canCancelAccessRequest() {
+      return isAtLeastProjectRole(this.project.role, ProjectRole.owner)
     },
     async acceptRequest(request) {
       try {

@@ -8,7 +8,7 @@ $inputBg: #ffffff;
 
 /// Font size of an input field
 /// @group form
-$inputTextFontSize: 0.90rem;
+$inputTextFontSize: 0.875rem;
 
 /// Text color of an input field
 /// @group form
@@ -161,7 +161,7 @@ $inputOverlayBorder: 0 none;
 
 /// Shadow for an overlay of an input such as autocomplete or dropdown
 /// @group form
-$inputOverlayShadow: 0 3px 6px 0 rgba(0, 0, 0, 0.1);
+$inputOverlayShadow: 0px 12px 24px rgba(0, 76, 69, 0.15);
 
 /// Width of a checkbox
 /// @group form
