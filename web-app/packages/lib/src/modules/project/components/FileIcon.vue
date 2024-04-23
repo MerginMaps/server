@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <div class="mr-2 text-lg">
+  <div class="mr-2 paragraph-p4">
     <template v-if="icon">
       <span>
         <img :src="icon" width="24" height="24" />

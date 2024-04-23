@@ -32,7 +32,7 @@ $ pipenv run flask run # run dev server on port 5000
 
 ### Web applications
 
-Before installing the web applications, make sure you have Node.js installed in a supported version. The applications require Node.js version **17 or higher**.
+Before installing the web applications, make sure you have Node.js installed in a supported version. The applications require Node.js version **18 or higher**.
 
 ```shell
 $ cd web-app

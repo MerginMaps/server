@@ -28,25 +28,25 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
         <dl class="grid grid-nogutter row-gap-4">
           <div class="col-12">
-            <dt class="text-xs opacity-80 mb-2">File</dt>
+            <dt class="paragraph-p6 opacity-80 mb-2">File</dt>
             <dl class="font-semibold">
-              <h3 class="text-2xl mt-0">
+              <h3 class="headline-h3 mt-0">
                 <FileIcon :file="{ ...file, name: fileName }" />{{ fileName }}
               </h3>
             </dl>
           </div>
           <PDivider class="m-0" />
           <div class="col-6">
-            <dt class="text-xs opacity-80 mb-2">Modified</dt>
-            <dl class="font-semibold text-sm">
+            <dt class="paragraph-p6 opacity-80 mb-2">Modified</dt>
+            <dl class="font-semibold paragraph-p5">
               <span v-tooltip="$filters.datetime(file.mtime)">{{
                 $filters.timediff(file.mtime)
               }}</span>
             </dl>
           </div>
           <div class="col-6 flex flex-column align-items-end">
-            <dt class="text-xs opacity-80 mb-2">Size</dt>
-            <dl class="font-semibold text-sm">
+            <dt class="paragraph-p6 opacity-80 mb-2">Size</dt>
+            <dl class="font-semibold paragraph-p5">
               {{ $filters.filesize(file.size) }}
               <span v-if="state === 'updated'"
                 >(new:
@@ -68,10 +68,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             imageClass="w-full"
           />
           <div
-            class="file-detail-code border-round-xl p-4 line-height-3 w-full"
+            class="file-detail-code border-round-xl p-4 paragraph-p4 w-full"
             v-else-if="mimetype.match('text')"
           >
-            <span class="opacity-80 text-sm">{{ content }}</span>
+            <span class="opacity-80 paragraph-p5">{{ content }}</span>
           </div>
         </output>
       </div>

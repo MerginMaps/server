@@ -39,10 +39,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         >
           <i class="ti ti-download" />
         </div>
-        <h4 class="text-lg font-semibold text-color-forest">
+        <h4 class="title-t1 font-semibold text-color-forest">
           Drag and drop files
         </h4>
-        <p class="text-sm opacity-80 m-0">
+        <p class="paragraph-p6 opacity-80 m-0">
           You can drop files from your computer to start uploading
         </p>
       </div>

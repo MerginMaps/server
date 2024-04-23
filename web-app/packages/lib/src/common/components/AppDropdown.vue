@@ -9,6 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :options="options"
     option-label="label"
     option-value="value"
+    option-disabled="disabled"
     v-model="model"
     @show="toggle"
     @hide="toggle"
@@ -21,12 +22,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         }
       },
       input: {
-        class: 'text-xs border-round-xl'
+        class: 'paragraph-p6 border-round-xl',
+        style: {
+          paddingTop: '.625rem',
+          paddingBottom: '.625rem'
+        }
       },
       item({ context }) {
         return {
           class: [
-            'text-color p-2 hover:bg-gray-100 bg-transparent',
+            'text-color hover:bg-gray-100 bg-transparent',
             context.focused ? 'bg-gray-50' : 'bg-transparent'
           ]
         }
@@ -36,6 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           class: options.props?.disabled ? 'text-color' : 'text-color-forest'
         }
       },
+      list: 'p-0',
       panel: {
         style: {
           zIndex: 2101
@@ -49,13 +55,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           scope.class,
           'ti',
           isOpen ? 'ti-chevron-up' : 'ti-chevron-down',
-          'font-semibold text-base'
+          'font-semibold title-t2'
         ]"
       ></i>
     </template>
+    <template #value="{ value, placeholder }">{{
+      options?.find((item) => item.value === value)?.label ??
+      placeholder ??
+      '&nbsp;'
+    }}</template>
     <template #option="{ option }">
-      <div class="flex text-xs align-items-center py-2">
-        <div class="flex flex-column mr-6 gap-2">
+      <div class="flex paragraph-p6 align-items-center">
+        <div class="flex flex-column mr-6">
           <p
             :class="[
               option.description && 'font-semibold',

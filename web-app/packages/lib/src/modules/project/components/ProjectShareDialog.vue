@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     @submit="share"
   >
     <template #accountsInput
-      ><label class="text-xs" for="accounts">Share with</label
+      ><label class="paragraph-p6" for="accounts">Share with</label
       ><PAutoComplete
         @complete="search"
         v-model="data.selectedUsers"
@@ -45,10 +45,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             />
 
             <div class="flex flex-column">
-              <span class="tip-message-title text-sm font-semibold">
+              <span class="tip-message-title title-t3">
                 {{ option.value.username }}
               </span>
-              <span class="opacity-80 text-sm line-height-4">
+              <span class="opacity-80 paragraph-p5">
                 {{ option.value.email }}
               </span>
             </div>
@@ -87,11 +87,9 @@ import { reactive } from 'vue'
 
 import ProjectShareTemplate from './ProjectShareDialogTemplate.vue'
 
-import { getErrorMessage } from '@/common/error_utils'
 import { ProjectRoleName } from '@/common/permission_utils'
 import { AutoCompleteItem, useUserStore } from '@/main'
 import { useDialogStore } from '@/modules/dialog/store'
-import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
 import { UserSearch, UserSearchParams } from '@/modules/user/types'
 
@@ -109,10 +107,13 @@ const data = reactive<Data>({
   permission: 'reader'
 })
 
+const emit = defineEmits<{
+  onShareError: [error: Error]
+}>()
+
 const projectStore = useProjectStore()
 const userStore = useUserStore()
 const dialogStore = useDialogStore()
-const notificationStore = useNotificationStore()
 
 const search = async (e: AutoCompleteCompleteEvent) => {
   if (data.isPending) {
@@ -162,9 +163,7 @@ const share = async () => {
     await projectStore.getProjectAccess(projectStore.project?.id)
     dialogStore.close()
   } catch (err) {
-    notificationStore.error({
-      text: getErrorMessage(err, 'Failed to save project settings')
-    })
+    emit('onShareError', err as Error)
   }
 }
 

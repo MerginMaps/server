@@ -20,7 +20,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     >
       <template #header>
         <div class="grid grid-nogutter">
-          <div v-for="col in columns" class="col-3 text-xs" :key="col.text">
+          <div
+            v-for="col in columns"
+            class="col-3 paragraph-p6"
+            :key="col.text"
+          >
             <i
               v-if="col.icon"
               :class="['ti', `${col.icon}`]"
@@ -34,7 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div
           v-for="item in slotProps.items"
           :key="item.id"
-          class="grid grid-nogutter px-4 py-2 mt-0 border-bottom-1 border-gray-200 text-sm hover:bg-gray-200"
+          class="grid grid-nogutter px-4 py-2 mt-0 border-bottom-1 border-gray-200 paragraph-p5 hover:bg-gray-200"
         >
           <div
             v-for="col in columns"

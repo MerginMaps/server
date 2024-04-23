@@ -8,9 +8,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <project-collaborators-view-template
     v-if="isProjectOwner"
     @share="openShareDialog"
-    :allow-share="!instanceStore.globalRolesEnabled"
+    :allow-share="instanceStore.currentGlobalRole === undefined"
     :show-access-requests="userStore.isGlobalWorkspaceAdmin"
-  />
+  >
+    <project-members-table
+      :allow-remove="instanceStore.currentGlobalRole === undefined"
+    />
+  </project-collaborators-view-template>
 </template>
 
 <script setup lang="ts">
@@ -20,7 +24,10 @@ import {
   useDialogStore,
   useProjectStore,
   useUserStore,
-  useInstanceStore
+  useInstanceStore,
+  useNotificationStore,
+  errorUtils,
+  ProjectMembersTable
 } from '@mergin/lib'
 import { computed } from 'vue'
 
@@ -28,6 +35,7 @@ const projectStore = useProjectStore()
 const dialogStore = useDialogStore()
 const userStore = useUserStore()
 const instanceStore = useInstanceStore()
+const notificationStore = useNotificationStore()
 
 const isProjectOwner = computed(() => projectStore.isProjectOwner)
 
@@ -39,7 +47,17 @@ function openShareDialog() {
   dialogStore.show({
     component: ProjectShareDialog,
     params: {
-      dialog
+      dialog,
+      listeners: {
+        onShareError: (err) => {
+          notificationStore.error({
+            text: errorUtils.getErrorMessage(
+              err,
+              'Failed to save project settings'
+            )
+          })
+        }
+      }
     }
   })
 }

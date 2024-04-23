@@ -7,12 +7,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <app-onboarding-page>
     <template #header>
-      <h1 class="text-6xl">Email confirmation</h1>
+      <h1 class="headline-h1">Email confirmation</h1>
     </template>
     <div class="flex flex-column gap-4 align-items-center">
       <template v-if="verified"
         ><img src="@/assets/neutral.svg" alt="MerginMaps neutral" /><span
-          class="opacity-80 text-sm"
+          class="opacity-80 paragraph-p5"
           >Your email address has been verified.</span
         ></template
       >

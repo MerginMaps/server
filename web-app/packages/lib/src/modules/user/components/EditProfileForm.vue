@@ -5,51 +5,51 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <form @submit.prevent="submit" class="flex flex-column pb-4 row-gap-1">
+  <form @submit.prevent="submit" class="flex flex-column pb-4">
     <span class="p-input-filled">
-      <label class="text-xs" for="first-name">First name</label>
+      <label class="paragraph-p6" for="first-name">First name</label>
       <PInputText
         id="first-name"
         v-model="editedProfile.first_name"
         data-cy="profile-edit-first-name"
-        :class="['w-full my-1', errors.first_name ? 'p-invalid' : '']"
+        :class="['w-full', errors.first_name ? 'p-invalid' : '']"
         toggleMask
         :feedback="false"
         aria-describedby="first-name-error"
       />
-      <span class="p-error text-xs" id="first-name-error">{{
+      <span class="p-error paragraph-p6" id="first-name-error">{{
         errors.first_name?.[0] || '&nbsp;'
       }}</span>
     </span>
 
     <span class="p-input-filled">
-      <label class="text-xs" for="last-name">Last name</label>
+      <label class="paragraph-p6" for="last-name">Last name</label>
       <PInputText
         id="last-name"
         v-model="editedProfile.last_name"
         data-cy="profile-edit-last-name"
-        :class="['w-full my-1', errors.last_name ? 'p-invalid' : '']"
+        :class="['w-full', errors.last_name ? 'p-invalid' : '']"
         toggleMask
         :feedback="false"
         aria-describedby="last-name-error"
       />
-      <span class="p-error text-xs" id="last-name-error">{{
+      <span class="p-error paragraph-p6" id="last-name-error">{{
         errors.last_name?.[0] || '&nbsp;'
       }}</span>
     </span>
 
     <span class="p-input-filled">
-      <label class="text-xs" for="email">Email</label>
+      <label class="paragraph-p6" for="email">Email</label>
       <PInputText
         id="email"
         v-model="editedProfile.email"
         data-cy="profile-edit-email"
-        :class="['w-full my-1', errors.email ? 'p-invalid' : '']"
+        :class="['w-full', errors.email ? 'p-invalid' : '']"
         toggleMask
         :feedback="false"
         aria-describedby="email-error"
       />
-      <span class="p-error text-xs" id="email-error">{{
+      <span class="p-error paragraph-p6" id="email-error">{{
         errors.email?.[0] || '&nbsp;'
       }}</span>
     </span>

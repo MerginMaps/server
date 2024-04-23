@@ -2,13 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import isObject from 'lodash/isObject'
 import { defineStore, getActivePinia } from 'pinia'
-import Cookies from 'universal-cookie'
 import { isNavigationFailure } from 'vue-router'
 
 import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
+import { createStorage, StorageProxy } from '@/common/local_storage'
 import { isAtLeastRole, UserRole } from '@/common/permission_utils'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useFormStore } from '@/modules/form/store'
@@ -26,7 +25,8 @@ import {
   WorkspaceResponse,
   SetWorkspaceIdPayload,
   UserSearchParams,
-  EditUserProfileParams
+  EditUserProfileParams,
+  LastSeenWorkspace
 } from '@/modules/user/types'
 import { UserApi } from '@/modules/user/userApi'
 
@@ -34,16 +34,20 @@ export interface UserState {
   loggedUser?: UserDetailResponse
   workspaces: WorkspaceResponse[]
   workspaceId: number
+  lastWorkspaces: StorageProxy<LastSeenWorkspace[]>
 }
 
-const cookies = new Cookies()
-const COOKIES_CURRENT_WORKSPACE = 'currentWorkspace'
+const lastWorkspacesStorage = createStorage<LastSeenWorkspace[]>(
+  'mm-last-workspaces',
+  []
+)
 
 export const useUserStore = defineStore('userModule', {
   state: (): UserState => ({
     loggedUser: null,
     workspaces: [],
-    workspaceId: undefined
+    workspaceId: undefined,
+    lastWorkspaces: lastWorkspacesStorage
   }),
 
   getters: {
@@ -62,11 +66,8 @@ export const useUserStore = defineStore('userModule', {
       return isAtLeastRole(this.getPreferredWorkspace?.role, UserRole.admin)
     },
     getPreferredWorkspace: (state) => {
-      return (
-        state.loggedUser?.workspaces &&
-        state.loggedUser?.workspaces.find(
-          (workspace) => workspace.id === state.loggedUser.preferred_workspace
-        )
+      return state.loggedUser?.workspaces?.find(
+        (workspace) => workspace.id === state.loggedUser.preferred_workspace
       )
     },
     getUserFullName: (state) => {
@@ -98,7 +99,7 @@ export const useUserStore = defineStore('userModule', {
       )
     },
     getWorkspaceById(state) {
-      return (payload: WorkspaceIdPayload) => {
+      return (payload: WorkspaceIdPayload): WorkspaceResponse | undefined => {
         return state.workspaces.find((workspace) => workspace.id === payload.id)
       }
     },
@@ -347,7 +348,7 @@ export const useUserStore = defineStore('userModule', {
       return newWorkspace
     },
 
-    async getWorkspaces() {
+    async getWorkspaces(): Promise<void> {
       const notificationStore = useNotificationStore()
 
       let workspacesResponse
@@ -380,153 +381,72 @@ export const useUserStore = defineStore('userModule', {
       }
     },
 
-    async getPreferredWorkspaceId() {
-      let preferredWorkspaceId
-      try {
-        const userProfileResponse = await this.fetchUserProfile()
-        preferredWorkspaceId = userProfileResponse.preferred_workspace
-      } catch (err) {
-        console.warn('Failed to get preferred workspace id', err)
-      }
-      return preferredWorkspaceId
-    },
-
     async setWorkspace(payload: SetWorkspaceIdPayload) {
       if (this.workspaceId === payload.workspaceId) {
         return
       }
-      // 'setWorkspaceId' and 'projectModule/setCurrentNamespace' has to be called together synchronously.
-      // In case when there is some async call between their calls, the watchers can be updated incorrectly
       this.setWorkspaceId({ id: payload.workspaceId })
-      if (!payload.skipSavingInCookies) {
-        return await this.setUserWorkspaceToCookies({
-          id: payload.workspaceId
-        })
-      }
-    },
-
-    async getAllUserWorkspacesFromCookies() {
-      let value: Record<string, string>
-      try {
-        const cookieValue = cookies.get(COOKIES_CURRENT_WORKSPACE, {
-          doNotParse: true
-        })
-        if (cookieValue) {
-          const parsedValue = JSON.parse(cookieValue)
-          if (isObject(parsedValue)) {
-            value = parsedValue
-          } else {
-            console.warn(
-              `Stored cookies (${COOKIES_CURRENT_WORKSPACE}) value is not an object, removing it.`
-            )
-            // stored cookies value has deprecated format
-            cookies.remove(COOKIES_CURRENT_WORKSPACE)
+      if (!payload.skipStorage) {
+        // Append current workspace with last seen parameter
+        this.lastWorkspaces.value = [
+          ...this.lastWorkspaces.value.filter(
+            (item) =>
+              item.id !== payload.workspaceId ||
+              item.userId !== this.loggedUser.id
+          ),
+          {
+            lastSeen: Date.now(),
+            id: payload.workspaceId,
+            userId: this.loggedUser.id
           }
-        }
-      } catch (e) {
-        console.warn(
-          `Stored cookies (${COOKIES_CURRENT_WORKSPACE}) value is malformed, removing it.`,
-          e
-        )
-        // stored cookies value is malformed, remove it
-        cookies.remove(COOKIES_CURRENT_WORKSPACE)
-      }
-      return value
-    },
-
-    async getUserWorkspaceFromCookies() {
-      let userWorkspaceId: string
-      if (this.loggedUser?.username) {
-        try {
-          const value = await this.getAllUserWorkspacesFromCookies()
-          if (value) {
-            userWorkspaceId = value[this.loggedUser?.username]
-          }
-        } catch {
-          // ignore
-        }
-      }
-      return userWorkspaceId
-    },
-
-    async removeUserWorkspaceFromCookies() {
-      if (this.loggedUser?.username) {
-        let value: Record<string, string>
-        try {
-          value = await this.getAllUserWorkspacesFromCookies()
-        } catch {
-          // ignore
-        }
-
-        if (value) {
-          delete value[this.loggedUser?.username]
-          const strValue = JSON.stringify(value)
-
-          const expires = new Date()
-          // cookies expire in one year
-          expires.setFullYear(expires.getFullYear() + 1)
-          cookies.set(COOKIES_CURRENT_WORKSPACE, strValue, {
-            expires
-          })
-        }
+        ]
       }
     },
 
-    async setUserWorkspaceToCookies(payload) {
-      if (this.loggedUser?.username) {
-        let oldValue: Record<string, string>
-        try {
-          oldValue = await this.getAllUserWorkspacesFromCookies()
-        } catch {
-          // ignore
-        }
+    getLastWorkspaceFromStorage(): WorkspaceResponse | undefined {
+      if (this.loggedUser?.id === undefined) return
 
-        const value = JSON.stringify({
-          ...oldValue,
-          [this.loggedUser?.username]: payload.id
+      const lastSeenWorkspace = [...this.lastWorkspaces.value]
+        .sort((a, b) => {
+          return b.lastSeen - a.lastSeen
         })
-        const expires = new Date()
-        // cookies expire in one year
-        expires.setFullYear(expires.getFullYear() + 1)
-        cookies.set(COOKIES_CURRENT_WORKSPACE, value, {
-          expires
-        })
-      }
+        .find((item) => item.userId === this.loggedUser?.id)
+
+      return (
+        lastSeenWorkspace && this.getWorkspaceById({ id: lastSeenWorkspace.id })
+      )
     },
 
-    async setFirstWorkspace() {
-      if (this.workspaces.length > 0) {
-        await this.setWorkspace({
-          workspaceId: this.workspaces[0].id
-        })
-      }
+    async cleanupLastSeenWorkspaces() {
+      this.lastWorkspaces.value = this.lastWorkspaces.value.filter(
+        (item) => item.userId !== this.loggedUser?.id
+      )
     },
 
+    /**
+     * Checks the current workspace that the user is in.
+     *
+     * Tries to get the current workspace ID from the local storage array of last seen ws.
+     * If not found, tries to use the preferred workspace ID from the user profile.
+     * If still not found, defaults to using the first workspace in the user's list of workspaces.
+     *
+     * Sets the current workspace in the store, and saves to local storage if needed.
+     */
     async checkCurrentWorkspace() {
       try {
         await this.getWorkspaces()
-        const currentWorkspaceFromCookie =
-          await this.getUserWorkspaceFromCookies()
+        let foundWorkspace = this.getLastWorkspaceFromStorage()
         if (this.workspaces.length > 0) {
-          let foundWorkspace
-          let skipSavingInCookies = true
-          if (currentWorkspaceFromCookie !== undefined) {
-            // try to use workspace stored in cookies
-            foundWorkspace = this.getWorkspaceById({
-              id: parseInt(currentWorkspaceFromCookie)
-            })
-          }
+          let skipStorage = true
           if (!foundWorkspace) {
             // try to use preferred_workspace from user profile response
-            const preferredWorkspaceId = await this.getPreferredWorkspaceId()
-            if (preferredWorkspaceId) {
-              foundWorkspace = this.getWorkspaceById({
-                id: preferredWorkspaceId
-              })
-              if (foundWorkspace?.id) {
-                // do not skip saving in cookies when using preferredWorkspace
-                skipSavingInCookies = false
-              }
+            const preferredWorkspaceId = this.loggedUser?.preferred_workspace
+            foundWorkspace = this.getWorkspaceById({
+              id: preferredWorkspaceId
+            })
+            if (foundWorkspace?.id) {
+              // do not skip saving in local storage when using preferredWorkspace
+              skipStorage = false
             }
           }
           // use id from found workspace, if not found fallback to first workspace from user workspaces
@@ -534,13 +454,13 @@ export const useUserStore = defineStore('userModule', {
             foundWorkspace?.id ?? this.workspaces[0].id
           await this.setWorkspace({
             workspaceId: currentWorkspaceIdToSet,
-            // do not save workspaceId to cookies as it could be:
-            // * already there, if was loaded from cookies
+            // do not save workspaceId to storage as it could be:
+            // * already there, if was loaded from local storage
             // * used the first user workspace as fallback, then it is not a user choice
-            skipSavingInCookies
+            skipStorage
           })
         } else {
-          await this.removeUserWorkspaceFromCookies()
+          await this.cleanupLastSeenWorkspaces()
         }
       } catch (e) {
         console.warn('Loading of stored user workspace id has failed.', e)

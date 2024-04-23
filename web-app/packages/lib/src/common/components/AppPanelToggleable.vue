@@ -31,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <slot name="header"></slot>
     </template>
     <template v-else-if="$slots.title" #header>
-      <h3 class="text-color-forest font-semibold m-0">
+      <h3 class="text-color-forest font-semibold m-0 title-t3">
         <slot name="title"></slot>
       </h3>
     </template>

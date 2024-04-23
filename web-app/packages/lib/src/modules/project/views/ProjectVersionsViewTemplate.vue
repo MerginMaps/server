@@ -34,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <!-- Visible on lg breakpoint > -->
             <div
               v-for="col in columns.filter((item) => !item.fixed)"
-              :class="['text-xs hidden lg:flex', `col-${col.cols ?? 2}`]"
+              :class="['paragraph-p6 hidden lg:flex', `col-${col.cols ?? 2}`]"
               :key="col.text"
             >
               {{ col.text }}
@@ -49,7 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <div
             v-for="item in slotProps.items"
             :key="item.id"
-            class="flex align-items-center hover:bg-gray-50 cursor-pointer border-bottom-1 border-gray-200 text-xs px-3 py-2 mt-0"
+            class="flex align-items-center hover:bg-gray-50 cursor-pointer border-bottom-1 border-gray-200 paragraph-p6 px-3 py-2 mt-0"
             :style="[rowStyle(item)]"
             @click.prevent="!item.disabled && rowClick(item.name)"
           >
@@ -73,7 +73,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   </span>
                 </template>
                 <template v-else-if="col.value === 'created'">
-                  <p class="text-xs opacity-80 font-semibold lg:hidden">
+                  <p class="paragraph-p6 opacity-80 font-semibold lg:hidden">
                     {{ col.text }}
                   </p>
                   <span
@@ -86,7 +86,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   </span>
                 </template>
                 <template v-else-if="col.value === 'changes.added'">
-                  <p class="text-xs opacity-80 font-semibold lg:hidden">
+                  <p class="paragraph-p6 opacity-80 font-semibold lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">{{
@@ -94,7 +94,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   }}</span>
                 </template>
                 <template v-else-if="col.value === 'changes.updated'">
-                  <p class="text-xs opacity-80 font-semibold lg:hidden">
+                  <p class="paragraph-p6 opacity-80 font-semibold lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">
@@ -102,7 +102,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   </span>
                 </template>
                 <template v-else-if="col.value === 'changes.removed'">
-                  <p class="text-xs opacity-80 font-semibold lg:hidden">
+                  <p class="paragraph-p6 opacity-80 font-semibold lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">
@@ -110,7 +110,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   </span>
                 </template>
                 <template v-else-if="col.value === 'project_size'">
-                  <p class="text-xs opacity-80 font-semibold lg:hidden">
+                  <p class="paragraph-p6 opacity-80 font-semibold lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">{{
@@ -118,7 +118,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   }}</span>
                 </template>
                 <template v-else>
-                  <p class="text-xs opacity-80 font-semibold lg:hidden">
+                  <p class="paragraph-p6 opacity-80 font-semibold lg:hidden">
                     {{ col.text }}
                   </p>
                   <span :class="col.textClass">{{ item[col.value] }}</span>
@@ -134,7 +134,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 text
                 :disabled="item.disabled"
                 :style="[rowStyle(item)]"
-                class="text-xl"
+                class="paragraph-p3"
                 data-cy="project-versions-download-btn"
                 @click.stop="
                   downloadArchive({

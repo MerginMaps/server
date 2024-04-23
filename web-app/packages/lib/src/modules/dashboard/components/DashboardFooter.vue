@@ -29,10 +29,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </div>
 
         <div class="col-12 xl:col-5 mb-2 xl:mb-0 text-center xl:text-left">
-          <h2 class="text-color text-sm mb-3">
+          <h2 class="text-color paragraph-p5">
             Download Mergin Maps to your phone
           </h2>
-          <p class="opacity-60 text-xs">
+          <p class="opacity-60 paragraph-p6">
             Capture geo-info easily through your mobile/tablet with our mobile
             app.
           </p>
@@ -43,12 +43,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             href="https://apps.apple.com/us/app/input/id1478603559?ls=1&utm_source=mergin-website&utm_medium=banner&utm_campaign=input"
             target="_blank"
             class="mr-1"
-            ><img src="@/assets/appstore.jpg"
+            ><img :style="{ width: '100%' }" src="@/assets/appstore.jpg"
           /></a>
           <a
             href="https://play.google.com/store/apps/details?id=uk.co.lutraconsulting&utm_source=mergin-website&utm_medium=banner&utm_campaign=input"
             target="_blank"
-            ><img src="@/assets/googleplay.jpg"
+            ><img :style="{ width: '100%' }" src="@/assets/googleplay.jpg"
           /></a>
         </div>
 
@@ -86,10 +86,10 @@ function closeElement() {
 .dashboard-view-footer-mobile {
   margin-top: -1.5rem;
   min-height: 100px;
-  width: 350px;
+  width: 320px;
 
   &-circle {
-    height: 350px;
+    height: 320px;
     background-color: var(--primary-color);
   }
 }

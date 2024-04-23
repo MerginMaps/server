@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <app-onboarding-page>
     <template #header>
-      <h1 class="text-6xl">
+      <h1 class="headline-h1">
         <template v-if="forgotPassword">Reset password</template
         ><template v-else>Sign in</template>
       </h1>
@@ -20,25 +20,25 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <form
       v-if="forgotPassword"
       @submit.prevent="reset"
-      class="flex flex-column row-gap-1"
+      class="flex flex-column"
     >
       <div>
-        <label class="text-xs" for="login">Email</label>
+        <label class="paragraph-p6" for="login">Email</label>
         <PInputText
           placeholder="Type your email"
           name="email"
           color="inputColor"
           data-cy="reset-form-email"
           v-model="email"
-          :class="['w-full my-1', errors.email ? 'p-invalid' : '']"
+          :class="['w-full', errors.email ? 'p-invalid' : '']"
         />
-        <span class="p-error text-xs" id="login-error">{{
+        <span class="p-error paragraph-p6" id="login-error">{{
           errors.email?.[0] || '&nbsp;'
         }}</span>
       </div>
 
       <router-link
-        class="text-sm text-color-forest font-semibold align-self-center"
+        class="text-color-forest align-self-center font-semibold"
         :to="{ name: 'login' }"
         >Back to login</router-link
       >
@@ -51,32 +51,32 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         label="Reset password"
       />
     </form>
-    <form v-else @submit.prevent="loginUser" class="flex flex-column row-gap-1">
+    <form v-else @submit.prevent="loginUser" class="flex flex-column">
       <div>
-        <label class="text-xs" for="login">Username or email</label>
+        <label class="paragraph-p6" for="login">Username or email</label>
         <PInputText
           id="login"
           name="login"
           v-model="login"
           data-cy="login-form-login"
-          :class="['w-full my-1', errors.login ? 'p-invalid' : '']"
+          :class="['w-full', errors.login ? 'p-invalid' : '']"
           aria-describedby="login-error"
           placeholder="Please enter username or email"
           :inputProps="{ autocomplete: 'on' }"
           autofocus
         />
-        <span class="p-error text-xs" id="login-error">{{
+        <span class="p-error paragraph-p6" id="login-error">{{
           errors.login?.[0] || '&nbsp;'
         }}</span>
       </div>
 
       <div>
-        <label class="text-xs" for="password">Password</label>
+        <label class="paragraph-p6" for="password">Password</label>
         <PPassword
           id="password"
           name="password"
           v-model="password"
-          :class="['w-full my-1', errors.password ? 'p-invalid' : '']"
+          :class="['w-full', errors.password ? 'p-invalid' : '']"
           data-cy="login-form-password"
           aria-describedby="password-error"
           toggleMask
@@ -91,13 +91,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             }
           }"
         />
-        <span class="p-error text-xs" id="password-error">{{
+        <span class="p-error paragraph-p6" id="password-error">{{
           errors.password?.[0] || '&nbsp;'
         }}</span>
       </div>
 
       <router-link
-        class="text-sm text-color-forest font-semibold align-self-center"
+        class="text-color-forest title-t3 align-self-center"
         :to="{ name: 'login', params: { reset: 'reset' } }"
         >Forgot password?</router-link
       >
@@ -108,6 +108,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         data-cy="login-form-btn-login"
         id="login-btn"
         class="mt-6 w-full"
+        size="large"
         label="Sign in"
       />
     </form>
