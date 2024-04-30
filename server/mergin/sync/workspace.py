@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 from datetime import datetime, timedelta
-from typing import Dict, Tuple, Optional, Set
+from typing import Dict, Tuple, Optional, Set, List
 from flask_login import current_user
 from sqlalchemy import or_, and_, Column, literal
 from sqlalchemy.orm import joinedload
@@ -281,3 +281,55 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
     def access_requests_query():
         """Project access base query"""
         return AccessRequest.query.join(Project)
+
+    @staticmethod
+    def project_access(project: Project) -> List[Dict]:
+        """
+        Project access users overview
+        """
+        global_role = None
+        accesses = (
+            (project.access.owners, "owner"),
+            (project.access.writers, "writer"),
+            (project.access.readers, "reader"),
+        )
+        if Configuration.GLOBAL_ADMIN:
+            global_role = "owner"
+            accesses = ()
+        elif Configuration.GLOBAL_WRITE:
+            global_role = "writer"
+            accesses = accesses[:1]
+        elif Configuration.GLOBAL_READ:
+            global_role = "reader"
+            accesses = accesses[:2]
+        result = []
+        processed_ids = set()
+        for user_ids, role in accesses:
+            for user_id in user_ids:
+                if user_id not in processed_ids:
+                    user = User.query.get(user_id)
+                    result.append(
+                        {
+                            "id": user_id,
+                            "type": "member",
+                            "email": user.email,
+                            "username": user.username,
+                            "project_permission": role,
+                            "name": user.profile.name(),
+                        }
+                    )
+                    processed_ids.add(user_id)
+        if global_role:
+            for user in User.query.all():
+                if user.id not in processed_ids:
+                    result.append(
+                        {
+                            "id": user.id,
+                            "type": "member",
+                            "email": user.email,
+                            "username": user.username,
+                            "project_permission": global_role,
+                            "name": user.profile.name(),
+                        }
+                    )
+        return result

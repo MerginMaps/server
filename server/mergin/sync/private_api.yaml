@@ -554,25 +554,38 @@ components:
         - id
         - type
         - email
-        - username
         - project_permission
       properties:
         id:
-          description: User id
-          type: integer
+          description: User/Invitation (uu)id
+          oneOf:
+            - type: integer
+            - type: string
           example: 1
         type:
           type: string
           enum:
             - member
+            - invitation
         email:
           type: string
           format: email
           example: john.doe@example.com
+        role:
+          description: Workspace role, only in EE
+          type: string
+          enum:
+            - owner
+            - admin
+            - writer
+            - reader
+            - guest
         username:
+          description: Present only for type `member`
           type: string
           example: john.doe
         name:
+          description: Present only for type `member`
           type: string
           example: John Doe
         project_permission:
@@ -581,6 +594,46 @@ components:
             - owner
             - writer
             - reader
+        invitation:
+          description: Present only for type `invitation`
+          type: object
+          required:
+            - "expires_at"
+          properties:
+            expires_at:
+              type: string
+              format: date-time
+              example: 2018-11-30T08:47:58.636074Z
+            projects:
+              $ref: '#/components/schemas/InvitationProjects'
+    InvitationProjects:
+      nullable: true
+      type: object
+      required:
+        - permissions
+        - ids
+      properties:
+        permissions:
+          type: string
+          description: permissions to be applied for all projects
+          enum:
+            - read
+            - write
+          example: read
+        ids:
+          type: array
+          description: list of project uuids
+          items:
+            type: string
+            description: project uuid
+            example: 9e7da83a-4gds-4ce4-a282-3cc2ecbc8df2
+        names:
+          type: array
+          description: list of project names
+          items:
+            type: string
+            description: project name
+            example: survey
     ProjectAccessUpdated:
       type: object
       properties:
