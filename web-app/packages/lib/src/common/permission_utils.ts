@@ -120,8 +120,7 @@ export function getProjectRoleNameValues(): DropdownOption<ProjectRoleName>[] {
     {
       value: 'reader',
       label: 'Reader',
-      description: 'Can view project files',
-      disabled: true
+      description: 'Can view project files'
     },
     {
       value: 'writer',
