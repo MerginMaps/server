@@ -305,6 +305,9 @@ class Project(db.Model):
         - reset project_access
         - decline pending project access requests
         """
+        # do nothing if the project has been already deleted
+        if not self.storage_params:
+            return
         self.name = f"{self.name}_{str(self.id)}"
         # make sure remove_at is not null as it is used as filter for APIs
         if not self.removed_at:

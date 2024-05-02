@@ -132,3 +132,6 @@ def test_remove_project(client, diff_project):
     assert ProjectAccess.query.filter_by(project_id=project_id).count()
     cleanup(client, [project_dir])
     assert access_request.status == RequestStatus.DECLINED.value
+
+    # try to remove the deleted project
+    assert diff_project.delete() is None
