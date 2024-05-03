@@ -380,6 +380,7 @@ def clean_upload(transaction_id):
     move_to_tmp(upload_dir, transaction_id)
     return NoContent, 200
 
+
 def get_device_id(request: Request) -> Optional[str]:
     """Get device uuid from http header X-Device-Id"""
-    return request.headers.get('X-Device-Id')
+    return request.headers.get("X-Device-Id")
