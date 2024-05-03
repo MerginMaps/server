@@ -477,9 +477,12 @@ class ProjectVersion(db.Model):
         "Project",
         uselist=False,
     )
+    device_id = db.Column(db.String, index=True, nullable=True)
     __table_args__ = (db.UniqueConstraint("project_id", "name"),)
 
-    def __init__(self, project, name, author, changes, files, ip, user_agent=None):
+    def __init__(
+        self, project, name, author, changes, files, ip, user_agent=None, device_id=None
+    ):
         self.project_id = project.id
         self.name = name
         self.author = author
@@ -487,6 +490,7 @@ class ProjectVersion(db.Model):
         self.files = files
         self.user_agent = user_agent
         self.ip_address = ip
+        self.device_id = device_id
         self.project_size = sum(f["size"] for f in self.files) if self.files else 0
         # clean up changes metadata from chunks upload info
         for change in self.changes["updated"] + self.changes["added"]:
