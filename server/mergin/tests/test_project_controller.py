@@ -400,7 +400,6 @@ def test_add_project(client, app, data, expected):
     )
     upload_chunks(upload_dir, upload.changes)
     resp = client.post("/v1/project/push/finish/{}".format(upload.id))
-    print(resp.json)
     assert resp.status_code == 200
 
     # add TEMPLATES user and make him creator of test_project (to become template)
@@ -434,6 +433,7 @@ def test_add_project(client, app, data, expected):
         )
         pv = project.get_latest_version()
         assert pv.user_agent is not None
+        assert pv.device_id == json_headers["X-Device-Id"]
         # check if there is no diffs in cloned files
         assert not any("diff" in file for file in project.files)
         assert not any("diff" in file for file in pv.files)
@@ -459,6 +459,7 @@ def test_versioning(client):
     pv = project.get_latest_version()
     assert pv.name == "v0"
     assert pv.project_size == 0
+    assert pv.device_id == json_headers["X-Device-Id"]
 
 
 def test_delete_project(client):
@@ -1367,7 +1368,7 @@ def test_push_finish(client):
     upload, upload_dir = create_transaction("mergin", changes)
     url = "/v1/project/push/finish/{}".format(upload.id)
 
-    resp = client.post(url)
+    resp = client.post(url, headers=json_headers)
     assert resp.status_code == 422
     assert "corrupted_files" in resp.json["detail"].keys()
     assert not os.path.exists(os.path.join(upload_dir, "files", "test.txt"))
@@ -1384,11 +1385,12 @@ def test_push_finish(client):
                 with open(os.path.join(upload_dir, "chunks", chunk), "wb") as out_file:
                     out_file.write(in_file.read(CHUNK_SIZE))
 
-    resp2 = client.post(url)
+    resp2 = client.post(url, headers={**json_headers, "User-Agent": "Werkzeug"})
     assert resp2.status_code == 200
     assert not os.path.exists(upload_dir)
     version = upload.project.get_latest_version()
     assert version.user_agent
+    assert version.device_id == json_headers["X-Device-Id"]
     # chunks is only temporal information, it should not be in db
     assert "chunks" not in version.changes["added"][0].keys()
     assert "chunks" not in version.changes["updated"][0].keys()
@@ -1699,6 +1701,7 @@ def test_clone_project(client, data, username, expected):
         assert not any("diff" in file for file in pv.files)
         assert pv.changes.get("removed") == []
         assert pv.changes.get("updated") == []
+        assert pv.device_id == json_headers["X-Device-Id"]
         assert "diff" not in pv.changes.get("added")
         # cleanup
         shutil.rmtree(project.storage.project_dir)

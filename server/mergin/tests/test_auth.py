@@ -57,6 +57,7 @@ def test_login(client, data, headers, expected):
             .first()
         )
         assert login_history
+        assert login_history.device_id == str(headers.get("X-Device-Id"))
 
 
 def test_logout(client):
