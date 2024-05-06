@@ -360,7 +360,7 @@ def get_project_access(id: str):
                 )
                 processed_ids.add(user_id)
     if global_role:
-        for user in User.query.all():
+        for user in User.query.filter_by(active=True).all():
             if user.id not in processed_ids:
                 result.append(
                     {
