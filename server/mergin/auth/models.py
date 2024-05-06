@@ -221,7 +221,7 @@ class LoginHistory(db.Model):
     ip_geolocation_country = db.Column(db.String, index=True)
     device_id = db.Column(db.String, index=True, nullable=True)
 
-    def __init__(self, user_id: int, ua: str, ip: str, device_id: Optional[str]):
+    def __init__(self, user_id: int, ua: str, ip: str, device_id: Optional[str] = None):
         self.user_id = user_id
         self.user_agent = ua
         self.ip_address = ip

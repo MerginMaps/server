@@ -35,6 +35,11 @@ test_login_data = [
     ({"login": "mergin", "password": "ilovemergin"}, json_headers, 200),
     ({"login": "mergin  ", "password": "ilovemergin"}, json_headers, 200),
     ({"login": "mergin@mergin.com", "password": "ilovemergin"}, json_headers, 200),
+    (
+        {"login": "mergin", "password": "ilovemergin"},
+        {**json_headers, "X-Device-Id": None},
+        200,
+    ),
     ({"login": "mergin", "password": "ilovemergi"}, json_headers, 401),
     ({"login": "mergin"}, json_headers, 401),
     ({"login": "mergin", "password": "ilovemergin"}, {}, 415),
