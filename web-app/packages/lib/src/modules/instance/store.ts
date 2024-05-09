@@ -4,6 +4,7 @@
 
 import { defineStore } from 'pinia'
 
+import { GlobalRole } from '@/common/permission_utils'
 import { InstanceApi } from '@/modules/instance/instanceApi'
 import {
   ConfigResponse,
@@ -28,6 +29,27 @@ export const useInstanceStore = defineStore('instanceModule', {
     configData: undefined
   }),
 
+  getters: {
+    /**
+     * Retrieves the current global role from the instance configuration data.
+     *
+     * The global role is determined by checking the `global_read`, `global_write`, and `global_admin` flags in the configuration data.
+     * If none of the flags are set, `undefined` is returned, otherwise the index of the first set flag is returned as the global role.
+     *
+     * @param state - The current instance state.
+     * @returns The current global role, or `undefined` if no global role is set.
+     */
+    currentGlobalRole(state): GlobalRole | undefined {
+      // eslint-disable-next-line camelcase
+      const { global_read, global_write, global_admin } = state.configData
+      // eslint-disable-next-line camelcase
+      const foundIndex = [global_read, global_write, global_admin].findIndex(
+        (r) => !!r
+      )
+      return foundIndex < 0 ? undefined : foundIndex
+    }
+  },
+
   actions: {
     setConfigData(payload: ConfigResponse) {
       this.configData = payload
@@ -37,9 +59,6 @@ export const useInstanceStore = defineStore('instanceModule', {
     },
     setPingData(payload: PingResponse) {
       this.pingData = payload
-    },
-    setInitialized() {
-      this.initialized = true
     },
     async initApp() {
       const notificationStore = useNotificationStore()
@@ -51,7 +70,6 @@ export const useInstanceStore = defineStore('instanceModule', {
           // fetch user profile if user is logged in
           await userStore.fetchUserProfile()
         }
-        this.setInitialized()
         return response
       } catch {
         notificationStore.error({ text: 'Failed to init application.' })

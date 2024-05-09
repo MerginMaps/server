@@ -9,6 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <PSidebar
       :auto-z-index="false"
       v-model:visible="model"
+      block-scroll
       :modal="true"
       position="right"
       class="w-11 lg:w-5 xl:w-3"
@@ -79,8 +80,16 @@ const model = computed({
   }
 })
 
+/**
+ * Handles scrolling of sidebar content area.
+ * Sets isScrollingContent ref to true if scroll position is past
+ * first child element.
+ */
 function scrollContent(e) {
-  isScrollingContent.value = !!e.currentTarget.scrollTop
+  const childRect = e.target.firstElementChild?.getBoundingClientRect()
+  isScrollingContent.value = childRect?.y
+    ? (e.currentTarget.scrollTop ?? 0) > childRect.y
+    : !!e.currentTarget.scrollTop
 }
 </script>
 

@@ -22,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <!-- Visible on lg breakpoint > -->
             <div
               v-for="col in columns.filter((item) => !item.fixed)"
-              :class="['text-xs hidden lg:flex', `col-${col.cols ?? 4}`]"
+              :class="['paragraph-p6 hidden lg:flex', `col-${col.cols ?? 4}`]"
               :key="col.text"
             >
               {{ col.text }}
@@ -32,12 +32,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </div>
         </template>
 
-        <!-- table rows -->
+        <!-- table rows -->options
         <template #list="slotProps">
           <div
             v-for="item in slotProps.items"
             :key="item.id"
-            class="flex align-items-center hover:bg-gray-50 border-bottom-1 border-gray-200 text-xs px-4 py-2 mt-0"
+            class="flex align-items-center hover:bg-gray-50 border-bottom-1 border-gray-200 paragraph-p6 px-4 py-2 mt-0"
           >
             <div class="w-11 grid grid-nogutter">
               <!-- Columns, we are using data view instead table, it is better handling of responsive state -->
@@ -62,11 +62,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 >
                   <PAvatar
                     v-if="col.value === 'email'"
-                    :label="(item.username ?? '').charAt(0).toUpperCase()"
+                    :label="$filters.getAvatar(item.email, item.name)"
                     shape="circle"
                     :pt="{
                       root: {
-                        class: 'mr-2 font-semibold text-color-forest',
+                        class:
+                          'mr-2 font-semibold text-color-forest flex-shrink-0',
                         style: {
                           borderRadius: '50%'
                         }
@@ -78,17 +79,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                     :options="roles"
                     :model-value="item.project_permission"
                     @update:model-value="(e) => roleUpdate(item, e)"
-                    :disabled="
-                      item.id === loggedUser.id || item.id === project.creator
-                    "
+                    :disabled="item.id === loggedUser.id"
                     class="w-6 lg:w-full"
                   />
-                  <template v-else
+                  <span v-else
                     >{{ item[col.value] }}
-                    <span
+                    <template
                       v-if="col.value === 'email' && item.id === loggedUser.id"
-                      >(me)</span
-                    ></template
+                      >(me)</template
+                    ></span
                   >
                 </div>
               </div>
@@ -101,11 +100,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 plain
                 text
                 @click.stop="removeMember(item)"
-                class="text-xl p-0"
+                class="paragraph-p3 p-0"
                 :style="{
-                  visibility: projectStore.canRemoveProjectAccess(item)
-                    ? 'visible'
-                    : 'hidden'
+                  visibility: canRemoveMember(item) ? 'visible' : 'hidden'
                 }"
               />
             </div>
@@ -125,16 +122,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { computed, ref, onUnmounted } from 'vue'
 
 import { useProjectStore } from '../store'
-import { ProjectAccessDetail, SortingParams } from '../types'
+import { ProjectAccessDetail } from '../types'
 
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppDropdown from '@/common/components/AppDropdown.vue'
 import AppSection from '@/common/components/AppSection.vue'
 import {
+  GlobalRole,
   ProjectRoleName,
-  getProjectRoleNameValues
+  getProjectRoleNameValues,
+  isAtLeastGlobalRole
 } from '@/common/permission_utils'
-import { useUserStore } from '@/main'
+import { useInstanceStore, useUserStore } from '@/main'
 
 // TODO: Externalize to AppCol element
 interface ColumnItem {
@@ -145,10 +144,15 @@ interface ColumnItem {
   textClass?: string
 }
 
+interface Props {
+  allowRemove?: boolean
+}
+
 const projectStore = useProjectStore()
 const userStore = useUserStore()
+const instanceStore = useInstanceStore()
 
-defineProps<{ options?: SortingParams }>()
+const props = withDefaults(defineProps<Props>(), { allowRemove: true })
 
 const itemsPerPage = ref(10)
 const columns = ref<ColumnItem[]>([
@@ -174,9 +178,16 @@ const columns = ref<ColumnItem[]>([
     fixed: true
   }
 ])
-const roles = ref(getProjectRoleNameValues())
+const roles = computed(() =>
+  getProjectRoleNameValues().map((item) => ({
+    ...item,
+    disabled: !isAtLeastGlobalRole(
+      item.value,
+      instanceStore.currentGlobalRole ?? GlobalRole.global_read
+    )
+  }))
+)
 const loggedUser = computed(() => userStore.loggedUser)
-const project = computed(() => projectStore.project)
 const searchedItems = computed(() =>
   projectStore.access.filter((item) => {
     return [item.username, item.email].some(
@@ -184,6 +195,10 @@ const searchedItems = computed(() =>
     )
   })
 )
+
+function canRemoveMember(item: ProjectAccessDetail) {
+  return props.allowRemove && item.id !== loggedUser.value?.id
+}
 
 function removeMember(item: ProjectAccessDetail) {
   projectStore.removeProjectAccess(item)

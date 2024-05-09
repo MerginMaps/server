@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <template v-if="!namespace">
         <app-section ground class="mb-3">
           <template #header>
-            <h1 class="text-3xl">
+            <h1 class="headline-h3">
               {{ header }}
               <span class="text-color-medium-green">({{ projectsCount }})</span>
             </h1>
@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </template>
           <div class="flex align-items-center justify-content-between mt-3">
             <span class="p-input-icon-left flex-grow-1">
-              <i class="ti ti-search text-xl"></i>
+              <i class="ti ti-search paragraph-p3"></i>
               <PInputText
                 placeholder="Search projects by name"
                 v-model="projectsStore.projectsSearch"

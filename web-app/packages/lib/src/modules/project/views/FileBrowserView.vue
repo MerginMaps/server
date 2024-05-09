@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <app-section ground>
         <div class="flex align-items-center">
           <span class="p-input-icon-left flex-grow-1">
-            <i class="ti ti-search text-xl"></i>
+            <i class="ti ti-search paragraph-p3"></i>
             <PInputText
               placeholder="Search files"
               data-cy="search-files-field"
@@ -48,10 +48,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <img src="@/assets/Icon/24/QGIS.svg" width="24" height="24" />
             </div>
 
-            <h4 class="text-lg font-semibold text-color-forest">
+            <h4 class="title-t1 text-color-forest">
               Mergin Maps plugin for QGIS
             </h4>
-            <p class="text-sm opacity-80 m-0">
+            <p class="paragraph-p6 opacity-80 m-0">
               This is the easiest and recommended way.
               <a
                 target="_blank"
@@ -75,6 +75,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :value="items"
           :data-key="'path'"
           :paginator="items.length > itemPerPage"
+          :sort-field="options.sortBy"
+          :sort-order="options.sortDesc"
           :rows="itemPerPage"
           :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
           data-cy="file-browser-table"
@@ -84,7 +86,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <!-- Visible on lg breakpoint > -->
               <div
                 v-for="col in columns"
-                :class="[`col-${col.cols ?? 3}`, 'text-xs hidden lg:flex']"
+                :class="[`col-${col.cols ?? 3}`, 'paragraph-p6 hidden lg:flex']"
                 :key="col.text"
               >
                 {{ col.text }}
@@ -97,7 +99,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <div
               v-for="item in slotProps.items"
               :key="item.id"
-              class="grid grid-nogutter px-4 py-3 mt-0 border-bottom-1 border-gray-200 text-xs hover:bg-gray-50 cursor-pointer row-gap-2"
+              class="grid grid-nogutter px-4 py-3 mt-0 border-bottom-1 border-gray-200 paragraph-p6 hover:bg-gray-50 cursor-pointer row-gap-2"
               @click.prevent="rowClick(item.link)"
             >
               <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->
@@ -123,7 +125,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   {{ $filters.timediff(item.mtime) }}
                 </span>
                 <span v-else class="opacity-80">{{
-                  $filters.filesize(item.size)
+                  item.size !== undefined ? $filters.filesize(item.size) : ''
                 }}</span>
               </div>
             </div>
@@ -160,7 +162,6 @@ import {
   AppPanelToggleable
 } from '@/common/components'
 import AppMenu from '@/common/components/AppMenu.vue'
-import { formatDateTime } from '@/common/date_utils'
 import { dirname } from '@/common/path_utils'
 import { removeAccents } from '@/common/text_utils'
 import { useInstanceStore } from '@/modules/instance/store'
@@ -199,7 +200,8 @@ export default defineComponent({
       options: {
         rowsPerPage: -1,
         descending: false,
-        sortBy: 'name'
+        sortBy: 'name',
+        sortDesc: 1
       },
       // Setup this to lower number in case of testing
       itemPerPage: 50,
@@ -436,7 +438,6 @@ export default defineComponent({
         ...file,
         name: file.path,
         link: this.fileLink(file),
-        mtime: formatDateTime(file.mtime),
         flags: this.fileFlags(file)
       }
     },
@@ -447,7 +448,6 @@ export default defineComponent({
         type: 'file',
         name: filename,
         link: this.fileLink(file),
-        mtime: formatDateTime(file.mtime),
         flags: this.fileFlags(file)
       }
     },
@@ -490,6 +490,7 @@ export default defineComponent({
     menuItemClick(e: MenuItemCommandEvent) {
       this.options.sortBy = e.item.key
       this.options.descending = e.item.sortDesc
+      this.options.sortDesc = e.item.sortDesc ? -1 : 1
     }
   }
 })

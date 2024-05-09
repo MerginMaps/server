@@ -122,12 +122,12 @@ export default defineComponent({
     })
     const toast = useToast()
     const notificationStore = useNotificationStore()
+    const layoutStore = useLayoutStore()
 
     notificationStore.init(toast)
+    layoutStore.init()
   },
   async created() {
-    this.init()
-
     await this.fetchConfig()
     if (this.loggedUser) {
       // here is loaded current workspace on startup (and reloaded in watcher when user has changed)
@@ -136,7 +136,7 @@ export default defineComponent({
 
     const pingDataResponse = await this.fetchPing()
     const getIsMaintenance = () => {
-      return pingDataResponse && pingDataResponse.maintenance
+      return pingDataResponse?.data?.maintenance
     }
 
     const resetUser = () => {
@@ -157,8 +157,7 @@ export default defineComponent({
     ...mapActions(useNotificationStore, {
       notificationError: 'error'
     }),
-    ...mapActions(useUserStore, ['checkCurrentWorkspace', 'updateLoggedUser']),
-    ...mapActions(useLayoutStore, ['init'])
+    ...mapActions(useUserStore, ['checkCurrentWorkspace', 'updateLoggedUser'])
   }
 })
 </script>

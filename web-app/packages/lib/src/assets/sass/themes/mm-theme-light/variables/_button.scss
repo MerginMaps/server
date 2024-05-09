@@ -120,11 +120,11 @@ $secondaryButtonFocusShadow: 0 0 0 0.2rem map-get($map: $colors, $key: "medium-g
 
 /// Background of an info button
 /// @group button
-$infoButtonBg: #03A9F4;
+$infoButtonBg: map-get($map: $colors, $key: informative);
 
 /// Text color of an info button
 /// @group button
-$infoButtonTextColor: #ffffff;
+$infoButtonTextColor: map-get($map: $colors, $key: "deep-ocean");
 
 /// Border of an info button
 /// @group button

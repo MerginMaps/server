@@ -340,4 +340,5 @@ export interface ProjectAccessDetail {
   email: string
   username: string
   project_permission: ProjectRoleName
+  name: string
 }

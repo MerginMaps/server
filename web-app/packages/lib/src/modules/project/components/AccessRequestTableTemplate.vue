@@ -18,15 +18,24 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     @page="onPage"
   >
     <template #header>
-      <h3 class="font-semibold text-xs text-color m-0">Access requests</h3>
+      <h3 class="font-semibold paragraph-p6 text-color">Access requests</h3>
     </template>
     <template #list="slotProps">
       <template v-for="item in slotProps.items" :key="item.id">
         <!-- Row -->
         <div
-          class="flex flex-column lg:flex-row align-items-center justify-content-between px-4 py-2 mt-0 border-bottom-1 border-gray-200"
+          class="flex flex-column lg:flex-row align-items-center justify-content-between px-4 py-2 mt-0 border-bottom-1 border-gray-200 gap-2"
         >
-          <p class="w-12 lg:w-4 text-xs m-0">
+          <p
+            v-if="loggedUser.username === item.requested_by"
+            class="w-12 lg:w-6 paragraph-p6"
+          >
+            You requested an access to project
+            <span class="font-semibold">{{ item.project_name }}</span> in
+            workspace <span class="font-semibold">{{ item.namespace }}</span
+            >.
+          </p>
+          <p v-else class="w-12 lg:w-6 paragraph-p6">
             User
             <span class="font-semibold">{{ item.requested_by }}</span>
             requested an access to your project
@@ -35,7 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <div
             class="flex w-12 lg:w-4 align-items-center flex-wrap lg:flex-nowrap row-gap-2"
           >
-            <p class="opacity-80 text-xs w-12">
+            <p class="opacity-80 paragraph-p6 w-12">
               <span v-tooltip.right="{ value: $filters.datetime(item.expire) }">
                 <template
                   v-if="$filters.remainingtime(item.expire) === 'expired'"
@@ -95,6 +104,7 @@ import {
   ProjectPermissionName,
   getProjectPermissionsValues
 } from '@/common/permission_utils'
+import { useUserStore } from '@/main'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
 import {
@@ -126,20 +136,9 @@ export default defineComponent({
   },
   computed: {
     ...mapState(useProjectStore, ['accessRequests', 'accessRequestsCount']),
+    ...mapState(useUserStore, ['loggedUser']),
     showAccept() {
       return this.namespace != null
-    },
-    ptColumn() {
-      return {
-        headerCell: {
-          style: {
-            backgroundColor: '#F8F9FA'
-          }
-        },
-        headerTitle: {
-          class: 'text-xs'
-        }
-      }
     },
     permissions(): Record<number, ProjectPermissionName> {
       return {

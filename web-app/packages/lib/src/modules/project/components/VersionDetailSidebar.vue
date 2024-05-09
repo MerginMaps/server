@@ -22,35 +22,35 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       ></template>
       <dl class="grid grid-nogutter row-gap-4">
         <div class="col-12">
-          <dt class="text-xs opacity-80 mb-2">Version</dt>
+          <dt class="paragraph-p6 opacity-80 mb-2">Version</dt>
           <dl>
-            <h3 class="text-2xl mt-0">
+            <h3 class="headline-h3 mt-0">
               {{ version.name }}
             </h3>
           </dl>
         </div>
         <PDivider class="m-0" />
         <div class="col-6">
-          <dt class="text-xs opacity-80 mb-2">Author</dt>
-          <dl class="font-semibold text-sm">
+          <dt class="paragraph-p6 opacity-80 mb-2">Author</dt>
+          <dl class="font-semibold paragraph-p5">
             {{ version.author }}
           </dl>
         </div>
         <div class="col-6 flex flex-column align-items-end">
-          <dt class="text-xs opacity-80 mb-2">Project size</dt>
-          <dl class="font-semibold text-sm">
+          <dt class="paragraph-p6 opacity-80 mb-2">Project size</dt>
+          <dl class="font-semibold paragraph-p5">
             {{ $filters.filesize(version.project_size) }}
           </dl>
         </div>
         <div class="col-12">
-          <dt class="text-xs opacity-80 mb-2">Created</dt>
-          <dl class="font-semibold text-sm">
+          <dt class="paragraph-p6 opacity-80 mb-2">Created</dt>
+          <dl class="font-semibold paragraph-p5">
             {{ $filters.datetime(version.created) }}
           </dl>
         </div>
         <div class="col-12">
-          <dt class="text-xs opacity-80 mb-2">User agent</dt>
-          <dl class="font-semibold text-sm">
+          <dt class="paragraph-p6 opacity-80 mb-2">User agent</dt>
+          <dl class="font-semibold paragraph-p5">
             {{ version.user_agent }}
           </dl>
         </div>
@@ -80,7 +80,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <app-circle :severity="item.severity" class="mr-2">
               <i :class="['ti', `${item.icon}`]"></i>
             </app-circle>
-            <span class="text-sm opacity-80">{{ item.text }}</span>
+            <span class="paragraph-p5 opacity-80">{{ item.text }}</span>
             <app-circle class="ml-auto">
               {{ changes[item.key].length }}
             </app-circle></template
@@ -88,7 +88,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <div
             v-for="change in changes[item.key]"
             :key="change.path"
-            class="py-2 text-xs"
+            class="py-2 paragraph-p6"
           >
             <div class="flex align-items-center justify-content-between mb-2">
               <span class="w-10 font-semibold">{{ change.path }}</span>

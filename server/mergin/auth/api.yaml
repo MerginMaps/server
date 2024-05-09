@@ -730,17 +730,9 @@ components:
          type: string
          format: email
          example: john.doe@mergin.com
-       profile:
-        type: object
-        properties:
-          first_name:
-            type: string
-            nullable: true
-            example: John
-          last_name:
-            type: string
-            nullable: true
-            example: Doe
+       name:
+         type: string
+         example: John Doe
     UserDetail:
       allOf:
         - $ref: "#/components/schemas/UserProfile"

@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <div>
     <app-container>
       <app-section>
-        <div class="flex flex-column row-gap-3 text-sm p-4">
+        <div class="flex flex-column row-gap-3 paragraph-p5 p-4">
           <div
             :class="[
               'flex flex-column align-items-start',
@@ -18,14 +18,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           >
             <div class="flex-grow-1">
               <template v-if="project.access.public">
-                <p class="font-semibold my-2">This is public project</p>
-                <span class="text-xs opacity-80"
+                <p class="font-semibold">This is public project</p>
+                <span class="paragraph-p6 opacity-80"
                   >Hide this project from everyone.</span
                 >
               </template>
               <template v-else>
-                <p class="font-semibold my-2">This is private project</p>
-                <span class="text-xs opacity-80"
+                <p class="title-t3">This is private project</p>
+                <span class="paragraph-p6 opacity-80"
                   >Make this project visible to anyone.</span
                 >
               </template>
@@ -58,8 +58,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             v-if="project && project.permissions && project.permissions.delete"
           >
             <div class="flex-grow-1">
-              <p class="font-semibold my-2">Delete project</p>
-              <span class="text-xs opacity-80">All data will be lost</span>
+              <p class="title-t3">Delete project</p>
+              <span class="paragraph-p6 opacity-80">All data will be lost</span>
             </div>
             <div class="flex-shrink-0">
               <PButton
@@ -149,6 +149,7 @@ export default defineComponent({
           this.project?.access.public ? 'private' : 'public'
         }?`,
         confirmText: 'Yes',
+        cancelText: 'No',
         description: this.project?.access.public
           ? 'Once you make your project private it can not be accessed by the community.'
           : 'Once you make your project public it can be accessed by the community.'

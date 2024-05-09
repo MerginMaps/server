@@ -42,11 +42,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <div v-if="$slots['header-image']" class="flex align-items-center">
               <slot name="header-image"></slot>
             </div>
-            <div :class="['flex flex-column gap-3 lg:gap-2']">
-              <h3 class="text-color text-sm font-semibold m-0">
+            <div :class="['flex flex-column gap-2 lg:gap-0']">
+              <h3 class="text-color title-t3">
                 <slot name="title"></slot>
               </h3>
-              <p v-if="$slots.description" class="text-xs m-0 opacity-80">
+              <p v-if="$slots.description" class="paragraph-p6 opacity-80">
                 <slot name="description"></slot>
               </p>
             </div>
@@ -56,7 +56,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </template>
       <!-- Header without additional styles -->
       <template v-else #header><slot name="header"></slot></template>
-      <div class="line-height-4"><slot></slot></div>
+      <div class="paragraph-p6 opacity-80"><slot></slot></div>
 
       <template v-if="$slots.footer" #footer>
         <slot name="footer"></slot>

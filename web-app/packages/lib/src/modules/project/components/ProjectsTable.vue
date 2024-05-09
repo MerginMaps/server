@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           class: 'bg-primary-reverse opacity-50'
         },
         bodyRow: {
-          class: 'text-xs hover:bg-gray-50 cursor-pointer'
+          class: 'paragraph-p6 hover:bg-gray-50 cursor-pointer'
         }
       }"
     >
@@ -39,7 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :pt="ptColumn"
         >
           <template #body="slotProps">
-            <p class="font-semibold text-sm mb-2 m-0">
+            <p class="title-t4">
               <router-link
                 :to="{
                   name: 'project',
@@ -82,7 +82,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 value: $filters.datetime(slotProps.data.updated),
                 pt: { root: { 'data-cy': 'project-form-updated' } }
               }"
-              class="opacity-80 m-0"
+              class="opacity-80 m-0 paragraph-p7"
             >
               Updated {{ $filters.timediff(slotProps.data.updated) }}
             </span>
@@ -198,16 +198,16 @@ export default defineComponent({
     ptColumn() {
       return {
         bodyCell: {
-          class: 'pl-4 py-3'
+          class: 'pl-4 py-2'
         },
         headerCell: {
-          class: 'pl-4 py-2',
+          class: 'pl-4 py-1',
           style: {
             backgroundColor: '#F8F9FA'
           }
         },
         headerTitle: {
-          class: 'text-xs'
+          class: 'paragraph-p6'
         }
       }
     }

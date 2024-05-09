@@ -31,6 +31,10 @@ class ProjectPermissions:
         @classmethod
         def check(cls, project: Project, user: User) -> bool:
             """Basic check for any permission"""
+            # this means project was permanently 'removed'
+            if project.storage_params is None:
+                return False
+
             if not user.is_authenticated:
                 return False
 

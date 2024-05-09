@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import { getAvatar } from './mergin_utils'
+
 import {
   formatDate,
   formatDateTime,
@@ -36,4 +38,5 @@ export interface ComponentCustomPropertyFilters {
   remainingtime: typeof formatRemainingTime
   totitle: typeof formatToTitle
   currency: typeof formatToCurrency
+  getAvatar: typeof getAvatar
 }

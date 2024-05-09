@@ -343,6 +343,21 @@ def test_get_paginated_projects(client):
     assert resp_desc.status_code == 200
     assert len(resp_desc.json["projects"]) == 1
 
+    # mark public project as deleted
+    project.removed_at = datetime.datetime.utcnow()
+    db.session.commit()
+    resp = client.get(
+        "/v1/project/paginated?page=1&per_page=10&only_public=true&order_params=namespace_asc"
+    )
+    assert resp.json.get("count") == 0
+    # delete permanently
+    project.delete()
+    db.session.commit()
+    resp = client.get(
+        "/v1/project/paginated?page=1&per_page=10&only_public=true&order_params=namespace_asc"
+    )
+    assert resp.json.get("count") == 0
+
 
 def test_get_projects_by_names(client):
     user = User.query.filter_by(username="mergin").first()

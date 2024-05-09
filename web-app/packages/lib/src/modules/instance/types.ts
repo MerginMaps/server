@@ -22,6 +22,9 @@ export interface BaseConfigResponse {
   major?: number
   minor?: number
   fix?: number
+  global_read?: boolean
+  global_write?: boolean
+  global_admin?: boolean
 }
 
 export type ConfigResponse = BaseConfigResponse &

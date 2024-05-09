@@ -23,8 +23,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   >
     <div class="flex flex-column justify-content-between h-screen">
       <div>
-        <header class="p-2 lg:p-5 mb-2">
-          <div class="lg:hidden flex justify-content-end">
+        <header class="p-2 xl:p-5 mb-2">
+          <div class="xl:hidden flex justify-content-end">
             <PButton
               plain
               icon="ti ti-x"
@@ -109,7 +109,7 @@ const onCloseClick = () => {
   max-width: 16.66%;
 }
 
-@media screen and (max-width: $lg) {
+@media screen and (max-width: $xl) {
   .sidebar {
     max-width: 400px;
   }

@@ -140,7 +140,7 @@ export default defineComponent({
           }
         },
         headerTitle: {
-          class: 'text-xs'
+          class: 'paragraph-p6'
         }
       }
     }

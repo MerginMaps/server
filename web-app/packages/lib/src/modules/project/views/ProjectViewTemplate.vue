@@ -80,7 +80,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div class="flex flex-column align-items-center p-4 text-center gap-4">
           <img src="@/assets/map-circle.svg" alt="No project" />
           <p class="font-semibold">This is a private project</p>
-          <p class="text-sm opacity-80 mt-2 mb-4">
+          <p class="paragraph-p5 opacity-80 mt-2 mb-4">
             You don't have permissions to access this project.
           </p>
           <PButton id="request-access-btn" @click="createAccessRequest"
@@ -92,7 +92,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div class="flex flex-column align-items-center p-4 text-center gap-4">
           <img src="@/assets/map-circle.svg" alt="No project" />
           <p class="font-semibold">Project not found</p>
-          <p class="text-sm opacity-80 mt-2 mb-4">
+          <p class="paragraph-p5 opacity-80 mt-2 mb-4">
             Please check if address is written correctly
           </p>
         </div>
@@ -103,7 +103,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <p class="font-semibold">
             You don't have permission to access this project
           </p>
-          <p class="text-sm opacity-80 mt-2 mb-4">
+          <p class="paragraph-p5 opacity-80 mt-2 mb-4">
             You already requested access
           </p>
         </div>
@@ -389,5 +389,11 @@ export default defineComponent({
 <style lang="scss" scoped>
 .project-view-actions {
   margin-bottom: -2.75rem;
+}
+
+@media screen and (max-width: $lg) {
+  .project-view-actions {
+    margin-bottom: 0px;
+  }
 }
 </style>

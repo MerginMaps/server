@@ -10,7 +10,7 @@ jobs:
       postgres:
         image: postgres:14
         env:
-          POSTGRES_DB: postgres        
+          POSTGRES_DB: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
         ports:
@@ -25,7 +25,7 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
- 
+
       - name: Install deps
         run: |
           cd server
@@ -36,8 +36,8 @@ jobs:
         run: |
           cd server
           pipenv run pytest -v --cov=mergin mergin/tests
-          
-      - name: Coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          base-path: server
+
+      # - name: Coveralls
+      #   uses: coverallsapp/github-action@v2
+      #   with:
+      #     base-path: server

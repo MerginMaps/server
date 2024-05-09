@@ -31,11 +31,13 @@ import { useUserStore } from '@/main'
 const userStore = useUserStore()
 
 const usage = computed(() =>
-  Math.floor(
-    (userStore.currentWorkspace?.disk_usage /
-      userStore.currentWorkspace?.storage) *
-      100
-  )
+  userStore.currentWorkspace?.disk_usage > userStore.currentWorkspace?.storage
+    ? 0
+    : Math.floor(
+        (userStore.currentWorkspace?.disk_usage /
+          userStore.currentWorkspace?.storage) *
+          100
+      )
 )
 
 /** Handle open state with connection to message close button */

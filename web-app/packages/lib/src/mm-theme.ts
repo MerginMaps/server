@@ -4,9 +4,11 @@ import { DataViewPassThroughOptions } from 'primevue/dataview'
 import { DialogPassThroughOptions } from 'primevue/dialog'
 import { InlineMessagePassThroughOptions } from 'primevue/inlinemessage'
 import { InputTextPassThroughOptions } from 'primevue/inputtext'
+import { MenuPassThroughOptions } from 'primevue/menu'
 import { usePassThrough } from 'primevue/passthrough'
 import { PasswordPassThroughOptions } from 'primevue/password'
 import { ProgressBarPassThroughOptions } from 'primevue/progressbar'
+import { TagPassThroughOptions } from 'primevue/tag'
 import { ToastPassThroughOptions } from 'primevue/toast'
 import { TreePassThroughOptions } from 'primevue/tree'
 
@@ -15,17 +17,16 @@ export default usePassThrough(
     button: {
       root(options) {
         return {
-          class: [
-            'line-height-4',
-            options.props.plain ? 'hover:text-color' : undefined
-          ],
-          style:
-            options.context.disabled && !options.props.severity
+          class: [options.props.plain ? 'hover:text-color' : undefined],
+          style: {
+            lineHeight: 1.857,
+            ...(options.context.disabled && !options.props.severity
               ? {
                   backgroundColor: 'var(--medium-green-color)',
                   borderColor: 'var(--medium-green-color)'
                 }
-              : undefined
+              : undefined)
+          }
         }
       }
     } as ButtonPassThroughOptions,
@@ -37,7 +38,7 @@ export default usePassThrough(
         class: 'border-round-xl w-full'
       },
       token: {
-        class: 'text-color-forest text-xs font-semibold',
+        class: 'text-color-forest title-t4',
         style: {
           backgroundColor: 'var(--medium-green-color)'
         }
@@ -56,7 +57,7 @@ export default usePassThrough(
     } as ToastPassThroughOptions,
     dataview: {
       header: {
-        class: 'px-4 py-2'
+        class: 'px-4 py-1'
       },
       loadingOverlay: {
         class: 'bg-primary-reverse opacity-50'
@@ -97,7 +98,7 @@ export default usePassThrough(
       content(options) {
         return {
           class: [
-            'border-round-xl font-semibold p-2 text-sm',
+            'border-round-xl p-2 title-t3',
             options.context.selected
               ? 'text-white'
               : 'surface-section hover:surface-50'
@@ -121,7 +122,7 @@ export default usePassThrough(
         }
       },
       title: {
-        class: 'text-base font-semibold'
+        class: 'title-t2'
       },
       closeButton:
         'text-2xl hover:surface-ground text-color-forest hover:text-color',
@@ -131,7 +132,14 @@ export default usePassThrough(
       mask: {
         style: { zIndex: 7 }
       }
-    } as DialogPassThroughOptions
+    } as DialogPassThroughOptions,
+    menu: {
+      label: 'title-t4'
+    } as MenuPassThroughOptions,
+    tag: {
+      root: 'title-t5',
+      value: 'title-t5'
+    } as TagPassThroughOptions
   },
   {}
 )

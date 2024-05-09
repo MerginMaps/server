@@ -23,6 +23,7 @@ from .permissions import (
     require_project_by_uuid,
     ProjectPermissions,
     check_workspace_permissions,
+    get_user_project_role,
 )
 from ..utils import parse_order_params, split_order_param, get_order_param
 from mergin.config import Configuration
@@ -92,10 +93,10 @@ def decline_project_access_request(request_id):  # noqa: E501
         )
         .first_or_404()
     )
-
+    project = access_request.project
+    project_role = get_user_project_role(project, current_user)
     if (
-        current_user.id in access_request.project.access.owners
-        or current_user.id == access_request.project.creator
+        project_role == ProjectRole.OWNER.value
         or current_user.id == access_request.requested_by
     ):
         access_request.resolve(RequestStatus.DECLINED, current_user.id)
@@ -120,10 +121,9 @@ def accept_project_access_request(request_id):
         )
         .first_or_404()
     )
-    if (
-        current_user.id in access_request.project.access.owners
-        or current_user.id == access_request.project.creator
-    ):
+    project = access_request.project
+    project_role = get_user_project_role(project, current_user)
+    if project_role == ProjectRole.OWNER.value:
         project_access_granted.send(
             access_request.project, user_id=access_request.requested_by
         )
@@ -135,7 +135,8 @@ def accept_project_access_request(request_id):
 @auth_required
 def get_project_access_requests(page, per_page, order_params=None, project_name=None):
     """Paginated list of active project access requests initiated by current user in session"""
-    access_requests = AccessRequest.query.join(AccessRequest.project).filter(
+    requests_query = current_app.ws_handler.access_requests_query()
+    access_requests = requests_query.filter(
         AccessRequest.requested_by == current_user.id,
         AccessRequest.resolved_at.is_(None),
         Project.removed_at.is_(None),
@@ -355,11 +356,12 @@ def get_project_access(id: str):
                         "email": user.email,
                         "username": user.username,
                         "project_permission": role,
+                        "name": user.profile.name(),
                     }
                 )
                 processed_ids.add(user_id)
     if global_role:
-        for user in User.query.all():
+        for user in User.query.filter_by(active=True).all():
             if user.id not in processed_ids:
                 result.append(
                     {
@@ -368,6 +370,7 @@ def get_project_access(id: str):
                         "email": user.email,
                         "username": user.username,
                         "project_permission": global_role,
+                        "name": user.profile.name(),
                     }
                 )
     return result, 200

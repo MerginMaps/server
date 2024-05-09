@@ -95,28 +95,7 @@ export const useProjectStore = defineStore('projectModule', {
 
   getters: {
     isProjectOwner: (state) =>
-      isAtLeastProjectRole(state.project?.role, ProjectRole.owner),
-    getProjectByName(state) {
-      return (payload) => {
-        return state.projects?.find((project) => project.name === payload.name)
-      }
-    },
-
-    /**
-     * Checks if the current user can remove the given project access detail.
-     *
-     * The user must be at least a project owner, and the access detail ID cannot
-     * be the same as the project creator ID.
-     *
-     * @param payload - The project access detail to check
-     * @returns True if the current user can remove the given access, false otherwise
-     */
-    canRemoveProjectAccess: (state) => (payload: ProjectAccessDetail) => {
-      return (
-        isAtLeastProjectRole(state.project?.role, ProjectRole.owner) &&
-        payload.id !== state.project?.creator
-      )
-    }
+      isAtLeastProjectRole(state.project?.role, ProjectRole.owner)
   },
 
   actions: {
@@ -616,18 +595,24 @@ export const useProjectStore = defineStore('projectModule', {
       userNames: string[]
       projectName: string
       roleName: ProjectRoleName
-    }): Promise<AxiosResponse<ProjectDetail>> {
+    }): Promise<void> {
       const { namespace, settings, userNames, projectName, roleName } = payload
+      const notificationStore = useNotificationStore()
 
       const accessKey = getProjectAccessKeyByRoleName(roleName)
       settings.access = {
         ...settings.access,
         [accessKey]: [...settings.access[accessKey], ...userNames]
       }
-      return this.saveProjectSettings({
+      await this.saveProjectSettings({
         namespace,
         newSettings: settings,
         projectName
+      })
+
+      notificationStore.show({
+        text: 'Following users have been added to the project',
+        detail: userNames.join(', ')
       })
     },
 
