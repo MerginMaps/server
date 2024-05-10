@@ -10,7 +10,7 @@ from flask import current_app, request
 from sqlalchemy import or_
 
 from .. import db
-from ..sync.utils import get_user_agent, get_ip
+from ..sync.utils import get_user_agent, get_ip, get_device_id
 
 
 class User(db.Model):
@@ -219,19 +219,22 @@ class LoginHistory(db.Model):
     user_agent = db.Column(db.String, index=True)
     ip_address = db.Column(db.String, index=True)
     ip_geolocation_country = db.Column(db.String, index=True)
+    device_id = db.Column(db.String, index=True, nullable=True)
 
-    def __init__(self, user_id: int, ua: str, ip: str):
+    def __init__(self, user_id: int, ua: str, ip: str, device_id: Optional[str] = None):
         self.user_id = user_id
         self.user_agent = ua
         self.ip_address = ip
+        self.device_id = device_id
 
     @staticmethod
     def add_record(user_id: int, req: request) -> None:
         ua = get_user_agent(req)
         ip = get_ip(req)
+        device_id = get_device_id(req)
         # ignore login attempts coming from urllib - related to db sync tool
         if "DB-sync" in ua:
             return
-        lh = LoginHistory(user_id, ua, ip)
+        lh = LoginHistory(user_id, ua, ip, device_id)
         db.session.add(lh)
         db.session.commit()
