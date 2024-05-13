@@ -572,7 +572,7 @@ components:
           format: email
           example: john.doe@example.com
         role:
-          description: Workspace role, only in EE
+          description: Workspace (EE) or global (CE) role
           type: string
           enum:
             - owner
@@ -604,8 +604,6 @@ components:
               type: string
               format: date-time
               example: 2018-11-30T08:47:58.636074Z
-            projects:
-              $ref: '#/components/schemas/InvitationProjects'
     InvitationProjects:
       nullable: true
       type: object

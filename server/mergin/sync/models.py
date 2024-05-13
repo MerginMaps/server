@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, List, Dict, Set
+from dataclasses import dataclass, asdict
 
 from blinker import signal
 from flask_login import current_user
@@ -349,6 +350,20 @@ class ProjectRole(Enum):
             return True
         else:
             return False
+
+
+@dataclass
+class ProjectAccessDetail:
+    id: int
+    type: str
+    email: str
+    username: str
+    workspace_role: str
+    project_permission: str
+    name: Optional[str]
+
+    def to_dict(self):
+        return {k: str(v) for k, v in asdict(self).items()}
 
 
 class ProjectAccess(db.Model):

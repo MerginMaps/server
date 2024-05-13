@@ -26,7 +26,6 @@ from .permissions import (
     get_user_project_role,
 )
 from ..utils import parse_order_params, split_order_param, get_order_param
-from mergin.config import Configuration
 
 project_access_granted = signal("project_access_granted")
 

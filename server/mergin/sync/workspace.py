@@ -9,8 +9,8 @@ from sqlalchemy import or_, and_, Column, literal
 from sqlalchemy.orm import joinedload
 
 from .errors import UpdateProjectAccessError
-from .models import Project, ProjectAccess, AccessRequest
-from .permissions import projects_query, ProjectPermissions
+from .models import Project, ProjectAccess, AccessRequest, ProjectAccessDetail
+from .permissions import projects_query, ProjectPermissions, get_user_project_role
 from .public_api_controller import parse_project_access_update_request
 from .. import db
 from ..auth.models import User
@@ -282,54 +282,33 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
         """Project access base query"""
         return AccessRequest.query.join(Project)
 
-    @staticmethod
-    def project_access(project: Project) -> List[Dict]:
+    def project_access(self, project: Project):
         """
         Project access users overview
         """
-        global_role = None
-        accesses = (
-            (project.access.owners, "owner"),
-            (project.access.writers, "writer"),
-            (project.access.readers, "reader"),
-        )
-        if Configuration.GLOBAL_ADMIN:
-            global_role = "owner"
-            accesses = ()
-        elif Configuration.GLOBAL_WRITE:
-            global_role = "writer"
-            accesses = accesses[:1]
-        elif Configuration.GLOBAL_READ:
-            global_role = "reader"
-            accesses = accesses[:2]
+        ws = self.factory_method()
+        if (
+            Configuration.GLOBAL_ADMIN
+            or Configuration.GLOBAL_WRITE
+            or Configuration.GLOBAL_READ
+        ):
+            members = User.query.filter(User.active.is_(True)).all()
+        else:
+            member_ids = set(
+                project.access.readers + project.access.writers + project.access.owners
+            )
+            members = User.query.filter(User.active, User.id.in_(member_ids)).all()
         result = []
-        processed_ids = set()
-        for user_ids, role in accesses:
-            for user_id in user_ids:
-                if user_id not in processed_ids:
-                    user = User.query.get(user_id)
-                    result.append(
-                        {
-                            "id": user_id,
-                            "type": "member",
-                            "email": user.email,
-                            "username": user.username,
-                            "project_permission": role,
-                            "name": user.profile.name(),
-                        }
-                    )
-                    processed_ids.add(user_id)
-        if global_role:
-            for user in User.query.all():
-                if user.id not in processed_ids:
-                    result.append(
-                        {
-                            "id": user.id,
-                            "type": "member",
-                            "email": user.email,
-                            "username": user.username,
-                            "project_permission": global_role,
-                            "name": user.profile.name(),
-                        }
-                    )
+        for member in members:
+            result.append(
+                ProjectAccessDetail(
+                    id=member.id,
+                    type="member",
+                    username=member.username,
+                    workspace_role=ws.get_user_role(member),
+                    name=member.profile.name(),
+                    email=member.email,
+                    project_permission=get_user_project_role(project, member),
+                ).to_dict()
+            )
         return result
