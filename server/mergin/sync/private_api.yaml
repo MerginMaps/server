@@ -130,6 +130,7 @@ paths:
                     - write
                     - edit
                     - read
+                    - editor
                   description: Desired permissions for project
                   example: write
       responses:

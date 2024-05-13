@@ -49,7 +49,7 @@ class AbstractWorkspace:
         """Space occupied by all projects in workspace in bytes"""
         pass
 
-    def user_has_permissions(self, user, permissions, project):
+    def user_has_permissions(self, user, permissions):
         """Check whether User obj has read/write/admin permissions to workspace or project
         Current rules are:
         - read: user can list and download all projects within workspace

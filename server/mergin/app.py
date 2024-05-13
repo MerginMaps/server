@@ -49,7 +49,6 @@ DEPRECATION_API_MSG = (
     "Update Mergin Maps to see this information [endpoint deprecated]."
 )
 
-
 def traceback_hash():
     # File paths will be relative to the server directory above so hashes will be consistent across different
     # deployments
@@ -143,6 +142,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
     from .sync.config import Configuration as SyncConfig
     from .sync.commands import add_commands
     from .auth import register as register_auth
+    from .sync.permissions import ProjectPermissions
 
     app = create_simple_app().connexion_app
 
@@ -397,6 +397,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
 
     # we need to register default handler to be accessible within app
     application.ws_handler = GlobalWorkspaceHandler()
+    application.project_perm_handler = ProjectPermissions
 
     # append config route with settings from app.config needed by clients
     if public_keys:

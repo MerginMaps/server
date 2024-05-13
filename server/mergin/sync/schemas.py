@@ -12,7 +12,7 @@ from flask import current_app
 
 from .. import ma
 from .utils import resolve_tags
-from .permissions import ProjectPermissions, get_user_project_role
+from .permissions import ProjectPermissions
 from .models import Project, ProjectVersion, AccessRequest
 from ..app import DateTimeWithZ
 from ..auth.models import User
@@ -59,7 +59,6 @@ class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
 def project_user_permissions(project):
     return {
         "upload": ProjectPermissions.Upload.check(project, current_user),
-        "edit": ProjectPermissions.Edit.check(project, current_user),
         "update": ProjectPermissions.Update.check(project, current_user),
         "delete": ProjectPermissions.Delete.check(project, current_user),
     }
@@ -140,7 +139,7 @@ class ProjectSchemaForVersion(ma.SQLAlchemyAutoSchema):
     role = fields.Method("_role")
 
     def _role(self, obj):
-        return get_user_project_role(obj.project, current_user)
+        return current_app.project_perm_handler.get_user_project_role(obj.project, current_user)
 
     def _uploads(self, obj):
         return [u.id for u in obj.project.uploads.all()]
@@ -187,7 +186,7 @@ class ProjectSchema(ma.SQLAlchemyAutoSchema):
     role = fields.Method("_role")
 
     def _role(self, obj):
-        return get_user_project_role(obj, current_user)
+        return current_app.project_perm_handler.get_user_project_role(obj, current_user)
 
     def _uploads(self, obj):
         return [u.id for u in obj.uploads.all()]

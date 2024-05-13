@@ -705,11 +705,6 @@ def catch_sync_failure(f):
     return wrapper
 
 
-# EDITOR
-def get_required_perm(changes):
-    return ProjectPermissions.Upload
-
-
 @auth_required
 @catch_sync_failure
 def project_push(namespace, project_name):
@@ -726,8 +721,7 @@ def project_push(namespace, project_name):
     """
     version = request.json["version"]
     changes = request.json["changes"]
-    required_perm = get_required_perm(changes)
-    project = require_project(namespace, project_name, required_perm)
+    project = require_project(namespace, project_name, current_app.project_perm_handler.Edit)
     request.view_args["project"] = (
         project  # pass full project object to request for later use
     )
