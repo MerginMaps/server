@@ -122,7 +122,7 @@ import { defineComponent, PropType } from 'vue'
 
 import { AppContainer, AppSection } from '@/common'
 import { waitCursor } from '@/common/html_utils'
-import { USER_ROLE_NAME_BY_ROLE, UserRole } from '@/common/permission_utils'
+import { USER_ROLE_NAME_BY_ROLE, WorkspaceRole } from '@/common/permission_utils'
 import { ConfirmDialogProps, ProjectRouteName } from '@/modules'
 import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 import { useDialogStore } from '@/modules/dialog/store'
@@ -251,7 +251,7 @@ export default defineComponent({
     canLeaveProject() {
       return (
         this.project?.workspace_id === this.currentWorkspace?.id &&
-        this.currentWorkspace?.role === USER_ROLE_NAME_BY_ROLE[UserRole.guest]
+        this.currentWorkspace?.role === USER_ROLE_NAME_BY_ROLE[WorkspaceRole.guest]
       )
     },
 

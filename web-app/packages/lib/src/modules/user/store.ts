@@ -8,7 +8,7 @@ import { isNavigationFailure } from 'vue-router'
 import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
 import { createStorage, StorageProxy } from '@/common/local_storage'
-import { isAtLeastRole, UserRole } from '@/common/permission_utils'
+import { isAtLeastRole, WorkspaceRole } from '@/common/permission_utils'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useFormStore } from '@/modules/form/store'
 import { useInstanceStore } from '@/modules/instance/store'
@@ -63,7 +63,7 @@ export const useUserStore = defineStore('userModule', {
       return this.isLoggedIn && instanceStore.initData?.superuser
     },
     isGlobalWorkspaceAdmin() {
-      return isAtLeastRole(this.getPreferredWorkspace?.role, UserRole.admin)
+      return isAtLeastRole(this.getPreferredWorkspace?.role, WorkspaceRole.admin)
     },
     getPreferredWorkspace: (state) => {
       return state.loggedUser?.workspaces?.find(
@@ -82,7 +82,7 @@ export const useUserStore = defineStore('userModule', {
         const workspace = payload?.id
           ? this.getWorkspaceById({ id: payload.id })
           : this.currentWorkspace
-        return isAtLeastRole(workspace?.role, UserRole.admin)
+        return isAtLeastRole(workspace?.role, WorkspaceRole.admin)
       }
     },
     isWorkspaceOwner() {
@@ -90,7 +90,7 @@ export const useUserStore = defineStore('userModule', {
         const workspace = payload?.id
           ? this.getWorkspaceById({ id: payload.id })
           : this.currentWorkspace
-        return isAtLeastRole(workspace?.role, UserRole.owner)
+        return isAtLeastRole(workspace?.role, WorkspaceRole.owner)
       }
     },
     currentWorkspace: (state) => {

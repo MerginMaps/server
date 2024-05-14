@@ -48,7 +48,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               </span>
             </p>
             <AppDropdown
-              :options="dropdownPermissions"
+              :options="availablePermissions"
               v-model="permissions[item.id]"
               class="w-6 lg:w-5 lg:mr-2"
             />
@@ -114,13 +114,10 @@ export default defineComponent({
     ...mapState(useProjectStore, [
       'project',
       'accessRequests',
-      'accessRequestsCount'
+      'accessRequestsCount',
+      'availablePermissions'
     ]),
-    ...mapState(useUserStore, ['loggedUser']),
-
-    dropdownPermissions() {
-      return permissionUtils.getProjectPermissionsValues()
-    }
+    ...mapState(useUserStore, ['loggedUser'])
   },
   created() {
     this.fetchItems()
