@@ -88,11 +88,10 @@ class ProjectPermissions:
     class Edit(Base):
         @classmethod
         @_is_superuser
-        def check(cls, project, user):
+        def check(self, project, user):
             return super().check(project, user) and (
                 (
-                    user.id
-                    in project.access.readers
+                    user.id in project.access.editors
                     or check_project_workspace_permissions(project, user, "edit")
                 )
             )
@@ -142,18 +141,18 @@ class ProjectPermissions:
             )
 
     @classmethod
-    def get_user_project_role(self, project: Project, user: User) -> Optional[str]:
+    def get_user_project_role(self, project: Project, user: User) -> Optional[ProjectRole]:
         """Get the highest role of user for given project.
         It can be based on local project settings or some global workspace settings.
         """
         if self.All.check(project, user):
-            return ProjectRole.OWNER.value
+            return ProjectRole.OWNER
         if self.Upload.check(project, user):
-            return ProjectRole.WRITER.value
+            return ProjectRole.WRITER
         if self.Edit.check(project, user):
-            return ProjectRole.EDITOR.value
+            return ProjectRole.EDITOR
         if self.Read.check(project, user):
-            return ProjectRole.READER.value
+            return ProjectRole.READER
         return None
 
 def require_project(ws, project_name, permission):

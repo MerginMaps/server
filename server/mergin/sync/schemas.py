@@ -35,7 +35,7 @@ class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
             # user map can be pass as context to save db query
             users_map = self.context["users_map"]
         else:
-            user_ids = data["owners"] + data["writers"] + data["readers"]
+            user_ids = data["owners"] + data["writers"] + data["editors"] + data["readers"]
             users_map = {
                 u.id: u.username
                 for u in User.query.filter(
@@ -139,7 +139,10 @@ class ProjectSchemaForVersion(ma.SQLAlchemyAutoSchema):
     role = fields.Method("_role")
 
     def _role(self, obj):
-        return current_app.project_perm_handler.get_user_project_role(obj.project, current_user)
+        role = ProjectPermissions.get_user_project_role(obj.project, current_user)
+        if not role:
+            return None
+        return role.value
 
     def _uploads(self, obj):
         return [u.id for u in obj.project.uploads.all()]
@@ -186,7 +189,10 @@ class ProjectSchema(ma.SQLAlchemyAutoSchema):
     role = fields.Method("_role")
 
     def _role(self, obj):
-        return current_app.project_perm_handler.get_user_project_role(obj, current_user)
+        role = ProjectPermissions.get_user_project_role(obj, current_user)
+        if not role:
+            return None
+        return role.value
 
     def _uploads(self, obj):
         return [u.id for u in obj.uploads.all()]

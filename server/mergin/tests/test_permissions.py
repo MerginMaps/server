@@ -54,7 +54,7 @@ def test_project_permissions(client):
     assert not ProjectPermissions.Upload.check(project, user)
     assert not ProjectPermissions.Delete.check(project, user)
     assert not ProjectPermissions.Update.check(project, user)
-    assert ProjectPermissions.get_user_project_role(project, user) == ProjectRole.EDITOR.value
+    assert ProjectPermissions.get_user_project_role(project, user) == ProjectRole.EDITOR
 
     # adjust global permissions
     Configuration.GLOBAL_READ = True
@@ -92,7 +92,7 @@ def test_project_permissions(client):
     assert not ProjectPermissions.Edit.check(project, user)
     assert not ProjectPermissions.Update.check(project, user)
     assert not ProjectPermissions.Upload.check(project, user)
-    assert ProjectPermissions.get_user_project_role(project, user) == ProjectRole.READER.value
+    assert ProjectPermissions.get_user_project_role(project, user) == ProjectRole.READER
 
     # tests inactive project (marked for removal)
     project.removed_at = datetime.datetime.utcnow()
@@ -114,4 +114,4 @@ def test_project_permissions(client):
     assert ProjectPermissions.Update.check(project, user)
     assert ProjectPermissions.All.check(project, user)
     assert ProjectPermissions.Edit.check(project, user)
-    assert ProjectPermissions.get_user_project_role(project, user) == ProjectRole.OWNER.value
+    assert ProjectPermissions.get_user_project_role(project, user) == ProjectRole.OWNER

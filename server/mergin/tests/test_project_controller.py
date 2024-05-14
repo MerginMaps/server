@@ -681,6 +681,7 @@ def test_update_project(client):
     data = {
         "access": {
             "readersnames": readers + ["not-found-user"],
+            "editorsnames": readers,
             "writersnames": readers,
             "ownersnames": readers,
         }

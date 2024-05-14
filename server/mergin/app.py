@@ -142,7 +142,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
     from .sync.config import Configuration as SyncConfig
     from .sync.commands import add_commands
     from .auth import register as register_auth
-    from .sync.permissions import ProjectPermissions
+    from .sync.project_handler import GlobalProjectHandler
 
     app = create_simple_app().connexion_app
 
@@ -397,7 +397,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
 
     # we need to register default handler to be accessible within app
     application.ws_handler = GlobalWorkspaceHandler()
-    application.project_perm_handler = ProjectPermissions
+    application.project_handler = GlobalProjectHandler()
 
     # append config route with settings from app.config needed by clients
     if public_keys:

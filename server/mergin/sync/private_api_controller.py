@@ -95,7 +95,7 @@ def decline_project_access_request(request_id):  # noqa: E501
     project = access_request.project
     project_role = ProjectPermissions.get_user_project_role(project, current_user)
     if (
-        project_role == ProjectRole.OWNER.value
+        project_role == ProjectRole.OWNER
         or current_user.id == access_request.requested_by
     ):
         access_request.resolve(RequestStatus.DECLINED, current_user.id)
@@ -122,7 +122,7 @@ def accept_project_access_request(request_id):
     )
     project = access_request.project
     project_role = ProjectPermissions.get_user_project_role(project, current_user)
-    if project_role == ProjectRole.OWNER.value:
+    if project_role == ProjectRole.OWNER:
         project_access_granted.send(
             access_request.project, user_id=access_request.requested_by
         )

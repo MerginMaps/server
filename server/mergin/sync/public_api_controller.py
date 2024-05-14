@@ -721,7 +721,8 @@ def project_push(namespace, project_name):
     """
     version = request.json["version"]
     changes = request.json["changes"]
-    project = require_project(namespace, project_name, current_app.project_perm_handler.Edit)
+    project_permission = current_app.project_handler.get_push_permission(changes)
+    project = require_project(namespace, project_name, project_permission)
     request.view_args["project"] = (
         project  # pass full project object to request for later use
     )

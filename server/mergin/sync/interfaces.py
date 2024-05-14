@@ -153,3 +153,11 @@ class WorkspaceHandler(ABC):
         Return number of workspaces
         """
         pass
+
+class ProjectHandler(ABC):
+    @abstractmethod
+    def get_push_permission(self, changes: dict):
+        """
+        Return project permission for user to push data to project
+        """
+        pass
