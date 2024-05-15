@@ -221,42 +221,42 @@ def test_project_access_request(client):
     assert resp.status_code == 404
 
 
-# def test_get_project_access_requests(client):
-#     """Test paginated list of project access requests initiated by current user in session"""
-#     user = User.query.filter(User.username == "mergin").first()
-#     test_workspace = create_workspace()
-#     add_user("test_user", "ilovemergin")
-#     login(client, "test_user", "ilovemergin")
-#
-#     # create 12 projects ("user" as an owner) and requests to them from "test_user"
-#     for i in range(12):
-#         project = create_project("test_project_" + str(i), test_workspace, user)
-#         resp = client.post(
-#             f"/app/project/access-request/{test_workspace.name}/{project.name}",
-#             headers=json_headers,
-#         )
-#         assert resp.status_code == 200
-#
-#     # paginated list
-#     resp = client.get("/app/project/access-requests?page=2&per_page=5")
-#     assert resp.status_code == 200
-#     assert resp.json.get("count") == 12
-#     assert len(resp.json.get("items")) == 5
-#
-#     # order params
-#     resp = client.get("/app/project/access-requests?page=1&per_page=10")
-#     assert resp.json["items"][0]["id"] == 1
-#     resp = client.get(
-#         "/app/project/access-requests?page=1&per_page=10&order_params=requested_at DESC"
-#     )
-#     assert resp.json["items"][0]["id"] == 12
-#
-#     # search params
-#     resp = client.get(
-#         "/app/project/access-requests?page=1&per_page=10&project_name=test_project_5"
-#     )
-#     assert resp.json.get("count") == 1
-#     assert resp.json["items"][0]["project_name"] == "test_project_5"
+def test_get_project_access_requests(client):
+    """Test paginated list of project access requests initiated by current user in session"""
+    user = User.query.filter(User.username == "mergin").first()
+    test_workspace = create_workspace()
+    add_user("test_user", "ilovemergin")
+    login(client, "test_user", "ilovemergin")
+
+    # create 12 projects ("user" as an owner) and requests to them from "test_user"
+    for i in range(12):
+        project = create_project("test_project_" + str(i), test_workspace, user)
+        resp = client.post(
+            f"/app/project/access-request/{test_workspace.name}/{project.name}",
+            headers=json_headers,
+        )
+        assert resp.status_code == 200
+
+    # paginated list
+    resp = client.get("/app/project/access-requests?page=2&per_page=5")
+    assert resp.status_code == 200
+    assert resp.json.get("count") == 12
+    assert len(resp.json.get("items")) == 5
+
+    # order params
+    resp = client.get("/app/project/access-requests?page=1&per_page=10")
+    assert resp.json["items"][0]["id"] == 1
+    resp = client.get(
+        "/app/project/access-requests?page=1&per_page=10&order_params=requested_at DESC"
+    )
+    assert resp.json["items"][0]["id"] == 12
+
+    # search params
+    resp = client.get(
+        "/app/project/access-requests?page=1&per_page=10&project_name=test_project_5"
+    )
+    assert resp.json.get("count") == 1
+    assert resp.json["items"][0]["project_name"] == "test_project_5"
 
 
 def test_list_namespace_project_access_requests(client):

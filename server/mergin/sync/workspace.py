@@ -9,7 +9,7 @@ from sqlalchemy import or_, and_, Column, literal
 from sqlalchemy.orm import joinedload
 
 from .errors import UpdateProjectAccessError
-from .models import Project, ProjectAccess, AccessRequest, ProjectAccessDetail
+from .models import Project, ProjectAccess, AccessRequest, MemberAccess
 from .permissions import projects_query, ProjectPermissions, get_user_project_role
 from .public_api_controller import parse_project_access_update_request
 from .. import db
@@ -282,7 +282,7 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
         """Project access base query"""
         return AccessRequest.query.join(Project)
 
-    def project_access(self, project: Project):
+    def project_access(self, project: Project) -> List[MemberAccess]:
         """
         Project access users overview
         """
@@ -300,15 +300,17 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
             members = User.query.filter(User.active, User.id.in_(member_ids)).all()
         result = []
         for member in members:
-            result.append(
-                ProjectAccessDetail(
-                    id=member.id,
-                    type="member",
-                    username=member.username,
-                    workspace_role=ws.get_user_role(member),
-                    name=member.profile.name(),
-                    email=member.email,
-                    project_permission=get_user_project_role(project, member),
-                ).to_dict()
-            )
+            member_access = MemberAccess(
+                id=member.id,
+                username=member.username,
+                role=ws.get_user_role(member),
+                name=member.profile.name(),
+                email=member.email,
+            ).to_dict()
+            # add correct project permission by comparing ws role and project access permission
+            user = User.query.get(member.id)
+            member_access["project_permission"] = get_user_project_role(project, user)
+
+            result.append(member_access)
+
         return result
