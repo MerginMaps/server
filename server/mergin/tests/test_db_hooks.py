@@ -13,7 +13,7 @@ from ..sync.models import (
     ProjectAccess,
     SyncFailuresHistory,
     AccessRequest,
-    RequestStatus,
+    RequestStatus, FileHistory,
 )
 from ..auth.models import User
 from .. import db
@@ -37,9 +37,9 @@ def test_close_user_account(client, diff_project):
     diff_project.access.writers.append(user.id)
     flag_modified(diff_project.access, "writers")
     # user contributed to another user project so he is listed in projects history
-    change = {"added": [], "removed": [], "updated": []}
+    changes = {"added": [], "removed": [], "updated": []}
     pv = ProjectVersion(
-        diff_project, "v11", user.username, change, diff_project.files, "127.0.0.1"
+        diff_project, "v11", user.username, changes, "127.0.0.1"
     )
     diff_project.latest_version = pv.name
     pv.project = diff_project
@@ -123,6 +123,10 @@ def test_remove_project(client, diff_project):
     access_request = AccessRequest(diff_project, user.id)
     db.session.add(access_request)
     db.session.commit()
+    versions_ids = [item.id for item in db.session.query(ProjectVersion.id).filter(ProjectVersion.project_id == project_id).all()]
+    file_history = FileHistory.query.filter(FileHistory.version_id.in_(versions_ids)).first()
+    file = os.path.join(project_dir, file_history.location)
+    assert file_history and os.path.exists(file)
 
     # remove project
     diff_project.delete()
@@ -132,6 +136,13 @@ def test_remove_project(client, diff_project):
     assert ProjectAccess.query.filter_by(project_id=project_id).count()
     cleanup(client, [project_dir])
     assert access_request.status == RequestStatus.DECLINED.value
+    # after removal only cached information in project table remains
+    assert diff_project.disk_usage
+    assert diff_project.latest_version is not None
+    assert diff_project.files == []
+    assert not diff_project.get_latest_version()
+    assert FileHistory.query.filter(FileHistory.version_id.in_(versions_ids)).count() == 0
+    assert not os.path.exists(file)
 
     # try to remove the deleted project
     assert diff_project.delete() is None

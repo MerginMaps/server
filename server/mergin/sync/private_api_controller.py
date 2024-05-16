@@ -191,7 +191,6 @@ def list_projects(
     projects = current_app.ws_handler.projects_query(name, workspace)
     # do not fetch from db what is not needed
     projects = projects.options(
-        defer(Project.files),
         defer(Project.storage_params),
         defer(Project.tags),
     )

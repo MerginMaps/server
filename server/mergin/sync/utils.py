@@ -15,7 +15,7 @@ from shapely import wkb
 from shapely.errors import WKBReadingError
 from gevent import sleep
 from flask import Request
-from typing import Optional
+from typing import Optional, Dict, List
 
 
 def generate_checksum(file, chunk_size=4096):
@@ -304,33 +304,6 @@ def mergin_secure_filename(filename):
             for path in filename.split(os.sep)
         ]
     )
-
-
-def get_path_from_files(files, path, is_diff=False):
-    """Get path from files between getting sanitized or mergin_secure_filename
-
-    :param files: list of files
-    :type files: list
-
-    :param path: path that will be checked
-    :type path: str
-
-    :return: secured filename
-    :rtype: str
-    """
-    for file in files:
-        if file["path"] == path:
-            if is_diff:
-                return (
-                    file["diff"]["sanitized_path"]
-                    if "sanitized_path" in file
-                    else file["diff"]["path"]
-                )
-            else:
-                return (
-                    file["sanitized_path"] if "sanitized_path" in file else file["path"]
-                )
-    return mergin_secure_filename(path)
 
 
 def workspace_names(workspaces):

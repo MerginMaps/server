@@ -8,7 +8,6 @@ import uuid
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, List, Dict, Set
-
 from blinker import signal
 from flask_login import current_user
 from pygeodiff import GeoDiff
@@ -23,7 +22,7 @@ from flask import current_app
 
 from .. import db
 from .storages import DiskStorage
-from .utils import int_version, is_versioned_file
+from .utils import int_version, is_versioned_file, mergin_secure_filename, resolve_tags
 
 Storages = {"local": DiskStorage}
 project_deleted = signal("project_deleted")
@@ -38,9 +37,8 @@ class Project(db.Model):
         db.Integer, db.ForeignKey("user.id"), nullable=True, index=True
     )
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow)
-    # metadata for project files (see also FileInfoSchema)
-    files = db.deferred(db.Column(JSONB, default=[]))
     tags = db.Column(ARRAY(String), server_default="{}")
+    # disk_usage & latest_version are cached properties to keep even if versions are deleted
     disk_usage = db.Column(BIGINT, nullable=False, default=0)
     latest_version = db.Column(db.String, index=True)
     workspace_id = db.Column(db.Integer, index=True, nullable=False)
@@ -79,6 +77,11 @@ class Project(db.Model):
         project_workspace = current_app.ws_handler.get(self.workspace_id)
         return project_workspace
 
+    @property
+    def files(self):
+        latest_version = self.get_latest_version()
+        return latest_version.files if latest_version else []
+
     def file_history(self, file, since, to, diffable=False):
         """
         Look up in project versions for history of versioned file.
@@ -108,49 +111,25 @@ class Project(db.Model):
 
         history = OrderedDict()
         # query only those versions where file appeared in changes
-        # we need to filter by timestamp instead of version name to be more effective
-        sql = text(
-            f"""
-            WITH since_ts AS (
-            SELECT COALESCE(
-               (SELECT created FROM project_version
-                WHERE project_id = :project_id
-                AND name = :since),
-                (SELECT NOW())
-                ) AS value
-            ),
-            to_ts AS (
-            SELECT COALESCE(
-               (SELECT created FROM project_version
-                WHERE project_id = :project_id
-                AND name = :to),
-                (SELECT NOW())
-                ) AS value
-            )
-            SELECT expanded.name, expanded.change, expanded.files as value FROM
-            (SELECT
-                pv.name, pv.created, changes.key AS change, jsonb_array_elements(changes.value) AS files
-             FROM project_version pv, jsonb_each(pv.changes) AS changes
-             WHERE pv.changes @@ :json_changes_query
-             AND pv.project_id = :project_id
-             AND pv.created >= (SELECT value FROM since_ts)
-             AND pv.created <= (SELECT value FROM to_ts)
-            ) AS expanded
-             WHERE expanded.files @> :json_file_query
-             ORDER BY expanded.created DESC
-        """
-        )
+        sql = text("""
+        SELECT
+            pv.name AS name,
+            fh.change,
+            json_build_object('path', path, 'size', size, 'diff', diff, 'checksum', checksum, 'location', pv.name || '/' || fh.path) AS value
+        FROM file_history fh
+        LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
+        WHERE project_id = :project_id
+            AND fh.path = :file
+            AND replace(pv.name, 'v', '')::integer <= :to
+            AND replace(pv.name, 'v', '')::integer >= :since
+        ORDER BY pv.created DESC;
+        """)
 
-        # in query we need exact format including correct quotes for search in jsonb
-        # but because of sqlalchemy params formatting issues we construct json clauses manually
-        json_changes_query = '$.*.path == "' + file + '"'
-        json_file_query = '{"path": "' + file + '"}'
         params = {
             "project_id": self.id,
-            "json_file_query": json_file_query,
-            "json_changes_query": json_changes_query,
-            "since": since,
-            "to": to,
+            "file": file,
+            "since": int_version(since),
+            "to": int_version(to),
         }
         result = db.session.execute(sql, params).fetchall()
         for r in result:
@@ -165,11 +144,11 @@ class Project(db.Model):
 
             history[r.name] = {**r.value, "change": r.change}
             # end of file history
-            if r.change in ["added", "removed"]:
+            if r.change in [PushChangeType.CREATE.value, PushChangeType.DELETE.value]:
                 break
 
             # if we are interested only in 'diffable' history (not broken with forced update)
-            if diffable and r.change == "updated" and "diff" not in r.value:
+            if diffable and r.change == PushChangeType.UPDATE.value and not r.value.get("diff"):
                 break
 
         return history
@@ -227,7 +206,7 @@ class Project(db.Model):
                 history_end = next(reversed(history))
                 meta = history[history_end]
                 # we have either full history of changes or v_x = v_x+n => no basefile in way, it is 'diffable' from the end
-                if "diff" in meta:
+                if meta.get("diff"):
                     # omit diff for target version as it would lead to previous version if reconstructed backward
                     diffs = [
                         value["diff"]
@@ -240,7 +219,7 @@ class Project(db.Model):
                 # there was either breaking change or v_x is a basefile itself
                 else:
                     # we asked for basefile
-                    if v_x == history_end and meta["change"] in ["added", "updated"]:
+                    if v_x == history_end and meta["change"] in [PushChangeType.CREATE.value, PushChangeType.UPDATE.value]:
                         base_meta = meta
                         base_meta["version"] = v_x
                         diffs = []
@@ -260,7 +239,7 @@ class Project(db.Model):
                 history_end = next(reversed(history))
                 meta = history[history_end]
                 # we found basefile
-                if meta["change"] in ["added", "updated"]:
+                if meta["change"] in [PushChangeType.CREATE.value, PushChangeType.UPDATE.value]:
                     base_meta = meta
                     base_meta["version"] = history_end
                     if v_x == history_end:
@@ -317,8 +296,8 @@ class Project(db.Model):
         # Null in storage params serves as permanent deletion flag
         self.storage.delete()
         self.storage_params = null()
-        self.files = null()
         pv_table = ProjectVersion.__table__
+        # remove versions and file history items with cascade
         db.session.execute(pv_table.delete().where(pv_table.c.project_id == self.id))
         upload_table = Upload.__table__
         db.session.execute(
@@ -462,12 +441,6 @@ class ProjectVersion(db.Model):
     )
     created = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     author = db.Column(db.String, index=True)
-    # metadata with files changes
-    # {"added": [{"checksum": "c9a4fd2afd513a97aba19d450396a4c9df8b2ba4", "path": "tests.qgs", "size": 31980}],
-    # "removed": [], "renamed": [], "updated": []}
-    changes = db.Column(JSONB)
-    # metadata (see also FileInfoSchema) for files in actual version
-    files = db.Column(JSONB)
     user_agent = db.Column(db.String, index=True)
     ip_address = db.Column(db.String, index=True)
     ip_geolocation_country = db.Column(
@@ -484,27 +457,99 @@ class ProjectVersion(db.Model):
     __table_args__ = (db.UniqueConstraint("project_id", "name"),)
 
     def __init__(
-        self, project, name, author, changes, files, ip, user_agent=None, device_id=None
+        self, project, name, author, changes, ip, user_agent=None, device_id=None,
     ):
+        self.project = project
         self.project_id = project.id
         self.name = name
         self.author = author
-        self.changes = changes
-        self.files = files
         self.user_agent = user_agent
         self.ip_address = ip
         self.device_id = device_id
+
+        for change in self.process_changes(changes):
+            fh = FileHistory(
+                path=change.get("path"),
+                location=os.path.join(self.name, mergin_secure_filename(change.get("path"))),
+                checksum=change.get("checksum"),
+                size=change.get("size"),
+                diff=change.get("diff"),
+                change=change.get("change").value
+            )
+            fh.version = self
+            db.session.add(fh)
+        # push changes to transaction buffer so that self.files is up-to-date
+        db.session.flush()
         self.project_size = sum(f["size"] for f in self.files) if self.files else 0
-        # clean up changes metadata from chunks upload info
-        for change in self.changes["updated"] + self.changes["added"]:
-            change.pop("chunks", None)
-            if "diff" in change:
-                change["diff"].pop("chunks", None)
+
+        # update cached values in project
+        self.project.disk_usage = self.project_size
+        self.project.latest_version = self.name
+        self.project.tags = resolve_tags(self.files)
 
     @property
     def int_name(self) -> int:
         """Parsed version name as integer (v5 -> 5)"""
         return int(self.name.replace("v", ""))
+
+    @property
+    def files(self):
+        query = f"""
+                WITH files_ids AS (
+                    -- get the latest change
+                    SELECT DISTINCT
+                    FIRST_VALUE (fh.id) OVER (
+                        PARTITION BY fh.path
+                        ORDER BY
+                            pv.created DESC
+                    ) AS pf_id
+                    FROM project_version pv
+                    LEFT OUTER JOIN file_history fh ON fh.version_id = pv.id
+                    WHERE pv.project_id = :project_id
+                    AND replace(pv.name, 'v', '')::integer <= :version
+                )
+                SELECT
+                    fh.path, fh.size, fh.diff, fh.location, fh.checksum, pv.name AS version
+                FROM file_history fh
+                INNER JOIN files_ids ON files_ids.pf_id = fh.id
+                LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
+                WHERE fh.change != 'delete'; -- if latest change was removed it means file is not there
+                """
+        params = {
+            "project_id": self.project_id,
+            "version": int_version(self.name)
+        }
+        result = db.session.execute(query, params).fetchall()
+        return [{**row._mapping} for row in result]
+
+    @property
+    def changes(self):
+        """ Backward compatible version changes overview, similar to Upload.changes """
+        changes = {
+            "added": [],
+            "updated": [],
+            "removed": []
+        }
+        for item in self.file_changes.all():
+            if item.change == PushChangeType.CREATE.value:
+                changes["added"].append(item)
+            elif item.change in (PushChangeType.UPDATE.value, PushChangeType.UPDATE_DIFF.value):
+                changes["updated"].append(item)
+            elif item.change == PushChangeType.DELETE.value:
+                changes["removed"].append(item)
+        return changes
+
+    @staticmethod
+    def process_changes(changes: Dict) -> List:
+        """ Process public API changes to internal list """
+        files_changes = []
+        for change_type, files in changes.items():
+            for file in files:
+                files_changes.append({
+                    **file,
+                    "change": PushChangeType.from_change(change_type, bool("diff" in file))
+                })
+        return files_changes
 
     def diff_summary(self):
         """Calculate diff summary for versioned files updated with geodiff
@@ -532,13 +577,14 @@ class ProjectVersion(db.Model):
         output = {}
         self.project.storage.flush_geodiff_logger()
         for f in self.changes["updated"]:
-            if "diff" not in f:
+            if f.change != PushChangeType.UPDATE_DIFF.value:
                 continue
+
             json_file = os.path.join(
-                self.project.storage.project_dir, f["location"] + "-diff-summary"
+                self.project.storage.project_dir, f.location + "-diff-summary"
             )
             changeset = os.path.join(
-                self.project.storage.project_dir, f["diff"]["location"]
+                self.project.storage.project_dir, f.diff["location"]
             )
             if not os.path.exists(json_file):
                 try:
@@ -546,9 +592,9 @@ class ProjectVersion(db.Model):
                         changeset, json_file
                     )
                 except GeoDiffLibError:
-                    output[f["path"]] = {
+                    output[f.path] = {
                         "error": self.project.storage.gediff_log.getvalue(),
-                        "size": f["diff"]["size"],
+                        "size": f.diff["size"],
                     }
                     continue
             with open(json_file, "r") as jf:
@@ -556,12 +602,64 @@ class ProjectVersion(db.Model):
                 if "geodiff_summary" not in content:
                     continue
 
-                output[f["path"]] = {
+                output[f.path] = {
                     "summary": content["geodiff_summary"],
-                    "size": f["diff"]["size"],
+                    "size": f.diff["size"],
                 }
 
         return output
+
+
+class PushChangeType(Enum):
+    CREATE = "create"
+    UPDATE = "update"
+    DELETE = "delete"
+    UPDATE_DIFF = "update_diff"
+
+    @classmethod
+    def values(cls):
+        return [member.value for member in cls.__members__.values()]
+
+    @classmethod
+    def from_change(cls, change, diff=False):
+        """ Initialize from public API value """
+        if change == "added":
+            return PushChangeType.CREATE
+        if change == "removed":
+            return PushChangeType.DELETE
+        if change == "updated":
+            return PushChangeType.UPDATE_DIFF if diff else PushChangeType.UPDATE
+
+
+class FileHistory(db.Model):
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    version_id = db.Column(
+        db.Integer, db.ForeignKey("project_version.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    path = db.Column(db.String, index=True, nullable=False)
+    # path on FS relative to project directory: version_name + file path
+    location = db.Column(db.String)
+    size = db.Column(db.BigInteger, nullable=False)
+    checksum = db.Column(db.String, nullable=False)
+    diff = db.Column(JSONB)
+    change = db.Column(
+        ENUM(
+            *PushChangeType.values(),
+            name="push_change_type",
+        ),
+        index=True,
+        nullable=False,
+    )
+
+    version = db.relationship(
+        "ProjectVersion",
+        uselist=False,
+        backref=db.backref(
+            "file_changes", single_parent=True, lazy="dynamic", cascade="all,delete"
+        ),
+    )
+
+    __table_args__ = (db.UniqueConstraint("version_id", "path"),)
 
 
 class Upload(db.Model):

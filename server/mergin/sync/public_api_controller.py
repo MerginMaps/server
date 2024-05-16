@@ -27,7 +27,6 @@ from pygeodiff import GeoDiffLibError
 from flask_login import current_user
 from sqlalchemy import and_, desc, asc, text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm.attributes import flag_modified
 from binaryornot.check import is_binary
 from gevent import sleep
 import base64
@@ -35,7 +34,7 @@ from werkzeug.exceptions import HTTPException
 from .. import db
 from ..auth import auth_required
 from ..auth.models import User
-from .models import Project, ProjectAccess, ProjectVersion, Upload
+from .models import Project, ProjectAccess, ProjectVersion, Upload, PushChangeType
 from .schemas import (
     ProjectSchema,
     ProjectListSchema,
@@ -67,7 +66,6 @@ from .utils import (
     is_valid_gpkg,
     is_name_allowed,
     mergin_secure_filename,
-    get_path_from_files,
     get_project_path,
     clean_upload,
     get_device_id,
@@ -77,15 +75,6 @@ from ..utils import format_time_delta
 
 push_triggered = signal("push_triggered")
 project_version_created = signal("project_version_created")
-
-
-def _project_version_files(project, version=None):
-    if version:
-        pv = ProjectVersion.query.filter_by(
-            project_id=project.id, name=version
-        ).first_or_404("Project version does not exist")
-        return pv.files
-    return project.files
 
 
 def parse_project_access_update_request(access: Dict) -> Dict:
@@ -155,8 +144,6 @@ def add_project(namespace):  # noqa: E501
         )
 
     if request.is_json:
-        ua = get_user_agent(request)
-        device_id = get_device_id(request)
         workspace = current_app.ws_handler.get_by_name(namespace)
         if not workspace:
             # return special message if former 'user workspace' was used
@@ -192,47 +179,37 @@ def add_project(namespace):  # noqa: E501
         p.updated = datetime.utcnow()
         pa = ProjectAccess(p, public=request.json.get("public", False))
 
-        template = request.json.get("template", None)
-        ip = get_ip(request)
-        if template:
+        template_name = request.json.get("template", None)
+        if template_name:
             template = (
                 Project.query.filter(Project.creator.has(username="TEMPLATES"))
-                .filter(Project.name == template)
+                .filter(Project.name == template_name)
                 .first_or_404()
             )
-            try:
-                p.storage.initialize(template_project=template)
-            except InitializationError as e:
-                abort(400, f"Failed to initialize project: {str(e)}")
-
-            version = "v1"
+            version_name = "v1"
             changes = {"added": p.files, "updated": [], "removed": []}
-            user_agent = get_user_agent(request)
-            p.latest_version = version
-            version = ProjectVersion(
-                p,
-                version,
-                current_user.username,
-                changes,
-                p.files,
-                get_ip(request),
-                user_agent,
-                device_id,
-            )
         else:
+            template = None
+            version_name = "v0"
             changes = {"added": [], "updated": [], "removed": []}
-            version = ProjectVersion(
-                p, "v0", current_user.username, changes, [], ip, ua, device_id
-            )
-            p.latest_version = "v0"
-            try:
-                p.storage.initialize(template_project=template)
-            except InitializationError as exc:
-                abort(400, f"Failed to initialize project: {str(exc)}")
+
+        try:
+            p.storage.initialize(template_project=template)
+        except InitializationError as e:
+            abort(400, f"Failed to initialize project: {str(e)}")
+
+        version = ProjectVersion(
+            p,
+            version_name,
+            current_user.username,
+            changes,
+            get_ip(request),
+            get_user_agent(request),
+            get_device_id(request),
+        )
 
         db.session.add(p)
         db.session.add(pa)
-        version.project = p
         db.session.add(version)
         db.session.commit()
         project_version_created.send(version)
@@ -278,16 +255,19 @@ def download_project(
     :rtype: file - zip archive or multipart stream with project files
     """
     project = require_project(namespace, project_name, ProjectPermissions.Read)
-    files = _project_version_files(project, version)
-    total_size = sum(file["size"] for file in files)
-    if total_size > current_app.config["MAX_DOWNLOAD_ARCHIVE_SIZE"]:
+    lookup_version = version or project.latest_version
+    project_version = ProjectVersion.query.filter_by(
+        project_id=project.id, name=lookup_version
+    ).first_or_404("Project version does not exist")
+
+    if project_version.project_size > current_app.config["MAX_DOWNLOAD_ARCHIVE_SIZE"]:
         abort(
             400,
             "The total size of requested files is too large to download as a single zip, "
             "please use different method/client for download",
         )
     try:
-        return project.storage.download_files(files, format, version=version)
+        return project.storage.download_files(project_version.files, format, version=version)
     except FileNotFound as e:
         abort(404, str(e))
 
@@ -317,28 +297,28 @@ def download_project_file(
         abort(400, f"Changeset must be requested for particular file version")
 
     lookup_version = version or project.latest_version
+    # find the latest file change record for version of interest
     sql = text(
         """
-            SELECT
-                expanded.files ->> 'location' AS location,
-                (expanded.files ->> 'diff')::jsonb ->> 'location' as diff_location
-            FROM
-            (
-                SELECT jsonb_array_elements(pv.files::jsonb) AS files
-                FROM project_version pv
-                WHERE pv.name = :version AND project_id = :project_id
-            ) AS expanded
-            WHERE
-                expanded.files @> :json;
+        SELECT
+            pv.name || '/' || fh.path AS location,
+            pv.name || '/' || (fh.diff ->> 'path')::text AS diff_location,
+            change
+        FROM file_history fh
+        LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
+        WHERE pv.project_id = :project_id AND replace(pv.name, 'v', '')::integer <= :version AND fh.path = :file
+        ORDER BY pv.created DESC
+        LIMIT 1;
         """
     )
     params = {
-        "version": lookup_version,
+        "version": int_version(lookup_version),
         "project_id": project.id,
-        "json": '{"path": "' + file + '"}',
+        "file": file,
     }
     result = db.session.execute(sql, params).fetchone()
-    if not result:
+    # in case last change was 'delete', file does not exist for such version
+    if not result or result.change == PushChangeType.DELETE.value:
         abort(404, f"File {file} not found")
 
     if diff and version:
@@ -405,12 +385,23 @@ def get_project(project_name, namespace, since="", version=None):  # noqa: E501
     if since and version:
         abort(400, "Parameters 'since' and 'version' are mutually exclusive")
     elif since:
+        data = ProjectSchema(exclude=["storage_params"]).dump(project)
         # append history for versioned files
+        files = []
         for f in project.files:
             f["history"] = project.file_history(
                 f["path"], since, project.latest_version
             )
-        data = ProjectSchema(exclude=["storage_params"]).dump(project)
+            for item in f["history"].values():
+                if item.get("change") == "create":
+                    item["change"] = "added"
+                elif item.get("change") == "delete":
+                    item["change"] = "removed"
+                elif item.get("change") == "update":
+                    item["change"] = "updated"
+            files.append(f)
+        # TODO convert to schema
+        data["files"] = files
     elif version:
         # return project info at requested version
         version_obj = ProjectVersion.query.filter_by(
@@ -443,6 +434,7 @@ def get_paginated_project_versions(
     page, per_page, namespace, project_name, descending=True
 ):
     project = require_project(namespace, project_name, ProjectPermissions.Read)
+    # TODO consider join with FileHistory
     query = ProjectVersion.query.filter(
         and_(ProjectVersion.project_id == project.id, ProjectVersion.name != "v0")
     )
@@ -758,7 +750,7 @@ def project_push(namespace, project_name):
                     filename + f".{str(uuid.uuid4())}" + file_extension
                 )
             sanitized_files.append(f["sanitized_path"])
-            if "diff" in f:
+            if f.get("diff"):
                 f["diff"]["sanitized_path"] = mergin_secure_filename(f["diff"]["path"])
                 if f["diff"]["sanitized_path"] in sanitized_files:
                     filename, file_extension = os.path.splitext(
@@ -767,6 +759,7 @@ def project_push(namespace, project_name):
                     f["diff"]["sanitized_path"] = (
                         filename + f".{str(uuid.uuid4())}" + file_extension
                     )
+                sanitized_files.append(f["diff"]["sanitized_path"])
             changes_files.append(f["path"])
     if len(set(changes_files)) != len(changes_files):
         abort(400, "Not unique changes")
@@ -857,24 +850,20 @@ def project_push(namespace, project_name):
     if not (changes["added"] or changes["updated"]):
         next_version = "v{}".format(num_version + 1)
         project.storage.apply_changes(changes, next_version, upload.id)
-        flag_modified(project, "files")
-        project.disk_usage = sum(file["size"] for file in project.files)
         user_agent = get_user_agent(request)
         device_id = get_device_id(request)
-        pv = ProjectVersion(
-            project,
-            next_version,
-            current_user.username,
-            changes,
-            project.files,
-            get_ip(request),
-            user_agent,
-            device_id,
-        )
-        project.latest_version = next_version
-        db.session.add(pv)
-        db.session.add(project)
         try:
+            pv = ProjectVersion(
+                project,
+                next_version,
+                current_user.username,
+                changes,
+                get_ip(request),
+                user_agent,
+                device_id,
+            )
+            db.session.add(pv)
+            db.session.add(project)
             db.session.commit()
             logging.info(
                 f"A project version {next_version} for project: {project.id} created. "
@@ -964,12 +953,12 @@ def push_finish(transaction_id):
             dest_file = os.path.join(
                 upload_dir,
                 "files",
-                get_path_from_files(upload_files, f["diff"]["path"], is_diff=True),
+                f["diff"].get("sanitized_path", mergin_secure_filename(f["diff"]["path"])),
             )
             expected_size = f["diff"]["size"]
         else:
             dest_file = os.path.join(
-                upload_dir, "files", get_path_from_files(upload_files, f["path"])
+                upload_dir, "files", f.get("sanitized_path", mergin_secure_filename(f["path"]))
             )
             expected_size = f["size"]
         if "chunks" in f:
@@ -1029,8 +1018,6 @@ def push_finish(transaction_id):
         # let's move uploaded files where they are expected to be
         os.renames(files_dir, target_dir)
         project.storage.apply_changes(changes, next_version, transaction_id)
-        flag_modified(project, "files")
-        project.disk_usage = sum(file["size"] for file in project.files)
         user_agent = get_user_agent(request)
         device_id = get_device_id(request)
         pv = ProjectVersion(
@@ -1038,12 +1025,10 @@ def push_finish(transaction_id):
             next_version,
             current_user.username,
             changes,
-            project.files,
             get_ip(request),
             user_agent,
             device_id,
         )
-        project.latest_version = next_version
         db.session.add(pv)
         db.session.add(project)
         db.session.commit()
@@ -1161,28 +1146,25 @@ def clone_project(namespace, project_name):  # noqa: E501
     except InitializationError as e:
         abort(400, f"Failed to clone project: {str(e)}")
 
-    version = "v1" if p.files else "v0"
-    changes = {"added": p.files, "updated": [], "removed": []}
+    version = "v1" if cloned_project.files else "v0"
     # TODO: add user_agent and device_id handling to class
     user_agent = get_user_agent(request)
     device_id = get_device_id(request)
-    p.latest_version = version
-    version = ProjectVersion(
+    changes = {"added": cloned_project.files}
+    project_version = ProjectVersion(
         p,
         version,
         current_user.username,
         changes,
-        p.files,
         get_ip(request),
         user_agent,
         device_id,
     )
     db.session.add(p)
     db.session.add(pa)
-    version.project = p
-    db.session.add(version)
+    db.session.add(project_version)
     db.session.commit()
-    project_version_created.send(version)
+    project_version_created.send(project_version)
     return NoContent, 200
 
 
@@ -1203,28 +1185,25 @@ def get_resource_history(project_name, namespace, path):  # noqa: E501
     project = require_project(namespace, project_name, ProjectPermissions.Read)
 
     # get the metadata of file at latest version where file is present
-    sql = text(
-        "SELECT expanded.name, expanded.files AS file FROM "
-        "(SELECT pv.name, pv.created, jsonb_array_elements(pv.files) AS files "
-        "FROM project_version pv "
-        "WHERE files @> :json AND project_id = :project_id) AS expanded "
-        "WHERE expanded.files @> :json2 "
-        "ORDER BY expanded.created DESC "
-        "LIMIT 1;"
-    )
+    sql = text("""
+        SELECT fh.path, fh.size AS size, fh.diff, fh.location, pv.name AS version
+        FROM file_history fh
+        LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
+        WHERE pv.project_id = :project_id AND fh.path = :file_path AND fh.change != 'delete'
+        ORDER BY pv.created DESC
+        LIMIT 1;
+    """)
 
-    # in query we need exact format including correct quotes for search in jsonb like this '[{"path": "data.gpkg"}]'
-    # but because of sqlalchemy params formatting issues we construct json clause manually
-    json_query = '[{"path": "' + path + '"}]'
-    json2_query = '{"path": "' + path + '"}'
     result = db.session.execute(
-        sql, {"project_id": project.id, "json": json_query, "json2": json2_query}
-    ).fetchall()
+        sql, {"project_id": project.id, "file_path": path}
+    ).fetchone()
     if not result:
         abort(404, f"File {path} not found")
 
-    file = result[0].file
-    file["history"] = project.file_history(path, "v1", project.latest_version)
+    file = {
+        **result._mapping,
+        "history": project.file_history(path, "v1", project.latest_version)
+    }
     file_info = FileInfoSchema(
         context={"project_dir": project.storage.project_dir}
     ).dump(file)
@@ -1259,6 +1238,7 @@ def get_resource_changeset(project_name, namespace, version_id, path):  # noqa: 
             404, f"Version {version_id} in project {namespace}/{project_name} not found"
         )
 
+    # FIXME optimize, do a lookup in database
     file = next(
         (f for f in version.files if f["location"] == os.path.join(version_id, path)),
         None,
@@ -1266,7 +1246,7 @@ def get_resource_changeset(project_name, namespace, version_id, path):  # noqa: 
     if not file:
         abort(404, f"File {path} not found")
 
-    if "diff" not in file:
+    if not file.get("diff"):
         abort(404, "Diff not found")
 
     changeset = os.path.join(

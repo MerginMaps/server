@@ -88,7 +88,7 @@ def optimize_storage(project_id):
 
         for item in f_history.values():
             # no diffs, it is a basefile for geodiff
-            if "diff" not in item:
+            if item["diff"] is None:
                 continue
 
             # skip the latest file version (high chance of being used)
@@ -96,8 +96,9 @@ def optimize_storage(project_id):
                 continue
 
             abs_path = os.path.join(project.storage.project_dir, item["location"])
+            # already removed
             if not os.path.exists(abs_path):
-                continue  # already removed
+                continue
 
             age = time.time() - os.path.getmtime(abs_path)
             if age > Configuration.FILE_EXPIRATION:

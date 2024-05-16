@@ -171,8 +171,6 @@ def test_version_file_restore(diff_project):
         project_id=diff_project.id, name="v10"
     ).first()
     diff_project.latest_version = "v8"
-    diff_project.files = pv_8.files
-    flag_modified(diff_project, "files")
     db.session.delete(pv_9)
     db.session.delete(pv_10)
     db.session.commit()

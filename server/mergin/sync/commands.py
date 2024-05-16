@@ -41,7 +41,7 @@ def add_commands(app: Flask):
         db.session.add(p)
         p.access = ProjectAccess(p, public=False)
         changes = {"added": [], "updated": [], "removed": []}
-        pv = ProjectVersion(p, "v0", user.username, changes, p.files, "127.0.0.1")
+        pv = ProjectVersion(p, "v0", user.username, changes, "127.0.0.1")
         pv.project = p
         db.session.commit()
         os.makedirs(p.storage.project_dir, exist_ok=True)

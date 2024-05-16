@@ -13,7 +13,7 @@ from flask import current_app
 from .. import ma
 from .utils import resolve_tags
 from .permissions import ProjectPermissions, get_user_project_role
-from .models import Project, ProjectVersion, AccessRequest
+from .models import Project, ProjectVersion, AccessRequest, FileHistory
 from ..app import DateTimeWithZ
 from ..auth.models import User
 from ..auth.schemas import UserSearchSchema
@@ -80,6 +80,9 @@ class FileInfoSchema(ma.SQLAlchemyAutoSchema):
         #TODO resolve once marshmallow 3.0 is released.
         history = fields.Dict(keys=fields.String(), values=fields.Nested('self', exclude=['location', 'chunks']))
         """
+        if isinstance(data, FileHistory):
+            return data
+
         # diff field (self-nested does not contain history)
         if "history" not in data:
             return data
@@ -88,7 +91,7 @@ class FileInfoSchema(ma.SQLAlchemyAutoSchema):
             data
         )  # create deep copy to avoid messing around with original object
         for item in _data["history"].values():
-            if "diff" in item:
+            if item.get("diff"):
                 item["diff"].pop("location", None)
                 item["diff"].pop("sanitized_path", None)
                 if self.context and "project_dir" in self.context:
@@ -104,6 +107,12 @@ class FileInfoSchema(ma.SQLAlchemyAutoSchema):
             item.pop("location", None)
             item.pop("chunks", None)
             item.pop("sanitized_path", None)
+            if item.get("change") == "create":
+                item["change"] = "added"
+            elif item.get("change") == "delete":
+                item["change"] = "removed"
+            elif item.get("change") in ("update", "update_diff"):
+                item["change"] = "updated"
         return _data
 
 
@@ -174,7 +183,8 @@ class ProjectAccessRequestSchema(ma.SQLAlchemyAutoSchema):
 
 class ProjectSchema(ma.SQLAlchemyAutoSchema):
     id = fields.UUID()
-    files = fields.Nested(FileInfoSchema(), many=True)
+    #files = fields.Nested(FileInfoSchema(), many=True)
+    files = fields.Function(lambda obj: obj.files)
     access = fields.Nested(ProjectAccessSchema())
     permissions = fields.Function(project_user_permissions)
     version = fields.String(attribute="latest_version")

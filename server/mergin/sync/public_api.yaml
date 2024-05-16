@@ -1436,6 +1436,7 @@ components:
                 example: 0
     FileDiff:
       type: object
+      nullable: true
       required:
         - path
         - checksum

@@ -8,18 +8,17 @@ import uuid
 from copy import deepcopy
 from shutil import copy, move
 from flask import current_app
-from flask_login import current_user
-from sqlalchemy.orm.attributes import flag_modified
+from sqlalchemy import desc
 from pygeodiff import GeoDiff
 import pytest
 
 from .. import db, create_app
-from ..sync.models import Project, Upload, ProjectVersion, ProjectAccess
-from ..sync.utils import generate_checksum, is_versioned_file, resolve_tags
+from ..sync.models import Project, ProjectVersion
+from ..sync.utils import resolve_tags
 from ..stats.app import register
 from ..stats.models import MerginInfo
 from . import test_project, test_workspace_id, test_project_dir, TMP_DIR
-from .utils import login_as_admin, initialize, cleanup, file_info, create_project
+from .utils import login_as_admin, initialize, cleanup, file_info
 
 thisdir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(thisdir, os.pardir))
@@ -108,7 +107,7 @@ def diff_project(app):
     v6: patched with changes from modified_1_geom.gpkg (translated feature)
     v7: patched with changes from inserted_1_B.gpkg (1 inserted feature), final state is modified_1_geom.gpkg + inserted_1_B.gpkg
     v8: nothing happened, just to ensure last diff is not last version of project file
-    v9: renamed to test.gpkg base.gpkg has been removed removed and tests.gpkg has been added
+    v9: renamed to test.gpkg base.gpkg has been removed and tests.gpkg has been added
     v10: nothing happened (although officially forbidden here it mimics no changes to file of interest)
     """
     from .test_project_controller import create_diff_meta
@@ -152,40 +151,40 @@ def diff_project(app):
                 "updated": [],
             },
             {"added": [], "removed": [], "updated": [diff_meta_A]},
+            # force update with full file
             {
                 "added": [],
                 "removed": [],
                 "updated": [update_meta],
-            },  # force update with full file
+            },
             {"added": [], "removed": [], "updated": [diff_meta_mod]},
             {"added": [], "removed": [], "updated": [diff_meta_B]},
+            # final state of base.gpkg (v8)
             {
                 "added": [],
                 "removed": [],
                 "updated": [],
-            },  # final state of base.gpkg (v8)
+            },
+            # file renamed, by removing old and upload new - break of history
             {
                 "added": [file_info(test_project_dir, "test.gpkg")],
                 "removed": [file_info(test_project_dir, "base.gpkg")],
                 "updated": [],
-            },  # file renamed, by removing old and upload new - break of history
+            },
             {"added": [], "removed": [], "updated": []},
         ]
-        version_files = project.files
         for i, change in enumerate(changes):
             ver = "v{}".format(i + 2)
             if change["added"]:
-                meta = deepcopy(
-                    change["added"][0]
-                )  # during push we do not store 'location' in 'added' metadata
+                # during push we do not store 'location' in 'added' metadata
+                meta = deepcopy(change["added"][0])
                 meta["location"] = os.path.join(ver, meta["path"])
                 new_file = os.path.join(project.storage.project_dir, meta["location"])
                 os.makedirs(os.path.dirname(new_file), exist_ok=True)
                 copy(os.path.join(test_project_dir, meta["path"]), new_file)
-                version_files.append(meta)
             elif change["updated"]:
                 meta = change["updated"][0]
-                f_updated = next(f for f in version_files if f["path"] == meta["path"])
+                f_updated = next(f for f in pv.files if f["path"] == meta["path"])
                 new_location = os.path.join(ver, f_updated["path"])
                 patchedfile = os.path.join(project.storage.project_dir, new_location)
                 os.makedirs(os.path.dirname(patchedfile), exist_ok=True)
@@ -208,14 +207,14 @@ def diff_project(app):
                     f_updated.pop("diff", None)
                 meta["location"] = new_location
                 f_updated.update(meta)
-            if change["removed"]:
-                f_removed = next(
-                    f
-                    for f in version_files
-                    if f["path"] == change["removed"][0]["path"]
-                )
-                version_files.remove(f_removed)
+            # elif change["removed"]:
+            #     f_removed = next(
+            #         f
+            #         for f in project.files
+            #         if f["path"] == change["removed"][0]["path"]
+            #     )
             else:
+                # no files uploaded, hence no action needed
                 pass
 
             pv = ProjectVersion(
@@ -223,21 +222,16 @@ def diff_project(app):
                 ver,
                 project.creator.username,
                 change,
-                version_files,
                 "127.0.0.1",
             )
+            assert pv.project_size == sum(file["size"] for file in pv.files)
             db.session.add(pv)
-            db.session.commit()
-            version_files = pv.files
-            current_version = pv.name
-            assert pv.project_size == sum(file["size"] for file in version_files)
+            db.session.add(project)
+            latest_version = ProjectVersion.query.filter_by(project_id=project.id).order_by(
+                desc(ProjectVersion.created)).first()
+            assert latest_version.project_size == sum(file["size"] for file in latest_version.files)
 
-        project.files = version_files
-        project.disk_usage = sum(file["size"] for file in project.files)
-        project.tags = resolve_tags(version_files)
-        project.latest_version = current_version
         db.session.add(project)
-        flag_modified(project, "files")
         db.session.commit()
     finally:
         os.remove(test_gpkg_file)

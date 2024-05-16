@@ -15,7 +15,6 @@ from gevent import sleep
 from .storage import ProjectStorage, FileNotFound, DataSyncError, InitializationError
 from ... import db
 from ..utils import (
-    resolve_tags,
     generate_checksum,
     int_version,
     is_versioned_file,
@@ -178,8 +177,8 @@ class DiskStorage(ProjectStorage):
                     self.delete()
                     raise InitializationError(str(e))
 
-            self.project.files = forked_files
             self.project.tags = template_project.tags
+            # TODO (move elsewhere, e.g. version __init__)
             self.project.disk_usage = sum([f["size"] for f in self.project.files])
 
     def file_size(self, file):
@@ -271,11 +270,7 @@ class DiskStorage(ProjectStorage):
 
                 f["diff"]["location"] = os.path.join(
                     version,
-                    (
-                        f["diff"]["sanitized_path"]
-                        if "sanitized_path" in f["diff"]
-                        else mergin_secure_filename(f["diff"]["path"])
-                    ),
+                    f["diff"].get("sanitized_path", mergin_secure_filename(f["diff"]["path"]))
                 )
 
                 # we can now replace old basefile metadata with the new one (patchedfile)
@@ -323,14 +318,8 @@ class DiskStorage(ProjectStorage):
 
             if "chunks" in f:
                 f.pop("chunks")
-            f["location"] = os.path.join(
-                version,
-                (
-                    f["sanitized_path"]
-                    if "sanitized_path" in f
-                    else mergin_secure_filename(f["path"])
-                ),
-            )
+
+            f["location"] = os.path.join(version, f.get("sanitized_path", mergin_secure_filename(f["path"])))
             if not sync_errors:
                 old_item.update(f)
                 # make sure we do not have diff in metadata if diff file was not uploaded/created
@@ -354,17 +343,11 @@ class DiskStorage(ProjectStorage):
                     "mtime": item["mtime"],
                     "location": os.path.join(
                         version,
-                        (
-                            item["sanitized_path"]
-                            if "sanitized_path" in item
-                            else mergin_secure_filename(item["path"])
-                        ),
+                        item.get("sanitized_path", mergin_secure_filename(item["path"]))
                     ),
                 }
             )
-
-        self.project.files = files
-        self.project.tags = resolve_tags(files)
+        return files
 
     def delete(self):
         move_to_tmp(self.project_dir)
