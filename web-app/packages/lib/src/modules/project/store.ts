@@ -101,7 +101,9 @@ export const useProjectStore = defineStore('projectModule', {
 
   getters: {
     isProjectOwner: (state) =>
-      isAtLeastProjectRole(state.project?.role, ProjectRole.owner)
+      isAtLeastProjectRole(state.project?.role, ProjectRole.owner),
+    isProjectWriter: (state) =>
+      isAtLeastProjectRole(state.project?.role, ProjectRole.writer)
   },
 
   actions: {
