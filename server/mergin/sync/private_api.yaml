@@ -573,7 +573,7 @@ components:
           format: email
           example: john.doe@example.com
         role:
-          description: Workspace (EE) or global (CE) role
+          description: Workspace role
           type: string
           enum:
             - owner

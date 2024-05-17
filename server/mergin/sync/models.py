@@ -353,16 +353,14 @@ class ProjectRole(Enum):
 
 
 @dataclass
-class MemberAccess:
-    id: int
+class ProjectAccessDetail:
+    id: int or str
     email: str
-    username: str
     role: str
+    username: str
     name: Optional[str]
-    type: str = "member"
-
-    def to_dict(self):
-        return {k: str(v) for k, v in asdict(self).items()}
+    project_permission: str
+    type: str
 
 
 class ProjectAccess(db.Model):

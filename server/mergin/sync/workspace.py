@@ -9,7 +9,7 @@ from sqlalchemy import or_, and_, Column, literal
 from sqlalchemy.orm import joinedload
 
 from .errors import UpdateProjectAccessError
-from .models import Project, ProjectAccess, AccessRequest, MemberAccess
+from .models import Project, ProjectAccess, AccessRequest, ProjectAccessDetail
 from .permissions import projects_query, ProjectPermissions, get_user_project_role
 from .public_api_controller import parse_project_access_update_request
 from .. import db
@@ -282,35 +282,51 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
         """Project access base query"""
         return AccessRequest.query.join(Project)
 
-    def project_access(self, project: Project) -> List[MemberAccess]:
+    def project_access(self, project: Project) -> List[ProjectAccessDetail]:
         """
         Project access users overview
         """
         ws = self.factory_method()
-        if (
-            Configuration.GLOBAL_ADMIN
-            or Configuration.GLOBAL_WRITE
-            or Configuration.GLOBAL_READ
-        ):
-            members = User.query.filter(User.active.is_(True)).all()
-        else:
-            member_ids = set(
-                project.access.readers + project.access.writers + project.access.owners
-            )
-            members = User.query.filter(User.active, User.id.in_(member_ids)).all()
         result = []
-        for member in members:
-            member_access = MemberAccess(
-                id=member.id,
-                username=member.username,
-                role=ws.get_user_role(member),
-                name=member.profile.name(),
-                email=member.email,
-            ).to_dict()
-            # add correct project permission by comparing ws role and project access permission
-            user = User.query.get(member.id)
-            member_access["project_permission"] = get_user_project_role(project, user)
+        global_role = None
+        if Configuration.GLOBAL_ADMIN:
+            global_role = "owner"
+        elif Configuration.GLOBAL_WRITE:
+            global_role = "writer"
+        elif Configuration.GLOBAL_READ:
+            global_role = "reader"
 
-            result.append(member_access)
+        direct_members_ids = set(
+            project.access.readers + project.access.writers + project.access.owners
+        )
+        direct_members = User.query.filter(
+            User.active, User.id.in_(direct_members_ids)
+        ).all()
 
+        for dm in direct_members:
+            member = ProjectAccessDetail(
+                id=dm.id,
+                username=dm.username,
+                role=ws.get_user_role(dm),
+                name=dm.profile.name(),
+                email=dm.email,
+                project_permission=get_user_project_role(project, dm),
+                type="member",
+            )
+            result.append(member)
+        if global_role:
+            global_members = User.query.filter(
+                User.active.is_(True), User.id.notin_(direct_members_ids)
+            ).all()
+            for gm in global_members:
+                member = ProjectAccessDetail(
+                    id=gm.id,
+                    username=gm.username,
+                    name=gm.profile.name(),
+                    email=gm.email,
+                    role=global_role,
+                    project_permission=global_role,
+                    type="member",
+                )
+                result.append(member)
         return result

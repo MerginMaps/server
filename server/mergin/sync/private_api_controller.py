@@ -327,4 +327,5 @@ def get_project_access(id: str):
     """Get list of users with access to project"""
     project = require_project_by_uuid(id, ProjectPermissions.Read)
     result = current_app.ws_handler.project_access(project)
-    return result, 200
+    data = ProjectAccessSchema(many=True).dump(result)
+    return data, 200

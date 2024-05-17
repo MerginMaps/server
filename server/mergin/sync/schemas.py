@@ -6,7 +6,7 @@ import copy
 import os
 import re
 from datetime import datetime
-from marshmallow import fields, pre_dump, post_dump
+from marshmallow import fields, pre_dump, post_dump, ValidationError
 from flask_login import current_user
 from flask import current_app
 
@@ -16,7 +16,6 @@ from .permissions import ProjectPermissions, get_user_project_role
 from .models import Project, ProjectVersion, AccessRequest
 from ..app import DateTimeWithZ
 from ..auth.models import User
-from ..auth.schemas import UserSearchSchema
 
 
 class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
@@ -330,3 +329,21 @@ class UserWorkspaceSchema(ma.SQLAlchemyAutoSchema):
         if not self.context.get("user"):
             return
         return obj.get_user_role(self.context.get("user"))
+
+
+class StrInt(fields.Field):
+    def _deserialize(self, value, attr, data, **kwargs):
+        if isinstance(value, str) or isinstance(value, int):
+            return value
+        else:
+            raise ValidationError("Field should be str or list")
+
+
+class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
+    id = StrInt()
+    email = fields.String()
+    role = fields.String()
+    username = fields.String()
+    name = fields.String()
+    project_permission = fields.String()
+    type = fields.String()
