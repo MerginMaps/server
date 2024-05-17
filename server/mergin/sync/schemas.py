@@ -60,6 +60,8 @@ class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
 
 def project_user_permissions(project):
     return {
+        # This mapping (upload) is used by mobile and mergin client to check if it is possible to make push to server.
+        # We can rename it in future upload -> Edit and add new Write key.
         "upload": ProjectPermissions.Edit.check(project, current_user),
         "update": ProjectPermissions.Update.check(project, current_user),
         "delete": ProjectPermissions.Delete.check(project, current_user),
