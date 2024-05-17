@@ -6,7 +6,7 @@ import copy
 import os
 import re
 from datetime import datetime
-from marshmallow import fields, pre_dump, post_dump, ValidationError
+from marshmallow import fields, pre_dump, post_dump, ValidationError, Schema
 from flask_login import current_user
 from flask import current_app
 
@@ -341,7 +341,7 @@ class StrOrInt(fields.Field):
             raise ValidationError("Field should be str or int")
 
 
-class ProjectAccessDetailSchema(ma.SQLAlchemyAutoSchema):
+class ProjectAccessDetailSchema(Schema):
     id = StrOrInt()
     email = fields.String()
     role = fields.String()
