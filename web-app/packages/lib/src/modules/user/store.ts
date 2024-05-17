@@ -63,7 +63,10 @@ export const useUserStore = defineStore('userModule', {
       return this.isLoggedIn && instanceStore.initData?.superuser
     },
     isGlobalWorkspaceAdmin() {
-      return isAtLeastRole(this.getPreferredWorkspace?.role, WorkspaceRole.admin)
+      return isAtLeastRole(
+        this.getPreferredWorkspace?.role,
+        WorkspaceRole.admin
+      )
     },
     getPreferredWorkspace: (state) => {
       return state.loggedUser?.workspaces?.find(

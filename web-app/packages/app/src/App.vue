@@ -55,7 +55,7 @@ import {
   useUserStore,
   AppContainer,
   InstanceMaintenanceMessage,
-useProjectStore
+  useProjectStore
 } from '@mergin/lib'
 import { mapActions, mapState } from 'pinia'
 import { useToast } from 'primevue/usetoast'

@@ -86,7 +86,6 @@ import { mapActions, mapState } from 'pinia'
 import { DataViewPageEvent } from 'primevue/dataview'
 import { defineComponent } from 'vue'
 
-import { permissionUtils } from '@/common'
 import AppDropdown from '@/common/components/AppDropdown.vue'
 import { getErrorMessage } from '@/common/error_utils'
 import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
