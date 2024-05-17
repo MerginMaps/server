@@ -58,7 +58,7 @@ class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
 
 def project_user_permissions(project):
     return {
-        "upload": ProjectPermissions.Upload.check(project, current_user),
+        "upload": ProjectPermissions.Edit.check(project, current_user),
         "update": ProjectPermissions.Update.check(project, current_user),
         "delete": ProjectPermissions.Delete.check(project, current_user),
     }

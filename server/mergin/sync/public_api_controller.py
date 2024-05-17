@@ -125,10 +125,11 @@ def parse_project_access_update_request(access: Dict) -> Dict:
 
     for key in ("owners", "writers", "editors", "readers"):
         # transform usernames from client request to ids, which has precedence over ids in request
-        if key + "names" in access:
+        name_key = key + "names"
+        if name_key in access:
             parsed_access[key] = [
                 valid_users_map[username]
-                for username in access.get(key + "names")
+                for username in access.get(name_key)
                 if username in valid_usernames
             ]
         # use legacy option
