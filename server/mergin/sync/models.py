@@ -648,22 +648,16 @@ class AccessRequest(db.Model):
     def accept(self, permissions):
         """Accept project access request"""
         project_access = self.project.access
-        readers = project_access.readers.copy()
-        editors = project_access.editors.copy()
-        writers = project_access.writers.copy()
-        owners = project_access.owners.copy()
-        readers.append(self.requested_by)
-        project_access.readers = readers
-        if permissions in ("edit", "write", "owner"):
-            editors.append(self.requested_by)
-            project_access.editors = editors
-        if permissions == "write" or permissions == "owner":
-            writers.append(self.requested_by)
-            project_access.writers = writers
-        if permissions == "owner":
-            owners.append(self.requested_by)
-            project_access.owners = owners
+        PERMISSION_PROJECT_ROLE = {
+            "read": ProjectRole.READER,
+            "edit": ProjectRole.EDITOR,
+            "write": ProjectRole.WRITER,
+            "owner": ProjectRole.OWNER,
+        }
 
+        project_access.set_role(
+            self.requested_by, PERMISSION_PROJECT_ROLE.get(permissions)
+        )
         self.resolve(RequestStatus.ACCEPTED, current_user.id)
         db.session.commit()
 
