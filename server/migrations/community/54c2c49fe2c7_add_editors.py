@@ -1,4 +1,4 @@
-"""add editors
+"""add project editors
 
 Revision ID: 54c2c49fe2c7
 Revises: 0e3fc92aeaaa
