@@ -141,7 +141,9 @@ class ProjectPermissions:
             )
 
     @classmethod
-    def get_user_project_role(self, project: Project, user: User) -> Optional[ProjectRole]:
+    def get_user_project_role(
+        self, project: Project, user: User
+    ) -> Optional[ProjectRole]:
         """Get the highest role of user for given project.
         It can be based on local project settings or some global workspace settings.
         """
@@ -154,6 +156,7 @@ class ProjectPermissions:
         if self.Read.check(project, user):
             return ProjectRole.READER
         return None
+
 
 def require_project(ws, project_name, permission):
     workspace = current_app.ws_handler.get_by_name(ws)

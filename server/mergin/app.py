@@ -49,6 +49,7 @@ DEPRECATION_API_MSG = (
     "Update Mergin Maps to see this information [endpoint deprecated]."
 )
 
+
 def traceback_hash():
     # File paths will be relative to the server directory above so hashes will be consistent across different
     # deployments

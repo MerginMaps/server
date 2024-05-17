@@ -154,6 +154,7 @@ class WorkspaceHandler(ABC):
         """
         pass
 
+
 class ProjectHandler(ABC):
     @abstractmethod
     def get_push_permission(self, changes: dict):

@@ -35,7 +35,9 @@ class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
             # user map can be pass as context to save db query
             users_map = self.context["users_map"]
         else:
-            user_ids = data["owners"] + data["writers"] + data["editors"] + data["readers"]
+            user_ids = (
+                data["owners"] + data["writers"] + data["editors"] + data["readers"]
+            )
             users_map = {
                 u.id: u.username
                 for u in User.query.filter(
