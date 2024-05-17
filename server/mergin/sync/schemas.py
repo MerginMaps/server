@@ -331,16 +331,18 @@ class UserWorkspaceSchema(ma.SQLAlchemyAutoSchema):
         return obj.get_user_role(self.context.get("user"))
 
 
-class StrInt(fields.Field):
+class StrOrInt(fields.Field):
+    """Custom field type for validating both str or int datatype"""
+
     def _deserialize(self, value, attr, data, **kwargs):
         if isinstance(value, str) or isinstance(value, int):
             return value
         else:
-            raise ValidationError("Field should be str or list")
+            raise ValidationError("Field should be str or int")
 
 
 class ProjectAccessDetailSchema(ma.SQLAlchemyAutoSchema):
-    id = StrInt()
+    id = StrOrInt()
     email = fields.String()
     role = fields.String()
     username = fields.String()
