@@ -1,7 +1,7 @@
-from .interfaces import ProjectHandler
+from .interfaces import AbstractProjectHandler
 from .permissions import ProjectPermissions
 
 
-class GlobalProjectHandler(ProjectHandler):
+class ProjectHandler(AbstractProjectHandler):
     def get_push_permission(self, changes: dict):
         return ProjectPermissions.Upload
