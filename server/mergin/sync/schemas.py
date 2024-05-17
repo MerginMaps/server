@@ -339,7 +339,7 @@ class StrInt(fields.Field):
             raise ValidationError("Field should be str or list")
 
 
-class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
+class ProjectAccessDetailSchema(ma.SQLAlchemyAutoSchema):
     id = StrInt()
     email = fields.String()
     role = fields.String()
