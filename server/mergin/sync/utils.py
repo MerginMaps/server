@@ -14,6 +14,8 @@ from pathvalidate import sanitize_filename
 from shapely import wkb
 from shapely.errors import WKBReadingError
 from gevent import sleep
+from flask import Request
+from typing import Optional
 
 
 def generate_checksum(file, chunk_size=4096):
@@ -377,3 +379,8 @@ def clean_upload(transaction_id):
     db.session.commit()
     move_to_tmp(upload_dir, transaction_id)
     return NoContent, 200
+
+
+def get_device_id(request: Request) -> Optional[str]:
+    """Get device uuid from http header X-Device-Id"""
+    return request.headers.get("X-Device-Id")

@@ -518,3 +518,10 @@ def test_get_project_access(client):
     assert sum(map(lambda x: int(x["project_permission"] == "owner"), resp.json)) == 6
     assert sum(map(lambda x: int(x["project_permission"] == "writer"), resp.json)) == 0
     assert sum(map(lambda x: int(x["project_permission"] == "reader"), resp.json)) == 0
+    # pretend a user was deleted to test that api can handle it
+    users[3].inactivate()
+    users[3].anonymize()
+    resp = client.get(url)
+    assert resp.status_code == 200
+    assert len(resp.json) == 5
+    assert sum(map(lambda x: int(x["project_permission"] == "owner"), resp.json)) == 5

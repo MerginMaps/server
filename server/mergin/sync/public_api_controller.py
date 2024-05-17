@@ -70,6 +70,7 @@ from .utils import (
     get_path_from_files,
     get_project_path,
     clean_upload,
+    get_device_id,
 )
 from .errors import StorageLimitHit
 from ..utils import format_time_delta
@@ -155,6 +156,7 @@ def add_project(namespace):  # noqa: E501
 
     if request.is_json:
         ua = get_user_agent(request)
+        device_id = get_device_id(request)
         workspace = current_app.ws_handler.get_by_name(namespace)
         if not workspace:
             # return special message if former 'user workspace' was used
@@ -215,11 +217,12 @@ def add_project(namespace):  # noqa: E501
                 p.files,
                 get_ip(request),
                 user_agent,
+                device_id,
             )
         else:
             changes = {"added": [], "updated": [], "removed": []}
             version = ProjectVersion(
-                p, "v0", current_user.username, changes, [], ip, ua
+                p, "v0", current_user.username, changes, [], ip, ua, device_id
             )
             p.latest_version = "v0"
             try:
@@ -857,6 +860,7 @@ def project_push(namespace, project_name):
         flag_modified(project, "files")
         project.disk_usage = sum(file["size"] for file in project.files)
         user_agent = get_user_agent(request)
+        device_id = get_device_id(request)
         pv = ProjectVersion(
             project,
             next_version,
@@ -865,6 +869,7 @@ def project_push(namespace, project_name):
             project.files,
             get_ip(request),
             user_agent,
+            device_id,
         )
         project.latest_version = next_version
         db.session.add(pv)
@@ -1027,6 +1032,7 @@ def push_finish(transaction_id):
         flag_modified(project, "files")
         project.disk_usage = sum(file["size"] for file in project.files)
         user_agent = get_user_agent(request)
+        device_id = get_device_id(request)
         pv = ProjectVersion(
             project,
             next_version,
@@ -1035,6 +1041,7 @@ def push_finish(transaction_id):
             project.files,
             get_ip(request),
             user_agent,
+            device_id,
         )
         project.latest_version = next_version
         db.session.add(pv)
@@ -1156,10 +1163,19 @@ def clone_project(namespace, project_name):  # noqa: E501
 
     version = "v1" if p.files else "v0"
     changes = {"added": p.files, "updated": [], "removed": []}
+    # TODO: add user_agent and device_id handling to class
     user_agent = get_user_agent(request)
+    device_id = get_device_id(request)
     p.latest_version = version
     version = ProjectVersion(
-        p, version, current_user.username, changes, p.files, get_ip(request), user_agent
+        p,
+        version,
+        current_user.username,
+        changes,
+        p.files,
+        get_ip(request),
+        user_agent,
+        device_id,
     )
     db.session.add(p)
     db.session.add(pa)

@@ -35,6 +35,11 @@ test_login_data = [
     ({"login": "mergin", "password": "ilovemergin"}, json_headers, 200),
     ({"login": "mergin  ", "password": "ilovemergin"}, json_headers, 200),
     ({"login": "mergin@mergin.com", "password": "ilovemergin"}, json_headers, 200),
+    (
+        {"login": "mergin", "password": "ilovemergin"},
+        {**json_headers, "X-Device-Id": None},
+        200,
+    ),
     ({"login": "mergin", "password": "ilovemergi"}, json_headers, 401),
     ({"login": "mergin"}, json_headers, 401),
     ({"login": "mergin", "password": "ilovemergin"}, {}, 415),
@@ -57,6 +62,7 @@ def test_login(client, data, headers, expected):
             .first()
         )
         assert login_history
+        assert login_history.device_id == str(headers.get("X-Device-Id"))
 
 
 def test_logout(client):
