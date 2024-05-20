@@ -18,6 +18,7 @@ from .schemas import (
     ProjectAccessRequestSchema,
     AdminProjectSchema,
     ProjectAccessSchema,
+    ProjectAccessDetailSchema,
 )
 from .permissions import (
     require_project_by_uuid,
@@ -25,7 +26,6 @@ from .permissions import (
     check_workspace_permissions,
 )
 from ..utils import parse_order_params, split_order_param, get_order_param
-from mergin.config import Configuration
 
 project_access_granted = signal("project_access_granted")
 
@@ -326,50 +326,6 @@ def update_project_access(id: str):
 def get_project_access(id: str):
     """Get list of users with access to project"""
     project = require_project_by_uuid(id, ProjectPermissions.Read)
-    global_role = None
-    accesses = (
-        (project.access.owners, "owner"),
-        (project.access.writers, "writer"),
-        (project.access.editors, "editor"),
-        (project.access.readers, "reader"),
-    )
-    if Configuration.GLOBAL_ADMIN:
-        global_role = "owner"
-        accesses = ()
-    elif Configuration.GLOBAL_WRITE:
-        global_role = "writer"
-        accesses = accesses[:1]
-    elif Configuration.GLOBAL_READ:
-        global_role = "reader"
-        accesses = accesses[:3]
-    result = []
-    processed_ids = set()
-    for user_ids, role in accesses:
-        for user_id in user_ids:
-            if user_id not in processed_ids:
-                user = User.query.get(user_id)
-                result.append(
-                    {
-                        "id": user_id,
-                        "type": "member",
-                        "email": user.email,
-                        "username": user.username,
-                        "project_permission": role,
-                        "name": user.profile.name(),
-                    }
-                )
-                processed_ids.add(user_id)
-    if global_role:
-        for user in User.query.filter_by(active=True).all():
-            if user.id not in processed_ids:
-                result.append(
-                    {
-                        "id": user.id,
-                        "type": "member",
-                        "email": user.email,
-                        "username": user.username,
-                        "project_permission": global_role,
-                        "name": user.profile.name(),
-                    }
-                )
-    return result, 200
+    result = current_app.ws_handler.project_access(project)
+    data = ProjectAccessDetailSchema(many=True).dump(result)
+    return data, 200

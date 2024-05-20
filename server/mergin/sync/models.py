@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, List, Dict, Set
+from dataclasses import dataclass, asdict
 
 from blinker import signal
 from flask_login import current_user
@@ -355,6 +356,17 @@ class ProjectRole(Enum):
             return True
         else:
             return False
+
+
+@dataclass
+class ProjectAccessDetail:
+    id: int or str
+    email: str
+    role: str
+    username: str
+    name: Optional[str]
+    project_permission: str
+    type: str
 
 
 class ProjectAccess(db.Model):
