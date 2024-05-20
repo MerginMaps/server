@@ -103,10 +103,14 @@ def parse_project_access_update_request(access: Dict) -> Dict:
     names = set(
         access.get("ownersnames", [])
         + access.get("writersnames", [])
+        + access.get("editorsnames", [])
         + access.get("readersnames", [])
     )
     ids = set(
-        access.get("owners", []) + access.get("writers", []) + access.get("readers", [])
+        access.get("owners", [])
+        + access.get("writers", [])
+        + access.get("editors", [])
+        + access.get("readers", [])
     )
     # get only valid user entries from database
     valid_users = (
@@ -119,12 +123,13 @@ def parse_project_access_update_request(access: Dict) -> Dict:
     valid_usernames = valid_users_map.keys()
     valid_ids = valid_users_map.values()
 
-    for key in ("owners", "writers", "readers"):
+    for key in ("owners", "writers", "editors", "readers"):
         # transform usernames from client request to ids, which has precedence over ids in request
-        if key + "names" in access:
+        name_key = key + "names"
+        if name_key in access:
             parsed_access[key] = [
                 valid_users_map[username]
-                for username in access.get(key + "names")
+                for username in access.get(name_key)
                 if username in valid_usernames
             ]
         # use legacy option
@@ -717,7 +722,8 @@ def project_push(namespace, project_name):
     """
     version = request.json["version"]
     changes = request.json["changes"]
-    project = require_project(namespace, project_name, ProjectPermissions.Upload)
+    project_permission = current_app.project_handler.get_push_permission(changes)
+    project = require_project(namespace, project_name, project_permission)
     request.view_args["project"] = (
         project  # pass full project object to request for later use
     )

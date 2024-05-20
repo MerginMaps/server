@@ -12,7 +12,7 @@ from flask import current_app
 
 from .. import ma
 from .utils import resolve_tags
-from .permissions import ProjectPermissions, get_user_project_role
+from .permissions import ProjectPermissions
 from .models import Project, ProjectVersion, AccessRequest
 from ..app import DateTimeWithZ
 from ..auth.models import User
@@ -21,6 +21,7 @@ from ..auth.models import User
 class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
     owners = fields.List(fields.Integer())
     writers = fields.List(fields.Integer())
+    editors = fields.List(fields.Integer())
     readers = fields.List(fields.Integer())
     public = fields.Boolean()
 
@@ -33,7 +34,9 @@ class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
             # user map can be pass as context to save db query
             users_map = self.context["users_map"]
         else:
-            user_ids = data["owners"] + data["writers"] + data["readers"]
+            user_ids = (
+                data["owners"] + data["writers"] + data["editors"] + data["readers"]
+            )
             users_map = {
                 u.id: u.username
                 for u in User.query.filter(
@@ -41,7 +44,7 @@ class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
                 ).all()
             }
 
-        for field in ("owners", "writers", "readers"):
+        for field in ("owners", "writers", "editors", "readers"):
             new_key = field + "names"
             data[new_key] = []
             users_ids = data[field]
@@ -56,7 +59,9 @@ class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
 
 def project_user_permissions(project):
     return {
-        "upload": ProjectPermissions.Upload.check(project, current_user),
+        # This mapping (upload) is used by mobile and mergin client to check if it is possible to make push to server.
+        # We can rename it in future upload -> Edit and add new Write key.
+        "upload": ProjectPermissions.Edit.check(project, current_user),
         "update": ProjectPermissions.Update.check(project, current_user),
         "delete": ProjectPermissions.Delete.check(project, current_user),
     }
@@ -137,7 +142,10 @@ class ProjectSchemaForVersion(ma.SQLAlchemyAutoSchema):
     role = fields.Method("_role")
 
     def _role(self, obj):
-        return get_user_project_role(obj.project, current_user)
+        role = ProjectPermissions.get_user_project_role(obj.project, current_user)
+        if not role:
+            return None
+        return role.value
 
     def _uploads(self, obj):
         return [u.id for u in obj.project.uploads.all()]
@@ -184,7 +192,10 @@ class ProjectSchema(ma.SQLAlchemyAutoSchema):
     role = fields.Method("_role")
 
     def _role(self, obj):
-        return get_user_project_role(obj, current_user)
+        role = ProjectPermissions.get_user_project_role(obj, current_user)
+        if not role:
+            return None
+        return role.value
 
     def _uploads(self, obj):
         return [u.id for u in obj.uploads.all()]

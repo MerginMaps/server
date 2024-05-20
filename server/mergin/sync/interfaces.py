@@ -50,9 +50,10 @@ class AbstractWorkspace:
         pass
 
     def user_has_permissions(self, user, permissions):
-        """Check whether User obj has read/write/admin permissions to workspace
+        """Check whether User obj has read/write/admin permissions to workspace or project
         Current rules are:
         - read: user can list and download all projects within workspace
+        - edit: user can add/update features on a map, can't remove any files, change any layers (schema) nor update *.qgz or *.qgs files
         - write: user can push to any projects within workspace
         - admin: user can create new projects, delete projects within workspace
         and modify read/write permissions for other users
@@ -150,5 +151,14 @@ class WorkspaceHandler(ABC):
     def workspace_count():
         """
         Return number of workspaces
+        """
+        pass
+
+
+class AbstractProjectHandler(ABC):
+    @abstractmethod
+    def get_push_permission(self, changes: dict):
+        """
+        Return project permission for user to push data to project
         """
         pass

@@ -325,7 +325,9 @@ class Project(db.Model):
         db.session.execute(
             upload_table.delete().where(upload_table.c.project_id == self.id)
         )
-        self.access.owners = self.access.writers = self.access.readers = []
+        self.access.owners = self.access.writers = self.access.editors = (
+            self.access.readers
+        ) = []
         access_requests = (
             AccessRequest.query.filter_by(project_id=self.id)
             .filter(AccessRequest.status.is_(None))
@@ -340,6 +342,7 @@ class Project(db.Model):
 class ProjectRole(Enum):
     OWNER = "owner"
     WRITER = "writer"
+    EDITOR = "editor"
     READER = "reader"
 
     def __gt__(self, other):
@@ -377,6 +380,7 @@ class ProjectAccess(db.Model):
     owners = db.Column(ARRAY(db.Integer), server_default="{}")
     readers = db.Column(ARRAY(db.Integer), server_default="{}")
     writers = db.Column(ARRAY(db.Integer), server_default="{}")
+    editors = db.Column(ARRAY(db.Integer), server_default="{}")
 
     project = db.relationship(
         "Project",
@@ -394,6 +398,7 @@ class ProjectAccess(db.Model):
         db.Index("ix_project_access_owners", owners, postgresql_using="gin"),
         db.Index("ix_project_access_readers", readers, postgresql_using="gin"),
         db.Index("ix_project_access_writers", writers, postgresql_using="gin"),
+        db.Index("ix_project_access_editors", editors, postgresql_using="gin"),
     )
 
     def __init__(self, project, public=False):
@@ -401,6 +406,7 @@ class ProjectAccess(db.Model):
         self.owners = [project.creator.id]
         self.writers = [project.creator.id]
         self.readers = [project.creator.id]
+        self.editors = [project.creator.id]
         self.project_id = project.id
         self.public = public
 
@@ -410,6 +416,8 @@ class ProjectAccess(db.Model):
             return ProjectRole.OWNER
         elif user_id in self.writers:
             return ProjectRole.WRITER
+        elif user_id in self.editors:
+            return ProjectRole.EDITOR
         elif user_id in self.readers:
             return ProjectRole.READER
         else:
@@ -421,8 +429,9 @@ class ProjectAccess(db.Model):
         # because roles do not inherit, they must be un/set explicitly in db ACLs
         perm_list = {
             ProjectRole.READER: ["readers"],
-            ProjectRole.WRITER: ["writers", "readers"],
-            ProjectRole.OWNER: ["owners", "writers", "readers"],
+            ProjectRole.EDITOR: ["editors", "readers"],
+            ProjectRole.WRITER: ["writers", "editors", "readers"],
+            ProjectRole.OWNER: ["owners", "writers", "editors", "readers"],
         }
         return perm_list[role]
 
@@ -452,7 +461,7 @@ class ProjectAccess(db.Model):
     def bulk_update(self, new_access: Dict) -> Set[int]:
         """From new access lists do bulk update and return ids with any change applied"""
         diff = set()
-        for key in ("owners", "writers", "readers"):
+        for key in ("owners", "writers", "editors", "readers"):
             new_value = new_access.get(key, None)
             if not new_value:
                 continue
@@ -462,7 +471,8 @@ class ProjectAccess(db.Model):
 
         # make sure lists are consistent (they inherit from each other)
         self.writers = list(set(self.writers).union(set(self.owners)))
-        self.readers = list(set(self.readers).union(set(self.writers)))
+        self.editors = list(set(self.editors).union(set(self.writers)))
+        self.readers = list(set(self.readers).union(set(self.editors)))
         return diff
 
 
@@ -650,18 +660,16 @@ class AccessRequest(db.Model):
     def accept(self, permissions):
         """Accept project access request"""
         project_access = self.project.access
-        readers = project_access.readers.copy()
-        writers = project_access.writers.copy()
-        owners = project_access.owners.copy()
-        readers.append(self.requested_by)
-        project_access.readers = readers
-        if permissions == "write" or permissions == "owner":
-            writers.append(self.requested_by)
-            project_access.writers = writers
-        if permissions == "owner":
-            owners.append(self.requested_by)
-            project_access.owners = owners
+        PERMISSION_PROJECT_ROLE = {
+            "read": ProjectRole.READER,
+            "edit": ProjectRole.EDITOR,
+            "write": ProjectRole.WRITER,
+            "owner": ProjectRole.OWNER,
+        }
 
+        project_access.set_role(
+            self.requested_by, PERMISSION_PROJECT_ROLE.get(permissions)
+        )
         self.resolve(RequestStatus.ACCEPTED, current_user.id)
         db.session.commit()
 

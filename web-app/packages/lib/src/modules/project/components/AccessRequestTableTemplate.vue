@@ -58,7 +58,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             </p>
             <AppDropdown
               v-if="showAccept"
-              :options="dropdownPermissions"
+              :options="availablePermissions"
               v-model="permissions[item.id]"
               @change="(e) => permissionsChange(e, item)"
               :disabled="expired(item.expire)"
@@ -100,10 +100,7 @@ import { DropdownChangeEvent } from 'primevue/dropdown'
 import { defineComponent } from 'vue'
 
 import AppDropdown from '@/common/components/AppDropdown.vue'
-import {
-  ProjectPermissionName,
-  getProjectPermissionsValues
-} from '@/common/permission_utils'
+import { ProjectPermissionName } from '@/common/permission_utils'
 import { useUserStore } from '@/main'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useProjectStore } from '@/modules/project/store'
@@ -135,7 +132,11 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState(useProjectStore, ['accessRequests', 'accessRequestsCount']),
+    ...mapState(useProjectStore, [
+      'accessRequests',
+      'accessRequestsCount',
+      'availablePermissions'
+    ]),
     ...mapState(useUserStore, ['loggedUser']),
     showAccept() {
       return this.namespace != null
@@ -151,9 +152,6 @@ export default defineComponent({
         ),
         ...this.selectedPermissions
       }
-    },
-    dropdownPermissions() {
-      return getProjectPermissionsValues()
     }
   },
   methods: {

@@ -45,6 +45,8 @@ export interface ProjectAccess {
   readersnames: string[]
   writers: number[]
   writersnames: string[]
+  editors: number[]
+  editorsnames: string[]
 }
 
 export type ProjectTags = 'valid_qgis' | 'mappin_use' | 'input_use'
@@ -199,6 +201,7 @@ export interface CreateProjectParams {
 export interface AccessUpdate {
   ownersnames: string[]
   writersnames: string[]
+  editorsnames: string[]
   readersnames: string[]
   public: boolean
 }

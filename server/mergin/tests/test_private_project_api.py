@@ -349,6 +349,12 @@ def test_update_project_access(client, diff_project):
     assert resp.status_code == 200
     assert user.id in diff_project.access.readers
 
+    # grant editor access
+    data["role"] = "editor"
+    resp = client.patch(url, headers=json_headers, data=json.dumps(data))
+    assert resp.status_code == 200
+    assert user.id in diff_project.access.editors
+
     # change to write access
     data["role"] = "writer"
     resp = client.patch(url, headers=json_headers, data=json.dumps(data))

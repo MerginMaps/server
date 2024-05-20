@@ -5,7 +5,7 @@
 import { RouteRecordRaw } from 'vue-router'
 
 import { PaginatedRequestParams } from '@/common'
-import { UserRoleName } from '@/common/permission_utils'
+import { WorkspaceRoleName } from '@/common/permission_utils'
 import { MerginComponentUuidPayload } from '@/modules/form/types'
 
 export interface LoginData {
@@ -49,7 +49,7 @@ export interface UserResponse {
 export interface UserWorkspace {
   id: number
   name: string
-  role: UserRoleName
+  role: WorkspaceRoleName
 }
 
 export interface UserDetailResponse extends UserProfileResponse {

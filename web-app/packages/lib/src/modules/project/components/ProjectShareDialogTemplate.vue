@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
       <div class="flex flex-column p-input-filled">
         <label class="paragraph-p6">Project permission</label>
-        <app-dropdown :options="permissionStates" v-model="permission" />
+        <app-dropdown :options="permissions" v-model="permission" />
       </div>
     </div>
 
@@ -50,10 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { computed } from 'vue'
 
 import AppDropdown from '@/common/components/AppDropdown.vue'
-import {
-  ProjectRoleName,
-  getProjectRoleNameValues
-} from '@/common/permission_utils'
+import { ProjectRoleName } from '@/common/permission_utils'
 import { DropdownOption, useInstanceStore } from '@/main'
 
 const instanceStore = useInstanceStore()
@@ -68,7 +65,6 @@ const emit = defineEmits<{
   submit: []
 }>()
 
-const permissionStates = props.permissions || getProjectRoleNameValues()
 const docsUrl = `${instanceStore.configData?.docs_url ?? ''}/manage/permissions`
 // define proxyValue for modelValue to emit update:modelValue
 const permission = computed({

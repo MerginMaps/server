@@ -128,6 +128,7 @@ paths:
                   enum:
                     - owner
                     - write
+                    - edit
                     - read
                   description: Desired permissions for project
                   example: write
@@ -378,6 +379,7 @@ paths:
                   enum:
                     - owner
                     - writer
+                    - editor
                     - reader
                     - none
                   example: writer
@@ -579,6 +581,7 @@ components:
             - owner
             - admin
             - writer
+            - editor
             - reader
             - guest
         username:
@@ -594,6 +597,7 @@ components:
           enum:
             - owner
             - writer
+            - editor
             - reader
         invitation:
           description: Present only for type `invitation`
@@ -605,34 +609,6 @@ components:
               type: string
               format: date-time
               example: 2018-11-30T08:47:58.636074Z
-    InvitationProjects:
-      nullable: true
-      type: object
-      required:
-        - permissions
-        - ids
-      properties:
-        permissions:
-          type: string
-          description: permissions to be applied for all projects
-          enum:
-            - read
-            - write
-          example: read
-        ids:
-          type: array
-          description: list of project uuids
-          items:
-            type: string
-            description: project uuid
-            example: 9e7da83a-4gds-4ce4-a282-3cc2ecbc8df2
-        names:
-          type: array
-          description: list of project names
-          items:
-            type: string
-            description: project name
-            example: survey
     ProjectAccessUpdated:
       type: object
       properties:
@@ -643,6 +619,12 @@ components:
             type: string
           example: [ john.doe ]
         writersnames:
+          type: array
+          nullable: false
+          items:
+            type: string
+          example: [ john.doe ]
+        editorsnames:
           type: array
           nullable: false
           items:
@@ -669,6 +651,12 @@ components:
           items:
             type: integer
           example: [1]
+        editors:
+          type: array
+          nullable: false
+          items:
+            type: integer
+            example: [1]
         readers:
           type: array
           nullable: false

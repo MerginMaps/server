@@ -79,7 +79,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <!-- foooter -->
       <template #footer>
         <PButton
-          v-if="project && project.permissions.upload && state !== 'removed'"
+          v-if="project && isProjectWriter && state !== 'removed'"
           severity="danger"
           @click="removeSelected"
           class="flex justify-content-center w-full text-center"
@@ -116,7 +116,7 @@ export default defineComponent({
     projectName: String
   },
   computed: {
-    ...mapState(useProjectStore, ['project', 'uploads']),
+    ...mapState(useProjectStore, ['project', 'uploads', 'isProjectWriter']),
     upload() {
       return this.uploads[this.project.path]
     },

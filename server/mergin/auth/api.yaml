@@ -525,13 +525,7 @@ paths:
                     type: object
                     nullable: true
                     additionalProperties:
-                      type: string
-                      enum:
-                        - owner
-                        - admin
-                        - writer
-                        - reader
-                        - guest
+                      $ref: "#/components/schemas/WorkspaceRole"
                     example: { myWorkspace: owner }
         "400":
           $ref: "#/components/responses/BadStatusResp"
@@ -805,8 +799,7 @@ components:
                 type: string
                 example: my-workspace
               role:
-                type: string
-                example: reader
+                $ref: "#/components/schemas/WorkspaceRole"
         preferred_workspace:
           type: integer
           nullable: true
@@ -824,8 +817,7 @@ components:
                 type: string
                 example: my-workspace
               role:
-                type: string
-                example: reader
+                $ref: "#/components/schemas/WorkspaceRole"
     LoginResponse:
       allOf:
         - $ref: "#/components/schemas/UserDetail"
@@ -838,3 +830,13 @@ components:
               type: string
               format: date-time
               example: 2019-05-04T14:21:56.695035Z
+    WorkspaceRole:
+      type: string
+      enum:
+        - owner
+        - admin
+        - writer
+        - editor
+        - reader
+        - guest
+      example: reader
