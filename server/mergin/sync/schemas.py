@@ -6,7 +6,7 @@ import copy
 import os
 import re
 from datetime import datetime
-from marshmallow import fields, pre_dump, post_dump
+from marshmallow import fields, pre_dump, post_dump, ValidationError, Schema
 from flask_login import current_user
 from flask import current_app
 
@@ -16,7 +16,6 @@ from .permissions import ProjectPermissions, get_user_project_role
 from .models import Project, ProjectVersion, AccessRequest
 from ..app import DateTimeWithZ
 from ..auth.models import User
-from ..auth.schemas import UserSearchSchema
 
 
 class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
@@ -330,3 +329,23 @@ class UserWorkspaceSchema(ma.SQLAlchemyAutoSchema):
         if not self.context.get("user"):
             return
         return obj.get_user_role(self.context.get("user"))
+
+
+class StrOrInt(fields.Field):
+    """Custom field type for validating both str or int datatype"""
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        if isinstance(value, str) or isinstance(value, int):
+            return value
+        else:
+            raise ValidationError("Field should be str or int")
+
+
+class ProjectAccessDetailSchema(Schema):
+    id = StrOrInt()
+    email = fields.String()
+    role = fields.String()
+    username = fields.String()
+    name = fields.String()
+    project_permission = fields.String()
+    type = fields.String()
