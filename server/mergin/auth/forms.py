@@ -17,6 +17,7 @@ from wtforms.validators import (
 
 from .models import User
 from ..app import UpdateForm, CustomStringField
+from .. import db
 
 
 def username_validation(form, field):
