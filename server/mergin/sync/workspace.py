@@ -10,7 +10,7 @@ from sqlalchemy.orm import joinedload
 
 from .errors import UpdateProjectAccessError
 from .models import Project, ProjectAccess, AccessRequest, ProjectAccessDetail
-from .permissions import projects_query, ProjectPermissions, get_user_project_role
+from .permissions import projects_query, ProjectPermissions
 from .public_api_controller import parse_project_access_update_request
 from .. import db
 from ..auth.models import User
@@ -299,20 +299,24 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
             global_role = "reader"
 
         direct_members_ids = set(
-            project.access.readers + project.access.writers + project.access.owners
+            project.access.readers
+            + project.access.editors
+            + project.access.writers
+            + project.access.owners
         )
         direct_members = User.query.filter(
             User.active, User.id.in_(direct_members_ids)
         ).all()
 
         for dm in direct_members:
+            project_role = ProjectPermissions.get_user_project_role(project, dm)
             member = ProjectAccessDetail(
                 id=dm.id,
                 username=dm.username,
                 role=ws.get_user_role(dm),
                 name=dm.profile.name(),
                 email=dm.email,
-                project_permission=get_user_project_role(project, dm),
+                project_permission=project_role and project_role.value,
                 type="member",
             )
             result.append(member)
