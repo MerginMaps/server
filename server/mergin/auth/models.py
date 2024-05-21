@@ -37,7 +37,6 @@ class User(db.Model):
         db.Index("ix_email_insensitive_unique", func.lower(email), unique=True),
     )
 
-
     def __init__(self, username, email, passwd, is_admin=False):
         self.username = username
         self.email = email
