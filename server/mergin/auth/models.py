@@ -16,8 +16,8 @@ from ..sync.utils import get_user_agent, get_ip, get_device_id
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
-    username = db.Column(db.String(80), unique=True, info={"label": "Username"})
-    email = db.Column(db.String(120), unique=True)
+    username = db.Column(db.String(80), info={"label": "Username"})
+    email = db.Column(db.String(120))
 
     passwd = db.Column(db.String(80), info={"label": "Password"})  # salted + hashed
 
