@@ -33,8 +33,8 @@ class User(db.Model):
     )
 
     __table_args__ = (
-        db.Index("ix_username_insensitive_unique", func.lower(username), unique=True),
-        db.Index("ix_email_insensitive_unique", func.lower(email), unique=True),
+        db.Index("ix_user_username", func.lower(username), unique=True),
+        db.Index("ix_user_email", func.lower(email), unique=True),
     )
 
     def __init__(self, username, email, passwd, is_admin=False):
