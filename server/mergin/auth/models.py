@@ -7,7 +7,7 @@ import datetime
 from typing import List, Optional
 import bcrypt
 from flask import current_app, request
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 
 from .. import db
 from ..sync.utils import get_user_agent, get_ip, get_device_id
@@ -31,6 +31,12 @@ class User(db.Model):
         info={"label": "Date of creation of user account"},
         default=datetime.datetime.utcnow,
     )
+
+    __table_args__ = (
+        db.Index("ix_username_insensitive_unique", func.lower(username), unique=True),
+        db.Index("ix_email_insensitive_unique", func.lower(email), unique=True),
+    )
+
 
     def __init__(self, username, email, passwd, is_admin=False):
         self.username = username
