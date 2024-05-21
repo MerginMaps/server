@@ -20,19 +20,17 @@ depends_on = None
 def upgrade():
     conn = op.get_bind()
     conn.execute(
-        "CREATE UNIQUE INDEX ix_username_insensitive_unique ON public.user (LOWER(username));"
+        "CREATE UNIQUE INDEX ix_user_username ON public.user (LOWER(username));"
     )
-    conn.execute(
-        "CREATE UNIQUE INDEX ix_email_insensitive_unique ON public.user (LOWER(email));"
-    )
+    conn.execute("CREATE UNIQUE INDEX ix_email_username ON public.user (LOWER(email));")
     conn.execute("ALTER TABLE public.user DROP CONSTRAINT uq_user_email;")
     conn.execute("ALTER TABLE public.user DROP CONSTRAINT uq_user_username;")
 
 
 def downgrade():
     conn = op.get_bind()
-    conn.execute("DROP INDEX IF EXISTS ix_username_insensitive_unique;")
-    conn.execute("DROP INDEX IF EXISTS ix_email_insensitive_unique;")
+    conn.execute("DROP INDEX IF EXISTS ix_user_username;")
+    conn.execute("DROP INDEX IF EXISTS ix_email_username;")
     conn.execute("ALTER TABLE public.user ADD CONSTRAINT uq_user_email UNIQUE (email);")
     conn.execute(
         "ALTER TABLE public.user ADD CONSTRAINT uq_user_username UNIQUE (username);"
