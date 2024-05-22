@@ -188,10 +188,10 @@ export default defineComponent({
         { header: 'Project name', field: 'name' },
         { header: 'Versions', field: 'version' },
         { header: 'Size', field: 'meta.size' },
-        {
-          header: 'Collaborators',
-          field: 'access.readers'
-        }
+        // {
+        //   header: 'Collaborators',
+        //   field: 'access.readers'
+        // }
       )
       return columns
     },
