@@ -43,6 +43,9 @@ test_login_data = [
     ({"login": "mergin", "password": "ilovemergi"}, json_headers, 401),
     ({"login": "mergin"}, json_headers, 401),
     ({"login": "mergin", "password": "ilovemergin"}, {}, 415),
+    # case insensitive login
+    ({"login": "merGIN", "password": "ilovemergin"}, json_headers, 200),
+    ({"login": "merGIN@MERgin.com", "password": "ilovemergin"}, json_headers, 200),
 ]
 
 
@@ -79,13 +82,13 @@ test_user_reg_data = [
         "test@test.com",
         "#pwd1234",
         201,
-    ),  # tests with upper case, but user is not exist
+    ),  # tests with upper case, but user does not exist
     (
         "TesTUser2",
         "test2@test.com",
         "#pwd1234",
         201,
-    ),  # tests with upper case, but user is not exist
+    ),  # tests with upper case, but user does not exist
     ("bob", "test@test.com", "#pwd1234", 400),  # invalid (short) username
     ("test", "test.com", "#pwd1234", 400),  # invalid email
     ("mergin", "test@test.com", "#pwd1234", 400),  # existing user
@@ -94,7 +97,7 @@ test_user_reg_data = [
         "tests@test.com",
         "#pwd1234",
         400,
-    ),  # tests with upper case but mergin already exist
+    ),  # tests with upper case but mergin already exists
     (
         "  mergin  ",
         "tests@test.com",
@@ -108,11 +111,17 @@ test_user_reg_data = [
         201,
     ),  # tests with blank spaces, whitespace to be removed
     (
-        "XmerginX",
+        "mergin2",
         " mergin@mergin.com  ",
         "#pwd1234",
         400,
     ),  # tests with blank spaces, but email already exists
+    (
+        "mergin3",
+        " merGIN@mergin.com  ",
+        "#pwd1234",
+        400,
+    ),  # tests with upper case, but email already exists
     ("XmerginX", " mergin@mergin.com  ", "#pwd123", 400),  # invalid password
 ]
 

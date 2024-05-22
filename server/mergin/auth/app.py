@@ -7,6 +7,7 @@ from blinker import signal
 from flask import current_app, render_template
 from flask_login import current_user
 from itsdangerous import URLSafeTimedSerializer
+from sqlalchemy import func
 
 from .commands import add_commands
 from .config import Configuration
@@ -72,10 +73,10 @@ def auth_required(f=None, permissions=None):
 
 def authenticate(login, password):
     if "@" in login:
-        query = {"email": login}
+        query = func.lower(User.email) == func.lower(login)
     else:
-        query = {"username": login}
-    user = User.query.filter_by(**query).one_or_none()
+        query = func.lower(User.username) == func.lower(login)
+    user = User.query.filter(query).one_or_none()
     if user and user.check_password(password):
         return user
 
