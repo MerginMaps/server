@@ -1,10 +1,10 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
-
 import json
 import os
 import uuid
+from dataclasses import dataclass, asdict
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, List, Dict, Set
@@ -22,10 +22,71 @@ from flask import current_app
 
 from .. import db
 from .storages import DiskStorage
-from .utils import int_version, is_versioned_file, mergin_secure_filename, resolve_tags
+from .utils import int_version, is_versioned_file, mergin_secure_filename
 
 Storages = {"local": DiskStorage}
 project_deleted = signal("project_deleted")
+
+
+class PushChangeType(Enum):
+    CREATE = "create"
+    UPDATE = "update"
+    DELETE = "delete"
+    UPDATE_DIFF = "update_diff"
+
+    @classmethod
+    def values(cls):
+        return [member.value for member in cls.__members__.values()]
+
+    @classmethod
+    def from_change(cls, change, diff=False):
+        """Initialize from public API value"""
+        if change == "added":
+            return PushChangeType.CREATE
+        if change == "removed":
+            return PushChangeType.DELETE
+        if change == "updated":
+            return PushChangeType.UPDATE_DIFF if diff else PushChangeType.UPDATE
+
+
+@dataclass
+class FileMeta:
+    """Base class for every file object"""
+
+    path: str
+    checksum: str
+    size: int
+
+
+@dataclass
+class File(FileMeta):
+    """File stored on server"""
+
+    location: str
+
+
+@dataclass
+class DBFileInfo(File):
+    """File metadata as stored in db"""
+
+    version: str
+    diff: Optional[File]
+
+
+@dataclass
+class UploadFile(FileMeta):
+    """File to be uploaded with secure filename"""
+
+    sanitized_path: str  # added by server
+
+
+@dataclass
+class UploadFileInfo(UploadFile):
+    """File to be uploaded coming from client push process"""
+
+    chunks: Optional[List[str]]  # determined by client
+    diff: Optional[UploadFile]
+    change: Optional[PushChangeType]
 
 
 class Project(db.Model):
@@ -111,7 +172,8 @@ class Project(db.Model):
 
         history = OrderedDict()
         # query only those versions where file appeared in changes
-        sql = text("""
+        sql = text(
+            """
         SELECT
             pv.name AS name,
             fh.change,
@@ -123,7 +185,8 @@ class Project(db.Model):
             AND replace(pv.name, 'v', '')::integer <= :to
             AND replace(pv.name, 'v', '')::integer >= :since
         ORDER BY pv.created DESC;
-        """)
+        """
+        )
 
         params = {
             "project_id": self.id,
@@ -148,7 +211,11 @@ class Project(db.Model):
                 break
 
             # if we are interested only in 'diffable' history (not broken with forced update)
-            if diffable and r.change == PushChangeType.UPDATE.value and not r.value.get("diff"):
+            if (
+                diffable
+                and r.change == PushChangeType.UPDATE.value
+                and not r.value.get("diff")
+            ):
                 break
 
         return history
@@ -188,12 +255,11 @@ class Project(db.Model):
 
         # we ask for the latest version which is always a basefile if the file has not been removed
         if v_x == v_last:
-            f_meta = next((f for f in self.files if file == f["path"]), None)
+            f_meta = next((f for f in self.files if file == f.path), None)
             if f_meta:
-                base_meta = f_meta
-                base_meta["version"] = f_meta["location"].split(os.path.sep)[
-                    0
-                ]  # take actual version where file exists
+                base_meta = asdict(f_meta)
+                # take actual version where file exists
+                base_meta["version"] = f_meta.location.split(os.path.sep)[0]
             return base_meta, diffs
 
         # check if it would not be faster to look up from the latest version
@@ -219,7 +285,10 @@ class Project(db.Model):
                 # there was either breaking change or v_x is a basefile itself
                 else:
                     # we asked for basefile
-                    if v_x == history_end and meta["change"] in [PushChangeType.CREATE.value, PushChangeType.UPDATE.value]:
+                    if v_x == history_end and meta["change"] in [
+                        PushChangeType.CREATE.value,
+                        PushChangeType.UPDATE.value,
+                    ]:
                         base_meta = meta
                         base_meta["version"] = v_x
                         diffs = []
@@ -239,7 +308,10 @@ class Project(db.Model):
                 history_end = next(reversed(history))
                 meta = history[history_end]
                 # we found basefile
-                if meta["change"] in [PushChangeType.CREATE.value, PushChangeType.UPDATE.value]:
+                if meta["change"] in [
+                    PushChangeType.CREATE.value,
+                    PushChangeType.UPDATE.value,
+                ]:
                     base_meta = meta
                     base_meta["version"] = history_end
                     if v_x == history_end:
@@ -457,7 +529,14 @@ class ProjectVersion(db.Model):
     __table_args__ = (db.UniqueConstraint("project_id", "name"),)
 
     def __init__(
-        self, project, name, author, changes, ip, user_agent=None, device_id=None,
+        self,
+        project: Project,
+        name: str,
+        author: str,
+        changes: Dict,
+        ip: str,
+        user_agent: str = None,
+        device_id: str = None,
     ):
         self.project = project
         self.project_id = project.id
@@ -467,25 +546,40 @@ class ProjectVersion(db.Model):
         self.ip_address = ip
         self.device_id = device_id
 
-        for change in self.process_changes(changes):
-            fh = FileHistory(
-                path=change.get("path"),
-                location=os.path.join(self.name, mergin_secure_filename(change.get("path"))),
-                checksum=change.get("checksum"),
-                size=change.get("size"),
-                diff=change.get("diff"),
-                change=change.get("change").value
+        for file_change in self.process_changes(changes):
+            diff = None
+            if file_change.diff:
+                diff = File(
+                    path=file_change.diff.path,
+                    size=file_change.diff.size,
+                    checksum=file_change.diff.checksum,
+                    location=os.path.join(
+                        self.name, mergin_secure_filename(file_change.diff.path)
+                    ),
+                )
+
+            file_item = DBFileInfo(
+                path=file_change.path,
+                size=file_change.size,
+                checksum=file_change.checksum,
+                location=os.path.join(
+                    self.name, mergin_secure_filename(file_change.path)
+                ),
+                diff=diff,
+                version=self.name,
             )
+            fh = FileHistory(file_item, file_change.change)
             fh.version = self
             db.session.add(fh)
         # push changes to transaction buffer so that self.files is up-to-date
         db.session.flush()
-        self.project_size = sum(f["size"] for f in self.files) if self.files else 0
+        self.project_size = sum(f.size for f in self.files) if self.files else 0
 
         # update cached values in project
         self.project.disk_usage = self.project_size
         self.project.latest_version = self.name
-        self.project.tags = resolve_tags(self.files)
+        self.project.tags = self.resolve_tags()
+        db.session.flush()
 
     @property
     def int_name(self) -> int:
@@ -515,40 +609,69 @@ class ProjectVersion(db.Model):
                 LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
                 WHERE fh.change != 'delete'; -- if latest change was removed it means file is not there
                 """
-        params = {
-            "project_id": self.project_id,
-            "version": int_version(self.name)
-        }
+        params = {"project_id": self.project_id, "version": int_version(self.name)}
         result = db.session.execute(query, params).fetchall()
-        return [{**row._mapping} for row in result]
+        files = [
+            DBFileInfo(
+                path=row.path,
+                size=row.size,
+                checksum=row.checksum,
+                location=row.location,
+                version=row.version,
+                diff=File(**row.diff) if row.diff else None,
+            )
+            for row in result
+        ]
+        return files
+
+    def resolve_tags(self) -> List[str]:
+        def _is_qgis(filename):
+            _, ext = os.path.splitext(filename)
+            return ext in [".qgs", ".qgz"]
+
+        tags = []
+        qgis_count = 0
+        for f in self.files:
+            if _is_qgis(f.path):
+                qgis_count += 1
+        if qgis_count == 1:
+            tags.extend(["valid_qgis", "input_use"])
+        return tags
 
     @property
     def changes(self):
-        """ Backward compatible version changes overview, similar to Upload.changes """
-        changes = {
-            "added": [],
-            "updated": [],
-            "removed": []
-        }
+        """Backward compatible version changes overview, similar to Upload.changes"""
+        changes = {"added": [], "updated": [], "removed": []}
         for item in self.file_changes.all():
             if item.change == PushChangeType.CREATE.value:
                 changes["added"].append(item)
-            elif item.change in (PushChangeType.UPDATE.value, PushChangeType.UPDATE_DIFF.value):
+            elif item.change in (
+                PushChangeType.UPDATE.value,
+                PushChangeType.UPDATE_DIFF.value,
+            ):
                 changes["updated"].append(item)
             elif item.change == PushChangeType.DELETE.value:
                 changes["removed"].append(item)
         return changes
 
     @staticmethod
-    def process_changes(changes: Dict) -> List:
-        """ Process public API changes to internal list """
+    def process_changes(changes: Dict) -> List[UploadFileInfo]:
+        """Process public API changes (e.g. from Upload.changes) to internal list"""
+        from .schemas import UploadFileInfoSchema
+
         files_changes = []
         for change_type, files in changes.items():
             for file in files:
-                files_changes.append({
-                    **file,
-                    "change": PushChangeType.from_change(change_type, bool("diff" in file))
-                })
+                files_changes.append(
+                    UploadFileInfoSchema().load(
+                        {
+                            **file,
+                            "change": PushChangeType.from_change(
+                                change_type, bool(file.get("diff"))
+                            ).value,
+                        }
+                    )
+                )
         return files_changes
 
     def diff_summary(self):
@@ -610,31 +733,13 @@ class ProjectVersion(db.Model):
         return output
 
 
-class PushChangeType(Enum):
-    CREATE = "create"
-    UPDATE = "update"
-    DELETE = "delete"
-    UPDATE_DIFF = "update_diff"
-
-    @classmethod
-    def values(cls):
-        return [member.value for member in cls.__members__.values()]
-
-    @classmethod
-    def from_change(cls, change, diff=False):
-        """ Initialize from public API value """
-        if change == "added":
-            return PushChangeType.CREATE
-        if change == "removed":
-            return PushChangeType.DELETE
-        if change == "updated":
-            return PushChangeType.UPDATE_DIFF if diff else PushChangeType.UPDATE
-
-
 class FileHistory(db.Model):
     id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
     version_id = db.Column(
-        db.Integer, db.ForeignKey("project_version.id", ondelete="CASCADE"), index=True, nullable=False
+        db.Integer,
+        db.ForeignKey("project_version.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
     )
     path = db.Column(db.String, index=True, nullable=False)
     # path on FS relative to project directory: version_name + file path
@@ -660,6 +765,14 @@ class FileHistory(db.Model):
     )
 
     __table_args__ = (db.UniqueConstraint("version_id", "path"),)
+
+    def __init__(self, file_info: DBFileInfo, change: PushChangeType):
+        self.path = file_info.path
+        self.size = file_info.size
+        self.checksum = file_info.checksum
+        self.location = file_info.location
+        self.diff = asdict(file_info.diff) if file_info.diff else None
+        self.change = change.value
 
 
 class Upload(db.Model):

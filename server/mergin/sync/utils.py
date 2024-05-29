@@ -15,7 +15,7 @@ from shapely import wkb
 from shapely.errors import WKBReadingError
 from gevent import sleep
 from flask import Request
-from typing import Optional, Dict, List
+from typing import Optional
 
 
 def generate_checksum(file, chunk_size=4096):
@@ -79,22 +79,6 @@ class Toucher:
         if self.running:
             self.timer = Timer(self.interval, self.touch_lockfile)
             self.timer.start()
-
-
-def resolve_tags(files):
-    def _is_qgis(filename):
-        _, ext = os.path.splitext(filename)
-        return ext in [".qgs", ".qgz"]
-
-    tags = []
-    qgis_count = 0
-    for f in files:
-        if _is_qgis(f["path"]):
-            qgis_count += 1
-    # TODO add some rules for intput validity and mappin validity
-    if qgis_count == 1:
-        tags.extend(["valid_qgis", "input_use"])
-    return tags
 
 
 def int_version(version):

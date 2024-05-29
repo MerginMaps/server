@@ -14,7 +14,6 @@ import pytest
 
 from .. import db, create_app
 from ..sync.models import Project, ProjectVersion
-from ..sync.utils import resolve_tags
 from ..stats.app import register
 from ..stats.models import MerginInfo
 from . import test_project, test_workspace_id, test_project_dir, TMP_DIR
@@ -174,45 +173,38 @@ def diff_project(app):
             {"added": [], "removed": [], "updated": []},
         ]
         for i, change in enumerate(changes):
-            ver = "v{}".format(i + 2)
+            ver = f"v{i + 2}"
             if change["added"]:
-                # during push we do not store 'location' in 'added' metadata
-                meta = deepcopy(change["added"][0])
-                meta["location"] = os.path.join(ver, meta["path"])
-                new_file = os.path.join(project.storage.project_dir, meta["location"])
+                file_meta = change["added"][0]
+                new_file = os.path.join(
+                    project.storage.project_dir, ver, file_meta["path"]
+                )
                 os.makedirs(os.path.dirname(new_file), exist_ok=True)
-                copy(os.path.join(test_project_dir, meta["path"]), new_file)
+                copy(os.path.join(test_project_dir, file_meta["path"]), new_file)
             elif change["updated"]:
-                meta = change["updated"][0]
-                f_updated = next(f for f in pv.files if f["path"] == meta["path"])
-                new_location = os.path.join(ver, f_updated["path"])
-                patchedfile = os.path.join(project.storage.project_dir, new_location)
+                file_meta = change["updated"][0]
+                f_updated = next(
+                    f for f in project.files if f.path == file_meta["path"]
+                )
+                patchedfile = os.path.join(
+                    project.storage.project_dir, ver, f_updated.path
+                )
                 os.makedirs(os.path.dirname(patchedfile), exist_ok=True)
-                if "diff" in meta.keys():
+                if "diff" in file_meta:
                     basefile = os.path.join(
-                        project.storage.project_dir, f_updated["location"]
+                        project.storage.project_dir, f_updated.location
                     )
-                    changefile = os.path.join(TMP_DIR, meta["diff"]["path"])
+                    changefile = os.path.join(TMP_DIR, file_meta["diff"]["path"])
                     copy(basefile, patchedfile)
                     geodiff.apply_changeset(patchedfile, changefile)
-                    meta["diff"]["location"] = os.path.join(ver, meta["diff"]["path"])
                     move(
                         changefile,
                         os.path.join(
-                            project.storage.project_dir, meta["diff"]["location"]
+                            project.storage.project_dir, ver, file_meta["diff"]["path"]
                         ),
                     )
                 else:
-                    copy(os.path.join(test_project_dir, f_updated["path"]), patchedfile)
-                    f_updated.pop("diff", None)
-                meta["location"] = new_location
-                f_updated.update(meta)
-            # elif change["removed"]:
-            #     f_removed = next(
-            #         f
-            #         for f in project.files
-            #         if f["path"] == change["removed"][0]["path"]
-            #     )
+                    copy(os.path.join(test_project_dir, f_updated.path), patchedfile)
             else:
                 # no files uploaded, hence no action needed
                 pass
@@ -224,12 +216,17 @@ def diff_project(app):
                 change,
                 "127.0.0.1",
             )
-            assert pv.project_size == sum(file["size"] for file in pv.files)
+            assert pv.project_size == sum(file.size for file in pv.files)
             db.session.add(pv)
             db.session.add(project)
-            latest_version = ProjectVersion.query.filter_by(project_id=project.id).order_by(
-                desc(ProjectVersion.created)).first()
-            assert latest_version.project_size == sum(file["size"] for file in latest_version.files)
+            latest_version = (
+                ProjectVersion.query.filter_by(project_id=project.id)
+                .order_by(desc(ProjectVersion.created))
+                .first()
+            )
+            assert latest_version.project_size == sum(
+                file.size for file in latest_version.files
+            )
 
         db.session.add(project)
         db.session.commit()

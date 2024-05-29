@@ -7,6 +7,7 @@ import shutil
 import sqlite3
 import uuid
 import math
+from dataclasses import asdict
 from datetime import datetime
 
 import pysqlite3
@@ -66,7 +67,7 @@ def login(client, username, password):
 
 
 def create_project(name, workspace, user, **kwargs):
-    """ Create new empty project """
+    """Create new empty project"""
     default_project = {
         "storage_params": {"type": "local", "location": generate_location()},
         "name": name,
@@ -177,7 +178,7 @@ def initialize():
     db.session.commit()
 
     changes = {"added": project_files, "updated": [], "removed": []}
-    pv = ProjectVersion(p, "v1", user.username,  changes, "127.0.0.1")
+    pv = ProjectVersion(p, "v1", user.username, changes, "127.0.0.1")
     db.session.add(pv)
     db.session.commit()
 
@@ -283,7 +284,7 @@ def push_change(project, action, path, src_dir):
         shutil.copy(os.path.join(src_dir, metadata["path"]), new_file)
         changes["added"].append(metadata)
     elif action == "updated":
-        f_updated = next(f for f in current_files if f["path"] == path)
+        f_updated = next(f for f in current_files if f.path == path)
         metadata = {
             **file_info(src_dir, path),
             "location": os.path.join(new_version, path),
@@ -293,7 +294,7 @@ def push_change(project, action, path, src_dir):
         if ".gpkg" in path:
             diff_id = str(uuid.uuid4())
             diff_name = path + "-diff-" + diff_id
-            basefile = os.path.join(project.storage.project_dir, f_updated["location"])
+            basefile = os.path.join(project.storage.project_dir, f_updated.location)
             modfile = os.path.join(src_dir, path)
             changeset = os.path.join(src_dir, diff_name)
             project.storage.geodiff.create_changeset(basefile, modfile, changeset)
@@ -318,11 +319,10 @@ def push_change(project, action, path, src_dir):
         new_file = os.path.join(project.storage.project_dir, metadata["location"])
         os.makedirs(os.path.dirname(new_file), exist_ok=True)
         shutil.copy(os.path.join(src_dir, metadata["path"]), new_file)
-        f_updated.update(metadata)
         changes["updated"].append(metadata)
     elif action == "removed":
-        f_removed = next(f for f in current_files if f["path"] == path)
-        changes["removed"].append(f_removed)
+        f_removed = next(f for f in current_files if f.path == path)
+        changes["removed"].append(asdict(f_removed))
     else:
         return
 
@@ -335,7 +335,7 @@ def push_change(project, action, path, src_dir):
     )
     db.session.add(pv)
     db.session.commit()
-    assert pv.project_size == sum(file["size"] for file in pv.files)
+    assert pv.project_size == sum(file.size for file in pv.files)
     db.session.add(project)
     db.session.commit()
     return pv

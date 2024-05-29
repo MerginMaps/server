@@ -8,6 +8,7 @@ import json
 import mimetypes
 import os
 import logging
+from dataclasses import asdict
 from typing import Dict
 from urllib.parse import quote
 import uuid
@@ -267,7 +268,9 @@ def download_project(
             "please use different method/client for download",
         )
     try:
-        return project.storage.download_files(project_version.files, format, version=version)
+        return project.storage.download_files(
+            project_version.files, format, version=version
+        )
     except FileNotFound as e:
         abort(404, str(e))
 
@@ -389,17 +392,15 @@ def get_project(project_name, namespace, since="", version=None):  # noqa: E501
         # append history for versioned files
         files = []
         for f in project.files:
-            f["history"] = project.file_history(
-                f["path"], since, project.latest_version
-            )
-            for item in f["history"].values():
+            history = project.file_history(f.path, since, project.latest_version)
+            for item in history.values():
                 if item.get("change") == "create":
                     item["change"] = "added"
                 elif item.get("change") == "delete":
                     item["change"] = "removed"
                 elif item.get("change") == "update":
                     item["change"] = "updated"
-            files.append(f)
+            files.append({**asdict(f), "history": history})
         # TODO convert to schema
         data["files"] = files
     elif version:
@@ -434,7 +435,6 @@ def get_paginated_project_versions(
     page, per_page, namespace, project_name, descending=True
 ):
     project = require_project(namespace, project_name, ProjectPermissions.Read)
-    # TODO consider join with FileHistory
     query = ProjectVersion.query.filter(
         and_(ProjectVersion.project_id == project.id, ProjectVersion.name != "v0")
     )
@@ -727,7 +727,7 @@ def project_push(namespace, project_name):
 
     # check if same file is not already uploaded
     for item in changes["added"]:
-        if not all(ele["path"] != item["path"] for ele in project.files):
+        if not all(ele.path != item["path"] for ele in project.files):
             abort(400, "File {} has been already uploaded".format(item["path"]))
 
     # changes' files must be unique
@@ -778,10 +778,10 @@ def project_push(namespace, project_name):
 
     # Check user data limit
     updates = [f["path"] for f in changes["updated"]]
-    updated_files = list(filter(lambda i: i["path"] in updates, project.files))
+    updated_files = list(filter(lambda i: i.path in updates, project.files))
     additional_disk_usage = (
         sum(file["size"] for file in changes["added"] + changes["updated"])
-        - sum(file["size"] for file in updated_files)
+        - sum(file.size for file in updated_files)
         - sum(file["size"] for file in changes["removed"])
     )
     ws = project.workspace
@@ -849,7 +849,7 @@ def project_push(namespace, project_name):
     # Update immediately without uploading of new/modified files and remove transaction/lockfile after successful commit
     if not (changes["added"] or changes["updated"]):
         next_version = "v{}".format(num_version + 1)
-        project.storage.apply_changes(changes, next_version, upload.id)
+        # project.storage.apply_changes(changes, next_version, upload.id)
         user_agent = get_user_agent(request)
         device_id = get_device_id(request)
         try:
@@ -953,12 +953,16 @@ def push_finish(transaction_id):
             dest_file = os.path.join(
                 upload_dir,
                 "files",
-                f["diff"].get("sanitized_path", mergin_secure_filename(f["diff"]["path"])),
+                f["diff"].get(
+                    "sanitized_path", mergin_secure_filename(f["diff"]["path"])
+                ),
             )
             expected_size = f["diff"]["size"]
         else:
             dest_file = os.path.join(
-                upload_dir, "files", f.get("sanitized_path", mergin_secure_filename(f["path"]))
+                upload_dir,
+                "files",
+                f.get("sanitized_path", mergin_secure_filename(f["path"])),
             )
             expected_size = f["size"]
         if "chunks" in f:
@@ -1017,7 +1021,10 @@ def push_finish(transaction_id):
     try:
         # let's move uploaded files where they are expected to be
         os.renames(files_dir, target_dir)
-        project.storage.apply_changes(changes, next_version, transaction_id)
+        updated_files = project.storage.apply_changes(
+            changes, next_version, transaction_id
+        )
+        changes["updated"] = updated_files
         user_agent = get_user_agent(request)
         device_id = get_device_id(request)
         pv = ProjectVersion(
@@ -1185,14 +1192,16 @@ def get_resource_history(project_name, namespace, path):  # noqa: E501
     project = require_project(namespace, project_name, ProjectPermissions.Read)
 
     # get the metadata of file at latest version where file is present
-    sql = text("""
+    sql = text(
+        """
         SELECT fh.path, fh.size AS size, fh.diff, fh.location, pv.name AS version
         FROM file_history fh
         LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
         WHERE pv.project_id = :project_id AND fh.path = :file_path AND fh.change != 'delete'
         ORDER BY pv.created DESC
         LIMIT 1;
-    """)
+    """
+    )
 
     result = db.session.execute(
         sql, {"project_id": project.id, "file_path": path}
@@ -1202,7 +1211,7 @@ def get_resource_history(project_name, namespace, path):  # noqa: E501
 
     file = {
         **result._mapping,
-        "history": project.file_history(path, "v1", project.latest_version)
+        "history": project.file_history(path, "v1", project.latest_version),
     }
     file_info = FileInfoSchema(
         context={"project_dir": project.storage.project_dir}
@@ -1240,24 +1249,22 @@ def get_resource_changeset(project_name, namespace, version_id, path):  # noqa: 
 
     # FIXME optimize, do a lookup in database
     file = next(
-        (f for f in version.files if f["location"] == os.path.join(version_id, path)),
+        (f for f in version.files if f.location == os.path.join(version_id, path)),
         None,
     )
     if not file:
         abort(404, f"File {path} not found")
 
-    if not file.get("diff"):
+    if not file.diff:
         abort(404, "Diff not found")
 
-    changeset = os.path.join(
-        version.project.storage.project_dir, file["diff"]["location"]
-    )
+    changeset = os.path.join(version.project.storage.project_dir, file.diff.location)
     json_file = os.path.join(
-        version.project.storage.project_dir, file["location"] + "-diff-changeset"
+        version.project.storage.project_dir, file.location + "-diff-changeset"
     )
-    basefile = os.path.join(version.project.storage.project_dir, file["location"])
+    basefile = os.path.join(version.project.storage.project_dir, file.location)
     schema_file = os.path.join(
-        version.project.storage.project_dir, file["location"] + "-schema"
+        version.project.storage.project_dir, file.location + "-schema"
     )
     project.storage.flush_geodiff_logger()  # clean geodiff logger
 

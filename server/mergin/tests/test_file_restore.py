@@ -124,8 +124,8 @@ def test_version_file_restore_with_no_changes(app, forward_check):
         pv = ProjectVersion.query.filter_by(
             project_id=str(p.id), name=f"v{ver}"
         ).first()
-        file = next(i for i in pv.files if i["path"] == "base.gpkg")
-        expected_file = os.path.join(p.storage.project_dir, file["location"])
+        file = next(i for i in pv.files if i.path == "base.gpkg")
+        expected_file = os.path.join(p.storage.project_dir, file.location)
         # pretend previous full file was removed due to storage optimization
         os.rename(expected_file, expected_file + "_backup")
 

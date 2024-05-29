@@ -1109,6 +1109,7 @@ components:
           type: string
           example: 9adb76bf81a34880209040ffe5ee262a090b62ab
         mtime:
+          deprecated: true
           type: string
           format: date-time
           example: 2018-11-30T08:47:58.636074Z

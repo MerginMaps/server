@@ -6,17 +6,50 @@ import copy
 import os
 import re
 from datetime import datetime
-from marshmallow import fields, pre_dump, post_dump
+from marshmallow import fields, pre_dump, post_dump, post_load, EXCLUDE
 from flask_login import current_user
 from flask import current_app
 
 from .. import ma
-from .utils import resolve_tags
 from .permissions import ProjectPermissions, get_user_project_role
-from .models import Project, ProjectVersion, AccessRequest, FileHistory
+from .models import (
+    Project,
+    ProjectVersion,
+    AccessRequest,
+    FileHistory,
+    File,
+    UploadFileInfo,
+    UploadFile,
+    PushChangeType,
+)
 from ..app import DateTimeWithZ
 from ..auth.models import User
 from ..auth.schemas import UserSearchSchema
+
+
+class UploadFileSchema(ma.Schema):
+    path = fields.String()
+    checksum = fields.String()
+    size = fields.Integer()
+    sanitized_path = fields.String(missing="")
+
+    class Meta:
+        unknown = EXCLUDE
+
+    @post_load
+    def create_obj(self, data, **kwargs):
+        return UploadFile(**data)
+
+
+class UploadFileInfoSchema(UploadFileSchema):
+    chunks = fields.List(fields.String(), missing=[])
+    diff = fields.Nested(UploadFileSchema(), many=False, missing=None)
+    change = fields.String(missing=None)  # TODO change to enum
+
+    @post_load
+    def create_obj(self, data, **kwargs):
+        data["change"] = PushChangeType(data["change"])
+        return UploadFileInfo(**data)
 
 
 class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
@@ -80,7 +113,7 @@ class FileInfoSchema(ma.SQLAlchemyAutoSchema):
         #TODO resolve once marshmallow 3.0 is released.
         history = fields.Dict(keys=fields.String(), values=fields.Nested('self', exclude=['location', 'chunks']))
         """
-        if isinstance(data, FileHistory):
+        if isinstance(data, FileHistory) or isinstance(data, File):
             return data
 
         # diff field (self-nested does not contain history)
@@ -159,10 +192,10 @@ class ProjectSchemaForVersion(ma.SQLAlchemyAutoSchema):
         return project_user_permissions(obj.project)
 
     def _disk_usage(self, obj):
-        return sum(f["size"] for f in obj.files)
+        return sum(f.size for f in obj.files)
 
     def _tags(self, obj):
-        return resolve_tags(obj.files)
+        return obj.resolve_tags()
 
 
 class ProjectAccessRequestSchema(ma.SQLAlchemyAutoSchema):
@@ -183,7 +216,7 @@ class ProjectAccessRequestSchema(ma.SQLAlchemyAutoSchema):
 
 class ProjectSchema(ma.SQLAlchemyAutoSchema):
     id = fields.UUID()
-    #files = fields.Nested(FileInfoSchema(), many=True)
+    # files = fields.Nested(FileInfoSchema(), many=True)
     files = fields.Function(lambda obj: obj.files)
     access = fields.Nested(ProjectAccessSchema())
     permissions = fields.Function(project_user_permissions)
@@ -232,7 +265,7 @@ class ProjectListSchema(ma.SQLAlchemyAutoSchema):
         - file (edit conflict, user vx).json
         """
         regex = r"(\.gpkg|\.qgs|.qgz)(.*conflict.*)|( \(.*conflict.*)"
-        return any(re.search(regex, file["path"]) for file in obj.files)
+        return any(re.search(regex, file.path) for file in obj.files)
 
     def get_workspace_name(self, obj):
         """Discover ProjectListSchema workspace name"""

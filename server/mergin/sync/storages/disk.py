@@ -7,7 +7,10 @@ import io
 import time
 import uuid
 import logging
+from dataclasses import asdict
 from datetime import datetime
+from typing import Dict, List
+
 from flask import current_app
 from pygeodiff import GeoDiff, GeoDiffLibError
 from pygeodiff.geodifflib import GeoDiffLibConflictError
@@ -150,20 +153,13 @@ class DiskStorage(ProjectStorage):
             if ws.disk_usage() + template_project.disk_usage > ws.storage:
                 self.delete()
                 raise InitializationError("Disk quota reached")
-            forked_files = []
 
             for file in template_project.files:
-                forked_file = dict(file)
-                forked_file["location"] = os.path.join("v1/", file["path"])
-                forked_file["mtime"] = datetime.utcnow()
-                if "diff" in forked_file:
-                    forked_file.pop("diff")
-                forked_files.append(forked_file)
-
-                src = os.path.join(
-                    template_project.storage.project_dir, file["location"]
+                src = os.path.join(template_project.storage.project_dir, file.location)
+                dest = os.path.join(
+                    self.project_dir,
+                    os.path.join("v1", mergin_secure_filename(file.path)),
                 )
-                dest = os.path.join(self.project_dir, forked_file["location"])
                 if not os.path.isfile(src):
                     self.restore_versioned_file(file, template_project.latest_version)
                 try:
@@ -176,10 +172,6 @@ class DiskStorage(ProjectStorage):
                 except Exception as e:
                     self.delete()
                     raise InitializationError(str(e))
-
-            self.project.tags = template_project.tags
-            # TODO (move elsewhere, e.g. version __init__)
-            self.project.disk_usage = sum([f["size"] for f in self.project.files])
 
     def file_size(self, file):
         file_path = os.path.join(self.project_dir, file)
@@ -212,26 +204,40 @@ class DiskStorage(ProjectStorage):
 
         return _generator()
 
-    def apply_changes(self, changes, version, transaction_id):
+    # FIXME refactor this into single file action
+    def apply_changes(
+        self, changes: Dict, version: str, transaction_id: str
+    ) -> List[dict]:
+        """Apply geodiff changes for gpkg updates. As a result both changeset and full gpkg file are present
+        on filesystem. In case of failure DataSyncError is raised. Two possible actions can be done for any update:
+        - if diff file is uploaded, then it is applied and new gpkg is constructed
+        - if full gpkg is uploaded (e.g. from browser) then corresponding geodiff changeset is calculated
+          and diff file saved.
+        """
         from ..models import GeodiffActionHistory
 
+        updated_files = []
         sync_errors = {}
         modified_files = []
-
         to_remove = [i["path"] for i in changes["removed"]]
-        files = list(filter(lambda i: i["path"] not in to_remove, self.project.files))
+        # filter current project files which are not being removed
+        files = list(filter(lambda i: i.path not in to_remove, self.project.files))
 
         for f in changes["updated"]:
-            sleep(
-                0
-            )  # yield to gevent hub since geodiff action can take some time to prevent worker timeout
-            old_item = next((i for i in files if i["path"] == f["path"]), None)
+            # yield to gevent hub since geodiff action can take some time to prevent worker timeout
+            sleep(0)
+            old_item = next((i for i in files if i.path == f["path"]), None)
             if not old_item:
                 sync_errors[f["path"]] = "file does not found on server "
                 continue
+            updated_file_meta = {
+                **f,
+                "location": os.path.join(
+                    version, f.get("sanitized_path", mergin_secure_filename(f["path"]))
+                ),
+            }
             if "diff" in f:
-                no_diff_in_meta = False
-                basefile = os.path.join(self.project_dir, old_item["location"])
+                basefile = os.path.join(self.project_dir, old_item.location)
                 changeset = os.path.join(self.project_dir, version, f["diff"]["path"])
                 patchedfile = os.path.join(self.project_dir, version, f["path"])
                 modified_files.append(changeset)
@@ -253,8 +259,8 @@ class DiskStorage(ProjectStorage):
                     self.geodiff.apply_changeset(patchedfile, changeset)
                     geodiff_apply_time = time.time() - start
                     # track performance of geodiff action
-                    base_version = old_item["location"].split("/")[0]
-                    meta = {"version": base_version, **old_item}
+                    base_version = old_item.location.split("/")[0]
+                    meta = {"version": base_version, **asdict(old_item)}
                     gh = GeodiffActionHistory(
                         self.project.id, meta, version, "apply_changes", changeset
                     )
@@ -267,36 +273,36 @@ class DiskStorage(ProjectStorage):
                         f"project: {project_workspace}/{self.project.name}, {self.gediff_log.getvalue()}"
                     )
                     continue
-
-                f["diff"]["location"] = os.path.join(
+                updated_file_meta["diff"]["location"] = os.path.join(
                     version,
-                    f["diff"].get("sanitized_path", mergin_secure_filename(f["diff"]["path"]))
+                    f["diff"].get(
+                        "sanitized_path", mergin_secure_filename(f["diff"]["path"])
+                    ),
                 )
-
                 # we can now replace old basefile metadata with the new one (patchedfile)
                 # TODO this can potentially fail for large files
                 logging.info(f"Apply changes: calculating checksum of {patchedfile}")
                 start = time.time()
-                f["checksum"] = generate_checksum(patchedfile)
+                updated_file_meta["checksum"] = generate_checksum(patchedfile)
                 checksumming_time = time.time() - start
                 gh.checksum_time = checksumming_time
                 logging.info(f"Checksum calculated in {checksumming_time} s")
-                f["size"] = os.path.getsize(patchedfile)
+                updated_file_meta["size"] = os.path.getsize(patchedfile)
                 db.session.add(gh)
             elif is_versioned_file(f["path"]):
                 # diff not provided by client (e.g. web browser), let's try to construct it here
-                basefile = os.path.join(self.project_dir, old_item["location"])
-                updated_file = os.path.join(self.project_dir, version, f["path"])
+                basefile = os.path.join(self.project_dir, old_item.location)
+                uploaded_file = os.path.join(self.project_dir, version, f["path"])
                 diff_name = f["path"] + "-diff-" + str(uuid.uuid4())
                 changeset = os.path.join(self.project_dir, version, diff_name)
                 try:
                     self.flush_geodiff_logger()
                     logging.info(
-                        f"Geodiff: create changeset {changeset} from {updated_file}"
+                        f"Geodiff: create changeset {changeset} from {uploaded_file}"
                     )
-                    self.geodiff.create_changeset(basefile, updated_file, changeset)
+                    self.geodiff.create_changeset(basefile, uploaded_file, changeset)
                     # append diff metadata as it would be created by other clients
-                    f["diff"] = {
+                    updated_file_meta["diff"] = {
                         "path": diff_name,
                         "location": os.path.join(
                             version, mergin_secure_filename(diff_name)
@@ -304,7 +310,6 @@ class DiskStorage(ProjectStorage):
                         "checksum": generate_checksum(changeset),
                         "size": os.path.getsize(changeset),
                     }
-                    no_diff_in_meta = False
                 except (GeoDiffLibError, GeoDiffLibConflictError):
                     # diff is not possible to create - file will be overwritten
                     move_to_tmp(changeset)  # remove residuum from geodiff
@@ -312,20 +317,11 @@ class DiskStorage(ProjectStorage):
                     logging.warning(
                         f"Geodiff: create changeset error {self.gediff_log.getvalue()}"
                     )
-            else:
-                # simple update of geodiff unsupported file
-                no_diff_in_meta = True
 
-            if "chunks" in f:
-                f.pop("chunks")
+            if f["path"] not in sync_errors:
+                updated_files.append(updated_file_meta)
 
-            f["location"] = os.path.join(version, f.get("sanitized_path", mergin_secure_filename(f["path"])))
-            if not sync_errors:
-                old_item.update(f)
-                # make sure we do not have diff in metadata if diff file was not uploaded/created
-                if no_diff_in_meta:
-                    old_item.pop("diff", None)
-
+        # do cleanup and exit
         if sync_errors:
             for file in modified_files:
                 move_to_tmp(file, transaction_id)
@@ -334,20 +330,7 @@ class DiskStorage(ProjectStorage):
                 msg += key + " error=" + value + "\n"
             raise DataSyncError(msg)
 
-        for item in changes["added"]:
-            files.append(
-                {
-                    "path": item["path"],
-                    "size": item["size"],
-                    "checksum": item["checksum"],
-                    "mtime": item["mtime"],
-                    "location": os.path.join(
-                        version,
-                        item.get("sanitized_path", mergin_secure_filename(item["path"]))
-                    ),
-                }
-            )
-        return files
+        return updated_files
 
     def delete(self):
         move_to_tmp(self.project_dir)
@@ -375,11 +358,11 @@ class DiskStorage(ProjectStorage):
             return
 
         # check actual file from the version files
-        file_found = next((i for i in project_version.files if i["path"] == file), None)
+        file_found = next((i for i in project_version.files if i.path == file), None)
 
         # check the location that we found on the file
         if not file_found or os.path.exists(
-            os.path.join(self.project_dir, file_found["location"])
+            os.path.join(self.project_dir, file_found.location)
         ):
             return
 
@@ -441,10 +424,10 @@ class DiskStorage(ProjectStorage):
             return
         # move final restored file to place where it is expected (only after it is successfully created)
         logging.info(
-            f"Copying restored file to expected location {file_found['location']}"
+            f"Copying restored file to expected location {file_found.location}"
         )
         start = time.time()
-        copy_file(restored_file, os.path.join(self.project_dir, file_found["location"]))
+        copy_file(restored_file, os.path.join(self.project_dir, file_found.location))
         logging.info(f"File copied in {time.time() - start} s")
         copy_time += time.time() - start
         gh.copy_time = copy_time

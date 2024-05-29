@@ -5,6 +5,7 @@
 import datetime
 import os
 import sqlite3
+from dataclasses import asdict
 from unittest.mock import patch
 
 import pysqlite3
@@ -29,7 +30,9 @@ from ..sync.models import (
     ProjectAccess,
     SyncFailuresHistory,
     GeodiffActionHistory,
-    ProjectRole, FileHistory, PushChangeType,
+    ProjectRole,
+    FileHistory,
+    PushChangeType,
 )
 from ..sync.schemas import ProjectListSchema
 from ..sync.utils import generate_checksum, is_versioned_file
@@ -60,7 +63,9 @@ CHUNK_SIZE = 1024
 
 
 def test_file_history(client, diff_project):
-    resp = client.get(f"/v1/resource/history/{test_workspace_name}/{test_project}?path=test.gpkg")
+    resp = client.get(
+        f"/v1/resource/history/{test_workspace_name}/{test_project}?path=test.gpkg"
+    )
     history = resp.json["history"]
     assert resp.status_code == 200
     assert "v2" not in history
@@ -148,14 +153,15 @@ def test_file_history(client, diff_project):
     # assert file history removed as well
     diff_project.latest_version = "v8"
     db.session.commit()
-    resp = client.get(f"/v1/resource/history/{test_workspace_name}/{test_project}?path=base.gpkg")
+    resp = client.get(
+        f"/v1/resource/history/{test_workspace_name}/{test_project}?path=base.gpkg"
+    )
     history = resp.json["history"]
     assert resp.status_code == 200
     assert "v1" not in history
     assert "v3" in history
     assert "location" not in history["v7"]
     assert "expiration" in history["v7"]
-
 
 
 def test_get_paginated_projects(client):
@@ -267,7 +273,9 @@ def test_get_paginated_projects(client):
     assert resp_data.get("projects")[0].get("has_conflict")
 
     # remove conflict copy file
-    conflict_file = FileHistory.query.filter_by(path="base.gpkg_rebase_conflicts").first()
+    conflict_file = FileHistory.query.filter_by(
+        path="base.gpkg_rebase_conflicts"
+    ).first()
     conflict_file.change = PushChangeType.DELETE.value
     db.session.commit()
 
@@ -423,10 +431,10 @@ def test_add_project(client, app, data, expected):
         assert pv.device_id == json_headers["X-Device-Id"]
         # check if there is no diffs in cloned files
         assert not any("diff" in file for file in proj_files)
-        #assert not any("diff" in file for file in pv.files)
-        #assert pv.changes.get("removed") == []
-        #assert pv.changes.get("updated") == []
-        #assert "diff" not in pv.changes.get("added")
+        # assert not any("diff" in file for file in pv.files)
+        # assert pv.changes.get("removed") == []
+        # assert pv.changes.get("updated") == []
+        # assert "diff" not in pv.changes.get("added")
         shutil.rmtree(
             os.path.join(app.config["LOCAL_PROJECTS"], project.storage.project_dir)
         )  # cleanup
@@ -575,7 +583,7 @@ def test_get_project_at_version(client, diff_project):
     assert len(info["files"]) == len(version_obj.files)
     assert info["updated"] == version_obj.created.strftime("%Y-%m-%dT%H:%M:%S%zZ")
     assert info["tags"] == ["valid_qgis", "input_use"]
-    assert info["disk_usage"] == sum(f["size"] for f in version_obj.files)
+    assert info["disk_usage"] == sum(f.size for f in version_obj.files)
 
     # compare with most recent version
     version = "v10"
@@ -804,12 +812,12 @@ def test_download_file_by_version(
         project_id=project.id, name=version
     ).first()
     for file in project_version.files:
-        if not is_versioned_file(file["path"]):
+        if not is_versioned_file(file.path):
             continue
 
         # let's delete the file, so it can be restored
-        if file["path"] == file_path:
-            file_location = os.path.join(project.storage.project_dir, file["location"])
+        if file.path == file_path:
+            file_location = os.path.join(project.storage.project_dir, file.location)
             os.remove(file_location)
 
     # download whole files, no diffs
@@ -1229,7 +1237,7 @@ def test_exceed_data_limit(client):
 
     # try to make some space only by removing file
     changes["added"] = []
-    changes["removed"] = [project.files[0]]
+    changes["removed"] = [asdict(project.files[0])]
     data = {"version": "v1", "changes": changes}
     resp = client.post(
         url,
@@ -1485,10 +1493,10 @@ def test_whole_push_process(client):
         name=test_project, workspace_id=test_workspace_id
     ).first()
     for file in project.files:
-        if file["path"] not in uploaded_files:
+        if file.path not in uploaded_files:
             continue
-        file_location = os.path.join(project.storage.project_dir, file["location"])
-        file_before_upload = os.path.join(test_dir, file["path"])
+        file_location = os.path.join(project.storage.project_dir, file.location)
+        file_before_upload = os.path.join(test_dir, file.path)
         assert os.path.exists(file_location)
         assert open(file_before_upload, "r").read() == open(file_location, "r").read()
 
@@ -1695,7 +1703,7 @@ def test_clone_project(client, data, username, expected):
 
 
 def test_optimize_storage(app, client, diff_project):
-    """ Test optimize storage for geopackages which could be restored from diffs
+    """Test optimize storage for geopackages which could be restored from diffs
     Scenarios for test projects:
         v1/base.gpkg create - basefile (no optimize)
         v2/base.gpkg delete
@@ -1881,10 +1889,8 @@ def test_changeset_file(client, diff_project, version, path, expected):
         assert client.get(url).status_code == 200
 
     if resp.status_code == 200:
-        file = next((f for f in pv.files if f["path"] == path), None)
-        changeset = os.path.join(
-            pv.project.storage.project_dir, file["diff"]["location"]
-        )
+        file = next((f for f in pv.files if f.path == path), None)
+        changeset = os.path.join(pv.project.storage.project_dir, file.diff.location)
         json_file = "changeset"
 
         # create manually list changes
@@ -1981,7 +1987,9 @@ def test_project_conflict_files(diff_project, file):
     ws_ids = [diff_project.workspace_id]
     workspaces_map = {w.id: w.name for w in current_app.ws_handler.get_by_ids(ws_ids)}
     ctx = {"workspaces_map": workspaces_map}
-    project_info = ProjectListSchema(only=("has_conflict",), context=ctx).dump(diff_project)
+    project_info = ProjectListSchema(only=("has_conflict",), context=ctx).dump(
+        diff_project
+    )
     assert not project_info["has_conflict"]
 
     # tests if project contains conflict files
@@ -1996,7 +2004,9 @@ def test_project_conflict_files(diff_project, file):
         ]
     }
     _ = add_project_version(diff_project, changes)
-    project_info = ProjectListSchema(only=("has_conflict",), context=ctx).dump(diff_project)
+    project_info = ProjectListSchema(only=("has_conflict",), context=ctx).dump(
+        diff_project
+    )
     assert project_info["has_conflict"]
 
 
@@ -2093,7 +2103,7 @@ def test_inactive_project(client, diff_project):
     resp = client.get(f"/v1/project/download/{project_path}?v1format=zip")
     assert resp.status_code == 404
 
-    assert "test.txt" in [f["path"] for f in diff_project.files]
+    assert "test.txt" in [f.path for f in diff_project.files]
     resp = client.get(f"/v1/project/raw/{project_path}?file=test.txt")
     assert resp.status_code == 404
 
@@ -2205,7 +2215,7 @@ def add_project_version(project, changes, version=None):
         f"v{version}" if version else project.next_version(),
         "mergin",
         changes,
-        ip='127.0.0.1',
+        ip="127.0.0.1",
     )
     db.session.add(pv)
     db.session.commit()
@@ -2263,7 +2273,11 @@ def test_project_version_integrity(client):
         ).first()
         assert failure.error_type == "push_start"
         assert "Failed to upload a new project version" in failure.error_details
-        pv = ProjectVersion.query.filter_by(project_id=upload.project_id).order_by(desc(ProjectVersion.created)).first()
+        pv = (
+            ProjectVersion.query.filter_by(project_id=upload.project_id)
+            .order_by(desc(ProjectVersion.created))
+            .first()
+        )
         db.session.delete(pv)
         db.session.commit()
 

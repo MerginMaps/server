@@ -82,7 +82,7 @@ def optimize_storage(project_id):
         return
 
     for f in project.files:
-        f_history = project.file_history(f["path"], "v1", project.latest_version)
+        f_history = project.file_history(f.path, "v1", project.latest_version)
         if not f_history:
             continue
 
@@ -92,7 +92,7 @@ def optimize_storage(project_id):
                 continue
 
             # skip the latest file version (high chance of being used)
-            if item["location"] == f["location"]:
+            if item["location"] == f.location:
                 continue
 
             abs_path = os.path.join(project.storage.project_dir, item["location"])
