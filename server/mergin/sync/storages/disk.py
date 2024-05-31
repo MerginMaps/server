@@ -19,7 +19,6 @@ from .storage import ProjectStorage, FileNotFound, DataSyncError, Initialization
 from ... import db
 from ..utils import (
     generate_checksum,
-    int_version,
     is_versioned_file,
     mergin_secure_filename,
 )
@@ -206,7 +205,7 @@ class DiskStorage(ProjectStorage):
 
     # FIXME refactor this into single file action
     def apply_changes(
-        self, changes: Dict, version: str, transaction_id: str
+        self, changes: Dict, version: int, transaction_id: str
     ) -> List[dict]:
         """Apply geodiff changes for gpkg updates. As a result both changeset and full gpkg file are present
         on filesystem. In case of failure DataSyncError is raised. Two possible actions can be done for any update:
@@ -214,7 +213,7 @@ class DiskStorage(ProjectStorage):
         - if full gpkg is uploaded (e.g. from browser) then corresponding geodiff changeset is calculated
           and diff file saved.
         """
-        from ..models import GeodiffActionHistory
+        from ..models import GeodiffActionHistory, ProjectVersion
 
         updated_files = []
         sync_errors = {}
@@ -222,6 +221,7 @@ class DiskStorage(ProjectStorage):
         to_remove = [i["path"] for i in changes["removed"]]
         # filter current project files which are not being removed
         files = list(filter(lambda i: i.path not in to_remove, self.project.files))
+        v_name = ProjectVersion.to_v_name(version)
 
         for f in changes["updated"]:
             # yield to gevent hub since geodiff action can take some time to prevent worker timeout
@@ -233,13 +233,13 @@ class DiskStorage(ProjectStorage):
             updated_file_meta = {
                 **f,
                 "location": os.path.join(
-                    version, f.get("sanitized_path", mergin_secure_filename(f["path"]))
+                    v_name, f.get("sanitized_path", mergin_secure_filename(f["path"]))
                 ),
             }
             if "diff" in f:
                 basefile = os.path.join(self.project_dir, old_item.location)
-                changeset = os.path.join(self.project_dir, version, f["diff"]["path"])
-                patchedfile = os.path.join(self.project_dir, version, f["path"])
+                changeset = os.path.join(self.project_dir, v_name, f["diff"]["path"])
+                patchedfile = os.path.join(self.project_dir, v_name, f["path"])
                 modified_files.append(changeset)
                 modified_files.append(patchedfile)
                 # create copy of basefile which will be updated in next version
@@ -260,21 +260,21 @@ class DiskStorage(ProjectStorage):
                     geodiff_apply_time = time.time() - start
                     # track performance of geodiff action
                     base_version = old_item.location.split("/")[0]
-                    meta = {"version": base_version, **asdict(old_item)}
+                    meta = {**asdict(old_item), "version": ProjectVersion.from_v_name(base_version)}
                     gh = GeodiffActionHistory(
-                        self.project.id, meta, version, "apply_changes", changeset
+                        self.project.id, meta, v_name, "apply_changes", changeset
                     )
                     gh.copy_time = copy_time
                     gh.geodiff_time = geodiff_apply_time
                     logging.info(f"Changeset applied in {geodiff_apply_time} s")
                 except (GeoDiffLibError, GeoDiffLibConflictError):
                     project_workspace = self.project.workspace.name
-                    sync_errors[f["path"]] = (
-                        f"project: {project_workspace}/{self.project.name}, {self.gediff_log.getvalue()}"
-                    )
+                    sync_errors[
+                        f["path"]
+                    ] = f"project: {project_workspace}/{self.project.name}, {self.gediff_log.getvalue()}"
                     continue
                 updated_file_meta["diff"]["location"] = os.path.join(
-                    version,
+                    v_name,
                     f["diff"].get(
                         "sanitized_path", mergin_secure_filename(f["diff"]["path"])
                     ),
@@ -292,9 +292,9 @@ class DiskStorage(ProjectStorage):
             elif is_versioned_file(f["path"]):
                 # diff not provided by client (e.g. web browser), let's try to construct it here
                 basefile = os.path.join(self.project_dir, old_item.location)
-                uploaded_file = os.path.join(self.project_dir, version, f["path"])
+                uploaded_file = os.path.join(self.project_dir, v_name, f["path"])
                 diff_name = f["path"] + "-diff-" + str(uuid.uuid4())
-                changeset = os.path.join(self.project_dir, version, diff_name)
+                changeset = os.path.join(self.project_dir, v_name, diff_name)
                 try:
                     self.flush_geodiff_logger()
                     logging.info(
@@ -305,7 +305,7 @@ class DiskStorage(ProjectStorage):
                     updated_file_meta["diff"] = {
                         "path": diff_name,
                         "location": os.path.join(
-                            version, mergin_secure_filename(diff_name)
+                            v_name, mergin_secure_filename(diff_name)
                         ),
                         "checksum": generate_checksum(changeset),
                         "size": os.path.getsize(changeset),
@@ -335,15 +335,13 @@ class DiskStorage(ProjectStorage):
     def delete(self):
         move_to_tmp(self.project_dir)
 
-    def restore_versioned_file(self, file, version):
+    def restore_versioned_file(self, file: str, version: int):
         """
         For removed versioned files tries to restore full file in particular project version
         using file diffs history (latest basefile and sequence of diffs).
 
         :param file: path of file in project to recover
-        :type file: str
-        :param version: project version (e.g. v2)
-        :type version: str
+        :param version: project version (e.g. 2)
         """
         from ..models import GeodiffActionHistory, ProjectVersion
 
@@ -399,7 +397,7 @@ class DiskStorage(ProjectStorage):
                 f"Geodiff: apply changeset {changeset} of size {os.path.getsize(changeset)}"
             )
             # if we are going backwards we need to reverse changeset!
-            if int_version(base_meta["version"]) > int_version(version):
+            if base_meta["version"] > version:
                 logging.info(f"Geodiff: inverting changeset")
                 changes = os.path.join(
                     tmp_dir, os.path.basename(basefile) + "-diff-inv"
@@ -411,7 +409,11 @@ class DiskStorage(ProjectStorage):
             self.geodiff.apply_changeset(restored_file, changes)
             # track geodiff event for performance analysis
             gh = GeodiffActionHistory(
-                self.project.id, base_meta, version, "restore_file", changes
+                self.project.id,
+                base_meta,
+                ProjectVersion.to_v_name(project_version.name),
+                "restore_file",
+                changes,
             )
             apply_time = time.time() - start
             gh.geodiff_time = apply_time

@@ -56,7 +56,6 @@ from .permissions import (
 from .utils import (
     generate_checksum,
     Toucher,
-    int_version,
     is_file_name_blacklisted,
     get_ip,
     get_user_agent,
@@ -187,11 +186,11 @@ def add_project(namespace):  # noqa: E501
                 .filter(Project.name == template_name)
                 .first_or_404()
             )
-            version_name = "v1"
+            version_name = 1
             changes = {"added": p.files, "updated": [], "removed": []}
         else:
             template = None
-            version_name = "v0"
+            version_name = 0
             changes = {"added": [], "updated": [], "removed": []}
 
         try:
@@ -256,7 +255,9 @@ def download_project(
     :rtype: file - zip archive or multipart stream with project files
     """
     project = require_project(namespace, project_name, ProjectPermissions.Read)
-    lookup_version = version or project.latest_version
+    lookup_version = (
+        ProjectVersion.from_v_name(version) if version else project.latest_version
+    )
     project_version = ProjectVersion.query.filter_by(
         project_id=project.id, name=lookup_version
     ).first_or_404("Project version does not exist")
@@ -269,7 +270,9 @@ def download_project(
         )
     try:
         return project.storage.download_files(
-            project_version.files, format, version=version
+            project_version.files,
+            format,
+            version=ProjectVersion.from_v_name(version) if version else None,
         )
     except FileNotFound as e:
         abort(404, str(e))
@@ -299,23 +302,25 @@ def download_project_file(
     if diff and not version:
         abort(400, f"Changeset must be requested for particular file version")
 
-    lookup_version = version or project.latest_version
+    lookup_version = (
+        ProjectVersion.from_v_name(version) if version else project.latest_version
+    )
     # find the latest file change record for version of interest
     sql = text(
         """
         SELECT
-            pv.name || '/' || fh.path AS location,
-            pv.name || '/' || (fh.diff ->> 'path')::text AS diff_location,
+            'v' || pv.name || '/' || fh.path AS location,
+            'v' || pv.name || '/' || (fh.diff ->> 'path')::text AS diff_location,
             change
         FROM file_history fh
         LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
-        WHERE pv.project_id = :project_id AND replace(pv.name, 'v', '')::integer <= :version AND fh.path = :file
+        WHERE pv.project_id = :project_id AND pv.name <= :version AND fh.path = :file
         ORDER BY pv.created DESC
         LIMIT 1;
         """
     )
     params = {
-        "version": int_version(lookup_version),
+        "version": lookup_version,
         "project_id": project.id,
         "file": file,
     }
@@ -333,7 +338,9 @@ def download_project_file(
         file_path = result["location"]
 
     if version and not diff:
-        project.storage.restore_versioned_file(file, version)
+        project.storage.restore_versioned_file(
+            file, ProjectVersion.from_v_name(version)
+        )
 
     abs_path = os.path.join(project.storage.project_dir, file_path)
     # check file exists (e.g. there might have been issue with restore)
@@ -345,9 +352,9 @@ def download_project_file(
         # encoding for nginx to be able to download file with non-ascii chars
         encoded_file_path = quote(file_path.encode("utf-8"))
         resp = make_response()
-        resp.headers["X-Accel-Redirect"] = (
-            f"/download/{project.storage_params['location']}/{encoded_file_path}"
-        )
+        resp.headers[
+            "X-Accel-Redirect"
+        ] = f"/download/{project.storage_params['location']}/{encoded_file_path}"
         resp.headers["X-Accel-Buffering"] = True
         resp.headers["X-Accel-Expires"] = "off"
     else:
@@ -392,21 +399,25 @@ def get_project(project_name, namespace, since="", version=None):  # noqa: E501
         # append history for versioned files
         files = []
         for f in project.files:
-            history = project.file_history(f.path, since, project.latest_version)
-            for item in history.values():
-                if item.get("change") == "create":
-                    item["change"] = "added"
-                elif item.get("change") == "delete":
-                    item["change"] = "removed"
-                elif item.get("change") == "update":
-                    item["change"] = "updated"
-            files.append({**asdict(f), "history": history})
+            history = project.file_history(
+                f.path, ProjectVersion.from_v_name(since), project.latest_version
+            )
+            history_data = {}
+            for key, value in history.items():
+                if value.get("change") == "create":
+                    value["change"] = "added"
+                elif value.get("change") == "delete":
+                    value["change"] = "removed"
+                elif value.get("change") == "update":
+                    value["change"] = "updated"
+                history_data[ProjectVersion.to_v_name(key)] = value
+            files.append({**asdict(f), "history": history_data})
         # TODO convert to schema
         data["files"] = files
     elif version:
         # return project info at requested version
         version_obj = ProjectVersion.query.filter_by(
-            project_id=project.id, name=version
+            project_id=project.id, name=ProjectVersion.from_v_name(version)
         ).first_or_404("Project at requested version does not exist")
         data = ProjectSchemaForVersion().dump(version_obj)
     else:
@@ -436,7 +447,7 @@ def get_paginated_project_versions(
 ):
     project = require_project(namespace, project_name, ProjectPermissions.Read)
     query = ProjectVersion.query.filter(
-        and_(ProjectVersion.project_id == project.id, ProjectVersion.name != "v0")
+        and_(ProjectVersion.project_id == project.id, ProjectVersion.name != 0)
     )
 
     if descending:
@@ -707,19 +718,19 @@ def project_push(namespace, project_name):
 
     :rtype: None or Dict[str: uuid]
     """
-    version = request.json["version"]
+    version = ProjectVersion.from_v_name(request.json["version"])
     changes = request.json["changes"]
     project = require_project(namespace, project_name, ProjectPermissions.Upload)
-    request.view_args["project"] = (
-        project  # pass full project object to request for later use
-    )
+    # pass full project object to request for later use
+    request.view_args["project"] = project
     push_triggered.send(project)
+    # fixme use get_latest
     pv = ProjectVersion.query.filter_by(
         project_id=project.id, name=project.latest_version
     ).first()
     if pv and pv.name != version:
         abort(400, "Version mismatch")
-    if not pv and version != "v0":
+    if not pv and version != 0:
         abort(400, "First push should be with v0")
 
     if all(len(changes[key]) == 0 for key in changes.keys()):
@@ -774,8 +785,6 @@ def project_push(namespace, project_name):
         for f in changes[key]:
             f["mtime"] = datetime.utcnow()
 
-    num_version = int_version(version)
-
     # Check user data limit
     updates = [f["path"] for f in changes["updated"]]
     updated_files = list(filter(lambda i: i.path in updates, project.files))
@@ -797,7 +806,7 @@ def project_push(namespace, project_name):
             )
         )
 
-    upload = Upload(project, num_version, changes, current_user.id)
+    upload = Upload(project, version, changes, current_user.id)
     db.session.add(upload)
     try:
         # Creating upload transaction with different project's version is possible.
@@ -848,8 +857,7 @@ def project_push(namespace, project_name):
 
     # Update immediately without uploading of new/modified files and remove transaction/lockfile after successful commit
     if not (changes["added"] or changes["updated"]):
-        next_version = "v{}".format(num_version + 1)
-        # project.storage.apply_changes(changes, next_version, upload.id)
+        next_version = version + 1
         user_agent = get_user_agent(request)
         device_id = get_device_id(request)
         try:
@@ -866,7 +874,7 @@ def project_push(namespace, project_name):
             db.session.add(project)
             db.session.commit()
             logging.info(
-                f"A project version {next_version} for project: {project.id} created. "
+                f"A project version {ProjectVersion.to_v_name(next_version)} for project: {project.id} created. "
                 f"Transaction id: {upload.id}. No upload."
             )
             project_version_created.send(pv)
@@ -1003,15 +1011,20 @@ def push_finish(transaction_id):
         move_to_tmp(upload_dir)
         abort(422, {"corrupted_files": corrupted_files})
 
-    next_version = "v{}".format(upload.version + 1)
+    next_version = upload.version + 1
     files_dir = os.path.join(upload_dir, "files")
-    target_dir = os.path.join(project.storage.project_dir, next_version)
+    target_dir = os.path.join(
+        project.storage.project_dir, ProjectVersion.to_v_name(next_version)
+    )
     if os.path.exists(target_dir):
         pv = ProjectVersion.query.filter_by(
             project_id=project.id, name=project.latest_version
         ).first()
-        if pv and pv.name == next_version:
-            abort(409, {"There is already version with this name %s" % next_version})
+        if pv and pv.name == upload.version + 1:
+            abort(
+                409,
+                f"There is already version with this name {ProjectVersion.to_v_name(next_version)}",
+            )
         logging.info(
             "Upload transaction: Target directory already exists. Overwriting %s"
             % target_dir
@@ -1040,7 +1053,7 @@ def push_finish(transaction_id):
         db.session.add(project)
         db.session.commit()
         logging.info(
-            f"Push finished for project: {project.id}, project version: {next_version}, transaction id: {transaction_id}."
+            f"Push finished for project: {project.id}, project version: {ProjectVersion.to_v_name(next_version)}, transaction id: {transaction_id}."
         )
         project_version_created.send(pv)
         # remove artifacts
@@ -1049,14 +1062,13 @@ def push_finish(transaction_id):
         db.session.rollback()
         clean_upload(transaction_id)
         logging.exception(
-            f"Failed to finish push for project: {project.id}, project version: {next_version}, "
+            f"Failed to finish push for project: {project.id}, project version: {ProjectVersion.to_v_name(next_version)}, "
             f"transaction id: {transaction_id}.: {str(err)}"
         )
         abort(422, "Failed to create new version: {}".format(str(err)))
 
-    num_version = int_version(project.latest_version)
     # do not optimize on every version, every 10th is just fine
-    if not num_version % 10:
+    if not project.latest_version % 10:
         optimize_storage.delay(project.id)
     return jsonify(ProjectSchema().dump(project)), 200
 
@@ -1153,7 +1165,7 @@ def clone_project(namespace, project_name):  # noqa: E501
     except InitializationError as e:
         abort(400, f"Failed to clone project: {str(e)}")
 
-    version = "v1" if cloned_project.files else "v0"
+    version = 1 if cloned_project.files else 0
     # TODO: add user_agent and device_id handling to class
     user_agent = get_user_agent(request)
     device_id = get_device_id(request)
@@ -1211,7 +1223,7 @@ def get_resource_history(project_name, namespace, path):  # noqa: E501
 
     file = {
         **result._mapping,
-        "history": project.file_history(path, "v1", project.latest_version),
+        "history": project.file_history(path, 1, project.latest_version),
     }
     file_info = FileInfoSchema(
         context={"project_dir": project.storage.project_dir}
@@ -1240,7 +1252,7 @@ def get_resource_changeset(project_name, namespace, version_id, path):  # noqa: 
         abort(404, f"Project {namespace}/{project_name} not found")
 
     version = ProjectVersion.query.filter_by(
-        project_id=project.id, name=version_id
+        project_id=project.id, name=ProjectVersion.from_v_name(version_id)
     ).first()
     if not version:
         abort(
@@ -1270,7 +1282,9 @@ def get_resource_changeset(project_name, namespace, version_id, path):  # noqa: 
 
     try:
         if not os.path.exists(basefile):
-            version.project.storage.restore_versioned_file(path, version_id)
+            version.project.storage.restore_versioned_file(
+                path, ProjectVersion.from_v_name(version_id)
+            )
         if not os.path.exists(json_file):
             version.project.storage.geodiff.list_changes(changeset, json_file)
         if not os.path.exists(schema_file):
@@ -1371,7 +1385,7 @@ def get_project_version(project_id: str, version: str):
     """Get project version by its name (e.g. v3)"""
     project = require_project_by_uuid(project_id, ProjectPermissions.Read)
     pv = ProjectVersion.query.filter_by(
-        project_id=project.id, name=version
+        project_id=project.id, name=ProjectVersion.from_v_name(version)
     ).first_or_404()
     data = ProjectVersionSchema(exclude=["files"]).dump(pv)
     return data, 200

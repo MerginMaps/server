@@ -85,7 +85,7 @@ def create_project(name, workspace, user, **kwargs):
     db.session.add(pa)
     changes = {"added": [], "updated": [], "removed": []}
 
-    pv = ProjectVersion(p, "v0", user.username, changes, "127.0.0.1")
+    pv = ProjectVersion(p, 0, user.username, changes, "127.0.0.1")
     db.session.add(pv)
     db.session.commit()
 
@@ -168,7 +168,7 @@ def initialize():
                     "mtime": datetime.fromtimestamp(os.path.getmtime(abs_path)),
                 }
             )
-    p.latest_version = "v1"
+    p.latest_version = 1
     p.updated = datetime.utcnow()
     db.session.add(p)
 
@@ -178,7 +178,7 @@ def initialize():
     db.session.commit()
 
     changes = {"added": project_files, "updated": [], "removed": []}
-    pv = ProjectVersion(p, "v1", user.username, changes, "127.0.0.1")
+    pv = ProjectVersion(p, 1, user.username, changes, "127.0.0.1")
     db.session.add(pv)
     db.session.commit()
 
@@ -211,7 +211,10 @@ def upload_file_to_project(project, filename, client):
         "updated": [],
         "removed": [],
     }
-    data = {"version": project.latest_version, "changes": changes}
+    data = {
+        "version": ProjectVersion.to_v_name(project.latest_version),
+        "changes": changes,
+    }
     resp = client.post(
         f"/v1/project/push/{project.workspace.name}/{project.name}",
         data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
@@ -274,7 +277,7 @@ def push_change(project, action, path, src_dir):
     :returns: new project version, ProjectVersion
     """
     current_files = project.files
-    new_version = project.next_version()
+    new_version = ProjectVersion.to_v_name(project.next_version())
     changes = {"added": [], "updated": [], "removed": []}
     metadata = {**file_info(src_dir, path), "location": os.path.join(new_version, path)}
 
@@ -328,7 +331,7 @@ def push_change(project, action, path, src_dir):
 
     pv = ProjectVersion(
         project,
-        new_version,
+        project.next_version(),
         project.creator.username,
         changes,
         "127.0.0.1",

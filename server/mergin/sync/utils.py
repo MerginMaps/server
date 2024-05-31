@@ -81,11 +81,6 @@ class Toucher:
             self.timer.start()
 
 
-def int_version(version):
-    """Convert v<n> format of version to integer representation."""
-    return int(version.lstrip("v")) if re.match(r"v\d", version) else None
-
-
 def is_versioned_file(file):
     """Check if file is compatible with geodiff lib and hence suitable for versioning."""
     diff_extensions = [".gpkg", ".sqlite"]

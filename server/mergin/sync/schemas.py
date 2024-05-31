@@ -120,10 +120,9 @@ class FileInfoSchema(ma.SQLAlchemyAutoSchema):
         if "history" not in data:
             return data
 
-        _data = copy.deepcopy(
-            data
-        )  # create deep copy to avoid messing around with original object
-        for item in _data["history"].values():
+        history_data = {}
+        for key, value in data["history"].items():
+            item = {**value}
             if item.get("diff"):
                 item["diff"].pop("location", None)
                 item["diff"].pop("sanitized_path", None)
@@ -146,7 +145,9 @@ class FileInfoSchema(ma.SQLAlchemyAutoSchema):
                 item["change"] = "removed"
             elif item.get("change") in ("update", "update_diff"):
                 item["change"] = "updated"
-        return _data
+            history_data[ProjectVersion.to_v_name(key)] = item
+        data["history"] = history_data
+        return data
 
 
 class ChangesSchema(ma.SQLAlchemyAutoSchema):
@@ -176,7 +177,7 @@ class ProjectSchemaForVersion(ma.SQLAlchemyAutoSchema):
     files = fields.Nested(FileInfoSchema(), many=True)
     tags = fields.Method("_tags")
     updated = DateTimeWithZ(attribute="created")
-    version = fields.Function(lambda obj: obj.name)
+    version = fields.Function(lambda obj: ProjectVersion.to_v_name(obj.name))
     role = fields.Method("_role")
 
     def _role(self, obj):
@@ -220,7 +221,7 @@ class ProjectSchema(ma.SQLAlchemyAutoSchema):
     files = fields.Function(lambda obj: obj.files)
     access = fields.Nested(ProjectAccessSchema())
     permissions = fields.Function(project_user_permissions)
-    version = fields.String(attribute="latest_version")
+    version = fields.Function(lambda obj: ProjectVersion.to_v_name(obj.latest_version))
     namespace = fields.Function(lambda obj: obj.workspace.name)
     created = DateTimeWithZ()
     creator = fields.Integer(attribute="creator_id")
@@ -245,7 +246,7 @@ class ProjectListSchema(ma.SQLAlchemyAutoSchema):
     namespace = fields.Method("get_workspace_name")
     access = fields.Nested(ProjectAccessSchema())
     permissions = fields.Function(project_user_permissions)
-    version = fields.String(attribute="latest_version")
+    version = fields.Function(lambda obj: ProjectVersion.to_v_name(obj.latest_version))
     updated = fields.Method("get_updated")
     created = DateTimeWithZ()
     creator = fields.Integer(attribute="creator_id")
@@ -284,6 +285,7 @@ class ProjectListSchema(ma.SQLAlchemyAutoSchema):
 class ProjectVersionSchema(ma.SQLAlchemyAutoSchema):
     project_name = fields.Function(lambda obj: obj.project.name)
     namespace = fields.Function(lambda obj: obj.project.workspace.name)
+    name = fields.Function(lambda obj: ProjectVersion.to_v_name(obj.name))
     author = fields.String()
     changesets = fields.Method("get_diff_summary")
     files = fields.String()
@@ -339,7 +341,9 @@ class AdminProjectSchema(ma.SQLAlchemyAutoSchema):
     id = fields.UUID(attribute="Project.id")
     name = fields.Str(attribute="Project.name")
     namespace = fields.Method("_workspace_name")
-    version = fields.String(attribute="Project.latest_version")
+    version = fields.Function(
+        lambda obj: ProjectVersion.to_v_name(obj.Project.latest_version)
+    )
     disk_usage = fields.Integer(attribute="Project.disk_usage")
     created = DateTimeWithZ(attribute="Project.created")
     updated = DateTimeWithZ(attribute="Project.updated")

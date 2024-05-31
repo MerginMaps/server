@@ -151,7 +151,7 @@ def test_file_history(client, diff_project):
     db.session.delete(versions[0])
     db.session.delete(versions[1])
     # assert file history removed as well
-    diff_project.latest_version = "v8"
+    diff_project.latest_version = 8
     db.session.commit()
     resp = client.get(
         f"/v1/resource/history/{test_workspace_name}/{test_project}?path=base.gpkg"
@@ -452,7 +452,7 @@ def test_versioning(client):
         name="version_test", workspace_id=test_workspace_id
     ).first()
     pv = project.get_latest_version()
-    assert pv.name == "v0"
+    assert pv.name == 0
     assert pv.project_size == 0
     assert pv.device_id == json_headers["X-Device-Id"]
 
@@ -578,7 +578,7 @@ def test_get_project_at_version(client, diff_project):
         assert info[key] == latest_project[key]
     assert info["version"] == version
     version_obj = ProjectVersion.query.filter_by(
-        project_id=diff_project.id, name=version
+        project_id=diff_project.id, name=ProjectVersion.from_v_name(version)
     ).first()
     assert len(info["files"]) == len(version_obj.files)
     assert info["updated"] == version_obj.created.strftime("%Y-%m-%dT%H:%M:%S%zZ")
@@ -725,7 +725,7 @@ def test_download_project(client, proj_name, out_format, expected, version):
         )
         if expected == 200:
             header = "attachment; filename={}{}.zip".format(
-                proj_name, "-" + version if version else ""
+                proj_name, "-" + version if version is not None else ""
             )
             assert header in resp.headers[1][1]
     else:
@@ -809,7 +809,7 @@ def test_download_file_by_version(
     project = diff_project
 
     project_version = ProjectVersion.query.filter_by(
-        project_id=project.id, name=version
+        project_id=project.id, name=ProjectVersion.from_v_name(version)
     ).first()
     for file in project_version.files:
         if not is_versioned_file(file.path):
@@ -863,7 +863,7 @@ def test_download_diff_file(client, diff_project):
     assert resp.status_code == 404
 
     # updated with diff based on 'inserted_1_A.gpkg'
-    pv_2 = ProjectVersion.query.filter_by(project_id=diff_project.id, name="v4").first()
+    pv_2 = ProjectVersion.query.filter_by(project_id=diff_project.id, name=4).first()
     file_meta = pv_2.changes["updated"][0]
     resp = client.get(
         "/v1/project/raw/{}/{}?file={}&diff=true&version=v4".format(
@@ -1718,11 +1718,11 @@ def test_optimize_storage(app, client, diff_project):
     from ..sync.tasks import optimize_storage
 
     # pretend project is in state where base.gpkg still existed
-    diff_project.latest_version = "v8"
-    ProjectVersion.query.filter_by(project_id=diff_project.id, name="v9").delete()
-    ProjectVersion.query.filter_by(project_id=diff_project.id, name="v10").delete()
+    diff_project.latest_version = 8
+    ProjectVersion.query.filter_by(project_id=diff_project.id, name=9).delete()
+    ProjectVersion.query.filter_by(project_id=diff_project.id, name=10).delete()
     db.session.commit()
-    assert diff_project.latest_version == "v8"
+    assert diff_project.latest_version == 8
 
     basefile_v1 = os.path.join(diff_project.storage.project_dir, "v1", "base.gpkg")
     basefile_v3 = os.path.join(diff_project.storage.project_dir, "v3", "base.gpkg")
@@ -1775,89 +1775,87 @@ def test_optimize_storage(app, client, diff_project):
 def test_file_diffs_chain(diff_project):
     # file test.gpkg was added only in v9, and then left intact
     # direct search
-    basefile, diffs = diff_project.file_diffs_chain("test.gpkg", "v2")
+    basefile, diffs = diff_project.file_diffs_chain("test.gpkg", 2)
     assert not basefile
     assert not diffs
     # reverse search
-    basefile, diffs = diff_project.file_diffs_chain("test.gpkg", "v8")
+    basefile, diffs = diff_project.file_diffs_chain("test.gpkg", 8)
     assert not basefile
     assert not diffs
 
     # ask for basefile
-    basefile, diffs = diff_project.file_diffs_chain("test.gpkg", "v9")
-    assert basefile["version"] == "v9"
+    basefile, diffs = diff_project.file_diffs_chain("test.gpkg", 9)
+    assert basefile["version"] == 9
     assert basefile["change"] == "create"
     assert not diffs
 
     # version history has been broken by removal of file in v2
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", "v2")
+    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 2)
     assert not basefile
     assert not diffs
 
     # file was re-added in v3
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", "v3")
-    assert basefile["version"] == "v3"
+    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 3)
+    assert basefile["version"] == 3
     assert basefile["change"] == "create"
     assert not diffs
 
     # diff was used in v4, direct search
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", "v4")
-    assert basefile["version"] == "v3"
+    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 4)
+    assert basefile["version"] == 3
     assert len(diffs) == 1
     assert "v4" in diffs[0]["location"]
 
     # file was overwritten in v5
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", "v5")
-    assert basefile["version"] == "v5"
+    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 5)
+    assert basefile["version"] == 5
     assert basefile["change"] == "update"
     assert not diffs
 
     # diff was used in v6, reverse search followed by direct search
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", "v6")
-    assert basefile["version"] == "v5"
+    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 6)
+    assert basefile["version"] == 5
     assert len(diffs) == 1
     assert "v6" in diffs[0]["location"]
 
     # diff was used in v7, nothing happened in v8 (=v7), reverse search followed by direct search
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", "v8")
-    assert basefile["version"] == "v5"
+    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 8)
+    assert basefile["version"] == 5
     assert len(diffs) == 2
 
     # file was removed in v9
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", "v9")
+    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 9)
     assert not basefile
     assert not diffs
 
     # ask for latest version, but file is already gone
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", "v10")
+    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 10)
     assert not basefile
     assert not diffs
 
     # remove v9 and v10 to mimic that project history end with existing file
-    pv_8 = ProjectVersion.query.filter_by(project_id=diff_project.id, name="v8").first()
-    pv_9 = ProjectVersion.query.filter_by(project_id=diff_project.id, name="v9").first()
-    pv_10 = ProjectVersion.query.filter_by(
-        project_id=diff_project.id, name="v10"
-    ).first()
-    diff_project.latest_version = "v8"
+    pv_8 = ProjectVersion.query.filter_by(project_id=diff_project.id, name=8).first()
+    pv_9 = ProjectVersion.query.filter_by(project_id=diff_project.id, name=9).first()
+    pv_10 = ProjectVersion.query.filter_by(project_id=diff_project.id, name=10).first()
+    diff_project.latest_version = 8
     db.session.delete(pv_9)
     db.session.delete(pv_10)
     db.session.commit()
 
     # diff was used in v6, v7, nothing happened in v8 => v7 = v8, reverse search
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", "v6")
-    assert basefile["version"] == "v7"
+    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 6)
+    assert basefile["version"] == 7
     assert len(diffs) == 1
     assert "v7" in diffs[0]["location"]
 
     # we asked for last existing file version - basefile
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", "v7")
-    assert basefile["version"] == "v7"
+    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 7)
+    assert basefile["version"] == 7
     assert not diffs
 
     # we asked for last project version
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", "v8")
-    assert basefile["version"] == "v7"
+    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 8)
+    assert basefile["version"] == 7
     assert not diffs
 
 
@@ -1872,7 +1870,7 @@ changeset_data = [
 @pytest.mark.parametrize("version, path, expected", changeset_data)
 def test_changeset_file(client, diff_project, version, path, expected):
     pv = ProjectVersion.query.filter_by(
-        project_id=diff_project.id, name=version
+        project_id=diff_project.id, name=ProjectVersion.from_v_name(version)
     ).first()
 
     url = "/v1/resource/changesets/{}/{}/{}?path={}".format(
@@ -2186,10 +2184,10 @@ def test_inactive_project(client, diff_project):
 def test_get_project_version(client, diff_project):
     # success - latest version
     resp = client.get(
-        f"/v1/project/version/{str(diff_project.id)}/{diff_project.latest_version}"
+        f"/v1/project/version/{str(diff_project.id)}/{ProjectVersion.to_v_name(diff_project.latest_version)}"
     )
     assert resp.status_code == 200
-    assert resp.json["name"] == diff_project.latest_version
+    assert resp.json["name"] == ProjectVersion.to_v_name(diff_project.latest_version)
 
     # success any older version
     resp = client.get(f"/v1/project/version/{str(diff_project.id)}/v1")
@@ -2202,7 +2200,7 @@ def test_get_project_version(client, diff_project):
 
     # invalid version identifier
     resp = client.get(f"/v1/project/version/{str(diff_project.id)}/500")
-    assert resp.status_code == 404
+    assert resp.status_code == 400
 
     # invalid project identifier
     resp = client.get(f"/v1/project/version/1234/v10")
@@ -2212,7 +2210,7 @@ def test_get_project_version(client, diff_project):
 def add_project_version(project, changes, version=None):
     pv = ProjectVersion(
         project,
-        f"v{version}" if version else project.next_version(),
+        version or project.next_version(),
         "mergin",
         changes,
         ip="127.0.0.1",
@@ -2237,7 +2235,7 @@ def test_project_version_integrity(client):
     failure = SyncFailuresHistory.query.filter_by(project_id=upload.project.id).first()
     assert failure.error_type == "push_finish"
     assert "Failed to create new version" in failure.error_details
-    upload.project.latest_version = f"v{pv.int_name - 1}"
+    upload.project.latest_version = pv.name - 1
     db.session.delete(pv)
     db.session.delete(failure)
     db.session.commit()
@@ -2257,7 +2255,7 @@ def test_project_version_integrity(client):
         def _get_user_agent():
             add_project_version(project, changes)
             # bypass endpoint checks
-            upload.project.latest_version = data["version"]
+            upload.project.latest_version = ProjectVersion.from_v_name(data["version"])
             return "Input"
 
         mock.return_value = _get_user_agent()

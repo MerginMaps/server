@@ -22,7 +22,7 @@ from flask import current_app
 
 from .. import db
 from .storages import DiskStorage
-from .utils import int_version, is_versioned_file, mergin_secure_filename
+from .utils import is_versioned_file, mergin_secure_filename
 
 Storages = {"local": DiskStorage}
 project_deleted = signal("project_deleted")
@@ -101,7 +101,7 @@ class Project(db.Model):
     tags = db.Column(ARRAY(String), server_default="{}")
     # disk_usage & latest_version are cached properties to keep even if versions are deleted
     disk_usage = db.Column(BIGINT, nullable=False, default=0)
-    latest_version = db.Column(db.String, index=True)
+    latest_version = db.Column(db.Integer, index=True)
     workspace_id = db.Column(db.Integer, index=True, nullable=False)
     removed_at = db.Column(db.DateTime, index=True)
     removed_by = db.Column(
@@ -121,7 +121,7 @@ class Project(db.Model):
         self.storage_params = storage_params
         self.workspace_id = workspace.id
         self.creator = creator
-        self.latest_version = "v0"
+        self.latest_version = 0
 
     @property
     def storage(self):
@@ -143,29 +143,26 @@ class Project(db.Model):
         latest_version = self.get_latest_version()
         return latest_version.files if latest_version else []
 
-    def file_history(self, file, since, to, diffable=False):
+    def file_history(
+        self, file: str, since: int, to: int, diffable: bool = False
+    ) -> Dict:
         """
         Look up in project versions for history of versioned file.
         Returns ordered (from latest) dict with versions where some change happened and corresponding metadata.
 
         :Example:
 
-        >>> self.file_history('mergin/base.gpkg', 'v1', 'v2')
-        {'v2': {'checksum': '08b0e8caddafe74bf5c11a45f65cedf974210fed', 'location': 'v2/base.gpkg', 'path': 'base.gpkg',
-        'size': 2793, 'change': 'updated'}, 'v1': {checksum': '89469a6482267de394c7c7270cb7ffafe694ea76',
+        >>> self.file_history('mergin/base.gpkg', 1, 2)
+        {2: {'checksum': '08b0e8caddafe74bf5c11a45f65cedf974210fed', 'location': 'v2/base.gpkg', 'path': 'base.gpkg',
+        'size': 2793, 'change': 'updated'}, 1: {checksum': '89469a6482267de394c7c7270cb7ffafe694ea76',
         'location': 'v1/base.gpkg', 'mtime': '2019-07-18T07:52:38.770113Z', 'path': 'base.gpkg', 'size': 98304,
         'change': 'added'}}
 
         :param file: file path
-        :type file: str
-        :param since: start version for history (e.g. v1)
-        :type since: str
-        :param to: end version for history (e.g. v2)
-        :type to: str
+        :param since: start version for history (e.g. 1)
+        :param to: end version for history (e.g. 2)
         :param diffable: whether to find only diffable history, defaults to False
-        :type diffable: bool
         :returns: changes metadata for versions where some file change happened
-        :rtype: dict
         """
         if not (is_versioned_file(file) and since is not None and to is not None):
             return {}
@@ -177,13 +174,13 @@ class Project(db.Model):
         SELECT
             pv.name AS name,
             fh.change,
-            json_build_object('path', path, 'size', size, 'diff', diff, 'checksum', checksum, 'location', pv.name || '/' || fh.path) AS value
+            json_build_object('path', path, 'size', size, 'diff', diff, 'checksum', checksum, 'location', location) AS value
         FROM file_history fh
         LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
         WHERE project_id = :project_id
             AND fh.path = :file
-            AND replace(pv.name, 'v', '')::integer <= :to
-            AND replace(pv.name, 'v', '')::integer >= :since
+            AND pv.name <= :to
+            AND pv.name >= :since
         ORDER BY pv.created DESC;
         """
         )
@@ -191,13 +188,13 @@ class Project(db.Model):
         params = {
             "project_id": self.id,
             "file": file,
-            "since": int_version(since),
-            "to": int_version(to),
+            "since": since,
+            "to": to,
         }
         result = db.session.execute(sql, params).fetchall()
         for r in result:
             # example of custom query result
-            # ('v1', 'added', {'checksum': '89469a6482267de394c7c7270cb7ffafe694ea76', 'location': 'v1/data/tests.gpkg',
+            # (1, 'added', {'checksum': '89469a6482267de394c7c7270cb7ffafe694ea76', 'location': 'v1/data/tests.gpkg',
             # 'mtime': '2019-07-18T07:52:38.770113Z', 'path': 'base.gpkg', 'size': 98304})
 
             # make sure we have "location" in response (e.g. 'added' changes do not have it stored)
@@ -228,7 +225,7 @@ class Project(db.Model):
         db.session.add(new_failure)
         db.session.commit()
 
-    def file_diffs_chain(self, file, version):
+    def file_diffs_chain(self, file: str, version: int):
         """Find chain of diffs from the closest basefile that leads to a given file at certain project version.
 
         Returns basefile and list of diffs for gpkg that needs to be applied to reconstruct file.
@@ -237,13 +234,13 @@ class Project(db.Model):
 
         :Example:
 
-        >>> self.file_diffs_chain('mergin/base.gpkg', 'v3')
-        {'checksum': '89469a6482267de394c7c7270cb7ffafe694ea76', 'location': 'v3/base.gpkg', 'path': 'base.gpkg', 'size': 98304, 'change': 'added', 'version': 'v3'},
+        >>> self.file_diffs_chain('mergin/base.gpkg', 3)
+        {'checksum': '89469a6482267de394c7c7270cb7ffafe694ea76', 'location': 'v3/base.gpkg', 'path': 'base.gpkg', 'size': 98304, 'change': 'added', 'version': 3},
         [{'checksum': '3749188af2721c60a0a6ac77935cd445934462d3', 'location': 'v4/base.gpkg-diff-aa78054c-6e43-4cbf-a7a9-cbbd3d84a0d5', 'path': 'base.gpkg-diff-aa78054c-6e43-4cbf-a7a9-cbbd3d84a0d5', 'size': 80}]
 
         :param file: file path
         :type file: str
-        :param version: start version for history (e.g. v1)
+        :param version: start version for history (e.g. 1)
         :type version: str
         :returns: basefile metadata, list of diffs metadata
         :rtype: dict, List[dict]
@@ -259,11 +256,11 @@ class Project(db.Model):
             if f_meta:
                 base_meta = asdict(f_meta)
                 # take actual version where file exists
-                base_meta["version"] = f_meta.location.split(os.path.sep)[0]
+                base_meta["version"] = ProjectVersion.from_v_name(f_meta.location.split(os.path.sep)[0])
             return base_meta, diffs
 
         # check if it would not be faster to look up from the latest version
-        backward = (int_version(v_last) - int_version(v_x)) < int_version(v_x)
+        backward = (v_last - v_x) < v_x
 
         if backward:
             # get ordered dict of file history starting with the latest version (v_last, ..., v_x+n, (..., v_x))
@@ -303,7 +300,7 @@ class Project(db.Model):
         # we haven't found something so far, search from v1
         if not (base_meta and diffs):
             # get ordered dict of file history starting with version of interest (v_x, ..., v_x-n, (..., v_1))
-            history = self.file_history(file, "v1", v_x, diffable=True)
+            history = self.file_history(file, 1, v_x, diffable=True)
             if history:
                 history_end = next(reversed(history))
                 meta = history[history_end]
@@ -336,9 +333,8 @@ class Project(db.Model):
         ).first()
 
     def next_version(self):
-        """Next project version in vx format"""
-        ver = int(self.latest_version.replace("v", "")) + 1
-        return "v" + str(ver)
+        """Next project version"""
+        return self.latest_version + 1
 
     @property
     def expiration(self) -> timedelta:
@@ -507,7 +503,7 @@ class ProjectAccess(db.Model):
 
 class ProjectVersion(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String, index=True)
+    name = db.Column(db.Integer, index=True)
     project_id = db.Column(
         UUID(as_uuid=True), db.ForeignKey("project.id", ondelete="CASCADE"), index=True
     )
@@ -531,7 +527,7 @@ class ProjectVersion(db.Model):
     def __init__(
         self,
         project: Project,
-        name: str,
+        name: int,
         author: str,
         changes: Dict,
         ip: str,
@@ -554,7 +550,8 @@ class ProjectVersion(db.Model):
                     size=file_change.diff.size,
                     checksum=file_change.diff.checksum,
                     location=os.path.join(
-                        self.name, mergin_secure_filename(file_change.diff.path)
+                        self.to_v_name(self.name),
+                        mergin_secure_filename(file_change.diff.path),
                     ),
                 )
 
@@ -563,10 +560,10 @@ class ProjectVersion(db.Model):
                 size=file_change.size,
                 checksum=file_change.checksum,
                 location=os.path.join(
-                    self.name, mergin_secure_filename(file_change.path)
+                    self.to_v_name(self.name), mergin_secure_filename(file_change.path)
                 ),
                 diff=diff,
-                version=self.name,
+                version=self.to_v_name(self.name),
             )
             fh = FileHistory(file_item, file_change.change)
             fh.version = self
@@ -581,10 +578,17 @@ class ProjectVersion(db.Model):
         self.project.tags = self.resolve_tags()
         db.session.flush()
 
-    @property
-    def int_name(self) -> int:
+    @staticmethod
+    def from_v_name(name: str) -> int:
         """Parsed version name as integer (v5 -> 5)"""
-        return int(self.name.replace("v", ""))
+        return int(name.strip().replace("v", ""))
+
+    @staticmethod
+    def to_v_name(name: int) -> str:
+        """Parsed version name as string with prefix (5 -> v5)
+        Used in public API and as part of file path on FS.
+        """
+        return "v" + str(name)
 
     @property
     def files(self):
@@ -600,7 +604,7 @@ class ProjectVersion(db.Model):
                     FROM project_version pv
                     LEFT OUTER JOIN file_history fh ON fh.version_id = pv.id
                     WHERE pv.project_id = :project_id
-                    AND replace(pv.name, 'v', '')::integer <= :version
+                    AND pv.name <= :version
                 )
                 SELECT
                     fh.path, fh.size, fh.diff, fh.location, fh.checksum, pv.name AS version
@@ -609,7 +613,7 @@ class ProjectVersion(db.Model):
                 LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
                 WHERE fh.change != 'delete'; -- if latest change was removed it means file is not there
                 """
-        params = {"project_id": self.project_id, "version": int_version(self.name)}
+        params = {"project_id": self.project_id, "version": self.name}
         result = db.session.execute(query, params).fetchall()
         files = [
             DBFileInfo(
@@ -894,7 +898,7 @@ class SyncFailuresHistory(db.Model):
         self.error_type = err_type
         self.error_details = err_details
         self.project_id = project.id
-        self.last_version = project.latest_version
+        self.last_version = ProjectVersion.to_v_name(project.latest_version)
         self.user_id = user_id
 
 
@@ -925,7 +929,7 @@ class GeodiffActionHistory(db.Model):
 
     def __init__(self, project_id, base_meta, target_version, action, diff_path):
         self.project_id = project_id
-        self.base_version = base_meta["version"]
+        self.base_version = ProjectVersion.to_v_name(base_meta["version"])
         self.file_name = base_meta["path"]
         self.file_size = base_meta["size"]
         self.target_version = target_version

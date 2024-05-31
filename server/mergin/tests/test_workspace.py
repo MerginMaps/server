@@ -6,7 +6,7 @@ import os
 
 from .. import db
 from ..config import Configuration
-from ..sync.models import FileHistory, PushChangeType, DBFileInfo
+from ..sync.models import FileHistory, PushChangeType, DBFileInfo, ProjectVersion
 from ..sync.workspace import GlobalWorkspaceHandler
 from .utils import add_user, login, create_project
 
@@ -45,7 +45,9 @@ def test_workspace_implementation(client):
     project = create_project("test_permissions", ws, user)
     file_info = DBFileInfo(
         path="some_file.txt",
-        location=os.path.join(project.latest_version, "some_file.txt"),
+        location=os.path.join(
+            ProjectVersion.to_v_name(project.latest_version), "some_file.txt"
+        ),
         checksum="89469a6482267de394c7c7270cb7ffafe694ea76",
         size=1024,
         diff=None,

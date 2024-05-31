@@ -77,7 +77,7 @@ class ProjectStorage:
     def restore_versioned_file(self, file, version):
         raise NotImplementedError
 
-    def download_files(self, files, files_format=None, version=None):
+    def download_files(self, files, files_format: str = None, version: int = None):
         """Download files"""
         if version:
             for f in files:
@@ -87,12 +87,12 @@ class ProjectStorage:
             paths = [{"fs": self.file_path(f.location), "n": f.path} for f in files]
             z = zipfly.ZipFly(mode="w", paths=paths)
             response = Response(z.generator(), mimetype="application/zip")
-            response.headers["Content-Disposition"] = (
-                "attachment; filename={}{}.zip".format(
-                    quote(self.project.name.encode("utf-8")),
-                    "-" + version if version else "",
-                )
-            )
+            archive_name = quote(self.project.name.encode("utf-8"))
+            if version is not None:
+                archive_name += f"-v{version}"
+            response.headers[
+                "Content-Disposition"
+            ] = f"attachment; filename={archive_name}.zip"
             return response
         files_dict = {}
         for f in files:

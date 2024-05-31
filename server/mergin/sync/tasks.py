@@ -9,7 +9,7 @@ import time
 from datetime import datetime, timedelta
 from flask import current_app
 
-from .models import Project
+from .models import Project, ProjectVersion
 from .storages.disk import move_to_tmp
 from .config import Configuration
 from ..celery import celery
@@ -82,7 +82,7 @@ def optimize_storage(project_id):
         return
 
     for f in project.files:
-        f_history = project.file_history(f.path, "v1", project.latest_version)
+        f_history = project.file_history(f.path, 1, project.latest_version)
         if not f_history:
             continue
 
