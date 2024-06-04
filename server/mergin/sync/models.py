@@ -365,7 +365,7 @@ class ProjectAccessDetail:
     role: str
     username: str
     name: Optional[str]
-    project_permission: str
+    project_permission: ProjectRole
     type: str
 
 
