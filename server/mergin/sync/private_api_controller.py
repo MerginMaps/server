@@ -309,9 +309,6 @@ def update_project_access(id: str):
         user = User.query.filter_by(
             id=request.json["user_id"], active=True
         ).first_or_404("User does not exist")
-        # prevent to remove ownership of project creator
-        if user.id == project.creator_id:
-            abort(400, "Ownership of project creator cannot be removed")
 
         if request.json["role"] == "none":
             project.access.unset_role(user.id)

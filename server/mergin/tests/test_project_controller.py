@@ -656,7 +656,7 @@ def test_update_project(client):
         data=json.dumps(data),
         headers=json_headers,
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 200
 
     # try to add non-existing user
     readers = [
