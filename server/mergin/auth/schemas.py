@@ -1,7 +1,6 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
-from datetime import timedelta
 
 from flask import current_app
 from marshmallow import fields
@@ -34,7 +33,7 @@ class UserProfileSchema(ma.SQLAlchemyAutoSchema):
 
     def _has_project(self, obj):
         # DEPRECATED functionality - kept for the backward-compatibility
-        from ..sync.models import Project
+        from ..sync.models import Project, ProjectAccess
 
         ws = current_app.ws_handler.get_by_name(obj.user.username)
         if ws:
@@ -42,6 +41,7 @@ class UserProfileSchema(ma.SQLAlchemyAutoSchema):
                 Project.query.filter(Project.creator_id == obj.user.id)
                 .filter(Project.removed_at.is_(None))
                 .filter_by(workspace_id=ws.id)
+                .filter(Project.access.has(ProjectAccess.owners.contains([obj.user.id])))
                 .count()
             )
             return projects_count > 0
