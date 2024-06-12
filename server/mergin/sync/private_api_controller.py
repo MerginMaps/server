@@ -59,7 +59,7 @@ def create_project_access_request(namespace, project_name):  # noqa: E501
     # notify project owners
     owners = (
         User.query.join(UserProfile)
-        .filter(User.id.in_(project.access.owners))
+        .filter(User.verified_email, User.id.in_(project.access.owners))
         .filter(UserProfile.receive_notifications)
         .all()
     )
