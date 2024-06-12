@@ -202,21 +202,37 @@ def data_downgrade():
         )
         SELECT
             version_id,
-            jsonb_agg(
-                json_build_object(
-                    'path', fh.path,
-                    'size', fh.size,
-                    'checksum', fh.checksum,
-                    'diff', coalesce(fh.diff, '{}'),
-                    'location', fh.location,
-                    'sanitized_path', ltrim(fh.location, pv.name || '/')
+            CASE
+            WHEN fh.diff IS NOT NULL THEN
+                jsonb_agg(
+                    jsonb_build_object(
+                        'path', fh.path,
+                        'size', fh.size,
+                        'checksum', fh.checksum,
+                        'diff', fh.diff || jsonb_build_object('mtime', pv.created, 'sanitized_path', ltrim(fh.diff ->> 'location', pv.name || '/')),
+                        'location', fh.location,
+                        'sanitized_path', ltrim(fh.location, pv.name || '/'),
+                        'mtime', pv.created
+                    )
                 )
-            ) AS files
+            ELSE
+                jsonb_agg(
+                    jsonb_build_object(
+                        'path', fh.path,
+                        'size', fh.size,
+                        'checksum', fh.checksum,
+                        'location', fh.location,
+                        'sanitized_path', ltrim(fh.location, pv.name || '/'),
+                        'mtime', pv.created
+                    )
+                )
+            END
+            AS files
         FROM file_history fh
         LEFT OUTER JOIN files_ids ON files_ids.pf_id = fh.id
         LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
         WHERE fh.change::text != 'delete'
-        GROUP BY fh.version_id
+        GROUP BY fh.version_id, fh.diff
     )
     UPDATE project_version pv
     SET files = vf.files
@@ -224,25 +240,41 @@ def data_downgrade():
     WHERE vf.version_id = pv.id;
     """
 
+    # renamed files are reconstructed as delete-create pairs
     version_changes_query = """
     WITH changes AS (
         WITH change_preprocess AS (
             SELECT
                 pv.id,
+                CASE
+                WHEN fh.diff IS NOT NULL THEN
                 jsonb_agg(
-                    json_build_object(
+                    jsonb_build_object(
                         'path', fh.path,
                         'size', fh.size,
                         'checksum', fh.checksum,
-                        'diff', coalesce(fh.diff, '{}'),
+                        'diff', fh.diff || jsonb_build_object('mtime', pv.created, 'sanitized_path', ltrim(fh.diff ->> 'location', pv.name || '/')),
                         'location', fh.location,
-                        'sanitized_path', ltrim(fh.location, pv.name || '/')
+                        'sanitized_path', ltrim(fh.location, pv.name || '/'),
+                        'mtime', pv.created
                     )
-                ) AS meta,
+                )
+                ELSE
+                jsonb_agg(
+                    jsonb_build_object(
+                        'path', fh.path,
+                        'size', fh.size,
+                        'checksum', fh.checksum,
+                        'location', fh.location,
+                        'sanitized_path', ltrim(fh.location, pv.name || '/'),
+                        'mtime', pv.created
+                    )
+                )
+                END AS meta,
                 fh.change
             FROM project_version pv
             LEFT JOIN file_history fh ON pv.id = fh.version_id
-            GROUP BY pv.id, fh.change
+            GROUP BY pv.id, fh.change, fh.diff
         )
         SELECT
             id,
@@ -261,7 +293,7 @@ def data_downgrade():
         from change_preprocess
     )
     UPDATE project_version pv
-    SET changes = json_build_object('added', added, 'updated', updated, 'removed', removed, 'renamed', '[]'::jsonb)
+    SET changes = jsonb_build_object('added', added, 'updated', updated, 'removed', removed, 'renamed', '[]'::jsonb)
     FROM changes ch
     WHERE ch.id = pv.id;
     """
