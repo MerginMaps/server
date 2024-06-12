@@ -41,7 +41,9 @@ class UserProfileSchema(ma.SQLAlchemyAutoSchema):
                 Project.query.filter(Project.creator_id == obj.user.id)
                 .filter(Project.removed_at.is_(None))
                 .filter_by(workspace_id=ws.id)
-                .filter(Project.access.has(ProjectAccess.owners.contains([obj.user.id])))
+                .filter(
+                    Project.access.has(ProjectAccess.owners.contains([obj.user.id]))
+                )
                 .count()
             )
             return projects_count > 0
