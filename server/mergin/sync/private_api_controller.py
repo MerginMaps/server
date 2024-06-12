@@ -69,7 +69,7 @@ def create_project_access_request(namespace, project_name):  # noqa: E501
             "html": render_template(
                 "email/project_access_request.html",
                 expire=access_request.expire,
-                link=f"{request.url_root.rstrip('/')}/projects/{namespace}/{project.name}/settings",
+                link=f"{request.url_root.rstrip('/')}/projects/{namespace}/{project.name}/collaborators",
                 user=current_user.username,
                 username=owner.username,
                 project_name=f"{namespace}/{project.name}",
