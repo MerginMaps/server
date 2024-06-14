@@ -646,11 +646,6 @@ def update_project(namespace, project_name):  # noqa: E501  # pylint: disable=W0
     project = require_project(namespace, project_name, ProjectPermissions.Update)
     access = request.json.get("access", {})
 
-    # prevent to remove ownership of project creator
-    if access.get("owners", []):
-        if project.creator_id and project.creator_id not in access["owners"]:
-            abort(400, str("Ownership of project creator cannot be removed."))
-
     id_diffs, error = current_app.ws_handler.update_project_members(project, access)
 
     if not id_diffs and error:

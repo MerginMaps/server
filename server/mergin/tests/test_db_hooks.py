@@ -123,6 +123,7 @@ def test_remove_project(client, diff_project):
     access_request = AccessRequest(diff_project, user.id)
     db.session.add(access_request)
     db.session.commit()
+    original_creator_id = diff_project.creator_id
 
     # remove project
     diff_project.delete()
@@ -132,6 +133,9 @@ def test_remove_project(client, diff_project):
     assert ProjectAccess.query.filter_by(project_id=project_id).count()
     cleanup(client, [project_dir])
     assert access_request.status == RequestStatus.DECLINED.value
+    assert (
+        Project.query.filter_by(id=project_id).first().creator_id == original_creator_id
+    )
 
     # try to remove the deleted project
     assert diff_project.delete() is None
