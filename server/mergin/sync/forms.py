@@ -19,5 +19,10 @@ class AccessPermissionForm(FlaskForm):
     permissions = SelectField(
         "permissions",
         [DataRequired()],
-        choices=[("read", "read"), ("write", "write"), ("owner", "owner")],
+        choices=[
+            ("read", "read"),
+            ("edit", "edit"),
+            ("write", "write"),
+            ("owner", "owner"),
+        ],
     )

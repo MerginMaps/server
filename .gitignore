@@ -21,3 +21,6 @@ gen
 # pyenv
 .python-version
 web-app/.node-version
+
+# datadir for database
+mergin-db-ce

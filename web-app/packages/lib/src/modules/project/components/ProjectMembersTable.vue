@@ -130,7 +130,6 @@ import AppSection from '@/common/components/AppSection.vue'
 import {
   GlobalRole,
   ProjectRoleName,
-  getProjectRoleNameValues,
   isAtLeastGlobalRole
 } from '@/common/permission_utils'
 import { useInstanceStore, useUserStore } from '@/main'
@@ -179,7 +178,7 @@ const columns = ref<ColumnItem[]>([
   }
 ])
 const roles = computed(() =>
-  getProjectRoleNameValues().map((item) => ({
+  projectStore.availableRoles.map((item) => ({
     ...item,
     disabled: !isAtLeastGlobalRole(
       item.value,

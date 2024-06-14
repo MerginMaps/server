@@ -349,6 +349,12 @@ def test_update_project_access(client, diff_project):
     assert resp.status_code == 200
     assert user.id in diff_project.access.readers
 
+    # grant editor access
+    data["role"] = "editor"
+    resp = client.patch(url, headers=json_headers, data=json.dumps(data))
+    assert resp.status_code == 200
+    assert user.id in diff_project.access.editors
+
     # change to write access
     data["role"] = "writer"
     resp = client.patch(url, headers=json_headers, data=json.dumps(data))
@@ -494,6 +500,9 @@ def test_get_project_access(client):
     assert sum(map(lambda x: int(x["project_permission"] == "owner"), resp.json)) == 2
     assert sum(map(lambda x: int(x["project_permission"] == "writer"), resp.json)) == 1
     assert sum(map(lambda x: int(x["project_permission"] == "reader"), resp.json)) == 1
+    # user3 does not have access to the project
+    assert not any(users[3].email == access["email"] for access in resp.json)
+    assert any(users[2].email == access["email"] for access in resp.json)
     Configuration.GLOBAL_READ = True
     resp = client.get(url)
     assert resp.status_code == 200

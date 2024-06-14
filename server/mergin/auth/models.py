@@ -7,7 +7,7 @@ import datetime
 from typing import List, Optional
 import bcrypt
 from flask import current_app, request
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 
 from .. import db
 from ..sync.utils import get_user_agent, get_ip, get_device_id
@@ -16,8 +16,8 @@ from ..sync.utils import get_user_agent, get_ip, get_device_id
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
-    username = db.Column(db.String(80), unique=True, info={"label": "Username"})
-    email = db.Column(db.String(120), unique=True)
+    username = db.Column(db.String(80), info={"label": "Username"})
+    email = db.Column(db.String(120))
 
     passwd = db.Column(db.String(80), info={"label": "Password"})  # salted + hashed
 
@@ -30,6 +30,11 @@ class User(db.Model):
         nullable=False,
         info={"label": "Date of creation of user account"},
         default=datetime.datetime.utcnow,
+    )
+
+    __table_args__ = (
+        db.Index("ix_user_username", func.lower(username), unique=True),
+        db.Index("ix_user_email", func.lower(email), unique=True),
     )
 
     def __init__(self, username, email, passwd, is_admin=False):
@@ -150,6 +155,7 @@ class User(db.Model):
             or_(
                 Project.access.has(ProjectAccess.owners.contains([self.id])),
                 Project.access.has(ProjectAccess.writers.contains([self.id])),
+                Project.access.has(ProjectAccess.editors.contains([self.id])),
                 Project.access.has(ProjectAccess.readers.contains([self.id])),
             )
         ).all()

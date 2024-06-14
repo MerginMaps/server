@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <project-share-template
     v-model="data.permission"
+    :permissions="projectStore.availableRoles"
     :disabled="data.isPending || data.selectedUsers.length === 0"
     @close="dialogStore.close"
     @submit="share"
@@ -142,6 +143,7 @@ const share = async () => {
   const {
     ownersnames,
     readersnames,
+    editorsnames,
     writersnames,
     public: publicProject
   } = projectStore.project.access
@@ -152,6 +154,7 @@ const share = async () => {
         access: {
           ownersnames,
           readersnames,
+          editorsnames,
           writersnames,
           public: publicProject
         }

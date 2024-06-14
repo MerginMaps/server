@@ -10,7 +10,7 @@ from flask_login import current_user
 
 from .utils import is_valid_uuid
 from ..auth.models import User
-from .models import ProjectAccess, Project, Upload
+from .models import ProjectAccess, Project, Upload, ProjectRole
 
 
 def _is_superuser(f):
@@ -85,6 +85,17 @@ class ProjectPermissions:
                 .filter(Project.removed_at.is_(None))
             )
 
+    class Edit(Base):
+        @classmethod
+        @_is_superuser
+        def check(self, project, user):
+            return super().check(project, user) and (
+                (
+                    user.id in project.access.editors
+                    or check_project_workspace_permissions(project, user, "edit")
+                )
+            )
+
     class Upload(Base):
         @classmethod
         @_is_superuser
@@ -129,6 +140,23 @@ class ProjectPermissions:
                 )
             )
 
+    @classmethod
+    def get_user_project_role(
+        self, project: Project, user: User
+    ) -> Optional[ProjectRole]:
+        """Get the highest role of user for given project.
+        It can be based on local project settings or some global workspace settings.
+        """
+        if self.All.check(project, user):
+            return ProjectRole.OWNER
+        if self.Upload.check(project, user):
+            return ProjectRole.WRITER
+        if self.Edit.check(project, user):
+            return ProjectRole.EDITOR
+        if self.Read.check(project, user):
+            return ProjectRole.READER
+        return None
+
 
 def require_project(ws, project_name, permission):
     workspace = current_app.ws_handler.get_by_name(ws)
@@ -147,7 +175,7 @@ def require_project(ws, project_name, permission):
     return project
 
 
-def require_project_by_uuid(uuid, permission, scheduled=False):
+def require_project_by_uuid(uuid: str, permission: ProjectPermissions, scheduled=False):
     if not is_valid_uuid(uuid):
         abort(404)
 
@@ -227,15 +255,3 @@ def check_workspace_permissions(ws, user, permissions):
     if not workspace:
         return False
     return workspace.user_has_permissions(user, permissions)
-
-
-def get_user_project_role(project: Project, user: User) -> Optional[str]:
-    """Get the highest role of user for given project.
-    It can be based on local project settings or some global workspace settings.
-    """
-    if ProjectPermissions.All.check(project, user):
-        return "owner"
-    if ProjectPermissions.Upload.check(project, user):
-        return "writer"
-    if ProjectPermissions.Read.check(project, user):
-        return "reader"

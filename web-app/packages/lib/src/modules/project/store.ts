@@ -8,6 +8,7 @@ import keyBy from 'lodash/keyBy'
 import omit from 'lodash/omit'
 import { defineStore, getActivePinia } from 'pinia'
 
+import { DropdownOption, permissionUtils } from '@/common'
 import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
 import { filesDiff } from '@/common/mergin_utils'
@@ -15,7 +16,8 @@ import {
   getProjectAccessKeyByRoleName,
   isAtLeastProjectRole,
   ProjectRole,
-  ProjectRoleName
+  ProjectRoleName,
+  ProjectPermissionName
 } from '@/common/permission_utils'
 import { useNotificationStore } from '@/modules/notification/store'
 import { ProjectApi } from '@/modules/project/projectApi'
@@ -69,6 +71,8 @@ export interface ProjectState {
   accessLoading: boolean
   accessSearch: string
   accessSorting: SortingParams
+  availablePermissions: DropdownOption<ProjectPermissionName>[]
+  availableRoles: DropdownOption<ProjectRoleName>[]
 }
 
 export const useProjectStore = defineStore('projectModule', {
@@ -90,15 +94,36 @@ export const useProjectStore = defineStore('projectModule', {
     access: [],
     accessLoading: false,
     accessSearch: '',
-    accessSorting: undefined
+    accessSorting: undefined,
+    availablePermissions: permissionUtils.getProjectPermissionsValues(),
+    availableRoles: permissionUtils.getProjectRoleNameValues()
   }),
 
   getters: {
     isProjectOwner: (state) =>
-      isAtLeastProjectRole(state.project?.role, ProjectRole.owner)
+      isAtLeastProjectRole(state.project?.role, ProjectRole.owner),
+    isProjectWriter: (state) =>
+      isAtLeastProjectRole(state.project?.role, ProjectRole.writer)
   },
 
   actions: {
+    /**
+     * Filters the available permissions and roles based on the provided lists.
+     *
+     * @param roles - An array of project role names to filter against.
+     * @param permissions - An array of project permission names to filter against.
+     */
+    filterPermissions(
+      roles: ProjectRoleName[],
+      permissions: ProjectPermissionName[]
+    ) {
+      this.availablePermissions = this.availablePermissions.filter(
+        (permission) => !permissions.includes(permission.value)
+      )
+      this.availableRoles = this.availableRoles.filter(
+        (role) => !roles.includes(role.value)
+      )
+    },
     setAccessRequests(payload) {
       this.accessRequests = payload.accessRequests
       this.accessRequestsCount = payload.count
