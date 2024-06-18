@@ -6,7 +6,7 @@ import os
 from functools import wraps
 from typing import Optional
 from flask import abort, current_app
-from flask_login import current_user
+from flask_login import AnonymousUserMixin, current_user
 
 from .utils import is_valid_uuid
 from ..auth.models import User
@@ -162,7 +162,10 @@ def require_project(ws, project_name, permission):
     workspace = current_app.ws_handler.get_by_name(ws)
     if not workspace:
         abort(404)
-    if not workspace.is_active and not current_user.is_admin:
+    # Check for active workspace and if logged user (not Anonymous) is admin.
+    is_anonymous = isinstance(current_user, AnonymousUserMixin)
+    is_admin = not is_anonymous and current_user.is_admin
+    if not workspace.is_active and (not is_admin or is_anonymous):
         abort(404, "Workspace doesn't exist")
     project = (
         Project.query.filter_by(name=project_name, workspace_id=workspace.id)
