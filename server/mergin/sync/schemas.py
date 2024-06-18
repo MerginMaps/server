@@ -2,11 +2,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import copy
 import os
 import re
 from datetime import datetime
-from marshmallow import fields, pre_dump, post_dump, post_load, EXCLUDE
+from marshmallow import fields, pre_dump, post_dump
 from flask_login import current_user
 from flask import current_app
 
@@ -17,39 +16,10 @@ from .models import (
     ProjectVersion,
     AccessRequest,
     FileHistory,
-    File,
-    UploadFileInfo,
-    UploadFile,
-    PushChangeType,
 )
+from .files import LocalFile
 from ..app import DateTimeWithZ
 from ..auth.models import User
-from ..auth.schemas import UserSearchSchema
-
-
-class UploadFileSchema(ma.Schema):
-    path = fields.String()
-    checksum = fields.String()
-    size = fields.Integer()
-    sanitized_path = fields.String(missing="")
-
-    class Meta:
-        unknown = EXCLUDE
-
-    @post_load
-    def create_obj(self, data, **kwargs):
-        return UploadFile(**data)
-
-
-class UploadFileInfoSchema(UploadFileSchema):
-    chunks = fields.List(fields.String(), missing=[])
-    diff = fields.Nested(UploadFileSchema(), many=False, missing=None)
-    change = fields.String(missing=None)  # TODO change to enum
-
-    @post_load
-    def create_obj(self, data, **kwargs):
-        data["change"] = PushChangeType(data["change"])
-        return UploadFileInfo(**data)
 
 
 class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
@@ -96,6 +66,15 @@ def project_user_permissions(project):
     }
 
 
+class FileHistorySchema(ma.SQLAlchemyAutoSchema):
+    mtime = DateTimeWithZ()
+
+    class Meta:
+        model = FileHistory
+        load_instance = True
+        fields = ("path", "size", "checksum", "mtime", ) # add version?
+
+
 class FileInfoSchema(ma.SQLAlchemyAutoSchema):
     path = fields.String()
     size = fields.Integer()
@@ -103,6 +82,7 @@ class FileInfoSchema(ma.SQLAlchemyAutoSchema):
     location = fields.String(load_only=True)
     mtime = fields.String()
     diff = fields.Nested("self", required=False, missing={})
+    # FIXME to separate schema (FileHistorySchema?)
     history = fields.Dict(required=False, dump_only=True, missing={})
 
     @pre_dump
@@ -113,7 +93,7 @@ class FileInfoSchema(ma.SQLAlchemyAutoSchema):
         #TODO resolve once marshmallow 3.0 is released.
         history = fields.Dict(keys=fields.String(), values=fields.Nested('self', exclude=['location', 'chunks']))
         """
-        if isinstance(data, FileHistory) or isinstance(data, File):
+        if isinstance(data, FileHistory) or isinstance(data, LocalFile):
             return data
 
         # diff field (self-nested does not contain history)
@@ -139,6 +119,7 @@ class FileInfoSchema(ma.SQLAlchemyAutoSchema):
             item.pop("location", None)
             item.pop("chunks", None)
             item.pop("sanitized_path", None)
+            # fixme to pushChange.public()?
             if item.get("change") == "create":
                 item["change"] = "added"
             elif item.get("change") == "delete":
@@ -148,18 +129,6 @@ class FileInfoSchema(ma.SQLAlchemyAutoSchema):
             history_data[ProjectVersion.to_v_name(key)] = item
         data["history"] = history_data
         return data
-
-
-class ChangesSchema(ma.SQLAlchemyAutoSchema):
-    added = fields.Nested(
-        FileInfoSchema(), many=True, only=("mtime", "size", "checksum", "path")
-    )
-    updated = fields.Nested(
-        FileInfoSchema(), many=True, only=("mtime", "size", "checksum", "path")
-    )
-    removed = fields.Nested(
-        FileInfoSchema(), many=True, only=("mtime", "size", "checksum", "path")
-    )
 
 
 class ProjectSchemaForVersion(ma.SQLAlchemyAutoSchema):
@@ -217,8 +186,7 @@ class ProjectAccessRequestSchema(ma.SQLAlchemyAutoSchema):
 
 class ProjectSchema(ma.SQLAlchemyAutoSchema):
     id = fields.UUID()
-    # files = fields.Nested(FileInfoSchema(), many=True)
-    files = fields.Function(lambda obj: obj.files)
+    files = fields.Nested(FileInfoSchema(), many=True)
     access = fields.Nested(ProjectAccessSchema())
     permissions = fields.Function(project_user_permissions)
     version = fields.Function(lambda obj: ProjectVersion.to_v_name(obj.latest_version))
@@ -290,10 +258,21 @@ class ProjectVersionSchema(ma.SQLAlchemyAutoSchema):
     changesets = fields.Method("get_diff_summary")
     files = fields.String()
     created = DateTimeWithZ()
-    changes = fields.Nested(ChangesSchema())
+    changes = fields.Method("_changes")
 
     def get_diff_summary(self, obj):
         return obj.diff_summary()
+
+    def _changes(self, obj):
+        changes = {"added": [], "updated": [], "removed": []}
+        for file in obj.changes.all():
+            if file.change == "create":
+                changes["added"].append(FileHistorySchema().dump(file))
+            elif file.change in ("update", "update_diff"):
+                changes["updated"].append(FileHistorySchema().dump(file))
+            elif file.change == "delete":
+                changes["removed"].append(FileHistorySchema().dump(file))
+        return changes
 
     class Meta:
         model = ProjectVersion

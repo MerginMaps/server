@@ -36,14 +36,14 @@ from .. import db
 from ..auth import auth_required
 from ..auth.models import User
 from .models import Project, ProjectAccess, ProjectVersion, Upload, PushChangeType
+from .files import UploadChanges, UploadChangesSchema, UploadFileInfoSchema
 from .schemas import (
     ProjectSchema,
     ProjectListSchema,
     ProjectVersionSchema,
     FileInfoSchema,
     ProjectSchemaForVersion,
-    UserWorkspaceSchema,
-)
+    UserWorkspaceSchema, FileHistorySchema, )
 from .storages.storage import FileNotFound, DataSyncError, InitializationError
 from .storages.disk import save_to_file, move_to_tmp
 from .permissions import (
@@ -63,9 +63,7 @@ from .utils import (
     is_valid_uuid,
     gpkg_wkb_to_wkt,
     is_versioned_file,
-    is_valid_gpkg,
     is_name_allowed,
-    mergin_secure_filename,
     get_project_path,
     clean_upload,
     get_device_id,
@@ -187,11 +185,13 @@ def add_project(namespace):  # noqa: E501
                 .first_or_404()
             )
             version_name = 1
-            changes = {"added": p.files, "updated": [], "removed": []}
+            files = [UploadFileInfoSchema().load(FileHistorySchema().dump(file)) for file in p.files]
+            changes = UploadChanges(added=files, updated=[], removed=[])
+
         else:
             template = None
             version_name = 0
-            changes = {"added": [], "updated": [], "removed": []}
+            changes = UploadChanges(added=[], updated=[], removed=[])
 
         try:
             p.storage.initialize(template_project=template)
@@ -721,6 +721,9 @@ def project_push(namespace, project_name):
     version = ProjectVersion.from_v_name(request.json["version"])
     changes = request.json["changes"]
     project = require_project(namespace, project_name, ProjectPermissions.Upload)
+    ws = project.workspace
+    if not ws:
+        abort(404)
     # pass full project object to request for later use
     request.view_args["project"] = project
     push_triggered.send(project)
@@ -736,66 +739,50 @@ def project_push(namespace, project_name):
     if all(len(changes[key]) == 0 for key in changes.keys()):
         abort(400, "No changes")
 
+    upload_changes = UploadChangesSchema().load(changes)
     # check if same file is not already uploaded
-    for item in changes["added"]:
-        if not all(ele.path != item["path"] for ele in project.files):
-            abort(400, "File {} has been already uploaded".format(item["path"]))
+    for item in upload_changes.added:
+        if not all(ele.path != item.path for ele in project.files):
+            abort(400, f"File {item.path} has been already uploaded")
 
     # changes' files must be unique
-    changes_files = []
-    sanitized_files = []
-    blacklisted_files = []
-    for change in changes.values():
-        for f in change:
-            # check if .gpkg file is valid
-            if is_versioned_file(f["path"]):
-                if not is_valid_gpkg(f):
-                    abort(400, "File {} is not valid".format(f["path"]))
-            if is_file_name_blacklisted(f["path"], current_app.config["BLACKLIST"]):
-                blacklisted_files.append(f)
-            # all file need to be unique after sanitized
-            f["sanitized_path"] = mergin_secure_filename(f["path"])
-            if f["sanitized_path"] in sanitized_files:
-                filename, file_extension = os.path.splitext(f["sanitized_path"])
-                f["sanitized_path"] = (
-                    filename + f".{str(uuid.uuid4())}" + file_extension
-                )
-            sanitized_files.append(f["sanitized_path"])
-            if f.get("diff"):
-                f["diff"]["sanitized_path"] = mergin_secure_filename(f["diff"]["path"])
-                if f["diff"]["sanitized_path"] in sanitized_files:
-                    filename, file_extension = os.path.splitext(
-                        f["diff"]["sanitized_path"]
-                    )
-                    f["diff"]["sanitized_path"] = (
-                        filename + f".{str(uuid.uuid4())}" + file_extension
-                    )
-                sanitized_files.append(f["diff"]["sanitized_path"])
-            changes_files.append(f["path"])
+    changes_files = [f.path for f in upload_changes.added + upload_changes.updated + upload_changes.removed]
     if len(set(changes_files)) != len(changes_files):
         abort(400, "Not unique changes")
 
-    # remove blacklisted files from changes
-    for key, change in changes.items():
-        files_to_upload = [f for f in change if f not in blacklisted_files]
-        changes[key] = files_to_upload
+    sanitized_files = []
+    blacklisted_files = []
+    for f in upload_changes.added + upload_changes.updated + upload_changes.removed:
+        # check if .gpkg file is valid
+        if is_versioned_file(f.path):
+            if not f.is_valid_gpkg():
+                abort(400, f"File {f.path} is not valid")
+        if is_file_name_blacklisted(f.path, current_app.config["BLACKLIST"]):
+            blacklisted_files.append(f.path)
+        # all file need to be unique after sanitized
+        if f.sanitized_path in sanitized_files:
+            filename, file_extension = os.path.splitext(f.sanitized_path)
+            f.sanitized_path = filename + f".{str(uuid.uuid4())}" + file_extension
+        sanitized_files.append(f.sanitized_path)
+        if f.diff:
+            if f.diff.sanitized_path in sanitized_files:
+                filename, file_extension = os.path.splitext(f.diff.sanitized_path)
+                f.diff.sanitized_path = (filename + f".{str(uuid.uuid4())}" + file_extension)
+            sanitized_files.append(f.diff.sanitized_path)
 
-    # Convert datetimes to UTC
-    for key in changes.keys():
-        for f in changes[key]:
-            f["mtime"] = datetime.utcnow()
+    # remove blacklisted files from changes
+    for key in upload_changes.__dict__.keys():
+        new_value = [f for f in getattr(upload_changes, key) if f.path not in blacklisted_files]
+        setattr(upload_changes, key, new_value)
 
     # Check user data limit
-    updates = [f["path"] for f in changes["updated"]]
+    updates = [f.path for f in upload_changes.updated]
     updated_files = list(filter(lambda i: i.path in updates, project.files))
     additional_disk_usage = (
-        sum(file["size"] for file in changes["added"] + changes["updated"])
+        sum(file.size for file in upload_changes.added + upload_changes.updated)
         - sum(file.size for file in updated_files)
-        - sum(file["size"] for file in changes["removed"])
+        - sum(file.size for file in upload_changes.removed)
     )
-    ws = project.workspace
-    if not ws:
-        abort(404)
 
     current_usage = ws.disk_usage()
     requested_storage = current_usage + additional_disk_usage
@@ -806,7 +793,7 @@ def project_push(namespace, project_name):
             )
         )
 
-    upload = Upload(project, version, changes, current_user.id)
+    upload = Upload(project, version, upload_changes, current_user.id)
     db.session.add(upload)
     try:
         # Creating upload transaction with different project's version is possible.
@@ -865,7 +852,7 @@ def project_push(namespace, project_name):
                 project,
                 next_version,
                 current_user.username,
-                changes,
+                upload_changes,
                 get_ip(request),
                 user_agent,
                 device_id,
@@ -907,8 +894,9 @@ def chunk_upload(transaction_id, chunk_id):
     """
     upload, upload_dir = get_upload(transaction_id)
     request.view_args["project"] = upload.project
-    for f in upload.changes["added"] + upload.changes["updated"]:
-        if "chunks" in f and chunk_id in f["chunks"]:
+    upload_changes = UploadChangesSchema().load(upload.changes)
+    for f in upload_changes.added + upload_changes.updated:
+        if chunk_id in f.chunks:
             dest = os.path.join(upload_dir, "chunks", chunk_id)
             lockfile = os.path.join(upload_dir, "lockfile")
             with Toucher(lockfile, 30):
@@ -950,36 +938,25 @@ def push_finish(transaction_id):
 
     upload, upload_dir = get_upload(transaction_id)
     request.view_args["project"] = upload.project
-    changes = upload.changes
-    upload_files = changes["added"] + changes["updated"]
+    changes = UploadChangesSchema().load(upload.changes)
     project = upload.project
     project_path = get_project_path(project)
     corrupted_files = []
 
-    for f in upload_files:
-        if "diff" in f:
-            dest_file = os.path.join(
-                upload_dir,
-                "files",
-                f["diff"].get(
-                    "sanitized_path", mergin_secure_filename(f["diff"]["path"])
-                ),
-            )
-            expected_size = f["diff"]["size"]
+    for f in changes.added + changes.updated:
+        if f.diff is not None:
+            dest_file = os.path.join(upload_dir, "files", f.diff.sanitized_path)
+            expected_size = f.diff.size
         else:
-            dest_file = os.path.join(
-                upload_dir,
-                "files",
-                f.get("sanitized_path", mergin_secure_filename(f["path"])),
-            )
-            expected_size = f["size"]
-        if "chunks" in f:
+            dest_file = os.path.join(upload_dir, "files", f.sanitized_path)
+            expected_size = f.size
+        if f.chunks:
             # Concatenate chunks into single file
             # TODO we need to move this elsewhere since it can fail for large files (and slow FS)
             os.makedirs(os.path.dirname(dest_file), exist_ok=True)
             with open(dest_file, "wb") as dest:
                 try:
-                    for chunk_id in f["chunks"]:
+                    for chunk_id in f.chunks:
                         sleep(0)  # to unblock greenlet
                         chunk_file = os.path.join(upload_dir, "chunks", chunk_id)
                         with open(chunk_file, "rb") as src:
@@ -992,20 +969,20 @@ def push_finish(transaction_id):
                         "Failed to process chunk: %s in project %s"
                         % (chunk_id, project_path)
                     )
-                    corrupted_files.append(f["path"])
+                    corrupted_files.append(f.path)
                     continue
 
         if expected_size != os.path.getsize(dest_file):
             logging.error(
                 "Data integrity check has failed on file %s in project %s"
-                % (f["path"], project_path),
+                % (f.path, project_path),
                 exc_info=True,
             )
             # check if .gpkg file is valid
             if is_versioned_file(dest_file):
-                if not is_valid_gpkg(f):
-                    corrupted_files.append(f["path"])
-            corrupted_files.append(f["path"])
+                if not f.is_valid_gpkg():
+                    corrupted_files.append(f.path)
+            corrupted_files.append(f.path)
 
     if corrupted_files:
         move_to_tmp(upload_dir)
@@ -1035,16 +1012,18 @@ def push_finish(transaction_id):
         # let's move uploaded files where they are expected to be
         os.renames(files_dir, target_dir)
         updated_files = project.storage.apply_changes(
-            changes, next_version, transaction_id
+            upload.changes, next_version, transaction_id
         )
-        changes["updated"] = updated_files
+        # update list with modified metadata (server-side generated diffs)
+        upload.changes["updated"] = updated_files
+        upload_changes = UploadChangesSchema().load(upload.changes)
         user_agent = get_user_agent(request)
         device_id = get_device_id(request)
         pv = ProjectVersion(
             project,
             next_version,
             current_user.username,
-            changes,
+            upload_changes,
             get_ip(request),
             user_agent,
             device_id,
@@ -1169,7 +1148,9 @@ def clone_project(namespace, project_name):  # noqa: E501
     # TODO: add user_agent and device_id handling to class
     user_agent = get_user_agent(request)
     device_id = get_device_id(request)
-    changes = {"added": cloned_project.files}
+    # transform source files to new uploaded files
+    files = [UploadFileInfoSchema().load(FileHistorySchema().dump(file)) for file in cloned_project.files]
+    changes = UploadChanges(added=files, updated=[], removed=[])
     project_version = ProjectVersion(
         p,
         version,

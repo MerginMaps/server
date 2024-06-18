@@ -18,6 +18,7 @@ from ..stats.app import register
 from ..stats.models import MerginInfo
 from . import test_project, test_workspace_id, test_project_dir, TMP_DIR
 from .utils import login_as_admin, initialize, cleanup, file_info
+from ..sync.files import UploadChangesSchema
 
 thisdir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(thisdir, os.pardir))
@@ -208,12 +209,12 @@ def diff_project(app):
             else:
                 # no files uploaded, hence no action needed
                 pass
-
+            upload_changes = UploadChangesSchema().load(change)
             pv = ProjectVersion(
                 project,
                 i + 2,
                 project.creator.username,
-                change,
+                upload_changes,
                 "127.0.0.1",
             )
             assert pv.project_size == sum(file.size for file in pv.files)

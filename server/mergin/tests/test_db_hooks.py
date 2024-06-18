@@ -14,8 +14,8 @@ from ..sync.models import (
     SyncFailuresHistory,
     AccessRequest,
     RequestStatus,
-    FileHistory,
-)
+    FileHistory, )
+from ..sync.files import UploadChanges
 from ..auth.models import User
 from .. import db
 from . import DEFAULT_USER
@@ -38,7 +38,7 @@ def test_close_user_account(client, diff_project):
     diff_project.access.writers.append(user.id)
     flag_modified(diff_project.access, "writers")
     # user contributed to another user project so he is listed in projects history
-    changes = {"added": [], "removed": [], "updated": []}
+    changes = UploadChanges(added=[], updated=[], removed=[])
     pv = ProjectVersion(diff_project, 11, user.username, changes, "127.0.0.1")
     diff_project.latest_version = pv.name
     pv.project = diff_project
@@ -114,7 +114,7 @@ def test_remove_project(client, diff_project):
     # set up
     mergin_user = User.query.filter_by(username=DEFAULT_USER[0]).first()
     project_dir = Path(diff_project.storage.project_dir)
-    changes = {"added": [], "removed": [], "updated": []}
+    changes = UploadChanges(added=[], removed=[], updated=[])
     upload = Upload(diff_project, 10, changes, mergin_user.id)
     db.session.add(upload)
     project_id = diff_project.id

@@ -6,7 +6,7 @@ import os
 
 from .. import db
 from ..config import Configuration
-from ..sync.models import FileHistory, PushChangeType, DBFileInfo, ProjectVersion
+from ..sync.models import FileHistory, ProjectVersion, PushChangeType
 from ..sync.workspace import GlobalWorkspaceHandler
 from .utils import add_user, login, create_project
 
@@ -43,7 +43,7 @@ def test_workspace_implementation(client):
     Configuration.GLOBAL_ADMIN = True
     # create project with dummy file to count for workspace usage
     project = create_project("test_permissions", ws, user)
-    file_info = DBFileInfo(
+    file_history = FileHistory(
         path="some_file.txt",
         location=os.path.join(
             ProjectVersion.to_v_name(project.latest_version), "some_file.txt"
@@ -51,9 +51,8 @@ def test_workspace_implementation(client):
         checksum="89469a6482267de394c7c7270cb7ffafe694ea76",
         size=1024,
         diff=None,
-        version="v1",
+        change=PushChangeType.CREATE
     )
-    file_history = FileHistory(file_info=file_info, change=PushChangeType.CREATE)
     file_history.version = project.get_latest_version()
     default_project_usage = ws.disk_usage()
     db.session.add(file_history)

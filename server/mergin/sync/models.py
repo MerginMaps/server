@@ -4,7 +4,7 @@
 import json
 import os
 import uuid
-from dataclasses import dataclass, asdict
+from dataclasses import asdict
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, List, Dict, Set
@@ -20,9 +20,10 @@ from collections import OrderedDict
 from pygeodiff.geodifflib import GeoDiffLibError
 from flask import current_app
 
+from .files import LocalFile, UploadFileInfo, UploadChanges, UploadChangesSchema, mergin_secure_filename, ProjectFile
 from .. import db
 from .storages import DiskStorage
-from .utils import is_versioned_file, mergin_secure_filename
+from .utils import is_versioned_file
 
 Storages = {"local": DiskStorage}
 project_deleted = signal("project_deleted")
@@ -37,56 +38,6 @@ class PushChangeType(Enum):
     @classmethod
     def values(cls):
         return [member.value for member in cls.__members__.values()]
-
-    @classmethod
-    def from_change(cls, change, diff=False):
-        """Initialize from public API value"""
-        if change == "added":
-            return PushChangeType.CREATE
-        if change == "removed":
-            return PushChangeType.DELETE
-        if change == "updated":
-            return PushChangeType.UPDATE_DIFF if diff else PushChangeType.UPDATE
-
-
-@dataclass
-class FileMeta:
-    """Base class for every file object"""
-
-    path: str
-    checksum: str
-    size: int
-
-
-@dataclass
-class File(FileMeta):
-    """File stored on server"""
-
-    location: str
-
-
-@dataclass
-class DBFileInfo(File):
-    """File metadata as stored in db"""
-
-    version: str
-    diff: Optional[File]
-
-
-@dataclass
-class UploadFile(FileMeta):
-    """File to be uploaded with secure filename"""
-
-    sanitized_path: str  # added by server
-
-
-@dataclass
-class UploadFileInfo(UploadFile):
-    """File to be uploaded coming from client push process"""
-
-    chunks: Optional[List[str]]  # determined by client
-    diff: Optional[UploadFile]
-    change: Optional[PushChangeType]
 
 
 class Project(db.Model):
@@ -501,6 +452,57 @@ class ProjectAccess(db.Model):
         return diff
 
 
+class FileHistory(db.Model):
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("project_version.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    path = db.Column(db.String, index=True, nullable=False)
+    # path on FS relative to project directory: version_name + file path
+    location = db.Column(db.String)
+    size = db.Column(db.BigInteger, nullable=False)
+    checksum = db.Column(db.String, nullable=False)
+    diff = db.Column(JSONB)
+    change = db.Column(
+        ENUM(
+            *PushChangeType.values(),
+            name="push_change_type",
+        ),
+        index=True,
+        nullable=False,
+    )
+
+    version = db.relationship(
+        "ProjectVersion",
+        uselist=False,
+        backref=db.backref(
+            "changes", single_parent=True, lazy="dynamic", cascade="all,delete"
+        ),
+    )
+
+    __table_args__ = (db.UniqueConstraint("version_id", "path"),)
+
+    def __init__(self, path: str, size: int, checksum: str, location: str, change: PushChangeType, diff: dict = None):
+        self.path = path
+        self.size = size
+        self.checksum = checksum
+        self.location = location
+        self.diff = diff
+        self.change = change.value
+
+    @property
+    def diff_file(self) -> Optional[LocalFile]:
+        if self.diff:
+            return LocalFile(**self.diff)
+
+    @property
+    def mtime(self) -> datetime:
+        return self.version.created
+
+
 class ProjectVersion(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.Integer, index=True)
@@ -529,7 +531,7 @@ class ProjectVersion(db.Model):
         project: Project,
         name: int,
         author: str,
-        changes: Dict,
+        changes: UploadChanges,
         ip: str,
         user_agent: str = None,
         device_id: str = None,
@@ -542,32 +544,16 @@ class ProjectVersion(db.Model):
         self.ip_address = ip
         self.device_id = device_id
 
-        for file_change in self.process_changes(changes):
-            diff = None
-            if file_change.diff:
-                diff = File(
-                    path=file_change.diff.path,
-                    size=file_change.diff.size,
-                    checksum=file_change.diff.checksum,
-                    location=os.path.join(
-                        self.to_v_name(self.name),
-                        mergin_secure_filename(file_change.diff.path),
-                    ),
-                )
+        for file in changes.added:
+            self._add_file_change(PushChangeType.CREATE, file)
 
-            file_item = DBFileInfo(
-                path=file_change.path,
-                size=file_change.size,
-                checksum=file_change.checksum,
-                location=os.path.join(
-                    self.to_v_name(self.name), mergin_secure_filename(file_change.path)
-                ),
-                diff=diff,
-                version=self.to_v_name(self.name),
-            )
-            fh = FileHistory(file_item, file_change.change)
-            fh.version = self
-            db.session.add(fh)
+        for file in changes.updated:
+            change = PushChangeType.UPDATE_DIFF if file.diff is not None else PushChangeType.UPDATE
+            self._add_file_change(change, file)
+
+        for file in changes.removed:
+            self._add_file_change(PushChangeType.DELETE, file)
+
         # push changes to transaction buffer so that self.files is up-to-date
         db.session.flush()
         self.project_size = sum(f.size for f in self.files) if self.files else 0
@@ -577,6 +563,33 @@ class ProjectVersion(db.Model):
         self.project.latest_version = self.name
         self.project.tags = self.resolve_tags()
         db.session.flush()
+
+    def _add_file_change(self, change: PushChangeType, upload_file: UploadFileInfo):
+        """ Add file history record to project version """
+        diff = None
+        if upload_file.diff:
+            secure_diff_path = upload_file.diff.sanitized_path if upload_file.diff.sanitized_path else mergin_secure_filename(
+                upload_file.diff.path)
+            diff = LocalFile(
+                path=upload_file.diff.path,
+                size=upload_file.diff.size,
+                checksum=upload_file.diff.checksum,
+                location=os.path.join(self.to_v_name(self.name), secure_diff_path)
+            )
+
+        secure_path = upload_file.sanitized_path if upload_file.sanitized_path else mergin_secure_filename(
+            upload_file.path)
+
+        fh = FileHistory(
+            path=upload_file.path,
+            size=upload_file.size,
+            checksum=upload_file.checksum,
+            location=os.path.join(self.to_v_name(self.name), secure_path),
+            diff=asdict(diff) if diff else None,
+            change=change
+        )
+        fh.version = self
+        db.session.add(fh)
 
     @staticmethod
     def from_v_name(name: str) -> int:
@@ -591,7 +604,7 @@ class ProjectVersion(db.Model):
         return "v" + str(name)
 
     @property
-    def files(self):
+    def files(self) -> List[ProjectFile]:
         query = f"""
                 WITH files_ids AS (
                     -- get the latest change
@@ -607,7 +620,7 @@ class ProjectVersion(db.Model):
                     AND pv.name <= :version
                 )
                 SELECT
-                    fh.path, fh.size, fh.diff, fh.location, fh.checksum, pv.name AS version
+                    fh.path, fh.size, fh.diff, fh.location, fh.checksum, pv.created AS mtime
                 FROM file_history fh
                 INNER JOIN files_ids ON files_ids.pf_id = fh.id
                 LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
@@ -616,16 +629,15 @@ class ProjectVersion(db.Model):
         params = {"project_id": self.project_id, "version": self.name}
         result = db.session.execute(query, params).fetchall()
         files = [
-            DBFileInfo(
+            ProjectFile(
                 path=row.path,
                 size=row.size,
                 checksum=row.checksum,
                 location=row.location,
-                version=row.version,
-                diff=File(**row.diff) if row.diff else None,
+                mtime=row.mtime,
+                diff=LocalFile(**row.diff) if row.diff else None
             )
-            for row in result
-        ]
+            for row in result]
         return files
 
     def resolve_tags(self) -> List[str]:
@@ -641,42 +653,6 @@ class ProjectVersion(db.Model):
         if qgis_count == 1:
             tags.extend(["valid_qgis", "input_use"])
         return tags
-
-    @property
-    def changes(self):
-        """Backward compatible version changes overview, similar to Upload.changes"""
-        changes = {"added": [], "updated": [], "removed": []}
-        for item in self.file_changes.all():
-            if item.change == PushChangeType.CREATE.value:
-                changes["added"].append(item)
-            elif item.change in (
-                PushChangeType.UPDATE.value,
-                PushChangeType.UPDATE_DIFF.value,
-            ):
-                changes["updated"].append(item)
-            elif item.change == PushChangeType.DELETE.value:
-                changes["removed"].append(item)
-        return changes
-
-    @staticmethod
-    def process_changes(changes: Dict) -> List[UploadFileInfo]:
-        """Process public API changes (e.g. from Upload.changes) to internal list"""
-        from .schemas import UploadFileInfoSchema
-
-        files_changes = []
-        for change_type, files in changes.items():
-            for file in files:
-                files_changes.append(
-                    UploadFileInfoSchema().load(
-                        {
-                            **file,
-                            "change": PushChangeType.from_change(
-                                change_type, bool(file.get("diff"))
-                            ).value,
-                        }
-                    )
-                )
-        return files_changes
 
     def diff_summary(self):
         """Calculate diff summary for versioned files updated with geodiff
@@ -703,7 +679,7 @@ class ProjectVersion(db.Model):
         """
         output = {}
         self.project.storage.flush_geodiff_logger()
-        for f in self.changes["updated"]:
+        for f in self.changes.all():
             if f.change != PushChangeType.UPDATE_DIFF.value:
                 continue
 
@@ -711,7 +687,7 @@ class ProjectVersion(db.Model):
                 self.project.storage.project_dir, f.location + "-diff-summary"
             )
             changeset = os.path.join(
-                self.project.storage.project_dir, f.diff["location"]
+                self.project.storage.project_dir, f.diff_file.location
             )
             if not os.path.exists(json_file):
                 try:
@@ -721,7 +697,7 @@ class ProjectVersion(db.Model):
                 except GeoDiffLibError:
                     output[f.path] = {
                         "error": self.project.storage.gediff_log.getvalue(),
-                        "size": f.diff["size"],
+                        "size": f.diff_file.size,
                     }
                     continue
             with open(json_file, "r") as jf:
@@ -731,52 +707,10 @@ class ProjectVersion(db.Model):
 
                 output[f.path] = {
                     "summary": content["geodiff_summary"],
-                    "size": f.diff["size"],
+                    "size": f.diff_file.size,
                 }
 
         return output
-
-
-class FileHistory(db.Model):
-    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
-    version_id = db.Column(
-        db.Integer,
-        db.ForeignKey("project_version.id", ondelete="CASCADE"),
-        index=True,
-        nullable=False,
-    )
-    path = db.Column(db.String, index=True, nullable=False)
-    # path on FS relative to project directory: version_name + file path
-    location = db.Column(db.String)
-    size = db.Column(db.BigInteger, nullable=False)
-    checksum = db.Column(db.String, nullable=False)
-    diff = db.Column(JSONB)
-    change = db.Column(
-        ENUM(
-            *PushChangeType.values(),
-            name="push_change_type",
-        ),
-        index=True,
-        nullable=False,
-    )
-
-    version = db.relationship(
-        "ProjectVersion",
-        uselist=False,
-        backref=db.backref(
-            "file_changes", single_parent=True, lazy="dynamic", cascade="all,delete"
-        ),
-    )
-
-    __table_args__ = (db.UniqueConstraint("version_id", "path"),)
-
-    def __init__(self, file_info: DBFileInfo, change: PushChangeType):
-        self.path = file_info.path
-        self.size = file_info.size
-        self.checksum = file_info.checksum
-        self.location = file_info.location
-        self.diff = asdict(file_info.diff) if file_info.diff else None
-        self.change = change.value
 
 
 class Upload(db.Model):
@@ -801,11 +735,11 @@ class Upload(db.Model):
     )
     __table_args__ = (db.UniqueConstraint("project_id", "version"),)
 
-    def __init__(self, project, version, changes, user_id):
+    def __init__(self, project: Project, version: int, changes: UploadChanges, user_id: int):
         self.id = str(uuid.uuid4())
         self.project_id = project.id
         self.version = version
-        self.changes = changes
+        self.changes = UploadChangesSchema().dump(changes)
         self.user_id = user_id
 
 

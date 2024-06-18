@@ -4,7 +4,6 @@
 
 import json
 import shutil
-import sqlite3
 import uuid
 import math
 from dataclasses import asdict
@@ -19,6 +18,7 @@ from pygeodiff import GeoDiff
 from ..auth.models import User, UserProfile
 from ..sync.utils import generate_location, generate_checksum
 from ..sync.models import Project, ProjectAccess, ProjectVersion
+from ..sync.files import UploadChanges, UploadChangesSchema
 from ..sync.workspace import GlobalWorkspace
 from .. import db
 from . import json_headers, DEFAULT_USER, test_project, test_project_dir, TMP_DIR
@@ -83,8 +83,7 @@ def create_project(name, workspace, user, **kwargs):
     public = kwargs.get("public", False)
     pa = ProjectAccess(p, public)
     db.session.add(pa)
-    changes = {"added": [], "updated": [], "removed": []}
-
+    changes = UploadChanges(added=[], updated=[], removed=[])
     pv = ProjectVersion(p, 0, user.username, changes, "127.0.0.1")
     db.session.add(pv)
     db.session.commit()
@@ -165,7 +164,7 @@ def initialize():
                     ),
                     "size": os.path.getsize(abs_path),
                     "checksum": generate_checksum(abs_path),
-                    "mtime": datetime.fromtimestamp(os.path.getmtime(abs_path)),
+                    "mtime": str(datetime.fromtimestamp(os.path.getmtime(abs_path))),
                 }
             )
     p.latest_version = 1
@@ -177,8 +176,8 @@ def initialize():
     db.session.add(pa)
     db.session.commit()
 
-    changes = {"added": project_files, "updated": [], "removed": []}
-    pv = ProjectVersion(p, 1, user.username, changes, "127.0.0.1")
+    upload_changes = UploadChangesSchema().load({"added": project_files, "updated": [], "removed": []})
+    pv = ProjectVersion(p, 1, user.username, upload_changes, "127.0.0.1")
     db.session.add(pv)
     db.session.commit()
 
@@ -254,12 +253,11 @@ def execute_query(file, sql):
 
 def create_blank_version(project):
     """Helper to create dummy project version with no changes to increase count"""
-    changes = {"added": [], "updated": [], "removed": []}
     pv = ProjectVersion(
         project,
         project.next_version(),
         project.creator.username,
-        changes,
+        UploadChanges(added=[], updated=[], removed=[]),
         "127.0.0.1",
     )
     db.session.add(pv)
@@ -329,11 +327,12 @@ def push_change(project, action, path, src_dir):
     else:
         return
 
+    upload_changes = UploadChangesSchema().load(changes)
     pv = ProjectVersion(
         project,
         project.next_version(),
         project.creator.username,
-        changes,
+        upload_changes,
         "127.0.0.1",
     )
     db.session.add(pv)

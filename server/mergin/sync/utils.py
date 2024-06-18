@@ -10,7 +10,6 @@ import secrets
 from threading import Timer
 from uuid import UUID
 from connexion import NoContent
-from pathvalidate import sanitize_filename
 from shapely import wkb
 from shapely.errors import WKBReadingError
 from gevent import sleep
@@ -267,24 +266,6 @@ def is_name_allowed(string):
     )
 
 
-def mergin_secure_filename(filename):
-    """Change filename to be secured filename
-
-    :param filename: string to be checked.
-    :type filename: str
-
-    :return: secured filename
-    :rtype: str
-    """
-    filename = os.path.normpath(filename)
-    return os.path.join(
-        *[
-            sanitize_filename(path, replacement_text="_")
-            for path in filename.split(os.sep)
-        ]
-    )
-
-
 def workspace_names(workspaces):
     """Helper to extract only names from list of workspaces"""
     return list(map(lambda x: x.name, workspaces))
@@ -305,11 +286,6 @@ def split_project_path(project_path):
     """Extract workspace and project names out of path."""
     workspace_name, project_name = project_path.split("/")
     return workspace_name, project_name
-
-
-def is_valid_gpkg(file_meta):
-    """Check if diff file is valid"""
-    return file_meta["size"] != 0
 
 
 def clean_upload(transaction_id):

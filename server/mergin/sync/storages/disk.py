@@ -20,8 +20,8 @@ from ... import db
 from ..utils import (
     generate_checksum,
     is_versioned_file,
-    mergin_secure_filename,
 )
+from ..files import mergin_secure_filename
 
 
 def save_to_file(stream, path, max_size=None):
@@ -236,7 +236,7 @@ class DiskStorage(ProjectStorage):
                     v_name, f.get("sanitized_path", mergin_secure_filename(f["path"]))
                 ),
             }
-            if "diff" in f:
+            if f.get("diff"):
                 basefile = os.path.join(self.project_dir, old_item.location)
                 changeset = os.path.join(self.project_dir, v_name, f["diff"]["path"])
                 patchedfile = os.path.join(self.project_dir, v_name, f["path"])
@@ -260,7 +260,10 @@ class DiskStorage(ProjectStorage):
                     geodiff_apply_time = time.time() - start
                     # track performance of geodiff action
                     base_version = old_item.location.split("/")[0]
-                    meta = {**asdict(old_item), "version": ProjectVersion.from_v_name(base_version)}
+                    meta = {
+                        "path": old_item.path,
+                        "size": old_item.size,
+                        "version": ProjectVersion.from_v_name(base_version)}
                     gh = GeodiffActionHistory(
                         self.project.id, meta, v_name, "apply_changes", changeset
                     )
