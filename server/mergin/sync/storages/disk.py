@@ -260,12 +260,8 @@ class DiskStorage(ProjectStorage):
                     geodiff_apply_time = time.time() - start
                     # track performance of geodiff action
                     base_version = old_item.location.split("/")[0]
-                    meta = {
-                        "path": old_item.path,
-                        "size": old_item.size,
-                        "version": ProjectVersion.from_v_name(base_version)}
                     gh = GeodiffActionHistory(
-                        self.project.id, meta, v_name, "apply_changes", changeset
+                        self.project.id, base_version, old_item.path, old_item.size, v_name, "apply_changes", changeset
                     )
                     gh.copy_time = copy_time
                     gh.geodiff_time = geodiff_apply_time
@@ -346,7 +342,7 @@ class DiskStorage(ProjectStorage):
         :param file: path of file in project to recover
         :param version: project version (e.g. 2)
         """
-        from ..models import GeodiffActionHistory, ProjectVersion
+        from ..models import GeodiffActionHistory, ProjectVersion, FileHistory
 
         if not is_versioned_file(file):
             return
@@ -367,19 +363,17 @@ class DiskStorage(ProjectStorage):
         ):
             return
 
-        base_meta, diffs = self.project.file_diffs_chain(file, version)
+        base_meta, diffs = FileHistory.diffs_chain(self.project, file, version)
         if not (base_meta and diffs):
             return
 
-        basefile = os.path.join(self.project_dir, base_meta["location"])
         tmp_dir = os.path.join(current_app.config["TEMP_DIR"], str(uuid.uuid4()))
         os.makedirs(tmp_dir, exist_ok=True)
-        restored_file = os.path.join(
-            tmp_dir, os.path.basename(basefile)
-        )  # this is final restored file
-        logging.info(f"Restore file: copying {basefile} to {restored_file}")
+        # this is final restored file
+        restored_file = os.path.join(tmp_dir, os.path.basename(base_meta.abs_path))
+        logging.info(f"Restore file: copying {base_meta.abs_path} to {restored_file}")
         start = time.time()
-        copy_file(basefile, restored_file)
+        copy_file(base_meta.abs_path, restored_file)
         copy_time = time.time() - start
         logging.info(f"File copied in {copy_time} s")
         logging.info(f"Restoring gpkg file with {len(diffs)} diffs")
@@ -388,22 +382,22 @@ class DiskStorage(ProjectStorage):
             self.flush_geodiff_logger()  # clean geodiff logger
             if len(diffs) > 1:
                 # concatenate multiple diffs into single one
-                changeset = os.path.join(tmp_dir, os.path.basename(basefile) + "-diff")
+                changeset = os.path.join(tmp_dir, os.path.basename(base_meta.abs_path) + "-diff")
                 partials = [
-                    os.path.join(self.project_dir, d["location"]) for d in diffs
+                    os.path.join(self.project_dir, d.location) for d in diffs
                 ]
                 self.geodiff.concat_changes(partials, changeset)
             else:
-                changeset = os.path.join(self.project_dir, diffs[0]["location"])
+                changeset = os.path.join(self.project_dir, diffs[0].location)
 
             logging.info(
                 f"Geodiff: apply changeset {changeset} of size {os.path.getsize(changeset)}"
             )
             # if we are going backwards we need to reverse changeset!
-            if base_meta["version"] > version:
+            if base_meta.version.name > version:
                 logging.info(f"Geodiff: inverting changeset")
                 changes = os.path.join(
-                    tmp_dir, os.path.basename(basefile) + "-diff-inv"
+                    tmp_dir, os.path.basename(base_meta.abs_path) + "-diff-inv"
                 )
                 self.geodiff.invert_changeset(changeset, changes)
             else:
@@ -413,7 +407,9 @@ class DiskStorage(ProjectStorage):
             # track geodiff event for performance analysis
             gh = GeodiffActionHistory(
                 self.project.id,
-                base_meta,
+                ProjectVersion.to_v_name(base_meta.version.name),
+                base_meta.path,
+                base_meta.size,
                 ProjectVersion.to_v_name(project_version.name),
                 "restore_file",
                 changes,

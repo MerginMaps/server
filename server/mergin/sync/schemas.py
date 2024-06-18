@@ -2,10 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import os
 import re
-from datetime import datetime
-from marshmallow import fields, pre_dump, post_dump
+from marshmallow import fields, post_dump
 from flask_login import current_user
 from flask import current_app
 
@@ -17,7 +15,7 @@ from .models import (
     AccessRequest,
     FileHistory,
 )
-from .files import LocalFile
+from .files import ProjectFileSchema, LocalFileSchema
 from ..app import DateTimeWithZ
 from ..auth.models import User
 
@@ -68,66 +66,23 @@ def project_user_permissions(project):
 
 class FileHistorySchema(ma.SQLAlchemyAutoSchema):
     mtime = DateTimeWithZ()
+    diff = fields.Nested(LocalFileSchema(), attribute="diff_file", exclude=("location", ), dump_default={})
+    expiration = DateTimeWithZ(attribute="expiration", dump_only=True)
 
     class Meta:
         model = FileHistory
         load_instance = True
-        fields = ("path", "size", "checksum", "mtime", ) # add version?
+        fields = ("path", "size", "checksum", "mtime", "diff", "expiration", "change", )
 
-
-class FileInfoSchema(ma.SQLAlchemyAutoSchema):
-    path = fields.String()
-    size = fields.Integer()
-    checksum = fields.String()
-    location = fields.String(load_only=True)
-    mtime = fields.String()
-    diff = fields.Nested("self", required=False, missing={})
-    # FIXME to separate schema (FileHistorySchema?)
-    history = fields.Dict(required=False, dump_only=True, missing={})
-
-    @pre_dump
-    def patch_history_field(self, data, **kwargs):
-        """
-        Append expiration to materialized versioned files and remove internal server metadata from final response.
-        This is because history is general dict with yet unknown structure.
-        #TODO resolve once marshmallow 3.0 is released.
-        history = fields.Dict(keys=fields.String(), values=fields.Nested('self', exclude=['location', 'chunks']))
-        """
-        if isinstance(data, FileHistory) or isinstance(data, LocalFile):
-            return data
-
-        # diff field (self-nested does not contain history)
-        if "history" not in data:
-            return data
-
-        history_data = {}
-        for key, value in data["history"].items():
-            item = {**value}
-            if item.get("diff"):
-                item["diff"].pop("location", None)
-                item["diff"].pop("sanitized_path", None)
-                if self.context and "project_dir" in self.context:
-                    abs_path = os.path.join(
-                        self.context["project_dir"], item["location"]
-                    )
-                    if os.path.exists(abs_path):
-                        expiration = (
-                            os.path.getmtime(abs_path)
-                            + current_app.config["FILE_EXPIRATION"]
-                        )
-                        item.update(expiration=datetime.utcfromtimestamp(expiration))
-            item.pop("location", None)
-            item.pop("chunks", None)
-            item.pop("sanitized_path", None)
-            # fixme to pushChange.public()?
-            if item.get("change") == "create":
-                item["change"] = "added"
-            elif item.get("change") == "delete":
-                item["change"] = "removed"
-            elif item.get("change") in ("update", "update_diff"):
-                item["change"] = "updated"
-            history_data[ProjectVersion.to_v_name(key)] = item
-        data["history"] = history_data
+    @post_dump
+    def patch_field(self, data, **kwargs):
+        # patch change type from internal type to public API value
+        if data.get("change") == "create":
+            data["change"] = "added"
+        elif data.get("change") == "delete":
+            data["change"] = "removed"
+        elif data.get("change") in ("update", "update_diff"):
+            data["change"] = "updated"
         return data
 
 
@@ -143,7 +98,7 @@ class ProjectSchemaForVersion(ma.SQLAlchemyAutoSchema):
     access = fields.Method("_access")
     permissions = fields.Method("_permissions")
     disk_usage = fields.Method("_disk_usage")
-    files = fields.Nested(FileInfoSchema(), many=True)
+    files = fields.Nested(ProjectFileSchema(), many=True)
     tags = fields.Method("_tags")
     updated = DateTimeWithZ(attribute="created")
     version = fields.Function(lambda obj: ProjectVersion.to_v_name(obj.name))
@@ -186,7 +141,7 @@ class ProjectAccessRequestSchema(ma.SQLAlchemyAutoSchema):
 
 class ProjectSchema(ma.SQLAlchemyAutoSchema):
     id = fields.UUID()
-    files = fields.Nested(FileInfoSchema(), many=True)
+    files = fields.Nested(ProjectFileSchema(), many=True)
     access = fields.Nested(ProjectAccessSchema())
     permissions = fields.Function(project_user_permissions)
     version = fields.Function(lambda obj: ProjectVersion.to_v_name(obj.latest_version))

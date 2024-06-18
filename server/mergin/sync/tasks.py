@@ -9,7 +9,7 @@ import time
 from datetime import datetime, timedelta
 from flask import current_app
 
-from .models import Project, ProjectVersion
+from .models import Project, ProjectVersion, FileHistory
 from .storages.disk import move_to_tmp
 from .config import Configuration
 from ..celery import celery
@@ -82,24 +82,23 @@ def optimize_storage(project_id):
         return
 
     for f in project.files:
-        f_history = project.file_history(f.path, 1, project.latest_version)
+        f_history = FileHistory.changes(project.id, f.path, 1, project.latest_version)
         if not f_history:
             continue
 
-        for item in f_history.values():
+        for item in f_history:
             # no diffs, it is a basefile for geodiff
-            if item["diff"] is None:
+            if item.diff is None:
                 continue
 
             # skip the latest file version (high chance of being used)
-            if item["location"] == f.location:
+            if item.location == f.location:
                 continue
 
-            abs_path = os.path.join(project.storage.project_dir, item["location"])
             # already removed
-            if not os.path.exists(abs_path):
+            if not os.path.exists(item.abs_path):
                 continue
 
-            age = time.time() - os.path.getmtime(abs_path)
+            age = time.time() - os.path.getmtime(item.abs_path)
             if age > Configuration.FILE_EXPIRATION:
-                move_to_tmp(abs_path)
+                move_to_tmp(item.abs_path)

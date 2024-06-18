@@ -1115,46 +1115,34 @@ components:
           format: int64
           example: 1024
     HistoryFileInfo:
-      type: object
-      properties:
-        path:
-          type: string
-          example: data/survey.gpkg
-        checksum:
-          description: sha1 hash
-          type: string
-          example: 9adb76bf81a34880209040ffe5ee262a090b62ab
-        mtime:
-          type: string
-          format: date-time
-          example: 2019-01-30T08:47:58.636074Z
-        size:
-          type: integer
-          format: int64
-          example: 102450086
-        diff:
-          $ref: "#/components/schemas/FileDiff"
-        history:
-          type: object
-          description: map with version names as keys and file info as values
-          additionalProperties:
-            allOf:
-              - $ref: "#/components/schemas/UpdateFileInfo"
-              - type: object
-                required:
-                  - change
-                properties:
-                  change:
-                    type: string
-                    example: added
-                    enum:
-                      - added
-                      - updated
-                      - removed
-                  expiration:
-                    type: string
-                    format: date-time
-                    example: 2019-02-26T08:47:58.636074Z
+      allOf:
+        - $ref: "#/components/schemas/FileInfo"
+        - type: object
+          properties:
+            diff:
+              $ref: "#/components/schemas/FileDiff"
+            history:
+              type: object
+              description: map with version names as keys and file info as values
+              additionalProperties:
+                allOf:
+                  - $ref: "#/components/schemas/UpdateFileInfo"
+                  - type: object
+                    required:
+                      - change
+                    properties:
+                      change:
+                        type: string
+                        example: added
+                        enum:
+                          - added
+                          - updated
+                          - removed
+                      expiration:
+                        nullable: true
+                        type: string
+                        format: date-time
+                        example: 2019-02-26T08:47:58.636074Z
     UploadFileInfo:
       allOf:
         - $ref: "#/components/schemas/FileInfo"

@@ -35,13 +35,12 @@ from werkzeug.exceptions import HTTPException
 from .. import db
 from ..auth import auth_required
 from ..auth.models import User
-from .models import Project, ProjectAccess, ProjectVersion, Upload, PushChangeType
-from .files import UploadChanges, UploadChangesSchema, UploadFileInfoSchema
+from .models import Project, ProjectAccess, ProjectVersion, Upload, PushChangeType, FileHistory
+from .files import UploadChanges, UploadChangesSchema, UploadFileInfoSchema, ProjectFileSchema, LocalFileSchema
 from .schemas import (
     ProjectSchema,
     ProjectListSchema,
     ProjectVersionSchema,
-    FileInfoSchema,
     ProjectSchemaForVersion,
     UserWorkspaceSchema, FileHistorySchema, )
 from .storages.storage import FileNotFound, DataSyncError, InitializationError
@@ -185,7 +184,7 @@ def add_project(namespace):  # noqa: E501
                 .first_or_404()
             )
             version_name = 1
-            files = [UploadFileInfoSchema().load(FileHistorySchema().dump(file)) for file in p.files]
+            files = [UploadFileInfoSchema().load(LocalFileSchema().dump(file)) for file in p.files]
             changes = UploadChanges(added=files, updated=[], removed=[])
 
         else:
@@ -399,20 +398,11 @@ def get_project(project_name, namespace, since="", version=None):  # noqa: E501
         # append history for versioned files
         files = []
         for f in project.files:
-            history = project.file_history(
-                f.path, ProjectVersion.from_v_name(since), project.latest_version
-            )
-            history_data = {}
-            for key, value in history.items():
-                if value.get("change") == "create":
-                    value["change"] = "added"
-                elif value.get("change") == "delete":
-                    value["change"] = "removed"
-                elif value.get("change") == "update":
-                    value["change"] = "updated"
-                history_data[ProjectVersion.to_v_name(key)] = value
-            files.append({**asdict(f), "history": history_data})
-        # TODO convert to schema
+            history_field = {}
+            for item in FileHistory.changes(project.id, f.path, ProjectVersion.from_v_name(since), project.latest_version):
+                history_field[ProjectVersion.to_v_name(item.version.name)] = FileHistorySchema(exclude=('mtime',)).dump(
+                    item)
+            files.append({**asdict(f), "history": history_field})
         data["files"] = files
     elif version:
         # return project info at requested version
@@ -1149,7 +1139,7 @@ def clone_project(namespace, project_name):  # noqa: E501
     user_agent = get_user_agent(request)
     device_id = get_device_id(request)
     # transform source files to new uploaded files
-    files = [UploadFileInfoSchema().load(FileHistorySchema().dump(file)) for file in cloned_project.files]
+    files = [UploadFileInfoSchema().load(LocalFileSchema().dump(file)) for file in cloned_project.files]
     changes = UploadChanges(added=files, updated=[], removed=[])
     project_version = ProjectVersion(
         p,
@@ -1183,33 +1173,20 @@ def get_resource_history(project_name, namespace, path):  # noqa: E501
     :rtype: HistoryFileInfo
     """
     project = require_project(namespace, project_name, ProjectPermissions.Read)
-
     # get the metadata of file at latest version where file is present
-    sql = text(
-        """
-        SELECT fh.path, fh.size AS size, fh.diff, fh.location, pv.name AS version
-        FROM file_history fh
-        LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
-        WHERE pv.project_id = :project_id AND fh.path = :file_path AND fh.change != 'delete'
-        ORDER BY pv.created DESC
-        LIMIT 1;
-    """
-    )
+    fh = FileHistory.query.join(FileHistory.version).filter(
+        ProjectVersion.project_id == project.id,
+        FileHistory.path == path,
+        FileHistory.change != "delete"
+    ).order_by(desc(ProjectVersion.created)).first_or_404(f"File {path} not found")
 
-    result = db.session.execute(
-        sql, {"project_id": project.id, "file_path": path}
-    ).fetchone()
-    if not result:
-        abort(404, f"File {path} not found")
+    data = ProjectFileSchema().dump(fh)
+    history_field = {}
+    for item in FileHistory.changes(project.id, path, 1, project.latest_version):
+        history_field[ProjectVersion.to_v_name(item.version.name)] = FileHistorySchema(exclude=('mtime',)).dump(item)
 
-    file = {
-        **result._mapping,
-        "history": project.file_history(path, 1, project.latest_version),
-    }
-    file_info = FileInfoSchema(
-        context={"project_dir": project.storage.project_dir}
-    ).dump(file)
-    return file_info, 200
+    data["history"] = history_field
+    return data, 200
 
 
 def get_resource_changeset(project_name, namespace, version_id, path):  # noqa: E501

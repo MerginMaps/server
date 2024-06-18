@@ -1,22 +1,22 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+from __future__ import annotations
 import json
 import os
 import uuid
 from dataclasses import asdict
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, List, Dict, Set
+from typing import Optional, List, Dict, Set, Tuple
 from blinker import signal
 from flask_login import current_user
 from pygeodiff import GeoDiff
-from sqlalchemy import text, null
+from sqlalchemy import text, null, desc
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.types import String
 from sqlalchemy.ext.hybrid import hybrid_property
-from collections import OrderedDict
 from pygeodiff.geodifflib import GeoDiffLibError
 from flask import current_app
 
@@ -94,80 +94,6 @@ class Project(db.Model):
         latest_version = self.get_latest_version()
         return latest_version.files if latest_version else []
 
-    def file_history(
-        self, file: str, since: int, to: int, diffable: bool = False
-    ) -> Dict:
-        """
-        Look up in project versions for history of versioned file.
-        Returns ordered (from latest) dict with versions where some change happened and corresponding metadata.
-
-        :Example:
-
-        >>> self.file_history('mergin/base.gpkg', 1, 2)
-        {2: {'checksum': '08b0e8caddafe74bf5c11a45f65cedf974210fed', 'location': 'v2/base.gpkg', 'path': 'base.gpkg',
-        'size': 2793, 'change': 'updated'}, 1: {checksum': '89469a6482267de394c7c7270cb7ffafe694ea76',
-        'location': 'v1/base.gpkg', 'mtime': '2019-07-18T07:52:38.770113Z', 'path': 'base.gpkg', 'size': 98304,
-        'change': 'added'}}
-
-        :param file: file path
-        :param since: start version for history (e.g. 1)
-        :param to: end version for history (e.g. 2)
-        :param diffable: whether to find only diffable history, defaults to False
-        :returns: changes metadata for versions where some file change happened
-        """
-        if not (is_versioned_file(file) and since is not None and to is not None):
-            return {}
-
-        history = OrderedDict()
-        # query only those versions where file appeared in changes
-        sql = text(
-            """
-        SELECT
-            pv.name AS name,
-            fh.change,
-            json_build_object('path', path, 'size', size, 'diff', diff, 'checksum', checksum, 'location', location) AS value
-        FROM file_history fh
-        LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
-        WHERE project_id = :project_id
-            AND fh.path = :file
-            AND pv.name <= :to
-            AND pv.name >= :since
-        ORDER BY pv.created DESC;
-        """
-        )
-
-        params = {
-            "project_id": self.id,
-            "file": file,
-            "since": since,
-            "to": to,
-        }
-        result = db.session.execute(sql, params).fetchall()
-        for r in result:
-            # example of custom query result
-            # (1, 'added', {'checksum': '89469a6482267de394c7c7270cb7ffafe694ea76', 'location': 'v1/data/tests.gpkg',
-            # 'mtime': '2019-07-18T07:52:38.770113Z', 'path': 'base.gpkg', 'size': 98304})
-
-            # make sure we have "location" in response (e.g. 'added' changes do not have it stored)
-            # which consists of version and file path
-            if "location" not in r.value:
-                r.value["location"] = os.path.join(r.name, r.value["path"])
-
-            history[r.name] = {**r.value, "change": r.change}
-            # end of file history
-            if r.change in [PushChangeType.CREATE.value, PushChangeType.DELETE.value]:
-                break
-
-            # if we are interested only in 'diffable' history (not broken with forced update)
-            if (
-                diffable
-                and r.change == PushChangeType.UPDATE.value
-                and not r.value.get("diff")
-            ):
-                break
-
-        return history
-
     def sync_failed(self, client, error_type, error_details, user_id):
         """Commit failed attempt to sync failure history table"""
         new_failure = SyncFailuresHistory(
@@ -175,107 +101,6 @@ class Project(db.Model):
         )
         db.session.add(new_failure)
         db.session.commit()
-
-    def file_diffs_chain(self, file: str, version: int):
-        """Find chain of diffs from the closest basefile that leads to a given file at certain project version.
-
-        Returns basefile and list of diffs for gpkg that needs to be applied to reconstruct file.
-        List of diffs can be empty if basefile was eventually asked. Basefile can be empty if file cannot be
-        reconstructed (removed/renamed).
-
-        :Example:
-
-        >>> self.file_diffs_chain('mergin/base.gpkg', 3)
-        {'checksum': '89469a6482267de394c7c7270cb7ffafe694ea76', 'location': 'v3/base.gpkg', 'path': 'base.gpkg', 'size': 98304, 'change': 'added', 'version': 3},
-        [{'checksum': '3749188af2721c60a0a6ac77935cd445934462d3', 'location': 'v4/base.gpkg-diff-aa78054c-6e43-4cbf-a7a9-cbbd3d84a0d5', 'path': 'base.gpkg-diff-aa78054c-6e43-4cbf-a7a9-cbbd3d84a0d5', 'size': 80}]
-
-        :param file: file path
-        :type file: str
-        :param version: start version for history (e.g. 1)
-        :type version: str
-        :returns: basefile metadata, list of diffs metadata
-        :rtype: dict, List[dict]
-        """
-        diffs = []
-        base_meta = {}
-        v_x = version  # the version of interest
-        v_last = self.latest_version
-
-        # we ask for the latest version which is always a basefile if the file has not been removed
-        if v_x == v_last:
-            f_meta = next((f for f in self.files if file == f.path), None)
-            if f_meta:
-                base_meta = asdict(f_meta)
-                # take actual version where file exists
-                base_meta["version"] = ProjectVersion.from_v_name(f_meta.location.split(os.path.sep)[0])
-            return base_meta, diffs
-
-        # check if it would not be faster to look up from the latest version
-        backward = (v_last - v_x) < v_x
-
-        if backward:
-            # get ordered dict of file history starting with the latest version (v_last, ..., v_x+n, (..., v_x))
-            history = self.file_history(file, v_x, v_last, diffable=True)
-            if history:
-                history_end = next(reversed(history))
-                meta = history[history_end]
-                # we have either full history of changes or v_x = v_x+n => no basefile in way, it is 'diffable' from the end
-                if meta.get("diff"):
-                    # omit diff for target version as it would lead to previous version if reconstructed backward
-                    diffs = [
-                        value["diff"]
-                        for key, value in reversed(history.items())
-                        if key != v_x
-                    ]
-                    base_meta = history[next(iter(history))]
-                    base_meta["version"] = next(iter(history))
-                    return base_meta, diffs
-                # there was either breaking change or v_x is a basefile itself
-                else:
-                    # we asked for basefile
-                    if v_x == history_end and meta["change"] in [
-                        PushChangeType.CREATE.value,
-                        PushChangeType.UPDATE.value,
-                    ]:
-                        base_meta = meta
-                        base_meta["version"] = v_x
-                        diffs = []
-                        return base_meta, diffs
-                    # file was removed (or renamed for backward compatibility)
-                    elif v_x == history_end:
-                        return base_meta, diffs
-                    # there was a breaking change in v_x+n, and we need to search from start
-                    else:
-                        pass
-
-        # we haven't found something so far, search from v1
-        if not (base_meta and diffs):
-            # get ordered dict of file history starting with version of interest (v_x, ..., v_x-n, (..., v_1))
-            history = self.file_history(file, 1, v_x, diffable=True)
-            if history:
-                history_end = next(reversed(history))
-                meta = history[history_end]
-                # we found basefile
-                if meta["change"] in [
-                    PushChangeType.CREATE.value,
-                    PushChangeType.UPDATE.value,
-                ]:
-                    base_meta = meta
-                    base_meta["version"] = history_end
-                    if v_x == history_end:
-                        diffs = []  # we asked for basefile
-                    else:
-                        diffs = [
-                            value["diff"]
-                            for value in list(reversed(history.values()))[
-                                1:
-                            ]  # basefile has no diff
-                        ]
-                # file was removed (or renamed for backward compatibility)
-                else:
-                    pass
-
-        return base_meta, diffs
 
     def get_latest_version(self):
         """Return ProjectVersion object for the latest project version"""
@@ -501,6 +326,137 @@ class FileHistory(db.Model):
     @property
     def mtime(self) -> datetime:
         return self.version.created
+
+    @property
+    def abs_path(self) -> str:
+        return os.path.join(self.version.project.storage.project_dir, self.location)
+
+    @property
+    def expiration(self) -> Optional[datetime]:
+        if not self.diff:
+            return
+
+        if os.path.exists(self.abs_path):
+            return datetime.utcfromtimestamp(os.path.getmtime(self.abs_path) + current_app.config["FILE_EXPIRATION"])
+
+    @classmethod
+    def changes(cls, project_id: str, file: str, since: int, to: int, diffable: bool = False) -> List[FileHistory]:
+        """
+        Returns file history (changes) between two versions. The result is ordered from the newest change.
+        Actions for create and delete file are considered as a start of changes chain.
+
+        If only versioned files are of interest (diffable=True) then forced update without diff is also considered
+        as a start of changes chain.
+        """
+        if not (is_versioned_file(file) and since is not None and to is not None):
+            return []
+
+        history = []
+        full_history = FileHistory.query.join(FileHistory.version).filter(
+            ProjectVersion.project_id == project_id,
+            ProjectVersion.name <= to,
+            ProjectVersion.name >= since,
+            FileHistory.path == file,
+        ).order_by(desc(ProjectVersion.created)).all()
+
+        for item in full_history:
+            history.append(item)
+
+            # end of file history
+            if item.change in [PushChangeType.CREATE.value, PushChangeType.DELETE.value]:
+                break
+
+            # if we are interested only in 'diffable' history (not broken with forced update)
+            if (
+                diffable
+                and item.change == PushChangeType.UPDATE.value
+                and not item.diff
+            ):
+                break
+
+        return history
+
+    @classmethod
+    def diffs_chain(cls, project: Project, file: str, version: int) -> Tuple[Optional[FileHistory], List[Optional[LocalFile]]]:
+        """Find chain of diffs from the closest basefile that leads to a given file at certain project version.
+
+        Returns basefile and list of diffs for gpkg that needs to be applied to reconstruct file.
+        List of diffs can be empty if basefile was eventually asked. Basefile can be empty if file cannot be
+        reconstructed (removed/renamed).
+        """
+        diffs = []
+        basefile = None
+        v_x = version  # the version of interest
+        v_last = project.latest_version
+
+        # we ask for the latest version which is always a basefile if the file has not been removed
+        if v_x == v_last:
+            latest_change = FileHistory.query.join(FileHistory.version).filter(
+                FileHistory.path == file,
+                ProjectVersion.project_id == project.id
+            ).order_by(desc(ProjectVersion.created)).first()
+            if latest_change.change != PushChangeType.DELETE.value:
+                return latest_change, []
+            else:
+                # file is actually not in the latest project version
+                return None, []
+
+        # check if it would not be faster to look up from the latest version
+        backward = (v_last - v_x) < v_x
+
+        if backward:
+            # get list of file history changes starting with the latest version (v_last, ..., v_x+n, (..., v_x))
+            history = FileHistory.changes(project.id, file, v_x, v_last, diffable=True)
+            if history:
+                first_change = history[-1]
+                # we have either full history of changes or v_x = v_x+n => no basefile in way, it is 'diffable' from the end
+                if first_change.diff:
+                    # omit diff for target version as it would lead to previous version if reconstructed backward
+                    diffs = [
+                        value.diff_file
+                        for value in reversed(history)
+                        if value.version.name != v_x
+                    ]
+                    basefile = history[0]
+                    return basefile, diffs
+                # there was either breaking change or v_x is a basefile itself
+                else:
+                    # we asked for basefile
+                    if v_x == first_change.version.name and first_change.change in [
+                        PushChangeType.CREATE.value,
+                        PushChangeType.UPDATE.value,
+                    ]:
+                        return first_change, []
+                    # file was removed (or renamed for backward compatibility)
+                    elif v_x == first_change.version.name:
+                        return basefile, diffs
+                    # there was a breaking change in v_x+n, and we need to search from start
+                    else:
+                        pass
+
+        # we haven't found anything so far, search from v1
+        if not (basefile and diffs):
+            # get ordered dict of file history starting with version of interest (v_x, ..., v_x-n, (..., v_1))
+            history = FileHistory.changes(project.id, file, 1, v_x, diffable=True)
+            if history:
+                first_change = history[-1]
+                # we found basefile
+                if first_change.change in [
+                    PushChangeType.CREATE.value,
+                    PushChangeType.UPDATE.value,
+                ]:
+                    basefile = first_change
+                    if v_x == first_change.version.name:
+                        # we asked for basefile
+                        diffs = []
+                    else:
+                        # basefile has no diff
+                        diffs = [value.diff_file for value in list(reversed(history))[1:]]
+                # file was removed (or renamed for backward compatibility)
+                else:
+                    pass
+
+        return basefile, diffs
 
 
 class ProjectVersion(db.Model):
@@ -861,11 +817,11 @@ class GeodiffActionHistory(db.Model):
     checksum_time = db.Column(db.Float)  # in seconds
     geodiff_time = db.Column(db.Float)  # in seconds
 
-    def __init__(self, project_id, base_meta, target_version, action, diff_path):
+    def __init__(self, project_id, base_version: str, file: str, size: int, target_version: str, action: str, diff_path: str):
         self.project_id = project_id
-        self.base_version = ProjectVersion.to_v_name(base_meta["version"])
-        self.file_name = base_meta["path"]
-        self.file_size = base_meta["size"]
+        self.base_version = base_version
+        self.file_name = file
+        self.file_size = size
         self.target_version = target_version
         self.action = action
 

@@ -104,3 +104,15 @@ class UploadChangesSchema(ma.Schema):
     @post_load
     def create_obj(self, data, **kwargs):
         return UploadChanges(**data)
+
+
+class LocalFileSchema(ma.Schema):
+    path = fields.String()
+    size = fields.Integer()
+    checksum = fields.String()
+    location = fields.String(load_only=True)
+
+
+class ProjectFileSchema(LocalFileSchema):
+    mtime = fields.String()
+    diff = fields.Nested(LocalFileSchema(), dump_default={})

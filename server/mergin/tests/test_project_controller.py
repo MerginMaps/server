@@ -34,7 +34,7 @@ from ..sync.models import (
     FileHistory, PushChangeType,
 )
 from ..sync.files import UploadChangesSchema
-from ..sync.schemas import ProjectListSchema
+from ..sync.schemas import ProjectListSchema, ProjectSchema
 from ..sync.utils import generate_checksum, is_versioned_file
 from ..auth.models import User, UserProfile
 
@@ -1774,61 +1774,61 @@ def test_optimize_storage(app, client, diff_project):
 def test_file_diffs_chain(diff_project):
     # file test.gpkg was added only in v9, and then left intact
     # direct search
-    basefile, diffs = diff_project.file_diffs_chain("test.gpkg", 2)
+    basefile, diffs = FileHistory.diffs_chain(diff_project, "test.gpkg", 2)
     assert not basefile
     assert not diffs
     # reverse search
-    basefile, diffs = diff_project.file_diffs_chain("test.gpkg", 8)
+    basefile, diffs = FileHistory.diffs_chain(diff_project, "test.gpkg", 8)
     assert not basefile
     assert not diffs
 
     # ask for basefile
-    basefile, diffs = diff_project.file_diffs_chain("test.gpkg", 9)
-    assert basefile["version"] == 9
-    assert basefile["change"] == "create"
+    basefile, diffs = FileHistory.diffs_chain(diff_project, "test.gpkg", 9)
+    assert basefile.version.name == 9
+    assert basefile.change == "create"
     assert not diffs
 
     # version history has been broken by removal of file in v2
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 2)
+    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 2)
     assert not basefile
     assert not diffs
 
     # file was re-added in v3
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 3)
-    assert basefile["version"] == 3
-    assert basefile["change"] == "create"
+    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 3)
+    assert basefile.version.name == 3
+    assert basefile.change == "create"
     assert not diffs
 
     # diff was used in v4, direct search
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 4)
-    assert basefile["version"] == 3
+    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 4)
+    assert basefile.version.name == 3
     assert len(diffs) == 1
-    assert "v4" in diffs[0]["location"]
+    assert "v4" in diffs[0].location
 
     # file was overwritten in v5
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 5)
-    assert basefile["version"] == 5
-    assert basefile["change"] == "update"
+    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 5)
+    assert basefile.version.name == 5
+    assert basefile.change == "update"
     assert not diffs
 
     # diff was used in v6, reverse search followed by direct search
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 6)
-    assert basefile["version"] == 5
+    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 6)
+    assert basefile.version.name == 5
     assert len(diffs) == 1
-    assert "v6" in diffs[0]["location"]
+    assert "v6" in diffs[0].location
 
     # diff was used in v7, nothing happened in v8 (=v7), reverse search followed by direct search
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 8)
-    assert basefile["version"] == 5
+    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 8)
+    assert basefile.version.name == 5
     assert len(diffs) == 2
 
     # file was removed in v9
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 9)
+    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 9)
     assert not basefile
     assert not diffs
 
     # ask for latest version, but file is already gone
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 10)
+    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 10)
     assert not basefile
     assert not diffs
 
@@ -1842,19 +1842,19 @@ def test_file_diffs_chain(diff_project):
     db.session.commit()
 
     # diff was used in v6, v7, nothing happened in v8 => v7 = v8, reverse search
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 6)
-    assert basefile["version"] == 7
+    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 6)
+    assert basefile.version.name == 7
     assert len(diffs) == 1
-    assert "v7" in diffs[0]["location"]
+    assert "v7" in diffs[0].location
 
     # we asked for last existing file version - basefile
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 7)
-    assert basefile["version"] == 7
+    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 7)
+    assert basefile.version.name == 7
     assert not diffs
 
     # we asked for last project version
-    basefile, diffs = diff_project.file_diffs_chain("base.gpkg", 8)
-    assert basefile["version"] == 7
+    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 8)
+    assert basefile.version.name == 7
     assert not diffs
 
 
