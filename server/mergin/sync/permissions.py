@@ -157,7 +157,8 @@ class ProjectPermissions:
             return ProjectRole.READER
         return None
 
-def is_inactive_workspace(workspace):
+
+def is_active_workspace(workspace):
     """
     Checks if the given workspace is active and if the current user is an admin or anonymous.
 
@@ -167,14 +168,15 @@ def is_inactive_workspace(workspace):
     Returns:
         bool: True if the workspace is not active and the current user is not an admin or is anonymous, False otherwise.
     """
-    is_admin = not current_user.is_anonymous and current_user.is_admin
     if not workspace:
         abort(404)
-    return not workspace.is_active and (not is_admin or is_anonymous)
+    is_admin = not current_user.is_anonymous and current_user.is_admin
+    return workspace.is_active or is_admin
+
 
 def require_project(ws, project_name, permission):
     workspace = current_app.ws_handler.get_by_name(ws)
-    if is_inactive_workspace(workspace):
+    if not is_active_workspace(workspace):
         abort(404, "Workspace doesn't exist")
     project = (
         Project.query.filter_by(name=project_name, workspace_id=workspace.id)
@@ -198,7 +200,7 @@ def require_project_by_uuid(uuid: str, permission: ProjectPermissions, scheduled
         project = project.filter(Project.removed_at.is_(None))
     project = project.first_or_404()
     workspace = project.workspace
-    if is_inactive_workspace(workspace):
+    if not is_active_workspace(workspace):
         abort(404, "Workspace doesn't exist")
     if not permission.check(project, current_user):
         abort(403, "You do not have permissions for this project")
