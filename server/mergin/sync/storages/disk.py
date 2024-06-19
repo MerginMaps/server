@@ -7,21 +7,20 @@ import io
 import time
 import uuid
 import logging
-from dataclasses import asdict
-from datetime import datetime
-from typing import Dict, List
 
 from flask import current_app
 from pygeodiff import GeoDiff, GeoDiffLibError
 from pygeodiff.geodifflib import GeoDiffLibConflictError
 from gevent import sleep
-from .storage import ProjectStorage, FileNotFound, DataSyncError, InitializationError
+from result import Err, Ok, Result
+
+from .storage import ProjectStorage, FileNotFound, InitializationError
 from ... import db
 from ..utils import (
     generate_checksum,
     is_versioned_file,
 )
-from ..files import mergin_secure_filename
+from ..files import mergin_secure_filename, ProjectFile, UploadFile, UploadFileInfo
 
 
 def save_to_file(stream, path, max_size=None):
@@ -203,133 +202,85 @@ class DiskStorage(ProjectStorage):
 
         return _generator()
 
-    # FIXME refactor this into single file action
-    def apply_changes(
-        self, changes: Dict, version: int, transaction_id: str
-    ) -> List[dict]:
-        """Apply geodiff changes for gpkg updates. As a result both changeset and full gpkg file are present
-        on filesystem. In case of failure DataSyncError is raised. Two possible actions can be done for any update:
-        - if diff file is uploaded, then it is applied and new gpkg is constructed
-        - if full gpkg is uploaded (e.g. from browser) then corresponding geodiff changeset is calculated
-          and diff file saved.
+    def apply_diff(self, current_file: ProjectFile, upload_file: UploadFileInfo, version: int) -> Result:
+        """ Apply geodiff diff file on current gpkg basefile. Creates GeodiffActionHistory record of the action.
+        Returns checksum and size of generated file. If action fails it returns geodiff error message.
         """
         from ..models import GeodiffActionHistory, ProjectVersion
 
-        updated_files = []
-        sync_errors = {}
-        modified_files = []
-        to_remove = [i["path"] for i in changes["removed"]]
-        # filter current project files which are not being removed
-        files = list(filter(lambda i: i.path not in to_remove, self.project.files))
         v_name = ProjectVersion.to_v_name(version)
+        basefile = os.path.join(self.project_dir, current_file.location)
+        changeset = os.path.join(self.project_dir, v_name, upload_file.diff.path)
+        patchedfile = os.path.join(self.project_dir, v_name, upload_file.path)
+        # create copy of basefile which will be updated in next version
+        # TODO this can potentially fail for large files
+        logging.info(f"Apply changes: copying {basefile} to {patchedfile}")
+        start = time.time()
+        copy_file(basefile, patchedfile)
+        copy_time = time.time() - start
+        logging.info(f"Copying finished in {copy_time} s")
+        try:
+            # clean geodiff logger
+            self.flush_geodiff_logger()
+            logging.info(
+                f"Geodiff: apply changeset {changeset} of size {os.path.getsize(changeset)} with changes to {patchedfile}"
+            )
+            start = time.time()
+            self.geodiff.apply_changeset(patchedfile, changeset)
+            geodiff_apply_time = time.time() - start
+            # track performance of geodiff action
+            base_version = current_file.location.split("/")[0]
+            gh = GeodiffActionHistory(
+                self.project.id, base_version, current_file.path, current_file.size, v_name, "apply_changes",
+                changeset
+            )
+            gh.copy_time = copy_time
+            gh.geodiff_time = geodiff_apply_time
+            logging.info(f"Changeset applied in {geodiff_apply_time} s")
+        except (GeoDiffLibError, GeoDiffLibConflictError):
+            move_to_tmp(patchedfile)
+            move_to_tmp(changeset)
+            return Err(self.gediff_log.getvalue())
 
-        for f in changes["updated"]:
-            # yield to gevent hub since geodiff action can take some time to prevent worker timeout
-            sleep(0)
-            old_item = next((i for i in files if i.path == f["path"]), None)
-            if not old_item:
-                sync_errors[f["path"]] = "file does not found on server "
-                continue
-            updated_file_meta = {
-                **f,
-                "location": os.path.join(
-                    v_name, f.get("sanitized_path", mergin_secure_filename(f["path"]))
-                ),
-            }
-            if f.get("diff"):
-                basefile = os.path.join(self.project_dir, old_item.location)
-                changeset = os.path.join(self.project_dir, v_name, f["diff"]["path"])
-                patchedfile = os.path.join(self.project_dir, v_name, f["path"])
-                modified_files.append(changeset)
-                modified_files.append(patchedfile)
-                # create copy of basefile which will be updated in next version
-                # TODO this can potentially fail for large files
-                logging.info(f"Apply changes: copying {basefile} to {patchedfile}")
-                start = time.time()
-                copy_file(basefile, patchedfile)
-                copy_time = time.time() - start
-                logging.info(f"Copying finished in {copy_time} s")
-                try:
-                    self.flush_geodiff_logger()  # clean geodiff logger
-                    logging.info(
-                        f"Geodiff: apply changeset {changeset} of size {os.path.getsize(changeset)} "
-                        f"with {3} changes to {patchedfile}"
-                    )
-                    start = time.time()
-                    self.geodiff.apply_changeset(patchedfile, changeset)
-                    geodiff_apply_time = time.time() - start
-                    # track performance of geodiff action
-                    base_version = old_item.location.split("/")[0]
-                    gh = GeodiffActionHistory(
-                        self.project.id, base_version, old_item.path, old_item.size, v_name, "apply_changes", changeset
-                    )
-                    gh.copy_time = copy_time
-                    gh.geodiff_time = geodiff_apply_time
-                    logging.info(f"Changeset applied in {geodiff_apply_time} s")
-                except (GeoDiffLibError, GeoDiffLibConflictError):
-                    project_workspace = self.project.workspace.name
-                    sync_errors[
-                        f["path"]
-                    ] = f"project: {project_workspace}/{self.project.name}, {self.gediff_log.getvalue()}"
-                    continue
-                updated_file_meta["diff"]["location"] = os.path.join(
-                    v_name,
-                    f["diff"].get(
-                        "sanitized_path", mergin_secure_filename(f["diff"]["path"])
-                    ),
-                )
-                # we can now replace old basefile metadata with the new one (patchedfile)
-                # TODO this can potentially fail for large files
-                logging.info(f"Apply changes: calculating checksum of {patchedfile}")
-                start = time.time()
-                updated_file_meta["checksum"] = generate_checksum(patchedfile)
-                checksumming_time = time.time() - start
-                gh.checksum_time = checksumming_time
-                logging.info(f"Checksum calculated in {checksumming_time} s")
-                updated_file_meta["size"] = os.path.getsize(patchedfile)
-                db.session.add(gh)
-            elif is_versioned_file(f["path"]):
-                # diff not provided by client (e.g. web browser), let's try to construct it here
-                basefile = os.path.join(self.project_dir, old_item.location)
-                uploaded_file = os.path.join(self.project_dir, v_name, f["path"])
-                diff_name = f["path"] + "-diff-" + str(uuid.uuid4())
-                changeset = os.path.join(self.project_dir, v_name, diff_name)
-                try:
-                    self.flush_geodiff_logger()
-                    logging.info(
-                        f"Geodiff: create changeset {changeset} from {uploaded_file}"
-                    )
-                    self.geodiff.create_changeset(basefile, uploaded_file, changeset)
-                    # append diff metadata as it would be created by other clients
-                    updated_file_meta["diff"] = {
-                        "path": diff_name,
-                        "location": os.path.join(
-                            v_name, mergin_secure_filename(diff_name)
-                        ),
-                        "checksum": generate_checksum(changeset),
-                        "size": os.path.getsize(changeset),
-                    }
-                except (GeoDiffLibError, GeoDiffLibConflictError):
-                    # diff is not possible to create - file will be overwritten
-                    move_to_tmp(changeset)  # remove residuum from geodiff
-                    no_diff_in_meta = True
-                    logging.warning(
-                        f"Geodiff: create changeset error {self.gediff_log.getvalue()}"
-                    )
+        # we can now replace old basefile metadata with the new one (patchedfile)
+        # TODO this can potentially fail for large files
+        logging.info(f"Apply changes: calculating checksum of {patchedfile}")
+        start = time.time()
+        checksumming_time = time.time() - start
+        gh.checksum_time = checksumming_time
+        logging.info(f"Checksum calculated in {checksumming_time} s")
+        db.session.add(gh)
+        return Ok((generate_checksum(patchedfile), os.path.getsize(patchedfile)))
 
-            if f["path"] not in sync_errors:
-                updated_files.append(updated_file_meta)
+    def construct_diff(self, current_file: ProjectFile, upload_file: UploadFileInfo, version: int) -> Result:
+        """ Construct geodiff diff file from uploaded gpkg and current basefile. Returns diff metadata as a result.
+        If action fails it returns geodiff error message.
+        """
+        from ..models import ProjectVersion
 
-        # do cleanup and exit
-        if sync_errors:
-            for file in modified_files:
-                move_to_tmp(file, transaction_id)
-            msg = ""
-            for key, value in sync_errors.items():
-                msg += key + " error=" + value + "\n"
-            raise DataSyncError(msg)
-
-        return updated_files
+        v_name = ProjectVersion.to_v_name(version)
+        basefile = os.path.join(self.project_dir, current_file.location)
+        uploaded_file = os.path.join(self.project_dir, v_name, upload_file.path)
+        diff_name = upload_file.path + "-diff-" + str(uuid.uuid4())
+        changeset = os.path.join(self.project_dir, v_name, diff_name)
+        try:
+            self.flush_geodiff_logger()
+            logging.info(
+                f"Geodiff: create changeset {changeset} from {uploaded_file}"
+            )
+            self.geodiff.create_changeset(basefile, uploaded_file, changeset)
+            # create diff metadata as it would be created by other clients
+            diff_file = UploadFile(
+                path=diff_name,
+                checksum=generate_checksum(changeset),
+                size=os.path.getsize(changeset),
+                sanitized_path=mergin_secure_filename(diff_name)
+            )
+            return Ok(diff_file)
+        except (GeoDiffLibError, GeoDiffLibConflictError):
+            # diff is not possible to create - file will be overwritten
+            move_to_tmp(changeset)
+            return Err(self.gediff_log.getvalue())
 
     def delete(self):
         move_to_tmp(self.project_dir)

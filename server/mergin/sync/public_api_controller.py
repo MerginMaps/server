@@ -979,18 +979,15 @@ def push_finish(transaction_id):
         abort(422, {"corrupted_files": corrupted_files})
 
     next_version = upload.version + 1
+    v_next_version = ProjectVersion.to_v_name(next_version)
     files_dir = os.path.join(upload_dir, "files")
-    target_dir = os.path.join(
-        project.storage.project_dir, ProjectVersion.to_v_name(next_version)
-    )
+    target_dir = os.path.join(project.storage.project_dir, v_next_version)
     if os.path.exists(target_dir):
-        pv = ProjectVersion.query.filter_by(
-            project_id=project.id, name=project.latest_version
-        ).first()
+        pv = ProjectVersion.query.filter_by(project_id=project.id, name=project.latest_version).first()
         if pv and pv.name == upload.version + 1:
             abort(
                 409,
-                f"There is already version with this name {ProjectVersion.to_v_name(next_version)}",
+                f"There is already version with this name {v_next_version}",
             )
         logging.info(
             "Upload transaction: Target directory already exists. Overwriting %s"
@@ -1001,19 +998,48 @@ def push_finish(transaction_id):
     try:
         # let's move uploaded files where they are expected to be
         os.renames(files_dir, target_dir)
-        updated_files = project.storage.apply_changes(
-            upload.changes, next_version, transaction_id
-        )
-        # update list with modified metadata (server-side generated diffs)
-        upload.changes["updated"] = updated_files
-        upload_changes = UploadChangesSchema().load(upload.changes)
+        # apply gpkg updates
+        sync_errors = {}
+        to_remove = [i.path for i in changes.removed]
+        current_files = [f for f in project.files if f.path not in to_remove]
+        for updated_file in changes.updated:
+            # yield to gevent hub since geodiff action can take some time to prevent worker timeout
+            sleep(0)
+            current_file = next((i for i in current_files if i.path == updated_file.path), None)
+            if not current_file:
+                sync_errors[updated_file.path] = "file not found on server "
+                continue
+
+            if updated_file.diff:
+                result = project.storage.apply_diff(current_file, updated_file, next_version)
+                if result.ok():
+                    checksum, size = result.value
+                    updated_file.checksum = checksum
+                    updated_file.size = size
+                else:
+                    sync_errors[updated_file.path] = f"project: {project.workspace.name}/{project.name}, {result.value}"
+
+            elif is_versioned_file(updated_file.path):
+                result = project.storage.construct_diff(current_file, updated_file, next_version)
+                if result.ok():
+                    updated_file.diff = result.value
+                else:
+                    # if diff cannot be constructed it would be force update
+                    logging.warning(f"Geodiff: create changeset error {result.value}")
+
+        if sync_errors:
+            msg = ""
+            for key, value in sync_errors.items():
+                msg += key + " error=" + value + "\n"
+            raise DataSyncError(msg)
+
         user_agent = get_user_agent(request)
         device_id = get_device_id(request)
         pv = ProjectVersion(
             project,
             next_version,
             current_user.username,
-            upload_changes,
+            changes,
             get_ip(request),
             user_agent,
             device_id,
@@ -1022,7 +1048,7 @@ def push_finish(transaction_id):
         db.session.add(project)
         db.session.commit()
         logging.info(
-            f"Push finished for project: {project.id}, project version: {ProjectVersion.to_v_name(next_version)}, transaction id: {transaction_id}."
+            f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
         )
         project_version_created.send(pv)
         # remove artifacts
@@ -1031,7 +1057,7 @@ def push_finish(transaction_id):
         db.session.rollback()
         clean_upload(transaction_id)
         logging.exception(
-            f"Failed to finish push for project: {project.id}, project version: {ProjectVersion.to_v_name(next_version)}, "
+            f"Failed to finish push for project: {project.id}, project version: {v_next_version}, "
             f"transaction id: {transaction_id}.: {str(err)}"
         )
         abort(422, "Failed to create new version: {}".format(str(err)))
