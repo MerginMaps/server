@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 from datetime import datetime, timedelta
-from typing import Dict, Tuple, Optional, Set
+from typing import Dict, Tuple, Optional, Set, List
 from flask_login import current_user
 from sqlalchemy import or_, and_, Column, literal
 from sqlalchemy.orm import joinedload
 
 from .errors import UpdateProjectAccessError
-from .models import Project, ProjectAccess, AccessRequest
+from .models import Project, ProjectAccess, AccessRequest, ProjectAccessDetail
 from .permissions import projects_query, ProjectPermissions
 from .public_api_controller import parse_project_access_update_request
 from .. import db
@@ -72,7 +72,9 @@ class GlobalWorkspace(AbstractWorkspace):
             return True
 
         if permissions == "read":
-            return role in ["admin", "writer", "reader"]
+            return role in ["admin", "writer", "editor", "reader"]
+        elif permissions == "edit":
+            return role in ["admin", "writer", "editor"]
         elif permissions == "write":
             return role in ["admin", "writer"]
         elif permissions == "admin":
@@ -281,3 +283,56 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
     def access_requests_query():
         """Project access base query"""
         return AccessRequest.query.join(Project)
+
+    def project_access(self, project: Project) -> List[ProjectAccessDetail]:
+        """
+        Project access users overview
+        """
+        ws = self.factory_method()
+        result = []
+        global_role = None
+        if Configuration.GLOBAL_ADMIN:
+            global_role = "owner"
+        elif Configuration.GLOBAL_WRITE:
+            global_role = "writer"
+        elif Configuration.GLOBAL_READ:
+            global_role = "reader"
+
+        direct_members_ids = set(
+            project.access.readers
+            + project.access.editors
+            + project.access.writers
+            + project.access.owners
+        )
+        direct_members = User.query.filter(
+            User.active, User.id.in_(direct_members_ids)
+        ).all()
+
+        for dm in direct_members:
+            project_role = ProjectPermissions.get_user_project_role(project, dm)
+            member = ProjectAccessDetail(
+                id=dm.id,
+                username=dm.username,
+                role=ws.get_user_role(dm),
+                name=dm.profile.name(),
+                email=dm.email,
+                project_permission=project_role and project_role.value,
+                type="member",
+            )
+            result.append(member)
+        if global_role:
+            global_members = User.query.filter(
+                User.active.is_(True), User.id.notin_(direct_members_ids)
+            ).all()
+            for gm in global_members:
+                member = ProjectAccessDetail(
+                    id=gm.id,
+                    username=gm.username,
+                    name=gm.profile.name(),
+                    email=gm.email,
+                    role=global_role,
+                    project_permission=global_role,
+                    type="member",
+                )
+                result.append(member)
+        return result

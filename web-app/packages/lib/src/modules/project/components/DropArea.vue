@@ -73,7 +73,7 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState(useProjectStore, ['project', 'uploads']),
+    ...mapState(useProjectStore, ['project', 'uploads', 'isProjectWriter']),
     ...mapState(useInstanceStore, ['configData']),
     upload() {
       return this.project && this.uploads[this.project.name]
@@ -83,9 +83,7 @@ export default defineComponent({
     },
     canDropFiles() {
       const isUploadRunning = this.upload && this.upload.running
-      return (
-        this.canDragOver && !isUploadRunning && this.project.permissions.upload
-      )
+      return this.canDragOver && !isUploadRunning && this.isProjectWriter
     }
   },
   methods: {

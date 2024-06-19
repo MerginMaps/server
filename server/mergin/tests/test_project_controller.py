@@ -484,6 +484,7 @@ def test_delete_project(client):
 
     # remove project
     admin = User.query.filter_by(username="mergin").first()
+    original_creator_id = project.creator_id
     resp = client.delete("/v1/project/{}/{}".format(test_workspace_name, test_project))
     assert resp.status_code == 200
     rp = Project.query.filter_by(
@@ -494,6 +495,7 @@ def test_delete_project(client):
     assert os.path.exists(
         project_dir
     )  # files not deleted yet, since there is possibility of restore
+    assert rp.creator_id == original_creator_id
 
     # do permanent delete as admin by forcing removal
     resp = client.delete(f"/app/project/removed-project/{project.id}")
@@ -652,7 +654,7 @@ def test_update_project(client):
         data=json.dumps(data),
         headers=json_headers,
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 200
 
     # try to add non-existing user
     readers = [
@@ -677,6 +679,7 @@ def test_update_project(client):
     data = {
         "access": {
             "readersnames": readers + ["not-found-user"],
+            "editorsnames": readers,
             "writersnames": readers,
             "ownersnames": readers,
         }

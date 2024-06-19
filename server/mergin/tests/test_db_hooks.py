@@ -134,6 +134,7 @@ def test_remove_project(client, diff_project):
     ).first()
     file = os.path.join(project_dir, file_history.location)
     assert file_history and os.path.exists(file)
+    original_creator_id = diff_project.creator_id
 
     # remove project
     diff_project.delete()
@@ -152,6 +153,9 @@ def test_remove_project(client, diff_project):
         FileHistory.query.filter(FileHistory.version_id.in_(versions_ids)).count() == 0
     )
     assert not os.path.exists(file)
+    assert (
+        Project.query.filter_by(id=project_id).first().creator_id == original_creator_id
+    )
 
     # try to remove the deleted project
     assert diff_project.delete() is None

@@ -104,10 +104,14 @@ def parse_project_access_update_request(access: Dict) -> Dict:
     names = set(
         access.get("ownersnames", [])
         + access.get("writersnames", [])
+        + access.get("editorsnames", [])
         + access.get("readersnames", [])
     )
     ids = set(
-        access.get("owners", []) + access.get("writers", []) + access.get("readers", [])
+        access.get("owners", [])
+        + access.get("writers", [])
+        + access.get("editors", [])
+        + access.get("readers", [])
     )
     # get only valid user entries from database
     valid_users = (
@@ -120,12 +124,13 @@ def parse_project_access_update_request(access: Dict) -> Dict:
     valid_usernames = valid_users_map.keys()
     valid_ids = valid_users_map.values()
 
-    for key in ("owners", "writers", "readers"):
+    for key in ("owners", "writers", "editors", "readers"):
         # transform usernames from client request to ids, which has precedence over ids in request
-        if key + "names" in access:
+        name_key = key + "names"
+        if name_key in access:
             parsed_access[key] = [
                 valid_users_map[username]
-                for username in access.get(key + "names")
+                for username in access.get(name_key)
                 if username in valid_usernames
             ]
         # use legacy option
@@ -658,11 +663,6 @@ def update_project(namespace, project_name):  # noqa: E501  # pylint: disable=W0
     project = require_project(namespace, project_name, ProjectPermissions.Update)
     access = request.json.get("access", {})
 
-    # prevent to remove ownership of project creator
-    if access.get("owners", []):
-        if project.creator_id and project.creator_id not in access["owners"]:
-            abort(400, str("Ownership of project creator cannot be removed."))
-
     id_diffs, error = current_app.ws_handler.update_project_members(project, access)
 
     if not id_diffs and error:
@@ -740,6 +740,9 @@ def project_push(namespace, project_name):
         abort(404)
     # pass full project object to request for later use
     request.view_args["project"] = project
+    project_permission = current_app.project_handler.get_push_permission(changes)
+    project = require_project(namespace, project_name, project_permission)
+
     push_triggered.send(project)
     # fixme use get_latest
     pv = ProjectVersion.query.filter_by(

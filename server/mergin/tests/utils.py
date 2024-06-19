@@ -26,7 +26,7 @@ from . import json_headers, DEFAULT_USER, test_project, test_project_dir, TMP_DI
 CHUNK_SIZE = 1024
 
 
-def add_user(username, password, is_admin=False):
+def add_user(username="random", password="random", is_admin=False):
     """Helper function to create not-privileged user.
     Associated user workspace is created with db hook.
 

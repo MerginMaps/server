@@ -8,7 +8,7 @@ from typing import Optional, List
 from marshmallow import fields, EXCLUDE, pre_load, post_load
 from pathvalidate import sanitize_filename
 
-from server.mergin import ma
+from .. import ma
 
 
 def mergin_secure_filename(filename: str) -> str:

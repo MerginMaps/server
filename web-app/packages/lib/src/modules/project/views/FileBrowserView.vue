@@ -25,12 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </app-container>
 
     <app-container
-      v-if="
-        project &&
-        $route.name === 'project-tree' &&
-        project.permissions &&
-        project.permissions.upload
-      "
+      v-if="project && $route.name === 'project-tree' && isProjectWriter"
     >
       <app-panel-toggleable :collapsed="dataTableOpen">
         <template #title>Upload files</template>
@@ -217,7 +212,7 @@ export default defineComponent({
   },
   computed: {
     ...mapState(useInstanceStore, ['configData']),
-    ...mapState(useProjectStore, ['project', 'uploads']),
+    ...mapState(useProjectStore, ['project', 'uploads', 'isProjectWriter']),
     docsLinkManageCreateProject() {
       return `${this.configData?.docs_url ?? ''}/manage/create-project`
     },
@@ -368,7 +363,7 @@ export default defineComponent({
       return !!(
         this.searchFilter !== '' ||
         this.items.length ||
-        (this.project && !this.project.permissions.upload) ||
+        (this.project && !this.isProjectWriter) ||
         this.filter !== ''
       )
     },

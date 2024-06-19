@@ -333,6 +333,7 @@ def test_template_projects(client):
 
 def test_update_project_access(client, diff_project):
     url = f"/app/project/{diff_project.id}/access"
+    original_creator_id = diff_project.creator.id
     # create user and grant him write access
     user = add_user("reader", "reader")
     assert user.id not in diff_project.access.readers
@@ -348,6 +349,12 @@ def test_update_project_access(client, diff_project):
     resp = client.patch(url, headers=json_headers, data=json.dumps(data))
     assert resp.status_code == 200
     assert user.id in diff_project.access.readers
+
+    # grant editor access
+    data["role"] = "editor"
+    resp = client.patch(url, headers=json_headers, data=json.dumps(data))
+    assert resp.status_code == 200
+    assert user.id in diff_project.access.editors
 
     # change to write access
     data["role"] = "writer"
@@ -376,14 +383,18 @@ def test_update_project_access(client, diff_project):
     assert resp.status_code == 200
     assert diff_project.access.public == True
 
-    # access of project creator can not be removed
+    # access of project creator can be removed
     data["user_id"] = diff_project.creator_id
     resp = client.patch(
         f"/app/project/{diff_project.id}/access",
         headers=json_headers,
         data=json.dumps(data),
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 200
+    db.session.rollback()
+    assert user.id not in diff_project.access.owners
+    assert user.id not in diff_project.access.readers
+    assert diff_project.creator_id == original_creator_id
 
     # try to grant access to inaccessible user
     data = {"user_id": 100, "role": "reader"}
@@ -494,6 +505,9 @@ def test_get_project_access(client):
     assert sum(map(lambda x: int(x["project_permission"] == "owner"), resp.json)) == 2
     assert sum(map(lambda x: int(x["project_permission"] == "writer"), resp.json)) == 1
     assert sum(map(lambda x: int(x["project_permission"] == "reader"), resp.json)) == 1
+    # user3 does not have access to the project
+    assert not any(users[3].email == access["email"] for access in resp.json)
+    assert any(users[2].email == access["email"] for access in resp.json)
     Configuration.GLOBAL_READ = True
     resp = client.get(url)
     assert resp.status_code == 200

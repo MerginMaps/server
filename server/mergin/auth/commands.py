@@ -4,7 +4,7 @@
 
 import click
 from flask import Flask
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 
 from .. import db
 from .models import User, UserProfile
@@ -24,7 +24,10 @@ def add_commands(app: Flask):
     def create(username, password, is_admin, email):  # pylint: disable=W0612
         """Create user account"""
         user = User.query.filter(
-            or_(User.username == username, User.email == email)
+            or_(
+                func.lower(User.username) == func.lower(username),
+                func.lower(User.email) == func.lower(email),
+            )
         ).first()
         if user:
             print("ERROR: User already exists!\n")

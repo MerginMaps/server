@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+from .. import db
 from mergin.sync.models import Project
 from tests import test_project, test_workspace_id
 
@@ -23,8 +24,11 @@ def test_delete_project_now(client):
     project = Project.query.filter_by(
         workspace_id=test_workspace_id, name=test_project
     ).first()
+    original_creator_id = project.creator_id
     response = client.delete(f"v2/projects/{project.id}")
     assert response.status_code == 204
+    db.session.rollback()
+    assert project.creator_id == original_creator_id
     project = Project.query.get(project.id)
     assert project.removed_at and not project.storage_params and not project.files
     response = client.delete(f"v2/projects/{project.id}")

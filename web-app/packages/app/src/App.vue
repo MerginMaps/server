@@ -54,7 +54,8 @@ import {
   useNotificationStore,
   useUserStore,
   AppContainer,
-  InstanceMaintenanceMessage
+  InstanceMaintenanceMessage,
+  useProjectStore
 } from '@mergin/lib'
 import { mapActions, mapState } from 'pinia'
 import { useToast } from 'primevue/usetoast'
@@ -123,9 +124,11 @@ export default defineComponent({
     const toast = useToast()
     const notificationStore = useNotificationStore()
     const layoutStore = useLayoutStore()
+    const projectStore = useProjectStore()
 
     notificationStore.init(toast)
     layoutStore.init()
+    projectStore.filterPermissions(['editor'], ['edit'])
   },
   async created() {
     await this.fetchConfig()

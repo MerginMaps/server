@@ -80,11 +80,36 @@ class Toucher:
             self.timer.start()
 
 
+def is_qgis(path: str) -> bool:
+    """
+    Check if file is a QGIS project file.
+    """
+    _, ext = os.path.splitext(path)
+    return ext.lower() in [".qgs", ".qgz"]
+
+
+def resolve_tags(files):
+    tags = []
+    qgis_count = 0
+    for f in files:
+        if is_qgis(f["path"]):
+            qgis_count += 1
+    # TODO add some rules for intput validity and mappin validity
+    if qgis_count == 1:
+        tags.extend(["valid_qgis", "input_use"])
+    return tags
+
+
+def int_version(version):
+    """Convert v<n> format of version to integer representation."""
+    return int(version.lstrip("v")) if re.match(r"v\d", version) else None
+
+
 def is_versioned_file(file):
     """Check if file is compatible with geodiff lib and hence suitable for versioning."""
     diff_extensions = [".gpkg", ".sqlite"]
     f_extension = os.path.splitext(file)[1]
-    return f_extension in diff_extensions
+    return f_extension.lower() in diff_extensions
 
 
 def is_file_name_blacklisted(path, blacklist):

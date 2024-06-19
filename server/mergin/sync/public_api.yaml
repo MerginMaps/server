@@ -1234,6 +1234,7 @@ components:
               type: string
               enum:
                 - reader
+                - editor
                 - writer
                 - owner
     MerginTag:
@@ -1276,6 +1277,12 @@ components:
           items:
             type: string
           example: [ john.doe ]
+        editorsnames:
+          type: array
+          nullable: false
+          items:
+            type: string
+          example: [ john.doe ]
         readersnames:
           nullable: false
           type: array
@@ -1297,6 +1304,12 @@ components:
                 type: integer
               example: [1]
             writers:
+              type: array
+              nullable: false
+              items:
+                type: integer
+              example: [1]
+            editors:
               type: array
               nullable: false
               items:
