@@ -12,7 +12,7 @@ from server.mergin import ma
 
 
 def mergin_secure_filename(filename: str) -> str:
-    """ Generate secure filename for given file """
+    """Generate secure filename for given file"""
     filename = os.path.normpath(filename)
     return os.path.join(
         *[
@@ -25,6 +25,7 @@ def mergin_secure_filename(filename: str) -> str:
 @dataclass
 class FileMeta:
     """Base class for every file object"""
+
     path: str
     checksum: str
     size: int
@@ -37,26 +38,33 @@ class FileMeta:
 @dataclass
 class LocalFile(FileMeta):
     """File stored on server"""
+
     location: str
 
 
 @dataclass
 class ProjectFile(LocalFile):
     """Project file metadata including diff meta"""
+
     diff: Optional[LocalFile]
-    mtime: Optional[datetime.datetime]  # deprecated attribute kept for public API compatibility
+    # deprecated attribute kept for public API compatibility
+    mtime: Optional[datetime.datetime]
 
 
 @dataclass
 class UploadFile(FileMeta):
     """File to be uploaded with secure filename"""
-    sanitized_path: str  # added by server
+
+    # added by server
+    sanitized_path: str
 
 
 @dataclass
 class UploadFileInfo(UploadFile):
     """File to be uploaded coming from client push process"""
-    chunks: Optional[List[str]]  # determined by client
+
+    # determined by client
+    chunks: Optional[List[str]]
     diff: Optional[UploadFile]
 
 

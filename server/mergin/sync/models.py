@@ -20,7 +20,14 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from pygeodiff.geodifflib import GeoDiffLibError
 from flask import current_app
 
-from .files import LocalFile, UploadFileInfo, UploadChanges, UploadChangesSchema, mergin_secure_filename, ProjectFile
+from .files import (
+    LocalFile,
+    UploadFileInfo,
+    UploadChanges,
+    UploadChangesSchema,
+    mergin_secure_filename,
+    ProjectFile,
+)
 from .. import db
 from .storages import DiskStorage
 from .utils import is_versioned_file
@@ -310,7 +317,15 @@ class FileHistory(db.Model):
 
     __table_args__ = (db.UniqueConstraint("version_id", "path"),)
 
-    def __init__(self, path: str, size: int, checksum: str, location: str, change: PushChangeType, diff: dict = None):
+    def __init__(
+        self,
+        path: str,
+        size: int,
+        checksum: str,
+        location: str,
+        change: PushChangeType,
+        diff: dict = None,
+    ):
         self.path = path
         self.size = size
         self.checksum = checksum
@@ -337,10 +352,14 @@ class FileHistory(db.Model):
             return
 
         if os.path.exists(self.abs_path):
-            return datetime.utcfromtimestamp(os.path.getmtime(self.abs_path) + current_app.config["FILE_EXPIRATION"])
+            return datetime.utcfromtimestamp(
+                os.path.getmtime(self.abs_path) + current_app.config["FILE_EXPIRATION"]
+            )
 
     @classmethod
-    def changes(cls, project_id: str, file: str, since: int, to: int, diffable: bool = False) -> List[FileHistory]:
+    def changes(
+        cls, project_id: str, file: str, since: int, to: int, diffable: bool = False
+    ) -> List[FileHistory]:
         """
         Returns file history (changes) between two versions. The result is ordered from the newest change.
         Actions for create and delete file are considered as a start of changes chain.
@@ -352,18 +371,26 @@ class FileHistory(db.Model):
             return []
 
         history = []
-        full_history = FileHistory.query.join(FileHistory.version).filter(
-            ProjectVersion.project_id == project_id,
-            ProjectVersion.name <= to,
-            ProjectVersion.name >= since,
-            FileHistory.path == file,
-        ).order_by(desc(ProjectVersion.created)).all()
+        full_history = (
+            FileHistory.query.join(FileHistory.version)
+            .filter(
+                ProjectVersion.project_id == project_id,
+                ProjectVersion.name <= to,
+                ProjectVersion.name >= since,
+                FileHistory.path == file,
+            )
+            .order_by(desc(ProjectVersion.created))
+            .all()
+        )
 
         for item in full_history:
             history.append(item)
 
             # end of file history
-            if item.change in [PushChangeType.CREATE.value, PushChangeType.DELETE.value]:
+            if item.change in [
+                PushChangeType.CREATE.value,
+                PushChangeType.DELETE.value,
+            ]:
                 break
 
             # if we are interested only in 'diffable' history (not broken with forced update)
@@ -377,7 +404,9 @@ class FileHistory(db.Model):
         return history
 
     @classmethod
-    def diffs_chain(cls, project: Project, file: str, version: int) -> Tuple[Optional[FileHistory], List[Optional[LocalFile]]]:
+    def diffs_chain(
+        cls, project: Project, file: str, version: int
+    ) -> Tuple[Optional[FileHistory], List[Optional[LocalFile]]]:
         """Find chain of diffs from the closest basefile that leads to a given file at certain project version.
 
         Returns basefile and list of diffs for gpkg that needs to be applied to reconstruct file.
@@ -391,10 +420,14 @@ class FileHistory(db.Model):
 
         # we ask for the latest version which is always a basefile if the file has not been removed
         if v_x == v_last:
-            latest_change = FileHistory.query.join(FileHistory.version).filter(
-                FileHistory.path == file,
-                ProjectVersion.project_id == project.id
-            ).order_by(desc(ProjectVersion.created)).first()
+            latest_change = (
+                FileHistory.query.join(FileHistory.version)
+                .filter(
+                    FileHistory.path == file, ProjectVersion.project_id == project.id
+                )
+                .order_by(desc(ProjectVersion.created))
+                .first()
+            )
             if latest_change.change != PushChangeType.DELETE.value:
                 return latest_change, []
             else:
@@ -451,7 +484,9 @@ class FileHistory(db.Model):
                         diffs = []
                     else:
                         # basefile has no diff
-                        diffs = [value.diff_file for value in list(reversed(history))[1:]]
+                        diffs = [
+                            value.diff_file for value in list(reversed(history))[1:]
+                        ]
                 # file was removed (or renamed for backward compatibility)
                 else:
                     pass
@@ -504,7 +539,11 @@ class ProjectVersion(db.Model):
             self._add_file_change(PushChangeType.CREATE, file)
 
         for file in changes.updated:
-            change = PushChangeType.UPDATE_DIFF if file.diff is not None else PushChangeType.UPDATE
+            change = (
+                PushChangeType.UPDATE_DIFF
+                if file.diff is not None
+                else PushChangeType.UPDATE
+            )
             self._add_file_change(change, file)
 
         for file in changes.removed:
@@ -521,20 +560,26 @@ class ProjectVersion(db.Model):
         db.session.flush()
 
     def _add_file_change(self, change: PushChangeType, upload_file: UploadFileInfo):
-        """ Add file history record to project version """
+        """Add file history record to project version"""
         diff = None
         if upload_file.diff:
-            secure_diff_path = upload_file.diff.sanitized_path if upload_file.diff.sanitized_path else mergin_secure_filename(
-                upload_file.diff.path)
+            secure_diff_path = (
+                upload_file.diff.sanitized_path
+                if upload_file.diff.sanitized_path
+                else mergin_secure_filename(upload_file.diff.path)
+            )
             diff = LocalFile(
                 path=upload_file.diff.path,
                 size=upload_file.diff.size,
                 checksum=upload_file.diff.checksum,
-                location=os.path.join(self.to_v_name(self.name), secure_diff_path)
+                location=os.path.join(self.to_v_name(self.name), secure_diff_path),
             )
 
-        secure_path = upload_file.sanitized_path if upload_file.sanitized_path else mergin_secure_filename(
-            upload_file.path)
+        secure_path = (
+            upload_file.sanitized_path
+            if upload_file.sanitized_path
+            else mergin_secure_filename(upload_file.path)
+        )
 
         fh = FileHistory(
             path=upload_file.path,
@@ -542,7 +587,7 @@ class ProjectVersion(db.Model):
             checksum=upload_file.checksum,
             location=os.path.join(self.to_v_name(self.name), secure_path),
             diff=asdict(diff) if diff else None,
-            change=change
+            change=change,
         )
         fh.version = self
         db.session.add(fh)
@@ -591,9 +636,10 @@ class ProjectVersion(db.Model):
                 checksum=row.checksum,
                 location=row.location,
                 mtime=row.mtime,
-                diff=LocalFile(**row.diff) if row.diff else None
+                diff=LocalFile(**row.diff) if row.diff else None,
             )
-            for row in result]
+            for row in result
+        ]
         return files
 
     def resolve_tags(self) -> List[str]:
@@ -691,7 +737,9 @@ class Upload(db.Model):
     )
     __table_args__ = (db.UniqueConstraint("project_id", "version"),)
 
-    def __init__(self, project: Project, version: int, changes: UploadChanges, user_id: int):
+    def __init__(
+        self, project: Project, version: int, changes: UploadChanges, user_id: int
+    ):
         self.id = str(uuid.uuid4())
         self.project_id = project.id
         self.version = version
@@ -817,7 +865,16 @@ class GeodiffActionHistory(db.Model):
     checksum_time = db.Column(db.Float)  # in seconds
     geodiff_time = db.Column(db.Float)  # in seconds
 
-    def __init__(self, project_id, base_version: str, file: str, size: int, target_version: str, action: str, diff_path: str):
+    def __init__(
+        self,
+        project_id,
+        base_version: str,
+        file: str,
+        size: int,
+        target_version: str,
+        action: str,
+        diff_path: str,
+    ):
         self.project_id = project_id
         self.base_version = base_version
         self.file_name = file

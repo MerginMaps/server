@@ -51,7 +51,7 @@ def test_workspace_implementation(client):
         checksum="89469a6482267de394c7c7270cb7ffafe694ea76",
         size=1024,
         diff=None,
-        change=PushChangeType.CREATE
+        change=PushChangeType.CREATE,
     )
     file_history.version = project.get_latest_version()
     default_project_usage = ws.disk_usage()

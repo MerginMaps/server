@@ -202,8 +202,10 @@ class DiskStorage(ProjectStorage):
 
         return _generator()
 
-    def apply_diff(self, current_file: ProjectFile, upload_file: UploadFileInfo, version: int) -> Result:
-        """ Apply geodiff diff file on current gpkg basefile. Creates GeodiffActionHistory record of the action.
+    def apply_diff(
+        self, current_file: ProjectFile, upload_file: UploadFileInfo, version: int
+    ) -> Result:
+        """Apply geodiff diff file on current gpkg basefile. Creates GeodiffActionHistory record of the action.
         Returns checksum and size of generated file. If action fails it returns geodiff error message.
         """
         from ..models import GeodiffActionHistory, ProjectVersion
@@ -231,8 +233,13 @@ class DiskStorage(ProjectStorage):
             # track performance of geodiff action
             base_version = current_file.location.split("/")[0]
             gh = GeodiffActionHistory(
-                self.project.id, base_version, current_file.path, current_file.size, v_name, "apply_changes",
-                changeset
+                self.project.id,
+                base_version,
+                current_file.path,
+                current_file.size,
+                v_name,
+                "apply_changes",
+                changeset,
             )
             gh.copy_time = copy_time
             gh.geodiff_time = geodiff_apply_time
@@ -252,8 +259,10 @@ class DiskStorage(ProjectStorage):
         db.session.add(gh)
         return Ok((generate_checksum(patchedfile), os.path.getsize(patchedfile)))
 
-    def construct_diff(self, current_file: ProjectFile, upload_file: UploadFileInfo, version: int) -> Result:
-        """ Construct geodiff diff file from uploaded gpkg and current basefile. Returns diff metadata as a result.
+    def construct_diff(
+        self, current_file: ProjectFile, upload_file: UploadFileInfo, version: int
+    ) -> Result:
+        """Construct geodiff diff file from uploaded gpkg and current basefile. Returns diff metadata as a result.
         If action fails it returns geodiff error message.
         """
         from ..models import ProjectVersion
@@ -265,16 +274,14 @@ class DiskStorage(ProjectStorage):
         changeset = os.path.join(self.project_dir, v_name, diff_name)
         try:
             self.flush_geodiff_logger()
-            logging.info(
-                f"Geodiff: create changeset {changeset} from {uploaded_file}"
-            )
+            logging.info(f"Geodiff: create changeset {changeset} from {uploaded_file}")
             self.geodiff.create_changeset(basefile, uploaded_file, changeset)
             # create diff metadata as it would be created by other clients
             diff_file = UploadFile(
                 path=diff_name,
                 checksum=generate_checksum(changeset),
                 size=os.path.getsize(changeset),
-                sanitized_path=mergin_secure_filename(diff_name)
+                sanitized_path=mergin_secure_filename(diff_name),
             )
             return Ok(diff_file)
         except (GeoDiffLibError, GeoDiffLibConflictError):
@@ -333,10 +340,10 @@ class DiskStorage(ProjectStorage):
             self.flush_geodiff_logger()  # clean geodiff logger
             if len(diffs) > 1:
                 # concatenate multiple diffs into single one
-                changeset = os.path.join(tmp_dir, os.path.basename(base_meta.abs_path) + "-diff")
-                partials = [
-                    os.path.join(self.project_dir, d.location) for d in diffs
-                ]
+                changeset = os.path.join(
+                    tmp_dir, os.path.basename(base_meta.abs_path) + "-diff"
+                )
+                partials = [os.path.join(self.project_dir, d.location) for d in diffs]
                 self.geodiff.concat_changes(partials, changeset)
             else:
                 changeset = os.path.join(self.project_dir, diffs[0].location)

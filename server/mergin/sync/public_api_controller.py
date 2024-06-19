@@ -35,14 +35,29 @@ from werkzeug.exceptions import HTTPException
 from .. import db
 from ..auth import auth_required
 from ..auth.models import User
-from .models import Project, ProjectAccess, ProjectVersion, Upload, PushChangeType, FileHistory
-from .files import UploadChanges, UploadChangesSchema, UploadFileInfoSchema, ProjectFileSchema, LocalFileSchema
+from .models import (
+    Project,
+    ProjectAccess,
+    ProjectVersion,
+    Upload,
+    PushChangeType,
+    FileHistory,
+)
+from .files import (
+    UploadChanges,
+    UploadChangesSchema,
+    UploadFileInfoSchema,
+    ProjectFileSchema,
+    LocalFileSchema,
+)
 from .schemas import (
     ProjectSchema,
     ProjectListSchema,
     ProjectVersionSchema,
     ProjectSchemaForVersion,
-    UserWorkspaceSchema, FileHistorySchema, )
+    UserWorkspaceSchema,
+    FileHistorySchema,
+)
 from .storages.storage import FileNotFound, DataSyncError, InitializationError
 from .storages.disk import save_to_file, move_to_tmp
 from .permissions import (
@@ -184,7 +199,10 @@ def add_project(namespace):  # noqa: E501
                 .first_or_404()
             )
             version_name = 1
-            files = [UploadFileInfoSchema().load(LocalFileSchema().dump(file)) for file in p.files]
+            files = [
+                UploadFileInfoSchema().load(LocalFileSchema().dump(file))
+                for file in p.files
+            ]
             changes = UploadChanges(added=files, updated=[], removed=[])
 
         else:
@@ -351,9 +369,9 @@ def download_project_file(
         # encoding for nginx to be able to download file with non-ascii chars
         encoded_file_path = quote(file_path.encode("utf-8"))
         resp = make_response()
-        resp.headers[
-            "X-Accel-Redirect"
-        ] = f"/download/{project.storage_params['location']}/{encoded_file_path}"
+        resp.headers["X-Accel-Redirect"] = (
+            f"/download/{project.storage_params['location']}/{encoded_file_path}"
+        )
         resp.headers["X-Accel-Buffering"] = True
         resp.headers["X-Accel-Expires"] = "off"
     else:
@@ -399,9 +417,15 @@ def get_project(project_name, namespace, since="", version=None):  # noqa: E501
         files = []
         for f in project.files:
             history_field = {}
-            for item in FileHistory.changes(project.id, f.path, ProjectVersion.from_v_name(since), project.latest_version):
-                history_field[ProjectVersion.to_v_name(item.version.name)] = FileHistorySchema(exclude=('mtime',)).dump(
-                    item)
+            for item in FileHistory.changes(
+                project.id,
+                f.path,
+                ProjectVersion.from_v_name(since),
+                project.latest_version,
+            ):
+                history_field[ProjectVersion.to_v_name(item.version.name)] = (
+                    FileHistorySchema(exclude=("mtime",)).dump(item)
+                )
             files.append({**asdict(f), "history": history_field})
         data["files"] = files
     elif version:
@@ -736,7 +760,10 @@ def project_push(namespace, project_name):
             abort(400, f"File {item.path} has been already uploaded")
 
     # changes' files must be unique
-    changes_files = [f.path for f in upload_changes.added + upload_changes.updated + upload_changes.removed]
+    changes_files = [
+        f.path
+        for f in upload_changes.added + upload_changes.updated + upload_changes.removed
+    ]
     if len(set(changes_files)) != len(changes_files):
         abort(400, "Not unique changes")
 
@@ -757,12 +784,16 @@ def project_push(namespace, project_name):
         if f.diff:
             if f.diff.sanitized_path in sanitized_files:
                 filename, file_extension = os.path.splitext(f.diff.sanitized_path)
-                f.diff.sanitized_path = (filename + f".{str(uuid.uuid4())}" + file_extension)
+                f.diff.sanitized_path = (
+                    filename + f".{str(uuid.uuid4())}" + file_extension
+                )
             sanitized_files.append(f.diff.sanitized_path)
 
     # remove blacklisted files from changes
     for key in upload_changes.__dict__.keys():
-        new_value = [f for f in getattr(upload_changes, key) if f.path not in blacklisted_files]
+        new_value = [
+            f for f in getattr(upload_changes, key) if f.path not in blacklisted_files
+        ]
         setattr(upload_changes, key, new_value)
 
     # Check user data limit
@@ -983,7 +1014,9 @@ def push_finish(transaction_id):
     files_dir = os.path.join(upload_dir, "files")
     target_dir = os.path.join(project.storage.project_dir, v_next_version)
     if os.path.exists(target_dir):
-        pv = ProjectVersion.query.filter_by(project_id=project.id, name=project.latest_version).first()
+        pv = ProjectVersion.query.filter_by(
+            project_id=project.id, name=project.latest_version
+        ).first()
         if pv and pv.name == upload.version + 1:
             abort(
                 409,
@@ -1005,22 +1038,30 @@ def push_finish(transaction_id):
         for updated_file in changes.updated:
             # yield to gevent hub since geodiff action can take some time to prevent worker timeout
             sleep(0)
-            current_file = next((i for i in current_files if i.path == updated_file.path), None)
+            current_file = next(
+                (i for i in current_files if i.path == updated_file.path), None
+            )
             if not current_file:
                 sync_errors[updated_file.path] = "file not found on server "
                 continue
 
             if updated_file.diff:
-                result = project.storage.apply_diff(current_file, updated_file, next_version)
+                result = project.storage.apply_diff(
+                    current_file, updated_file, next_version
+                )
                 if result.ok():
                     checksum, size = result.value
                     updated_file.checksum = checksum
                     updated_file.size = size
                 else:
-                    sync_errors[updated_file.path] = f"project: {project.workspace.name}/{project.name}, {result.value}"
+                    sync_errors[updated_file.path] = (
+                        f"project: {project.workspace.name}/{project.name}, {result.value}"
+                    )
 
             elif is_versioned_file(updated_file.path):
-                result = project.storage.construct_diff(current_file, updated_file, next_version)
+                result = project.storage.construct_diff(
+                    current_file, updated_file, next_version
+                )
                 if result.ok():
                     updated_file.diff = result.value
                 else:
@@ -1165,7 +1206,10 @@ def clone_project(namespace, project_name):  # noqa: E501
     user_agent = get_user_agent(request)
     device_id = get_device_id(request)
     # transform source files to new uploaded files
-    files = [UploadFileInfoSchema().load(LocalFileSchema().dump(file)) for file in cloned_project.files]
+    files = [
+        UploadFileInfoSchema().load(LocalFileSchema().dump(file))
+        for file in cloned_project.files
+    ]
     changes = UploadChanges(added=files, updated=[], removed=[])
     project_version = ProjectVersion(
         p,
@@ -1200,16 +1244,23 @@ def get_resource_history(project_name, namespace, path):  # noqa: E501
     """
     project = require_project(namespace, project_name, ProjectPermissions.Read)
     # get the metadata of file at latest version where file is present
-    fh = FileHistory.query.join(FileHistory.version).filter(
-        ProjectVersion.project_id == project.id,
-        FileHistory.path == path,
-        FileHistory.change != "delete"
-    ).order_by(desc(ProjectVersion.created)).first_or_404(f"File {path} not found")
+    fh = (
+        FileHistory.query.join(FileHistory.version)
+        .filter(
+            ProjectVersion.project_id == project.id,
+            FileHistory.path == path,
+            FileHistory.change != "delete",
+        )
+        .order_by(desc(ProjectVersion.created))
+        .first_or_404(f"File {path} not found")
+    )
 
     data = ProjectFileSchema().dump(fh)
     history_field = {}
     for item in FileHistory.changes(project.id, path, 1, project.latest_version):
-        history_field[ProjectVersion.to_v_name(item.version.name)] = FileHistorySchema(exclude=('mtime',)).dump(item)
+        history_field[ProjectVersion.to_v_name(item.version.name)] = FileHistorySchema(
+            exclude=("mtime",)
+        ).dump(item)
 
     data["history"] = history_field
     return data, 200

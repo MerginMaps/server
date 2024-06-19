@@ -66,13 +66,23 @@ def project_user_permissions(project):
 
 class FileHistorySchema(ma.SQLAlchemyAutoSchema):
     mtime = DateTimeWithZ()
-    diff = fields.Nested(LocalFileSchema(), attribute="diff_file", exclude=("location", ), dump_default={})
+    diff = fields.Nested(
+        LocalFileSchema(), attribute="diff_file", exclude=("location",), dump_default={}
+    )
     expiration = DateTimeWithZ(attribute="expiration", dump_only=True)
 
     class Meta:
         model = FileHistory
         load_instance = True
-        fields = ("path", "size", "checksum", "mtime", "diff", "expiration", "change", )
+        fields = (
+            "path",
+            "size",
+            "checksum",
+            "mtime",
+            "diff",
+            "expiration",
+            "change",
+        )
 
     @post_dump
     def patch_field(self, data, **kwargs):

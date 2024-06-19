@@ -14,7 +14,8 @@ from ..sync.models import (
     SyncFailuresHistory,
     AccessRequest,
     RequestStatus,
-    FileHistory, )
+    FileHistory,
+)
 from ..sync.files import UploadChanges
 from ..auth.models import User
 from .. import db
