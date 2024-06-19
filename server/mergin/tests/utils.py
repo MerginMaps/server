@@ -177,7 +177,7 @@ def initialize():
     db.session.commit()
 
     upload_changes = UploadChangesSchema().load(
-        {"added": project_files, "updated": [], "removed": []}
+        {"added": project_files, "updated": [], "removed": [], "renamed": []}
     )
     pv = ProjectVersion(p, 1, user.username, upload_changes, "127.0.0.1")
     db.session.add(pv)

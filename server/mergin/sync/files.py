@@ -109,6 +109,9 @@ class UploadChangesSchema(ma.Schema):
     updated = fields.List(fields.Nested(UploadFileInfoSchema()), load_default=[])
     removed = fields.List(fields.Nested(UploadFileInfoSchema()), load_default=[])
 
+    class Meta:
+        unknown = EXCLUDE
+
     @post_load
     def create_obj(self, data, **kwargs):
         return UploadChanges(**data)
