@@ -55,7 +55,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               ><PTag
                 v-if="slotProps.data.access.public && !onlyPublic"
                 severity="success"
-                :pt="{ root: { class: 'ml-1 pl-0.5 pr-0.5' } }"
+                :pt="{ root: { class: 'ml-1' } }"
                 >Public</PTag
               >
               <i
