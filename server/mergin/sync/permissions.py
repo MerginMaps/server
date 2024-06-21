@@ -6,7 +6,7 @@ import os
 from functools import wraps
 from typing import Optional
 from flask import abort, current_app
-from flask_login import current_user
+from flask_login import AnonymousUserMixin, current_user
 
 from .utils import is_valid_uuid
 from ..auth.models import User
@@ -158,11 +158,25 @@ class ProjectPermissions:
         return None
 
 
+def is_active_workspace(workspace):
+    """
+    Checks if the given workspace is active or if the current user is an admin.
+
+    Args:
+        workspace (Workspace): The workspace to check.
+
+    Returns:
+        bool: True if the workspace is active or the current user is an admin, False otherwise.
+    """
+    is_admin = not current_user.is_anonymous and current_user.is_admin
+    return workspace.is_active or is_admin
+
+
 def require_project(ws, project_name, permission):
     workspace = current_app.ws_handler.get_by_name(ws)
     if not workspace:
         abort(404)
-    if not workspace.is_active and not current_user.is_admin:
+    if not is_active_workspace(workspace):
         abort(404, "Workspace doesn't exist")
     project = (
         Project.query.filter_by(name=project_name, workspace_id=workspace.id)
@@ -188,7 +202,7 @@ def require_project_by_uuid(uuid: str, permission: ProjectPermissions, scheduled
     workspace = project.workspace
     if not workspace:
         abort(404)
-    if not workspace.is_active and not current_user.is_admin:
+    if not is_active_workspace(workspace):
         abort(404, "Workspace doesn't exist")
     if not permission.check(project, current_user):
         abort(403, "You do not have permissions for this project")
