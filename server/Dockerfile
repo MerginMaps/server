@@ -35,7 +35,7 @@ ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
 RUN pipenv install --system --deploy --verbose
-RUN pip3 install flower==0.9.7
+RUN pip3 install flower==2.0.1
 
 ARG UID=901
 ARG GID=901
@@ -43,15 +43,15 @@ ARG GID=901
 # create mergin user to run container with
 RUN groupadd -r mergin -g "${GID}"
 RUN groupadd -r mergin-family -g 999
-RUN useradd -u "${UID}" -r -g mergin -G mergin-family -s /sbin/nologin  mergin
+RUN useradd -u "${UID}" --home-dir /home/mergin/app -r -g mergin -G mergin-family -s /sbin/nologin  mergin
+
+COPY --chown=mergin:mergin . /home/mergin/app
+RUN chmod -R 755 /home/mergin/app
 
 # Set the non-root user as the default user
 USER mergin
 
 # Set working directory for non root user
 WORKDIR /home/mergin/app
-
-COPY --chown=mergin:mergin . /home/mergin/app
-RUN chmod -R 755 /home/mergin/app
 
 ENTRYPOINT ["/home/mergin/app/entrypoint.sh"]
