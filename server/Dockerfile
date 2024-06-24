@@ -35,7 +35,7 @@ ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
 RUN pipenv install --system --deploy --verbose
-RUN pip3 install flower==2.0.1
+RUN pip3 install celery==5.2.2 kombu==5.2.2
 
 ARG UID=901
 ARG GID=901
