@@ -20,7 +20,7 @@ from ..utils import (
     generate_checksum,
     is_versioned_file,
 )
-from ..files import mergin_secure_filename, ProjectFile, UploadFile, UploadFileInfo
+from ..files import mergin_secure_filename, ProjectFile, UploadFile, File
 
 
 def save_to_file(stream, path, max_size=None):
@@ -203,7 +203,7 @@ class DiskStorage(ProjectStorage):
         return _generator()
 
     def apply_diff(
-        self, current_file: ProjectFile, upload_file: UploadFileInfo, version: int
+        self, current_file: ProjectFile, upload_file: UploadFile, version: int
     ) -> Result:
         """Apply geodiff diff file on current gpkg basefile. Creates GeodiffActionHistory record of the action.
         Returns checksum and size of generated file. If action fails it returns geodiff error message.
@@ -212,8 +212,8 @@ class DiskStorage(ProjectStorage):
 
         v_name = ProjectVersion.to_v_name(version)
         basefile = os.path.join(self.project_dir, current_file.location)
-        changeset = os.path.join(self.project_dir, v_name, upload_file.diff.path)
-        patchedfile = os.path.join(self.project_dir, v_name, upload_file.path)
+        changeset = os.path.join(self.project_dir, upload_file.diff.location)
+        patchedfile = os.path.join(self.project_dir, upload_file.location)
         # create copy of basefile which will be updated in next version
         # TODO this can potentially fail for large files
         logging.info(f"Apply changes: copying {basefile} to {patchedfile}")
@@ -260,7 +260,7 @@ class DiskStorage(ProjectStorage):
         return Ok((generate_checksum(patchedfile), os.path.getsize(patchedfile)))
 
     def construct_diff(
-        self, current_file: ProjectFile, upload_file: UploadFileInfo, version: int
+        self, current_file: ProjectFile, upload_file: UploadFile, version: int
     ) -> Result:
         """Construct geodiff diff file from uploaded gpkg and current basefile. Returns diff metadata as a result.
         If action fails it returns geodiff error message.
@@ -269,7 +269,7 @@ class DiskStorage(ProjectStorage):
 
         v_name = ProjectVersion.to_v_name(version)
         basefile = os.path.join(self.project_dir, current_file.location)
-        uploaded_file = os.path.join(self.project_dir, v_name, upload_file.path)
+        uploaded_file = os.path.join(self.project_dir, upload_file.location)
         diff_name = upload_file.path + "-diff-" + str(uuid.uuid4())
         changeset = os.path.join(self.project_dir, v_name, diff_name)
         try:
@@ -277,11 +277,11 @@ class DiskStorage(ProjectStorage):
             logging.info(f"Geodiff: create changeset {changeset} from {uploaded_file}")
             self.geodiff.create_changeset(basefile, uploaded_file, changeset)
             # create diff metadata as it would be created by other clients
-            diff_file = UploadFile(
+            diff_file = File(
                 path=diff_name,
                 checksum=generate_checksum(changeset),
                 size=os.path.getsize(changeset),
-                sanitized_path=mergin_secure_filename(diff_name),
+                location=os.path.join(v_name, mergin_secure_filename(diff_name)),
             )
             return Ok(diff_file)
         except (GeoDiffLibError, GeoDiffLibConflictError):

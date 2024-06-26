@@ -22,16 +22,15 @@ from pygeodiff.geodifflib import GeoDiffLibError
 from flask import current_app
 
 from .files import (
-    LocalFile,
-    UploadFileInfo,
+    File,
+    UploadFile,
     UploadChanges,
-    UploadChangesSchema,
-    mergin_secure_filename,
+    ChangesSchema,
     ProjectFile,
 )
 from .. import db
 from .storages import DiskStorage
-from .utils import is_versioned_file
+from .utils import is_versioned_file, is_qgis
 
 Storages = {"local": DiskStorage}
 project_deleted = signal("project_deleted")
@@ -356,9 +355,9 @@ class FileHistory(db.Model):
         self.change = change.value
 
     @property
-    def diff_file(self) -> Optional[LocalFile]:
+    def diff_file(self) -> Optional[File]:
         if self.diff:
-            return LocalFile(**self.diff)
+            return File(**self.diff)
 
     @property
     def mtime(self) -> datetime:
@@ -428,7 +427,7 @@ class FileHistory(db.Model):
     @classmethod
     def diffs_chain(
         cls, project: Project, file: str, version: int
-    ) -> Tuple[Optional[FileHistory], List[Optional[LocalFile]]]:
+    ) -> Tuple[Optional[FileHistory], List[Optional[File]]]:
         """Find chain of diffs from the closest basefile that leads to a given file at certain project version.
 
         Returns basefile and list of diffs for gpkg that needs to be applied to reconstruct file.
@@ -581,34 +580,14 @@ class ProjectVersion(db.Model):
         self.project.tags = self.resolve_tags()
         db.session.flush()
 
-    def _add_file_change(self, change: PushChangeType, upload_file: UploadFileInfo):
+    def _add_file_change(self, change: PushChangeType, upload_file: UploadFile):
         """Add file history record to project version"""
-        diff = None
-        if upload_file.diff:
-            secure_diff_path = (
-                upload_file.diff.sanitized_path
-                if upload_file.diff.sanitized_path
-                else mergin_secure_filename(upload_file.diff.path)
-            )
-            diff = LocalFile(
-                path=upload_file.diff.path,
-                size=upload_file.diff.size,
-                checksum=upload_file.diff.checksum,
-                location=os.path.join(self.to_v_name(self.name), secure_diff_path),
-            )
-
-        secure_path = (
-            upload_file.sanitized_path
-            if upload_file.sanitized_path
-            else mergin_secure_filename(upload_file.path)
-        )
-
         fh = FileHistory(
             path=upload_file.path,
             size=upload_file.size,
             checksum=upload_file.checksum,
-            location=os.path.join(self.to_v_name(self.name), secure_path),
-            diff=asdict(diff) if diff else None,
+            location=upload_file.location,
+            diff=asdict(upload_file.diff) if upload_file.diff else None,
             change=change,
         )
         fh.version = self
@@ -658,21 +637,17 @@ class ProjectVersion(db.Model):
                 checksum=row.checksum,
                 location=row.location,
                 mtime=row.mtime,
-                diff=LocalFile(**row.diff) if row.diff else None,
+                diff=File(**row.diff) if row.diff else None,
             )
             for row in result
         ]
         return files
 
     def resolve_tags(self) -> List[str]:
-        def _is_qgis(filename):
-            _, ext = os.path.splitext(filename)
-            return ext in [".qgs", ".qgz"]
-
         tags = []
         qgis_count = 0
         for f in self.files:
-            if _is_qgis(f.path):
+            if is_qgis(f.path):
                 qgis_count += 1
         if qgis_count == 1:
             tags.extend(["valid_qgis", "input_use"])
@@ -742,6 +717,7 @@ class Upload(db.Model):
     project_id = db.Column(
         UUID(as_uuid=True), db.ForeignKey("project.id", ondelete="CASCADE"), index=True
     )
+    # project version where upload is initiated from
     version = db.Column(db.Integer, index=True)
     changes = db.Column(db.JSON)
     user_id = db.Column(
@@ -765,7 +741,7 @@ class Upload(db.Model):
         self.id = str(uuid.uuid4())
         self.project_id = project.id
         self.version = version
-        self.changes = UploadChangesSchema().dump(changes)
+        self.changes = ChangesSchema().dump(changes)
         self.user_id = user_id
 
 

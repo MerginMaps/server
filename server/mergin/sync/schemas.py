@@ -8,7 +8,7 @@ from flask_login import current_user
 from flask import current_app
 
 from .. import ma
-from .files import ProjectFileSchema, LocalFileSchema
+from .files import ProjectFileSchema, FileSchema
 from .permissions import ProjectPermissions
 from .models import Project, ProjectVersion, AccessRequest, FileHistory
 from ..app import DateTimeWithZ
@@ -67,7 +67,7 @@ def project_user_permissions(project):
 class FileHistorySchema(ma.SQLAlchemyAutoSchema):
     mtime = DateTimeWithZ()
     diff = fields.Nested(
-        LocalFileSchema(), attribute="diff_file", exclude=("location",), dump_default={}
+        FileSchema(), attribute="diff_file", exclude=("location",), dump_default={}
     )
     expiration = DateTimeWithZ(attribute="expiration", dump_only=True)
 

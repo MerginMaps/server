@@ -23,12 +23,13 @@ def mergin_secure_filename(filename: str) -> str:
 
 
 @dataclass
-class FileMeta:
+class File:
     """Base class for every file object"""
 
     path: str
     checksum: str
     size: int
+    location: str
 
     def is_valid_gpkg(self):
         """Check if diff file is valid"""
@@ -36,58 +37,61 @@ class FileMeta:
 
 
 @dataclass
-class LocalFile(FileMeta):
-    """File stored on server"""
+class ProjectFile(File):
+    """Project file metadata including metadata for diff file"""
 
-    location: str
-
-
-@dataclass
-class ProjectFile(LocalFile):
-    """Project file metadata including diff meta"""
-
-    diff: Optional[LocalFile]
+    # metadata for gpkg diff file
+    diff: Optional[File]
     # deprecated attribute kept for public API compatibility
     mtime: Optional[datetime.datetime]
 
 
 @dataclass
-class UploadFile(FileMeta):
-    """File to be uploaded with secure filename"""
-
-    # added by server
-    sanitized_path: str
-
-
-@dataclass
-class UploadFileInfo(UploadFile):
+class UploadFile(File):
     """File to be uploaded coming from client push process"""
 
     # determined by client
     chunks: Optional[List[str]]
-    diff: Optional[UploadFile]
+    diff: Optional[File]
 
 
 @dataclass
 class UploadChanges:
-    added: List[UploadFileInfo]
-    updated: List[UploadFileInfo]
-    removed: List[UploadFileInfo]
+    added: List[UploadFile]
+    updated: List[UploadFile]
+    removed: List[UploadFile]
 
 
-class UploadFileSchema(ma.Schema):
+class FileSchema(ma.Schema):
     path = fields.String()
-    checksum = fields.String()
     size = fields.Integer()
-    sanitized_path = fields.String(load_default="", load_only=True)
+    checksum = fields.String()
+    location = fields.String(load_default="", load_only=True)
 
     class Meta:
         unknown = EXCLUDE
 
+    @post_load
+    def create_obj(self, data, **kwargs):
+        return File(**data)
+
+
+class UploadFileSchema(FileSchema):
+    chunks = fields.List(fields.String(), load_default=[])
+    diff = fields.Nested(FileSchema(), many=False, load_default=None)
+
     @pre_load
     def pre_load(self, data, **kwargs):
-        if not data.get("sanitized_path"):
-            data["sanitized_path"] = mergin_secure_filename(data["path"])
+        # add future location based on context version
+        version = f"v{self.context.get('version')}"
+        if not data.get("location"):
+            data["location"] = os.path.join(
+                version, mergin_secure_filename(data["path"])
+            )
+        if data.get("diff") and not data.get("diff").get("location"):
+            data["diff"]["location"] = os.path.join(
+                version, mergin_secure_filename(data["diff"]["path"])
+            )
         return data
 
     @post_load
@@ -95,19 +99,12 @@ class UploadFileSchema(ma.Schema):
         return UploadFile(**data)
 
 
-class UploadFileInfoSchema(UploadFileSchema):
-    chunks = fields.List(fields.String(), load_default=[])
-    diff = fields.Nested(UploadFileSchema(), many=False, load_default=None)
+class ChangesSchema(ma.Schema):
+    """Schema for upload changes"""
 
-    @post_load
-    def create_obj(self, data, **kwargs):
-        return UploadFileInfo(**data)
-
-
-class UploadChangesSchema(ma.Schema):
-    added = fields.List(fields.Nested(UploadFileInfoSchema()), load_default=[])
-    updated = fields.List(fields.Nested(UploadFileInfoSchema()), load_default=[])
-    removed = fields.List(fields.Nested(UploadFileInfoSchema()), load_default=[])
+    added = fields.List(fields.Nested(UploadFileSchema()), load_default=[])
+    updated = fields.List(fields.Nested(UploadFileSchema()), load_default=[])
+    removed = fields.List(fields.Nested(UploadFileSchema()), load_default=[])
 
     class Meta:
         unknown = EXCLUDE
@@ -117,13 +114,6 @@ class UploadChangesSchema(ma.Schema):
         return UploadChanges(**data)
 
 
-class LocalFileSchema(ma.Schema):
-    path = fields.String()
-    size = fields.Integer()
-    checksum = fields.String()
-    location = fields.String(load_only=True)
-
-
-class ProjectFileSchema(LocalFileSchema):
+class ProjectFileSchema(FileSchema):
     mtime = fields.String()
-    diff = fields.Nested(LocalFileSchema(), dump_default={})
+    diff = fields.Nested(FileSchema(), dump_default={})

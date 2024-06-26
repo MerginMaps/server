@@ -88,18 +88,6 @@ def is_qgis(path: str) -> bool:
     return ext.lower() in [".qgs", ".qgz"]
 
 
-def resolve_tags(files):
-    tags = []
-    qgis_count = 0
-    for f in files:
-        if is_qgis(f["path"]):
-            qgis_count += 1
-    # TODO add some rules for intput validity and mappin validity
-    if qgis_count == 1:
-        tags.extend(["valid_qgis", "input_use"])
-    return tags
-
-
 def int_version(version):
     """Convert v<n> format of version to integer representation."""
     return int(version.lstrip("v")) if re.match(r"v\d", version) else None

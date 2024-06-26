@@ -18,7 +18,7 @@ from pygeodiff import GeoDiff
 from ..auth.models import User, UserProfile
 from ..sync.utils import generate_location, generate_checksum
 from ..sync.models import Project, ProjectAccess, ProjectVersion
-from ..sync.files import UploadChanges, UploadChangesSchema
+from ..sync.files import UploadChanges, ChangesSchema
 from ..sync.workspace import GlobalWorkspace
 from .. import db
 from . import json_headers, DEFAULT_USER, test_project, test_project_dir, TMP_DIR
@@ -176,8 +176,13 @@ def initialize():
     db.session.add(pa)
     db.session.commit()
 
-    upload_changes = UploadChangesSchema().load(
-        {"added": project_files, "updated": [], "removed": [], "renamed": []}
+    upload_changes = ChangesSchema(context={"version": 1}).load(
+        {
+            "added": project_files,
+            "updated": [],
+            "removed": [],
+            "renamed": [],
+        }
     )
     pv = ProjectVersion(p, 1, user.username, upload_changes, "127.0.0.1")
     db.session.add(pv)
@@ -329,7 +334,9 @@ def push_change(project, action, path, src_dir):
     else:
         return
 
-    upload_changes = UploadChangesSchema().load(changes)
+    upload_changes = ChangesSchema(context={"version": project.next_version()}).load(
+        changes
+    )
     pv = ProjectVersion(
         project,
         project.next_version(),

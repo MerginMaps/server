@@ -88,7 +88,7 @@ def optimize_storage(project_id):
 
         for item in f_history:
             # no diffs, it is a basefile for geodiff
-            if item.diff is None:
+            if not item.diff:
                 continue
 
             # skip the latest file version (high chance of being used)

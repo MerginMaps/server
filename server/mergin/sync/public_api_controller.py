@@ -45,10 +45,10 @@ from .models import (
 )
 from .files import (
     UploadChanges,
-    UploadChangesSchema,
-    UploadFileInfoSchema,
+    ChangesSchema,
+    UploadFileSchema,
     ProjectFileSchema,
-    LocalFileSchema,
+    FileSchema,
 )
 from .schemas import (
     ProjectSchema,
@@ -204,10 +204,9 @@ def add_project(namespace):  # noqa: E501
                 .first_or_404()
             )
             version_name = 1
-            files = [
-                UploadFileInfoSchema().load(LocalFileSchema().dump(file))
-                for file in p.files
-            ]
+            files = UploadFileSchema(context={"version": 1}, many=True).load(
+                FileSchema(exclude=("location",), many=True).dump(template.files)
+            )
             changes = UploadChanges(added=files, updated=[], removed=[])
 
         else:
@@ -756,7 +755,7 @@ def project_push(namespace, project_name):
     if all(len(changes[key]) == 0 for key in changes.keys()):
         abort(400, "No changes")
 
-    upload_changes = UploadChangesSchema().load(changes)
+    upload_changes = ChangesSchema(context={"version": version + 1}).load(changes)
     # check if same file is not already uploaded
     for item in upload_changes.added:
         if not all(ele.path != item.path for ele in project.files):
@@ -780,17 +779,15 @@ def project_push(namespace, project_name):
         if is_file_name_blacklisted(f.path, current_app.config["BLACKLIST"]):
             blacklisted_files.append(f.path)
         # all file need to be unique after sanitized
-        if f.sanitized_path in sanitized_files:
-            filename, file_extension = os.path.splitext(f.sanitized_path)
-            f.sanitized_path = filename + f".{str(uuid.uuid4())}" + file_extension
-        sanitized_files.append(f.sanitized_path)
+        if f.location in sanitized_files:
+            filename, file_extension = os.path.splitext(f.location)
+            f.location = filename + f".{str(uuid.uuid4())}" + file_extension
+        sanitized_files.append(f.location)
         if f.diff:
-            if f.diff.sanitized_path in sanitized_files:
-                filename, file_extension = os.path.splitext(f.diff.sanitized_path)
-                f.diff.sanitized_path = (
-                    filename + f".{str(uuid.uuid4())}" + file_extension
-                )
-            sanitized_files.append(f.diff.sanitized_path)
+            if f.diff.location in sanitized_files:
+                filename, file_extension = os.path.splitext(f.diff.location)
+                f.diff.location = filename + f".{str(uuid.uuid4())}" + file_extension
+            sanitized_files.append(f.diff.location)
 
     # remove blacklisted files from changes
     for key in upload_changes.__dict__.keys():
@@ -918,7 +915,9 @@ def chunk_upload(transaction_id, chunk_id):
     """
     upload, upload_dir = get_upload(transaction_id)
     request.view_args["project"] = upload.project
-    upload_changes = UploadChangesSchema().load(upload.changes)
+    upload_changes = ChangesSchema(context={"version": upload.version + 1}).load(
+        upload.changes
+    )
     for f in upload_changes.added + upload_changes.updated:
         if chunk_id in f.chunks:
             dest = os.path.join(upload_dir, "chunks", chunk_id)
@@ -962,17 +961,19 @@ def push_finish(transaction_id):
 
     upload, upload_dir = get_upload(transaction_id)
     request.view_args["project"] = upload.project
-    changes = UploadChangesSchema().load(upload.changes)
+    changes = ChangesSchema(context={"version": upload.version + 1}).load(
+        upload.changes
+    )
     project = upload.project
     project_path = get_project_path(project)
     corrupted_files = []
 
     for f in changes.added + changes.updated:
         if f.diff is not None:
-            dest_file = os.path.join(upload_dir, "files", f.diff.sanitized_path)
+            dest_file = os.path.join(upload_dir, "files", f.diff.location)
             expected_size = f.diff.size
         else:
-            dest_file = os.path.join(upload_dir, "files", f.sanitized_path)
+            dest_file = os.path.join(upload_dir, "files", f.location)
             expected_size = f.size
         if f.chunks:
             # Concatenate chunks into single file
@@ -1014,7 +1015,7 @@ def push_finish(transaction_id):
 
     next_version = upload.version + 1
     v_next_version = ProjectVersion.to_v_name(next_version)
-    files_dir = os.path.join(upload_dir, "files")
+    files_dir = os.path.join(upload_dir, "files", v_next_version)
     target_dir = os.path.join(project.storage.project_dir, v_next_version)
     if os.path.exists(target_dir):
         pv = ProjectVersion.query.filter_by(
@@ -1209,10 +1210,9 @@ def clone_project(namespace, project_name):  # noqa: E501
     user_agent = get_user_agent(request)
     device_id = get_device_id(request)
     # transform source files to new uploaded files
-    files = [
-        UploadFileInfoSchema().load(LocalFileSchema().dump(file))
-        for file in cloned_project.files
-    ]
+    files = UploadFileSchema(context={"version": 1}, many=True).load(
+        FileSchema(exclude=("location",), many=True).dump(cloned_project.files)
+    )
     changes = UploadChanges(added=files, updated=[], removed=[])
     project_version = ProjectVersion(
         p,

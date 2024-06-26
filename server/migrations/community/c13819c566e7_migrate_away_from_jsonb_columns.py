@@ -97,6 +97,7 @@ def upgrade():
         table_name="project_version",
         postgresql_using="gin",
     )
+    # harmonize constraint name
     op.drop_constraint("uq_project_id_version", "project_version", type_="unique")
     op.drop_column("project_version", "files")
     op.drop_column("project_version", "changes")

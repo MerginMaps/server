@@ -34,7 +34,7 @@ from ..sync.models import (
     FileHistory,
     PushChangeType,
 )
-from ..sync.files import UploadChangesSchema
+from ..sync.files import ChangesSchema
 from ..sync.schemas import ProjectListSchema, ProjectSchema
 from ..sync.utils import generate_checksum, is_versioned_file
 from ..auth.models import User, UserProfile
@@ -423,22 +423,25 @@ def test_add_project(client, app, data, expected):
         ).first()
         proj_files = project.files
         temp_files = template.files
+        assert len(proj_files) == len(temp_files)
         assert not any(
-            x["checksum"] != y["checksum"] and x["path"] != y["path"]
+            x.checksum != y.checksum and x.path != y.path
             for x, y in zip(proj_files, temp_files)
         )
         pv = project.get_latest_version()
         assert pv.user_agent is not None
         assert pv.device_id == json_headers["X-Device-Id"]
         # check if there is no diffs in cloned files
-        assert not any("diff" in file for file in proj_files)
-        # assert not any("diff" in file for file in pv.files)
-        # assert pv.changes.get("removed") == []
-        # assert pv.changes.get("updated") == []
-        # assert "diff" not in pv.changes.get("added")
+        assert not any(file.diff for file in proj_files)
+        assert not any(file.diff for file in pv.files)
+        assert all(
+            item.change == PushChangeType.CREATE.value and not item.diff
+            for item in pv.changes.all()
+        )
+        # cleanup
         shutil.rmtree(
             os.path.join(app.config["LOCAL_PROJECTS"], project.storage.project_dir)
-        )  # cleanup
+        )
 
 
 def test_versioning(client):
@@ -1291,7 +1294,7 @@ def create_transaction(username, changes, version=1):
     project = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
     ).first()
-    upload_changes = UploadChangesSchema().load(changes)
+    upload_changes = ChangesSchema(context={"version": version}).load(changes)
     upload = Upload(project, version, upload_changes, user.id)
     db.session.add(upload)
     db.session.commit()
@@ -2219,10 +2222,11 @@ def test_get_project_version(client, diff_project):
 
 
 def add_project_version(project, changes, version=None):
-    upload_changes = UploadChangesSchema().load(changes)
+    next_version = version or project.next_version()
+    upload_changes = ChangesSchema(context={"version": next_version}).load(changes)
     pv = ProjectVersion(
         project,
-        version or project.next_version(),
+        next_version,
         "mergin",
         upload_changes,
         ip="127.0.0.1",
