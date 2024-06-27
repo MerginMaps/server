@@ -998,7 +998,11 @@ def create_diff_meta(base, modified, project_dir):
 def _get_changes(project_dir, diff=False):
     changes = {
         "added": [file_info(project_dir, "test_dir/test4.txt", chunk_size=CHUNK_SIZE)],
-        "updated": [file_info(project_dir, "test.txt", chunk_size=CHUNK_SIZE)],
+        "updated": [
+            file_info(project_dir, "test.txt", chunk_size=CHUNK_SIZE),
+            # push 0 size file
+            file_info(project_dir, "test.qgs", chunk_size=CHUNK_SIZE),
+        ],
         "removed": [file_info(project_dir, "test3.txt", chunk_size=CHUNK_SIZE)],
     }
     return changes
@@ -1034,7 +1038,7 @@ def _get_changes_with_diff(project_dir):
 def _get_changes_with_diff_0_size(project_dir):
     changes = _get_changes_with_diff(project_dir)
     # tweak file size
-    changes["updated"][1]["size"] = 0
+    changes["updated"][2]["size"] = 0
     return changes
 
 

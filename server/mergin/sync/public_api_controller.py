@@ -975,27 +975,27 @@ def push_finish(transaction_id):
         else:
             dest_file = os.path.join(upload_dir, "files", f.location)
             expected_size = f.size
-        if f.chunks:
-            # Concatenate chunks into single file
-            # TODO we need to move this elsewhere since it can fail for large files (and slow FS)
-            os.makedirs(os.path.dirname(dest_file), exist_ok=True)
-            with open(dest_file, "wb") as dest:
-                try:
-                    for chunk_id in f.chunks:
-                        sleep(0)  # to unblock greenlet
-                        chunk_file = os.path.join(upload_dir, "chunks", chunk_id)
-                        with open(chunk_file, "rb") as src:
+
+        # Concatenate chunks into single file
+        # TODO we need to move this elsewhere since it can fail for large files (and slow FS)
+        os.makedirs(os.path.dirname(dest_file), exist_ok=True)
+        with open(dest_file, "wb") as dest:
+            try:
+                for chunk_id in f.chunks:
+                    sleep(0)  # to unblock greenlet
+                    chunk_file = os.path.join(upload_dir, "chunks", chunk_id)
+                    with open(chunk_file, "rb") as src:
+                        data = src.read(8192)
+                        while data:
+                            dest.write(data)
                             data = src.read(8192)
-                            while data:
-                                dest.write(data)
-                                data = src.read(8192)
-                except IOError:
-                    logging.exception(
-                        "Failed to process chunk: %s in project %s"
-                        % (chunk_id, project_path)
-                    )
-                    corrupted_files.append(f.path)
-                    continue
+            except IOError:
+                logging.exception(
+                    "Failed to process chunk: %s in project %s"
+                    % (chunk_id, project_path)
+                )
+                corrupted_files.append(f.path)
+                continue
 
         if expected_size != os.path.getsize(dest_file):
             logging.error(
