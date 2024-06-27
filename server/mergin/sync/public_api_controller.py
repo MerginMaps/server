@@ -733,14 +733,13 @@ def project_push(namespace, project_name):
     """
     version = ProjectVersion.from_v_name(request.json["version"])
     changes = request.json["changes"]
-    project = require_project(namespace, project_name, ProjectPermissions.Upload)
+    project_permission = current_app.project_handler.get_push_permission(changes)
+    project = require_project(namespace, project_name, project_permission)
+    # pass full project object to request for later use
+    request.view_args["project"] = project
     ws = project.workspace
     if not ws:
         abort(404)
-    # pass full project object to request for later use
-    request.view_args["project"] = project
-    project_permission = current_app.project_handler.get_push_permission(changes)
-    project = require_project(namespace, project_name, project_permission)
 
     push_triggered.send(project)
     # fixme use get_latest

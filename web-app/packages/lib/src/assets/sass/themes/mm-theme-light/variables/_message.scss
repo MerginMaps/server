@@ -80,19 +80,19 @@ $toastDetailMargin: $inlineSpacing 0 0 0;
 
 /// Background of an info message
 /// @group message
-$infoMessageBg: #039BE5;
+$infoMessageBg: map-get($map: $colors, $key: informative);
 
 /// Border of an info message
 /// @group message
-$infoMessageBorder: solid #027cb7;
+$infoMessageBorder: 0 solid map-get($map: $colors, $key: deep-ocean);
 
 /// Text color of an info message
 /// @group message
-$infoMessageTextColor: #ffffff;
+$infoMessageTextColor: map-get($map: $colors, $key: deep-ocean);
 
 /// Icon color of an info message
 /// @group message
-$infoMessageIconColor: #ffffff;
+$infoMessageIconColor: map-get($map: $colors, $key: deep-ocean);
 
 /// Background of a success message
 /// @group message
