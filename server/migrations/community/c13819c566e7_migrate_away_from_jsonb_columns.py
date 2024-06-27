@@ -20,10 +20,10 @@ depends_on = None
 push_change_type = postgresql.ENUM(
     "create", "update", "delete", "update_diff", name="push_change_type"
 )
-conn = op.get_bind()
 
 
 def upgrade():
+    conn = op.get_bind()
     op.create_table(
         "file_history",
         sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
@@ -85,18 +85,15 @@ def upgrade():
         existing_nullable=True,
     )
 
-    op.drop_index("ix_project_files_gin", table_name="project", postgresql_using="gin")
+    # optionally drop gin indices (only added by old alembic migration, not present in new databases)
+    conn.execute(sa.text("DROP INDEX IF EXISTS ix_project_files_gin;"))
+    conn.execute(sa.text("DROP INDEX IF EXISTS ix_project_version_changes_gin;"))
+    conn.execute(
+        sa.text("DROP INDEX IF EXISTS ix_project_ix_project_version_files_gin;")
+    )
+
     op.drop_column("project", "files")
-    op.drop_index(
-        "ix_project_version_changes_gin",
-        table_name="project_version",
-        postgresql_using="gin",
-    )
-    op.drop_index(
-        "ix_project_version_files_gin",
-        table_name="project_version",
-        postgresql_using="gin",
-    )
+
     # harmonize constraint name
     op.drop_constraint("uq_project_id_version", "project_version", type_="unique")
     op.drop_column("project_version", "files")
@@ -108,6 +105,7 @@ def upgrade():
 
 
 def data_upgrade():
+    conn = op.get_bind()
     # split json aggregate to individual file changes, rename action is split to create and delete file actions
     query = """
     WITH history AS (
@@ -188,6 +186,7 @@ def data_upgrade():
 
 
 def data_downgrade():
+    conn = op.get_bind()
     # construct version files and changes, update project files with latest version files
     version_files_query = """
     WITH version_files AS (
@@ -312,6 +311,7 @@ def data_downgrade():
 
 
 def downgrade():
+    conn = op.get_bind()
     op.add_column(
         "project_version",
         sa.Column(
