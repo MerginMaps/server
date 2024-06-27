@@ -5,7 +5,7 @@ import datetime
 import os
 from dataclasses import dataclass
 from typing import Optional, List
-from marshmallow import fields, EXCLUDE, pre_load, post_load
+from marshmallow import fields, EXCLUDE, pre_load, post_load, post_dump
 from pathvalidate import sanitize_filename
 
 from .. import ma
@@ -116,4 +116,11 @@ class ChangesSchema(ma.Schema):
 
 class ProjectFileSchema(FileSchema):
     mtime = fields.String()
-    diff = fields.Nested(FileSchema(), dump_default={})
+    diff = fields.Nested(FileSchema())
+
+    @post_dump
+    def patch_field(self, data, **kwargs):
+        # drop 'diff' key entirely if empty or None as clients would expect
+        if not data.get("diff"):
+            data.pop("diff")
+        return data

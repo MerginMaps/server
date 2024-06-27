@@ -66,9 +66,7 @@ def project_user_permissions(project):
 
 class FileHistorySchema(ma.SQLAlchemyAutoSchema):
     mtime = DateTimeWithZ()
-    diff = fields.Nested(
-        FileSchema(), attribute="diff_file", exclude=("location",), dump_default={}
-    )
+    diff = fields.Nested(FileSchema(), attribute="diff_file", exclude=("location",))
     expiration = DateTimeWithZ(attribute="expiration", dump_only=True)
 
     class Meta:
@@ -93,6 +91,10 @@ class FileHistorySchema(ma.SQLAlchemyAutoSchema):
             data["change"] = "removed"
         elif data.get("change") in ("update", "update_diff"):
             data["change"] = "updated"
+
+        # drop 'diff' key entirely if empty or None as clients would expect
+        if not data.get("diff"):
+            data.pop("diff")
         return data
 
 

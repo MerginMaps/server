@@ -1620,6 +1620,20 @@ def test_push_no_diff_finish(client):
     diff_files = [f for f in version_files if re.findall("-diff-", f)]
     assert not diff_files
 
+    # assert 'diff' key is not in serialized responses
+    resp = client.get(
+        f"/v1/project/{upload.project.workspace.name}/{upload.project.name}?version=v{latest_version.name}"
+    )
+    project_info = resp.json
+    updated_file = next(f for f in project_info["files"] if f["path"] == "base.gpkg")
+    assert "diff" not in updated_file
+    resp = client.get(f"/v1/project/version/{upload.project.id}/v{latest_version.name}")
+    version_info = resp.json
+    updated_file = next(
+        f for f in version_info["changes"]["updated"] if f["path"] == "base.gpkg"
+    )
+    assert "diff" not in updated_file
+
 
 clone_project_data = [
     ({"project": " clone "}, "mergin", 200),  # clone own project
