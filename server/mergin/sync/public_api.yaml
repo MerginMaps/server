@@ -1077,7 +1077,7 @@ components:
         storage_limit: 24865
     VersionName:
       type: string
-      pattern: '^v\d+$'
+      pattern: '^$|^v\d+$'
       example: v2
     Project:
       type: object

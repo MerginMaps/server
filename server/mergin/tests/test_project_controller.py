@@ -804,6 +804,7 @@ test_download_file_version_data = [
     (test_project, "v8", "base.gpkg", 200),  # again, file as not changed
     (test_project, "v1", "test.txt", 200),  # initial file (ordinary text file)
     (test_project, "v10", "test.txt", 200),  # unmodified file (ordinary text file)
+    (test_project, "", "test.txt", 200),  # empty version => latest version
 ]
 
 
@@ -815,8 +816,11 @@ def test_download_file_by_version(
 ):
     project = diff_project
 
+    version_name = (
+        ProjectVersion.from_v_name(version) if version else diff_project.latest_version
+    )
     project_version = ProjectVersion.query.filter_by(
-        project_id=project.id, name=ProjectVersion.from_v_name(version)
+        project_id=project.id, name=version_name
     ).first()
     for file in project_version.files:
         if not is_versioned_file(file.path):
@@ -828,11 +832,10 @@ def test_download_file_by_version(
             os.remove(file_location)
 
     # download whole files, no diffs
-    resp = client.get(
-        "/v1/project/raw/{}/{}?file={}&version={}".format(
-            test_workspace_name, proj_name, file_path, version
-        )
-    )
+    url = f"/v1/project/raw/{test_workspace_name}/{proj_name}?file={file_path}&version="
+    if version:
+        url += version
+    resp = client.get(url)
     assert resp.status_code == expected
 
 

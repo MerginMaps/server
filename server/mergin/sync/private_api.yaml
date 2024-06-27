@@ -504,7 +504,7 @@ components:
           example: jane.doe
     VersionName:
       type: string
-      pattern: '^v\d+$'
+      pattern: '^$|^v\d+$'
       example: v2
     ProjectListItem:
       type: object
