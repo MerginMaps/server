@@ -37,8 +37,6 @@ except ImportError:
     )
     sys.exit(1)
 
-bind = "0.0.0.0:5000"
-
 worker_class = "gevent"
 
 workers = 2

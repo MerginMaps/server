@@ -57,6 +57,19 @@ yarn watch:lib:types
 Watching the type definitions is also useful to pick up any changes to imports or new components that are added.
 
 
+## Running locally in a docker composition
+
+```shell
+# Create the "projects" directory with the current user in order to have the same permissions on the mounted volume
+# for this user within the container (if the folder does not exist during startup of the docker composition,
+# the docker deamon creates the directory as root, which prevents access for the current user)
+mkdir projects
+
+# Run the docker composition as the current user
+HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up
+```
+
+
 ## Running tests
 To launch the unit tests run:
 ```shell
