@@ -161,7 +161,7 @@ class User(db.Model):
         ).all()
 
         for p in shared_projects:
-            for key in ("owners", "writers", "readers"):
+            for key in ("owners", "writers", "editors", "readers"):
                 value = set(getattr(p.access, key))
                 if self.id in value:
                     value.remove(self.id)
