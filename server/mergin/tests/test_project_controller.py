@@ -7,6 +7,7 @@ import os
 import sqlite3
 from dataclasses import asdict
 from unittest.mock import patch
+from urllib.parse import quote
 
 import pysqlite3
 import pytest
@@ -1447,7 +1448,13 @@ def test_whole_push_process(client):
     test_dir = os.path.join(TMP_DIR, "test_uploaded_files")
     if os.path.exists(test_dir):
         shutil.rmtree(test_dir)
-    uploaded_files = ["テスト.txt", "£¥§.txt", "name_1_1.txt", "name\\1\\1.txt"]
+    uploaded_files = [
+        "テスト.txt",
+        "£¥§.txt",
+        "name_1_1.txt",
+        "name\\1\\1.txt",
+        "+?%@&.qgs",
+    ]
     # prepare dummy files
     os.mkdir(test_dir)
     for file in uploaded_files:
@@ -1513,6 +1520,15 @@ def test_whole_push_process(client):
         file_before_upload = os.path.join(test_dir, file.path)
         assert os.path.exists(file_location)
         assert open(file_before_upload, "r").read() == open(file_location, "r").read()
+
+        # make sure files can be downloaded
+        encoded_path = quote(file.path.encode("utf-8"))
+        assert (
+            client.get(
+                f"/v1/project/raw/{project.workspace.name}/{project.name}?file={encoded_path}&version=v2"
+            ).status_code
+            == 200
+        )
 
 
 def test_push_diff_finish(client):

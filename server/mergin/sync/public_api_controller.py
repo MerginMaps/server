@@ -327,36 +327,27 @@ def download_project_file(
         ProjectVersion.from_v_name(version) if version else project.latest_version
     )
     # find the latest file change record for version of interest
-    sql = text(
-        """
-        SELECT
-            'v' || pv.name || '/' || fh.path AS location,
-            'v' || pv.name || '/' || (fh.diff ->> 'path')::text AS diff_location,
-            change
-        FROM file_history fh
-        LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
-        WHERE pv.project_id = :project_id AND pv.name <= :version AND fh.path = :file
-        ORDER BY pv.created DESC
-        LIMIT 1;
-        """
+    fh = (
+        FileHistory.query.join(ProjectVersion)
+        .filter(
+            ProjectVersion.project_id == project.id,
+            ProjectVersion.name <= lookup_version,
+            FileHistory.path == file,
+        )
+        .order_by(ProjectVersion.created.desc())
+        .first()
     )
-    params = {
-        "version": lookup_version,
-        "project_id": project.id,
-        "file": file,
-    }
-    result = db.session.execute(sql, params).fetchone()
     # in case last change was 'delete', file does not exist for such version
-    if not result or result.change == PushChangeType.DELETE.value:
+    if not fh or fh.change == PushChangeType.DELETE.value:
         abort(404, f"File {file} not found")
 
     if diff and version:
         # get specific version of geodiff file modified in requested version
-        if not result["diff_location"]:
+        if not fh.diff:
             abort(404, f"No diff in particular file {file} version")
-        file_path = result["diff_location"]
+        file_path = fh.diff_file.location
     else:
-        file_path = result["location"]
+        file_path = fh.location
 
     if version and not diff:
         project.storage.restore_versioned_file(
