@@ -205,15 +205,13 @@ paths:
           description: Version to look up diff files history from.
           required: false
           schema:
-            type: string
-            example: v3
+            $ref: "#/components/schemas/VersionName"
         - name: version
           in: query
           description: Project version. Mutually exclusive with 'since'.
           required: false
           schema:
-            type: string
-            example: v3
+            $ref: "#/components/schemas/VersionName"
       responses:
         "200":
           description: Success.
@@ -478,8 +476,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
-            example: v3
+            $ref: "#/components/schemas/VersionName"
       responses:
         '200':
           description: Project version detail
@@ -519,8 +516,7 @@ paths:
           description: Particular version to download
           required: false
           schema:
-            type: string
-            example: v3
+            $ref: "#/components/schemas/VersionName"
       responses:
         "200":
           description: Zip file or stream
@@ -558,8 +554,7 @@ paths:
           description: Version tag.
           required: false
           schema:
-            type: string
-            example: v3
+            $ref: "#/components/schemas/VersionName"
         - name: diff
           in: query
           description: Ask for diff file instead of full one.
@@ -603,8 +598,7 @@ paths:
                 - changes
               properties:
                 version:
-                  type: string
-                  example: v1
+                  $ref: "#/components/schemas/VersionName"
                 changes:
                   type: object
                   required:
@@ -837,8 +831,7 @@ paths:
           description: Version id of the file.
           required: true
           schema:
-            type: string
-            example: v3
+            $ref: "#/components/schemas/VersionName"
         - name: path
           in: query
           description: Path to file in project
@@ -1082,6 +1075,10 @@ components:
         detail: You have reached a data limit (StorageLimitHit)
         current_usage: 24865
         storage_limit: 24865
+    VersionName:
+      type: string
+      pattern: '^$|^v\d+$'
+      example: v2
     Project:
       type: object
       required:
@@ -1109,6 +1106,7 @@ components:
           type: string
           example: 9adb76bf81a34880209040ffe5ee262a090b62ab
         mtime:
+          deprecated: true
           type: string
           format: date-time
           example: 2018-11-30T08:47:58.636074Z
@@ -1117,46 +1115,34 @@ components:
           format: int64
           example: 1024
     HistoryFileInfo:
-      type: object
-      properties:
-        path:
-          type: string
-          example: data/survey.gpkg
-        checksum:
-          description: sha1 hash
-          type: string
-          example: 9adb76bf81a34880209040ffe5ee262a090b62ab
-        mtime:
-          type: string
-          format: date-time
-          example: 2019-01-30T08:47:58.636074Z
-        size:
-          type: integer
-          format: int64
-          example: 102450086
-        diff:
-          $ref: "#/components/schemas/FileDiff"
-        history:
-          type: object
-          description: map with version names as keys and file info as values
-          additionalProperties:
-            allOf:
-              - $ref: "#/components/schemas/UpdateFileInfo"
-              - type: object
-                required:
-                  - change
-                properties:
-                  change:
-                    type: string
-                    example: added
-                    enum:
-                      - added
-                      - updated
-                      - removed
-                  expiration:
-                    type: string
-                    format: date-time
-                    example: 2019-02-26T08:47:58.636074Z
+      allOf:
+        - $ref: "#/components/schemas/FileInfo"
+        - type: object
+          properties:
+            diff:
+              $ref: "#/components/schemas/FileDiff"
+            history:
+              type: object
+              description: map with version names as keys and file info as values
+              additionalProperties:
+                allOf:
+                  - $ref: "#/components/schemas/UpdateFileInfo"
+                  - type: object
+                    required:
+                      - change
+                    properties:
+                      change:
+                        type: string
+                        example: added
+                        enum:
+                          - added
+                          - updated
+                          - removed
+                      expiration:
+                        nullable: true
+                        type: string
+                        format: date-time
+                        example: 2019-02-26T08:47:58.636074Z
     UploadFileInfo:
       allOf:
         - $ref: "#/components/schemas/FileInfo"
@@ -1449,6 +1435,7 @@ components:
                 example: 0
     FileDiff:
       type: object
+      nullable: true
       required:
         - path
         - checksum

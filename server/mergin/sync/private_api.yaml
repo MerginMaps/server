@@ -300,8 +300,7 @@ paths:
                       type: string
                       example: TEMPLATES
                     version:
-                      type: string
-                      example: v1
+                      $ref: "#/components/schemas/VersionName"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
   /project/unsubscribe/{id}:
@@ -503,6 +502,10 @@ components:
         requested_by:
           type: string
           example: jane.doe
+    VersionName:
+      type: string
+      pattern: '^$|^v\d+$'
+      example: v2
     ProjectListItem:
       type: object
       properties:
@@ -519,8 +522,7 @@ components:
           type: integer
           example: 1024
         version:
-          type: string
-          example: v5
+          $ref: "#/components/schemas/VersionName"
         created:
           type: string
           format: date-time

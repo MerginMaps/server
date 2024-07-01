@@ -48,6 +48,7 @@ pytest-cov = "==3.0.0"
 pylint = "==2.15.0"
 responses = "==0.21.0"
 pytest-dotenv= "==0.5.2"
+pysqlite3= "==0.5.2"
 # requirements for pytest on windows
 atomicwrites = "==1.4.0"
 

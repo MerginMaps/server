@@ -21,7 +21,6 @@ depends_on = None
 
 
 def upgrade():
-
     conn = op.get_bind()
     # assign some random value to user_profile registration_date field if empty
     conn.execute(

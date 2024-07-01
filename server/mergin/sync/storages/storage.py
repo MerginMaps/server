@@ -77,31 +77,27 @@ class ProjectStorage:
     def restore_versioned_file(self, file, version):
         raise NotImplementedError
 
-    def download_files(self, files, files_format=None, version=None):
-        """Download files
-        :type files: list of dict
-        """
+    def download_files(self, files, files_format: str = None, version: int = None):
+        """Download files"""
         if version:
             for f in files:
                 sleep(0)
-                self.restore_versioned_file(f["path"], version)
+                self.restore_versioned_file(f.path, version)
         if files_format == "zip":
-            paths = [
-                {"fs": self.file_path(f["location"]), "n": f["path"]} for f in files
-            ]
+            paths = [{"fs": self.file_path(f.location), "n": f.path} for f in files]
             z = zipfly.ZipFly(mode="w", paths=paths)
             response = Response(z.generator(), mimetype="application/zip")
+            archive_name = quote(self.project.name.encode("utf-8"))
+            if version is not None:
+                archive_name += f"-v{version}"
             response.headers["Content-Disposition"] = (
-                "attachment; filename={}{}.zip".format(
-                    quote(self.project.name.encode("utf-8")),
-                    "-" + version if version else "",
-                )
+                f"attachment; filename={archive_name}.zip"
             )
             return response
         files_dict = {}
         for f in files:
-            path = f["path"]
-            files_dict[path] = (path, StorageFile(self, f["location"]))
+            path = f.path
+            files_dict[path] = (path, StorageFile(self, f.location))
         encoder = MultipartEncoder(files_dict)
 
         def _generator():
