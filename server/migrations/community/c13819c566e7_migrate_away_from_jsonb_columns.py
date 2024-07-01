@@ -190,54 +190,65 @@ def data_downgrade():
     # construct version files and changes, update project files with latest version files
     version_files_query = """
     WITH version_files AS (
-        WITH files_ids AS (
+        WITH version_files_changes AS (
+            WITH history AS (
+                SELECT
+                    fh.*,
+                    pv.project_id,
+                    pv.name
+                FROM file_history fh
+                LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
+            )
             SELECT DISTINCT
-            FIRST_VALUE (fh.id) OVER (
-                    PARTITION BY fh.path
-                    ORDER BY
-                        pv.created DESC
-                ) as pf_id
+                pv.project_id,
+                pv.id AS version_id,
+                FIRST_VALUE (h.id) OVER (
+                    PARTITION BY (h.path, pv.id)
+                    ORDER BY h.name DESC
+                ) AS fh_id
             FROM project_version pv
-            LEFT OUTER JOIN file_history fh ON fh.version_id = pv.id
+            LEFT OUTER JOIN history h ON pv.project_id = h.project_id
+            WHERE h.name <= pv.name
         )
         SELECT
-            version_id,
+            vf.version_id,
             CASE
-            WHEN fh.diff IS NOT NULL THEN
-                jsonb_agg(
-                    jsonb_build_object(
-                        'path', fh.path,
-                        'size', fh.size,
-                        'checksum', fh.checksum,
-                        'diff', fh.diff || jsonb_build_object('mtime', pv.created, 'sanitized_path', ltrim(fh.diff ->> 'location', pv.name || '/')),
-                        'location', fh.location,
-                        'sanitized_path', ltrim(fh.location, pv.name || '/'),
-                        'mtime', pv.created
-                    )
-                )
-            ELSE
-                jsonb_agg(
-                    jsonb_build_object(
-                        'path', fh.path,
-                        'size', fh.size,
-                        'checksum', fh.checksum,
-                        'location', fh.location,
-                        'sanitized_path', ltrim(fh.location, pv.name || '/'),
-                        'mtime', pv.created
-                    )
-                )
-            END
-            AS files
-        FROM file_history fh
-        LEFT OUTER JOIN files_ids ON files_ids.pf_id = fh.id
-        LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
-        WHERE fh.change::text != 'delete'
-        GROUP BY fh.version_id, fh.diff
+                WHEN fh.diff IS NOT NULL THEN
+                        jsonb_build_object(
+                            'path', fh.path,
+                            'size', fh.size,
+                            'checksum', fh.checksum,
+                            'diff', fh.diff || jsonb_build_object('mtime', pv.created, 'sanitized_path', ltrim(fh.diff ->> 'location', pv.name || '/')),
+                            'location', fh.location,
+                            'sanitized_path', ltrim(fh.location, pv.name || '/'),
+                            'mtime', pv.created
+                        )
+                ELSE
+                        jsonb_build_object(
+                            'path', fh.path,
+                            'size', fh.size,
+                            'checksum', fh.checksum,
+                            'location', fh.location,
+                            'sanitized_path', ltrim(fh.location, pv.name || '/'),
+                            'mtime', pv.created
+                        )
+            END AS file
+            FROM project_version pv
+            LEFT OUTER JOIN version_files_changes vf ON pv.id = vf.version_id
+            LEFT OUTER JOIN file_history fh ON fh.id = vf.fh_id
+            WHERE fh.change::text != 'delete'
+            GROUP BY vf.version_id, fh.diff, fh.path, fh.size, fh.checksum, fh.location, pv.created, pv.name
+    ), aggregates AS (
+    SELECT
+        version_id,
+        jsonb_agg(file) AS files
+    FROM version_files
+    GROUP BY version_id
     )
     UPDATE project_version pv
-    SET files = vf.files
-    FROM version_files vf
-    WHERE vf.version_id = pv.id;
+    SET files = a.files
+    FROM aggregates a
+    WHERE a.version_id = pv.id;
     """
 
     # renamed files are reconstructed as delete-create pairs
@@ -368,6 +379,7 @@ def downgrade():
         postgresql_using="gin",
     )
 
+    data_downgrade()
     # convert to string with 'v' prefix
     conn.execute(
         sa.text(
@@ -379,7 +391,6 @@ def downgrade():
             "ALTER TABLE project_version ALTER COLUMN name SET DATA TYPE VARCHAR USING 'v' || name;"
         )
     )
-    data_downgrade()
 
     op.drop_index(op.f("ix_file_history_version_id"), table_name="file_history")
     op.drop_index(op.f("ix_file_history_path"), table_name="file_history")
