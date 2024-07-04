@@ -587,7 +587,7 @@ class ProjectVersion(db.Model):
             size=upload_file.size,
             checksum=upload_file.checksum,
             location=upload_file.location,
-            diff=asdict(upload_file.diff) if upload_file.diff else None,
+            diff=asdict(upload_file.diff) if upload_file.diff else null(),
             change=change,
         )
         fh.version = self
