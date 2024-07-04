@@ -57,6 +57,23 @@ def upgrade():
 
     data_upgrade()
 
+    # optionally drop gin indices (only added by old alembic migration, not present in new databases)
+    conn.execute(sa.text("DROP INDEX IF EXISTS ix_project_files_gin;"))
+    conn.execute(sa.text("DROP INDEX IF EXISTS ix_project_version_changes_gin;"))
+    conn.execute(
+        sa.text("DROP INDEX IF EXISTS ix_project_ix_project_version_files_gin;")
+    )
+
+    op.drop_column("project", "files")
+
+    op.drop_index(op.f("ix_project_version_name"), table_name="project_version")
+    op.drop_index(op.f("ix_project_latest_version"), table_name="project")
+    op.drop_column("project_version", "files")
+    op.drop_column("project_version", "changes")
+
+    # harmonize constraint name
+    op.drop_constraint("uq_project_id_version", "project_version", type_="unique")
+
     # trim 'v' prefix and convert to integer
     conn.execute(
         sa.text(
@@ -85,19 +102,13 @@ def upgrade():
         existing_nullable=True,
     )
 
-    # optionally drop gin indices (only added by old alembic migration, not present in new databases)
-    conn.execute(sa.text("DROP INDEX IF EXISTS ix_project_files_gin;"))
-    conn.execute(sa.text("DROP INDEX IF EXISTS ix_project_version_changes_gin;"))
-    conn.execute(
-        sa.text("DROP INDEX IF EXISTS ix_project_ix_project_version_files_gin;")
+    op.create_index(
+        op.f("ix_project_version_name"), "project_version", ["name"], unique=False
     )
 
-    op.drop_column("project", "files")
-
-    # harmonize constraint name
-    op.drop_constraint("uq_project_id_version", "project_version", type_="unique")
-    op.drop_column("project_version", "files")
-    op.drop_column("project_version", "changes")
+    op.create_index(
+        op.f("ix_project_latest_version"), "project", ["latest_version"], unique=False
+    )
 
     op.create_unique_constraint(
         op.f("uq_project_version_project_id"), "project_version", ["project_id", "name"]
