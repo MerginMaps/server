@@ -327,9 +327,16 @@ def data_downgrade():
     WHERE pv.project_id = p.id and p.latest_version = pv.name
     """
 
+    removed_projects_files_query = """
+    UPDATE project
+    SET files = NULL
+    WHERE storage_params IS NULL
+    """
+
     conn.execute(sa.text(version_files_query))
     conn.execute(sa.text(version_changes_query))
     conn.execute(sa.text(project_files_query))
+    conn.execute(sa.text(removed_projects_files_query))
 
 
 def downgrade():
@@ -341,6 +348,7 @@ def downgrade():
             postgresql.JSONB(astext_type=sa.Text()),
             autoincrement=False,
             nullable=True,
+            server_default="{}",
         ),
     )
     op.add_column(
@@ -350,6 +358,7 @@ def downgrade():
             postgresql.JSONB(astext_type=sa.Text()),
             autoincrement=False,
             nullable=True,
+            server_default="[]",
         ),
     )
     op.drop_constraint(
@@ -380,6 +389,7 @@ def downgrade():
             postgresql.JSONB(astext_type=sa.Text()),
             autoincrement=False,
             nullable=True,
+            server_default="[]",
         ),
     )
     op.create_index(
