@@ -60,15 +60,16 @@ Watching the type definitions is also useful to pick up any changes to imports o
 ## Running locally in a docker composition
 
 ```shell
-# Create the "projects" directory with the current user in order to have the same permissions on the mounted volume
-# for this user within the container (if the folder does not exist during startup of the docker composition,
-# the docker deamon creates the directory as root, which prevents access for the current user)
-mkdir projects
+# Run the docker composition with the current Dockerfiles
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
-# Run the docker composition as the current user
-HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up
+# Give ownership of the ./projects folder to user that is running the gunicorn container
+sudo chown 901:999 projects/
+
+# init db and create user
+docker exec -it merginmaps-server flask init-db
+docker exec -it merginmaps-server flask user create admin topsecret --is-admin --email admin@example.com
 ```
-
 
 ## Running tests
 To launch the unit tests run:
