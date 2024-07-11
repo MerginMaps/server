@@ -162,6 +162,7 @@ class ProjectSchema(ma.SQLAlchemyAutoSchema):
     version = fields.Function(lambda obj: ProjectVersion.to_v_name(obj.latest_version))
     namespace = fields.Function(lambda obj: obj.workspace.name)
     created = DateTimeWithZ()
+    updated = DateTimeWithZ()
     creator = fields.Integer(attribute="creator_id")
     uploads = fields.Method("_uploads")
     role = fields.Method("_role")

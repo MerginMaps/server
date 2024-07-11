@@ -9,6 +9,7 @@ from marshmallow import fields, EXCLUDE, pre_load, post_load, post_dump
 from pathvalidate import sanitize_filename
 
 from .. import ma
+from ..app import DateTimeWithZ
 
 
 def mergin_secure_filename(filename: str) -> str:
@@ -115,7 +116,7 @@ class ChangesSchema(ma.Schema):
 
 
 class ProjectFileSchema(FileSchema):
-    mtime = fields.String()
+    mtime = DateTimeWithZ()
     diff = fields.Nested(FileSchema())
 
     @post_dump

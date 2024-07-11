@@ -540,6 +540,16 @@ def test_get_project(client, data, expected):
         assert resp_data["role"] == "owner"
         resp = client.get("/v1/project/by_uuid/{}".format(resp_data["id"]))
         assert resp.json["role"] == "owner"
+        assert all(
+            [
+                "Z" in value
+                for value in [
+                    resp.json["created"],
+                    resp.json["updated"],
+                    resp.json["files"][0]["mtime"],
+                ]
+            ]
+        )
 
 
 test_history_data = [
