@@ -37,7 +37,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
       <template #end>
         <div class="flex align-items-center flex-shrink-0">
-          <slot name="invitationsIcon"></slot>
           <PButton
             text
             plain
@@ -47,6 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             @click="toggleMenu"
             class="p-2 shadow-none"
           >
+            <slot name="invitationsIcon"></slot>
             <div class="mr-2 max-w-80 flex flex-column align-items-start">
               <span class="title-t4" :style="{ whiteSpace: 'nowrap' }">{{
                 userName
