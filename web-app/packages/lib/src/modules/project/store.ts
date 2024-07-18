@@ -157,10 +157,6 @@ export const useProjectStore = defineStore('projectModule', {
       this.versions = payload.versions
       this.versionsCount = payload.count
     },
-    projectVersionsLoading(loading: boolean) {
-      this.versionsLoading = loading
-    },
-
     initUpload(payload) {
       const upload = {
         files: payload.files ?? {},
@@ -544,7 +540,7 @@ export const useProjectStore = defineStore('projectModule', {
       const notificationStore = useNotificationStore()
 
       try {
-        this.projectVersionsLoading(true)
+        this.versionsLoading = true
         const response = await ProjectApi.fetchProjectVersions(
           payload.namespace,
           payload.projectName,
@@ -559,7 +555,7 @@ export const useProjectStore = defineStore('projectModule', {
           text: 'Failed to fetch project versions'
         })
       } finally {
-        this.projectVersionsLoading(false)
+        this.versionsLoading = false
       }
     },
 

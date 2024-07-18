@@ -33,6 +33,7 @@ import { UserApi } from '@/modules/user/userApi'
 export interface UserState {
   loggedUser?: UserDetailResponse
   workspaces: WorkspaceResponse[]
+  workspacesLoading: boolean
   workspaceId: number
   lastWorkspaces: StorageProxy<LastSeenWorkspace[]>
 }
@@ -46,6 +47,7 @@ export const useUserStore = defineStore('userModule', {
   state: (): UserState => ({
     loggedUser: null,
     workspaces: [],
+    workspacesLoading: false,
     workspaceId: undefined,
     lastWorkspaces: lastWorkspacesStorage
   }),
@@ -356,12 +358,15 @@ export const useUserStore = defineStore('userModule', {
 
       let workspacesResponse
       try {
+        this.workspacesLoading = true
         workspacesResponse = await UserApi.getWorkspaces()
         this.setWorkspaces({ workspaces: workspacesResponse.data })
       } catch (_err) {
         await notificationStore.error({
           text: 'Failed to load workspaces'
         })
+      } finally {
+        this.workspacesLoading = false
       }
       return workspacesResponse
     },
