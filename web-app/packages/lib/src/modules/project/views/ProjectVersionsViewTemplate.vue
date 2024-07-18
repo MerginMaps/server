@@ -143,7 +143,7 @@ export default defineComponent({
       ] as DataViewWrapperColumnItem[],
       options: {
         sortDesc: true,
-        itemsPerPage: this.defaultItemsPerPage ?? 10,
+        itemsPerPage: this.defaultItemsPerPage ?? 50,
         page: 1
       } as DataViewWrapperOptions
     }
