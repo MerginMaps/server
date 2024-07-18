@@ -16,3 +16,4 @@ export { default as FullStorageWarningTemplate } from './FullStorageWarningTempl
 export { default as TipMessage } from './TipMessage.vue'
 export { default as AppOnboardingPage } from './AppOnboardingPage.vue'
 export * from './types'
+export * from './data-view'

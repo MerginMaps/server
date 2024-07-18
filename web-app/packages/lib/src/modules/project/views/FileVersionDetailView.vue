@@ -6,67 +6,79 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div>
-    <AppContainer v-if="tables">
-      <AppSection ground class="mb-3">
-        <h2>{{ path }}</h2>
-      </AppSection>
-      <AppSection v-bind:key="name" v-for="(value, name) in tables">
-        <template #title
-          ><i class="ti ti-file-spreadsheet mb-2"></i>{{ name }}</template
-        >
-        <PDataTable
-          :value="value.changes"
-          :paginator="value.changes.length > itemsPerPage"
-          :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
-          :rows="itemsPerPage"
-          size="small"
-          :scrollable="true"
-          scroll-height="400px"
-        >
-          <template v-for="col in value.headers" :key="col.value">
-            <!-- Show icon with insert / update / delete -->
-            <PColumn
-              v-if="col.value === 'operationTypeHeader'"
-              :header="col.text"
-              style="width: 50px"
-              :pt="ptColumn"
-            >
-              <template #body="slotProps">
-                <app-circle
-                  class="mr-1"
-                  :severity="actions[slotProps.data[col.value]].severity"
-                >
-                  <i
-                    :class="[
-                      'ti',
-                      `${actions[slotProps.data[col.value]].icon}`
-                    ]"
-                  ></i>
-                </app-circle>
-              </template>
-            </PColumn>
-            <!-- else show data -->
-            <PColumn
-              v-else
-              :header="col.text"
-              :style="{ minWidth: `${col.width}px` }"
-              :pt="ptColumn"
-            >
-              <template #body="slotProps">{{
-                slotProps.data[col.value]
-              }}</template>
-            </PColumn>
-          </template>
-          <template #empty>
-            <div class="flex flex-column align-items-center p-4 text-center">
-              <p>No changeset for current layer</p>
-            </div>
-          </template>
-        </PDataTable>
-      </AppSection>
-    </AppContainer>
-    <AppContainer v-else>
-      <AppSection class="p-4">
+    <app-container v-if="loading && !tables">
+      <PSkeleton width="4rem" height="2rem" class="mb-3"></PSkeleton>
+      <PSkeleton width="100%" height="150px"></PSkeleton>
+    </app-container>
+
+    <template v-if="tables">
+      <app-container>
+        <app-section ground>
+          <template #header
+            ><h1 class="headline-h3">{{ path }}</h1></template
+          >
+        </app-section>
+      </app-container>
+
+      <app-container :key="name" v-for="(value, name) in tables">
+        <app-section>
+          <template #title
+            ><i class="ti ti-file-spreadsheet mb-2"></i>{{ name }}</template
+          >
+          <PDataTable
+            :value="value.changes"
+            :paginator="value.changes.length > itemsPerPage"
+            :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
+            :rows="itemsPerPage"
+            size="small"
+            :scrollable="true"
+            scroll-height="400px"
+          >
+            <template v-for="col in value.headers" :key="col.value">
+              <!-- Show icon with insert / update / delete -->
+              <PColumn
+                v-if="col.value === 'operationTypeHeader'"
+                :header="col.text"
+                style="width: 50px"
+                :pt="ptColumn"
+              >
+                <template #body="slotProps">
+                  <app-circle
+                    class="mr-1"
+                    :severity="actions[slotProps.data[col.value]].severity"
+                  >
+                    <i
+                      :class="[
+                        'ti',
+                        `${actions[slotProps.data[col.value]].icon}`
+                      ]"
+                    ></i>
+                  </app-circle>
+                </template>
+              </PColumn>
+              <!-- else show data -->
+              <PColumn
+                v-else
+                :header="col.text"
+                :style="{ minWidth: `${col.width}px` }"
+                :pt="ptColumn"
+              >
+                <template #body="slotProps">{{
+                  slotProps.data[col.value]
+                }}</template>
+              </PColumn>
+            </template>
+            <template #empty>
+              <div class="flex flex-column align-items-center p-4 text-center">
+                <p>No changeset for current layer</p>
+              </div>
+            </template>
+          </PDataTable>
+        </app-section>
+      </app-container>
+    </template>
+    <app-container v-else-if="!loading">
+      <app-section class="p-4">
         <div class="flex flex-column align-items-center text-center">
           <h3>Changes cannot be calculated</h3>
           <p>
@@ -79,8 +91,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             >.
           </p>
         </div>
-      </AppSection>
-    </AppContainer>
+      </app-section>
+    </app-container>
   </div>
 </template>
 
@@ -94,7 +106,6 @@ import { defineComponent } from 'vue'
 import AppCircle from '@/common/components/AppCircle.vue'
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppSection from '@/common/components/AppSection.vue'
-import { waitCursor } from '@/common/html_utils'
 import { ProjectVersionFileChange, useNotificationStore } from '@/modules'
 import { useInstanceStore } from '@/modules/instance/store'
 
@@ -118,7 +129,7 @@ export default defineComponent({
         string,
         { headers?: ColumnItem[]; changes?: Record<string, string | number>[] }
       > | null,
-      loading: true,
+      loading: false,
       actions: {
         insert: { icon: 'ti-plus', severity: 'success' },
         update: { icon: 'ti-pen', severity: 'warn' },
@@ -152,7 +163,7 @@ export default defineComponent({
     ...mapActions(useNotificationStore, ['error']),
     // TODO: refactor to pinia action
     getChangeset() {
-      waitCursor(true)
+      this.loading = true
       this.$http
         .get(
           `/v1/resource/changesets/${this.namespace}/${this.projectName}/${this.version_id}?path=${this.path}`
@@ -225,7 +236,6 @@ export default defineComponent({
         })
         .finally(() => {
           this.loading = false
-          waitCursor(false)
         })
     }
   },
