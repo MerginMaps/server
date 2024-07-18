@@ -342,6 +342,10 @@ class UserWorkspaceSchema(ma.SQLAlchemyAutoSchema):
         return obj.get_user_role(self.context.get("user"))
 
 
+class ProjectInvitationAccessSchema(Schema):
+    expires_at = fields.String()
+
+
 class StrOrInt(fields.Field):
     """Custom field type for validating both str or int datatype"""
 
@@ -360,3 +364,4 @@ class ProjectAccessDetailSchema(Schema):
     name = fields.String()
     project_permission = fields.String()
     type = fields.String()
+    invitation = fields.Nested(ProjectInvitationAccessSchema())
