@@ -29,8 +29,8 @@ jobs:
       - name: Install deps
         run: |
           cd server
-          sudo apt-get -y install pipenv libsqlite3-mod-spatialite
-          pipenv install --dev --three --sequential --verbose
+          pip3 install pipenv==2022.7.24
+          pipenv install --dev --sequential --verbose
 
       - name: Run tests
         run: |
