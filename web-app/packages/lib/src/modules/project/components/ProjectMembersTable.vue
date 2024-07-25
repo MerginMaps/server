@@ -7,113 +7,77 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <app-container>
     <app-section>
-      <PDataView
-        :value="searchedItems"
-        :rows="itemsPerPage"
-        :paginator="searchedItems.length > itemsPerPage"
-        :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
+      <DataViewWrapper
         :data-key="'id'"
         data-cy="permission-table"
-        :sortField="projectStore.accessSorting?.sortBy"
-        :sortOrder="projectStore.accessSorting?.sortDesc ? -1 : 1"
+        :value="searchedItems"
+        :rows="itemsPerPage"
+        :columns="columns"
+        :paginator="searchedItems.length > itemsPerPage"
+        :loading="projectStore.accessLoading"
+        :empty-message="'No members found.'"
+        :row-cursor-pointer="false"
+        :options="{
+          itemsPerPage,
+          sortBy: projectStore.accessSorting?.sortBy,
+          sortDesc: projectStore.accessSorting?.sortDesc
+        }"
       >
-        <template #header>
-          <div class="w-11 grid grid-nogutter">
-            <!-- Visible on lg breakpoint > -->
-            <div
-              v-for="col in columns.filter((item) => !item.fixed)"
-              :class="['paragraph-p6 hidden lg:flex', `col-${col.cols ?? 4}`]"
-              :key="col.text"
+        <template #header-title>Members</template>
+        <template #actions="{ item }">
+          <PButton
+            icon="ti ti-trash"
+            rounded
+            plain
+            text
+            @click.stop="removeMember(item)"
+            class="paragraph-p3 p-0"
+            :style="{
+              visibility: canRemoveMember(item) ? 'visible' : 'hidden'
+            }"
+          />
+        </template>
+
+        <template #col-email="{ column, item }">
+          <div
+            :class="[
+              column.textClass,
+              // Center texts with additional content Avatar - text
+              'flex align-items-center'
+            ]"
+          >
+            <PAvatar
+              :label="$filters.getAvatar(item.email, item.name)"
+              shape="circle"
+              :pt="{
+                root: {
+                  class: 'mr-2 font-semibold text-color-forest flex-shrink-0',
+                  style: {
+                    borderRadius: '50%'
+                  }
+                }
+              }"
+            />
+            <span
+              >{{ item[column.value] }}
+              <template
+                v-if="column.value === 'email' && item.id === loggedUser.id"
+                >(me)</template
+              ></span
             >
-              {{ col.text }}
-            </div>
-            <!-- else -->
-            <div class="col-12 flex lg:hidden">Members</div>
           </div>
         </template>
 
-        <!-- table rows -->options
-        <template #list="slotProps">
-          <div
-            v-for="item in slotProps.items"
-            :key="item.id"
-            class="flex align-items-center hover:bg-gray-50 border-bottom-1 border-gray-200 paragraph-p6 px-4 py-2 mt-0"
-          >
-            <div class="w-11 grid grid-nogutter">
-              <!-- Columns, we are using data view instead table, it is better handling of responsive state -->
-              <div
-                v-for="col in columns.filter((item) => !item.fixed)"
-                :key="col.value"
-                :class="[
-                  'flex flex-column justify-content-center col-12 gap-1 py-2',
-                  `lg:col-${col.cols ?? 4}`,
-                  'lg:py-0'
-                ]"
-              >
-                <p class="opacity-80 lg:hidden font-semibold">
-                  {{ col.text }}
-                </p>
-                <div
-                  :class="[
-                    col.textClass || 'opacity-80',
-                    // Center texts with additional content Avatar - text
-                    'flex align-items-center'
-                  ]"
-                >
-                  <PAvatar
-                    v-if="col.value === 'email'"
-                    :label="$filters.getAvatar(item.email, item.name)"
-                    shape="circle"
-                    :pt="{
-                      root: {
-                        class:
-                          'mr-2 font-semibold text-color-forest flex-shrink-0',
-                        style: {
-                          borderRadius: '50%'
-                        }
-                      }
-                    }"
-                  />
-                  <AppDropdown
-                    v-if="col.value === 'roles'"
-                    :options="roles"
-                    :model-value="item.project_permission"
-                    @update:model-value="(e) => roleUpdate(item, e)"
-                    :disabled="item.id === loggedUser.id"
-                    class="w-6 lg:w-full"
-                  />
-                  <span v-else
-                    >{{ item[col.value] }}
-                    <template
-                      v-if="col.value === 'email' && item.id === loggedUser.id"
-                      >(me)</template
-                    ></span
-                  >
-                </div>
-              </div>
-              <!-- actions -->
-            </div>
-            <div class="w-1 flex justify-content-end">
-              <PButton
-                icon="ti ti-trash"
-                rounded
-                plain
-                text
-                @click.stop="removeMember(item)"
-                class="paragraph-p3 p-0"
-                :style="{
-                  visibility: canRemoveMember(item) ? 'visible' : 'hidden'
-                }"
-              />
-            </div>
-          </div>
+        <template #col-roles="{ item }">
+          <AppDropdown
+            :options="roles"
+            :model-value="item.project_permission"
+            @update:model-value="(e) => roleUpdate(item, e)"
+            :disabled="item.id === loggedUser.id"
+            class="w-6 lg:w-full"
+          />
         </template>
-        <template #empty>
-          <div class="w-full text-center p-4">
-            <span>No members found.</span>
-          </div>
-        </template>
-      </PDataView>
+      </DataViewWrapper>
     </app-section>
   </app-container>
 </template>
@@ -127,21 +91,14 @@ import { ProjectAccessDetail } from '../types'
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppDropdown from '@/common/components/AppDropdown.vue'
 import AppSection from '@/common/components/AppSection.vue'
+import DataViewWrapper from '@/common/components/data-view/DataViewWrapper.vue'
+import { DataViewWrapperColumnItem } from '@/common/components/data-view/types'
 import {
   GlobalRole,
   ProjectRoleName,
   isAtLeastGlobalRole
 } from '@/common/permission_utils'
 import { useInstanceStore, useUserStore } from '@/main'
-
-// TODO: Externalize to AppCol element
-interface ColumnItem {
-  text: string
-  value: string
-  cols?: number
-  fixed?: boolean
-  textClass?: string
-}
 
 interface Props {
   allowRemove?: boolean
@@ -154,7 +111,7 @@ const instanceStore = useInstanceStore()
 const props = withDefaults(defineProps<Props>(), { allowRemove: true })
 
 const itemsPerPage = ref(10)
-const columns = ref<ColumnItem[]>([
+const columns = ref<DataViewWrapperColumnItem[]>([
   {
     text: 'Email address',
     value: 'email',
