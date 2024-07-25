@@ -4,7 +4,7 @@
 
 import json
 import shutil
-import sqlite3
+import pysqlite3
 import uuid
 import math
 from datetime import datetime
@@ -238,7 +238,7 @@ def gpkgs_are_equal(file1, file2):
 
 def execute_query(file, sql):
     """Open connection to gpkg file and execute SQL query"""
-    gpkg_conn = sqlite3.connect(file)
+    gpkg_conn = pysqlite3.connect(file)
     gpkg_conn.enable_load_extension(True)
     gpkg_cur = gpkg_conn.cursor()
     gpkg_cur.execute('SELECT load_extension("mod_spatialite")')

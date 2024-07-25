@@ -1,4 +1,4 @@
-FROM ubuntu:focal-20230301
+FROM ubuntu:jammy-20240627.1
 MAINTAINER Martin Varga "martin.varga@lutraconsulting.co.uk"
 
 # this is to do choice of timezone upfront, because when "tzdata" package gets installed,
@@ -21,8 +21,7 @@ RUN apt-get update -y && \
 
 
 # needed for geodiff
-RUN pip3 install --upgrade pip
-RUN ln -s /usr/lib/x86_64-linux-musl/libc.so /lib/libc.musl-x86_64.so.1
+RUN pip3 install --upgrade pip==24.0
 
 # create mergin user to run container with
 RUN groupadd -r mergin -g 901

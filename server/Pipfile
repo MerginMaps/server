@@ -27,7 +27,7 @@ flask-migrate = "==2.6.0" # 3.1.0
 wtforms-json = "==0.3.5"
 pytz = "==2022.2.1"
 scikit-build = "==0.15.0"
-pygeodiff = "==1.0.4"
+pygeodiff = "==1.0.6"
 pathvalidate = "==2.5.2"
 celery= "==5.2.7"
 redis= "==4.3.4"
@@ -39,6 +39,7 @@ urllib3 = "==1.26.12"
 shapely = "==1.8.4"
 psycogreen = "==1.0.2"
 importlib-metadata = "==4.12.0"  # https://github.com/pallets/flask/issues/4502
+typing_extensions= "==4.12.2"
 # requirements for development on windows
 colorama = "==0.4.5"
 
@@ -48,8 +49,9 @@ pytest-cov = "==3.0.0"
 pylint = "==2.15.0"
 responses = "==0.21.0"
 pytest-dotenv= "==0.5.2"
+pysqlite3= "==0.5.2"
 # requirements for pytest on windows
 atomicwrites = "==1.4.0"
 
 [requires]
-python_version = "3.8"
+python_version = "3.10"

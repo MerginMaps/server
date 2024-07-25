@@ -4,7 +4,7 @@
 
 import datetime
 import os
-import sqlite3
+import pysqlite3
 from unittest.mock import patch
 import pytest
 import json
@@ -1591,7 +1591,7 @@ def test_push_no_diff_finish(client):
     )
 
     # change structure of gpkg file so diff would not be available -> hard overwrite
-    gpkg_conn = sqlite3.connect(os.path.join(working_dir, "base.gpkg"))
+    gpkg_conn = pysqlite3.connect(os.path.join(working_dir, "base.gpkg"))
     gpkg_conn.enable_load_extension(True)
     gpkg_cur = gpkg_conn.cursor()
     gpkg_cur.execute('SELECT load_extension("mod_spatialite")')
