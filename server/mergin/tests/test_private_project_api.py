@@ -441,12 +441,12 @@ def test_admin_project_list(client):
     for i in range(14):
         create_project("foo" + str(i), test_workspace, user)
 
-    resp = client.get("/app/admin/projects?page=1&per_page=10")
+    resp = client.get("/app/admin/projects?page=1&per_page=10&order_params=name ASC")
     assert resp.status_code == 200
     assert resp.json.get("count") == 15
     projects = resp.json.get("projects")
     assert len(projects) == 10
-    assert "foo8" in projects[9]["name"]
+    assert "foo5" in projects[9]["name"]
     assert "v0" == projects[9]["version"]
 
     resp = client.get(
