@@ -1,13 +1,18 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" width=350 srcset="https://raw.githubusercontent.com/MerginMaps/.github/main/images/MM_logo_HORIZ_COLOR_INVERSE_VECTOR.svg">
-  <img width=350 src="https://raw.githubusercontent.com/MerginMaps/.github/main/images/MM_logo_HORIZ_COLOR_VECTOR.svg">
-</picture>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" width=800 srcset="https://github.com/user-attachments/assets/445e5a36-de83-4893-9819-1e5ae276ce90">
+    <img width=800 src="https://github.com/user-attachments/assets/d99baef3-9c1a-4216-8575-21c10e121e8b">
+  </picture>
+</p>
 
-<img src="https://img.shields.io/badge/License-Dual AGPL3 and MM Commercial licence-blue">
+<br>
 
-[![Code Layout](https://github.com/MerginMaps/server/actions/workflows/code_style.yml/badge.svg)](https://github.com/MerginMaps/server/actions/workflows/code_style.yml)
-[![Auto Tests](https://github.com/MerginMaps/server/actions/workflows/auto_tests.yml/badge.svg)](https://github.com/MerginMaps/server/actions/workflows/auto_tests.yml)
-[![Coverage Status](https://coveralls.io/repos/github/MerginMaps/mergin/badge.svg)](https://coveralls.io/github/MerginMaps/mergin)
+<p align="center">
+  <a href="https://github.com/MerginMaps/server/tree/master/LICENSES"><img src="https://img.shields.io/badge/License-Dual%20AGPL3%20and%20MM%20Commercial%20licence-A6CBF4"></a>
+  <a href="https://github.com/MerginMaps/server/actions/workflows/code_style.yml"><img src="https://github.com/MerginMaps/server/actions/workflows/code_style.yml/badge.svg"></a>
+  <a href="https://github.com/MerginMaps/server/actions/workflows/auto_tests.yml"><img src="https://github.com/MerginMaps/server/actions/workflows/auto_tests.yml/badge.svg"></a>
+  <a href="https://coveralls.io/github/MerginMaps/mergin"><img src="https://coveralls.io/repos/github/MerginMaps/mergin/badge.svg"></a>
+</p>
 
 ## About
 
@@ -30,40 +35,6 @@ Mergin Maps organises all data in projects. A project in Mergin Maps is a direct
 QGIS project files, documents, pictures and more. As soon as a project is uploaded to Mergin Maps, it can be easily accessed directly from the web, from QGIS or from iOS/Android via our [mobile app](https://merginmaps.com/).
 
 You are currently browsing repository for Mergin Maps web server and web client. Our mobile app, QGIS plugin and integrations have standalone GitHub repositories, you can [find them here](https://github.com/MerginMaps).
-
-## Screenshots
-
-<p align="center">
-<b>Mergin Maps web</b><br>
-<table align="center">
-<tr>
-	<td align="center"><img src="doc/web-dashboard.png" width=350><br>Dashboard</td>
-	<td align="center"><img src="doc/web-project-detail.png" width=350><br>Project detail</td>
-</tr>
-<tr>
-	<td align="center"><img src="doc/web-project-history.png" width=350><br>Project version history</td>
-	<td align="center"><img src="doc/web-admin.png" width=350><br>Admin interface</td>
-</tr>
-</table>
-</p>
-
-<p align="center">
-<b>Mergin Maps mobile app</b><br>
-
-
-<table align="center">
-<tr>
-	<td align="center"><img src="doc/mobile-map.png" alt="Input app"  width=150 height=auto><br>QGIS map on mobile</td>
-	<td align="center"><img src="doc/mobile-form.png" alt="Input app"  width=150 heigh=auto><br>Feature form</td>
-</tr>
-</table>
-
-</p>
-
-<p align="center">
-<b>Mergin Maps QGIS plugin</b><br>
-<img src="doc/qgis-project.png" alt="Mergin Maps in QGIS" width=800>
-</p>
 
 ## Features
 
