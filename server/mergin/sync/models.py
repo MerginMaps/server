@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, List, Dict, Set
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 
 from blinker import signal
 from flask_login import current_user
