@@ -73,7 +73,16 @@ def upgrade():
     op.drop_column("project_version", "changes")
 
     # harmonize constraint name
-    op.drop_constraint("uq_project_id_version", "project_version", type_="unique")
+    conn.execute(
+        sa.text(
+            "ALTER TABLE project_version DROP CONSTRAINT IF EXISTS uq_project_id_version;"
+        )
+    )
+    conn.execute(
+        sa.text(
+            "ALTER TABLE project_version DROP CONSTRAINT IF EXISTS uq_project_version_project_id;"
+        )
+    )
 
     # trim 'v' prefix and convert to integer
     conn.execute(
