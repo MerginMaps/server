@@ -768,7 +768,7 @@ test_download_file_data = [
     (test_project, "test.txt", "text/plain", 200),
     (test_project, "logo.pdf", "application/pdf", 200),
     (test_project, "logo.jpeg", "image/jpeg", 200),
-    (test_project, "base.gpkg", "None", 200),
+    (test_project, "base.gpkg", "application/geopackage+sqlite3", 200),
     (test_project, "json.json", "text/plain", 200),
     (test_project, "foo.txt", None, 404),
     ("bar", "test.txt", None, 404),
