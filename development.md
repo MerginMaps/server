@@ -15,7 +15,8 @@ $ docker run -d --rm --name mergin_maps_dev_redis -p 6379:6379 redis
 
 ### Server
 ```shell
-$ pip3 install pipenv
+$ pip3 install --upgrade pip==24.0
+$ pip3 install pipenv==2024.0.1
 $ cd server
 # Install dependencies with pipenv
 # Note: You can append --three flag in older versions of pipenv (< 3.16.8 2023-02-04)
@@ -43,7 +44,7 @@ $ yarn dev  # development client web application dev server on port 8080 (packag
 $ yarn dev:admin  # development admin appplication dev server on port 8081 (package @mergin/admin-app)
 ```
 
-If you are developing a library package (named **-lib*), it is useful to watch the library for changes instead of rebuilding it each time. 
+If you are developing a library package (named **-lib*), it is useful to watch the library for changes instead of rebuilding it each time.
 
 To watch the @mergin/lib library while developing:
 

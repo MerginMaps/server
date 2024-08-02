@@ -32,7 +32,7 @@ RUN useradd -u 901 -r --home-dir /app --create-home -g mergin -G mergin-family -
 COPY . /app
 WORKDIR /app
 
-RUN pip3 install pipenv==2022.7.24
+RUN pip3 install pipenv==2024.0.1
 # for locale check this http://click.pocoo.org/5/python3/
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
