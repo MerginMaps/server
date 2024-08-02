@@ -6,6 +6,7 @@ Create Date: 2024-06-06 16:05:59.565541
 
 """
 
+import time
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
@@ -198,6 +199,29 @@ def data_upgrade():
 
 def data_downgrade():
     conn = op.get_bind()
+
+    first_version_files_query = """
+    WITH first_pushes AS (
+        SELECT
+            pv.id AS version_id,
+            jsonb_build_object(
+                'path', fh.path,
+                'size', fh.size,
+                'checksum', fh.checksum,
+                'location', fh.location,
+                'sanitized_path', ltrim(fh.location, pv.name || '/'),
+                'mtime', pv.created
+            ) AS file
+        FROM file_history fh
+        LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
+        WHERE pv.name = 1
+    )
+    UPDATE project_version pv
+    SET files = first_pushes.files
+    FROM first_pushes
+    WHERE first_pushes.version_id = pv.id;
+    """
+
     # construct version files and changes, update project files with latest version files
     version_files_query = """
     WITH version_files AS (
@@ -264,67 +288,56 @@ def data_downgrade():
 
     # renamed files are reconstructed as delete-create pairs
     version_changes_query = """
-    WITH changes AS (
-        WITH change_preprocess AS (
+    WITH changes AS NOT MATERIALIZED (
+        WITH history AS NOT MATERIALIZED (
             SELECT
-                pv.id,
+                pv.id AS version_id,
                 CASE
-                WHEN fh.diff IS NOT NULL THEN
-                jsonb_agg(
-                    jsonb_build_object(
-                        'path', fh.path,
-                        'size', fh.size,
-                        'checksum', fh.checksum,
-                        'diff', fh.diff || jsonb_build_object('mtime', pv.created, 'sanitized_path', ltrim(fh.diff ->> 'location', pv.name || '/')),
-                        'location', fh.location,
-                        'sanitized_path', ltrim(fh.location, pv.name || '/'),
-                        'mtime', pv.created
-                    )
-                )
-                ELSE
-                jsonb_agg(
-                    jsonb_build_object(
-                        'path', fh.path,
-                        'size', fh.size,
-                        'checksum', fh.checksum,
-                        'location', fh.location,
-                        'sanitized_path', ltrim(fh.location, pv.name || '/'),
-                        'mtime', pv.created
-                    )
-                )
-                END AS meta,
-                fh.change
-            FROM project_version pv
-            LEFT JOIN file_history fh ON pv.id = fh.version_id
-            GROUP BY pv.id, fh.change, fh.diff
+                    WHEN fh.diff IS NOT NULL THEN
+                        jsonb_build_object(
+                            'path', fh.path,
+                            'size', fh.size,
+                            'checksum', fh.checksum,
+                            'diff', fh.diff || jsonb_build_object('mtime', pv.created, 'sanitized_path', ltrim(fh.diff ->> 'location', pv.name || '/')),
+                            'location', fh.location,
+                            'sanitized_path', ltrim(fh.location, pv.name || '/'),
+                            'mtime', pv.created
+                        )
+                    ELSE
+                        jsonb_build_object(
+                            'path', fh.path,
+                            'size', fh.size,
+                            'checksum', fh.checksum,
+                            'location', fh.location,
+                            'sanitized_path', ltrim(fh.location, pv.name || '/'),
+                            'mtime', pv.created
+                        )
+                END AS file,
+                fh.change::text as change
+            FROM file_history fh
+            LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
         )
         SELECT
-            id,
-            CASE
-                WHEN change::text = 'create' THEN meta
-                ELSE '[]'::jsonb
-            END AS added,
-            CASE
-                WHEN change::text = 'update' OR change::text = 'update_diff' THEN meta
-                ELSE '[]'::jsonb
-            END AS updated,
-            CASE
-                WHEN change::text = 'delete' THEN meta
-                ELSE '[]'::jsonb
-            END AS removed
-        from change_preprocess
+            pv.id,
+            jsonb_build_object(
+                'added', COALESCE((SELECT jsonb_agg(file) FROM history WHERE version_id = pv.id AND change = 'create'), '[]'::jsonb),
+                'updated', COALESCE((SELECT jsonb_agg(file) FROM history WHERE version_id = pv.id AND (change = 'update' OR change = 'update_diff')), '[]'::jsonb),
+                'removed', COALESCE((SELECT jsonb_agg(file) FROM history WHERE version_id = pv.id AND change = 'delete'), '[]'::jsonb),
+                'renamed', '[]'::jsonb
+            ) AS changes
+        FROM project_version pv
     )
     UPDATE project_version pv
-    SET changes = jsonb_build_object('added', added, 'updated', updated, 'removed', removed, 'renamed', '[]'::jsonb)
+    SET changes = ch.changes
     FROM changes ch
     WHERE ch.id = pv.id;
     """
 
     project_files_query = """
-    UPDATE project p
-    SET files = pv.files
-    FROM project_version pv
-    WHERE pv.project_id = p.id and p.latest_version = pv.name
+        UPDATE project p
+        SET files = pv.files
+        FROM project_version pv
+        WHERE pv.project_id = p.id and p.latest_version = pv.name
     """
 
     removed_projects_files_query = """
@@ -332,7 +345,7 @@ def data_downgrade():
     SET files = NULL
     WHERE storage_params IS NULL
     """
-
+    conn.execute(sa.text(first_version_files_query))
     conn.execute(sa.text(version_files_query))
     conn.execute(sa.text(version_changes_query))
     conn.execute(sa.text(project_files_query))
