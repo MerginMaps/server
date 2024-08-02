@@ -2,9 +2,13 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import datetime
+import os
+
+from sqlalchemy import null
 
 from .. import db
 from ..config import Configuration
+from ..sync.models import FileHistory, ProjectVersion, PushChangeType
 from ..sync.workspace import GlobalWorkspaceHandler
 from .utils import add_user, login, create_project
 
@@ -26,7 +30,6 @@ def test_workspace_implementation(client):
     assert not ws.user_has_permissions(user, "read")
     assert not ws.user_has_permissions(user, "write")
     assert not ws.user_has_permissions(user, "admin")
-    assert ws.disk_usage() == 0  # no projects so far
     # user is kind of guest, without any global permissions
     assert len(handler.list_active()) == 1
     assert handler.list_active()[0].name == ws.name
@@ -42,22 +45,27 @@ def test_workspace_implementation(client):
     Configuration.GLOBAL_ADMIN = True
     # create project with dummy file to count for workspace usage
     project = create_project("test_permissions", ws, user)
-    project.files = [
-        {
-            "path": "some_file.txt",
-            "location": "v1/some_file.txt",
-            "size": 1024,
-            "checksum": "89469a6482267de394c7c7270cb7ffafe694ea76",
-        }
-    ]
+    file_history = FileHistory(
+        path="some_file.txt",
+        location=os.path.join(
+            ProjectVersion.to_v_name(project.latest_version), "some_file.txt"
+        ),
+        checksum="89469a6482267de394c7c7270cb7ffafe694ea76",
+        size=1024,
+        diff=null(),
+        change=PushChangeType.CREATE,
+    )
+    file_history.version = project.get_latest_version()
+    default_project_usage = ws.disk_usage()
+    db.session.add(file_history)
     project.disk_usage = 1024
     db.session.commit()
-    assert ws.disk_usage() == 1024
+    assert ws.disk_usage() == 1024 + default_project_usage
     # mark project for removal
     project.removed_at = datetime.datetime.utcnow()
     project.removed_by = user.id
     db.session.commit()
-    assert ws.disk_usage() == 0
+    assert ws.disk_usage() == default_project_usage
 
 
 def test_workspace(client):

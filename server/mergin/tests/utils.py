@@ -4,19 +4,21 @@
 
 import json
 import shutil
-import sqlite3
 import uuid
 import math
+from dataclasses import asdict
 from datetime import datetime
+
+import pysqlite3
 from flask import url_for, current_app
 import os
 from dateutil.tz import tzlocal
 from pygeodiff import GeoDiff
-from sqlalchemy.orm.attributes import flag_modified
 
 from ..auth.models import User, UserProfile
-from ..sync.utils import generate_location, generate_checksum, resolve_tags
-from ..sync.models import Project, ProjectAccess, ProjectVersion
+from ..sync.utils import generate_location, generate_checksum
+from ..sync.models import Project, ProjectAccess, ProjectVersion, FileHistory
+from ..sync.files import UploadChanges, ChangesSchema
 from ..sync.workspace import GlobalWorkspace
 from .. import db
 from . import json_headers, DEFAULT_USER, test_project, test_project_dir, TMP_DIR
@@ -65,6 +67,7 @@ def login(client, username, password):
 
 
 def create_project(name, workspace, user, **kwargs):
+    """Create new empty project"""
     default_project = {
         "storage_params": {"type": "local", "location": generate_location()},
         "name": name,
@@ -80,10 +83,8 @@ def create_project(name, workspace, user, **kwargs):
     public = kwargs.get("public", False)
     pa = ProjectAccess(p, public)
     db.session.add(pa)
-
-    changes = {"added": [], "updated": [], "removed": []}
-    pv = ProjectVersion(p, "v0", user.username, changes, p.files, "127.0.0.1")
-    pv.project = p
+    changes = UploadChanges(added=[], updated=[], removed=[])
+    pv = ProjectVersion(p, 0, user.username, changes, "127.0.0.1")
     db.session.add(pv)
     db.session.commit()
 
@@ -149,13 +150,13 @@ def initialize():
     }
 
     p = Project(**project_params)
-    p.files = []
+    project_files = []
     for root, dirs, files in os.walk(
         test_project_dir, topdown=True
     ):  # pylint: disable=W0612
         for f in files:
             abs_path = os.path.join(root, f)
-            p.files.append(
+            project_files.append(
                 {
                     "path": abs_path.replace(test_project_dir, "").lstrip("/"),
                     "location": os.path.join(
@@ -163,10 +164,10 @@ def initialize():
                     ),
                     "size": os.path.getsize(abs_path),
                     "checksum": generate_checksum(abs_path),
-                    "mtime": datetime.fromtimestamp(os.path.getmtime(abs_path)),
+                    "mtime": str(datetime.fromtimestamp(os.path.getmtime(abs_path))),
                 }
             )
-    p.latest_version = "v1"
+    p.latest_version = 1
     p.updated = datetime.utcnow()
     db.session.add(p)
 
@@ -175,10 +176,22 @@ def initialize():
     db.session.add(pa)
     db.session.commit()
 
-    changes = {"added": p.files, "updated": [], "removed": []}
-    pv = ProjectVersion(p, "v1", user.username, changes, p.files, "127.0.0.1")
+    upload_changes = ChangesSchema(context={"version": 1}).load(
+        {
+            "added": project_files,
+            "updated": [],
+            "removed": [],
+            "renamed": [],
+        }
+    )
+    pv = ProjectVersion(p, 1, user.username, upload_changes, "127.0.0.1")
     db.session.add(pv)
     db.session.commit()
+
+    # make sure for history without diff there is a proper Null in database jsonb column
+    assert FileHistory.query.filter_by(version_id=pv.id).filter(
+        FileHistory.diff.is_(None)
+    ).count() == len(project_files)
 
     # mimic files were uploaded
     shutil.copytree(
@@ -209,7 +222,10 @@ def upload_file_to_project(project, filename, client):
         "updated": [],
         "removed": [],
     }
-    data = {"version": project.latest_version, "changes": changes}
+    data = {
+        "version": ProjectVersion.to_v_name(project.latest_version),
+        "changes": changes,
+    }
     resp = client.post(
         f"/v1/project/push/{project.workspace.name}/{project.name}",
         data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
@@ -238,7 +254,7 @@ def gpkgs_are_equal(file1, file2):
 
 def execute_query(file, sql):
     """Open connection to gpkg file and execute SQL query"""
-    gpkg_conn = sqlite3.connect(file)
+    gpkg_conn = pysqlite3.connect(file)
     gpkg_conn.enable_load_extension(True)
     gpkg_cur = gpkg_conn.cursor()
     gpkg_cur.execute('SELECT load_extension("mod_spatialite")')
@@ -249,18 +265,14 @@ def execute_query(file, sql):
 
 def create_blank_version(project):
     """Helper to create dummy project version with no changes to increase count"""
-    changes = {"added": [], "updated": [], "removed": []}
     pv = ProjectVersion(
         project,
         project.next_version(),
         project.creator.username,
-        changes,
-        project.files,
+        UploadChanges(added=[], updated=[], removed=[]),
         "127.0.0.1",
     )
     db.session.add(pv)
-    project.latest_version = project.next_version()
-    flag_modified(project, "files")
     db.session.commit()
 
 
@@ -275,7 +287,7 @@ def push_change(project, action, path, src_dir):
     :returns: new project version, ProjectVersion
     """
     current_files = project.files
-    new_version = project.next_version()
+    new_version = ProjectVersion.to_v_name(project.next_version())
     changes = {"added": [], "updated": [], "removed": []}
     metadata = {**file_info(src_dir, path), "location": os.path.join(new_version, path)}
 
@@ -283,9 +295,9 @@ def push_change(project, action, path, src_dir):
         new_file = os.path.join(project.storage.project_dir, metadata["location"])
         os.makedirs(os.path.dirname(new_file), exist_ok=True)
         shutil.copy(os.path.join(src_dir, metadata["path"]), new_file)
-        current_files.append(metadata)
+        changes["added"].append(metadata)
     elif action == "updated":
-        f_updated = next(f for f in current_files if f["path"] == path)
+        f_updated = next(f for f in current_files if f.path == path)
         metadata = {
             **file_info(src_dir, path),
             "location": os.path.join(new_version, path),
@@ -295,7 +307,7 @@ def push_change(project, action, path, src_dir):
         if ".gpkg" in path:
             diff_id = str(uuid.uuid4())
             diff_name = path + "-diff-" + diff_id
-            basefile = os.path.join(project.storage.project_dir, f_updated["location"])
+            basefile = os.path.join(project.storage.project_dir, f_updated.location)
             modfile = os.path.join(src_dir, path)
             changeset = os.path.join(src_dir, diff_name)
             project.storage.geodiff.create_changeset(basefile, modfile, changeset)
@@ -320,30 +332,26 @@ def push_change(project, action, path, src_dir):
         new_file = os.path.join(project.storage.project_dir, metadata["location"])
         os.makedirs(os.path.dirname(new_file), exist_ok=True)
         shutil.copy(os.path.join(src_dir, metadata["path"]), new_file)
-        f_updated.update(metadata)
+        changes["updated"].append(metadata)
     elif action == "removed":
-        f_removed = next(f for f in current_files if f["path"] == path)
-        current_files.remove(f_removed)
+        f_removed = next(f for f in current_files if f.path == path)
+        changes["removed"].append(asdict(f_removed))
     else:
         return
 
-    changes[action].append(metadata)
+    upload_changes = ChangesSchema(context={"version": project.next_version()}).load(
+        changes
+    )
     pv = ProjectVersion(
         project,
-        new_version,
+        project.next_version(),
         project.creator.username,
-        changes,
-        current_files,
+        upload_changes,
         "127.0.0.1",
     )
     db.session.add(pv)
     db.session.commit()
-    assert pv.project_size == sum(file["size"] for file in pv.files)
-    project.files = current_files
-    project.disk_usage = sum(file["size"] for file in project.files)
-    project.tags = resolve_tags(pv.files)
-    project.latest_version = new_version
+    assert pv.project_size == sum(file.size for file in pv.files)
     db.session.add(project)
-    flag_modified(project, "files")
     db.session.commit()
     return pv
