@@ -31,7 +31,7 @@ jobs:
           cd server
           sudo apt-get -y install libsqlite3-mod-spatialite
           pip3 install pipenv==2024.0.1
-          pipenv install --dev --sequential --verbose
+          pipenv install --dev --verbose
 
       - name: Run tests
         run: |
