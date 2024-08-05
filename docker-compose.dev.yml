@@ -1,0 +1,23 @@
+version: "3.7"
+
+services:
+  server-gunicorn:
+    image: server-gunicorn
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+  celery-beat:
+    image: celery-beat
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+  celery-worker:
+    image: celery-worker
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+  web:
+    image: merginmaps-frontend
+    build:
+      context: ./web-app
+      dockerfile: Dockerfile

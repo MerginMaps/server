@@ -9,7 +9,7 @@ RUN yarn link:dependencies
 RUN yarn build:all
 RUN PUBLIC_PATH=/admin/ yarn build:all:admin
 
-FROM nginx:alpine
+FROM nginxinc/nginx-unprivileged:1.25.5
 MAINTAINER Martin Varga "martin.varga@lutraconsulting.co.uk"
 WORKDIR /usr/share/nginx/html
 # client app

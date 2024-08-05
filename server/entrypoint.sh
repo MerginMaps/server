@@ -17,6 +17,4 @@ umask 0027
 # We store a base config in config.py and override things as needed
 # using the environment variable GUNICORN_CMD_ARGS.
 
-/bin/bash -c "celery -A application.celery beat --loglevel=info &"
-/bin/bash -c "celery -A application.celery worker --loglevel=info &"
-/bin/bash -c "gunicorn --config config.py application:application"
+exec sh -c "$@"
