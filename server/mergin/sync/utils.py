@@ -10,7 +10,6 @@ import secrets
 from threading import Timer
 from uuid import UUID
 from connexion import NoContent
-from pathvalidate import sanitize_filename
 from shapely import wkb
 from shapely.errors import WKBReadingError
 from gevent import sleep
@@ -87,18 +86,6 @@ def is_qgis(path: str) -> bool:
     """
     _, ext = os.path.splitext(path)
     return ext.lower() in [".qgs", ".qgz"]
-
-
-def resolve_tags(files):
-    tags = []
-    qgis_count = 0
-    for f in files:
-        if is_qgis(f["path"]):
-            qgis_count += 1
-    # TODO add some rules for intput validity and mappin validity
-    if qgis_count == 1:
-        tags.extend(["valid_qgis", "input_use"])
-    return tags
 
 
 def int_version(version):
@@ -292,51 +279,6 @@ def is_name_allowed(string):
     )
 
 
-def mergin_secure_filename(filename):
-    """Change filename to be secured filename
-
-    :param filename: string to be checked.
-    :type filename: str
-
-    :return: secured filename
-    :rtype: str
-    """
-    filename = os.path.normpath(filename)
-    return os.path.join(
-        *[
-            sanitize_filename(path, replacement_text="_")
-            for path in filename.split(os.sep)
-        ]
-    )
-
-
-def get_path_from_files(files, path, is_diff=False):
-    """Get path from files between getting sanitized or mergin_secure_filename
-
-    :param files: list of files
-    :type files: list
-
-    :param path: path that will be checked
-    :type path: str
-
-    :return: secured filename
-    :rtype: str
-    """
-    for file in files:
-        if file["path"] == path:
-            if is_diff:
-                return (
-                    file["diff"]["sanitized_path"]
-                    if "sanitized_path" in file
-                    else file["diff"]["path"]
-                )
-            else:
-                return (
-                    file["sanitized_path"] if "sanitized_path" in file else file["path"]
-                )
-    return mergin_secure_filename(path)
-
-
 def workspace_names(workspaces):
     """Helper to extract only names from list of workspaces"""
     return list(map(lambda x: x.name, workspaces))
@@ -357,11 +299,6 @@ def split_project_path(project_path):
     """Extract workspace and project names out of path."""
     workspace_name, project_name = project_path.split("/")
     return workspace_name, project_name
-
-
-def is_valid_gpkg(file_meta):
-    """Check if diff file is valid"""
-    return file_meta["size"] != 0
 
 
 def clean_upload(transaction_id):

@@ -37,7 +37,7 @@ def _prepare_restore_project(working_dir: str) -> Project:
         os.path.join(working_dir, "base.gpkg"),
     )
     push_change(project, "added", "base.gpkg", working_dir)
-    assert project.latest_version == "v1"
+    assert project.latest_version == 1
     assert os.path.exists(os.path.join(project.storage.project_dir, "v1", "base.gpkg"))
     return project
 
@@ -59,19 +59,31 @@ def test_crud_in_version_file_restore(app, forward_check):
     execute_query(basefile, sql)
     pv2 = push_change(p, "updated", "base.gpkg", working_dir)
     assert p.latest_version == pv2.name
-    assert os.path.exists(os.path.join(p.storage.project_dir, pv2.name, "base.gpkg"))
+    assert os.path.exists(
+        os.path.join(
+            p.storage.project_dir, ProjectVersion.to_v_name(pv2.name), "base.gpkg"
+        )
+    )
     # update feature
     sql = "UPDATE simple SET rating=100 WHERE name='insert_test'"
     execute_query(basefile, sql)
     pv3 = push_change(p, "updated", "base.gpkg", working_dir)
     assert p.latest_version == pv3.name
-    assert os.path.exists(os.path.join(p.storage.project_dir, pv3.name, "base.gpkg"))
+    assert os.path.exists(
+        os.path.join(
+            p.storage.project_dir, ProjectVersion.to_v_name(pv3.name), "base.gpkg"
+        )
+    )
     # delete feature
     sql = "DELETE FROM simple WHERE name='insert_test'"
     execute_query(basefile, sql)
     pv4 = push_change(p, "updated", "base.gpkg", working_dir)
     assert p.latest_version == pv4.name
-    assert os.path.exists(os.path.join(p.storage.project_dir, pv4.name, "base.gpkg"))
+    assert os.path.exists(
+        os.path.join(
+            p.storage.project_dir, ProjectVersion.to_v_name(pv4.name), "base.gpkg"
+        )
+    )
 
     # introduce dummy changes before last project update to force restore lookup from beginning
     if forward_check:
@@ -83,11 +95,17 @@ def test_crud_in_version_file_restore(app, forward_check):
     execute_query(basefile, sql)
     pv5 = push_change(p, "updated", "base.gpkg", working_dir)
     assert p.latest_version == pv5.name
-    assert os.path.exists(os.path.join(p.storage.project_dir, pv5.name, "base.gpkg"))
+    assert os.path.exists(
+        os.path.join(
+            p.storage.project_dir, ProjectVersion.to_v_name(pv5.name), "base.gpkg"
+        )
+    )
 
     # tests we can restore anything between pv1 and pv5
     for version in [pv2.name, pv3.name, pv4.name]:
-        test_file = os.path.join(p.storage.project_dir, version, "base.gpkg")
+        test_file = os.path.join(
+            p.storage.project_dir, ProjectVersion.to_v_name(version), "base.gpkg"
+        )
         os.rename(test_file, test_file + "_backup")
         p.storage.restore_versioned_file("base.gpkg", version)
         assert os.path.exists(test_file)
@@ -105,27 +123,29 @@ def test_version_file_restore_with_no_changes(app, forward_check):
         for _ in range(6):
             create_blank_version(p)
 
-    base_version = p.get_latest_version().int_name
+    base_version = p.get_latest_version().name
     for i in range(3):
         sql = "INSERT INTO simple (geometry, name) VALUES (GeomFromText('POINT(24.5, 38.2)', 4326), 'insert_test')"
         execute_query(basefile, sql)
         pv_latest = push_change(p, "updated", "base.gpkg", working_dir)
         assert p.latest_version == pv_latest.name
         assert os.path.exists(
-            os.path.join(p.storage.project_dir, pv_latest.name, "base.gpkg")
+            os.path.join(
+                p.storage.project_dir,
+                ProjectVersion.to_v_name(pv_latest.name),
+                "base.gpkg",
+            )
         )
         # create "no changes" version
         create_blank_version(p)
 
-    latest_version = p.get_latest_version().int_name
+    latest_version = p.get_latest_version().name
     # reconstruct all "diff" file versions including those where no changes were made
     # but not first basefile and full latest version
     for ver in range(base_version + 1, latest_version - 1):
-        pv = ProjectVersion.query.filter_by(
-            project_id=str(p.id), name=f"v{ver}"
-        ).first()
-        file = next(i for i in pv.files if i["path"] == "base.gpkg")
-        expected_file = os.path.join(p.storage.project_dir, file["location"])
+        pv = ProjectVersion.query.filter_by(project_id=str(p.id), name=ver).first()
+        file = next(i for i in pv.files if i.path == "base.gpkg")
+        expected_file = os.path.join(p.storage.project_dir, file.location)
         # pretend previous full file was removed due to storage optimization
         os.rename(expected_file, expected_file + "_backup")
 
@@ -138,14 +158,14 @@ def test_version_file_restore(diff_project):
     """Test restore gpkg file with history which contains deletion, force update and renaming (legacy option)"""
     test_file = os.path.join(diff_project.storage.project_dir, "v4", "base.gpkg")
     os.rename(test_file, test_file + "_backup")
-    diff_project.storage.restore_versioned_file("base.gpkg", "v4")
+    diff_project.storage.restore_versioned_file("base.gpkg", 4)
     assert os.path.exists(test_file)
     assert gpkgs_are_equal(test_file, test_file + "_backup")
 
     # we can restore version 7 (composed from multiple diffs from v6 and v7)
     test_file = os.path.join(diff_project.storage.project_dir, "v7", "base.gpkg")
     os.rename(test_file, test_file + "_backup")
-    diff_project.storage.restore_versioned_file("base.gpkg", "v7")
+    diff_project.storage.restore_versioned_file("base.gpkg", 7)
     assert os.path.exists(test_file)
     assert gpkgs_are_equal(test_file, test_file + "_backup")
     # check we track performance of reconstruction
@@ -160,19 +180,15 @@ def test_version_file_restore(diff_project):
     # restore v6 from previous basefile v5
     test_file = os.path.join(diff_project.storage.project_dir, "v6", "base.gpkg")
     os.rename(test_file, test_file + "_backup")
-    diff_project.storage.restore_versioned_file("base.gpkg", "v6")
+    diff_project.storage.restore_versioned_file("base.gpkg", 6)
     assert os.path.exists(test_file)
     assert gpkgs_are_equal(test_file, test_file + "_backup")
 
     # remove v9 and v10 to mimic that project history end with existing file
-    pv_8 = ProjectVersion.query.filter_by(project_id=diff_project.id, name="v8").first()
-    pv_9 = ProjectVersion.query.filter_by(project_id=diff_project.id, name="v9").first()
-    pv_10 = ProjectVersion.query.filter_by(
-        project_id=diff_project.id, name="v10"
-    ).first()
-    diff_project.latest_version = "v8"
-    diff_project.files = pv_8.files
-    flag_modified(diff_project, "files")
+    pv_8 = ProjectVersion.query.filter_by(project_id=diff_project.id, name=8).first()
+    pv_9 = ProjectVersion.query.filter_by(project_id=diff_project.id, name=9).first()
+    pv_10 = ProjectVersion.query.filter_by(project_id=diff_project.id, name=10).first()
+    diff_project.latest_version = 8
     db.session.delete(pv_9)
     db.session.delete(pv_10)
     db.session.commit()
@@ -180,7 +196,7 @@ def test_version_file_restore(diff_project):
     test_file = os.path.join(diff_project.storage.project_dir, "v6", "base.gpkg")
     if os.path.exists(test_file):
         os.remove(test_file)
-    diff_project.storage.restore_versioned_file("base.gpkg", "v6")
+    diff_project.storage.restore_versioned_file("base.gpkg", 6)
     assert os.path.exists(test_file)
     assert gpkgs_are_equal(test_file, test_file + "_backup")
     gh = GeodiffActionHistory.query.filter_by(
@@ -192,11 +208,11 @@ def test_version_file_restore(diff_project):
     # basefile can not be restored
     test_file = os.path.join(diff_project.storage.project_dir, "v5", "base.gpkg")
     os.remove(test_file)
-    diff_project.storage.restore_versioned_file("base.gpkg", "v5")
+    diff_project.storage.restore_versioned_file("base.gpkg", 5)
     assert not os.path.exists(test_file)
 
     # no geodiff file can not be restored
     test_file = os.path.join(diff_project.storage.project_dir, "v1", "test.txt")
     os.remove(test_file)
-    diff_project.storage.restore_versioned_file("test.txt", "v1")
+    diff_project.storage.restore_versioned_file("test.txt", 1)
     assert not os.path.exists(test_file)

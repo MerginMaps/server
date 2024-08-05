@@ -8,6 +8,7 @@ import json
 import mimetypes
 import os
 import logging
+from dataclasses import asdict
 from typing import Dict
 from urllib.parse import quote
 import uuid
@@ -27,7 +28,6 @@ from pygeodiff import GeoDiffLibError
 from flask_login import current_user
 from sqlalchemy import and_, desc, asc, text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm.attributes import flag_modified
 from binaryornot.check import is_binary
 from gevent import sleep
 import base64
@@ -35,14 +35,28 @@ from werkzeug.exceptions import HTTPException
 from .. import db
 from ..auth import auth_required
 from ..auth.models import User
-from .models import Project, ProjectAccess, ProjectVersion, Upload
+from .models import (
+    Project,
+    ProjectAccess,
+    ProjectVersion,
+    Upload,
+    PushChangeType,
+    FileHistory,
+)
+from .files import (
+    UploadChanges,
+    ChangesSchema,
+    UploadFileSchema,
+    ProjectFileSchema,
+    FileSchema,
+)
 from .schemas import (
     ProjectSchema,
     ProjectListSchema,
     ProjectVersionSchema,
-    FileInfoSchema,
     ProjectSchemaForVersion,
     UserWorkspaceSchema,
+    FileHistorySchema,
 )
 from .storages.storage import FileNotFound, DataSyncError, InitializationError
 from .storages.disk import save_to_file, move_to_tmp
@@ -56,7 +70,6 @@ from .permissions import (
 from .utils import (
     generate_checksum,
     Toucher,
-    int_version,
     is_file_name_blacklisted,
     get_ip,
     get_user_agent,
@@ -64,10 +77,7 @@ from .utils import (
     is_valid_uuid,
     gpkg_wkb_to_wkt,
     is_versioned_file,
-    is_valid_gpkg,
     is_name_allowed,
-    mergin_secure_filename,
-    get_path_from_files,
     get_project_path,
     clean_upload,
     get_device_id,
@@ -77,15 +87,6 @@ from ..utils import format_time_delta
 
 push_triggered = signal("push_triggered")
 project_version_created = signal("project_version_created")
-
-
-def _project_version_files(project, version=None):
-    if version:
-        pv = ProjectVersion.query.filter_by(
-            project_id=project.id, name=version
-        ).first_or_404("Project version does not exist")
-        return pv.files
-    return project.files
 
 
 def parse_project_access_update_request(access: Dict) -> Dict:
@@ -160,8 +161,6 @@ def add_project(namespace):  # noqa: E501
         )
 
     if request.is_json:
-        ua = get_user_agent(request)
-        device_id = get_device_id(request)
         workspace = current_app.ws_handler.get_by_name(namespace)
         if not workspace:
             # return special message if former 'user workspace' was used
@@ -197,47 +196,41 @@ def add_project(namespace):  # noqa: E501
         p.updated = datetime.utcnow()
         pa = ProjectAccess(p, public=request.json.get("public", False))
 
-        template = request.json.get("template", None)
-        ip = get_ip(request)
-        if template:
+        template_name = request.json.get("template", None)
+        if template_name:
             template = (
                 Project.query.filter(Project.creator.has(username="TEMPLATES"))
-                .filter(Project.name == template)
+                .filter(Project.name == template_name)
                 .first_or_404()
             )
-            try:
-                p.storage.initialize(template_project=template)
-            except InitializationError as e:
-                abort(400, f"Failed to initialize project: {str(e)}")
+            version_name = 1
+            files = UploadFileSchema(context={"version": 1}, many=True).load(
+                FileSchema(exclude=("location",), many=True).dump(template.files)
+            )
+            changes = UploadChanges(added=files, updated=[], removed=[])
 
-            version = "v1"
-            changes = {"added": p.files, "updated": [], "removed": []}
-            user_agent = get_user_agent(request)
-            p.latest_version = version
-            version = ProjectVersion(
-                p,
-                version,
-                current_user.username,
-                changes,
-                p.files,
-                get_ip(request),
-                user_agent,
-                device_id,
-            )
         else:
-            changes = {"added": [], "updated": [], "removed": []}
-            version = ProjectVersion(
-                p, "v0", current_user.username, changes, [], ip, ua, device_id
-            )
-            p.latest_version = "v0"
-            try:
-                p.storage.initialize(template_project=template)
-            except InitializationError as exc:
-                abort(400, f"Failed to initialize project: {str(exc)}")
+            template = None
+            version_name = 0
+            changes = UploadChanges(added=[], updated=[], removed=[])
+
+        try:
+            p.storage.initialize(template_project=template)
+        except InitializationError as e:
+            abort(400, f"Failed to initialize project: {str(e)}")
+
+        version = ProjectVersion(
+            p,
+            version_name,
+            current_user.username,
+            changes,
+            get_ip(request),
+            get_user_agent(request),
+            get_device_id(request),
+        )
 
         db.session.add(p)
         db.session.add(pa)
-        version.project = p
         db.session.add(version)
         db.session.commit()
         project_version_created.send(version)
@@ -283,16 +276,25 @@ def download_project(
     :rtype: file - zip archive or multipart stream with project files
     """
     project = require_project(namespace, project_name, ProjectPermissions.Read)
-    files = _project_version_files(project, version)
-    total_size = sum(file["size"] for file in files)
-    if total_size > current_app.config["MAX_DOWNLOAD_ARCHIVE_SIZE"]:
+    lookup_version = (
+        ProjectVersion.from_v_name(version) if version else project.latest_version
+    )
+    project_version = ProjectVersion.query.filter_by(
+        project_id=project.id, name=lookup_version
+    ).first_or_404("Project version does not exist")
+
+    if project_version.project_size > current_app.config["MAX_DOWNLOAD_ARCHIVE_SIZE"]:
         abort(
             400,
             "The total size of requested files is too large to download as a single zip, "
             "please use different method/client for download",
         )
     try:
-        return project.storage.download_files(files, format, version=version)
+        return project.storage.download_files(
+            project_version.files,
+            format,
+            version=ProjectVersion.from_v_name(version) if version else None,
+        )
     except FileNotFound as e:
         abort(404, str(e))
 
@@ -321,41 +323,36 @@ def download_project_file(
     if diff and not version:
         abort(400, f"Changeset must be requested for particular file version")
 
-    lookup_version = version or project.latest_version
-    sql = text(
-        """
-            SELECT
-                expanded.files ->> 'location' AS location,
-                (expanded.files ->> 'diff')::jsonb ->> 'location' as diff_location
-            FROM
-            (
-                SELECT jsonb_array_elements(pv.files::jsonb) AS files
-                FROM project_version pv
-                WHERE pv.name = :version AND project_id = :project_id
-            ) AS expanded
-            WHERE
-                expanded.files @> :json;
-        """
+    lookup_version = (
+        ProjectVersion.from_v_name(version) if version else project.latest_version
     )
-    params = {
-        "version": lookup_version,
-        "project_id": project.id,
-        "json": '{"path": "' + file + '"}',
-    }
-    result = db.session.execute(sql, params).fetchone()
-    if not result:
+    # find the latest file change record for version of interest
+    fh = (
+        FileHistory.query.join(ProjectVersion)
+        .filter(
+            ProjectVersion.project_id == project.id,
+            ProjectVersion.name <= lookup_version,
+            FileHistory.path == file,
+        )
+        .order_by(ProjectVersion.created.desc())
+        .first()
+    )
+    # in case last change was 'delete', file does not exist for such version
+    if not fh or fh.change == PushChangeType.DELETE.value:
         abort(404, f"File {file} not found")
 
     if diff and version:
         # get specific version of geodiff file modified in requested version
-        if not result["diff_location"]:
+        if not fh.diff:
             abort(404, f"No diff in particular file {file} version")
-        file_path = result["diff_location"]
+        file_path = fh.diff_file.location
     else:
-        file_path = result["location"]
+        file_path = fh.location
 
     if version and not diff:
-        project.storage.restore_versioned_file(file, version)
+        project.storage.restore_versioned_file(
+            file, ProjectVersion.from_v_name(version)
+        )
 
     abs_path = os.path.join(project.storage.project_dir, file_path)
     # check file exists (e.g. there might have been issue with restore)
@@ -410,16 +407,26 @@ def get_project(project_name, namespace, since="", version=None):  # noqa: E501
     if since and version:
         abort(400, "Parameters 'since' and 'version' are mutually exclusive")
     elif since:
-        # append history for versioned files
-        for f in project.files:
-            f["history"] = project.file_history(
-                f["path"], since, project.latest_version
-            )
         data = ProjectSchema(exclude=["storage_params"]).dump(project)
+        # append history for versioned files
+        files = []
+        for f in project.files:
+            history_field = {}
+            for item in FileHistory.changes(
+                project.id,
+                f.path,
+                ProjectVersion.from_v_name(since),
+                project.latest_version,
+            ):
+                history_field[ProjectVersion.to_v_name(item.version.name)] = (
+                    FileHistorySchema(exclude=("mtime",)).dump(item)
+                )
+            files.append({**asdict(f), "history": history_field})
+        data["files"] = files
     elif version:
         # return project info at requested version
         version_obj = ProjectVersion.query.filter_by(
-            project_id=project.id, name=version
+            project_id=project.id, name=ProjectVersion.from_v_name(version)
         ).first_or_404("Project at requested version does not exist")
         data = ProjectSchemaForVersion().dump(version_obj)
     else:
@@ -449,7 +456,7 @@ def get_paginated_project_versions(
 ):
     project = require_project(namespace, project_name, ProjectPermissions.Read)
     query = ProjectVersion.query.filter(
-        and_(ProjectVersion.project_id == project.id, ProjectVersion.name != "v0")
+        and_(ProjectVersion.project_id == project.id, ProjectVersion.name != 0)
     )
 
     if descending:
@@ -715,86 +722,78 @@ def project_push(namespace, project_name):
 
     :rtype: None or Dict[str: uuid]
     """
-    version = request.json["version"]
+    version = ProjectVersion.from_v_name(request.json["version"])
     changes = request.json["changes"]
     project_permission = current_app.project_handler.get_push_permission(changes)
     project = require_project(namespace, project_name, project_permission)
-    request.view_args["project"] = (
-        project  # pass full project object to request for later use
-    )
+    # pass full project object to request for later use
+    request.view_args["project"] = project
+    ws = project.workspace
+    if not ws:
+        abort(404)
+
     push_triggered.send(project)
+    # fixme use get_latest
     pv = ProjectVersion.query.filter_by(
         project_id=project.id, name=project.latest_version
     ).first()
     if pv and pv.name != version:
         abort(400, "Version mismatch")
-    if not pv and version != "v0":
+    if not pv and version != 0:
         abort(400, "First push should be with v0")
 
     if all(len(changes[key]) == 0 for key in changes.keys()):
         abort(400, "No changes")
 
+    upload_changes = ChangesSchema(context={"version": version + 1}).load(changes)
     # check if same file is not already uploaded
-    for item in changes["added"]:
-        if not all(ele["path"] != item["path"] for ele in project.files):
-            abort(400, "File {} has been already uploaded".format(item["path"]))
+    for item in upload_changes.added:
+        if not all(ele.path != item.path for ele in project.files):
+            abort(400, f"File {item.path} has been already uploaded")
 
     # changes' files must be unique
-    changes_files = []
-    sanitized_files = []
-    blacklisted_files = []
-    for change in changes.values():
-        for f in change:
-            # check if .gpkg file is valid
-            if is_versioned_file(f["path"]):
-                if not is_valid_gpkg(f):
-                    abort(400, "File {} is not valid".format(f["path"]))
-            if is_file_name_blacklisted(f["path"], current_app.config["BLACKLIST"]):
-                blacklisted_files.append(f)
-            # all file need to be unique after sanitized
-            f["sanitized_path"] = mergin_secure_filename(f["path"])
-            if f["sanitized_path"] in sanitized_files:
-                filename, file_extension = os.path.splitext(f["sanitized_path"])
-                f["sanitized_path"] = (
-                    filename + f".{str(uuid.uuid4())}" + file_extension
-                )
-            sanitized_files.append(f["sanitized_path"])
-            if "diff" in f:
-                f["diff"]["sanitized_path"] = mergin_secure_filename(f["diff"]["path"])
-                if f["diff"]["sanitized_path"] in sanitized_files:
-                    filename, file_extension = os.path.splitext(
-                        f["diff"]["sanitized_path"]
-                    )
-                    f["diff"]["sanitized_path"] = (
-                        filename + f".{str(uuid.uuid4())}" + file_extension
-                    )
-            changes_files.append(f["path"])
+    changes_files = [
+        f.path
+        for f in upload_changes.added + upload_changes.updated + upload_changes.removed
+    ]
     if len(set(changes_files)) != len(changes_files):
         abort(400, "Not unique changes")
 
+    sanitized_files = []
+    blacklisted_files = []
+    for f in upload_changes.added + upload_changes.updated + upload_changes.removed:
+        # check if .gpkg file is valid
+        if is_versioned_file(f.path):
+            if not f.is_valid_gpkg():
+                abort(400, f"File {f.path} is not valid")
+        if is_file_name_blacklisted(f.path, current_app.config["BLACKLIST"]):
+            blacklisted_files.append(f.path)
+        # all file need to be unique after sanitized
+        if f.location in sanitized_files:
+            filename, file_extension = os.path.splitext(f.location)
+            f.location = filename + f".{str(uuid.uuid4())}" + file_extension
+        sanitized_files.append(f.location)
+        if f.diff:
+            if f.diff.location in sanitized_files:
+                filename, file_extension = os.path.splitext(f.diff.location)
+                f.diff.location = filename + f".{str(uuid.uuid4())}" + file_extension
+            sanitized_files.append(f.diff.location)
+
     # remove blacklisted files from changes
-    for key, change in changes.items():
-        files_to_upload = [f for f in change if f not in blacklisted_files]
-        changes[key] = files_to_upload
-
-    # Convert datetimes to UTC
-    for key in changes.keys():
-        for f in changes[key]:
-            f["mtime"] = datetime.utcnow()
-
-    num_version = int_version(version)
+    for key in upload_changes.__dict__.keys():
+        new_value = [
+            f for f in getattr(upload_changes, key) if f.path not in blacklisted_files
+        ]
+        setattr(upload_changes, key, new_value)
 
     # Check user data limit
-    updates = [f["path"] for f in changes["updated"]]
-    updated_files = list(filter(lambda i: i["path"] in updates, project.files))
+    updates = [f.path for f in upload_changes.updated]
+    updated_files = list(filter(lambda i: i.path in updates, project.files))
     additional_disk_usage = (
-        sum(file["size"] for file in changes["added"] + changes["updated"])
-        - sum(file["size"] for file in updated_files)
-        - sum(file["size"] for file in changes["removed"])
+        sum(file.size for file in upload_changes.added + upload_changes.updated)
+        - sum(file.size for file in updated_files)
+        - sum(file.size for file in upload_changes.removed)
     )
-    ws = project.workspace
-    if not ws:
-        abort(404)
 
     current_usage = ws.disk_usage()
     requested_storage = current_usage + additional_disk_usage
@@ -805,7 +804,7 @@ def project_push(namespace, project_name):
             )
         )
 
-    upload = Upload(project, num_version, changes, current_user.id)
+    upload = Upload(project, version, upload_changes, current_user.id)
     db.session.add(upload)
     try:
         # Creating upload transaction with different project's version is possible.
@@ -856,29 +855,24 @@ def project_push(namespace, project_name):
 
     # Update immediately without uploading of new/modified files and remove transaction/lockfile after successful commit
     if not (changes["added"] or changes["updated"]):
-        next_version = "v{}".format(num_version + 1)
-        project.storage.apply_changes(changes, next_version, upload.id)
-        flag_modified(project, "files")
-        project.disk_usage = sum(file["size"] for file in project.files)
+        next_version = version + 1
         user_agent = get_user_agent(request)
         device_id = get_device_id(request)
-        pv = ProjectVersion(
-            project,
-            next_version,
-            current_user.username,
-            changes,
-            project.files,
-            get_ip(request),
-            user_agent,
-            device_id,
-        )
-        project.latest_version = next_version
-        db.session.add(pv)
-        db.session.add(project)
         try:
+            pv = ProjectVersion(
+                project,
+                next_version,
+                current_user.username,
+                upload_changes,
+                get_ip(request),
+                user_agent,
+                device_id,
+            )
+            db.session.add(pv)
+            db.session.add(project)
             db.session.commit()
             logging.info(
-                f"A project version {next_version} for project: {project.id} created. "
+                f"A project version {ProjectVersion.to_v_name(next_version)} for project: {project.id} created. "
                 f"Transaction id: {upload.id}. No upload."
             )
             project_version_created.send(pv)
@@ -911,8 +905,11 @@ def chunk_upload(transaction_id, chunk_id):
     """
     upload, upload_dir = get_upload(transaction_id)
     request.view_args["project"] = upload.project
-    for f in upload.changes["added"] + upload.changes["updated"]:
-        if "chunks" in f and chunk_id in f["chunks"]:
+    upload_changes = ChangesSchema(context={"version": upload.version + 1}).load(
+        upload.changes
+    )
+    for f in upload_changes.added + upload_changes.updated:
+        if chunk_id in f.chunks:
             dest = os.path.join(upload_dir, "chunks", chunk_id)
             lockfile = os.path.join(upload_dir, "lockfile")
             with Toucher(lockfile, 30):
@@ -954,72 +951,71 @@ def push_finish(transaction_id):
 
     upload, upload_dir = get_upload(transaction_id)
     request.view_args["project"] = upload.project
-    changes = upload.changes
-    upload_files = changes["added"] + changes["updated"]
+    changes = ChangesSchema(context={"version": upload.version + 1}).load(
+        upload.changes
+    )
     project = upload.project
     project_path = get_project_path(project)
     corrupted_files = []
 
-    for f in upload_files:
-        if "diff" in f:
-            dest_file = os.path.join(
-                upload_dir,
-                "files",
-                get_path_from_files(upload_files, f["diff"]["path"], is_diff=True),
-            )
-            expected_size = f["diff"]["size"]
+    for f in changes.added + changes.updated:
+        if f.diff is not None:
+            dest_file = os.path.join(upload_dir, "files", f.diff.location)
+            expected_size = f.diff.size
         else:
-            dest_file = os.path.join(
-                upload_dir, "files", get_path_from_files(upload_files, f["path"])
-            )
-            expected_size = f["size"]
-        if "chunks" in f:
-            # Concatenate chunks into single file
-            # TODO we need to move this elsewhere since it can fail for large files (and slow FS)
-            os.makedirs(os.path.dirname(dest_file), exist_ok=True)
-            with open(dest_file, "wb") as dest:
-                try:
-                    for chunk_id in f["chunks"]:
-                        sleep(0)  # to unblock greenlet
-                        chunk_file = os.path.join(upload_dir, "chunks", chunk_id)
-                        with open(chunk_file, "rb") as src:
+            dest_file = os.path.join(upload_dir, "files", f.location)
+            expected_size = f.size
+
+        # Concatenate chunks into single file
+        # TODO we need to move this elsewhere since it can fail for large files (and slow FS)
+        os.makedirs(os.path.dirname(dest_file), exist_ok=True)
+        with open(dest_file, "wb") as dest:
+            try:
+                for chunk_id in f.chunks:
+                    sleep(0)  # to unblock greenlet
+                    chunk_file = os.path.join(upload_dir, "chunks", chunk_id)
+                    with open(chunk_file, "rb") as src:
+                        data = src.read(8192)
+                        while data:
+                            dest.write(data)
                             data = src.read(8192)
-                            while data:
-                                dest.write(data)
-                                data = src.read(8192)
-                except IOError:
-                    logging.exception(
-                        "Failed to process chunk: %s in project %s"
-                        % (chunk_id, project_path)
-                    )
-                    corrupted_files.append(f["path"])
-                    continue
+            except IOError:
+                logging.exception(
+                    "Failed to process chunk: %s in project %s"
+                    % (chunk_id, project_path)
+                )
+                corrupted_files.append(f.path)
+                continue
 
         if expected_size != os.path.getsize(dest_file):
             logging.error(
                 "Data integrity check has failed on file %s in project %s"
-                % (f["path"], project_path),
+                % (f.path, project_path),
                 exc_info=True,
             )
             # check if .gpkg file is valid
             if is_versioned_file(dest_file):
-                if not is_valid_gpkg(f):
-                    corrupted_files.append(f["path"])
-            corrupted_files.append(f["path"])
+                if not f.is_valid_gpkg():
+                    corrupted_files.append(f.path)
+            corrupted_files.append(f.path)
 
     if corrupted_files:
         move_to_tmp(upload_dir)
         abort(422, {"corrupted_files": corrupted_files})
 
-    next_version = "v{}".format(upload.version + 1)
-    files_dir = os.path.join(upload_dir, "files")
-    target_dir = os.path.join(project.storage.project_dir, next_version)
+    next_version = upload.version + 1
+    v_next_version = ProjectVersion.to_v_name(next_version)
+    files_dir = os.path.join(upload_dir, "files", v_next_version)
+    target_dir = os.path.join(project.storage.project_dir, v_next_version)
     if os.path.exists(target_dir):
         pv = ProjectVersion.query.filter_by(
             project_id=project.id, name=project.latest_version
         ).first()
-        if pv and pv.name == next_version:
-            abort(409, {"There is already version with this name %s" % next_version})
+        if pv and pv.name == upload.version + 1:
+            abort(
+                409,
+                f"There is already version with this name {v_next_version}",
+            )
         logging.info(
             "Upload transaction: Target directory already exists. Overwriting %s"
             % target_dir
@@ -1029,9 +1025,49 @@ def push_finish(transaction_id):
     try:
         # let's move uploaded files where they are expected to be
         os.renames(files_dir, target_dir)
-        project.storage.apply_changes(changes, next_version, transaction_id)
-        flag_modified(project, "files")
-        project.disk_usage = sum(file["size"] for file in project.files)
+        # apply gpkg updates
+        sync_errors = {}
+        to_remove = [i.path for i in changes.removed]
+        current_files = [f for f in project.files if f.path not in to_remove]
+        for updated_file in changes.updated:
+            # yield to gevent hub since geodiff action can take some time to prevent worker timeout
+            sleep(0)
+            current_file = next(
+                (i for i in current_files if i.path == updated_file.path), None
+            )
+            if not current_file:
+                sync_errors[updated_file.path] = "file not found on server "
+                continue
+
+            if updated_file.diff:
+                result = project.storage.apply_diff(
+                    current_file, updated_file, next_version
+                )
+                if result.ok():
+                    checksum, size = result.value
+                    updated_file.checksum = checksum
+                    updated_file.size = size
+                else:
+                    sync_errors[updated_file.path] = (
+                        f"project: {project.workspace.name}/{project.name}, {result.value}"
+                    )
+
+            elif is_versioned_file(updated_file.path):
+                result = project.storage.construct_diff(
+                    current_file, updated_file, next_version
+                )
+                if result.ok():
+                    updated_file.diff = result.value
+                else:
+                    # if diff cannot be constructed it would be force update
+                    logging.warning(f"Geodiff: create changeset error {result.value}")
+
+        if sync_errors:
+            msg = ""
+            for key, value in sync_errors.items():
+                msg += key + " error=" + value + "\n"
+            raise DataSyncError(msg)
+
         user_agent = get_user_agent(request)
         device_id = get_device_id(request)
         pv = ProjectVersion(
@@ -1039,17 +1075,15 @@ def push_finish(transaction_id):
             next_version,
             current_user.username,
             changes,
-            project.files,
             get_ip(request),
             user_agent,
             device_id,
         )
-        project.latest_version = next_version
         db.session.add(pv)
         db.session.add(project)
         db.session.commit()
         logging.info(
-            f"Push finished for project: {project.id}, project version: {next_version}, transaction id: {transaction_id}."
+            f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
         )
         project_version_created.send(pv)
         # remove artifacts
@@ -1058,14 +1092,13 @@ def push_finish(transaction_id):
         db.session.rollback()
         clean_upload(transaction_id)
         logging.exception(
-            f"Failed to finish push for project: {project.id}, project version: {next_version}, "
+            f"Failed to finish push for project: {project.id}, project version: {v_next_version}, "
             f"transaction id: {transaction_id}.: {str(err)}"
         )
         abort(422, "Failed to create new version: {}".format(str(err)))
 
-    num_version = int_version(project.latest_version)
     # do not optimize on every version, every 10th is just fine
-    if not num_version % 10:
+    if not project.latest_version % 10:
         optimize_storage.delay(project.id)
     return jsonify(ProjectSchema().dump(project)), 200
 
@@ -1162,28 +1195,29 @@ def clone_project(namespace, project_name):  # noqa: E501
     except InitializationError as e:
         abort(400, f"Failed to clone project: {str(e)}")
 
-    version = "v1" if p.files else "v0"
-    changes = {"added": p.files, "updated": [], "removed": []}
+    version = 1 if cloned_project.files else 0
     # TODO: add user_agent and device_id handling to class
     user_agent = get_user_agent(request)
     device_id = get_device_id(request)
-    p.latest_version = version
-    version = ProjectVersion(
+    # transform source files to new uploaded files
+    files = UploadFileSchema(context={"version": 1}, many=True).load(
+        FileSchema(exclude=("location",), many=True).dump(cloned_project.files)
+    )
+    changes = UploadChanges(added=files, updated=[], removed=[])
+    project_version = ProjectVersion(
         p,
         version,
         current_user.username,
         changes,
-        p.files,
         get_ip(request),
         user_agent,
         device_id,
     )
     db.session.add(p)
     db.session.add(pa)
-    version.project = p
-    db.session.add(version)
+    db.session.add(project_version)
     db.session.commit()
-    project_version_created.send(version)
+    project_version_created.send(project_version)
     return NoContent, 200
 
 
@@ -1202,34 +1236,27 @@ def get_resource_history(project_name, namespace, path):  # noqa: E501
     :rtype: HistoryFileInfo
     """
     project = require_project(namespace, project_name, ProjectPermissions.Read)
-
     # get the metadata of file at latest version where file is present
-    sql = text(
-        "SELECT expanded.name, expanded.files AS file FROM "
-        "(SELECT pv.name, pv.created, jsonb_array_elements(pv.files) AS files "
-        "FROM project_version pv "
-        "WHERE files @> :json AND project_id = :project_id) AS expanded "
-        "WHERE expanded.files @> :json2 "
-        "ORDER BY expanded.created DESC "
-        "LIMIT 1;"
+    fh = (
+        FileHistory.query.join(FileHistory.version)
+        .filter(
+            ProjectVersion.project_id == project.id,
+            FileHistory.path == path,
+            FileHistory.change != "delete",
+        )
+        .order_by(desc(ProjectVersion.created))
+        .first_or_404(f"File {path} not found")
     )
 
-    # in query we need exact format including correct quotes for search in jsonb like this '[{"path": "data.gpkg"}]'
-    # but because of sqlalchemy params formatting issues we construct json clause manually
-    json_query = '[{"path": "' + path + '"}]'
-    json2_query = '{"path": "' + path + '"}'
-    result = db.session.execute(
-        sql, {"project_id": project.id, "json": json_query, "json2": json2_query}
-    ).fetchall()
-    if not result:
-        abort(404, f"File {path} not found")
+    data = ProjectFileSchema().dump(fh)
+    history_field = {}
+    for item in FileHistory.changes(project.id, path, 1, project.latest_version):
+        history_field[ProjectVersion.to_v_name(item.version.name)] = FileHistorySchema(
+            exclude=("mtime",)
+        ).dump(item)
 
-    file = result[0].file
-    file["history"] = project.file_history(path, "v1", project.latest_version)
-    file_info = FileInfoSchema(
-        context={"project_dir": project.storage.project_dir}
-    ).dump(file)
-    return file_info, 200
+    data["history"] = history_field
+    return data, 200
 
 
 def get_resource_changeset(project_name, namespace, version_id, path):  # noqa: E501
@@ -1253,38 +1280,39 @@ def get_resource_changeset(project_name, namespace, version_id, path):  # noqa: 
         abort(404, f"Project {namespace}/{project_name} not found")
 
     version = ProjectVersion.query.filter_by(
-        project_id=project.id, name=version_id
+        project_id=project.id, name=ProjectVersion.from_v_name(version_id)
     ).first()
     if not version:
         abort(
             404, f"Version {version_id} in project {namespace}/{project_name} not found"
         )
 
+    # FIXME optimize, do a lookup in database
     file = next(
-        (f for f in version.files if f["location"] == os.path.join(version_id, path)),
+        (f for f in version.files if f.location == os.path.join(version_id, path)),
         None,
     )
     if not file:
         abort(404, f"File {path} not found")
 
-    if "diff" not in file:
+    if not file.diff:
         abort(404, "Diff not found")
 
-    changeset = os.path.join(
-        version.project.storage.project_dir, file["diff"]["location"]
-    )
+    changeset = os.path.join(version.project.storage.project_dir, file.diff.location)
     json_file = os.path.join(
-        version.project.storage.project_dir, file["location"] + "-diff-changeset"
+        version.project.storage.project_dir, file.location + "-diff-changeset"
     )
-    basefile = os.path.join(version.project.storage.project_dir, file["location"])
+    basefile = os.path.join(version.project.storage.project_dir, file.location)
     schema_file = os.path.join(
-        version.project.storage.project_dir, file["location"] + "-schema"
+        version.project.storage.project_dir, file.location + "-schema"
     )
     project.storage.flush_geodiff_logger()  # clean geodiff logger
 
     try:
         if not os.path.exists(basefile):
-            version.project.storage.restore_versioned_file(path, version_id)
+            version.project.storage.restore_versioned_file(
+                path, ProjectVersion.from_v_name(version_id)
+            )
         if not os.path.exists(json_file):
             version.project.storage.geodiff.list_changes(changeset, json_file)
         if not os.path.exists(schema_file):
@@ -1385,7 +1413,7 @@ def get_project_version(project_id: str, version: str):
     """Get project version by its name (e.g. v3)"""
     project = require_project_by_uuid(project_id, ProjectPermissions.Read)
     pv = ProjectVersion.query.filter_by(
-        project_id=project.id, name=version
+        project_id=project.id, name=ProjectVersion.from_v_name(version)
     ).first_or_404()
     data = ProjectVersionSchema(exclude=["files"]).dump(pv)
     return data, 200
