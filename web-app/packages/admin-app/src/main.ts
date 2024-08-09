@@ -13,13 +13,18 @@ import {
   NotificationModule,
   ProjectModule,
   UserModule,
-  useAppStore,
   useInstanceStore,
   initCsrfToken
-} from '@mergin/lib-vue2'
+} from '@mergin/lib'
+
+import 'primevue/resources/primevue.min.css'
+import 'primeflex/primeflex.min.css'
+import '@mergin/lib/dist/sass/themes/mm-theme-light/theme.scss'
+import '@tabler/icons-webfont/tabler-icons.min.css'
+import '@mergin/lib/dist/style.css'
+import '@mergin/admin-lib/dist/style.css'
 
 import { createMerginApp } from './app'
-import { createRouter } from './router'
 import { createPiniaInstance, getPiniaInstance } from './store'
 
 async function main() {
@@ -47,13 +52,7 @@ async function main() {
   const instanceStore = useInstanceStore(pinia)
   const response = await instanceStore.initApp()
   initCsrfToken(response)
-  const router = createRouter(pinia)
-  createMerginApp().$mount('#app')
-
-  router.onError((e) => {
-    const appStore = useAppStore()
-    appStore.setServerError(e.message)
-  })
+  createMerginApp().mount('#app')
 }
 
 main()

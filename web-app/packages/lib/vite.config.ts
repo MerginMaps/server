@@ -14,7 +14,7 @@ import { defineConfig } from 'vite'
 import packageJson from './package.json'
 
 // https://vitejs.dev/config/
-export default defineConfig(() => ({
+export default defineConfig({
   plugins: [
     vue(),
     Components({
@@ -46,38 +46,25 @@ export default defineConfig(() => ({
   },
   build: {
     commonjsOptions: {
-      //   include: [/node_modules/],
       transformMixedEsModules: true
     },
-    // Fix for watching, if watch:lib, disable this
-    // sourcemap: mode !== 'production',
     sourcemap: false,
     lib: {
       formats: ['es'],
-      // Could also be a dictionary or array of multiple entry points
       entry: resolve(__dirname, 'src/main.ts'),
       name: 'lib',
-      // the proper extensions will be added
       fileName: 'lib'
     },
     rollupOptions: {
-      // make sure to externalize deps that shouldn't be bundled
-      // into your library
       external: ['vue', 'pinia', ...Object.keys(packageJson.dependencies)],
       output: {
         exports: 'named',
-        // Provide global variables to use in the UMD build
-        // for externalized deps
         globals: {
           vue: 'Vue',
           pinia: 'pinia'
         }
       },
-      plugins: [
-        // Enable rollup polyfills plugin
-        // used during production bundling
-        rollupNodePolyFill()
-      ]
+      plugins: [rollupNodePolyFill()]
     }
   },
   optimizeDeps: {
@@ -99,4 +86,4 @@ export default defineConfig(() => ({
       ignored: ['!**/node_modules/@mergin/**']
     }
   }
-}))
+})

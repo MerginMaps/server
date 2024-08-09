@@ -47,13 +47,11 @@ import {
   initRequestInterceptors,
   initResponseInterceptors,
   Notifications,
-  UploadProgress,
   useAppStore,
   useInstanceStore,
   useLayoutStore,
   useNotificationStore,
   useUserStore,
-  AppContainer,
   InstanceMaintenanceMessage,
   useProjectStore
 } from '@mergin/lib'
@@ -65,10 +63,8 @@ import { useMeta } from 'vue-meta'
 export default defineComponent({
   name: 'app',
   components: {
-    UploadProgress,
     Notifications,
     DialogWindows,
-    AppContainer,
     InstanceMaintenanceMessage
   },
   computed: {

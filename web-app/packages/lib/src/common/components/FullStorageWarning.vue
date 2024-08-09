@@ -8,15 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <FullStorageWarningTemplate></FullStorageWarningTemplate>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-
+<script lang="ts" setup>
 import FullStorageWarningTemplate from './FullStorageWarningTemplate.vue'
-
-export default defineComponent({
-  name: 'FullStorageWarning',
-  components: { FullStorageWarningTemplate }
-})
 </script>
 
 <style scoped></style>

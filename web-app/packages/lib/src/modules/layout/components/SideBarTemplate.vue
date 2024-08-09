@@ -73,28 +73,33 @@ import { ProjectRouteName } from '@/modules/project'
 
 const route = useRoute()
 const layoutStore = useLayoutStore()
+const props = defineProps<{
+  sidebarItems: SideBarItemModel[]
+}>()
 
 const initialSidebarItems = computed<SideBarItemModel[]>(() => {
-  return [
-    {
-      active: route.matched.some(
-        (item) => item.name === DashboardRouteName.Dashboard
-      ),
-      title: 'Dashboard',
-      to: '/dashboard',
-      icon: 'ti ti-home'
-    },
-    {
-      active: route.matched.some(
-        (item) =>
-          item.name === ProjectRouteName.Projects ||
-          item.name === ProjectRouteName.Project
-      ),
-      title: 'Projects',
-      to: '/projects',
-      icon: 'ti ti-article'
-    }
-  ]
+  return (
+    props.sidebarItems || [
+      {
+        active: route.matched.some(
+          (item) => item.name === DashboardRouteName.Dashboard
+        ),
+        title: 'Dashboard',
+        to: '/dashboard',
+        icon: 'ti ti-home'
+      },
+      {
+        active: route.matched.some(
+          (item) =>
+            item.name === ProjectRouteName.Projects ||
+            item.name === ProjectRouteName.Project
+        ),
+        title: 'Projects',
+        to: '/projects',
+        icon: 'ti ti-article'
+      }
+    ]
+  )
 })
 const isOpen = computed<boolean>(() => layoutStore.drawer)
 

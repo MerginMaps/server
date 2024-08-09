@@ -151,7 +151,7 @@ import {
   htmlUtils,
   useDialogStore,
   useNotificationStore
-} from '@mergin/lib-vue2'
+} from '@mergin/lib'
 import { mapActions } from 'pinia'
 import { defineComponent } from 'vue'
 

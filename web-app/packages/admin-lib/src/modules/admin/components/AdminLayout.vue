@@ -5,42 +5,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-app>
-    <dashboard-core-app-bar />
-
-    <dashboard-core-drawer />
-
-    <v-main>
-      <server-not-configured />
-      <slot />
-      <!--      <router-view />-->
-    </v-main>
-  </v-app>
+  <server-not-configured />
+  <check-for-updates />
+  <slot />
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-
-import DashboardCoreAppBar from '../components/DashboardCoreAppBar.vue'
-import DashboardCoreDrawer from '../components/DashboardCoreDrawer.vue'
-import ServerNotConfigured from '../components/ServerNotConfigured.vue'
-
-export default defineComponent({
-  name: 'AdminLayoutView',
-
-  components: {
-    DashboardCoreAppBar,
-    DashboardCoreDrawer,
-    ServerNotConfigured
-  },
-
-  data: () => ({
-    expandOnHover: false
-  })
-})
+<script lang="ts" setup>
+/** Consider if we want to support this */
+import CheckForUpdates from './CheckForUpdates.vue'
+import ServerNotConfigured from './ServerNotConfigured.vue'
 </script>
-<style lang="scss" scoped>
-::v-deep(.v-application--wrap) {
-  overflow-y: auto;
-}
-</style>
+<style lang="scss" scoped></style>

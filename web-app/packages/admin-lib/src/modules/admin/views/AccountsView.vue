@@ -6,7 +6,24 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <admin-layout>
-    <v-card color="transparent" outlined style="margin: 10px">
+    <app-container>
+      <app-section ground>
+        <template #header>
+          <h1 class="headline-h3">
+            Accounts
+            <span class="text-color-medium-green">({{ users.count }})</span>
+          </h1>
+        </template>
+        <template #headerActions>
+          <PButton
+            icon="ti ti-users-plus"
+            @click="createUserDialog"
+            label="Add user"
+          />
+        </template>
+      </app-section>
+    </app-container>
+    <!-- <v-card color="transparent" outlined style="margin: 10px">
       <v-card-text>
         <v-layout row style="padding: 5px">
           <v-btn
@@ -96,12 +113,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </span>
         </span>
       </template>
-    </v-data-table>
+    </v-data-table> -->
   </admin-layout>
 </template>
 
 <script lang="ts">
-import { PaginatedUsersParams, useDialogStore } from '@mergin/lib-vue2'
+import {
+  PaginatedUsersParams,
+  useDialogStore,
+  AppContainer,
+  AppSection
+} from '@mergin/lib'
 import debounce from 'lodash/debounce'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
@@ -113,7 +135,9 @@ import { useAdminStore } from '@/modules/admin/store'
 export default defineComponent({
   name: 'AccountView',
   components: {
-    AdminLayout
+    AdminLayout,
+    AppSection,
+    AppContainer
   },
   data() {
     return {

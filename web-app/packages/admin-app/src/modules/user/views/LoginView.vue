@@ -9,11 +9,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { LoginViewTemplate, useUserStore } from '@mergin/lib-vue2'
+import { useAdminStore } from '@mergin/admin-lib'
+import { LoginViewTemplate, useUserStore } from '@mergin/lib'
 import { mapActions } from 'pinia'
 import { defineComponent } from 'vue'
 
-import { useAdminStore } from '@/modules/admin/store'
 
 export default defineComponent({
   name: 'LoginView',

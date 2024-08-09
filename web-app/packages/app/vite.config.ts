@@ -20,9 +20,6 @@ export default defineConfig(({ mode }) => ({
       : '/',
   plugins: [
     vue(),
-    // vuetify({
-    //   styles: { configFile: './src/sass/settings.scss' }
-    // }),
     Components({
       resolvers: [PrimeVueResolver({ prefix: 'P' })]
     }),
@@ -37,15 +34,7 @@ export default defineConfig(({ mode }) => ({
     },
     dedupe: ['vue', 'pinia', 'vue-router', '@mergin/lib', 'primevue']
   },
-  // define: {
-  //   'process.env': process.env
-  // },
   build: {
-    // commonjsOptions: {
-    //   include: [/node_modules/],
-    //   transformMixedEsModules: true
-    // },
-
     sourcemap: mode !== 'production',
     rollupOptions: {
       plugins: [

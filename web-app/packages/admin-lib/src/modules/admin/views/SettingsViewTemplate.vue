@@ -6,18 +6,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <admin-layout>
-    <page-view
-      :style="`overflow-y: auto; padding-right:20px; margin-right: 0px;`"
-    >
-      <v-layout class="column fill-height ml-10">
-        <slot />
-      </v-layout>
-    </page-view>
+    <v-layout class="column fill-height ml-10">
+      <slot />
+    </v-layout>
   </admin-layout>
 </template>
 
 <script lang="ts">
-import { PageView } from '@mergin/lib-vue2'
 import { defineComponent } from 'vue'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
@@ -25,7 +20,6 @@ import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
 export default defineComponent({
   name: 'SettingsViewTemplate',
   components: {
-    PageView,
     AdminLayout
   }
 })

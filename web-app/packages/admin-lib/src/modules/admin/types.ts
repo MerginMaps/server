@@ -9,7 +9,7 @@ import {
   Project,
   ProjectListItem,
   UserResponse
-} from '@mergin/lib-vue2'
+} from '@mergin/lib'
 
 export interface UsersParams extends PaginatedRequestParams {
   username?: string
