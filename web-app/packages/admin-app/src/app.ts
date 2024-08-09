@@ -2,61 +2,60 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-// styles must be imported first (at least before imports of our libs)
-import 'vuetify/dist/vuetify.min.css'
-import 'material-icons/iconfont/material-icons.scss'
-import '@fortawesome/fontawesome-free/css/all.css'
-import '@mdi/font/css/materialdesignicons.css'
-
-import '@mergin/lib-vue2/dist/style.css'
-import '@mergin/admin-lib/dist/style.css'
-
 import {
+  MMTheme,
+  MerginComponentUuidMixin,
   dateUtils,
-  textUtils,
+  merginUtils,
   numberUtils,
-  getHttpService,
-  MerginComponentUuidMixin
-} from '@mergin/lib-vue2'
-import PortalVue from 'portal-vue'
-import Vue from 'vue'
-import VueMeta from 'vue-meta'
+  textUtils,
+  useAppStore
+} from '@mergin/lib'
+import PrimeVue from 'primevue/config'
+import Toast from 'primevue/toast'
+import ToastService from 'primevue/toastservice'
+import Tooltip from 'primevue/tooltip'
+import { createApp } from 'vue'
+import { createMetaManager } from 'vue-meta'
 
 import App from './App.vue'
-import router from './router'
-import { getPiniaInstance } from './store'
+import { createRouter } from './router'
+import { addRouterToPinia, getPiniaInstance } from './store'
 
 import i18n from '@/plugins/i18n/i18n'
-import vuetify from '@/plugins/vuetify/vuetify'
 
-Vue.config.productionTip = false
-Vue.use(PortalVue)
-Vue.use(VueMeta)
-Vue.prototype.$http = getHttpService()
-
-Vue.filter('filesize', (value, unit, digits = 2, minUnit = 'B') => {
-  return numberUtils.formatFileSize(value, unit, digits, minUnit)
-})
-Vue.filter('datetime', dateUtils.formatDateTime)
-Vue.filter('date', dateUtils.formatDate)
-Vue.filter('timediff', dateUtils.formatTimeDiff)
-Vue.filter('remainingtime', dateUtils.formatRemainingTime)
-Vue.filter('totitle', textUtils.formatToTitle)
-Vue.filter('currency', numberUtils.formatToCurrency)
-
-// global mixin - replace with composable after migration to Vue 3
-Vue.mixin(MerginComponentUuidMixin)
-
-const createMerginApp = (): Vue => {
+const createMerginApp = () => {
   const pinia = getPiniaInstance()
-
-  return new Vue({
-    router,
-    pinia,
-    vuetify,
-    i18n,
-    render: (h) => h(App)
+  const router = createRouter(pinia)
+  addRouterToPinia(router)
+  router.onError((e) => {
+    const appStore = useAppStore()
+    appStore.setServerError(e.message)
   })
+
+  const app = createApp(App)
+    .mixin(MerginComponentUuidMixin)
+    .use(pinia)
+    .use(router)
+    .use(i18n)
+    .use(createMetaManager())
+    .use(PrimeVue, { pt: MMTheme })
+    .use(ToastService)
+    .component('PToast', Toast)
+    .directive('tooltip', Tooltip)
+
+  app.config.globalProperties.$filters = {
+    filesize: (value, unit, digits = 2, minUnit: numberUtils.SizeUnit = 'B') =>
+      numberUtils.formatFileSize(value, unit, digits, minUnit),
+    datetime: dateUtils.formatDateTime,
+    date: dateUtils.formatDate,
+    timediff: dateUtils.formatTimeDiff,
+    remainingtime: dateUtils.formatRemainingTime,
+    totitle: textUtils.formatToTitle,
+    currency: numberUtils.formatToCurrency,
+    getAvatar: merginUtils.getAvatar
+  }
+  return app
 }
 
 export { createMerginApp }

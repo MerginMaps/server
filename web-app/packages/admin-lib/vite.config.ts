@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import vue from '@vitejs/plugin-vue2'
+import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
-import { VuetifyResolver } from 'unplugin-vue-components/resolvers'
+import { PrimeVueResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 // import vuetify from 'vite-plugin-vuetify'
@@ -15,14 +15,18 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     vue(),
     Components({
-      resolvers: [VuetifyResolver()]
-    }) /*, vuetify() */
+      resolvers: [
+        PrimeVueResolver({
+          prefix: 'P'
+        })
+      ]
+    })
   ],
   publicDir: './src/assets',
   css: {
     preprocessorOptions: {
-      sass: {
-        quietDeps: true
+      scss: {
+        additionalData: `@import "primeflex/core/_variables.scss";`
       }
     }
   },
@@ -31,7 +35,7 @@ export default defineConfig(({ mode }) => ({
     alias: {
       '@': resolve(__dirname, './src')
     },
-    dedupe: ['vue', 'pinia', 'vue-router', 'vuetify', '@mergin/lib-vue2']
+    dedupe: ['vue', 'pinia', 'vue-router', 'vuetify', 'primevue', '@mergin/lib']
   },
   build: {
     sourcemap: mode !== 'production',
@@ -49,8 +53,7 @@ export default defineConfig(({ mode }) => ({
         'vue',
         'pinia',
         ...Object.keys(packageJson.dependencies),
-        '@mergin/lib-vue2',
-        '@vue/babel-helper-vue-jsx-merge-props'
+        '@mergin/lib'
       ],
       output: {
         exports: 'named',
@@ -64,7 +67,7 @@ export default defineConfig(({ mode }) => ({
     }
   },
   optimizeDeps: {
-    exclude: ['vue', '@mergin'],
+    exclude: ['vue', 'vue-demi', '@mergin'],
     esbuildOptions: {
       define: {
         global: 'globalThis'

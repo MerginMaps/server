@@ -3,13 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
-// import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
-import vue from '@vitejs/plugin-vue2'
+import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
-import { VuetifyResolver } from 'unplugin-vue-components/resolvers'
+import { PrimeVueResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
-import { defineConfig } from 'vite'
-// import vuetify from 'vite-plugin-vuetify'
+import { defineConfig, splitVendorChunkPlugin } from 'vite'
 
 const serverPort = process.env.FLASK_RUN_PORT ?? 5000
 
@@ -22,8 +20,9 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     vue(),
     Components({
-      resolvers: [VuetifyResolver()]
-    })
+      resolvers: [PrimeVueResolver({ prefix: 'P' })]
+    }),
+    splitVendorChunkPlugin()
   ],
 
   css: {
@@ -45,7 +44,8 @@ export default defineConfig(({ mode }) => ({
       'pinia',
       'vue-router',
       'vuetify',
-      '@mergin/lib-vue2',
+      'primevue',
+      '@mergin/lib',
       '@mergin/admin-lib'
     ]
   },
@@ -53,7 +53,7 @@ export default defineConfig(({ mode }) => ({
     sourcemap: mode !== 'production'
   },
   optimizeDeps: {
-    exclude: ['vue', '@mergin'],
+    exclude: ['vue', '@mergin', 'vue-demi'],
     esbuildOptions: {
       define: {
         global: 'globalThis'
