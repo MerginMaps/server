@@ -34,6 +34,7 @@ from ..sync.models import (
     ProjectRole,
     FileHistory,
     PushChangeType,
+    ProjectFilePath,
 )
 from ..sync.files import ChangesSchema
 from ..sync.schemas import ProjectListSchema, ProjectSchema
@@ -275,11 +276,14 @@ def test_get_paginated_projects(client):
     assert resp_data.get("projects")[0].get("has_conflict")
 
     # remove conflict copy file
-    conflict_file = FileHistory.query.filter_by(
-        path="base.gpkg_rebase_conflicts"
-    ).first()
+    conflict_file = (
+        FileHistory.query.join(ProjectFilePath)
+        .filter(ProjectFilePath.path == "base.gpkg_rebase_conflicts")
+        .first()
+    )
     conflict_file.change = PushChangeType.DELETE.value
     db.session.commit()
+    project.cache_latest_files()
 
     resp = client.get("/v1/project/paginated?page=1&per_page=15&name=test")
     resp_data = json.loads(resp.data)
@@ -1783,6 +1787,7 @@ def test_optimize_storage(app, client, diff_project):
     ProjectVersion.query.filter_by(project_id=diff_project.id, name=9).delete()
     ProjectVersion.query.filter_by(project_id=diff_project.id, name=10).delete()
     db.session.commit()
+    diff_project.cache_latest_files()
     assert diff_project.latest_version == 8
 
     basefile_v1 = os.path.join(diff_project.storage.project_dir, "v1", "base.gpkg")
@@ -2341,6 +2346,7 @@ def test_project_version_integrity(client):
         )
         db.session.delete(pv)
         db.session.commit()
+        upload.project.cache_latest_files()
 
     # check infrastructure is clean for successful push if no version conflict occur
     changes = _get_changes(test_project_dir)
