@@ -680,6 +680,7 @@ def test_update_project(client):
         headers=json_headers,
     )
     assert resp.status_code == 422
+    assert resp.headers["Content-Type"] == "application/problem+json"
     assert resp.json["code"] == "UpdateProjectAccessError"
     assert resp.json["invalid_usernames"] == ["not-found-user"]
 
@@ -1252,6 +1253,7 @@ def test_exceed_data_limit(client):
         headers=json_headers,
     )
     assert resp.status_code == 422
+    assert resp.headers["Content-Type"] == "application/problem+json"
     assert resp.json["code"] == "StorageLimitHit"
     assert resp.json["detail"] == "You have reached a data limit (StorageLimitHit)"
     assert "current_usage" in resp.json

@@ -272,7 +272,7 @@ paths:
         "422":
           description: Project access update could not be processed
           content:
-            application/json:
+            application/json+problem:
               schema:
                 anyOf:
                   - $ref: "#/components/schemas/UpdateProjectAccessError"
@@ -645,7 +645,7 @@ paths:
         "422":
           description: Request could not be processed by server
           content:
-            application/json:
+            application/problem+json:
               schema:
                 anyOf:
                   - $ref: "#/components/schemas/UnprocessableEntityError"
@@ -976,7 +976,7 @@ components:
     ProjectsLimitHitResp:
       description: Projects limit hit
       content:
-        application/json:
+        application/problem+json:
           schema:
             $ref: '#/components/schemas/ProjectsLimitHit'
   parameters:
