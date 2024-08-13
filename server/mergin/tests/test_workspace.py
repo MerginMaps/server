@@ -8,7 +8,7 @@ from sqlalchemy import null
 
 from .. import db
 from ..config import Configuration
-from ..sync.models import FileHistory, ProjectVersion, PushChangeType
+from ..sync.models import FileHistory, ProjectVersion, PushChangeType, ProjectFilePath
 from ..sync.workspace import GlobalWorkspaceHandler
 from .utils import add_user, login, create_project
 
@@ -45,8 +45,9 @@ def test_workspace_implementation(client):
     Configuration.GLOBAL_ADMIN = True
     # create project with dummy file to count for workspace usage
     project = create_project("test_permissions", ws, user)
+    file = ProjectFilePath(project.id, path="some_file.txt")
     file_history = FileHistory(
-        path="some_file.txt",
+        file,
         location=os.path.join(
             ProjectVersion.to_v_name(project.latest_version), "some_file.txt"
         ),
@@ -56,6 +57,7 @@ def test_workspace_implementation(client):
         change=PushChangeType.CREATE,
     )
     file_history.version = project.get_latest_version()
+    file_history.project_version_name = file_history.version.name
     default_project_usage = ws.disk_usage()
     db.session.add(file_history)
     project.disk_usage = 1024

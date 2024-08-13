@@ -15,6 +15,8 @@ from ..sync.models import (
     AccessRequest,
     RequestStatus,
     FileHistory,
+    ProjectFilePath,
+    LatestProjectFiles,
 )
 from ..sync.files import UploadChanges
 from ..auth.models import User
@@ -152,9 +154,16 @@ def test_remove_project(client, diff_project):
     assert (
         FileHistory.query.filter(FileHistory.version_id.in_(versions_ids)).count() == 0
     )
+    assert ProjectFilePath.query.filter_by(project_id=project_id).count() == 0
     assert not os.path.exists(file)
     assert (
         Project.query.filter_by(id=project_id).first().creator_id == original_creator_id
+    )
+    assert (
+        LatestProjectFiles.query.filter_by(project_id=project_id)
+        .first()
+        .file_history_ids
+        is None
     )
 
     # try to remove the deleted project
