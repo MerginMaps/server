@@ -70,7 +70,6 @@ def upgrade():
     op.add_column(
         "file_history", sa.Column("project_version_name", sa.Integer(), nullable=True)
     )
-    op.drop_constraint("uq_file_history_version_id", "file_history", type_="unique")
 
     data_upgrade()
 
@@ -179,6 +178,7 @@ def data_upgrade():
     )
 
     # drop indexes for update speed up
+    op.drop_constraint("uq_file_history_version_id", "file_history", type_="unique")
     op.drop_index(op.f("ix_file_history_version_id"), table_name="file_history")
     op.drop_index(op.f("ix_file_history_change"), table_name="file_history")
     op.drop_index(op.f("ix_file_history_path"), table_name="file_history")
