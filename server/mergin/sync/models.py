@@ -752,11 +752,10 @@ class ProjectVersion(db.Model):
             change_type = key[1]
 
             for upload_file in getattr(changes, change_attr):
-                if (
+                is_diff_change = (
                     change_type is PushChangeType.UPDATE
                     and upload_file.diff is not None
-                ):
-                    change_type = PushChangeType.UPDATE_DIFF
+                )
 
                 file = existing_files_map.get(
                     upload_file.path, ProjectFilePath(self.project_id, upload_file.path)
@@ -767,7 +766,9 @@ class ProjectVersion(db.Model):
                     checksum=upload_file.checksum,
                     location=upload_file.location,
                     diff=asdict(upload_file.diff) if upload_file.diff else null(),
-                    change=change_type,
+                    change=(
+                        PushChangeType.UPDATE_DIFF if is_diff_change else change_type
+                    ),
                 )
                 fh.version = self
                 fh.project_version_name = self.name
