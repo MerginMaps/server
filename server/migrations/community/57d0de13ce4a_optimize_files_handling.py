@@ -223,7 +223,10 @@ def data_downgrade():
     op.drop_index(op.f("ix_file_history_change"), table_name="file_history")
 
     op.create_index(
-        op.f("ix_file_history_file_path_id_mig"), "file_history", ["file_path_id"], unique=False
+        op.f("ix_file_history_file_path_id_mig"),
+        "file_history",
+        ["file_path_id"],
+        unique=False,
     )
     conn = op.get_bind()
     conn.execute(
