@@ -18,14 +18,12 @@ depends_on = None
 
 
 def upgrade():
-
     op.create_index(
         "ix_project_version_project_id_name",
         "project_version",
         ["project_id", sa.text("name ASC NULLS LAST")],
         unique=False,
     )
-
     op.create_table(
         "latest_project_files",
         sa.Column("project_id", postgresql.UUID(as_uuid=True), nullable=False),
@@ -66,13 +64,15 @@ def upgrade():
         ["project_id", "path"],
         unique=False,
     )
-
     op.add_column(
         "file_history", sa.Column("file_path_id", sa.BigInteger(), nullable=True)
     )
     op.add_column(
         "file_history", sa.Column("project_version_name", sa.Integer(), nullable=True)
     )
+    op.drop_constraint("uq_file_history_version_id", "file_history", type_="unique")
+
+    data_upgrade()
 
     op.create_index(
         "ix_file_history_file_path_id_project_version_name",
@@ -80,9 +80,6 @@ def upgrade():
         ["file_path_id", sa.text("project_version_name DESC")],
         unique=False,
     )
-
-    data_upgrade()
-
     # after data upgrade set columns to NOT NULL
     op.alter_column(
         "file_history", "file_path_id", existing_type=sa.BigInteger(), nullable=False
@@ -93,15 +90,11 @@ def upgrade():
         existing_type=sa.Integer(),
         nullable=False,
     )
-
-    op.drop_index("ix_file_history_path", table_name="file_history")
-    op.drop_constraint("uq_file_history_version_id", "file_history", type_="unique")
     op.create_unique_constraint(
         op.f("uq_file_history_version_id"),
         "file_history",
         ["version_id", "file_path_id"],
     )
-
     op.create_foreign_key(
         op.f("fk_file_history_file_path_id_project_file_path"),
         "file_history",
@@ -110,27 +103,28 @@ def upgrade():
         ["id"],
         ondelete="CASCADE",
     )
-    op.drop_column("file_history", "path")
 
 
 def downgrade():
+    op.drop_index(
+        "ix_file_history_file_path_id_project_version_name", table_name="file_history"
+    )
+    op.drop_column("file_history", "project_version_name")
     op.add_column(
         "file_history",
         sa.Column("path", sa.VARCHAR(), autoincrement=False, nullable=True),
     )
-
     data_downgrade()
+    op.drop_index(
+        op.f("ix_project_file_path_project_id_path"), table_name="project_file_path"
+    )
     op.drop_index("ix_project_version_project_id_name", table_name="project_version")
 
     op.alter_column("file_history", "path", existing_type=sa.VARCHAR(), nullable=False)
-
     op.drop_constraint(
         op.f("fk_file_history_file_path_id_project_file_path"),
         "file_history",
         type_="foreignkey",
-    )
-    op.drop_index(
-        "ix_file_history_file_path_id_project_version_name", table_name="file_history"
     )
     op.drop_constraint(
         op.f("uq_file_history_version_id"), "file_history", type_="unique"
@@ -138,12 +132,8 @@ def downgrade():
     op.create_unique_constraint(
         "uq_file_history_version_id", "file_history", ["version_id", "path"]
     )
-    op.create_index("ix_file_history_path", "file_history", ["path"], unique=False)
-    op.drop_column("file_history", "project_version_name")
     op.drop_column("file_history", "file_path_id")
-    op.drop_index(
-        op.f("ix_project_file_path_project_id_path"), table_name="project_file_path"
-    )
+    op.create_index("ix_file_history_path", "file_history", ["path"], unique=False)
     op.drop_table("project_file_path")
     op.drop_index(
         op.f("ix_latest_project_files_project_id"), table_name="latest_project_files"
@@ -167,31 +157,74 @@ def data_upgrade():
     """
         )
     )
+
+    # update file_history table via temporary results
     conn.execute(
         sa.text(
             """
-        WITH files_paths AS (
-            SELECT
-                fp.id AS file_path_id,
-                fh.id AS file_history_id,
-                pv.name AS version_name
-            FROM
-                file_history fh
-                INNER JOIN project_version pv ON (pv.id = fh.version_id)
-                LEFT OUTER JOIN project_file_path fp ON (fp.project_id = pv.project_id AND fp.path = fh.path)
+            CREATE TEMPORARY TABLE file_history_mig AS
+                SELECT
+                    fp.id AS file_path_id,
+                    fh.id AS file_history_id,
+                    pv.name AS version_name
+                FROM
+                    file_history fh
+                    INNER JOIN project_version pv ON (pv.id = fh.version_id)
+                    LEFT OUTER JOIN project_file_path fp ON (fp.project_id = pv.project_id AND fp.path = fh.path);
+
+                CREATE INDEX mig_file_history_mig_file_path_id
+                    ON file_history_mig (file_path_id);
+        """
         )
+    )
+
+    # drop indexes for update speed up
+    op.drop_index(op.f("ix_file_history_version_id"), table_name="file_history")
+    op.drop_index(op.f("ix_file_history_change"), table_name="file_history")
+    op.drop_index(op.f("ix_file_history_path"), table_name="file_history")
+    op.drop_column("file_history", "path")
+
+    conn.execute(
+        sa.text(
+            """
         UPDATE file_history
         SET
-            file_path_id = files_paths.file_path_id,
-            project_version_name = files_paths.version_name
-        FROM files_paths
-        WHERE file_history.id = files_paths.file_history_id;
+            file_path_id = mig.file_path_id,
+            project_version_name = mig.version_name
+        FROM file_history_mig mig
+        WHERE file_history.id = mig.file_history_id;
+        """
+        )
+    )
+
+    # recreate indexes again
+    op.create_index(
+        op.f("ix_file_history_change"), "file_history", ["change"], unique=False
+    )
+    op.create_index(
+        op.f("ix_file_history_version_id"), "file_history", ["version_id"], unique=False
+    )
+
+    # fill up latest_project_files for later caching
+    conn.execute(
+        sa.text(
+            """
+        INSERT INTO latest_project_files
+        SELECT id AS project_id
+        FROM project;
         """
         )
     )
 
 
 def data_downgrade():
+    # drop indexes for update speed up
+    op.drop_index(op.f("ix_file_history_version_id"), table_name="file_history")
+    op.drop_index(op.f("ix_file_history_change"), table_name="file_history")
+
+    op.create_index(
+        op.f("ix_file_history_file_path_id_mig"), "file_history", ["file_path_id"], unique=False
+    )
     conn = op.get_bind()
     conn.execute(
         sa.text(
@@ -202,4 +235,14 @@ def data_downgrade():
         WHERE pf.id = fh.file_path_id;
     """
         )
+    )
+
+    op.drop_index(op.f("ix_file_history_file_path_id_mig"), table_name="file_history")
+
+    # recreate indexes again
+    op.create_index(
+        op.f("ix_file_history_change"), "file_history", ["change"], unique=False
+    )
+    op.create_index(
+        op.f("ix_file_history_version_id"), "file_history", ["version_id"], unique=False
     )
