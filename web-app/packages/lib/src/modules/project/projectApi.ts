@@ -24,7 +24,8 @@ import {
   UpdateProjectAccessParams,
   ProjectVersion,
   ProjectAccessDetail,
-  ProjectAccess
+  ProjectAccess,
+  ProjectVersionFileChange
 } from '@/modules/project/types'
 
 export const ProjectApi = {
@@ -274,5 +275,16 @@ export const ProjectApi = {
     projectId: string
   ): Promise<AxiosResponse<ProjectAccessDetail[]>> {
     return ProjectModule.httpService.get(`/app/project/${projectId}/access`)
+  },
+
+  async getVersionChangeset(
+    workspace: string,
+    projectName: string,
+    versionId: string,
+    path: string
+  ): Promise<AxiosResponse<ProjectVersionFileChange[]>> {
+    return ProjectModule.httpService.get(
+      `/v1/resource/changesets/${workspace}/${projectName}/${versionId}?path=${path}`
+    )
   }
 }

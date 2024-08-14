@@ -43,7 +43,8 @@ import {
   SaveProjectSettings,
   ErrorCodes,
   ProjectAccessDetail,
-  UpdateProjectAccessParams
+  UpdateProjectAccessParams,
+  ProjectVersionFileChange
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
 
@@ -72,7 +73,8 @@ export interface ProjectState {
   accessSearch: string
   accessSorting: SortingParams
   availablePermissions: DropdownOption<ProjectPermissionName>[]
-  availableRoles: DropdownOption<ProjectRoleName>[]
+  availableRoles: DropdownOption<ProjectRoleName>[],
+  versionsChangesetLoading: boolean
 }
 
 export const useProjectStore = defineStore('projectModule', {
@@ -96,7 +98,8 @@ export const useProjectStore = defineStore('projectModule', {
     accessSearch: '',
     accessSorting: undefined,
     availablePermissions: permissionUtils.getProjectPermissionsValues(),
-    availableRoles: permissionUtils.getProjectRoleNameValues()
+    availableRoles: permissionUtils.getProjectRoleNameValues(),
+    versionsChangesetLoading: false
   }),
 
   getters: {
@@ -802,6 +805,33 @@ export const useProjectStore = defineStore('projectModule', {
       } finally {
         this.accessLoading = false
       }
+    },
+
+    async getVersionChangeset(payload: {
+      workspace: string
+      projectName: string
+      versionId: string
+      path: string
+    }): Promise<ProjectVersionFileChange[]> {
+      let response: AxiosResponse<ProjectVersionFileChange[]> = null
+      const notificationStore = useNotificationStore()
+      try {
+        this.versionsChangesetLoading = true
+        const { path, projectName, versionId, workspace } = payload
+        response = await ProjectApi.getVersionChangeset(
+          path,
+          projectName,
+          versionId,
+          workspace
+        )
+      } catch (err) {
+        await notificationStore.error({
+          text: getErrorMessage(err, 'Failed to display changeset of file')
+        })
+      } finally {
+        this.versionsChangesetLoading = false
+      }
+      return response?.data
     }
   }
 })

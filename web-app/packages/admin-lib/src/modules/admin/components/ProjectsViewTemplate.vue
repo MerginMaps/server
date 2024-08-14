@@ -6,48 +6,43 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <admin-layout>
-    <page-view
-      :style="`overflow-y: auto; padding-right:20px; margin-right: 0px;`"
-    >
-      <v-layout class="column fill-height ml-10">
-        <v-container>
-          <v-row>
-            <v-col>
-              <v-layout align-center shrink>
-                <h3 class="ml-1 my-2">
-                  <span v-if="namespace">
-                    <v-icon class="arrow">chevron_right</v-icon>
-                    {{ namespace }}</span
-                  >
-                </h3>
-                <v-spacer />
-                <portal-target name="additional-action" />
-              </v-layout>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col>
-              <v-card class="table">
-                <v-card-title> Projects</v-card-title>
-                <v-card-text>
-                  <admin-projects-table
-                    :key="namespace"
-                    :show-namespace="showNamespace"
-                    :namespace="namespace"
-                    show-tags
-                  />
-                </v-card-text>
-              </v-card>
-            </v-col>
-          </v-row>
-        </v-container>
-      </v-layout>
-    </page-view>
+    <v-layout class="column fill-height ml-10">
+      <v-container>
+        <v-row>
+          <v-col>
+            <v-layout align-center shrink>
+              <h3 class="ml-1 my-2">
+                <span v-if="namespace">
+                  <v-icon class="arrow">chevron_right</v-icon>
+                  {{ namespace }}</span
+                >
+              </h3>
+              <v-spacer />
+              <portal-target name="additional-action" />
+            </v-layout>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col>
+            <v-card class="table">
+              <v-card-title> Projects</v-card-title>
+              <v-card-text>
+                <admin-projects-table
+                  :key="namespace"
+                  :show-namespace="showNamespace"
+                  :namespace="namespace"
+                  show-tags
+                />
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-container>
+    </v-layout>
   </admin-layout>
 </template>
 
 <script lang="ts">
-import { PageView } from '@mergin/lib-vue2'
 import { defineComponent } from 'vue'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
@@ -56,7 +51,6 @@ import AdminProjectsTable from '@/modules/admin/components/AdminProjectsTable.vu
 export default defineComponent({
   name: 'ProjectsView',
   components: {
-    PageView,
     AdminProjectsTable,
     AdminLayout
   },

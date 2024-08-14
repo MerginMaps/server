@@ -12,28 +12,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :show-settings="true"
     :show-access-requests="true"
   >
-    <template #permissions="{ settings, keyProp, saveProject }">
-      <project-permissions-template
-        v-model="settings.access"
-        :key="keyProp"
-        @save-project="saveProject(...arguments)"
-      />
-    </template>
   </project-settings-view-template>
 </template>
 
 <script lang="ts">
-import {
-  ProjectSettingsViewTemplate,
-  ProjectPermissionsTemplate
-} from '@mergin/lib-vue2'
+import { ProjectSettingsViewTemplate } from '@mergin/lib'
 import { defineComponent } from 'vue'
 
 export default defineComponent({
   name: 'ProjectSettingsView',
   components: {
-    ProjectSettingsViewTemplate,
-    ProjectPermissionsTemplate
+    ProjectSettingsViewTemplate
   },
   props: {
     namespace: String,

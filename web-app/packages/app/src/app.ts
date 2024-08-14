@@ -6,17 +6,12 @@ import {
   dateUtils,
   textUtils,
   numberUtils,
-  getHttpService,
   MerginComponentUuidMixin,
   MMTheme,
-  merginUtils
+  merginUtils,
+  useAppStore
 } from '@mergin/lib'
 import PortalVue from 'portal-vue'
-import 'primevue/resources/primevue.min.css'
-import 'primeflex/primeflex.min.css'
-import '@mergin/lib/dist/sass/themes/mm-theme-light/theme.scss'
-import '@tabler/icons-webfont/tabler-icons.min.css'
-import '@mergin/lib/dist/style.css'
 import PrimeVue from 'primevue/config'
 import Toast from 'primevue/toast'
 import ToastService from 'primevue/toastservice'
@@ -34,6 +29,10 @@ const createMerginApp = () => {
   const pinia = getPiniaInstance()
   const router = createRouter(pinia)
   addRouterToPinia(router)
+  router.onError((e) => {
+    const appStore = useAppStore()
+    appStore.setServerError(e.message)
+  })
 
   const app = createApp(App)
     .mixin(MerginComponentUuidMixin)
@@ -47,7 +46,6 @@ const createMerginApp = () => {
     .component('PToast', Toast)
     .directive('tooltip', Tooltip)
 
-  app.config.globalProperties.$http = getHttpService()
   app.config.globalProperties.$filters = {
     filesize: (value, unit, digits = 2, minUnit: numberUtils.SizeUnit = 'B') =>
       numberUtils.formatFileSize(value, unit, digits, minUnit),

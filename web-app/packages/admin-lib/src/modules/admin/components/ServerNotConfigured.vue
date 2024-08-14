@@ -5,82 +5,49 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <div class="banner" v-if="displayBanner">
-    <v-card class="cardWrapper" elevation="0" rounded>
-      <v-card-title class="text-h6 font-weight-bold">
-        <v-icon class="orange--text mr-2">error</v-icon>
-        Server is not properly configured
-      </v-card-title>
-      <v-card-subtitle class="ml-8 black--text">
-        Your server is not configured properly for use in the production
-        environment. Read more in the documentation how to properly set up the
-        deployment.
-      </v-card-subtitle>
-      <v-card-actions class="ml-7 pb-4">
-        <v-btn
-          class="orange white--text buttonWrapper"
-          :href="docsLinkDocumentation"
-        >
-          Read documentation
-        </v-btn>
-        <v-spacer />
-        <v-btn text class="orange--text buttonWrapper" @click="dismiss">
-          Dismiss
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </div>
+  <app-container v-if="displayBanner">
+    <app-section-banner>
+      <template #title> Server is not properly configured</template>
+      <template #description
+        >Your server is not configured properly for use in the production
+        environment. Read more in the
+        <a :href="docsLinkDocumentation" target="_blank">documentation</a> how
+        to properly set up the deployment.</template
+      >
+      <template #header-actions
+        ><PButton
+          @click="dismiss"
+          severity="secondary"
+          data-cy="dismiss-server-configured-btn"
+          label="Dismiss"
+      /></template>
+    </app-section-banner>
+  </app-container>
 </template>
 
-<script lang="ts">
-import { useInstanceStore } from '@mergin/lib-vue2'
-import { mapActions, mapState } from 'pinia'
-import { defineComponent } from 'vue'
+<script lang="ts" setup>
+import { useInstanceStore, AppSectionBanner, AppContainer } from '@mergin/lib'
+import { computed } from 'vue'
 
 import { useAdminStore } from '@/modules/admin/store'
 
-export default defineComponent({
-  name: 'ServerNotConfigured',
-  methods: {
-    ...mapActions(useAdminStore, [
-      'setServerConfiguredCookies',
-      'getServerConfiguredCookies'
-    ]),
-    dismiss(e) {
-      e.preventDefault()
-      this.setServerConfiguredCookies()
-    }
-  },
-  created() {
-    this.getServerConfiguredCookies()
-  },
-  computed: {
-    ...mapState(useInstanceStore, ['configData']),
-    ...mapState(useAdminStore, ['isServerConfigHidden']),
-    docsLinkDocumentation(): string {
-      return `${this.configData?.docs_url ?? ''}/dev/mergince`
-    },
-    displayBanner(): boolean {
-      return !this.configData?.server_configured && !this.isServerConfigHidden
-    }
-  }
-})
+const adminStore = useAdminStore()
+const instanceStore = useInstanceStore()
+
+const docsLinkDocumentation = computed(
+  () => `${instanceStore.configData?.docs_url ?? ''}/dev/mergince`
+)
+const displayBanner = computed(
+  () =>
+    !instanceStore.configData?.server_configured &&
+    !adminStore.isServerConfigHidden
+)
+
+function dismiss() {
+  adminStore.setServerConfiguredCookies()
+}
+
+adminStore.getServerConfiguredCookies()
 </script>
 
-<style lang="scss" scoped>
-.banner {
-  display: flex;
-  justify-content: center;
-}
-.cardWrapper {
-  margin-top: 20px;
-  margin-bottom: 20px;
-  background-color: #fffaf0;
-}
-.warningIcon {
-  background-color: #fffaf0;
-}
-.buttonWrapper {
-  flex: 1;
-}
-</style>
+<style lang="scss" scoped></style>
