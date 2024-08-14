@@ -394,6 +394,61 @@ paths:
         "404":
           $ref: "#/components/responses/NotFoundResp"
       x-openapi-router-controller: mergin.sync.private_api_controller
+  '/project/versions/{project_id}':
+    get:
+      tags:
+        - project
+      summary: List paginated project versions
+      description: Returns a list of project versions.
+      operationId: list_project_versions
+      parameters:
+        - name: project_id
+          in: path
+          description: Project uuid
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: page number
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: per_page
+          in: query
+          description: number of results per page
+          required: true
+          schema:
+            type: integer
+            maximum: 100
+            format: int64
+        - name: descending
+          in: query
+          description: order of sorting
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Project version list.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PaginatedList"
+                  - properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ProjectVersionListItem"
+        '400':
+          $ref: '#/components/responses/BadStatusResp'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFoundResp'
+      x-openapi-router-controller: mergin.sync.private_api_controller
 components:
   responses:
     UnauthorizedError:
@@ -665,3 +720,36 @@ components:
           items:
             type: integer
             example: [1]
+    ProjectVersionListItem:
+      type: object
+      properties:
+        name:
+          type: string
+          example: v1
+        author:
+          type: string
+          example: john.doe
+        created:
+          type: string
+          format: date-time
+          example: 2018-11-30T08:47:58.636074Z
+        changes:
+          type: object
+          description: count of changes by change type
+          properties:
+            added:
+              type: integer
+            removed:
+              type: integer
+            updated:
+              type: integer
+        project_name:
+          type: string
+          example: survey
+        namespace:
+          type: string
+          example: john.doe
+        user_agent:
+          type: string
+          nullable: true
+          example: Python-client/0.5.3 Plugin/2020.5.2 QGIS/3.14.0 (Linux/Ubuntu)

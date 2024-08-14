@@ -6,19 +6,20 @@ from connexion import NoContent
 from flask import render_template, request, current_app, jsonify, abort
 from flask_login import current_user
 from sqlalchemy.orm import defer
-from sqlalchemy import text
+from sqlalchemy import text, and_, desc, asc
 
 from .. import db
 from ..auth import auth_required
 from ..auth.models import User, UserProfile
 from .forms import AccessPermissionForm
-from .models import Project, AccessRequest, ProjectRole, RequestStatus
+from .models import Project, AccessRequest, ProjectRole, RequestStatus, ProjectVersion
 from .schemas import (
     ProjectListSchema,
     ProjectAccessRequestSchema,
     AdminProjectSchema,
     ProjectAccessSchema,
     ProjectAccessDetailSchema,
+    ProjectVersionListSchema,
 )
 from .permissions import (
     require_project_by_uuid,
@@ -324,4 +325,22 @@ def get_project_access(id: str):
     project = require_project_by_uuid(id, ProjectPermissions.Read)
     result = current_app.ws_handler.project_access(project)
     data = ProjectAccessDetailSchema(many=True).dump(result)
+    return data, 200
+
+
+# draft for new lightweight /project/versions/ paginated endpoint (to become v2/)
+def list_project_versions(page, per_page, project_id, descending=True):
+    project = require_project_by_uuid(project_id, ProjectPermissions.Read)
+    query = ProjectVersion.query.filter(
+        and_(ProjectVersion.project_id == project.id, ProjectVersion.name != 0)
+    )
+    query = (
+        query.order_by(desc(ProjectVersion.created))
+        if descending
+        else query.order_by(asc(ProjectVersion.created))
+    )
+    result = query.paginate(page, per_page).items
+    total = query.paginate(page, per_page).total
+    versions = ProjectVersionListSchema(many=True).dump(result)
+    data = {"versions": versions, "count": total}
     return data, 200
