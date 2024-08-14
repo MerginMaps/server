@@ -60,7 +60,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           }}</span>
         </template>
         <template #col-changes.added="{ item, column }">
-          <span :class="column.textClass">{{ item.changes.added.length }}</span>
+          <span :class="column.textClass">{{ item.changes.added }}</span>
         </template>
         <template #col-changes.updated="{ item, column }">
           <span :class="column.textClass">{{
@@ -68,9 +68,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           }}</span>
         </template>
         <template #col-changes.removed="{ item, column }">
-          <span :class="column.textClass">{{
-            item.changes.removed.length
-          }}</span>
+          <span :class="column.textClass">{{ item.changes.removed }}</span>
         </template>
       </DataViewWrapper>
       <slot name="table-footer"></slot>
