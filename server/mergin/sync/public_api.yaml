@@ -272,7 +272,7 @@ paths:
         "422":
           description: Project access update could not be processed
           content:
-            application/json+problem:
+            application/problem+json:
               schema:
                 anyOf:
                   - $ref: "#/components/schemas/UpdateProjectAccessError"
