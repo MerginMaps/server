@@ -394,7 +394,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFoundResp"
       x-openapi-router-controller: mergin.sync.private_api_controller
-  '/project/versions/{project_id}':
+  /project/versions/{project_id}:
     get:
       tags:
         - project
@@ -743,6 +743,8 @@ components:
               type: integer
             updated:
               type: integer
+            updated_diff:
+              type: integer
         project_name:
           type: string
           example: survey
@@ -753,3 +755,6 @@ components:
           type: string
           nullable: true
           example: Python-client/0.5.3 Plugin/2020.5.2 QGIS/3.14.0 (Linux/Ubuntu)
+        project_size:
+          type: integer
+          example: 1024

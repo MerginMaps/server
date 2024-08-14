@@ -364,6 +364,7 @@ class ProjectVersionListSchema(ma.SQLAlchemyAutoSchema):
     author = fields.String()
     created = DateTimeWithZ()
     changes = fields.Method("_changes")
+    project_size = fields.Integer()
 
     def _changes(self, obj):
         result = obj.changes_count()
