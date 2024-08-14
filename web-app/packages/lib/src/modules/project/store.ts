@@ -32,8 +32,6 @@ import {
   ProjectParams,
   EnhancedProjectDetail,
   FetchProjectVersionsPayload,
-  ProjectVersion,
-  ProjectVersionsPayload,
   AccessRequest,
   GetUserAccessRequestsPayload,
   GetAccessRequestsPayload,
@@ -43,7 +41,8 @@ import {
   SaveProjectSettings,
   ErrorCodes,
   ProjectAccessDetail,
-  UpdateProjectAccessParams
+  UpdateProjectAccessParams,
+  ProjectVersionListItem
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
 
@@ -64,7 +63,7 @@ export interface ProjectState {
   projectsSearch: string
   projectsSorting: SortingParams
   uploads: object
-  versions: ProjectVersion[]
+  versions: ProjectVersionListItem[]
   versionsCount: number
   versionsLoading: boolean
   access: ProjectAccessDetail[]
@@ -152,10 +151,6 @@ export const useProjectStore = defineStore('projectModule', {
     setProjects(payload: ProjectsPayload) {
       this.projects = payload.projects
       this.projectsCount = payload.count
-    },
-    setProjectVersions(payload: ProjectVersionsPayload) {
-      this.versions = payload.versions
-      this.versionsCount = payload.count
     },
     initUpload(payload) {
       const upload = {
@@ -536,20 +531,17 @@ export const useProjectStore = defineStore('projectModule', {
       }
     },
 
-    async fetchProjectVersions(payload: FetchProjectVersionsPayload) {
+    async getProjectVersions(payload: FetchProjectVersionsPayload) {
       const notificationStore = useNotificationStore()
 
       try {
         this.versionsLoading = true
         const response = await ProjectApi.fetchProjectVersions(
-          payload.namespace,
-          payload.projectName,
+          payload.projectId,
           payload.params
         )
-        this.setProjectVersions({
-          versions: response.data?.versions,
-          count: response.data?.count
-        })
+        this.versions = response.data?.versions
+        this.versionsCount = response.data?.count
       } catch (e) {
         await notificationStore.error({
           text: 'Failed to fetch project versions'
