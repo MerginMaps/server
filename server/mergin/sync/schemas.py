@@ -378,5 +378,12 @@ class ProjectVersionListSchema(ma.SQLAlchemyAutoSchema):
 
     class Meta:
         model = ProjectVersion
-        exclude = ["id", "ip_address", "ip_geolocation_country", "project", "device_id"]
+        exclude = [
+            "id",
+            "ip_address",
+            "ip_geolocation_country",
+            "project",
+            "device_id",
+            "user_agent",
+        ]
         load_instance = True

@@ -751,10 +751,6 @@ components:
         namespace:
           type: string
           example: john.doe
-        user_agent:
-          type: string
-          nullable: true
-          example: Python-client/0.5.3 Plugin/2020.5.2 QGIS/3.14.0 (Linux/Ubuntu)
         project_size:
           type: integer
           example: 1024
