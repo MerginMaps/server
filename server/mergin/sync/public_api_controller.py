@@ -42,6 +42,7 @@ from .models import (
     Upload,
     PushChangeType,
     FileHistory,
+    ProjectFilePath,
 )
 from .files import (
     UploadChanges,
@@ -328,11 +329,12 @@ def download_project_file(
     )
     # find the latest file change record for version of interest
     fh = (
-        FileHistory.query.join(ProjectVersion)
+        FileHistory.query.join(ProjectFilePath)
+        .join(ProjectVersion)
         .filter(
             ProjectVersion.project_id == project.id,
             ProjectVersion.name <= lookup_version,
-            FileHistory.path == file,
+            ProjectFilePath.path == file,
         )
         .order_by(ProjectVersion.created.desc())
         .first()
@@ -1238,10 +1240,11 @@ def get_resource_history(project_name, namespace, path):  # noqa: E501
     project = require_project(namespace, project_name, ProjectPermissions.Read)
     # get the metadata of file at latest version where file is present
     fh = (
-        FileHistory.query.join(FileHistory.version)
+        FileHistory.query.join(ProjectFilePath)
+        .join(FileHistory.version)
         .filter(
             ProjectVersion.project_id == project.id,
-            FileHistory.path == path,
+            ProjectFilePath.path == path,
             FileHistory.change != "delete",
         )
         .order_by(desc(ProjectVersion.created))

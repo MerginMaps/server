@@ -13,7 +13,7 @@ from dataclasses import dataclass, asdict
 from blinker import signal
 from flask_login import current_user
 from pygeodiff import GeoDiff
-from sqlalchemy import text, null, desc
+from sqlalchemy import text, null, desc, nullslast
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.types import String
@@ -80,6 +80,8 @@ class Project(db.Model):
         self.workspace_id = workspace.id
         self.creator = creator
         self.latest_version = 0
+        latest_files = LatestProjectFiles(project=self)
+        db.session.add(latest_files)
 
     @property
     def storage(self):
@@ -96,10 +98,86 @@ class Project(db.Model):
         project_workspace = current_app.ws_handler.get(self.workspace_id)
         return project_workspace
 
+    def cache_latest_files(self) -> None:
+        """Get project files from changes (FileHistory) and saved them for later use"""
+        if self.latest_version is None:
+            return
+
+        query = f"""
+            WITH latest_changes AS (
+                SELECT
+                    fp.id,
+                    fp.project_id,
+                    max(pv.name) AS version
+                FROM
+                    project_version pv
+                    LEFT OUTER JOIN file_history fh ON fh.version_id = pv.id
+                    LEFT OUTER JOIN project_file_path fp ON fp.id = fh.file_path_id
+                WHERE
+                    pv.project_id = :project_id
+                    AND pv.name <= :latest_version
+                GROUP BY
+                    fp.id, fp.project_id
+            ), aggregates AS (
+                SELECT
+                    project_id,
+                    array_agg(fh.id) AS files_ids
+                FROM latest_changes ch
+                LEFT OUTER JOIN file_history fh ON (fh.file_path_id = ch.id AND fh.project_version_name = ch.version)
+                WHERE fh.change != 'delete'
+                GROUP BY project_id
+            )
+            UPDATE latest_project_files pf
+            SET file_history_ids = a.files_ids
+            FROM aggregates a
+            WHERE a.project_id = pf.project_id;
+        """
+        params = {"project_id": self.id, "latest_version": self.latest_version}
+        db.session.execute(query, params)
+        db.session.commit()
+
     @property
-    def files(self):
-        latest_version = self.get_latest_version()
-        return latest_version.files if latest_version else []
+    def files(self) -> List[ProjectFile]:
+        """Return project files at latest version"""
+        # cache file history ids if needed
+        if self.latest_project_files.file_history_ids is None:
+            self.cache_latest_files()
+
+        if not self.latest_project_files.file_history_ids:
+            return []
+
+        query = f"""
+            WITH files_ids AS (
+                SELECT
+                    unnest(file_history_ids) AS fh_id
+                FROM latest_project_files
+                WHERE project_id = :project_id
+            )
+            SELECT
+                fp.path,
+                fh.size,
+                fh.diff,
+                fh.location,
+                fh.checksum,
+                pv.created AS mtime
+            FROM files_ids
+            LEFT OUTER JOIN file_history fh ON fh.id = files_ids.fh_id
+            LEFT OUTER JOIN project_file_path fp ON fp.id = fh.file_path_id
+            LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id;
+        """
+        params = {"project_id": self.id}
+        files = [
+            ProjectFile(
+                path=row.path,
+                size=row.size,
+                checksum=row.checksum,
+                location=row.location,
+                mtime=row.mtime,
+                diff=File(**row.diff) if row.diff else None,
+            )
+            for row in db.session.execute(query, params).fetchall()
+        ]
+        return files
 
     def sync_failed(self, client, error_type, error_details, user_id):
         """Commit failed attempt to sync failure history table"""
@@ -131,7 +209,7 @@ class Project(db.Model):
     def delete(self, removed_by: int = None):
         """Mark project as permanently deleted (but keep in db)
         - rename (to free up the same name)
-        - remove associated files and project versions
+        - remove associated files and their history and project versions
         - reset project_access
         - decline pending project access requests
         """
@@ -150,6 +228,14 @@ class Project(db.Model):
         pv_table = ProjectVersion.__table__
         # remove versions and file history items with cascade
         db.session.execute(pv_table.delete().where(pv_table.c.project_id == self.id))
+        files_path_table = ProjectFilePath.__table__
+        db.session.execute(
+            files_path_table.delete().where(files_path_table.c.project_id == self.id)
+        )
+        # reset project files cache
+        files_cache = LatestProjectFiles.query.filter_by(project_id=self.id).first()
+        files_cache.file_history_ids = null()
+        # remove pending uploads
         upload_table = Upload.__table__
         db.session.execute(
             upload_table.delete().where(upload_table.c.project_id == self.id)
@@ -305,7 +391,62 @@ class ProjectAccess(db.Model):
         return diff
 
 
+class ProjectFilePath(db.Model):
+    """Files (paths) within Project"""
+
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    project_id = db.Column(
+        UUID(as_uuid=True),
+        db.ForeignKey("project.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    path = db.Column(db.String, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint("project_id", "path"),
+        db.Index(
+            "ix_project_file_path_project_id_path",
+            project_id,
+            path,
+        ),
+    )
+
+    def __init__(self, project_id, path):
+        self.project_id = project_id
+        self.path = path
+
+
+class LatestProjectFiles(db.Model):
+    """Store project latest version files history ids"""
+
+    project_id = db.Column(
+        UUID(as_uuid=True),
+        db.ForeignKey("project.id", ondelete="CASCADE"),
+        index=True,
+        primary_key=True,
+    )
+    file_history_ids = db.Column(ARRAY(db.Integer), nullable=True)
+
+    project = db.relationship(
+        "Project",
+        uselist=False,
+        backref=db.backref(
+            "latest_project_files",
+            single_parent=True,
+            uselist=False,
+            cascade="all,delete",
+            lazy="select",
+        ),
+    )
+
+    def __init__(self, project):
+        self.project = project
+        self.file_history_ids = []
+
+
 class FileHistory(db.Model):
+    """Changes for ProjectFilePath objects which happened in ProjectVersion"""
+
     id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
     version_id = db.Column(
         db.Integer,
@@ -313,7 +454,6 @@ class FileHistory(db.Model):
         index=True,
         nullable=False,
     )
-    path = db.Column(db.String, index=True, nullable=False)
     # path on FS relative to project directory: version_name + file path
     location = db.Column(db.String)
     size = db.Column(db.BigInteger, nullable=False)
@@ -327,6 +467,13 @@ class FileHistory(db.Model):
         index=True,
         nullable=False,
     )
+    file_path_id = db.Column(
+        db.BigInteger,
+        db.ForeignKey("project_file_path.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    # cache name of project version for more efficient queries
+    project_version_name = db.Column(db.Integer, nullable=False)
 
     version = db.relationship(
         "ProjectVersion",
@@ -336,23 +483,36 @@ class FileHistory(db.Model):
         ),
     )
 
-    __table_args__ = (db.UniqueConstraint("version_id", "path"),)
+    file = db.relationship("ProjectFilePath", uselist=False)
+
+    __table_args__ = (
+        db.UniqueConstraint("version_id", "file_path_id"),
+        db.Index(
+            "ix_file_history_file_path_id_project_version_name",
+            file_path_id,
+            project_version_name.desc(),
+        ),
+    )
 
     def __init__(
         self,
-        path: str,
+        file: ProjectFilePath,
         size: int,
         checksum: str,
         location: str,
         change: PushChangeType,
         diff: dict = None,
     ):
-        self.path = path
+        self.file = file
         self.size = size
         self.checksum = checksum
         self.location = location
         self.diff = diff
         self.change = change.value
+
+    @property
+    def path(self) -> str:
+        return self.file.path
 
     @property
     def diff_file(self) -> Optional[File]:
@@ -393,12 +553,13 @@ class FileHistory(db.Model):
 
         history = []
         full_history = (
-            FileHistory.query.join(FileHistory.version)
+            FileHistory.query.join(ProjectFilePath)
+            .join(FileHistory.version)
             .filter(
                 ProjectVersion.project_id == project_id,
                 ProjectVersion.name <= to,
                 ProjectVersion.name >= since,
-                FileHistory.path == file,
+                ProjectFilePath.path == file,
             )
             .order_by(desc(ProjectVersion.created))
             .all()
@@ -442,9 +603,11 @@ class FileHistory(db.Model):
         # we ask for the latest version which is always a basefile if the file has not been removed
         if v_x == v_last:
             latest_change = (
-                FileHistory.query.join(FileHistory.version)
+                FileHistory.query.join(ProjectFilePath)
+                .join(FileHistory.version)
                 .filter(
-                    FileHistory.path == file, ProjectVersion.project_id == project.id
+                    ProjectFilePath.path == file,
+                    ProjectVersion.project_id == project.id,
                 )
                 .order_by(desc(ProjectVersion.created))
                 .first()
@@ -536,7 +699,14 @@ class ProjectVersion(db.Model):
         uselist=False,
     )
     device_id = db.Column(db.String, index=True, nullable=True)
-    __table_args__ = (db.UniqueConstraint("project_id", "name"),)
+    __table_args__ = (
+        db.UniqueConstraint("project_id", "name"),
+        db.Index(
+            "ix_project_version_project_id_name",
+            project_id,
+            nullslast(name.asc()),
+        ),
+    )
 
     def __init__(
         self,
@@ -556,42 +726,70 @@ class ProjectVersion(db.Model):
         self.ip_address = ip
         self.device_id = device_id
 
-        for file in changes.added:
-            self._add_file_change(PushChangeType.CREATE, file)
+        latest_files_map = {
+            fh.path: fh.id
+            for fh in FileHistory.query.filter(
+                FileHistory.id.in_(self.project.latest_project_files.file_history_ids)
+            ).all()
+        }
 
-        for file in changes.updated:
-            change = (
-                PushChangeType.UPDATE_DIFF
-                if file.diff is not None
-                else PushChangeType.UPDATE
-            )
-            self._add_file_change(change, file)
+        changed_files_paths = [
+            f.path for f in changes.updated + changes.removed + changes.added
+        ]
+        existing_files_map = {
+            f.path: f
+            for f in ProjectFilePath.query.filter_by(project_id=self.project_id)
+            .filter(ProjectFilePath.path.in_(changed_files_paths))
+            .all()
+        }
 
-        for file in changes.removed:
-            self._add_file_change(PushChangeType.DELETE, file)
+        for key in (
+            ("added", PushChangeType.CREATE),
+            ("updated", PushChangeType.UPDATE),
+            ("removed", PushChangeType.DELETE),
+        ):
+            change_attr = key[0]
+            change_type = key[1]
 
-        # push changes to transaction buffer so that self.files is up-to-date
+            for upload_file in getattr(changes, change_attr):
+                is_diff_change = (
+                    change_type is PushChangeType.UPDATE
+                    and upload_file.diff is not None
+                )
+
+                file = existing_files_map.get(
+                    upload_file.path, ProjectFilePath(self.project_id, upload_file.path)
+                )
+                fh = FileHistory(
+                    file=file,
+                    size=upload_file.size,
+                    checksum=upload_file.checksum,
+                    location=upload_file.location,
+                    diff=asdict(upload_file.diff) if upload_file.diff else null(),
+                    change=(
+                        PushChangeType.UPDATE_DIFF if is_diff_change else change_type
+                    ),
+                )
+                fh.version = self
+                fh.project_version_name = self.name
+                db.session.add(fh)
+                db.session.flush()
+
+                if change_type is PushChangeType.DELETE:
+                    latest_files_map.pop(fh.path, None)
+                else:
+                    latest_files_map[fh.path] = fh.id
+
+        # update cached values in project and push to transaction buffer so that self.files is up-to-date
+        self.project.latest_project_files.file_history_ids = latest_files_map.values()
         db.session.flush()
-        self.project_size = sum(f.size for f in self.files) if self.files else 0
-
-        # update cached values in project
-        self.project.disk_usage = self.project_size
+        self.project.disk_usage = (
+            sum(f.size for f in self.project.files) if self.project.files else 0
+        )
         self.project.latest_version = self.name
         self.project.tags = self.resolve_tags()
+        self.project_size = self.project.disk_usage
         db.session.flush()
-
-    def _add_file_change(self, change: PushChangeType, upload_file: UploadFile):
-        """Add file history record to project version"""
-        fh = FileHistory(
-            path=upload_file.path,
-            size=upload_file.size,
-            checksum=upload_file.checksum,
-            location=upload_file.location,
-            diff=asdict(upload_file.diff) if upload_file.diff else null(),
-            change=change,
-        )
-        fh.version = self
-        db.session.add(fh)
 
     @staticmethod
     def from_v_name(name: str) -> int:
@@ -608,26 +806,32 @@ class ProjectVersion(db.Model):
     @property
     def files(self) -> List[ProjectFile]:
         query = f"""
-                WITH files_ids AS (
-                    -- get the latest change
-                    SELECT DISTINCT
-                    FIRST_VALUE (fh.id) OVER (
-                        PARTITION BY fh.path
-                        ORDER BY
-                            pv.created DESC
-                    ) AS pf_id
-                    FROM project_version pv
-                    LEFT OUTER JOIN file_history fh ON fh.version_id = pv.id
-                    WHERE pv.project_id = :project_id
-                    AND pv.name <= :version
-                )
+            WITH latest_changes AS (
                 SELECT
-                    fh.path, fh.size, fh.diff, fh.location, fh.checksum, pv.created AS mtime
-                FROM file_history fh
-                INNER JOIN files_ids ON files_ids.pf_id = fh.id
-                LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
-                WHERE fh.change != 'delete'; -- if latest change was removed it means file is not there
-                """
+                    fp.id,
+                    max(pv.name) AS version
+                FROM
+                    project_version pv
+                    LEFT OUTER JOIN file_history fh ON fh.version_id = pv.id
+                    LEFT OUTER JOIN project_file_path fp ON fp.id = fh.file_path_id
+                WHERE
+                    pv.project_id = :project_id AND pv.name <= :version
+                GROUP BY
+                    fp.id
+            )
+            SELECT
+                fp.path,
+                fh.size,
+                fh.diff,
+                fh.location,
+                fh.checksum,
+                pv.created AS mtime
+            FROM latest_changes ch
+            LEFT OUTER JOIN file_history fh ON (fh.file_path_id = ch.id AND fh.project_version_name = ch.version)
+            LEFT OUTER JOIN project_file_path fp ON fp.id = fh.file_path_id
+            LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
+            WHERE fh.change != 'delete';
+        """
         params = {"project_id": self.project_id, "version": self.name}
         result = db.session.execute(query, params).fetchall()
         files = [
@@ -710,6 +914,13 @@ class ProjectVersion(db.Model):
                 }
 
         return output
+
+    def changes_count(self) -> Dict:
+        """Return number of changes by type"""
+        query = f"SELECT change, COUNT(change) FROM file_history WHERE version_id = :version_id GROUP BY change;"
+        params = {"version_id": self.id}
+        result = db.session.execute(query, params).fetchall()
+        return {row[0]: row[1] for row in result}
 
 
 class Upload(db.Model):

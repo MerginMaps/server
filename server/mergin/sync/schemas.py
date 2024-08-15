@@ -10,7 +10,7 @@ from flask import current_app
 from .. import ma
 from .files import ProjectFileSchema, FileSchema
 from .permissions import ProjectPermissions
-from .models import Project, ProjectVersion, AccessRequest, FileHistory
+from .models import Project, ProjectVersion, AccessRequest, FileHistory, PushChangeType
 from ..app import DateTimeWithZ
 from ..auth.models import User
 
@@ -355,3 +355,35 @@ class ProjectAccessDetailSchema(Schema):
     project_permission = fields.String()
     type = fields.String()
     invitation = fields.Nested(ProjectInvitationAccessSchema())
+
+
+class ProjectVersionListSchema(ma.SQLAlchemyAutoSchema):
+    project_name = fields.Function(lambda obj: obj.project.name)
+    namespace = fields.Function(lambda obj: obj.project.workspace.name)
+    name = fields.Function(lambda obj: ProjectVersion.to_v_name(obj.name))
+    author = fields.String()
+    created = DateTimeWithZ()
+    changes = fields.Method("_changes")
+    project_size = fields.Integer()
+
+    def _changes(self, obj):
+        result = obj.changes_count()
+        data = {
+            "added": result.get(PushChangeType.CREATE.value, 0),
+            "updated": result.get(PushChangeType.UPDATE.value, 0),
+            "updated_diff": result.get(PushChangeType.UPDATE_DIFF.value, 0),
+            "removed": result.get(PushChangeType.DELETE.value, 0),
+        }
+        return data
+
+    class Meta:
+        model = ProjectVersion
+        exclude = [
+            "id",
+            "ip_address",
+            "ip_geolocation_country",
+            "project",
+            "device_id",
+            "user_agent",
+        ]
+        load_instance = True

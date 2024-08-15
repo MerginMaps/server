@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div v-if="version">
-    <AppSidebarRight v-model="sidebarVisible" data-cy="app-right-sidebar">
+    <app-sidebar-right v-model="sidebarVisible" data-cy="app-right-sidebar">
       <template #title>{{ queryId }}</template>
       <template #headerButtons
         ><PButton
@@ -135,7 +135,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </div>
         </PAccordionTab>
       </PAccordion>
-    </AppSidebarRight>
+    </app-sidebar-right>
   </div>
 </template>
 
@@ -248,13 +248,6 @@ export default defineComponent({
     ...mapActions(useNotificationStore, ['error']),
     async getVersion() {
       try {
-        const currentVersion = this.versions?.find(
-          (v) => v.name === this.queryId
-        )
-        if (currentVersion) {
-          this.version = currentVersion
-          return
-        }
         const response = await ProjectApi.getProjectVersion(
           this.project.id,
           this.queryId
