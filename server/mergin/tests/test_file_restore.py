@@ -192,6 +192,7 @@ def test_version_file_restore(diff_project):
     db.session.delete(pv_9)
     db.session.delete(pv_10)
     db.session.commit()
+    diff_project.cache_latest_files()
     # restore v6 backward, from the latest file (v7=v8)
     test_file = os.path.join(diff_project.storage.project_dir, "v6", "base.gpkg")
     if os.path.exists(test_file):

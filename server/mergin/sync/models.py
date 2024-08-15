@@ -803,8 +803,8 @@ class ProjectVersion(db.Model):
         """
         return "v" + str(name)
 
-    @property
-    def files(self) -> List[ProjectFile]:
+    def _files_forward_search(self):
+        """Calculate version files using lookup from the first version"""
         query = f"""
             WITH latest_changes AS (
                 SELECT
@@ -812,10 +812,11 @@ class ProjectVersion(db.Model):
                     max(pv.name) AS version
                 FROM
                     project_version pv
-                    LEFT OUTER JOIN file_history fh ON fh.version_id = pv.id
-                    LEFT OUTER JOIN project_file_path fp ON fp.id = fh.file_path_id
+                LEFT OUTER JOIN file_history fh ON fh.version_id = pv.id
+                LEFT OUTER JOIN project_file_path fp ON fp.id = fh.file_path_id
                 WHERE
-                    pv.project_id = :project_id AND pv.name <= :version
+                    pv.project_id = :project_id
+                    AND pv.name <= :version
                 GROUP BY
                     fp.id
             )
@@ -833,7 +834,71 @@ class ProjectVersion(db.Model):
             WHERE fh.change != 'delete';
         """
         params = {"project_id": self.project_id, "version": self.name}
-        result = db.session.execute(query, params).fetchall()
+        return db.session.execute(query, params).fetchall()
+
+    def _files_backward_search(self):
+        """Calculate version files using lookup from the last version"""
+        query = f"""
+            WITH files_changes_before_version AS (
+                WITH files_candidates AS (
+                    -- files removed later (but created anytime)
+                    SELECT DISTINCT
+                        fh.file_path_id AS file_id
+                    FROM project_version pv
+                    LEFT OUTER JOIN file_history fh ON fh.version_id = pv.id
+                    WHERE
+                        pv.project_id = :project_id
+                        AND pv.name > :version
+                        AND fh.change = 'delete'
+                    -- union with current files
+                    UNION
+                    SELECT
+                        fh.file_path_id AS file_id
+                    FROM file_history fh
+                    WHERE fh.id IN (
+                        SELECT unnest(file_history_ids)
+                        FROM latest_project_files
+                        WHERE project_id = :project_id
+                    )
+                )
+                SELECT
+                    fs.file_id,
+                    max(fh.project_version_name) AS version
+                FROM files_candidates fs
+                -- there can be candidates which do not have records in earlier versions
+                INNER JOIN file_history fh ON fh.file_path_id = fs.file_id
+                WHERE
+                    fh.project_version_name <= :version
+                GROUP BY
+                    fs.file_id
+            )
+            SELECT
+                fp.path,
+                fh.size,
+                fh.diff,
+                fh.location,
+                fh.checksum,
+                pv.created AS mtime
+            FROM files_changes_before_version ch
+            INNER JOIN file_history fh ON (fh.file_path_id = ch.file_id AND fh.project_version_name = ch.version)
+            INNER JOIN project_file_path fp ON fp.id = fh.file_path_id
+            INNER JOIN project_version pv ON pv.id = fh.version_id
+            WHERE fh.change != 'delete'
+            ORDER BY fp.path;
+        """
+        params = {"project_id": self.project_id, "version": self.name}
+        return db.session.execute(query, params).fetchall()
+
+    @property
+    def files(self) -> List[ProjectFile]:
+        # return from cache
+        if self.name == self.project.latest_version:
+            return self.project.files
+
+        if self.name < self.project.latest_version / 2:
+            result = self._files_forward_search()
+        else:
+            result = self._files_backward_search()
         files = [
             ProjectFile(
                 path=row.path,
