@@ -915,6 +915,13 @@ class ProjectVersion(db.Model):
 
         return output
 
+    def changes_count(self) -> Dict:
+        """Return number of changes by type"""
+        query = f"SELECT change, COUNT(change) FROM file_history WHERE version_id = :version_id GROUP BY change;"
+        params = {"version_id": self.id}
+        result = db.session.execute(query, params).fetchall()
+        return {row[0]: row[1] for row in result}
+
 
 class Upload(db.Model):
     id = db.Column(db.String, primary_key=True)

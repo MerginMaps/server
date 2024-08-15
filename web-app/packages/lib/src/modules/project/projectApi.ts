@@ -13,7 +13,7 @@ import {
   FetchProjectVersionsParams,
   PaginatedProjectsParams,
   PaginatedProjectsResponse,
-  PaginatedProjectVersionsResponse,
+  PaginatedProjectVersions,
   ProjectAccessRequestResponse,
   ProjectAccessRequestParams,
   ProjectDetail,
@@ -100,14 +100,12 @@ export const ProjectApi = {
   },
 
   async fetchProjectVersions(
-    namespace: string,
-    projectName: string,
+    projectId: string,
     params: FetchProjectVersionsParams
-  ): Promise<AxiosResponse<PaginatedProjectVersionsResponse>> {
-    return ProjectModule.httpService.get(
-      `/v1/project/versions/paginated/${namespace}/${projectName}`,
-      { params }
-    )
+  ): Promise<AxiosResponse<PaginatedProjectVersions>> {
+    return ProjectModule.httpService.get(`/app/project/versions/${projectId}`, {
+      params
+    })
   },
 
   /**
