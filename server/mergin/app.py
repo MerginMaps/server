@@ -396,6 +396,15 @@ def create_app(public_keys: List[str] = None) -> Flask:
 
         return response
 
+    @application.after_request
+    def set_custom_error_header(response):
+        """Clients (e.g. plugin) expect error `Content-Type` in response header.
+        Some responses with custom error lacks it."""
+        if response.status_code == 422:
+            response.headers["Content-Type"] = "application/problem+json"
+
+        return response
+
     # we need to register default handler to be accessible within app
     application.ws_handler = GlobalWorkspaceHandler()
     application.project_handler = ProjectHandler()
