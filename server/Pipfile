@@ -13,7 +13,7 @@ psycopg2-binary = "==2.9.3"
 itsdangerous = "==2.1.2"
 requests-toolbelt = "==0.9.1"
 Flask-SQLAlchemy = "==2.5.1"
-sqlalchemy = "==1.4.45"
+sqlalchemy = "==1.4.53"
 zipfly = "==6.0.3"
 gunicorn = {extras = ["gevent"],version = "==19.9"}
 python-dotenv = "==0.20.0"
