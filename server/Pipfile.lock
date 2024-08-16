@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "b4438e15a2a210e80c343bc2c18bf8b7a8961041bdc03eab3cbb83204b00e7a4"
+            "sha256": "04a15c4ab21045d5d81e593165141cef6fdeccb71dd9df6cc9d46ecb8b57ca7b"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -1356,11 +1356,11 @@
                 "email"
             ],
             "hashes": [
-                "sha256:6b351bbb12dd58af57ffef05bc78425d08d1914e0fd68ee14143b7ade023c5bc",
-                "sha256:837f2f0e0ca79481b92884962b914eba4e72b7a2daaf1f939c890ed0124b834b"
+                "sha256:bf831c042829c8cdbad74c27575098d541d039b1faa74c771545ecac916f2c07",
+                "sha256:f8d76180d7239c94c6322f7990ae1216dae3659b7aa1cee94b6318bdffb474b9"
             ],
-            "markers": "python_version >= '3.7'",
-            "version": "==3.0.1"
+            "markers": "python_version >= '3.8'",
+            "version": "==3.1.2"
         },
         "wtforms-json": {
             "hashes": [
