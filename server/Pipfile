@@ -44,7 +44,7 @@ typing_extensions= "==4.12.2"
 colorama = "==0.4.5"
 
 [dev-packages]
-pytest = "==7.1.2"
+pytest = "==8.3.2"
 pytest-cov = "==5.0.0"
 pylint = "==2.15.0"
 responses = "==0.21.0"
