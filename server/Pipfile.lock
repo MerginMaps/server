@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "543f0253af88654747e6d2927a6a5bea40bddedda833d93adb5d5f8854f8ae4f"
+            "sha256": "9694dced08dde74129acdbd5dab6c6f4c3b38acde4c33710bdcedc9a8153e0aa"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -1743,15 +1743,16 @@
         },
         "pysqlite3-binary": {
             "hashes": [
-                "sha256:175c9a2e74860408f2340d1bcf40eff880fbd18faa94464560921bdde7ff0ae2",
-                "sha256:2e6bd48e080ede902257bd3cfb739d97a53546360cafcf9ac9800dcec31b7648",
-                "sha256:6c37c51679256e529659e7e3798464e9284acd7b6f96a75215be939e86ea80c5",
-                "sha256:bcd776211c7e40227117548e36d79c2937e5a452dea54410122f761942d35f3e",
-                "sha256:df0ccc802fd01a428d446baa904a38707d587348ec8216d0b6c4ae32e152b904",
-                "sha256:eee8a6a63aa44987ed2a399a2e089f94327d77ed82a308954eb2113a3ab7e097"
+                "sha256:002fcba03fdd5ad190b9438a1c5c648ae8a4d6992d3d54daec2ab8138b1a4183",
+                "sha256:58992010c654b81b403b0175cfa32f499de5cb3a4e4e53c9eb9fb44d66370a84",
+                "sha256:68ac693470e361ff0a63a25c6be3354c784d6b0c2cdc7c2a9e8a956be6c8693a",
+                "sha256:763381e59ce70344d7e1a621b41069a1364e9a05c07103579af88e775952852b",
+                "sha256:9b672326ec8eacd40cd9d31959f477fca6bbcc32d0e2b115ce1c00882a9afc7a",
+                "sha256:ad8325f9b74e94fa542678fd30ac8b53dc25a5bd9e88b41151a62127f870ed7f",
+                "sha256:b21717b4df66b3b3f759f31209b1c835edfa1ad7768f7b2847337382b6c6003f"
             ],
             "index": "pypi",
-            "version": "==0.5.2"
+            "version": "==0.5.3"
         },
         "pytest": {
             "hashes": [
