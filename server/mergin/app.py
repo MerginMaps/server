@@ -183,7 +183,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
     def load_user(user_id):  # pylint: disable=W0613,W0612
         return User.query.get(user_id)
 
-    @login_manager.header_loader
+    @login_manager.request_loader
     def load_user_from_header(header_val):  # pylint: disable=W0613,W0612
         if header_val.startswith("Bearer"):
             header_val = header_val.replace("Bearer ", "", 1)
