@@ -184,13 +184,14 @@ def create_app(public_keys: List[str] = None) -> Flask:
         return User.query.get(user_id)
 
     @login_manager.request_loader
-    def load_user_from_header(header_val):  # pylint: disable=W0613,W0612
-        if header_val.startswith("Bearer"):
-            header_val = header_val.replace("Bearer ", "", 1)
+    def load_user_from_header(request):  # pylint: disable=W0613,W0612
+        bearer = request.args.get("Bearer")
+        if bearer:
+            bearer = bearer.replace("Bearer ", "", 1)
             try:
                 data = decode_token(
                     app.app.config["SECRET_KEY"],
-                    header_val,
+                    bearer,
                     app.app.config["BEARER_TOKEN_EXPIRATION"],
                 )
                 user = User.query.filter_by(
