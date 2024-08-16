@@ -38,7 +38,7 @@ python-decouple = "==3.6"
 urllib3 = "==2.2.2"
 shapely = "==2.0.5"
 psycogreen = "==1.0.2"
-importlib-metadata = "==4.12.0"  # https://github.com/pallets/flask/issues/4502
+importlib-metadata = "==8.2.0"  # https://github.com/pallets/flask/issues/4502
 typing_extensions= "==4.12.2"
 # requirements for development on windows
 colorama = "==0.4.5"
