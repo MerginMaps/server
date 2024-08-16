@@ -8,7 +8,7 @@ connexion = {extras = ["swagger-ui"],version = "==2.14.1"}
 flask = "==2.2.5"
 python-dateutil = "==2.8.2"
 flask-marshmallow = "==0.14.0"
-marshmallow-sqlalchemy = "==0.28.1"
+marshmallow-sqlalchemy = "==1.1.0"
 psycopg2-binary = "==2.9.3"
 itsdangerous = "==2.2.0"
 requests-toolbelt = "==1.0.0"
