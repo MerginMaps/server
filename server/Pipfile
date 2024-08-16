@@ -18,7 +18,7 @@ zipfly = "==6.0.3"
 gunicorn = {extras = ["gevent"],version = "==19.9"}
 python-dotenv = "==0.20.0"
 flask-login = "==0.6.2"
-bcrypt = "==4.0.0"
+bcrypt = "==4.2.0"
 wtforms = {extras = ["email"],version = "==3.1.2"}
 flask-wtf = "==1.0.1"
 flask-mail = "==0.9.1"
