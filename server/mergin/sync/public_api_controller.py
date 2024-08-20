@@ -366,9 +366,9 @@ def download_project_file(
         # encoding for nginx to be able to download file with non-ascii chars
         encoded_file_path = quote(file_path.encode("utf-8"))
         resp = make_response()
-        resp.headers[
-            "X-Accel-Redirect"
-        ] = f"/download/{project.storage_params['location']}/{encoded_file_path}"
+        resp.headers["X-Accel-Redirect"] = (
+            f"/download/{project.storage_params['location']}/{encoded_file_path}"
+        )
         resp.headers["X-Accel-Buffering"] = True
         resp.headers["X-Accel-Expires"] = "off"
     else:
@@ -420,9 +420,9 @@ def get_project(project_name, namespace, since="", version=None):  # noqa: E501
                 ProjectVersion.from_v_name(since),
                 project.latest_version,
             ):
-                history_field[
-                    ProjectVersion.to_v_name(item.version.name)
-                ] = FileHistorySchema(exclude=("mtime",)).dump(item)
+                history_field[ProjectVersion.to_v_name(item.version.name)] = (
+                    FileHistorySchema(exclude=("mtime",)).dump(item)
+                )
             files.append({**asdict(f), "history": history_field})
         data["files"] = files
     elif version:
@@ -1050,9 +1050,9 @@ def push_finish(transaction_id):
                     updated_file.checksum = checksum
                     updated_file.size = size
                 else:
-                    sync_errors[
-                        updated_file.path
-                    ] = f"project: {project.workspace.name}/{project.name}, {result.value}"
+                    sync_errors[updated_file.path] = (
+                        f"project: {project.workspace.name}/{project.name}, {result.value}"
+                    )
 
             elif is_versioned_file(updated_file.path):
                 result = project.storage.construct_diff(
