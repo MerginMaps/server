@@ -2378,3 +2378,26 @@ def test_project_version_integrity(client):
     upload_chunks(upload_dir, upload.changes)
     resp = client.post("/v1/project/push/finish/{}".format(upload.id))
     assert resp.status_code == 200
+
+
+def test_version_files(client, diff_project):
+    user = User.query.filter_by(username="mergin").first()
+    test_workspace = create_workspace()
+    p = create_project("empty", test_workspace, user)
+    first_version = ProjectVersion.query.filter_by(project_id=p.id).first()
+    assert first_version._files_from_start() == first_version._files_from_end() == []
+
+    for version in ProjectVersion.query.filter_by(project_id=diff_project.id).all():
+        forward_search = version._files_from_start()
+        backward_search = version._files_from_end()
+        assert len(forward_search) == len(backward_search)
+        assert all(
+            x.checksum == y.checksum
+            and x.path == y.path
+            and x.location == y.location
+            and x.diff == y.diff
+            for x, y in zip(
+                sorted(forward_search, key=lambda f: f.path),
+                sorted(backward_search, key=lambda f: f.path),
+            )
+        )
