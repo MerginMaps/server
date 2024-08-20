@@ -240,9 +240,9 @@ class Project(db.Model):
         db.session.execute(
             upload_table.delete().where(upload_table.c.project_id == self.id)
         )
-        self.access.owners = self.access.writers = self.access.editors = (
-            self.access.readers
-        ) = []
+        self.access.owners = (
+            self.access.writers
+        ) = self.access.editors = self.access.readers = []
         access_requests = (
             AccessRequest.query.filter_by(project_id=self.id)
             .filter(AccessRequest.status.is_(None))
