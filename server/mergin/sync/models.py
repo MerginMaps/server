@@ -803,8 +803,11 @@ class ProjectVersion(db.Model):
         """
         return "v" + str(name)
 
-    def _files_forward_search(self):
-        """Calculate version files using lookup from the first version"""
+    def _files_from_start(self):
+        """Calculate version files using lookup from the first version
+        Strategy: From all project files get the latest file change before or at the specific version.
+        If that change was not 'delete', file is present.
+        """
         query = f"""
             WITH latest_changes AS (
                 SELECT
@@ -836,8 +839,12 @@ class ProjectVersion(db.Model):
         params = {"project_id": self.project_id, "version": self.name}
         return db.session.execute(query, params).fetchall()
 
-    def _files_backward_search(self):
-        """Calculate version files using lookup from the last version"""
+    def _files_from_end(self):
+        """Calculate version files using lookup from the last version
+        Strategy: Get project files which could be present at specific version. These are either latest files or
+        files that were delete after the version (and thus not necessarily present now). From these candidates
+        get the latest file change before or at the specific version. If that change was not 'delete', file is present.
+        """
         query = f"""
             WITH files_changes_before_version AS (
                 WITH files_candidates AS (
@@ -896,9 +903,9 @@ class ProjectVersion(db.Model):
             return self.project.files
 
         if self.name < self.project.latest_version / 2:
-            result = self._files_forward_search()
+            result = self._files_from_start()
         else:
-            result = self._files_backward_search()
+            result = self._files_from_end()
         files = [
             ProjectFile(
                 path=row.path,

@@ -2386,14 +2386,14 @@ def test_version_files(client, diff_project):
     p = create_project("empty", test_workspace, user)
     first_version = ProjectVersion.query.filter_by(project_id=p.id).first()
     assert (
-        first_version._files_forward_search()
-        == first_version._files_backward_search()
+        first_version._files_from_start()
+        == first_version._files_from_end()
         == []
     )
 
     for version in ProjectVersion.query.filter_by(project_id=diff_project.id).all():
-        forward_search = version._files_forward_search()
-        backward_search = version._files_backward_search()
+        forward_search = version._files_from_start()
+        backward_search = version._files_from_end()
         assert len(forward_search) == len(backward_search)
         assert all(
             x.checksum == y.checksum
