@@ -4,11 +4,9 @@
 
 import datetime
 import os
-import sqlite3
 from dataclasses import asdict
 from unittest.mock import patch
 from urllib.parse import quote
-
 import pysqlite3
 import pytest
 import json
@@ -686,6 +684,7 @@ def test_update_project(client):
         headers=json_headers,
     )
     assert resp.status_code == 422
+    assert resp.headers["Content-Type"] == "application/problem+json"
     assert resp.json["code"] == "UpdateProjectAccessError"
     assert resp.json["invalid_usernames"] == ["not-found-user"]
 
@@ -782,7 +781,7 @@ test_download_file_data = [
     (test_project, "test.txt", "text/plain", 200),
     (test_project, "logo.pdf", "application/pdf", 200),
     (test_project, "logo.jpeg", "image/jpeg", 200),
-    (test_project, "base.gpkg", "None", 200),
+    (test_project, "base.gpkg", "application/geopackage+sqlite3", 200),
     (test_project, "json.json", "text/plain", 200),
     (test_project, "foo.txt", None, 404),
     ("bar", "test.txt", None, 404),
@@ -1258,6 +1257,7 @@ def test_exceed_data_limit(client):
         headers=json_headers,
     )
     assert resp.status_code == 422
+    assert resp.headers["Content-Type"] == "application/problem+json"
     assert resp.json["code"] == "StorageLimitHit"
     assert resp.json["detail"] == "You have reached a data limit (StorageLimitHit)"
     assert "current_usage" in resp.json
@@ -2378,3 +2378,26 @@ def test_project_version_integrity(client):
     upload_chunks(upload_dir, upload.changes)
     resp = client.post("/v1/project/push/finish/{}".format(upload.id))
     assert resp.status_code == 200
+
+
+def test_version_files(client, diff_project):
+    user = User.query.filter_by(username="mergin").first()
+    test_workspace = create_workspace()
+    p = create_project("empty", test_workspace, user)
+    first_version = ProjectVersion.query.filter_by(project_id=p.id).first()
+    assert first_version._files_from_start() == first_version._files_from_end() == []
+
+    for version in ProjectVersion.query.filter_by(project_id=diff_project.id).all():
+        forward_search = version._files_from_start()
+        backward_search = version._files_from_end()
+        assert len(forward_search) == len(backward_search)
+        assert all(
+            x.checksum == y.checksum
+            and x.path == y.path
+            and x.location == y.location
+            and x.diff == y.diff
+            for x, y in zip(
+                sorted(forward_search, key=lambda f: f.path),
+                sorted(backward_search, key=lambda f: f.path),
+            )
+        )

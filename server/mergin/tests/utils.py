@@ -4,6 +4,7 @@
 
 import json
 import shutil
+import pysqlite3
 import uuid
 import math
 from dataclasses import asdict

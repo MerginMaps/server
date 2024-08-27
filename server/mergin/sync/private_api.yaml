@@ -144,7 +144,7 @@ paths:
         "422":
           description: Reached user limit
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: "#/components/schemas/UsersLimitHit"
   /project/access-requests:

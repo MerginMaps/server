@@ -1,4 +1,4 @@
-FROM ubuntu:focal-20230301
+FROM ubuntu:jammy-20240627.1
 MAINTAINER Martin Varga "martin.varga@lutraconsulting.co.uk"
 
 # this is to do choice of timezone upfront, because when "tzdata" package gets installed,
@@ -21,8 +21,7 @@ RUN apt-get update -y && \
 
 
 # needed for geodiff
-RUN pip3 install --upgrade pip
-RUN ln -s /usr/lib/x86_64-linux-musl/libc.so /lib/libc.musl-x86_64.so.1
+RUN pip3 install --upgrade pip==24.0
 
 # create mergin user to run container with
 RUN groupadd -r mergin -g 901
@@ -33,7 +32,7 @@ RUN useradd -u 901 -r --home-dir /app --create-home -g mergin -G mergin-family -
 COPY . /app
 WORKDIR /app
 
-RUN pip3 install pipenv==2022.7.24
+RUN pip3 install pipenv==2024.0.1
 # for locale check this http://click.pocoo.org/5/python3/
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8

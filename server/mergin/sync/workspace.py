@@ -304,9 +304,8 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
             + project.access.writers
             + project.access.owners
         )
-        direct_members = User.query.filter(
-            User.active, User.id.in_(direct_members_ids)
-        ).all()
+        users = User.query.filter(User.active.is_(True)).order_by(User.email)
+        direct_members = users.filter(User.id.in_(direct_members_ids)).all()
 
         for dm in direct_members:
             project_role = ProjectPermissions.get_user_project_role(project, dm)
@@ -321,9 +320,7 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
             )
             result.append(member)
         if global_role:
-            global_members = User.query.filter(
-                User.active.is_(True), User.id.notin_(direct_members_ids)
-            ).all()
+            global_members = users.filter(User.id.notin_(direct_members_ids)).all()
             for gm in global_members:
                 member = ProjectAccessDetail(
                     id=gm.id,

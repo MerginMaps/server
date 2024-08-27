@@ -24,3 +24,5 @@ web-app/.node-version
 
 # datadir for database
 mergin-db-ce
+
+docker-compose.local.yml
