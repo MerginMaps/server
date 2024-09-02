@@ -11,7 +11,7 @@ from threading import Timer
 from uuid import UUID
 from connexion import NoContent
 from shapely import wkb
-from shapely.errors import WKBReadingError
+from shapely.errors import ShapelyError
 from gevent import sleep
 from flask import Request
 from typing import Optional
@@ -210,7 +210,7 @@ def gpkg_wkb_to_wkt(gpkg_wkb):
     wkb_geom = gpkg_wkb[wkb_header_length:]
     try:
         wkt = wkb.loads(wkb_geom).wkt
-    except WKBReadingError:
+    except ShapelyError:
         wkt = None
     return wkt
 
