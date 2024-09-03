@@ -554,14 +554,13 @@ class FileHistory(db.Model):
         history = []
         full_history = (
             FileHistory.query.join(ProjectFilePath)
-            .join(FileHistory.version)
             .filter(
-                ProjectVersion.project_id == project_id,
-                ProjectVersion.name <= to,
-                ProjectVersion.name >= since,
+                ProjectFilePath.project_id == project_id,
+                FileHistory.project_version_name <= to,
+                FileHistory.project_version_name >= since,
                 ProjectFilePath.path == file,
             )
-            .order_by(desc(ProjectVersion.created))
+            .order_by(desc(FileHistory.project_version_name))
             .all()
         )
 
