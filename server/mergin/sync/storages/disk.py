@@ -258,7 +258,12 @@ class DiskStorage(ProjectStorage):
         gh.checksum_time = checksumming_time
         logging.info(f"Checksum calculated in {checksumming_time} s")
         db.session.add(gh)
-        return Ok((checksum, os.path.getsize(patchedfile), ))
+        return Ok(
+            (
+                checksum,
+                os.path.getsize(patchedfile),
+            )
+        )
 
     def construct_diff(
         self, current_file: ProjectFile, upload_file: UploadFile, version: int
