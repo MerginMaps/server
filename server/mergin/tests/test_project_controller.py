@@ -97,9 +97,9 @@ def test_file_history(client, diff_project):
 
     # check geodiff changeset in project version object
     resp = client.get(
-        f"/v1/project/versions/paginated/{test_workspace_name}/{test_project}?page=1&per_page=10"
+        f"/v1/project/version/{diff_project.id}/v7"
     )
-    version_info = next(v for v in resp.json["versions"] if v["name"] == "v7")
+    version_info = resp.json
     assert "changesets" in version_info
     # the only diff update in version v7 is base.gpkg
     assert len(version_info["changesets"].keys()) == 1
@@ -108,9 +108,9 @@ def test_file_history(client, diff_project):
     assert "size" in version_info["changesets"]["base.gpkg"]
     # tests when no diffs were applied
     resp = client.get(
-        f"/v1/project/versions/paginated/{test_workspace_name}/{test_project}?page=1&per_page=10"
+        f"/v1/project/version/{diff_project.id}/v10"
     )
-    version_info = next(v for v in resp.json["versions"] if v["name"] == "v10")
+    version_info = resp.json
     assert not version_info["changesets"]
 
     # not geodiff file -> empty history
@@ -2040,7 +2040,7 @@ versions_test_data = [
     ),
     (
         {"page": 2, "per_page": 200, "desc": True},
-        400,
+        404,
         "",
         {},
     ),
