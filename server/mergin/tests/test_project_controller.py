@@ -2054,7 +2054,7 @@ def test_get_paginated_versions(
     client, diff_project, query_params, status_code, first_item, changes
 ):
     resp = client.get(
-        f"/v1/project/versions/paginated/{diff_project.namespace}/{diff_project.name}?page={query_params['page']}&per_page={query_params['per_page']}&descending={query_params['desc']}"
+        f"/v1/project/versions/paginated/{diff_project.workspace.name}/{diff_project.name}?page={query_params['page']}&per_page={query_params['per_page']}&descending={query_params['desc']}"
     )
     assert resp.status_code == status_code
     if status_code == 200:
