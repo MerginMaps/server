@@ -253,11 +253,12 @@ class DiskStorage(ProjectStorage):
         # TODO this can potentially fail for large files
         logging.info(f"Apply changes: calculating checksum of {patchedfile}")
         start = time.time()
+        checksum = generate_checksum(patchedfile)
         checksumming_time = time.time() - start
         gh.checksum_time = checksumming_time
         logging.info(f"Checksum calculated in {checksumming_time} s")
         db.session.add(gh)
-        return Ok((generate_checksum(patchedfile), os.path.getsize(patchedfile)))
+        return Ok((checksum, os.path.getsize(patchedfile), ))
 
     def construct_diff(
         self, current_file: ProjectFile, upload_file: UploadFile, version: int
