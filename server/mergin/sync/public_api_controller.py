@@ -330,13 +330,12 @@ def download_project_file(
     # find the latest file change record for version of interest
     fh = (
         FileHistory.query.join(ProjectFilePath)
-        .join(ProjectVersion)
         .filter(
-            ProjectVersion.project_id == project.id,
-            ProjectVersion.name <= lookup_version,
+            ProjectFilePath.project_id == project.id,
+            FileHistory.project_version_name <= lookup_version,
             ProjectFilePath.path == file,
         )
-        .order_by(ProjectVersion.created.desc())
+        .order_by(FileHistory.project_version_name.desc())
         .first()
     )
     # in case last change was 'delete', file does not exist for such version
