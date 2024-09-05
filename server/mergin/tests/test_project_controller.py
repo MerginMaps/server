@@ -96,9 +96,7 @@ def test_file_history(client, diff_project):
     assert test_gpkg_history["v9"]["change"] == "added"
 
     # check geodiff changeset in project version object
-    resp = client.get(
-        f"/v1/project/version/{diff_project.id}/v7"
-    )
+    resp = client.get(f"/v1/project/version/{diff_project.id}/v7")
     version_info = resp.json
     assert "changesets" in version_info
     # the only diff update in version v7 is base.gpkg
@@ -107,9 +105,7 @@ def test_file_history(client, diff_project):
     assert "summary" in version_info["changesets"]["base.gpkg"]
     assert "size" in version_info["changesets"]["base.gpkg"]
     # tests when no diffs were applied
-    resp = client.get(
-        f"/v1/project/version/{diff_project.id}/v10"
-    )
+    resp = client.get(f"/v1/project/version/{diff_project.id}/v10")
     version_info = resp.json
     assert not version_info["changesets"]
 
