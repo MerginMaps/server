@@ -1160,6 +1160,6 @@ class GeodiffActionHistory(db.Model):
         self.target_version = target_version
         self.action = action
 
-        if os.path.exists:
+        if os.path.exists(diff_path):
             self.diff_size = os.path.getsize(diff_path)
             self.changes = GeoDiff().changes_count(diff_path)

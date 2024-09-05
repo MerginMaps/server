@@ -1568,6 +1568,7 @@ def test_push_diff_finish(client):
     assert gh.copy_time
     assert gh.checksum_time
     assert gh.action == "apply_changes"
+    assert not os.path.exists(upload.project.storage.geodiff_working_dir)
 
     # try with valid update metadata but with conflicting diff (rebase was not done)
     upload, upload_dir = create_transaction("mergin", changes, 2)
@@ -1640,6 +1641,7 @@ def test_push_no_diff_finish(client):
     assert os.path.exists(
         os.path.join(upload.project.storage.project_dir, file_meta.diff_file.location)
     )
+    assert not os.path.exists(upload.project.storage.geodiff_working_dir)
 
     # change structure of gpkg file so diff would not be available -> hard overwrite
     gpkg_conn = pysqlite3.connect(os.path.join(working_dir, "base.gpkg"))
