@@ -209,7 +209,7 @@ class Project(db.Model):
     def delete(self, removed_by: int = None):
         """Mark project as permanently deleted (but keep in db)
         - rename (to free up the same name)
-        - remove associated files and their history and project versions
+        - remove associated files and their history
         - reset project_access
         - decline pending project access requests
         """
@@ -225,9 +225,7 @@ class Project(db.Model):
         # Null in storage params serves as permanent deletion flag
         self.storage.delete()
         self.storage_params = null()
-        pv_table = ProjectVersion.__table__
-        # remove versions and file history items with cascade
-        db.session.execute(pv_table.delete().where(pv_table.c.project_id == self.id))
+        # remove file records and their history (cascade)
         files_path_table = ProjectFilePath.__table__
         db.session.execute(
             files_path_table.delete().where(files_path_table.c.project_id == self.id)

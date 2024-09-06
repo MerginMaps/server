@@ -142,15 +142,15 @@ def test_remove_project(client, diff_project):
     diff_project.delete()
     assert Project.query.filter_by(id=project_id).count()
     assert not Upload.query.filter_by(project_id=project_id).count()
-    assert not ProjectVersion.query.filter_by(project_id=project_id).count()
+    assert ProjectVersion.query.filter_by(project_id=project_id).count()
     assert ProjectAccess.query.filter_by(project_id=project_id).count()
     cleanup(client, [project_dir])
     assert access_request.status == RequestStatus.DECLINED.value
-    # after removal only cached information in project table remains
+    # after removal cached information in project table remains and project versions, but not files details
     assert diff_project.disk_usage
     assert diff_project.latest_version is not None
     assert diff_project.files == []
-    assert not diff_project.get_latest_version()
+    assert diff_project.get_latest_version()
     assert (
         FileHistory.query.filter(FileHistory.version_id.in_(versions_ids)).count() == 0
     )
