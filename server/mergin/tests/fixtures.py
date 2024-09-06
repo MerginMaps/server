@@ -213,7 +213,7 @@ def diff_project(app):
             pv = ProjectVersion(
                 project,
                 i + 2,
-                project.creator.username,
+                project.creator.id,
                 upload_changes,
                 "127.0.0.1",
             )

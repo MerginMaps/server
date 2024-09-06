@@ -224,7 +224,7 @@ def add_project(namespace):  # noqa: E501
         version = ProjectVersion(
             p,
             version_name,
-            current_user.username,
+            current_user.id,
             changes,
             get_ip(request),
             get_user_agent(request),
@@ -863,7 +863,7 @@ def project_push(namespace, project_name):
             pv = ProjectVersion(
                 project,
                 next_version,
-                current_user.username,
+                current_user.id,
                 upload_changes,
                 get_ip(request),
                 user_agent,
@@ -1074,7 +1074,7 @@ def push_finish(transaction_id):
         pv = ProjectVersion(
             project,
             next_version,
-            current_user.username,
+            current_user.id,
             changes,
             get_ip(request),
             user_agent,
@@ -1208,7 +1208,7 @@ def clone_project(namespace, project_name):  # noqa: E501
     project_version = ProjectVersion(
         p,
         version,
-        current_user.username,
+        current_user.id,
         changes,
         get_ip(request),
         user_agent,

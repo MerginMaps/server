@@ -42,7 +42,7 @@ def test_close_user_account(client, diff_project):
     flag_modified(diff_project.access, "writers")
     # user contributed to another user project so he is listed in projects history
     changes = UploadChanges(added=[], updated=[], removed=[])
-    pv = ProjectVersion(diff_project, 11, user.username, changes, "127.0.0.1")
+    pv = ProjectVersion(diff_project, 11, user.id, changes, "127.0.0.1")
     diff_project.latest_version = pv.name
     pv.project = diff_project
     db.session.add(pv)
@@ -98,7 +98,7 @@ def test_close_user_account(client, diff_project):
     )
     assert user_id not in diff_project.access.writers
     # user remains referenced in existing project version he created (as read-only ref)
-    assert diff_project.get_latest_version().author == "user"
+    assert diff_project.get_latest_version().author_id == user_id
     sync_fail_history = SyncFailuresHistory.query.filter(
         SyncFailuresHistory.project_id == diff_project.id
     ).all()
