@@ -58,6 +58,7 @@ from .schemas import (
     ProjectSchemaForVersion,
     UserWorkspaceSchema,
     FileHistorySchema,
+    ProjectVersionListSchema,
 )
 from .storages.storage import FileNotFound, DataSyncError, InitializationError
 from .storages.disk import save_to_file, move_to_tmp
@@ -459,15 +460,14 @@ def get_paginated_project_versions(
     query = ProjectVersion.query.filter(
         and_(ProjectVersion.project_id == project.id, ProjectVersion.name != 0)
     )
-
-    if descending:
-        query = query.order_by(desc(ProjectVersion.created))
-    elif not descending:
-        query = query.order_by(asc(ProjectVersion.created))
-
+    query = (
+        query.order_by(desc(ProjectVersion.name))
+        if descending
+        else query.order_by(asc(ProjectVersion.name))
+    )
     result = query.paginate(page, per_page).items
     total = query.paginate(page, per_page).total
-    versions = ProjectVersionSchema(exclude=["files"], many=True).dump(result)
+    versions = ProjectVersionListSchema(many=True).dump(result)
     data = {"versions": versions, "count": total}
     return data, 200
 

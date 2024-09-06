@@ -537,7 +537,8 @@ export const useProjectStore = defineStore('projectModule', {
       try {
         this.versionsLoading = true
         const response = await ProjectApi.fetchProjectVersions(
-          payload.projectId,
+          payload.workspace,
+          payload.projectName,
           payload.params
         )
         this.versions = response.data?.versions

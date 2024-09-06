@@ -199,7 +199,8 @@ export default defineComponent({
       }
       await this.getProjectVersions({
         params,
-        projectId: this.project?.id
+        projectName: this.projectName,
+        workspace: this.namespace
       })
     },
     rowClick(item) {

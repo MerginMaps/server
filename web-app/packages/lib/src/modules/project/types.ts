@@ -303,7 +303,8 @@ export interface DownloadPayload {
 }
 
 export interface FetchProjectVersionsPayload {
-  projectId: string
+  workspace: string
+  projectName: string
   params: FetchProjectVersionsParams
 }
 
