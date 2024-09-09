@@ -492,6 +492,17 @@ class FileHistory(db.Model):
             file_path_id,
             project_version_name.desc(),
         ),
+        db.CheckConstraint(
+            text(
+                """
+                CASE
+                    WHEN (change = 'update_diff') THEN diff IS NOT NULL
+                    ELSE diff IS NULL
+                END
+                """
+            ),
+            name="file_history_changes_with_diff",
+        ),
     )
 
     def __init__(
@@ -507,7 +518,7 @@ class FileHistory(db.Model):
         self.size = size
         self.checksum = checksum
         self.location = location
-        self.diff = diff
+        self.diff = diff if diff is not None else null()
         self.change = change.value
 
     @property
@@ -764,7 +775,11 @@ class ProjectVersion(db.Model):
                     size=upload_file.size,
                     checksum=upload_file.checksum,
                     location=upload_file.location,
-                    diff=asdict(upload_file.diff) if upload_file.diff else null(),
+                    diff=(
+                        asdict(upload_file.diff)
+                        if (is_diff_change and upload_file.diff)
+                        else null()
+                    ),
                     change=(
                         PushChangeType.UPDATE_DIFF if is_diff_change else change_type
                     ),
