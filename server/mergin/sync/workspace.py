@@ -160,9 +160,10 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
     ):
         if only_public:
             projects = (
-                Project.query.filter(Project.access.has(public=only_public))
+                Project.query.join(ProjectAccess)
                 .filter(Project.storage_params.isnot(None))
                 .filter(Project.removed_at.is_(None))
+                .filter(ProjectAccess.public.is_(True))
             )
         else:
             projects = projects_query(
@@ -184,9 +185,7 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
                     projects = projects.filter(
                         or_(
                             and_(
-                                Project.access.has(
-                                    ProjectAccess.readers.contains([user.id])
-                                ),
+                                ProjectAccess.readers.contains([user.id]),
                                 Project.creator_id != user.id,
                             ),
                             and_(
@@ -211,8 +210,6 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
             projects = projects.filter(
                 Project.updated >= datetime.utcnow() - timedelta(days=last_updated_in)
             )
-
-        projects = projects.options(joinedload(Project.access))
 
         if order_params:
             order_by_params = []
