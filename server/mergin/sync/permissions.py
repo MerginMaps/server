@@ -6,7 +6,8 @@ import os
 from functools import wraps
 from typing import Optional
 from flask import abort, current_app
-from flask_login import AnonymousUserMixin, current_user
+from flask_login import current_user
+from sqlalchemy import or_
 
 from .utils import is_valid_uuid
 from ..auth.models import User
@@ -59,7 +60,12 @@ class ProjectPermissions:
         def query(cls, user, as_admin=True, public=True):
             if user.is_authenticated and user.is_admin and as_admin:
                 return Project.query
-            query = Project.access.has(public=public)
+
+            query = (
+                Project.query.join(ProjectAccess)
+                .filter(Project.storage_params.isnot(None))
+                .filter(Project.removed_at.is_(None))
+            )
             if user.is_authenticated and user.active:
                 all_workspaces = current_app.ws_handler.list_user_workspaces(
                     user.username, active=True
@@ -70,20 +76,24 @@ class ProjectPermissions:
                     if ws.user_has_permissions(user, "read")
                 ]
                 if public:
-                    query = query | Project.access.has(
-                        ProjectAccess.readers.contains([user.id])
-                        | Project.workspace_id.in_(user_workspace_ids)
+                    query = query.filter(
+                        or_(
+                            ProjectAccess.public.is_(True),
+                            Project.workspace_id.in_(user_workspace_ids),
+                            ProjectAccess.readers.contains([user.id]),
+                        )
                     )
                 else:
-                    query = Project.access.has(
-                        ProjectAccess.readers.contains([user.id])
-                        | Project.workspace_id.in_(user_workspace_ids)
+                    query = query.filter(
+                        or_(
+                            Project.workspace_id.in_(user_workspace_ids),
+                            ProjectAccess.readers.contains([user.id]),
+                        )
                     )
-            return (
-                Project.query.filter(query)
-                .filter(Project.storage_params.isnot(None))
-                .filter(Project.removed_at.is_(None))
-            )
+            else:
+                query = query.filter(ProjectAccess.public.is_(True))
+
+            return query
 
     class Edit(Base):
         @classmethod
