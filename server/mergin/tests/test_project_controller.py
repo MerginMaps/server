@@ -96,10 +96,8 @@ def test_file_history(client, diff_project):
     assert test_gpkg_history["v9"]["change"] == "added"
 
     # check geodiff changeset in project version object
-    resp = client.get(
-        f"/v1/project/versions/paginated/{test_workspace_name}/{test_project}?page=1&per_page=10"
-    )
-    version_info = next(v for v in resp.json["versions"] if v["name"] == "v7")
+    resp = client.get(f"/v1/project/version/{diff_project.id}/v7")
+    version_info = resp.json
     assert "changesets" in version_info
     # the only diff update in version v7 is base.gpkg
     assert len(version_info["changesets"].keys()) == 1
@@ -107,10 +105,8 @@ def test_file_history(client, diff_project):
     assert "summary" in version_info["changesets"]["base.gpkg"]
     assert "size" in version_info["changesets"]["base.gpkg"]
     # tests when no diffs were applied
-    resp = client.get(
-        f"/v1/project/versions/paginated/{test_workspace_name}/{test_project}?page=1&per_page=10"
-    )
-    version_info = next(v for v in resp.json["versions"] if v["name"] == "v10")
+    resp = client.get(f"/v1/project/version/{diff_project.id}/v10")
+    version_info = resp.json
     assert not version_info["changesets"]
 
     # not geodiff file -> empty history
@@ -2025,39 +2021,44 @@ def test_get_projects_by_uuids(client):
     assert resp.status_code == 400
 
 
-def test_get_paginated_versions(client, diff_project):
-    resp = client.get(
-        "/v1/project/versions/paginated/{}/{}?page={}&per_page={}".format(
-            test_workspace_name, test_project, 1, 5
-        )
-    )
-    assert resp.status_code == 200
-    result = json.loads(resp.data)
-    assert result.get("count") == 10
-    assert len(result.get("versions")) == 5
-    assert result.get("versions")[0].get("name") == "v10"
+versions_test_data = [
+    (
+        {"page": 1, "per_page": 5, "desc": False},
+        200,
+        "v1",
+        {"added": 12, "removed": 0, "updated": 0, "updated_diff": 0},
+    ),
+    (
+        {"page": 2, "per_page": 3, "desc": True},
+        200,
+        "v7",
+        {"added": 0, "removed": 0, "updated": 0, "updated_diff": 1},
+    ),
+    (
+        {"page": 2, "per_page": 200, "desc": True},
+        404,
+        "",
+        {},
+    ),
+]
 
-    resp = client.get(
-        "/v1/project/versions/paginated/{}/{}?page={}&per_page={}".format(
-            test_workspace_name, test_project, 2, 5
-        )
-    )
-    assert resp.status_code == 200
-    result = json.loads(resp.data)
-    assert result.get("count") == 10
-    assert len(result.get("versions")) == 5
-    assert result.get("versions")[0].get("name") == "v5"
 
+@pytest.mark.parametrize(
+    "query_params,status_code,first_item,changes", versions_test_data
+)
+def test_get_paginated_versions(
+    client, diff_project, query_params, status_code, first_item, changes
+):
     resp = client.get(
-        "/v1/project/versions/paginated/{}/{}?page={}&per_page={}&descending=false".format(
-            test_workspace_name, test_project, 1, 5
-        )
+        f"/v1/project/versions/paginated/{diff_project.workspace.name}/{diff_project.name}?page={query_params['page']}&per_page={query_params['per_page']}&descending={query_params['desc']}"
     )
-    assert resp.status_code == 200
-    result = json.loads(resp.data)
-    assert result.get("count") == 10
-    assert len(result.get("versions")) == 5
-    assert result.get("versions")[0].get("name") == "v1"
+    assert resp.status_code == status_code
+    if status_code == 200:
+        result = json.loads(resp.data)
+        assert result.get("count") == 10
+        assert len(result.get("versions")) == query_params["per_page"]
+        assert result.get("versions")[0].get("name") == first_item
+        assert result.get("versions")[0].get("changes") == changes
 
 
 conflict_files = [

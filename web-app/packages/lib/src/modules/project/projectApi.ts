@@ -100,12 +100,16 @@ export const ProjectApi = {
   },
 
   async fetchProjectVersions(
-    projectId: string,
+    workspace: string,
+    projectName: string,
     params: FetchProjectVersionsParams
   ): Promise<AxiosResponse<PaginatedProjectVersions>> {
-    return ProjectModule.httpService.get(`/app/project/versions/${projectId}`, {
-      params
-    })
+    return ProjectModule.httpService.get(
+      `/v1/project/versions/paginated/${workspace}/${projectName}`,
+      {
+        params
+      }
+    )
   },
 
   /**

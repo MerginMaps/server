@@ -326,21 +326,3 @@ def get_project_access(id: str):
     result = current_app.ws_handler.project_access(project)
     data = ProjectAccessDetailSchema(many=True).dump(result)
     return data, 200
-
-
-# draft for new lightweight /project/versions/ paginated endpoint (to become v2/)
-def list_project_versions(page, per_page, project_id, descending=True):
-    project = require_project_by_uuid(project_id, ProjectPermissions.Read)
-    query = ProjectVersion.query.filter(
-        and_(ProjectVersion.project_id == project.id, ProjectVersion.name != 0)
-    )
-    query = (
-        query.order_by(desc(ProjectVersion.created))
-        if descending
-        else query.order_by(asc(ProjectVersion.created))
-    )
-    result = query.paginate(page, per_page).items
-    total = query.paginate(page, per_page).total
-    versions = ProjectVersionListSchema(many=True).dump(result)
-    data = {"versions": versions, "count": total}
-    return data, 200
