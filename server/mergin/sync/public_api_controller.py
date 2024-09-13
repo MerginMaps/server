@@ -42,6 +42,7 @@ from .models import (
     Upload,
     PushChangeType,
     FileHistory,
+    ProjectFilePath,
 )
 from .files import (
     UploadChanges,
@@ -57,6 +58,7 @@ from .schemas import (
     ProjectSchemaForVersion,
     UserWorkspaceSchema,
     FileHistorySchema,
+    ProjectVersionListSchema,
 )
 from .storages.storage import FileNotFound, DataSyncError, InitializationError
 from .storages.disk import save_to_file, move_to_tmp
@@ -328,13 +330,13 @@ def download_project_file(
     )
     # find the latest file change record for version of interest
     fh = (
-        FileHistory.query.join(ProjectVersion)
+        FileHistory.query.join(ProjectFilePath)
         .filter(
-            ProjectVersion.project_id == project.id,
-            ProjectVersion.name <= lookup_version,
-            FileHistory.path == file,
+            ProjectFilePath.project_id == project.id,
+            FileHistory.project_version_name <= lookup_version,
+            ProjectFilePath.path == file,
         )
-        .order_by(ProjectVersion.created.desc())
+        .order_by(FileHistory.project_version_name.desc())
         .first()
     )
     # in case last change was 'delete', file does not exist for such version
@@ -458,15 +460,14 @@ def get_paginated_project_versions(
     query = ProjectVersion.query.filter(
         and_(ProjectVersion.project_id == project.id, ProjectVersion.name != 0)
     )
-
-    if descending:
-        query = query.order_by(desc(ProjectVersion.created))
-    elif not descending:
-        query = query.order_by(asc(ProjectVersion.created))
-
+    query = (
+        query.order_by(desc(ProjectVersion.name))
+        if descending
+        else query.order_by(asc(ProjectVersion.name))
+    )
     result = query.paginate(page, per_page).items
     total = query.paginate(page, per_page).total
-    versions = ProjectVersionSchema(exclude=["files"], many=True).dump(result)
+    versions = ProjectVersionListSchema(many=True).dump(result)
     data = {"versions": versions, "count": total}
     return data, 200
 
@@ -1238,10 +1239,11 @@ def get_resource_history(project_name, namespace, path):  # noqa: E501
     project = require_project(namespace, project_name, ProjectPermissions.Read)
     # get the metadata of file at latest version where file is present
     fh = (
-        FileHistory.query.join(FileHistory.version)
+        FileHistory.query.join(ProjectFilePath)
+        .join(FileHistory.version)
         .filter(
             ProjectVersion.project_id == project.id,
-            FileHistory.path == path,
+            ProjectFilePath.path == path,
             FileHistory.change != "delete",
         )
         .order_by(desc(ProjectVersion.created))

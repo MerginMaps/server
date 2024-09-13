@@ -60,17 +60,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           }}</span>
         </template>
         <template #col-changes.added="{ item, column }">
-          <span :class="column.textClass">{{ item.changes.added.length }}</span>
+          <span :class="column.textClass">{{ item.changes.added }}</span>
         </template>
         <template #col-changes.updated="{ item, column }">
           <span :class="column.textClass">{{
-            item.changes.updated.length
+            item.changes.updated + item.changes.updated_diff
           }}</span>
         </template>
         <template #col-changes.removed="{ item, column }">
-          <span :class="column.textClass">{{
-            item.changes.removed.length
-          }}</span>
+          <span :class="column.textClass">{{ item.changes.removed }}</span>
         </template>
       </DataViewWrapper>
       <slot name="table-footer"></slot>
@@ -93,7 +91,7 @@ import {
   DataViewWrapperColumnItem,
   DataViewWrapperOptions
 } from '@/common/components/data-view/types'
-import { FetchProjectVersionsParams, ProjectVersionsItem } from '@/modules'
+import { FetchProjectVersionsParams, ProjectVersionsTableItem } from '@/modules'
 import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
@@ -152,13 +150,14 @@ export default defineComponent({
     ...mapState(useProjectStore, [
       'versions',
       'versionsLoading',
-      'versionsCount'
+      'versionsCount',
+      'project'
     ]),
     /**
      * Table data from versions in global state transformed
      */
-    items(): ProjectVersionsItem[] {
-      return this.versions?.map<ProjectVersionsItem>((v) => ({
+    items(): ProjectVersionsTableItem[] {
+      return this.versions?.map<ProjectVersionsTableItem>((v) => ({
         ...v,
         disabled: this.disabledKeys.some((d) => d === v.name)
       }))
@@ -186,8 +185,8 @@ export default defineComponent({
     this.fetchVersions()
   },
   methods: {
-    ...mapActions(useProjectStore, ['fetchProjectVersions', 'downloadArchive']),
-    rowStyle(item: ProjectVersionsItem): StyleValue {
+    ...mapActions(useProjectStore, ['getProjectVersions', 'downloadArchive']),
+    rowStyle(item: ProjectVersionsTableItem): StyleValue {
       return (
         item.disabled && ({ opacity: 0.5, cursor: 'not-allowed' } as StyleValue)
       )
@@ -198,10 +197,10 @@ export default defineComponent({
         per_page: this.options.itemsPerPage,
         descending: this.options.sortDesc
       }
-      await this.fetchProjectVersions({
+      await this.getProjectVersions({
         params,
-        namespace: this.namespace,
-        projectName: this.projectName
+        projectName: this.projectName,
+        workspace: this.namespace
       })
     },
     rowClick(item) {

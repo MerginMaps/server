@@ -249,9 +249,20 @@ export interface ProjectVersion {
   project_size: number
 }
 
-export interface PaginatedProjectVersionsResponse
-  extends PaginatedResponseDefaults {
-  versions: ProjectVersion[]
+export type ProjectVersionListItem = Omit<
+  ProjectVersion,
+  'changesets' | 'changes'
+> & {
+  changes: {
+    added: number
+    removed: number
+    updated: number
+    updated_diff: number
+  }
+}
+
+export interface PaginatedProjectVersions extends PaginatedResponseDefaults {
+  versions: ProjectVersionListItem[]
 }
 
 export interface PushProjectChangesParams {
@@ -291,15 +302,13 @@ export interface DownloadPayload {
   url: string
 }
 
-export interface FetchProjectVersionsPayload extends ProjectParams {
+export interface FetchProjectVersionsPayload {
+  workspace: string
+  projectName: string
   params: FetchProjectVersionsParams
 }
 
-export interface ProjectVersionsPayload extends PaginatedResponseDefaults {
-  versions: ProjectVersion[]
-}
-
-export interface ProjectVersionsItem extends ProjectVersion {
+export interface ProjectVersionsTableItem extends ProjectVersionListItem {
   disabled: boolean
 }
 

@@ -272,7 +272,7 @@ paths:
         "422":
           description: Project access update could not be processed
           content:
-            application/json:
+            application/problem+json:
               schema:
                 anyOf:
                   - $ref: "#/components/schemas/UpdateProjectAccessError"
@@ -451,7 +451,7 @@ paths:
                   versions:
                     type: array
                     items:
-                      $ref: "#/components/schemas/ProjectVersion"
+                      $ref: "#/components/schemas/ProjectVersionListItem"
         '400':
           $ref: '#/components/responses/BadStatusResp'
         '403':
@@ -645,7 +645,7 @@ paths:
         "422":
           description: Request could not be processed by server
           content:
-            application/json:
+            application/problem+json:
               schema:
                 anyOf:
                   - $ref: "#/components/schemas/UnprocessableEntityError"
@@ -976,7 +976,7 @@ components:
     ProjectsLimitHitResp:
       description: Projects limit hit
       content:
-        application/json:
+        application/problem+json:
           schema:
             $ref: '#/components/schemas/ProjectsLimitHit'
   parameters:
@@ -1253,15 +1253,6 @@ components:
             $ref: "#/components/schemas/ProjectListItem"
         count:
           type: integer
-    PaginatedProjectVersions:
-      type: object
-      properties:
-        versions:
-          type: array
-          items:
-            $ref: '#/components/schemas/ProjectVersion'
-        count:
-          type: integer
     AccessUpdate:
       type: object
       properties:
@@ -1365,6 +1356,40 @@ components:
             anyOf:
               - $ref: '#/components/schemas/ChangesetSuccess'
               - $ref: '#/components/schemas/ChangesetError'
+    ProjectVersionListItem:
+      type: object
+      properties:
+        name:
+          type: string
+          example: v1
+        author:
+          type: string
+          example: john.doe
+        created:
+          type: string
+          format: date-time
+          example: 2018-11-30T08:47:58.636074Z
+        changes:
+          type: object
+          description: count of changes by change type
+          properties:
+            added:
+              type: integer
+            removed:
+              type: integer
+            updated:
+              type: integer
+            updated_diff:
+              type: integer
+        project_name:
+          type: string
+          example: survey
+        namespace:
+          type: string
+          example: john.doe
+        project_size:
+          type: integer
+          example: 1024
     GeodiffChangeset:
       type: object
       properties:
