@@ -6,7 +6,7 @@ import os
 import pytz
 from datetime import datetime, timedelta
 from connexion import NoContent
-from sqlalchemy import func, desc, asc
+from sqlalchemy import func, desc, asc, or_
 from sqlalchemy.sql.operators import is_
 from flask import request, current_app, jsonify, abort, render_template
 from flask_login import login_user, logout_user, current_user
@@ -454,8 +454,9 @@ def get_paginated_users(
     )
 
     if like:
-        attr = User.email if "@" in like else User.username
-        users = users.filter(attr.ilike(f"%{like}%"))
+        users = users.filter(
+            User.username.ilike(f"%{like}%") | User.email.ilike(f"%{like}%")
+        )
 
     if descending and order_by:
         users = users.order_by(desc(User.__table__.c[order_by]))
@@ -467,7 +468,7 @@ def get_paginated_users(
 
     result_users = UserSchema(many=True).dump(result)
 
-    data = {"users": result_users, "total": total}
+    data = {"items": result_users, "count": total}
     return data, 200
 
 
