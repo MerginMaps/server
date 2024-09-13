@@ -746,6 +746,13 @@ def project_push(namespace, project_name):
     if all(len(changes[key]) == 0 for key in changes.keys()):
         abort(400, "No changes")
 
+    # reject upload early if there is another one already running
+    pending_upload = Upload.query.filter_by(
+        project_id=project.id, version=version
+    ).first()
+    if pending_upload and pending_upload.is_active():
+        abort(400, "Another process is running. Please try later.")
+
     upload_changes = ChangesSchema(context={"version": version + 1}).load(changes)
     # check if same file is not already uploaded
     for item in upload_changes.added:
@@ -817,16 +824,8 @@ def project_push(namespace, project_name):
         db.session.rollback()
         # check and clean dangling uploads or abort
         for current_upload in project.uploads.all():
-            upload_dir = os.path.join(
-                project.storage.project_dir, "tmp", current_upload.id
-            )
-            upload_lockfile = os.path.join(upload_dir, "lockfile")
-            if os.path.exists(upload_lockfile):
-                if (
-                    time() - os.path.getmtime(upload_lockfile)
-                    < current_app.config["LOCKFILE_EXPIRATION"]
-                ):
-                    abort(400, "Another process is running. Please try later.")
+            if current_upload.is_active():
+                abort(400, "Another process is running. Please try later.")
             db.session.delete(current_upload)
             db.session.commit()
             # previous push attempt is definitely lost
@@ -844,15 +843,14 @@ def project_push(namespace, project_name):
             logging.info(
                 f"Upload transaction {upload.id} created for project: {project.id}, version: {version}"
             )
-            move_to_tmp(upload_dir)
+            move_to_tmp(upload.upload_dir)
         except IntegrityError as err:
             logging.error(f"Failed to create upload session: {str(err)}")
             abort(422, "Failed to create upload session. Please try later.")
 
     # Create transaction folder and lockfile
-    folder = os.path.join(project.storage.project_dir, "tmp", upload.id)
-    os.makedirs(folder)
-    open(os.path.join(folder, "lockfile"), "w").close()
+    os.makedirs(upload.upload_dir)
+    open(upload.lockfile, "w").close()
 
     # Update immediately without uploading of new/modified files and remove transaction/lockfile after successful commit
     if not (changes["added"] or changes["updated"]):

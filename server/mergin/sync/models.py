@@ -4,6 +4,7 @@
 from __future__ import annotations
 import json
 import os
+import time
 import uuid
 from datetime import datetime, timedelta
 from enum import Enum
@@ -1025,6 +1026,21 @@ class Upload(db.Model):
         self.version = version
         self.changes = ChangesSchema().dump(changes)
         self.user_id = user_id
+
+    @property
+    def upload_dir(self):
+        return os.path.join(self.project.storage.project_dir, "tmp", self.id)
+
+    @property
+    def lockfile(self):
+        return os.path.join(self.upload_dir, "lockfile")
+
+    def is_active(self):
+        """Check if upload is still active because there was a ping (lockfile update) from underlying process"""
+        return os.path.exists(self.lockfile) and (
+            time.time() - os.path.getmtime(self.lockfile)
+            < current_app.config["LOCKFILE_EXPIRATION"]
+        )
 
 
 class RequestStatus(Enum):
