@@ -5,6 +5,7 @@
 /* eslint-disable camelcase */
 import {
   PaginatedRequestParams,
+  PaginatedResponse,
   PaginatedResponseDefaults,
   Project,
   ProjectListItem,
@@ -15,9 +16,7 @@ export interface UsersParams extends PaginatedRequestParams {
   username?: string
 }
 
-export interface UsersResponse extends PaginatedResponseDefaults {
-  users: UserResponse[]
-}
+export type UsersResponse = PaginatedResponse<UserResponse>
 
 export interface UpdateUserData {
   is_admin: boolean

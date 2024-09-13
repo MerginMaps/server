@@ -91,15 +91,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               class="col-6 flex flex-column align-items-start text-left flex-wrap"
             >
               <dt class="paragraph-p6 opacity-80 mb-2">Full name</dt>
-              <dl class="font-semibold" data-cy="profile-name">
+              <dd class="font-semibold" data-cy="profile-name">
                 {{ loggedUser?.name || '-' }}
-              </dl>
+              </dd>
             </div>
             <div class="col-6 flex flex-column align-items-end">
               <dt class="paragraph-p6 opacity-80 mb-2">Registered</dt>
-              <dl class="font-semibold" data-cy="profile-registered">
+              <dd class="font-semibold" data-cy="profile-registered">
                 {{ $filters.date(loggedUser?.registration_date) }}
-              </dl>
+              </dd>
             </div>
           </dl>
         </div>

@@ -23,36 +23,36 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <dl class="grid grid-nogutter row-gap-4">
         <div class="col-12">
           <dt class="paragraph-p6 opacity-80 mb-2">Version</dt>
-          <dl>
+          <dd>
             <h3 class="headline-h3 mt-0">
               {{ version.name }}
             </h3>
-          </dl>
+          </dd>
         </div>
         <PDivider class="m-0" />
         <div class="col-6">
           <dt class="paragraph-p6 opacity-80 mb-2">Author</dt>
-          <dl class="font-semibold paragraph-p5">
+          <dd class="font-semibold paragraph-p5">
             {{ version.author }}
-          </dl>
+          </dd>
         </div>
         <div class="col-6 flex flex-column align-items-end">
           <dt class="paragraph-p6 opacity-80 mb-2">Project size</dt>
-          <dl class="font-semibold paragraph-p5">
+          <dd class="font-semibold paragraph-p5">
             {{ $filters.filesize(version.project_size) }}
-          </dl>
+          </dd>
         </div>
         <div class="col-12">
           <dt class="paragraph-p6 opacity-80 mb-2">Created</dt>
-          <dl class="font-semibold paragraph-p5">
+          <dd class="font-semibold paragraph-p5">
             {{ $filters.datetime(version.created) }}
-          </dl>
+          </dd>
         </div>
         <div class="col-12">
           <dt class="paragraph-p6 opacity-80 mb-2">User agent</dt>
-          <dl class="font-semibold paragraph-p5">
+          <dd class="font-semibold paragraph-p5">
             {{ version.user_agent }}
-          </dl>
+          </dd>
         </div>
       </dl>
       <PAccordion

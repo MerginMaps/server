@@ -29,30 +29,30 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <dl class="grid grid-nogutter row-gap-4">
           <div class="col-12">
             <dt class="paragraph-p6 opacity-80 mb-2">File</dt>
-            <dl class="font-semibold">
+            <dd class="font-semibold">
               <h3 class="headline-h3 mt-0">
                 <FileIcon :file="{ ...file, name: fileName }" />{{ fileName }}
               </h3>
-            </dl>
+            </dd>
           </div>
           <PDivider class="m-0" />
           <div class="col-6">
             <dt class="paragraph-p6 opacity-80 mb-2">Modified</dt>
-            <dl class="font-semibold paragraph-p5">
+            <dd class="font-semibold paragraph-p5">
               <span v-tooltip="$filters.datetime(file.mtime)">{{
                 $filters.timediff(file.mtime)
               }}</span>
-            </dl>
+            </dd>
           </div>
           <div class="col-6 flex flex-column align-items-end">
             <dt class="paragraph-p6 opacity-80 mb-2">Size</dt>
-            <dl class="font-semibold paragraph-p5">
+            <dd class="font-semibold paragraph-p5">
               {{ $filters.filesize(file.size) }}
               <span v-if="state === 'updated'"
                 >(new:
                 {{ $filters.filesize(upload.files[file.path].size) }})</span
               >
-            </dl>
+            </dd>
           </div>
         </dl>
 

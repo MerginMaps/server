@@ -5,79 +5,79 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-form @submit.prevent ref="form">
-    <v-card v-on:keyup.enter="submit" v-on:keyup.esc="close">
-      <v-card-title>
-        <span class="text-h5">
-          <span>Create user</span>
-        </span>
-      </v-card-title>
-      <v-card-text>
-        <v-text-field
-          placeholder="Username"
-          name="username"
-          color="inputColor"
-          v-model="username"
-          :error-messages="errors.username"
-        />
-        <v-text-field
-          placeholder="Email"
-          name="email"
-          color="inputColor"
-          v-model="email"
-          :error-messages="errors.email"
-        />
-        <v-layout align-center>
-          <v-text-field
-            placeholder="Password"
-            name="password"
-            color="inputColor"
-            v-model="password"
-            :append-icon="passwordVisible ? 'visibility_off' : 'visibility'"
-            @click:append="passwordVisible = !passwordVisible"
-            :type="passwordVisible ? 'text' : 'password'"
-            :error-messages="errors.password"
-          />
-          <v-tooltip
-            top
-            color="orange"
-            max-width="350"
-            content-class="form-tooltip"
-          >
-            <template v-slot:activator="{ on }">
-              <v-icon v-on="on" class="ml-1 mb-1">info</v-icon>
-            </template>
-            <ul>
-              <li>Password must be at least 8 characters long.</li>
-              <li>
-                Password must contain at least 3 character categories among the
-                following:
-                <ul>
-                  <li>Lowercase characters (a-z)</li>
-                  <li>Uppercase characters (A-Z)</li>
-                  <li>Digits (0-9)</li>
-                  <li>Special characters</li>
-                </ul>
-              </li>
-            </ul>
-          </v-tooltip>
-        </v-layout>
-        <slot />
+  <form @submit.prevent="submit" class="flex flex-column pb-4">
+    <span class="p-input-filled">
+      <label for="username">First name</label>
+      <PInputText
+        id="username"
+        v-model="username"
+        data-cy="create-user-username"
+        :class="['w-full', errors.username ? 'p-invalid' : '']"
+        toggleMask
+        :feedback="false"
+        aria-describedby="username-error"
+      />
+      <span class="p-error paragraph-p6" id="username-error">{{
+        errors.username?.[0] || '&nbsp;'
+      }}</span>
+    </span>
 
-        <v-card-actions>
-          <v-spacer />
-          <v-btn class="black--text" @click="close"> Close</v-btn>
-          <v-btn
-            class="orange white--text"
-            :disabled="invalidInput"
-            @click="submit"
-          >
-            Submit
-          </v-btn>
-        </v-card-actions>
-      </v-card-text>
-    </v-card>
-  </v-form>
+    <span class="p-input-filled">
+      <label for="email">Email</label>
+      <PInputText
+        id="email"
+        v-model="email"
+        data-cy="create-user-email"
+        :class="['w-full', errors.email ? 'p-invalid' : '']"
+        toggleMask
+        :feedback="false"
+        aria-describedby="email-error"
+      />
+      <span class="p-error paragraph-p6" id="email-error">{{
+        errors.email?.[0] || '&nbsp;'
+      }}</span>
+    </span>
+
+    <span class="p-input-filled">
+      <app-password-tooltip for="newPassword"
+        ><template #label>Password</template>
+      </app-password-tooltip>
+      <PPassword
+        id="newPassword"
+        v-model="password"
+        data-cy="change-password"
+        :class="['w-full', errors.password ? 'p-invalid' : '']"
+        toggleMask
+        :feedback="false"
+        aria-describedby="password-error"
+        placeholder="Enter password"
+      />
+      <span class="p-error paragraph-p6" id="password-error">{{
+        errors.password?.[0] || '&nbsp;'
+      }}</span>
+    </span>
+
+    <!-- Footer -->
+    <div
+      class="w-full flex flex-column lg:flex-row justify-content-between align-items-center mt-4"
+    >
+      <PButton
+        severity="secondary"
+        @click="close"
+        class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
+        data-cy="profile-edit-close-btn"
+        >Cancel</PButton
+      >
+
+      <PButton
+        type="submit"
+        class="flex w-12 lg:w-6 justify-content-center"
+        data-cy="profile-edit-save-btn"
+      >
+        Create
+      </PButton>
+    </div>
+  </form>
 </template>
 
 <script lang="ts">
@@ -86,7 +86,8 @@ import {
   htmlUtils,
   useDialogStore,
   useNotificationStore,
-  useFormStore
+  useFormStore,
+  AppPasswordTooltip
 } from '@mergin/lib'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
@@ -94,6 +95,9 @@ import { defineComponent } from 'vue'
 import { AdminApi, CreateUserData } from '..'
 
 export default defineComponent({
+  components: {
+    AppPasswordTooltip
+  },
   data() {
     return {
       isValid: null,
@@ -163,18 +167,4 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss" scoped>
-.v-tooltip {
-  cursor: default;
-}
-</style>
-
-<style lang="scss">
-.form-tooltip {
-  opacity: 0.95 !important;
-
-  ul {
-    padding-left: 1em;
-  }
-}
-</style>
+<style lang="scss" scoped></style>

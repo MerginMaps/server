@@ -52,6 +52,7 @@ export default defineConfig(({ mode }) => ({
       external: [
         'vue',
         'pinia',
+        'vue-router',
         ...Object.keys(packageJson.dependencies),
         '@mergin/lib'
       ],

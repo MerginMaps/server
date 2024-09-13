@@ -31,16 +31,13 @@ export const AdminApi = {
     return AdminModule.httpService.get(`/app/admin/users`, { params })
   },
 
-  async fetchUserProfileByName(
+  async fetchUserByName(
     username: string
   ): Promise<AxiosResponse<UserResponse>> {
-    return AdminModule.httpService?.get(`/app/admin/user/${username}?random=${Math.random()}`)
+    return AdminModule.httpService?.get(`/app/admin/user/${username}`)
   },
 
-  async deleteUser(
-    username: number,
-    withRetry?: boolean
-  ): Promise<AxiosResponse<void>> {
+  async deleteUser(username: number): Promise<AxiosResponse<void>> {
     return AdminModule.httpService.delete(
       `/app/admin/user/${username}` /*, {
       ...(withRetry ? getDefaultRetryOptions() : {})
@@ -50,8 +47,7 @@ export const AdminApi = {
 
   async updateUser(
     username: string,
-    data: UpdateUserData,
-    withRetry?: boolean
+    data: UpdateUserData
   ): Promise<AxiosResponse<UserResponse>> {
     return AdminModule.httpService.patch(
       `/app/admin/user/${username}`,
@@ -118,9 +114,12 @@ export const AdminApi = {
    * @return Result promise
    */
   async removeProject(id: number): Promise<AxiosResponse<void>> {
-    return await AdminModule.httpService.delete(`/app/project/removed-project/${id}`, {
-      'axios-retry': { retries: 5 }
-    })
+    return await AdminModule.httpService.delete(
+      `/app/project/removed-project/${id}`,
+      {
+        'axios-retry': { retries: 5 }
+      }
+    )
   },
 
   /**
@@ -129,8 +128,12 @@ export const AdminApi = {
    * @return Result promise
    */
   async restoreProject(id: number): Promise<AxiosResponse<void>> {
-    return await AdminModule.httpService.post(`/app/project/removed-project/restore/${id}`, null, {
-      'axios-retry': { retries: 5 }
-    })
+    return await AdminModule.httpService.post(
+      `/app/project/removed-project/restore/${id}`,
+      null,
+      {
+        'axios-retry': { retries: 5 }
+      }
+    )
   }
 }

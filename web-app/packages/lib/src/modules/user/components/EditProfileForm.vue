@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <form @submit.prevent="submit" class="flex flex-column pb-4">
     <span class="p-input-filled">
-      <label class="paragraph-p6" for="first-name">First name</label>
+      <label for="first-name">First name</label>
       <PInputText
         id="first-name"
         v-model="editedProfile.first_name"
@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </span>
 
     <span class="p-input-filled">
-      <label class="paragraph-p6" for="last-name">Last name</label>
+      <label for="last-name">Last name</label>
       <PInputText
         id="last-name"
         v-model="editedProfile.last_name"
@@ -39,7 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </span>
 
     <span class="p-input-filled">
-      <label class="paragraph-p6" for="email">Email</label>
+      <label for="email">Email</label>
       <PInputText
         id="email"
         v-model="editedProfile.email"
