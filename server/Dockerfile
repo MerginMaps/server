@@ -38,7 +38,6 @@ ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
 RUN pipenv install --system --deploy --verbose
-RUN pip3 install flower==0.9.7
 
 USER mergin
 
