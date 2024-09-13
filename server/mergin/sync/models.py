@@ -29,6 +29,7 @@ from .files import (
     ChangesSchema,
     ProjectFile,
 )
+from .storages.disk import move_to_tmp
 from .. import db
 from .storages import DiskStorage
 from .utils import is_versioned_file, is_qgis
@@ -1041,6 +1042,14 @@ class Upload(db.Model):
             time.time() - os.path.getmtime(self.lockfile)
             < current_app.config["LOCKFILE_EXPIRATION"]
         )
+
+    def clear(self):
+        """Clean up pending upload.
+        Uploaded files and table records are removed, and another upload can start.
+        """
+        move_to_tmp(self.upload_dir, self.id)
+        db.session.delete(self)
+        db.session.commit()
 
 
 class RequestStatus(Enum):

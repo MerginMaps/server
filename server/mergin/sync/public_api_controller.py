@@ -81,7 +81,6 @@ from .utils import (
     is_versioned_file,
     is_name_allowed,
     get_project_path,
-    clean_upload,
     get_device_id,
 )
 from .errors import StorageLimitHit
@@ -875,15 +874,15 @@ def project_push(namespace, project_name):
                 f"Transaction id: {upload.id}. No upload."
             )
             project_version_created.send(pv)
-            clean_upload(upload.id)
             return jsonify(ProjectSchema().dump(project)), 200
         except IntegrityError as err:
             db.session.rollback()
-            clean_upload(upload.id)
             logging.exception(
                 f"Failed to upload a new project version using transaction id: {upload.id}: {str(err)}"
             )
             abort(422, "Failed to upload a new project version. Please try later.")
+        finally:
+            upload.clear()
 
     return {"transaction": upload.id}
 
@@ -1085,16 +1084,16 @@ def push_finish(transaction_id):
             f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
         )
         project_version_created.send(pv)
-        # remove artifacts
-        clean_upload(transaction_id)
     except (psycopg2.Error, FileNotFoundError, DataSyncError, IntegrityError) as err:
         db.session.rollback()
-        clean_upload(transaction_id)
         logging.exception(
             f"Failed to finish push for project: {project.id}, project version: {v_next_version}, "
             f"transaction id: {transaction_id}.: {str(err)}"
         )
         abort(422, "Failed to create new version: {}".format(str(err)))
+    finally:
+        # remove artifacts
+        upload.clear()
 
     # do not optimize on every version, every 10th is just fine
     if not project.latest_version % 10:

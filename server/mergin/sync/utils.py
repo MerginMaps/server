@@ -301,27 +301,6 @@ def split_project_path(project_path):
     return workspace_name, project_name
 
 
-def clean_upload(transaction_id):
-    """Clean upload infrastructure
-
-    Uploaded files and table records are removed, and another upload can be started.
-
-    :param transaction_id: Transaction id.
-    :type transaction_id: Str
-
-    :rtype: None
-    """
-    from mergin.sync.permissions import get_upload
-    from mergin.sync.storages.disk import move_to_tmp
-    from .. import db
-
-    upload, upload_dir = get_upload(transaction_id)
-    db.session.delete(upload)
-    db.session.commit()
-    move_to_tmp(upload_dir, transaction_id)
-    return NoContent, 200
-
-
 def get_device_id(request: Request) -> Optional[str]:
     """Get device uuid from http header X-Device-Id"""
     return request.headers.get("X-Device-Id")
