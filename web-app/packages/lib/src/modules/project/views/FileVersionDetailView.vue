@@ -97,7 +97,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
-import { AxiosResponse } from 'axios'
 import groupBy from 'lodash/groupBy'
 import isArray from 'lodash/isArray'
 import { mapActions, mapState } from 'pinia'
@@ -106,11 +105,7 @@ import { defineComponent } from 'vue'
 import AppCircle from '@/common/components/AppCircle.vue'
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppSection from '@/common/components/AppSection.vue'
-import {
-  ProjectVersionFileChange,
-  useNotificationStore,
-  useProjectStore
-} from '@/modules'
+import { useNotificationStore, useProjectStore } from '@/modules'
 import { useInstanceStore } from '@/modules/instance/store'
 
 interface ColumnItem {
