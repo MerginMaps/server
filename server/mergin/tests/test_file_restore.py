@@ -205,6 +205,8 @@ def test_version_file_restore(diff_project):
     ).first()
     assert gh.geodiff_time
     assert gh.copy_time
+    # all temp files are gone
+    assert not os.path.exists(diff_project.storage.geodiff_working_dir)
 
     # basefile can not be restored
     test_file = os.path.join(diff_project.storage.project_dir, "v5", "base.gpkg")
@@ -217,3 +219,4 @@ def test_version_file_restore(diff_project):
     os.remove(test_file)
     diff_project.storage.restore_versioned_file("test.txt", 1)
     assert not os.path.exists(test_file)
+    assert not os.path.exists(diff_project.storage.geodiff_working_dir)

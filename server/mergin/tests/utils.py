@@ -85,7 +85,7 @@ def create_project(name, workspace, user, **kwargs):
     pa = ProjectAccess(p, public)
     db.session.add(pa)
     changes = UploadChanges(added=[], updated=[], removed=[])
-    pv = ProjectVersion(p, 0, user.username, changes, "127.0.0.1")
+    pv = ProjectVersion(p, 0, user.id, changes, "127.0.0.1")
     db.session.add(pv)
     db.session.commit()
 
@@ -185,7 +185,7 @@ def initialize():
             "renamed": [],
         }
     )
-    pv = ProjectVersion(p, 1, user.username, upload_changes, "127.0.0.1")
+    pv = ProjectVersion(p, 1, user.id, upload_changes, "127.0.0.1")
     db.session.add(pv)
     db.session.commit()
 
@@ -269,7 +269,7 @@ def create_blank_version(project):
     pv = ProjectVersion(
         project,
         project.next_version(),
-        project.creator.username,
+        project.creator.id,
         UploadChanges(added=[], updated=[], removed=[]),
         "127.0.0.1",
     )
@@ -346,7 +346,7 @@ def push_change(project, action, path, src_dir):
     pv = ProjectVersion(
         project,
         project.next_version(),
-        project.creator.username,
+        project.creator.id,
         upload_changes,
         "127.0.0.1",
     )
