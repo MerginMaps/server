@@ -2402,3 +2402,52 @@ def test_version_files(client, diff_project):
                 sorted(backward_search, key=lambda f: f.path),
             )
         )
+
+
+def test_delete_diff_file(client):
+    """Test file history in case of diff file removal"""
+    # prepare: add .gpkg and update with diff
+    changes = {
+        "added": [file_info(test_project_dir, "base.gpkg", chunk_size=CHUNK_SIZE)],
+    }
+    upload, upload_dir = create_transaction("mergin", changes)
+    upload_chunks(upload_dir, upload.changes)
+    client.post(f"/v1/project/push/finish/{upload.id}")
+
+    changes = _get_changes_with_diff(test_project_dir)
+    upload, upload_dir = create_transaction("mergin", changes, version=2)
+    upload_chunks(upload_dir, upload.changes)
+    client.post(f"/v1/project/push/finish/{upload.id}")
+
+    fh = FileHistory.query.filter_by(
+        project_version_name=upload.project.latest_version,
+        change=PushChangeType.UPDATE_DIFF.value,
+    ).first()
+    assert fh.diff is not None
+
+    # delete file
+    diff_change = next(
+        change for change in changes["updated"] if change["path"] == "base.gpkg"
+    )
+    resp = client.post(
+        f"/v1/project/push/{upload.project.workspace.name}/{upload.project.name}",
+        data=json.dumps(
+            {
+                "version": "v3",
+                "changes": {
+                    "added": [],
+                    "updated": [],
+                    "removed": [diff_change],
+                },
+            },
+            cls=DateTimeEncoder,
+        ).encode("utf-8"),
+        headers=json_headers,
+    )
+    assert resp.status_code == 200
+
+    fh = FileHistory.query.filter_by(
+        project_version_name=upload.project.latest_version,
+        change=PushChangeType.DELETE.value,
+    ).first()
+    assert fh.path == "base.gpkg" and fh.diff is None
