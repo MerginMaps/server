@@ -16,6 +16,8 @@ import time
 import hashlib
 import shutil
 import re
+
+from flask_login import current_user
 from pygeodiff import GeoDiff
 from flask import url_for, current_app
 import tempfile
@@ -46,6 +48,7 @@ from . import (
     test_project_dir,
     json_headers,
     TMP_DIR,
+    DEFAULT_USER,
 )
 from .utils import (
     add_user,
@@ -1564,6 +1567,7 @@ def test_push_diff_finish(client):
     assert gh.copy_time
     assert gh.checksum_time
     assert gh.action == "apply_changes"
+    assert not os.path.exists(upload.project.storage.geodiff_working_dir)
 
     # try with valid update metadata but with conflicting diff (rebase was not done)
     upload, upload_dir = create_transaction("mergin", changes, 2)
@@ -1636,6 +1640,7 @@ def test_push_no_diff_finish(client):
     assert os.path.exists(
         os.path.join(upload.project.storage.project_dir, file_meta.diff_file.location)
     )
+    assert not os.path.exists(upload.project.storage.geodiff_working_dir)
 
     # change structure of gpkg file so diff would not be available -> hard overwrite
     gpkg_conn = pysqlite3.connect(os.path.join(working_dir, "base.gpkg"))
@@ -2299,12 +2304,17 @@ def test_get_project_version(client, diff_project):
 
 
 def add_project_version(project, changes, version=None):
+    author = (
+        current_user
+        if current_user
+        else User.query.filter_by(username=DEFAULT_USER[0]).first()
+    )
     next_version = version or project.next_version()
     upload_changes = ChangesSchema(context={"version": next_version}).load(changes)
     pv = ProjectVersion(
         project,
         next_version,
-        "mergin",
+        author.id,
         upload_changes,
         ip="127.0.0.1",
     )
@@ -2402,3 +2412,52 @@ def test_version_files(client, diff_project):
                 sorted(backward_search, key=lambda f: f.path),
             )
         )
+
+
+def test_delete_diff_file(client):
+    """Test file history in case of diff file removal"""
+    # prepare: add .gpkg and update with diff
+    changes = {
+        "added": [file_info(test_project_dir, "base.gpkg", chunk_size=CHUNK_SIZE)],
+    }
+    upload, upload_dir = create_transaction("mergin", changes)
+    upload_chunks(upload_dir, upload.changes)
+    client.post(f"/v1/project/push/finish/{upload.id}")
+
+    changes = _get_changes_with_diff(test_project_dir)
+    upload, upload_dir = create_transaction("mergin", changes, version=2)
+    upload_chunks(upload_dir, upload.changes)
+    client.post(f"/v1/project/push/finish/{upload.id}")
+
+    fh = FileHistory.query.filter_by(
+        project_version_name=upload.project.latest_version,
+        change=PushChangeType.UPDATE_DIFF.value,
+    ).first()
+    assert fh.diff is not None
+
+    # delete file
+    diff_change = next(
+        change for change in changes["updated"] if change["path"] == "base.gpkg"
+    )
+    resp = client.post(
+        f"/v1/project/push/{upload.project.workspace.name}/{upload.project.name}",
+        data=json.dumps(
+            {
+                "version": "v3",
+                "changes": {
+                    "added": [],
+                    "updated": [],
+                    "removed": [diff_change],
+                },
+            },
+            cls=DateTimeEncoder,
+        ).encode("utf-8"),
+        headers=json_headers,
+    )
+    assert resp.status_code == 200
+
+    fh = FileHistory.query.filter_by(
+        project_version_name=upload.project.latest_version,
+        change=PushChangeType.DELETE.value,
+    ).first()
+    assert fh.path == "base.gpkg" and fh.diff is None

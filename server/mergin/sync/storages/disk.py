@@ -7,6 +7,7 @@ import io
 import time
 import uuid
 import logging
+from contextlib import contextmanager
 
 from flask import current_app
 from pygeodiff import GeoDiff, GeoDiffLibError
@@ -112,6 +113,13 @@ class DiskStorage(ProjectStorage):
         self.project_dir = self._project_dir()
         self.geodiff = GeoDiff()
         self.gediff_log = io.StringIO()
+        self.geodiff_working_dir = os.path.abspath(
+            os.path.join(
+                current_app.config["GEODIFF_WORKING_DIR"],
+                self.project.storage_params["location"],
+                str(uuid.uuid4()),
+            )
+        )
 
         def _logger_callback(level, text_bytes):
             text = text_bytes.decode()
@@ -123,6 +131,26 @@ class DiskStorage(ProjectStorage):
                 self.gediff_log.write(f"GEODIFF INFO: {text} \n")
 
         self.geodiff.set_logger_callback(_logger_callback)
+
+    @contextmanager
+    def geodiff_copy(self, file):
+        """Copy project file from live storage to geodiff temp storage for further actions.
+        If file cannot be copied then as a fallback it creates _tmp file next to original file.
+        Temporary copy is removed on exit.
+        """
+        file_path = file.replace(self.project_dir, "").lstrip(os.path.sep)
+        file_copy = os.path.join(self.geodiff_working_dir, file_path)
+        try:
+            copy_file(file, file_copy)
+            yield file_copy
+        except OSError as e:
+            logging.warning(f"Copy to geodiff dir failed: {str(e)}")
+            # fallback to live directory
+            file_copy = file + "_tmp"
+            copy_file(file, file_copy)
+            yield file_copy
+        finally:
+            move_to_tmp(file_copy)
 
     def flush_geodiff_logger(self):
         """Push content to stdout and then reset."""
@@ -214,56 +242,61 @@ class DiskStorage(ProjectStorage):
         basefile = os.path.join(self.project_dir, current_file.location)
         changeset = os.path.join(self.project_dir, upload_file.diff.location)
         patchedfile = os.path.join(self.project_dir, upload_file.location)
-        # create copy of basefile which will be updated in next version
+        # create local copy of basefile which will be updated in next version and changeset needed
         # TODO this can potentially fail for large files
         logging.info(f"Apply changes: copying {basefile} to {patchedfile}")
         start = time.time()
-        copy_file(basefile, patchedfile)
-        copy_time = time.time() - start
-        logging.info(f"Copying finished in {copy_time} s")
-        try:
-            # clean geodiff logger
-            self.flush_geodiff_logger()
-            logging.info(
-                f"Geodiff: apply changeset {changeset} of size {os.path.getsize(changeset)} with changes to {patchedfile}"
-            )
-            start = time.time()
-            self.geodiff.apply_changeset(patchedfile, changeset)
-            geodiff_apply_time = time.time() - start
-            # track performance of geodiff action
-            base_version = current_file.location.split("/")[0]
-            gh = GeodiffActionHistory(
-                self.project.id,
-                base_version,
-                current_file.path,
-                current_file.size,
-                v_name,
-                "apply_changes",
-                changeset,
-            )
-            gh.copy_time = copy_time
-            gh.geodiff_time = geodiff_apply_time
-            logging.info(f"Changeset applied in {geodiff_apply_time} s")
-        except (GeoDiffLibError, GeoDiffLibConflictError):
-            move_to_tmp(patchedfile)
-            move_to_tmp(changeset)
-            return Err(self.gediff_log.getvalue())
+        with self.geodiff_copy(changeset) as changeset_tmp, self.geodiff_copy(
+            basefile
+        ) as patchedfile_tmp:
+            copy_time = time.time() - start
+            logging.info(f"Copying finished in {copy_time} s")
+            try:
+                # clean geodiff logger
+                self.flush_geodiff_logger()
+                logging.info(
+                    f"Geodiff: apply changeset {changeset} of size {os.path.getsize(changeset)} with changes to {patchedfile}"
+                )
+                start = time.time()
+                self.geodiff.apply_changeset(patchedfile_tmp, changeset_tmp)
+                geodiff_apply_time = time.time() - start
+                # track performance of geodiff action
+                base_version = current_file.location.split("/")[0]
+                gh = GeodiffActionHistory(
+                    self.project.id,
+                    base_version,
+                    current_file.path,
+                    current_file.size,
+                    v_name,
+                    "apply_changes",
+                    changeset,
+                )
+                gh.copy_time = copy_time
+                gh.geodiff_time = geodiff_apply_time
+                logging.info(f"Changeset applied in {geodiff_apply_time} s")
+                # move constructed file where is belongs
+                logging.info(f"Apply changes: moving patchfile {patchedfile_tmp}")
+                start = time.time()
+                copy_file(patchedfile_tmp, patchedfile)
+                gh.copy_time = copy_time + (time.time() - start)
 
-        # we can now replace old basefile metadata with the new one (patchedfile)
-        # TODO this can potentially fail for large files
-        logging.info(f"Apply changes: calculating checksum of {patchedfile}")
-        start = time.time()
-        checksum = generate_checksum(patchedfile)
-        checksumming_time = time.time() - start
-        gh.checksum_time = checksumming_time
-        logging.info(f"Checksum calculated in {checksumming_time} s")
-        db.session.add(gh)
-        return Ok(
-            (
-                checksum,
-                os.path.getsize(patchedfile),
-            )
-        )
+                # TODO this can potentially fail for large files
+                logging.info(f"Apply changes: calculating checksum of {patchedfile}")
+                start = time.time()
+                checksum = generate_checksum(patchedfile_tmp)
+                checksumming_time = time.time() - start
+                gh.checksum_time = checksumming_time
+                logging.info(f"Checksum calculated in {checksumming_time} s")
+                db.session.add(gh)
+                return Ok(
+                    (
+                        checksum,
+                        os.path.getsize(patchedfile_tmp),
+                    )
+                )
+            except (GeoDiffLibError, GeoDiffLibConflictError):
+                move_to_tmp(changeset)
+                return Err(self.gediff_log.getvalue())
 
     def construct_diff(
         self, current_file: ProjectFile, upload_file: UploadFile, version: int
@@ -278,22 +311,40 @@ class DiskStorage(ProjectStorage):
         uploaded_file = os.path.join(self.project_dir, upload_file.location)
         diff_name = upload_file.path + "-diff-" + str(uuid.uuid4())
         changeset = os.path.join(self.project_dir, v_name, diff_name)
-        try:
-            self.flush_geodiff_logger()
-            logging.info(f"Geodiff: create changeset {changeset} from {uploaded_file}")
-            self.geodiff.create_changeset(basefile, uploaded_file, changeset)
-            # create diff metadata as it would be created by other clients
-            diff_file = File(
-                path=diff_name,
-                checksum=generate_checksum(changeset),
-                size=os.path.getsize(changeset),
-                location=os.path.join(v_name, mergin_secure_filename(diff_name)),
-            )
-            return Ok(diff_file)
-        except (GeoDiffLibError, GeoDiffLibConflictError):
-            # diff is not possible to create - file will be overwritten
-            move_to_tmp(changeset)
-            return Err(self.gediff_log.getvalue())
+        with self.geodiff_copy(basefile) as basefile_tmp, self.geodiff_copy(
+            uploaded_file
+        ) as uploaded_file_tmp:
+            try:
+                # create changeset next to uploaded file copy
+                changeset_tmp = os.path.join(
+                    uploaded_file_tmp.replace(upload_file.location, "").rstrip(
+                        os.path.sep
+                    ),
+                    v_name,
+                    diff_name,
+                )
+                self.flush_geodiff_logger()
+                logging.info(
+                    f"Geodiff: create changeset {changeset} from {uploaded_file}"
+                )
+                self.geodiff.create_changeset(
+                    basefile_tmp, uploaded_file_tmp, changeset_tmp
+                )
+                # create diff metadata as it would be created by other clients
+                diff_file = File(
+                    path=diff_name,
+                    checksum=generate_checksum(changeset_tmp),
+                    size=os.path.getsize(changeset_tmp),
+                    location=os.path.join(v_name, mergin_secure_filename(diff_name)),
+                )
+                copy_file(changeset_tmp, changeset)
+                return Ok(diff_file)
+            except (GeoDiffLibError, GeoDiffLibConflictError) as e:
+                # diff is not possible to create - file will be overwritten
+                move_to_tmp(changeset)
+                return Err(self.gediff_log.getvalue())
+            finally:
+                move_to_tmp(changeset_tmp)
 
     def delete(self):
         move_to_tmp(self.project_dir)
@@ -331,70 +382,78 @@ class DiskStorage(ProjectStorage):
         if not (base_meta and diffs):
             return
 
-        tmp_dir = os.path.join(current_app.config["TEMP_DIR"], str(uuid.uuid4()))
-        os.makedirs(tmp_dir, exist_ok=True)
-        # this is final restored file
-        restored_file = os.path.join(tmp_dir, os.path.basename(base_meta.abs_path))
-        logging.info(f"Restore file: copying {base_meta.abs_path} to {restored_file}")
         start = time.time()
-        copy_file(base_meta.abs_path, restored_file)
-        copy_time = time.time() - start
-        logging.info(f"File copied in {copy_time} s")
-        logging.info(f"Restoring gpkg file with {len(diffs)} diffs")
-
-        try:
-            self.flush_geodiff_logger()  # clean geodiff logger
-            if len(diffs) > 1:
-                # concatenate multiple diffs into single one
-                changeset = os.path.join(
-                    tmp_dir, os.path.basename(base_meta.abs_path) + "-diff"
-                )
-                partials = [os.path.join(self.project_dir, d.location) for d in diffs]
-                self.geodiff.concat_changes(partials, changeset)
-            else:
-                changeset = os.path.join(self.project_dir, diffs[0].location)
-
+        with self.geodiff_copy(base_meta.abs_path) as restored_file:
+            copy_time = time.time() - start
             logging.info(
-                f"Geodiff: apply changeset {changeset} of size {os.path.getsize(changeset)}"
+                f"Restore file: {base_meta.abs_path} copied to {restored_file} in {copy_time} s"
             )
-            # if we are going backwards we need to reverse changeset!
-            if base_meta.version.name > version:
-                logging.info(f"Geodiff: inverting changeset")
-                changes = os.path.join(
-                    tmp_dir, os.path.basename(base_meta.abs_path) + "-diff-inv"
+            logging.info(f"Restoring gpkg file with {len(diffs)} diffs")
+            try:
+                self.flush_geodiff_logger()  # clean geodiff logger
+                changeset = os.path.join(
+                    self.geodiff_working_dir,
+                    os.path.basename(base_meta.abs_path) + "-diff",
                 )
-                self.geodiff.invert_changeset(changeset, changes)
-            else:
-                changes = changeset
+                if len(diffs) > 1:
+                    # concatenate multiple diffs into single one
+                    partials = [
+                        os.path.join(self.project_dir, d.location) for d in diffs
+                    ]
+                    self.geodiff.concat_changes(partials, changeset)
+                else:
+                    copy_file(
+                        os.path.join(self.project_dir, diffs[0].location), changeset
+                    )
+
+                logging.info(
+                    f"Geodiff: apply changeset {changeset} of size {os.path.getsize(changeset)}"
+                )
+                # if we are going backwards we need to reverse changeset!
+                if base_meta.version.name > version:
+                    logging.info(f"Geodiff: inverting changeset")
+                    changes = os.path.join(
+                        self.geodiff_working_dir,
+                        os.path.basename(base_meta.abs_path) + "-diff-inv",
+                    )
+                    self.geodiff.invert_changeset(changeset, changes)
+                else:
+                    changes = changeset
+
+                start = time.time()
+                self.geodiff.apply_changeset(restored_file, changes)
+                # track geodiff event for performance analysis
+                gh = GeodiffActionHistory(
+                    self.project.id,
+                    ProjectVersion.to_v_name(base_meta.version.name),
+                    base_meta.path,
+                    base_meta.size,
+                    ProjectVersion.to_v_name(project_version.name),
+                    "restore_file",
+                    changes,
+                )
+                apply_time = time.time() - start
+                gh.geodiff_time = apply_time
+                logging.info(f"Changeset applied in {apply_time} s")
+            except (GeoDiffLibError, GeoDiffLibConflictError):
+                project_workspace = self.project.workspace.name
+                logging.exception(
+                    f"Failed to restore file: {self.gediff_log.getvalue()} from project {project_workspace}/{self.project.name}"
+                )
+                return
+            finally:
+                move_to_tmp(changes)
+                move_to_tmp(changeset)
+            # move final restored file to place where it is expected (only after it is successfully created)
+            logging.info(
+                f"Copying restored file to expected location {file_found.location}"
+            )
             start = time.time()
-            self.geodiff.apply_changeset(restored_file, changes)
-            # track geodiff event for performance analysis
-            gh = GeodiffActionHistory(
-                self.project.id,
-                ProjectVersion.to_v_name(base_meta.version.name),
-                base_meta.path,
-                base_meta.size,
-                ProjectVersion.to_v_name(project_version.name),
-                "restore_file",
-                changes,
+            copy_file(
+                restored_file, os.path.join(self.project_dir, file_found.location)
             )
-            apply_time = time.time() - start
-            gh.geodiff_time = apply_time
-            logging.info(f"Changeset applied in {apply_time} s")
-        except (GeoDiffLibError, GeoDiffLibConflictError):
-            project_workspace = self.project.workspace.name
-            logging.exception(
-                f"Failed to restore file: {self.gediff_log.getvalue()} from project {project_workspace}/{self.project.name}"
-            )
-            return
-        # move final restored file to place where it is expected (only after it is successfully created)
-        logging.info(
-            f"Copying restored file to expected location {file_found.location}"
-        )
-        start = time.time()
-        copy_file(restored_file, os.path.join(self.project_dir, file_found.location))
-        logging.info(f"File copied in {time.time() - start} s")
-        copy_time += time.time() - start
-        gh.copy_time = copy_time
-        db.session.add(gh)
-        db.session.commit()
+            logging.info(f"File copied in {time.time() - start} s")
+            copy_time += time.time() - start
+            gh.copy_time = copy_time
+            db.session.add(gh)
+            db.session.commit()
