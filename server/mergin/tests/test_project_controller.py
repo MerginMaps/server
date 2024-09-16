@@ -16,6 +16,8 @@ import time
 import hashlib
 import shutil
 import re
+
+from flask_login import current_user
 from pygeodiff import GeoDiff
 from flask import url_for, current_app
 import tempfile
@@ -46,6 +48,7 @@ from . import (
     test_project_dir,
     json_headers,
     TMP_DIR,
+    DEFAULT_USER,
 )
 from .utils import (
     add_user,
@@ -2301,12 +2304,17 @@ def test_get_project_version(client, diff_project):
 
 
 def add_project_version(project, changes, version=None):
+    author = (
+        current_user
+        if current_user
+        else User.query.filter_by(username=DEFAULT_USER[0]).first()
+    )
     next_version = version or project.next_version()
     upload_changes = ChangesSchema(context={"version": next_version}).load(changes)
     pv = ProjectVersion(
         project,
         next_version,
-        "mergin",
+        author.id,
         upload_changes,
         ip="127.0.0.1",
     )

@@ -695,7 +695,9 @@ class ProjectVersion(db.Model):
         UUID(as_uuid=True), db.ForeignKey("project.id", ondelete="CASCADE"), index=True
     )
     created = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    author = db.Column(db.String, index=True)
+    author_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), index=True, nullable=True
+    )
     user_agent = db.Column(db.String, index=True)
     ip_address = db.Column(db.String, index=True)
     ip_geolocation_country = db.Column(
@@ -709,6 +711,8 @@ class ProjectVersion(db.Model):
         uselist=False,
     )
     device_id = db.Column(db.String, index=True, nullable=True)
+    author = db.relationship("User", uselist=False, lazy="joined")
+
     __table_args__ = (
         db.UniqueConstraint("project_id", "name"),
         db.Index(
@@ -722,7 +726,7 @@ class ProjectVersion(db.Model):
         self,
         project: Project,
         name: int,
-        author: str,
+        author_id: int,
         changes: UploadChanges,
         ip: str,
         user_agent: str = None,
@@ -731,7 +735,7 @@ class ProjectVersion(db.Model):
         self.project = project
         self.project_id = project.id
         self.name = name
-        self.author = author
+        self.author_id = author_id
         self.user_agent = user_agent
         self.ip_address = ip
         self.device_id = device_id
