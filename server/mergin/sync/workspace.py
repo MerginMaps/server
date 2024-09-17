@@ -255,7 +255,9 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
         ).filter(Project.storage_params.isnot(None))
 
         if like:
-            query = query.filter(Project.name.ilike(f"%{like}%"))
+            query = query.filter(
+                Project.name.ilike(f"%{like}%") | literal(ws.name).ilike(f"%{like}%")
+            )
         return query
 
     @staticmethod

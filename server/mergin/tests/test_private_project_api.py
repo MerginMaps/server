@@ -461,22 +461,22 @@ def test_admin_project_list(client):
     )
     assert resp.json["items"][0]["name"] == "foo13"
 
-    resp = client.get("/app/admin/projects?page=1&per_page=15&name=12")
+    resp = client.get("/app/admin/projects?page=1&per_page=15&like=12")
     assert len(resp.json["items"]) == 1
     assert resp.json["items"][0]["name"] == "foo12"
 
-    resp = client.get("/app/admin/projects?page=1&per_page=15&name=foo")
+    resp = client.get("/app/admin/projects?page=1&per_page=15&like=foo")
     assert len(resp.json["items"]) == 14
 
-    resp = client.get("/app/admin/projects?page=1&per_page=15&workspace=invalid")
+    resp = client.get("/app/admin/projects?page=1&per_page=15&like=invalid")
     assert len(resp.json["items"]) == 0
 
-    resp = client.get("/app/admin/projects?page=1&per_page=15&workspace=mergin")
+    resp = client.get("/app/admin/projects?page=1&per_page=15&like=mergin")
     assert len(resp.json["items"]) == 15
 
     # delete project permanently
     p.delete()
-    resp = client.get("/app/admin/projects?page=1&per_page=15&workspace=mergin")
+    resp = client.get("/app/admin/projects?page=1&per_page=15&like=mergin")
     assert len(resp.json["items"]) == 14
 
 
