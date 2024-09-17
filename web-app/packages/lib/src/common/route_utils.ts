@@ -40,7 +40,6 @@ export function isAuthenticatedGuard(
   } else {
     next({
       path: options?.notAuthenticatedRedirectPath ?? 'login',
-      // TODO: V3_UPGRADE - check this https://router.vuejs.org/guide/migration/#redirect-records-cannot-use-special-paths
       query: { redirect: to.fullPath }
     })
   }

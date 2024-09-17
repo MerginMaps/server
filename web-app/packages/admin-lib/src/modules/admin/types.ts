@@ -61,13 +61,10 @@ export interface AdminProjectListItem extends Project {
   removed_by: string
 }
 
-export interface PaginatedAdminProjectsResponse
-  extends PaginatedResponseDefaults {
-  projects: AdminProjectListItem[]
-}
+export type PaginatedAdminProjectsResponse =
+  PaginatedResponse<AdminProjectListItem>
 
 export interface PaginatedAdminProjectsParams extends PaginatedRequestParams {
-  workspace?: string
-  name?: string
+  like?: string
 }
 /* eslint-enable camelcase */

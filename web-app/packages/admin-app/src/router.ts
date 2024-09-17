@@ -4,13 +4,14 @@
 
 import {
   AccountsView,
-  AccountDetailView
+  AccountDetailView,
   //   SettingsView,
   //   ProjectSettingsView,
-  //   ProjectsView,
-  //   ProjectView,
+  ProjectsView,
+  ProjectView,
   //   LoginView,
   //   useAdminStore
+  AdminRoutes
 } from '@mergin/admin-lib'
 import {
   NotFoundView,
@@ -40,14 +41,6 @@ export const createRouter = (pinia: Pinia) => {
         component: NotFoundView
       },
       {
-        beforeEnter: (to, from, next) => {
-          const userStore = useUserStore(pinia)
-          if (userStore.isSuperUser) {
-            next('/dashboard')
-          } else {
-            next()
-          }
-        },
         path: '/login/:reset?',
         name: 'login',
         component: LoginView,
@@ -65,54 +58,45 @@ export const createRouter = (pinia: Pinia) => {
       },
       {
         path: '/accounts',
-        name: 'accounts',
+        name: AdminRoutes.ACCOUNTS,
         components: {
           default: AccountsView,
           sidebar: Sidebar,
           header: AppHeader
         },
-        props: true,
-        beforeEnter: (to, from, next) => {
-          const userStore = useUserStore(pinia)
-          routeUtils.isAuthenticatedGuard(to, from, next, userStore)
-          routeUtils.isSuperUser(to, from, next, userStore)
-        }
+        props: true
       },
       {
         path: '/user/:username',
-        name: 'account',
+        name: AdminRoutes.ACCOUNT,
         components: {
           default: AccountDetailView,
           sidebar: Sidebar,
           header: AppHeader
         },
         props: true
+      },
+      {
+        path: '/projects',
+        name: AdminRoutes.PROJECTS,
+        components: {
+          default: ProjectsView,
+          sidebar: Sidebar,
+          header: AppHeader
+        },
+        props: true
+      },
+      {
+        path: '/projects/:namespace/:projectName?',
+        name: AdminRoutes.PROJECT,
+        components: {
+          default: ProjectView,
+          sidebar: Sidebar,
+          header: AppHeader
+        },
+        props: true
       }
-      // {
-      //   path: '/projects',
-      //   name: 'projects',
-      //   component: ProjectsView,
-      //   props: true,
-      //   children: [
-      //     {
-      //       path: ':namespace',
-      //       name: 'namespace-projects',
-      //       component: ProjectsView,
-      //       props: true
-      //     }
-      //   ]
-      // },
-      // {
-      //   path: '/projects/:namespace/:projectName',
-      //   name: 'project',
-      //   component: ProjectView,
-      //   props(route) {
-      //     return {
-      //       namespace: route.params.namespace,
-      //       projectName: route.params.projectName,
-      //       asAdmin: true
-      //     }
-      //   },
+
       //   redirect: { name: 'project-tree' },
       //   children: [
       //     {

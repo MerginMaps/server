@@ -2,9 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import { ComponentCustomPropertyFilters } from '@mergin/lib'
+
 import { MerginComponentUuid } from './modules/form/types'
 
-import { ComponentCustomPropertyFilters } from '@/common'
 
 declare module '*.vue' {
   import * as Vue from 'vue'

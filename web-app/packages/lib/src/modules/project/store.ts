@@ -466,7 +466,6 @@ export const useProjectStore = defineStore('projectModule', {
         )
         this.setProject({ project: projectResponse.data })
       } catch (e) {
-        console.warn('Failed to load project data', e)
         await notificationStore.error({ text: 'Failed to load project data' })
       }
     },

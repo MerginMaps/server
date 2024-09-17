@@ -6,415 +6,304 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div>
-    <portal to="additional-action" class="xxx">
-      <v-menu class="filter-menu" :close-on-content-click="false">
-        <template v-slot:activator="{ on: menu, attrs }">
-          <v-tooltip top>
-            <template v-slot:activator="{ on: tooltip }">
-              <v-btn
-                :class="searchFilterByNamespace || searchFilterByProjectName"
-                v-bind="attrs"
-                v-on="{ ...tooltip, ...menu }"
-                icon
-                small
-              >
-                Filter
-                <v-icon>filter_list</v-icon>
-              </v-btn>
-            </template>
-            <span>Filter data</span>
-          </v-tooltip>
+    <app-container>
+      <app-section ground>
+        <template #header>
+          <h1 class="headline-h3">Projects</h1>
         </template>
-        <v-list dense>
-          <v-list-item v-if="showNamespace">
-            <v-list-item-title>Workspace</v-list-item-title>
-            <v-list-item-action>
-              <v-text-field
-                class="search"
-                placeholder="Filter by workspace"
-                append-icon="search"
-                v-model="searchFilterByNamespace"
-                @input="filterData"
-                hide-details
-              />
-            </v-list-item-action>
-          </v-list-item>
-          <v-list-item>
-            <v-list-item-title>Project name</v-list-item-title>
-            <v-list-item-action>
-              <v-text-field
-                class="search"
-                placeholder="Filter by project name"
-                append-icon="search"
-                v-model="searchFilterByProjectName"
-                @input="filterData"
-                hide-details
-              />
-            </v-list-item-action>
-          </v-list-item>
-        </v-list>
-      </v-menu>
-    </portal>
-    <v-data-table
-      :headers="header"
-      :items="projects"
-      ref="table"
-      no-data-text="No projects"
-      color="primary"
-      :footer-props="{ 'items-per-page-options': [10, 25, 50] }"
-      :hide-default-footer="numberOfItems <= 10 || !showFooter"
-      item-key="updated"
-      :options="options"
-      :server-items-length="numberOfItems"
-      v-on:update:options="paginating"
-      :loading="loading"
-      loading-text="Loading... Please wait"
-    >
-      <template v-if="showNamespace" #item.namespace="{ value }">
-        <router-link
-          :to="{
-            name: `namespace-projects`,
-            params: { namespace: value }
-          }"
+      </app-section>
+    </app-container>
+    <app-container>
+      <app-section ground>
+        <span class="p-input-icon-left w-full">
+          <i class="ti ti-search paragraph-p3"></i>
+          <PInputText
+            placeholder="Search projects"
+            v-model="search"
+            class="w-full"
+            @input="onSearch"
+          />
+        </span>
+      </app-section>
+    </app-container>
+    <app-container>
+      <app-section>
+        <PDataTable
+          :value="projects.items"
+          :lazy="true"
+          :paginator="true"
+          :rows="options.itemsPerPage"
+          :rowsPerPageOptions="options.perPageOptions"
+          :totalRecords="projects.count"
+          :loading="projects.loading"
+          :first="(options.page - 1) * options.itemsPerPage"
+          :sortField="options.sortBy[0]"
+          :sortOrder="options.sortDesc[0] ? -1 : 1"
+          removableSort
+          reorderable-columns
+          @page="onPage"
+          @sort="onSort"
+          @row-click="rowClick"
+          data-cy="projects-table"
         >
-          <strong>{{ value }}</strong>
-        </router-link>
-      </template>
-      <template #item.name="{ value, item }">
-        <router-link
-          :to="{
-            name: 'project',
-            params: { namespace: item.namespace, projectName: value }
-          }"
-        >
-          <strong>{{ value }}</strong>
-        </router-link>
-      </template>
-
-      <template #item.updated="{ value }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <span v-on="on">{{ value | timediff }}</span>
-          </template>
-          <span>{{ value | datetime }}</span>
-        </v-tooltip>
-      </template>
-
-      <template #item.meta.size="{ item }">
-        {{ item.disk_usage | filesize('MB') }}
-      </template>
-
-      <template #item.removed_at="{ value }">
-        <v-tooltip bottom>
-          <template v-slot:activator="{ on }">
-            <span v-on="on">{{ value | timediff }}</span>
-          </template>
-          <span>{{ value | datetime }}</span>
-        </v-tooltip>
-      </template>
-
-      <template #item.removed_by="{ value }">
-        <span>{{ value }}</span>
-      </template>
-
-      <template #item.buttons="{ item }">
-        <div class="justify-center px-0" v-if="item.removed_at">
-          <div style="text-align: end">
-            <v-chip
-              @click="restoreProjectConfirmation(item)"
-              elevation="0"
-              color="green"
-              class="white--text"
+          <template v-for="header in headers" :key="header.field">
+            <PColumn
+              v-if="showNamespace && header.field === 'workspace'"
+              :field="header.field"
+              :header="header.header"
+              :sortable="header.sortable"
             >
-              restore
-            </v-chip>
-            <v-chip
-              @click="removeProjectConfirmation(item)"
-              elevation="0"
-              color="red"
-              class="white--text"
+              <template #body="slotProps">
+                <router-link
+                  class="title-t4"
+                  :to="{
+                    name: `workspace`,
+                    params: { namespace: slotProps.data.workspace }
+                  }"
+                >
+                  {{ slotProps.data.workspace }}
+                </router-link>
+              </template>
+            </PColumn>
+
+            <PColumn
+              v-else-if="header.field === 'name'"
+              :field="header.field"
+              :header="header.header"
+              :sortable="header.sortable"
             >
-              remove
-            </v-chip>
-          </div>
-        </div>
-      </template>
-    </v-data-table>
+              <template #body="slotProps">
+                <router-link
+                  :to="{
+                    name: 'project',
+                    params: {
+                      namespace: slotProps.data.workspace,
+                      projectName: slotProps.data.name
+                    }
+                  }"
+                >
+                  <strong>{{ slotProps.data.name }}</strong>
+                </router-link>
+              </template>
+            </PColumn>
+
+            <PColumn
+              v-else-if="header.field === 'updated'"
+              :field="header.field"
+              :header="header.header"
+              :sortable="header.sortable"
+            >
+              <template #body="slotProps">
+                <span :title="$filters.datetime(slotProps.data.updated)">
+                  {{ $filters.timediff(slotProps.data.updated) }}
+                </span>
+              </template>
+            </PColumn>
+
+            <PColumn
+              v-else-if="header.field === 'disk_usage'"
+              :field="header.field"
+              :header="header.header"
+              :sortable="header.sortable"
+            >
+              <template #body="slotProps">
+                {{ $filters.filesize(slotProps.data.disk_usage, 'MB') }}
+              </template>
+            </PColumn>
+
+            <PColumn
+              v-else-if="header.field === 'removed_at'"
+              :field="header.field"
+              :header="header.header"
+              :sortable="header.sortable"
+            >
+              <template #body="slotProps">
+                <span :title="$filters.datetime(slotProps.data.removed_at)">
+                  {{ $filters.timediff(slotProps.data.removed_at) }}
+                </span>
+              </template>
+            </PColumn>
+
+            <PColumn v-else-if="header.field === 'buttons'">
+              <template #body="slotProps">
+                <div
+                  class="justify-center px-0"
+                  v-if="slotProps.data.removed_at"
+                >
+                  <div style="text-align: end">
+                    <PButton
+                      label="Restore"
+                      severity="secondary"
+                      @click="confirmRestore(slotProps.data)"
+                    />
+                  </div>
+                </div>
+              </template>
+            </PColumn>
+
+            <PColumn
+              v-else
+              :field="header.field"
+              :header="header.header"
+              :sortable="header.sortable"
+            ></PColumn>
+          </template>
+          <template #paginatorstart>
+            <PButton
+              icon="ti ti-refresh"
+              plain
+              text
+              rounded
+              size="small"
+              @click="onRefresh"
+            />
+          </template>
+          <template #paginatorend />
+        </PDataTable>
+      </app-section>
+    </app-container>
   </div>
 </template>
 
 <script lang="ts">
 import {
-  ApiRequestSuccessInfo,
   ConfirmDialog,
-  errorUtils,
-  htmlUtils,
   useDialogStore,
-  useNotificationStore
+  useNotificationStore,
+  SortingOptions,
+  TableDataHeader,
+  AppSection,
+  AppContainer,
+  ConfirmDialogProps
 } from '@mergin/lib'
-import { mapActions } from 'pinia'
-import { defineComponent } from 'vue'
+import { mapActions, mapState } from 'pinia'
+import {
+  DataTablePageEvent,
+  DataTableRowClickEvent,
+  DataTableSortEvent
+} from 'primevue/datatable'
+import { PropType, defineComponent } from 'vue'
 
-import { AdminApi, PaginatedAdminProjectsParams } from '@/main'
+import { AdminRoutes, useAdminStore } from '@/main'
 
 export default defineComponent({
   name: 'projects-table',
+  components: {
+    AppContainer,
+    AppSection
+  },
   props: {
     showNamespace: Boolean,
-    sortable: {
-      type: Boolean,
-      default: true
-    },
-    showFooter: {
-      type: Boolean,
-      default: true
-    },
     initialOptions: {
-      type: Object,
+      type: Object as PropType<SortingOptions>,
       default: () => ({
         sortBy: ['updated'],
         sortDesc: [true],
-        itemsPerPage: 10,
-        page: 1
+        itemsPerPage: 20,
+        page: 1,
+        perPageOptions: [20, 50, 100]
       })
     }
   },
   data() {
     return {
       options: Object.assign({}, this.initialOptions),
-      searchFilterByProjectName: '',
-      searchFilterByNamespace: '',
-      numberOfItems: 0,
-      loading: false,
-      projects: []
+      search: ''
     }
   },
   computed: {
-    header() {
+    ...mapState(useAdminStore, ['projects']),
+    headers(): TableDataHeader[] {
       return [
         ...(this.showNamespace
           ? [
               {
-                text: 'Workspace',
-                value: 'namespace',
-                sortable: this.sortable
+                header: 'Workspace',
+                field: 'workspace',
+                sortable: true
               }
             ]
           : []),
-        { text: 'Name', value: 'name', sortable: this.sortable },
-        { text: 'Last Update', value: 'updated', sortable: this.sortable },
-        { text: 'Size', value: 'meta.size', sortable: this.sortable },
-        { text: 'Removed', value: 'removed_at', sortable: true },
-        { text: 'Removed by', value: 'removed_by', sortable: true },
-        { text: '', value: 'buttons', sortable: false }
+        { header: 'Name', field: 'name', sortable: true },
+        { header: 'Last Update', field: 'updated', sortable: true },
+        { header: 'Size', field: 'disk_usage', sortable: true },
+        { header: 'Removed', field: 'removed_at', sortable: true },
+        { header: 'Removed by', field: 'removed_by', sortable: true },
+        { header: '', field: 'buttons', sortable: false }
       ]
     }
   },
-  watch: {
-    $route: {
-      immediate: false,
-      handler: 'changedRoute'
-    }
-  },
   created() {
-    // this.filterData = debounce(this.filterData, 3000)
+    this.resetPaging()
+    this.fetchProjects()
   },
   methods: {
     ...mapActions(useDialogStore, { showDialog: 'show' }),
     ...mapActions(useNotificationStore, ['error', 'show']),
+    ...mapActions(useAdminStore, ['getProjects', 'restoreProject']),
 
     paginating(options) {
       this.options = options
       this.fetchProjects()
     },
 
-    changedRoute() {
+    async resetPaging() {
       this.options.page = 1
-      this.fetchProjects()
     },
 
     fetchProjects() {
-      this.loading = true
-      const params: PaginatedAdminProjectsParams = {
-        page: this.options.page,
-        per_page: this.options.itemsPerPage
-      }
-      if (this.options.sortBy[0]) {
-        let orderParam = ''
-        if (this.options.sortBy[0] === 'meta.size') {
-          orderParam = 'disk_usage'
-        } else {
-          orderParam =
-            this.options.sortBy[0] === 'namespace'
-              ? 'workspace'
-              : this.options.sortBy[0]
-        }
-        params.order_params =
-          orderParam + (this.options.sortDesc[0] ? ' DESC' : ' ASC')
-      }
-      if (this.searchFilterByProjectName) {
-        params.name = this.searchFilterByProjectName.trim()
-      }
-      if (this.searchFilterByNamespace) {
-        params.workspace = this.searchFilterByNamespace.trim()
-      }
-      AdminApi.getPaginatedAdminProject(params)
-        .then((resp) => {
-          this.projects = resp.data.projects
-          this.numberOfItems = resp.data.count
-          this.loading = false
-        })
-        .catch((e) => {
-          console.warn('Failed to fetch list of projects', e)
-          this.error({
-            text: 'Failed to fetch list of projects'
-          })
-        })
+      this.getProjects({ params: { ...this.options, like: this.search } })
     },
 
-    filterData() {
-      this.options.page = 1
+    onSearch() {
+      this.resetPaging()
       this.fetchProjects()
     },
 
-    async deleteProject(id) {
-      htmlUtils.waitCursor(true)
-
-      const result = {} as ApiRequestSuccessInfo
-      try {
-        await AdminApi.removeProject(id)
-        result.success = true
-      } catch (e) {
-        result.success = false
-        result.message = errorUtils.getErrorMessage(
-          e,
-          'Unable to remove project'
-        )
-      }
-
-      if (result.success) {
-        const index = this.projects.findIndex((i) => i.id === id)
-        this.projects.splice(index, 1)
-        await this.show({
-          text: 'Project removed successfully'
-        })
-      } else {
-        await this.error({
-          text: result.message
-        })
-      }
-      htmlUtils.waitCursor(false)
+    onPage(event: DataTablePageEvent) {
+      this.options.page = event.page + 1
+      this.options.itemsPerPage = event.rows
+      this.fetchProjects()
     },
 
-    restoreProjectConfirmation(item) {
-      const props = {
-        text: `Are you sure to restore project <strong>${item.namespace}/${item.name}?</strong>`,
+    onSort(event: DataTableSortEvent) {
+      this.options.sortBy[0] = event.sortField?.toString()
+      this.options.sortDesc[0] = event.sortOrder < 1
+      this.fetchProjects()
+    },
+
+    rowClick(event: DataTableRowClickEvent) {
+      this.$router.push({
+        name: AdminRoutes.PROJECT,
+        params: {
+          namespace: event.data.workspace,
+          projectName: event.data.name
+        }
+      })
+    },
+
+    confirmRestore(item) {
+      const props: ConfirmDialogProps = {
+        text: `Are you sure to restore project ${item.workspace}/${item.name}?`,
         confirmText: 'Restore'
       }
       const listeners = {
         confirm: async () => {
-          htmlUtils.waitCursor(true)
-
-          const result = {} as ApiRequestSuccessInfo
-          try {
-            await AdminApi.restoreProject(item.id)
-            result.success = true
-          } catch (e) {
-            result.success = false
-            result.message = errorUtils.getErrorMessage(
-              e,
-              'Unable to restore project'
-            )
-          }
-
-          if (result.success) {
-            this.fetchProjects()
-            await this.show({
-              text: 'Project restored successfully'
-            })
-          } else {
-            await this.show({
-              text: result.message
-            })
-          }
-          htmlUtils.waitCursor(false)
+          await this.restoreProject({ projectId: item.id })
+          this.fetchProjects()
         }
       }
       this.showDialog({
         component: ConfirmDialog,
-        params: { props, listeners, dialog: { maxWidth: 500 } }
+        params: { props, listeners, dialog: { header: 'Restore project' } }
       })
     },
 
-    removeProjectConfirmation(item) {
-      const props = {
-        text: `Are you sure to remove project <strong>${item.namespace}/${item.name}</strong>?
-        <br> All files will be <strong>permanently deleted</strong> and project won't be able to be restored anymore.`,
-        confirmText: 'Delete'
-      }
-      const listeners = {
-        confirm: () => {
-          this.deleteProject(item.id)
-        }
-      }
-      this.showDialog({
-        component: ConfirmDialog,
-        params: { props, listeners, dialog: { maxWidth: 500 } }
-      })
+    onRefresh() {
+      this.fetchProjects()
     }
   }
 })
 </script>
 
-<style lang="scss" scoped>
-.v-data-table {
-  td {
-    text-align: left;
-
-    &.flags {
-      .v-icon {
-        margin: 0 1px;
-        cursor: default;
-      }
-    }
-  }
-
-  a {
-    text-decoration: none;
-  }
-
-  .v-chip {
-    margin: 0;
-    margin-right: 0.5em;
-    height: 1.6em;
-
-    ::v-deep .v-chip__content {
-      cursor: pointer;
-      padding: 0 0.5em;
-      font-size: 85%;
-    }
-  }
-
-  .hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
-}
-
-.v-input {
-  padding-top: 0 !important;
-  margin-top: 0 !important;
-}
-
-.v-list__tile__title {
-  width: 110px;
-  font-weight: 800;
-}
-
-.filter-menu {
-  .activate {
-    border: 1px solid black;
-    border-radius: 5px;
-  }
-}
-</style>
+<style lang="scss" scoped></style>
