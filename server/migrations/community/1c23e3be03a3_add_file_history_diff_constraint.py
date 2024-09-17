@@ -21,6 +21,15 @@ def upgrade():
     conn.execute(
         sa.text(
             """
+                UPDATE file_history
+                SET diff = NULL
+                WHERE change != 'update_diff' AND diff IS NOT NULL;
+                """
+        )
+    )
+    conn.execute(
+        sa.text(
+            """
             ALTER TABLE file_history
             ADD CONSTRAINT ck_file_history_changes_with_diff CHECK (
                 CASE
