@@ -695,26 +695,26 @@ def test_paginate_users(client):
     # get 5 users (default + 5 new added - 1 deleted & inactive)
     resp = client.get(url)
     list_of_usernames = [user["username"] for user in resp.json["users"]]
-    assert resp.json["total"] == 5
-    assert resp.json["users"][0]["username"] == "mergin"
+    assert resp.json["count"] == 5
+    assert resp.json["items"][0]["username"] == "mergin"
     assert user_inactive.username in list_of_usernames
     assert deleted_active.username in list_of_usernames
     assert deleted_inactive.username not in list_of_usernames
     # order by username
     resp = client.get(url + "&order_by=username")
-    assert resp.json["total"] == 5
-    assert resp.json["users"][0]["username"] == "alice"
+    assert resp.json["count"] == 5
+    assert resp.json["items"][0]["username"] == "alice"
     # exact match with username
     resp = client.get(url + "&like=bob")
-    assert resp.json["total"] == 1
-    assert resp.json["users"][0]["username"] == "bob"
+    assert resp.json["count"] == 1
+    assert resp.json["items"][0]["username"] == "bob"
     # ilike search with email
     resp = client.get(url + "&like=@mergin.com")
-    assert resp.json["total"] == 5
+    assert resp.json["count"] == 5
     # exact search by email
     resp = client.get(url + "&like=alice@mergin.com")
-    assert resp.json["total"] == 1
-    assert resp.json["users"][0]["username"] == "alice"
+    assert resp.json["count"] == 1
+    assert resp.json["items"][0]["username"] == "alice"
     # invalid paging
     assert client.get("/app/admin/users?page=2&per_page=10").status_code == 404
 
