@@ -183,20 +183,13 @@ paths:
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/PerPage"
         - $ref: "#/components/parameters/OrderParams"
-        - name: name
+        - name: like
           in: query
-          description: Filter projects by name with ilike pattern
+          description: Filter projects by name or workspace name with ilike pattern
           required: false
           schema:
             type: string
             example: survey
-        - name: workspace
-          in: query
-          description: Filter projects by workspace with ilike pattern
-          required: false
-          schema:
-            type: string
-            example: my-workspace
       responses:
         "200":
           description: List of projects
@@ -209,7 +202,7 @@ paths:
                     type: integer
                     description: Total number of all projects
                     example: 20
-                  projects:
+                  items:
                     type: array
                     items:
                       $ref: "#/components/schemas/ProjectListItem"
@@ -292,7 +285,7 @@ paths:
                     id:
                       type: string
                       format: uuid
-                      example: 'd4ecda97-0595-40af-892c-e7522de70bd2'
+                      example: "d4ecda97-0595-40af-892c-e7522de70bd2"
                     name:
                       type: string
                       example: survey
@@ -460,7 +453,7 @@ components:
         - detail
     UsersLimitHit:
       allOf:
-        - $ref: '#/components/schemas/CustomError'
+        - $ref: "#/components/schemas/CustomError"
       type: object
       properties:
         rejected_emails:
@@ -473,7 +466,7 @@ components:
       example:
         code: UsersLimitHit
         detail: Maximum number of people in this workspace is reached. Please upgrade your subscription to add more people (UsersLimitHit)
-        rejected_emails: [ rejected@example.com ]
+        rejected_emails: [rejected@example.com]
         users_quota: 6
     ProjectAccessRequestList:
       type: array
@@ -488,7 +481,7 @@ components:
         project_id:
           type: string
           format: uuid
-          example: 'd4ecda97-0595-40af-892c-e7522de70bd2'
+          example: "d4ecda97-0595-40af-892c-e7522de70bd2"
         project_name:
           type: string
           example: survey
@@ -619,25 +612,25 @@ components:
           nullable: false
           items:
             type: string
-          example: [ john.doe ]
+          example: [john.doe]
         writersnames:
           type: array
           nullable: false
           items:
             type: string
-          example: [ john.doe ]
+          example: [john.doe]
         editorsnames:
           type: array
           nullable: false
           items:
             type: string
-          example: [ john.doe ]
+          example: [john.doe]
         readersnames:
           nullable: false
           type: array
           items:
             type: string
-          example: [ john.doe ]
+          example: [john.doe]
         public:
           type: boolean
           example: true
