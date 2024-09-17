@@ -694,7 +694,7 @@ def test_paginate_users(client):
     url = "/app/admin/users?page=1&per_page=10"
     # get 5 users (default + 5 new added - 1 deleted & inactive)
     resp = client.get(url)
-    list_of_usernames = [user["username"] for user in resp.json["users"]]
+    list_of_usernames = [user["username"] for user in resp.json["items"]]
     assert resp.json["count"] == 5
     assert resp.json["items"][0]["username"] == "mergin"
     assert user_inactive.username in list_of_usernames
