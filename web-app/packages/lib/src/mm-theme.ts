@@ -1,5 +1,7 @@
 import { AutoCompletePassThroughOptions } from 'primevue/autocomplete'
 import { ButtonPassThroughOptions } from 'primevue/button'
+import { ColumnPassThroughOptions } from 'primevue/column'
+import { DataTablePassThroughOptions } from 'primevue/datatable'
 import { DataViewPassThroughOptions } from 'primevue/dataview'
 import { DialogPassThroughOptions } from 'primevue/dialog'
 import { InlineMessagePassThroughOptions } from 'primevue/inlinemessage'
@@ -139,7 +141,29 @@ export default usePassThrough(
     tag: {
       root: 'title-t5',
       value: 'title-t5'
-    } as TagPassThroughOptions
+    } as TagPassThroughOptions,
+    column: {
+      bodyCell: {
+        class: 'pl-4 py-2'
+      },
+      headerCell: {
+        class: 'pl-4 py-1',
+        style: {
+          backgroundColor: '#F8F9FA'
+        }
+      },
+      headerTitle: {
+        class: 'paragraph-p6'
+      }
+    } as ColumnPassThroughOptions,
+    dataTable: {
+      loadingOverlay: {
+        class: 'bg-primary-reverse opacity-50'
+      },
+      bodyRow: {
+        class: 'paragraph-p6 hover:bg-gray-50 cursor-pointer'
+      }
+    } as DataTablePassThroughOptions
   },
   {}
 )

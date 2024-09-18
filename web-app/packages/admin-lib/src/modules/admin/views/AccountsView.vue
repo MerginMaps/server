@@ -1,9 +1,3 @@
-<!--
-Copyright (C) Lutra Consulting Limited
-
-SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
--->
-
 <template>
   <admin-layout>
     <app-container>
@@ -23,97 +17,83 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </template>
       </app-section>
     </app-container>
-    <!-- <v-card color="transparent" outlined style="margin: 10px">
-      <v-card-text>
-        <v-layout row style="padding: 5px">
-          <v-btn
-            class="ma-1"
-            color="primary"
-            outlined
-            rounded
-            @click="createUserDialog"
-          >
-            <v-icon>mdi-account-plus</v-icon>
-          </v-btn>
-          <v-spacer></v-spacer>
-          <v-text-field
-            :label="$t('search')"
-            color="secondary"
-            hide-details
-            style="max-width: 250px; padding-right: 10px"
+    <app-container>
+      <app-section ground>
+        <span class="p-input-icon-left w-full">
+          <i class="ti ti-search paragraph-p3"></i>
+          <PInputText
+            placeholder="Search members"
+            data-cy="search-members-field"
             v-model="searchByName"
-            @input="resetPaging"
-          >
-            <template v-if="$vuetify.breakpoint.mdAndUp" v-slot:prepend-inner>
-              <v-icon elevation="1">mdi-magnify</v-icon>
-            </template>
-            <template v-slot:append>
-              <v-icon elevation="1" @click="resetSearch">cancel</v-icon>
-            </template>
-          </v-text-field>
-        </v-layout>
-      </v-card-text>
-    </v-card>
-    <v-data-table
-      height="70vh"
-      :headers="headers"
-      :items="users.items"
-      :loading="loading"
-      no-data-text="No users"
-      color="primary"
-      :hide-default-footer="true"
-      :options="options"
-      :server-items-length="users.count"
-      v-on:update:options="paginate"
-    >
-      <template v-slot:top="{ pagination, options, updateOptions }">
-        <v-data-footer
-          :pagination="pagination"
-          :options="options"
-          show-current-page
-          show-first-last-page
-          :items-per-page-options="[5, 10, 50]"
-          @update:options="updateOptions"
-        />
-      </template>
-      <template v-slot:item.username="{ item }">
-        <span>
-          <router-link
-            :to="{ name: 'profile', params: { username: item.username } }"
-          >
-            {{ item.username }}
-          </router-link>
+            class="w-full"
+            @input="onSearch"
+          />
         </span>
-      </template>
-      <template v-slot:item.received="{ item }">
-        <span>
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on }">
-              <span v-on="on">{{ item.received | timediff }}</span>
-            </template>
-            <span>{{ item.received | datetime }}</span>
-          </v-tooltip>
-        </span>
-      </template>
-      <template v-slot:item.msg="{ item }">
-        <span>
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on }">
-              <span v-on="on">{{ item.msg.substring(0, 9) }}</span>
-            </template>
-            <span>{{ item.msg }}</span>
-          </v-tooltip>
-        </span>
-      </template>
-      <template v-slot:item.active="{ item }">
-        <span>
-          <span style="display: inline-block; width: 120px">
-            <v-icon v-if="item.active" color="green">check</v-icon>
-            <v-icon v-else color="red">clear</v-icon>
-          </span>
-        </span>
-      </template>
-    </v-data-table> -->
+      </app-section>
+    </app-container>
+    <app-container>
+      <app-section>
+        <PDataTable
+          :value="users.items"
+          :lazy="true"
+          :paginator="true"
+          :rows="options.itemsPerPage"
+          :rowsPerPageOptions="options.perPageOptions"
+          :totalRecords="users.count"
+          :loading="loading"
+          :first="(options.page - 1) * options.itemsPerPage"
+          :sort-field="options.sortBy[0]"
+          :sort-order="options.sortDesc[0] ? -1 : 1"
+          removableSort
+          reorderable-columns
+          @page="onPage"
+          @row-click="rowClick"
+          @sort="onSort"
+          data-cy="accounts-table"
+        >
+          <template v-for="header in headers" :key="header.field">
+            <PColumn
+              v-if="header.field === 'username'"
+              :field="header.field"
+              :header="header.header"
+              :sortable="header.sortable"
+            >
+              <template #body="slotProps">
+                <router-link
+                  class="title-t4"
+                  :to="{
+                    name: 'account',
+                    params: { username: slotProps.data.username }
+                  }"
+                >
+                  {{ slotProps.data.username }}
+                </router-link>
+              </template>
+            </PColumn>
+            <PColumn
+              v-else-if="header.field === 'active'"
+              :header="header.header"
+              :field="header.field"
+            >
+              <template #body="slotProps">
+                <i v-if="slotProps.data.active" class="ti ti-check" />
+                <i v-else class="ti ti-x" />
+              </template>
+            </PColumn>
+            <PColumn
+              v-else
+              :field="header.field"
+              :header="header.header"
+              :sortable="header.sortable"
+            ></PColumn>
+          </template>
+          <template #paginatorstart>
+            <PButton icon="ti ti-refresh" plain text rounded @click="refresh" />
+          </template>
+          <template #paginatorend />
+        </PDataTable>
+      </app-section>
+    </app-container>
   </admin-layout>
 </template>
 
@@ -121,11 +101,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import {
   PaginatedUsersParams,
   useDialogStore,
+  AppSection,
   AppContainer,
-  AppSection
+  TableDataHeader
 } from '@mergin/lib'
 import debounce from 'lodash/debounce'
 import { mapActions, mapState } from 'pinia'
+import {
+  DataTablePageEvent,
+  DataTableRowClickEvent,
+  DataTableSortEvent
+} from 'primevue/datatable'
 import { defineComponent } from 'vue'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
@@ -144,20 +130,17 @@ export default defineComponent({
       options: {
         sortBy: ['username'],
         sortDesc: [false],
-        itemsPerPage: 10,
-        page: 1
+        itemsPerPage: 20,
+        page: 1,
+        perPageOptions: [20, 50, 100]
       },
+      searchByName: '',
       headers: [
-        { text: 'Name', value: 'username', filterable: true, sortable: true },
-        {
-          text: 'Active',
-          value: 'active',
-          filterable: false,
-          sortable: false,
-          width: 15
-        }
-      ],
-      searchByName: ''
+        { field: 'username', header: 'Name', sortable: true },
+        { field: 'email', header: 'Email', sortable: true },
+        { field: 'profile.name', header: 'Username' },
+        { field: 'active', header: 'Active' }
+      ] as TableDataHeader[]
     }
   },
   computed: {
@@ -165,41 +148,66 @@ export default defineComponent({
   },
   created() {
     this.resetPaging = debounce(this.resetPaging, 1000)
+    this.fetchUsers({ params: this.getParams() })
   },
   methods: {
     ...mapActions(useAdminStore, ['fetchUsers']),
     ...mapActions(useDialogStore, ['show']),
 
+    onSearch() {
+      this.options.page = 1
+      this.fetchUsers({ params: this.getParams() })
+    },
+
     async resetPaging() {
       this.options.page = 1
-      await this.paginate(this.options)
     },
 
-    async resetSearch() {
-      this.searchByName = ''
-      await this.resetPaging()
-    },
-
-    async paginate(options) {
-      this.options = options
+    getParams(): PaginatedUsersParams {
       const params = {
-        page: options.page,
-        per_page: options.itemsPerPage
+        page: this.options.page,
+        per_page: this.options.itemsPerPage
       } as PaginatedUsersParams
-      if (options.sortBy[0]) {
-        params.descending = options.sortDesc[0]
-        params.order_by = options.sortBy[0]
+      if (this.options.sortBy[0]) {
+        params.descending = this.options.sortDesc[0]
+        params.order_by = this.options.sortBy[0]
       }
       if (this.searchByName) {
         params.like = this.searchByName.trim()
       }
-      await this.fetchUsers({ params })
+      return params
+    },
+
+    refresh() {
+      this.fetchUsers({ params: this.getParams() })
+    },
+
+    onPage(event: DataTablePageEvent) {
+      this.options.page = event.page + 1
+      this.options.itemsPerPage = event.rows
+      this.fetchUsers({ params: this.getParams() })
+    },
+
+    onSort(event: DataTableSortEvent) {
+      this.options.sortBy[0] = event.sortField?.toString()
+      this.options.sortDesc[0] = event.sortOrder < 1
+      this.fetchUsers({ params: this.getParams() })
+    },
+
+    rowClick(event: DataTableRowClickEvent) {
+      this.$router.push({
+        name: 'account',
+        params: { username: event.data.username }
+      })
     },
 
     createUserDialog() {
-      const dialog = { maxWidth: 500, persistent: true }
+      const dialog = { maxWidth: 500, header: 'Create user' }
       const listeners = {
-        success: async () => this.resetPaging()
+        success: () => {
+          this.resetPaging()
+          this.fetchUsers({ params: this.getParams() })
+        }
       }
       this.show({
         component: CreateUserForm,
@@ -212,10 +220,3 @@ export default defineComponent({
   }
 })
 </script>
-
-<style scoped>
-.theme--light.v-data-table,
-.theme--light.v-data-table .v-data-footer {
-  border: none;
-}
-</style>

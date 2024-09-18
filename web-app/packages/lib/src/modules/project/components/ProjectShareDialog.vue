@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     @submit="share"
   >
     <template #accountsInput
-      ><label class="paragraph-p6" for="accounts">Share with</label
+      ><label for="accounts">Share with</label
       ><PAutoComplete
         @complete="search"
         v-model="data.selectedUsers"

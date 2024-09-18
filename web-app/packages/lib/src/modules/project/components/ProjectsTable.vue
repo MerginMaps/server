@@ -20,14 +20,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       data-cy="project-table"
       @row-click="rowClick"
       @page="onPage"
-      :pt="{
-        loadingOverlay: {
-          class: 'bg-primary-reverse opacity-50'
-        },
-        bodyRow: {
-          class: 'paragraph-p6 hover:bg-gray-50 cursor-pointer'
-        }
-      }"
     >
       <template v-for="col in columns" :key="col.field">
         <PColumn
@@ -36,7 +28,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :header="col.header"
           style="width: 40%"
           class="pl-4"
-          :pt="ptColumn"
         >
           <template #body="slotProps">
             <p class="title-t4">
@@ -92,7 +83,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           v-else-if="col.field === 'version'"
           :field="col.field"
           :header="col.header"
-          :pt="ptColumn"
         >
           <template #body="slotProps"
             ><span class="opacity-80" data-cy="project-form-history">{{
@@ -104,7 +94,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           v-else-if="col.field === 'meta.size'"
           :field="col.field"
           :header="col.header"
-          :pt="ptColumn"
         >
           <template #body="slotProps"
             ><span class="opacity-80" data-cy="project-form-project-size">{{
@@ -117,7 +106,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :field="col.field"
           :header="col.header"
           style="width: 15%"
-          :pt="ptColumn"
         >
           <template #body="slotProps"
             ><span class="opacity-80" data-cy="project-form-project-size">{{
@@ -126,12 +114,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           ></PColumn
         >
 
-        <PColumn
-          v-else
-          :field="col.field"
-          :header="col.header"
-          :pt="ptColumn"
-        ></PColumn>
+        <PColumn v-else :field="col.field" :header="col.header"></PColumn>
       </template>
     </PDataTable>
     <!-- Empty state -->
@@ -147,8 +130,8 @@ import { defineComponent, PropType } from 'vue'
 
 import { useProjectStore } from '../store'
 
-import { PaginatedGridOptions } from '@/common'
-import { ProjectListItem, TableDataHeader } from '@/modules/project/types'
+import { PaginatedGridOptions, TableDataHeader } from '@/common'
+import { ProjectListItem } from '@/modules/project/types'
 
 export default defineComponent({
   name: 'projects-table',
@@ -183,33 +166,15 @@ export default defineComponent({
   computed: {
     ...mapState(useProjectStore, ['projectsSearch', 'projectsSorting']),
     columns(): TableDataHeader[] {
-      let columns = []
-      columns = columns.concat(
+      return [
         { header: 'Project name', field: 'name' },
         { header: 'Versions', field: 'version' },
-        { header: 'Size', field: 'meta.size' },
+        { header: 'Size', field: 'meta.size' }
         // {
         //   header: 'Collaborators',
         //   field: 'access.readers'
         // }
-      )
-      return columns
-    },
-    ptColumn() {
-      return {
-        bodyCell: {
-          class: 'pl-4 py-2'
-        },
-        headerCell: {
-          class: 'pl-4 py-1',
-          style: {
-            backgroundColor: '#F8F9FA'
-          }
-        },
-        headerTitle: {
-          class: 'paragraph-p6'
-        }
-      }
+      ]
     }
   },
   watch: {

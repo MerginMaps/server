@@ -14,7 +14,7 @@ import {
 import { defineStore, getActivePinia } from 'pinia'
 import Cookies from 'universal-cookie'
 import { AdminApi } from '@/modules/admin/adminApi'
-import { UpdateUserPayload } from '@/modules/admin/types'
+import { UpdateUserPayload, UsersResponse } from '@/modules/admin/types'
 
 export interface AdminState {
   loading: boolean
@@ -22,7 +22,7 @@ export interface AdminState {
     items: UserResponse[]
     count: number
   }
-  userAdminProfile?: UserResponse
+  user?: UserResponse
   checkForUpdates?: boolean
   info_url?: string
   isServerConfigHidden: boolean
@@ -38,7 +38,7 @@ export const useAdminStore = defineStore('adminModule', {
       items: [],
       count: 0
     },
-    userAdminProfile: null,
+    user: null,
     checkForUpdates: undefined,
     info_url: undefined,
     isServerConfigHidden: false
@@ -54,12 +54,8 @@ export const useAdminStore = defineStore('adminModule', {
     setLoading(value) {
       this.loading = value
     },
-    setUsers(data) {
-      this.users.count = data.total
-      this.users.items = data.users
-    },
-    setUserAdminProfile(userAdminProfile) {
-      this.userAdminProfile = userAdminProfile
+    setUsers(data: UsersResponse) {
+      this.users = data
     },
     setCheckForUpdates(value) {
       this.checkForUpdates = value
@@ -84,14 +80,14 @@ export const useAdminStore = defineStore('adminModule', {
         this.setLoading(false)
       }
     },
-    async fetchUserProfileByName(payload) {
+    async fetchUserByName(payload) {
       const notificationStore = useNotificationStore()
 
       htmlUtils.waitCursor(true)
       try {
-        const response = await AdminApi.fetchUserProfileByName(payload.username)
-        this.setUserAdminProfile(response.data)
-      } catch(e) {
+        const response = await AdminApi.fetchUserByName(payload.username)
+        this.user = response.data
+      } catch (e) {
         await notificationStore.error({ text: 'Failed to fetch user profile' })
       } finally {
         htmlUtils.waitCursor(false)
@@ -123,11 +119,10 @@ export const useAdminStore = defineStore('adminModule', {
           payload.username,
           payload.data
         )
-        if (this.userAdminProfile?.id === response.data?.id) {
+        if (this.user?.id === response.data?.id) {
           // update stored user detail data
-          this.setUserAdminProfile(response.data)
+          this.user = response.data
         }
-        await getActivePinia().router.push({ name: 'accounts' })
       } catch (err) {
         await notificationStore.error({
           text: errorUtils.getErrorMessage(

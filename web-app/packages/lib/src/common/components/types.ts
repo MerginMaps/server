@@ -8,3 +8,10 @@ export interface DropdownOption<T = string> {
   description?: string
   disabled?: boolean
 }
+
+export interface TableDataHeader {
+  header: string
+  field: string
+  sortable?: boolean
+  width?: number
+}

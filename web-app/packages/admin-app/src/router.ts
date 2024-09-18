@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import {
-  AccountView
-  //   ProfileView,
+  AccountsView,
+  AccountDetailView
   //   SettingsView,
   //   ProjectSettingsView,
   //   ProjectsView,
@@ -67,7 +67,7 @@ export const createRouter = (pinia: Pinia) => {
         path: '/accounts',
         name: 'accounts',
         components: {
-          default: AccountView,
+          default: AccountsView,
           sidebar: Sidebar,
           header: AppHeader
         },
@@ -77,29 +77,17 @@ export const createRouter = (pinia: Pinia) => {
           routeUtils.isAuthenticatedGuard(to, from, next, userStore)
           routeUtils.isSuperUser(to, from, next, userStore)
         }
+      },
+      {
+        path: '/user/:username',
+        name: 'account',
+        components: {
+          default: AccountDetailView,
+          sidebar: Sidebar,
+          header: AppHeader
+        },
+        props: true
       }
-      // {
-      //   path: '/user/:username',
-      //   name: 'profile',
-      //   component: ProfileView,
-      //   props: true,
-      //   beforeEnter: async (to, from, next) => {
-      //     const adminStore = useAdminStore(pinia)
-      //     adminStore.setUserAdminProfile(null)
-      //     try {
-      //       await adminStore.fetchUserProfileByName({
-      //         username: to.params.username
-      //       })
-      //       next()
-      //     } catch (e) {
-      //       next(
-      //         Error(
-      //           errorUtils.getErrorMessage(e, 'Failed to fetch user profile')
-      //         )
-      //       )
-      //     }
-      //   }
-      // },
       // {
       //   path: '/projects',
       //   name: 'projects',

@@ -53,6 +53,7 @@ export default defineConfig(({ mode }) => ({
     sourcemap: mode !== 'production'
   },
   optimizeDeps: {
+    include: ['vue-router'],
     exclude: ['vue', '@mergin', 'vue-demi'],
     esbuildOptions: {
       define: {

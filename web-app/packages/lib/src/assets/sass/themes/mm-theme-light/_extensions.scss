@@ -11,12 +11,14 @@ h6 {
   margin: 0;
   overflow-wrap: break-word;
   min-width: 0;
+  text-wrap: balance;
 }
-body, p {
+body, p, dd {
   margin: 0
 }
-p, span, dl {
+p, span, dl, li {
   overflow-wrap: break-word;
+  text-wrap: pretty;
 }
 a {
   text-decoration: inherit;
@@ -25,6 +27,11 @@ a {
 /** In browsers is hardcoded min width for inputs... */
 input, textarea {
   min-width: 0;
+}
+
+label {
+  font-size: 0.75rem !important;
+  line-height: 2;
 }
 
 /** Primevue overrides */
