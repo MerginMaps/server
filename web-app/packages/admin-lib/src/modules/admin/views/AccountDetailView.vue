@@ -177,7 +177,6 @@ import {
   useDialogStore,
   AppSection,
   AppContainer,
-  UserResponse,
   ConfirmDialogProps
 } from '@mergin/lib'
 import { computed, watch } from 'vue'
@@ -190,8 +189,8 @@ const route = useRoute()
 const adminStore = useAdminStore()
 const dialogStore = useDialogStore()
 
-const user = computed<UserResponse>(() => adminStore.user)
-const profile = computed(() => adminStore.user?.profile || {})
+const user = computed(() => adminStore.user)
+const profile = computed(() => adminStore.user?.profile)
 const routeUsername = computed(() => route?.params?.username)
 
 const fetchProfile = (username: string) => {

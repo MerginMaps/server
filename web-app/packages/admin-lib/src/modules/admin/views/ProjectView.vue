@@ -53,9 +53,10 @@
           >
             <div class="flex-grow-1">
               <template v-if="project?.access?.public">
-                <p class="title-t3">This is public project</p>
+                <p class="title-t3">Public project</p>
                 <span class="paragraph-p6 opacity-80"
-                  >Hide this project from everyone.</span
+                  >The project will be visible to everyone if it is marked as
+                  public.</span
                 >
               </template>
               <template v-else>
@@ -66,14 +67,8 @@
               </template>
             </div>
             <div class="flex-shrink-0">
-              <PButton
-                @click="confirmPublicPrivate()"
-                severity="secondary"
-                data-cy="settings-public-btn"
-                :label="
-                  project?.access?.public ? 'Make private' : 'Make public'
-                "
-              />
+              <i v-if="project?.access?.public" class="ti ti-check" />
+              <i v-else class="ti ti-x" />
             </div>
           </div>
 
@@ -152,43 +147,6 @@ watch(
   },
   { immediate: true }
 )
-
-const confirmPublicPrivate = () => {
-  const props: ConfirmDialogProps = {
-    text: `Do you really want to make this project ${
-      project.value?.access.public ? 'private' : 'public'
-    }?`,
-    confirmText: 'Yes',
-    cancelText: 'No',
-    description: project.value?.access.public
-      ? 'Once you make your project private it can not be accessed by the community.'
-      : 'Once you make your project public it can be accessed by the community.'
-  }
-  const listeners = {
-    confirm: () => togglePublicPrivate()
-  }
-  dialogStore.show({
-    component: ConfirmDialog,
-    params: {
-      props,
-      listeners,
-      dialog: {
-        header: project.value?.access.public
-          ? 'Private project'
-          : 'Public project'
-      }
-    }
-  })
-}
-
-const togglePublicPrivate = () => {
-  projectStore.updateProjectAccess({
-    projectId: project.value.id,
-    data: {
-      public: !project.value.access.public
-    }
-  })
-}
 
 const confirmDelete = () => {
   const props: ConfirmDialogProps = {
