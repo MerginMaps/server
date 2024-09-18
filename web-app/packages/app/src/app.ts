@@ -11,7 +11,6 @@ import {
   merginUtils,
   useAppStore
 } from '@mergin/lib'
-import PortalVue from 'portal-vue'
 import PrimeVue from 'primevue/config'
 import Toast from 'primevue/toast'
 import ToastService from 'primevue/toastservice'
@@ -39,7 +38,6 @@ const createMerginApp = () => {
     .use(pinia)
     .use(router)
     .use(i18n)
-    .use(PortalVue)
     .use(createMetaManager())
     .use(PrimeVue, { pt: MMTheme })
     .use(ToastService)

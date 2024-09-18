@@ -5,7 +5,10 @@
 import { RouteRecord } from 'vue-router'
 
 export enum AdminRoutes {
-  ACCOUNTS = 'accounts'
+  ACCOUNTS = 'accounts',
+  ACCOUNT = 'account',
+  PROJECTS = 'projects',
+  PROJECT = 'project'
 }
 
 export const getRoutes = (): RouteRecord[] => []

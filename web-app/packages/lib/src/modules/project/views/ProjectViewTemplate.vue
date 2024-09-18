@@ -149,11 +149,6 @@ export default defineComponent({
     AppSection
   },
   props: {
-    /**  Show namespace (ws) label in breadcrumb of page */
-    showNamespace: {
-      type: Boolean as PropType<boolean>,
-      default: true
-    },
     namespace: String,
     projectName: String,
     showSettings: Boolean as PropType<boolean>,
@@ -348,11 +343,8 @@ export default defineComponent({
         })
     },
     leaveDialog() {
-      const projPath = this.showNamespace
-        ? `${this.namespace}/${this.projectName}`
-        : this.projectName
       const props: ConfirmDialogProps = {
-        text: `Are you sure to leave the project ${projPath}?`,
+        text: `Are you sure to leave the project ${this.projectName}?`,
         description: 'You will not have access to it anymore.',
         severity: 'danger',
         confirmText: 'Yes',

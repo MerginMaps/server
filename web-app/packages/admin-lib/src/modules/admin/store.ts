@@ -6,6 +6,7 @@ import {
   errorUtils,
   htmlUtils,
   LoginPayload,
+  SortingOptions,
   useFormStore,
   useInstanceStore,
   useNotificationStore,
@@ -14,13 +15,23 @@ import {
 import { defineStore, getActivePinia } from 'pinia'
 import Cookies from 'universal-cookie'
 import { AdminApi } from '@/modules/admin/adminApi'
-import { UpdateUserPayload, UsersResponse } from '@/modules/admin/types'
+import {
+  PaginatedAdminProjectsParams,
+  UpdateUserPayload,
+  UsersResponse
+} from '@/modules/admin/types'
+import { AdminRoutes } from './routes'
 
 export interface AdminState {
   loading: boolean
   users: {
     items: UserResponse[]
     count: number
+  }
+  projects: {
+    items: any[]
+    count: number
+    loading: boolean
   }
   user?: UserResponse
   checkForUpdates?: boolean
@@ -37,6 +48,11 @@ export const useAdminStore = defineStore('adminModule', {
     users: {
       items: [],
       count: 0
+    },
+    projects: {
+      items: [],
+      count: 0,
+      loading: false
     },
     user: null,
     checkForUpdates: undefined,
@@ -100,7 +116,7 @@ export const useAdminStore = defineStore('adminModule', {
       htmlUtils.waitCursor(true)
       try {
         await AdminApi.deleteUser(payload.username)
-        await getActivePinia().router.push({ name: 'accounts' })
+        await getActivePinia().router.push({ name: AdminRoutes.ACCOUNTS })
       } catch (err) {
         await notificationStore.error({
           text: errorUtils.getErrorMessage(err, 'Unable to close account')
@@ -133,14 +149,6 @@ export const useAdminStore = defineStore('adminModule', {
       } finally {
         htmlUtils.waitCursor(false)
       }
-    },
-
-    // TODO: deprecated?
-    async updateAccountStorage(_context, payload) {
-      return await AdminApi.updateAccountStorage(
-        payload.accountId,
-        payload.data
-      )
     },
 
     async adminLogin(payload: LoginPayload) {
@@ -223,6 +231,67 @@ export const useAdminStore = defineStore('adminModule', {
 
     async removeServerConfiguredCookies() {
       cookies.remove(COOKIES_HIDE_SERVER_CONFIGURED_BANNER)
+    },
+
+    async getProjects(payload: {
+      params: SortingOptions & Pick<PaginatedAdminProjectsParams, 'like'>
+    }) {
+      const notificationStore = useNotificationStore()
+
+      try {
+        this.projects.loading = true
+        const params: PaginatedAdminProjectsParams = {
+          page: payload.params.page,
+          per_page: payload.params.itemsPerPage,
+          order_params: `${payload.params.sortBy[0]} ${
+            payload.params.sortDesc[0] ? 'DESC' : 'ASC'
+          }`
+        }
+        if (payload.params.like) {
+          params.like = payload.params.like.trim()
+        }
+
+        const response = await AdminApi.getProjects(params)
+        this.projects.items = response.data.items
+        this.projects.count = response.data.count
+      } catch (e) {
+        notificationStore.error({
+          text: 'Failed to fetch projects'
+        })
+      } finally {
+        this.projects.loading = false
+      }
+    },
+
+    async restoreProject(payload: { projectId: string }) {
+      const notificationStore = useNotificationStore()
+
+      try {
+        this.projects.loading = true
+        await AdminApi.restoreProject(payload.projectId)
+      } catch (e) {
+        notificationStore.error({
+          text: 'Failed to restore project'
+        })
+      } finally {
+        this.projects.loading = false
+      }
+    },
+
+    async deleteProject(payload: { projectId: string }) {
+      const notificationStore = useNotificationStore()
+
+      try {
+        await AdminApi.deleteProject(payload.projectId)
+        await getActivePinia().router.push({ name: AdminRoutes.PROJECTS })
+        notificationStore.show({
+          text: 'Project removed successfully'
+        })
+      } catch (e) {
+        notificationStore.error({
+          text: 'Unable to remove project'
+        })
+      }
     }
   }
 })

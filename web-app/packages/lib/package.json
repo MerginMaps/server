@@ -50,7 +50,6 @@
   },
   "peerDependencies": {
     "pinia": ">=2.x",
-    "portal-vue": "3.x",
     "vue": "3.x"
   },
   "devDependencies": {}

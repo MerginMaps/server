@@ -59,7 +59,7 @@ export interface PaginatedResponseDefaults {
 /* eslint-enable camelcase */
 
 export interface PaginatedResponse<T> extends PaginatedResponseDefaults {
-  items: readonly T[]
+  items: T[]
 }
 
 export interface ApiRequestSuccessInfo<T> {
@@ -72,4 +72,15 @@ export interface AutoCompleteItem<T> {
   key: string | number
   value: T
   label: string
+}
+
+/**
+ * Represents the sorting options for a paginated tables.
+ */
+export interface SortingOptions {
+  sortDesc?: boolean[]
+  sortBy?: string[]
+  page: number
+  itemsPerPage: number
+  perPageOptions: number[]
 }

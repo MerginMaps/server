@@ -64,76 +64,36 @@ export const AdminApi = {
     return AdminModule.httpService.get('/v1/latest-version')
   },
 
-  // TODO: deprecated?
-  /**
-   * Update account storage
-   * @param accountId (Int) edited account
-   * @param data ({Int}) new storage
-   * @param withRetry (Boolean)
-   * @return Result promise
-   */
-  async updateAccountStorage(
-    accountId: number,
-    data: any,
-    withRetry?: boolean
-  ): Promise<ApiRequestSuccessInfo> {
-    const result = {} as ApiRequestSuccessInfo
-    try {
-      await AdminModule.httpService.post(
-        `/app/account/change-storage/${accountId}`,
-        data /*,
-        {
-          ...(withRetry ? getDefaultRetryOptions() : {})
-        } */
-      )
-      result.success = true
-    } catch (e) {
-      result.success = false
-      result.message = errorUtils.getErrorMessage(e, 'Unable to update storage')
-    }
-    return new Promise((resolve) => {
-      resolve(result)
-    })
-  },
-
   async createUser(
     data: CreateUserData
   ): Promise<AxiosResponse<UserProfileResponse>> {
     return AdminModule.httpService.post(`/app/admin/user`, data)
   },
 
-  async getPaginatedAdminProject(
+  async getProjects(
     params: PaginatedAdminProjectsParams
   ): Promise<AxiosResponse<PaginatedAdminProjectsResponse>> {
     return AdminModule.httpService.get('/app/admin/projects', { params })
   },
 
   /**
-   * Permanently remove project
-   * @param id removed project id
+   * Permanently delete project
+   * @param id project id
    * @return Result promise
    */
-  async removeProject(id: number): Promise<AxiosResponse<void>> {
-    return await AdminModule.httpService.delete(
-      `/app/project/removed-project/${id}`,
-      {
-        'axios-retry': { retries: 5 }
-      }
-    )
+  async deleteProject(id: string): Promise<AxiosResponse<void>> {
+    return await AdminModule.httpService.delete(`/v2/projects/${id}`)
   },
 
   /**
    * Restore removed project
-   * @param id (Int) removed project id
+   * @param id (String) removed project id
    * @return Result promise
    */
-  async restoreProject(id: number): Promise<AxiosResponse<void>> {
+  async restoreProject(id: string): Promise<AxiosResponse<void>> {
     return await AdminModule.httpService.post(
       `/app/project/removed-project/restore/${id}`,
-      null,
-      {
-        'axios-retry': { retries: 5 }
-      }
+      null
     )
   }
 }

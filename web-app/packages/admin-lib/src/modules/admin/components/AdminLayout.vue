@@ -5,9 +5,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <server-not-configured />
-  <check-for-updates />
-  <slot />
+  <article>
+    <server-not-configured />
+    <check-for-updates />
+    <slot />
+  </article>
 </template>
 
 <script lang="ts" setup>

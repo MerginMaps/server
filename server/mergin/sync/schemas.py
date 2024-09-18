@@ -293,7 +293,7 @@ class ProjectSchemaForDelete(ma.SQLAlchemyAutoSchema):
 class AdminProjectSchema(ma.SQLAlchemyAutoSchema):
     id = fields.UUID(attribute="Project.id")
     name = fields.Str(attribute="Project.name")
-    namespace = fields.Method("_workspace_name")
+    workspace = fields.Method("_workspace_name")
     version = fields.Function(
         lambda obj: ProjectVersion.to_v_name(obj.Project.latest_version)
     )

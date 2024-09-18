@@ -122,8 +122,9 @@ export default defineComponent({
     },
     confirmDelete() {
       const props: ConfirmDialogProps = {
-        text: `Are you sure to delete project: ${this.projectName}?`,
+        text: `Are you sure to delete project?`,
         description: 'All files will be lost. Type in project name to confirm:',
+        hint: `${this.projectName}`,
         severity: 'danger',
         confirmText: 'Delete',
         confirmField: {
