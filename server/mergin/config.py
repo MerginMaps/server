@@ -75,9 +75,9 @@ class Configuration(object):
         "CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS", default="{}", cast=eval
     )
     CELERY_ACKS_LATE = config("CELERY_ACKS_LATE", default=False, cast=bool)
-    CELERY_WORKER_CONCURRENCY = config("CELERY_WORKER_CONCURRENCY", default=1, cast=int)
-    CELERY_WORKER_PREFETCH_MULTIPLIER = config(
-        "CELERY_WORKER_PREFETCH_MULTIPLIER", default=4, cast=int
+    CELERYD_CONCURRENCY = config("CELERYD_CONCURRENCY", default=1, cast=int)
+    CELERYD_PREFETCH_MULTIPLIER = config(
+        "CELERYD_PREFETCH_MULTIPLIER", default=4, cast=int
     )
 
     # deployment URL (e.g. for links generated in emails)
