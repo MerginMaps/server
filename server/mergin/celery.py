@@ -66,6 +66,11 @@ def configure_celery(celery: Celery, app: Flask, packages: List[str]):
                 return self.run(*args, **kwargs)
 
     celery.conf.update(app.config)
+    celery.conf.update(
+        task_acks_late=Configuration.CELERY_ACKS_LATE,
+        worker_concurrency=Configuration.CELERY_WORKER_CONCURRENCY,
+        worker_prefetch_multiplier=Configuration.CELERY_WORKER_PREFETCH_MULTIPLIER,
+    )
     # configure celery with flask context https://flask.palletsprojects.com/en/1.1.x/patterns/celery/
     # e.g. for using flask-mail
     celery.Task = ContextTask
