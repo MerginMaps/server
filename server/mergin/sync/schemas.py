@@ -294,6 +294,7 @@ class AdminProjectSchema(ma.SQLAlchemyAutoSchema):
     id = fields.UUID(attribute="Project.id")
     name = fields.Str(attribute="Project.name")
     workspace = fields.Method("_workspace_name")
+    workspace_id = fields.Method("_workspace_id")
     version = fields.Function(
         lambda obj: ProjectVersion.to_v_name(obj.Project.latest_version)
     )
@@ -315,6 +316,12 @@ class AdminProjectSchema(ma.SQLAlchemyAutoSchema):
         if not name:
             name = obj.Project.workspace.name
         return name
+
+    def _workspace_id(self, obj):
+        id = getattr(obj, "workspace_id", None)
+        if not id:
+            id = obj.Project.workspace.id
+        return id
 
 
 class UserWorkspaceSchema(ma.SQLAlchemyAutoSchema):

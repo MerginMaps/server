@@ -54,7 +54,8 @@ export interface AdminProjectListItem extends Project {
   disk_usage: number
   id: string
   name: string
-  namespace: string
+  workspace: string
+  workspace_id: number
   updated: string
   version: string
   removed_at: string
