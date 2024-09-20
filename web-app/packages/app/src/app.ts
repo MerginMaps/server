@@ -22,8 +22,6 @@ import App from './App.vue'
 import { createRouter } from './router'
 import { addRouterToPinia, getPiniaInstance } from './store'
 
-import i18n from '@/plugins/i18n/i18n'
-
 const createMerginApp = () => {
   const pinia = getPiniaInstance()
   const router = createRouter(pinia)
@@ -37,7 +35,6 @@ const createMerginApp = () => {
     .mixin(MerginComponentUuidMixin)
     .use(pinia)
     .use(router)
-    .use(i18n)
     .use(createMetaManager())
     .use(PrimeVue, { pt: MMTheme })
     .use(ToastService)
