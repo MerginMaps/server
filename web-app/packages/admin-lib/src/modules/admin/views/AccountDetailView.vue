@@ -48,7 +48,7 @@
             >
               <dt class="paragraph-p6 opacity-80 mb-2">Full name</dt>
               <dd class="font-semibold" data-cy="profile-name">
-                {{ profile.name || '-' }}
+                {{ profile?.name || '-' }}
               </dd>
             </div>
             <div class="col-6 flex flex-column align-items-end">
@@ -64,73 +64,28 @@
     <app-container>
       <app-section>
         <template #title>Advanced</template>
-        <div class="flex flex-column row-gap-3 paragraph-p5 px-4 pb-4">
-          <div
-            :class="[
-              'flex flex-column align-items-start',
-              'row-gap-2',
-              'md:align-items-center md:flex-row'
-            ]"
-          >
-            <div class="flex-grow-1">
-              <p class="title-t3">Receive notifications</p>
-              <span class="paragraph-p6 opacity-80">
-                <template v-if="profile?.receive_notifications"
-                  >User has enabled receiving notifications</template
-                >
-                <template v-else>User has disabled notifications.</template>
-              </span>
-            </div>
+
+        <app-settings :items="settingsItems">
+          <template #notifications>
             <div class="flex-shrink-0 paragraph-p1">
-              <i v-if="profile.receive_notifications" class="ti ti-check" />
+              <i v-if="profile?.receive_notifications" class="ti ti-check" />
               <i v-else class="ti ti-x" />
             </div>
-          </div>
-
-          <div
-            :class="[
-              'flex flex-column align-items-start',
-              'row-gap-2',
-              'md:align-items-center md:flex-row'
-            ]"
-          >
-            <div class="flex-grow-1">
-              <p class="title-t3">Access to admin panel</p>
-              <span class="paragraph-p6 opacity-80">
-                Enabling this option will provide access to the admin panel.
-              </span>
+          </template>
+          <template #adminAccess>
+            <div class="flex-shrink-0 paragraph-p1">
+              <div
+                class="flex align-items-center flex-shrink-0"
+                data-cy="profile-notification"
+              >
+                <PInputSwitch
+                  :modelValue="user?.is_admin"
+                  @change="switchAdminAccess"
+                />
+              </div>
             </div>
-            <div
-              class="flex align-items-center flex-shrink-0"
-              data-cy="profile-notification"
-            >
-              <PInputSwitch
-                :modelValue="user?.is_admin"
-                @change="switchAdminAccess"
-              />
-            </div>
-          </div>
-
-          <div
-            :class="[
-              'flex flex-column align-items-start',
-              'row-gap-2',
-              'md:align-items-center md:flex-row'
-            ]"
-          >
-            <div class="flex-grow-1">
-              <p class="title-t3">Account activation</p>
-              <span class="paragraph-p6 opacity-80">
-                <template v-if="user?.active">
-                  The user's account is currently active. Deactivation will lead
-                  to a temporary ban from Mergin Maps usage.
-                </template>
-                <template v-else>
-                  The user's account is currently inactive. Activating it will
-                  allow access to Mergin Maps.
-                </template>
-              </span>
-            </div>
+          </template>
+          <template #accountActivation>
             <div class="flex-shrink-0">
               <PButton
                 @click="changeStatusDialog"
@@ -141,21 +96,8 @@
                 class="w-auto mr-1"
               />
             </div>
-          </div>
-          <div
-            :class="[
-              'flex flex-column align-items-start',
-              'row-gap-2',
-              'md:align-items-center md:flex-row'
-            ]"
-          >
-            <div class="flex-grow-1">
-              <p class="title-t3">Delete account</p>
-              <span class="paragraph-p6 opacity-80"
-                >Deleting this user will remove them and all their data. This
-                action cannot be undone.</span
-              >
-            </div>
+          </template>
+          <template #deleteAccount>
             <div class="flex-shrink-0">
               <PButton
                 @click="confirmDeleteUser"
@@ -164,8 +106,8 @@
                 label="Delete account"
               />
             </div>
-          </div>
-        </div>
+          </template>
+        </app-settings>
       </app-section>
     </app-container>
   </admin-layout>
@@ -177,7 +119,9 @@ import {
   useDialogStore,
   AppSection,
   AppContainer,
-  ConfirmDialogProps
+  ConfirmDialogProps,
+  AppSettings,
+  AppSettingsItemConfig
 } from '@mergin/lib'
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -188,6 +132,34 @@ import { useAdminStore } from '@/modules/admin/store'
 const route = useRoute()
 const adminStore = useAdminStore()
 const dialogStore = useDialogStore()
+
+const settingsItems = computed<AppSettingsItemConfig[]>(() => [
+  {
+    key: 'notifications',
+    title: 'Receive notifications',
+    description: profile?.value?.receive_notifications
+      ? 'User has enabled receiving notifications'
+      : 'User has disabled notifications.'
+  },
+  {
+    key: 'adminAccess',
+    title: 'Access to admin panel',
+    description: 'Enabling this option will provide access to the admin panel.'
+  },
+  {
+    key: 'accountActivation',
+    title: 'Account activation',
+    description: user?.value?.active
+      ? "The user's account is currently active. Deactivation will lead to a temporary ban from Mergin Maps usage."
+      : "The user's account is currently inactive. Activating it will allow access to Mergin Maps."
+  },
+  {
+    key: 'deleteAccount',
+    title: 'Delete account',
+    description:
+      'Deleting this user will remove them and all their data. This action cannot be undone.'
+  }
+])
 
 const user = computed(() => adminStore.user)
 const profile = computed(() => adminStore.user?.profile)

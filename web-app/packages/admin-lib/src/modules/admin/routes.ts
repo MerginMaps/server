@@ -8,7 +8,8 @@ export enum AdminRoutes {
   ACCOUNTS = 'accounts',
   ACCOUNT = 'account',
   PROJECTS = 'projects',
-  PROJECT = 'project'
+  PROJECT = 'project',
+  SETTINGS = 'settings'
 }
 
 export const getRoutes = (): RouteRecord[] => []
