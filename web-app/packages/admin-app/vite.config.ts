@@ -43,7 +43,6 @@ export default defineConfig(({ mode }) => ({
       'vue',
       'pinia',
       'vue-router',
-      'vuetify',
       'primevue',
       '@mergin/lib',
       '@mergin/admin-lib'

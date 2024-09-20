@@ -6,7 +6,6 @@
     "packages/admin-lib",
     "packages/app",
     "packages/admin-app",
-    "packages/lib-vue2",
     "packages/*"
   ],
   "scripts": {
@@ -25,20 +24,17 @@
     "build:dev": "yarn workspace @mergin/app build:dev",
     "build:admin": "yarn workspace @mergin/admin-app build",
     "build:admin:dev": "yarn workspace @mergin/admin-app build:dev",
-    "clean:libs": "yarn workspace @mergin/lib clean && yarn workspace @mergin/admin-lib clean && yarn workspace @mergin/lib-vue2 clean",
+    "clean:libs": "yarn workspace @mergin/lib clean && yarn workspace @mergin/admin-lib clean",
     "clean:libs:noadmin": "yarn workspace @mergin/lib clean",
     "i18n:report": "yarn workspace @mergin/app 18n:report",
-    "link:dependencies": "yarn link:register && yarn link @mergin/lib && yarn link @mergin/admin-lib && yarn link @mergin/lib-vue2",
+    "link:dependencies": "yarn link:register && yarn link @mergin/lib && yarn link @mergin/admin-lib",
     "link:register": "yarn workspaces run link:register",
     "link:unregister": "yarn workspaces run link:unregister",
     "types:libs": "yarn workspaces run build:types",
     "types:lib": "yarn workspace @mergin/lib build:types",
-    "types:lib-vue2": "yarn workspace @mergin/lib-vue2 build:types",
     "types:admin-lib": "yarn workspace @mergin/admin-lib build:types",
     "watch:lib": "yarn workspace @mergin/lib build:lib:watch",
-    "watch:lib-vue2": "yarn workspace @mergin/lib-vue2 build:lib:watch",
     "watch:lib:types": "yarn workspace @mergin/lib build:types:watch",
-    "watch:lib-vue2:types": "yarn workspace @mergin/lib-vue2 build:types:watch",
     "watch:admin-lib": "yarn workspace @mergin/admin-lib build:lib:watch",
     "watch:admin-lib:types": "yarn workspace @mergin/admin-lib build:types:watch",
     "lint:all": "yarn workspaces run lint",
@@ -80,7 +76,5 @@
     "node": ">=18"
   },
   "version": "0.0.0",
-  "dependencies": {
-    "@vitejs/plugin-vue2": "^2.3.1"
-  }
+  "dependencies": {}
 }

@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => ({
     alias: {
       '@': resolve(__dirname, './src')
     },
-    dedupe: ['vue', 'pinia', 'vue-router', 'vuetify', 'primevue', '@mergin/lib']
+    dedupe: ['vue', 'pinia', 'vue-router', 'primevue', '@mergin/lib']
   },
   build: {
     sourcemap: mode !== 'production',
