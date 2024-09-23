@@ -45,6 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           @sort="onSort"
           @row-click="rowClick"
           data-cy="projects-table"
+          :row-class="(data) => (data.removed_at ? 'opacity-80' : '')"
         >
           <template v-for="header in headers" :key="header.field">
             <PColumn
@@ -273,6 +274,8 @@ export default defineComponent({
     },
 
     rowClick(event: DataTableRowClickEvent) {
+      if (event.data.removed_at) return
+
       this.$router.push({
         name: AdminRoutes.PROJECT,
         params: {

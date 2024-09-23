@@ -58,7 +58,7 @@ export const AdminApi = {
     )
   },
 
-  async getServerVersion(): Promise<
+  async getLatestServerVersion(): Promise<
     AxiosResponse<LatestServerVersionResponse>
   > {
     return AdminModule.httpService.get('/v1/latest-version')

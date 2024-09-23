@@ -34,6 +34,11 @@ label {
   line-height: 2;
 }
 
+.p-float-label label {
+  font-size: inherit;
+  line-height: inherit;
+}
+
 /** Primevue overrides */
 
 // Customization of infinite border of tabs using classes instead pt because, we want to have access to variables

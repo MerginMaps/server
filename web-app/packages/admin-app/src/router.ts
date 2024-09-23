@@ -5,11 +5,9 @@
 import {
   AccountsView,
   AccountDetailView,
-  //   SettingsView,
-  //   ProjectSettingsView,
+  SettingsView,
   ProjectsView,
   ProjectView,
-  //   LoginView,
   //   useAdminStore
   AdminRoutes
 } from '@mergin/admin-lib'
@@ -95,7 +93,7 @@ export const createRouter = (pinia: Pinia) => {
           header: AppHeader
         },
         props: true
-      }
+      },
 
       //   redirect: { name: 'project-tree' },
       //   children: [
@@ -178,12 +176,16 @@ export const createRouter = (pinia: Pinia) => {
       //     }
       //   ]
       // },
-      // {
-      //   path: '/settings',
-      //   name: 'settings',
-      //   component: SettingsView,
-      //   props: true
-      // }
+      {
+        path: '/settings',
+        name: AdminRoutes.SETTINGS,
+        components: {
+          default: SettingsView,
+          sidebar: Sidebar,
+          header: AppHeader
+        },
+        props: true
+      }
     ]
   })
 

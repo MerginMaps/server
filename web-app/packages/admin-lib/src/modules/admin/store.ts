@@ -16,7 +16,9 @@ import { defineStore, getActivePinia } from 'pinia'
 import Cookies from 'universal-cookie'
 import { AdminApi } from '@/modules/admin/adminApi'
 import {
+  LatestServerVersionResponse,
   PaginatedAdminProjectsParams,
+  PaginatedAdminProjectsResponse,
   UpdateUserPayload,
   UsersResponse
 } from '@/modules/admin/types'
@@ -29,14 +31,14 @@ export interface AdminState {
     count: number
   }
   projects: {
-    items: any[]
+    items: PaginatedAdminProjectsResponse[]
     count: number
     loading: boolean
   }
   user?: UserResponse
   checkForUpdates?: boolean
-  info_url?: string
   isServerConfigHidden: boolean
+  latestServerVersion?: LatestServerVersionResponse
 }
 
 const cookies = new Cookies()
@@ -56,16 +58,44 @@ export const useAdminStore = defineStore('adminModule', {
     },
     user: null,
     checkForUpdates: undefined,
-    info_url: undefined,
-    isServerConfigHidden: false
+    isServerConfigHidden: false,
+    latestServerVersion: undefined
   }),
-
   getters: {
     displayUpdateAvailable: (state) => {
-      return !!state.checkForUpdates
+      if (!state.checkForUpdates) {
+        return false
+      }
+
+      const instanceStore = useInstanceStore()
+      const config = instanceStore.configData
+
+      if (!state.latestServerVersion || !config) {
+        return false
+      }
+
+      const { major, minor, fix } = state.latestServerVersion
+
+      if (
+        (config.major || config.major === 0) &&
+        (config.minor || config.minor === 0)
+      ) {
+        if (major > config.major) {
+          return true
+        } else if (major === config.major) {
+          if (minor > config.minor) {
+            return true
+          } else if (minor === config.minor) {
+            if (fix > config.fix) {
+              return true
+            }
+          }
+        }
+      }
+
+      return false
     }
   },
-
   actions: {
     setLoading(value) {
       this.loading = value
@@ -75,9 +105,6 @@ export const useAdminStore = defineStore('adminModule', {
     },
     setCheckForUpdates(value) {
       this.checkForUpdates = value
-    },
-    setInfoUrl(value: string) {
-      this.info_url = value
     },
     setIsServerConfigHidden(value: boolean) {
       this.isServerConfigHidden = value
@@ -167,31 +194,22 @@ export const useAdminStore = defineStore('adminModule', {
       }
     },
 
-    async checkVersions(payload) {
+    async getLatestServerVersion() {
+      const notificationStore = useNotificationStore()
       try {
-        const response = await AdminApi.getServerVersion()
-        const { major, minor, fix } = response.data
-        // compare payload - major, minor and fix version from config with latest-version from server
-        if (
-          (payload.major || payload.major === 0) &&
-          (payload.minor || payload.minor === 0)
-        ) {
-          let isUpdate = false
-          if (major > payload.major) {
-            isUpdate = true
-          } else if (major === payload.major) {
-            if (minor > payload.minor) {
-              isUpdate = true
-            } else if (minor === payload.minor) {
-              if (fix > payload.fix) {
-                isUpdate = true
-              }
-            }
-          }
-          if (isUpdate) {
-            this.setInfoUrl(response.data.info_url)
-          }
-        }
+        const response = await AdminApi.getLatestServerVersion()
+        this.latestServerVersion = response.data
+      } catch (e) {
+        notificationStore.error({ text: errorUtils.getErrorMessage(e) })
+      }
+    },
+
+    async checkVersions() {
+      try {
+        await this.getCheckUpdateFromCookies()
+        if (!this.checkForUpdates) return
+
+        await this.getLatestServerVersion()
       } catch (e) {
         console.error(e)
       }

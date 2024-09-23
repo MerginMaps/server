@@ -24,6 +24,12 @@ const sidebarItems = computed<SideBarItemModel[]>(() => [
     to: '/projects',
     icon: 'ti ti-article',
     active: route.matched.some((item) => item.name === AdminRoutes.PROJECTS)
+  },
+  {
+    title: 'Settings',
+    to: '/settings',
+    icon: 'ti ti-settings',
+    active: route.matched.some((item) => item.name === AdminRoutes.SETTINGS)
   }
 ])
 </script>

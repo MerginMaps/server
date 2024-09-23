@@ -74,7 +74,7 @@ import { ProjectRouteName } from '@/modules/project'
 const route = useRoute()
 const layoutStore = useLayoutStore()
 const props = defineProps<{
-  sidebarItems: SideBarItemModel[]
+  sidebarItems?: SideBarItemModel[]
 }>()
 
 const initialSidebarItems = computed<SideBarItemModel[]>(() => {

@@ -5,9 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <app-container
-    v-if="adminStore.displayUpdateAvailable && adminStore.info_url"
-  >
+  <app-container v-if="adminStore.displayUpdateAvailable">
     <app-section-banner>
       <template #title>Update available 🎉!</template>
       <template #description
@@ -26,22 +24,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts" setup>
-import { useInstanceStore, AppSectionBanner, AppContainer } from '@mergin/lib'
+import { AppSectionBanner, AppContainer } from '@mergin/lib'
+import { onMounted } from 'vue'
 
 import { useAdminStore } from '@/modules/admin/store'
 
-const instanceStore = useInstanceStore()
 const adminStore = useAdminStore()
 
-adminStore.getCheckUpdateFromCookies()
-adminStore.checkVersions({
-  major: instanceStore.configData?.major,
-  minor: instanceStore.configData?.minor,
-  fix: instanceStore.configData?.fix ?? null
+onMounted(async () => {
+  await adminStore.checkVersions()
 })
 
 function openUpdateUrl() {
-  window.open(adminStore.info_url, '_blank')
+  window.open(adminStore.latestServerVersion?.info_url, '_blank')
 }
 </script>
 

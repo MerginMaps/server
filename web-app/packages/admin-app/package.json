@@ -22,7 +22,6 @@
     "@tabler/icons-webfont": "^2.42.0",
     "axios": "^0.28.1",
     "lodash": "^4.17.21",
-    "material-icons": "^0.2.3",
     "pinia": "^2.1.7",
     "primeflex": "^3.3.1",
     "primevue": "3.43.0",

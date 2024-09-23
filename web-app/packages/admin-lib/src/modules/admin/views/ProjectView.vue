@@ -20,13 +20,13 @@
             <div>
               <dt class="paragraph-p6 opacity-80">Created</dt>
               <dd class="font-semibold" data-cy="project-owner">
-                {{ $filters.date(project?.created) }}
+                {{ $filters.datetime(project?.created) }}
               </dd>
             </div>
             <div>
               <dt class="paragraph-p6 opacity-80">Updated</dt>
               <dd class="font-semibold" data-cy="project-created">
-                {{ $filters.date(project?.updated) }}
+                {{ $filters.datetime(project?.updated) }}
               </dd>
             </div>
             <div>
@@ -43,49 +43,14 @@
     <app-container>
       <app-section>
         <template #title>Advanced</template>
-        <div class="flex flex-column row-gap-3 paragraph-p5 px-4 pb-4">
-          <div
-            :class="[
-              'flex flex-column align-items-start',
-              'row-gap-2',
-              'md:align-items-center md:flex-row'
-            ]"
-          >
-            <div class="flex-grow-1">
-              <template v-if="project?.access?.public">
-                <p class="title-t3">Public project</p>
-                <span class="paragraph-p6 opacity-80"
-                  >The project will be visible to everyone if it is marked as
-                  public.</span
-                >
-              </template>
-              <template v-else>
-                <p class="title-t3">This is private project</p>
-                <span class="paragraph-p6 opacity-80"
-                  >Make this project visible to anyone.</span
-                >
-              </template>
-            </div>
-            <div class="flex-shrink-0">
+        <app-settings :items="settingsItems">
+          <template #publicProject>
+            <div class="flex-shrink-0 paragraph-p1">
               <i v-if="project?.access?.public" class="ti ti-check" />
               <i v-else class="ti ti-x" />
             </div>
-          </div>
-
-          <div
-            :class="[
-              'flex flex-column align-items-start',
-              'row-gap-2',
-              'md:align-items-center md:flex-row'
-            ]"
-          >
-            <div class="flex-grow-1">
-              <p class="title-t3">Delete project</p>
-              <span class="paragraph-p6 opacity-80"
-                >Deleting this project will remove it and all its data. This
-                action cannot be undone.</span
-              >
-            </div>
+          </template>
+          <template #deleteProject>
             <div class="flex-shrink-0">
               <PButton
                 @click="confirmDelete"
@@ -94,8 +59,8 @@
                 label="Delete project"
               />
             </div>
-          </div>
-        </div>
+          </template>
+        </app-settings>
       </app-section>
     </app-container>
   </admin-layout>
@@ -108,7 +73,9 @@ import {
   AppSection,
   AppContainer,
   ConfirmDialogProps,
-  useProjectStore
+  useProjectStore,
+  AppSettingsItemConfig,
+  AppSettings
 } from '@mergin/lib'
 import { computed, watch, defineProps } from 'vue'
 import { useRoute } from 'vue-router'
@@ -126,6 +93,20 @@ defineProps<{
   namespace: string
 }>()
 
+const settingsItems = computed<AppSettingsItemConfig[]>(() => [
+  {
+    key: 'publicProject',
+    title: 'Public project',
+    description:
+      'The project will be visible to everyone if it is marked as public.'
+  },
+  {
+    key: 'deleteProject',
+    title: 'Delete project',
+    description:
+      'Deleting this project will remove it and all its data. This action cannot be undone.'
+  }
+])
 const project = computed(() => projectStore.project)
 const routeProjectName = computed(() => route?.params?.projectName as string)
 const routeWorkspaceName = computed(() => route?.params?.namespace as string)
