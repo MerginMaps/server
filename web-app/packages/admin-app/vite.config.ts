@@ -36,14 +36,12 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
-      // 'vue-i18n': 'vue-i18n/dist/vue-i18n.cjs.js',
       url: 'rollup-plugin-node-polyfills/polyfills/url'
     },
     dedupe: [
       'vue',
       'pinia',
       'vue-router',
-      'vuetify',
       'primevue',
       '@mergin/lib',
       '@mergin/admin-lib'

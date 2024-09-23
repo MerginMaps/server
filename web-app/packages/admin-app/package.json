@@ -15,8 +15,7 @@
     "clean": "echo 'Nothing to clean.'",
     "link:register": "echo '[@mergin/admin-app] Nothing to register.'",
     "link:unregister": "echo '[@mergin/admin-app] Nothing to unregister.'",
-    "lint": "eslint . --ext .js,.vue,.ts",
-    "i18n:report": "vue-cli-service i18n:report --src './src/admin/**/*.?(js|vue)' --locales './src/admin/locales/**/*.json'"
+    "lint": "eslint . --ext .js,.vue,.ts"
   },
   "dependencies": {
     "@tabler/icons-webfont": "^2.42.0",
@@ -26,7 +25,6 @@
     "primeflex": "^3.3.1",
     "primevue": "3.43.0",
     "vue": "3.3.8",
-    "vue-i18n": "^9.7.1",
     "vue-meta": "^3.0.0-alpha.10",
     "vue-router": "4.2.5"
   }
