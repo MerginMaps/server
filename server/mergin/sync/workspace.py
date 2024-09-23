@@ -251,7 +251,8 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
     def projects_query(self, like: str = None):
         ws = self.factory_method()
         query = db.session.query(
-            Project, literal(ws.name).label("workspace_name")
+            Project,
+            literal(ws.name).label("workspace_name"),
         ).filter(Project.storage_params.isnot(None))
 
         if like:

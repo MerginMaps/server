@@ -14,7 +14,6 @@ import { LoginViewTemplate, useUserStore } from '@mergin/lib'
 import { mapActions } from 'pinia'
 import { defineComponent } from 'vue'
 
-
 export default defineComponent({
   name: 'LoginView',
   components: {

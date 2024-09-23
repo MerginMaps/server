@@ -8,7 +8,6 @@ import {
   SettingsView,
   ProjectsView,
   ProjectView,
-  //   useAdminStore
   AdminRoutes
 } from '@mergin/admin-lib'
 import {
@@ -48,11 +47,7 @@ export const createRouter = (pinia: Pinia) => {
       {
         path: '/',
         name: 'admin',
-        component: NotFoundView,
-        beforeEnter: (to, from, next) => {
-          next('/accounts')
-        },
-        props: true
+        redirect: '/accounts'
       },
       {
         path: '/accounts',

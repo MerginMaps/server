@@ -58,8 +58,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 <router-link
                   class="title-t4"
                   :to="{
-                    name: `workspace`,
-                    params: { namespace: slotProps.data.workspace }
+                    name: `adminWorkspace`,
+                    params: { id: slotProps.data.workspace_id }
                   }"
                 >
                   {{ slotProps.data.workspace }}
