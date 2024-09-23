@@ -253,7 +253,6 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
         query = db.session.query(
             Project,
             literal(ws.name).label("workspace_name"),
-            literal(ws.id).label("workspace_id"),
         ).filter(Project.storage_params.isnot(None))
 
         if like:
