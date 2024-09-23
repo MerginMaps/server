@@ -1,3 +1,8 @@
+<!--
+Copyright (C) Lutra Consulting Limited
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+-->
 <template>
   <div class="flex flex-column row-gap-3 px-4 pb-4">
     <app-settings-item v-for="(item, index) in items" :key="index">
