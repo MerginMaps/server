@@ -4,6 +4,7 @@
 from __future__ import annotations
 import json
 import os
+import time
 import uuid
 from datetime import datetime, timedelta
 from enum import Enum
@@ -28,6 +29,7 @@ from .files import (
     ChangesSchema,
     ProjectFile,
 )
+from .storages.disk import move_to_tmp
 from .. import db
 from .storages import DiskStorage
 from .utils import is_versioned_file, is_qgis
@@ -209,7 +211,7 @@ class Project(db.Model):
     def delete(self, removed_by: int = None):
         """Mark project as permanently deleted (but keep in db)
         - rename (to free up the same name)
-        - remove associated files and their history and project versions
+        - remove associated files and their history
         - reset project_access
         - decline pending project access requests
         """
@@ -225,9 +227,7 @@ class Project(db.Model):
         # Null in storage params serves as permanent deletion flag
         self.storage.delete()
         self.storage_params = null()
-        pv_table = ProjectVersion.__table__
-        # remove versions and file history items with cascade
-        db.session.execute(pv_table.delete().where(pv_table.c.project_id == self.id))
+        # remove file records and their history (cascade)
         files_path_table = ProjectFilePath.__table__
         db.session.execute(
             files_path_table.delete().where(files_path_table.c.project_id == self.id)
@@ -492,6 +492,17 @@ class FileHistory(db.Model):
             file_path_id,
             project_version_name.desc(),
         ),
+        db.CheckConstraint(
+            text(
+                """
+                CASE
+                    WHEN (change = 'update_diff') THEN diff IS NOT NULL
+                    ELSE diff IS NULL
+                END
+                """
+            ),
+            name="changes_with_diff",
+        ),
     )
 
     def __init__(
@@ -507,7 +518,7 @@ class FileHistory(db.Model):
         self.size = size
         self.checksum = checksum
         self.location = location
-        self.diff = diff
+        self.diff = diff if diff is not None else null()
         self.change = change.value
 
     @property
@@ -684,7 +695,9 @@ class ProjectVersion(db.Model):
         UUID(as_uuid=True), db.ForeignKey("project.id", ondelete="CASCADE"), index=True
     )
     created = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    author = db.Column(db.String, index=True)
+    author_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), index=True, nullable=True
+    )
     user_agent = db.Column(db.String, index=True)
     ip_address = db.Column(db.String, index=True)
     ip_geolocation_country = db.Column(
@@ -698,6 +711,8 @@ class ProjectVersion(db.Model):
         uselist=False,
     )
     device_id = db.Column(db.String, index=True, nullable=True)
+    author = db.relationship("User", uselist=False, lazy="joined")
+
     __table_args__ = (
         db.UniqueConstraint("project_id", "name"),
         db.Index(
@@ -711,7 +726,7 @@ class ProjectVersion(db.Model):
         self,
         project: Project,
         name: int,
-        author: str,
+        author_id: int,
         changes: UploadChanges,
         ip: str,
         user_agent: str = None,
@@ -720,7 +735,7 @@ class ProjectVersion(db.Model):
         self.project = project
         self.project_id = project.id
         self.name = name
-        self.author = author
+        self.author_id = author_id
         self.user_agent = user_agent
         self.ip_address = ip
         self.device_id = device_id
@@ -764,7 +779,11 @@ class ProjectVersion(db.Model):
                     size=upload_file.size,
                     checksum=upload_file.checksum,
                     location=upload_file.location,
-                    diff=asdict(upload_file.diff) if upload_file.diff else null(),
+                    diff=(
+                        asdict(upload_file.diff)
+                        if (is_diff_change and upload_file.diff)
+                        else null()
+                    ),
                     change=(
                         PushChangeType.UPDATE_DIFF if is_diff_change else change_type
                     ),
@@ -1026,6 +1045,29 @@ class Upload(db.Model):
         self.changes = ChangesSchema().dump(changes)
         self.user_id = user_id
 
+    @property
+    def upload_dir(self):
+        return os.path.join(self.project.storage.project_dir, "tmp", self.id)
+
+    @property
+    def lockfile(self):
+        return os.path.join(self.upload_dir, "lockfile")
+
+    def is_active(self):
+        """Check if upload is still active because there was a ping (lockfile update) from underlying process"""
+        return os.path.exists(self.lockfile) and (
+            time.time() - os.path.getmtime(self.lockfile)
+            < current_app.config["LOCKFILE_EXPIRATION"]
+        )
+
+    def clear(self):
+        """Clean up pending upload.
+        Uploaded files and table records are removed, and another upload can start.
+        """
+        move_to_tmp(self.upload_dir, self.id)
+        db.session.delete(self)
+        db.session.commit()
+
 
 class RequestStatus(Enum):
     ACCEPTED = "accepted"
@@ -1160,6 +1202,6 @@ class GeodiffActionHistory(db.Model):
         self.target_version = target_version
         self.action = action
 
-        if os.path.exists:
+        if os.path.exists(diff_path):
             self.diff_size = os.path.getsize(diff_path)
             self.changes = GeoDiff().changes_count(diff_path)

@@ -81,7 +81,6 @@ from .utils import (
     is_versioned_file,
     is_name_allowed,
     get_project_path,
-    clean_upload,
     get_device_id,
 )
 from .errors import StorageLimitHit
@@ -224,7 +223,7 @@ def add_project(namespace):  # noqa: E501
         version = ProjectVersion(
             p,
             version_name,
-            current_user.username,
+            current_user.id,
             changes,
             get_ip(request),
             get_user_agent(request),
@@ -746,6 +745,13 @@ def project_push(namespace, project_name):
     if all(len(changes[key]) == 0 for key in changes.keys()):
         abort(400, "No changes")
 
+    # reject upload early if there is another one already running
+    pending_upload = Upload.query.filter_by(
+        project_id=project.id, version=version
+    ).first()
+    if pending_upload and pending_upload.is_active():
+        abort(400, "Another process is running. Please try later.")
+
     upload_changes = ChangesSchema(context={"version": version + 1}).load(changes)
     # check if same file is not already uploaded
     for item in upload_changes.added:
@@ -817,16 +823,8 @@ def project_push(namespace, project_name):
         db.session.rollback()
         # check and clean dangling uploads or abort
         for current_upload in project.uploads.all():
-            upload_dir = os.path.join(
-                project.storage.project_dir, "tmp", current_upload.id
-            )
-            upload_lockfile = os.path.join(upload_dir, "lockfile")
-            if os.path.exists(upload_lockfile):
-                if (
-                    time() - os.path.getmtime(upload_lockfile)
-                    < current_app.config["LOCKFILE_EXPIRATION"]
-                ):
-                    abort(400, "Another process is running. Please try later.")
+            if current_upload.is_active():
+                abort(400, "Another process is running. Please try later.")
             db.session.delete(current_upload)
             db.session.commit()
             # previous push attempt is definitely lost
@@ -844,15 +842,14 @@ def project_push(namespace, project_name):
             logging.info(
                 f"Upload transaction {upload.id} created for project: {project.id}, version: {version}"
             )
-            move_to_tmp(upload_dir)
+            move_to_tmp(upload.upload_dir)
         except IntegrityError as err:
             logging.error(f"Failed to create upload session: {str(err)}")
             abort(422, "Failed to create upload session. Please try later.")
 
     # Create transaction folder and lockfile
-    folder = os.path.join(project.storage.project_dir, "tmp", upload.id)
-    os.makedirs(folder)
-    open(os.path.join(folder, "lockfile"), "w").close()
+    os.makedirs(upload.upload_dir)
+    open(upload.lockfile, "w").close()
 
     # Update immediately without uploading of new/modified files and remove transaction/lockfile after successful commit
     if not (changes["added"] or changes["updated"]):
@@ -863,7 +860,7 @@ def project_push(namespace, project_name):
             pv = ProjectVersion(
                 project,
                 next_version,
-                current_user.username,
+                current_user.id,
                 upload_changes,
                 get_ip(request),
                 user_agent,
@@ -877,15 +874,15 @@ def project_push(namespace, project_name):
                 f"Transaction id: {upload.id}. No upload."
             )
             project_version_created.send(pv)
-            clean_upload(upload.id)
             return jsonify(ProjectSchema().dump(project)), 200
         except IntegrityError as err:
             db.session.rollback()
-            clean_upload(upload.id)
             logging.exception(
                 f"Failed to upload a new project version using transaction id: {upload.id}: {str(err)}"
             )
             abort(422, "Failed to upload a new project version. Please try later.")
+        finally:
+            upload.clear()
 
     return {"transaction": upload.id}
 
@@ -1074,7 +1071,7 @@ def push_finish(transaction_id):
         pv = ProjectVersion(
             project,
             next_version,
-            current_user.username,
+            current_user.id,
             changes,
             get_ip(request),
             user_agent,
@@ -1087,16 +1084,16 @@ def push_finish(transaction_id):
             f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
         )
         project_version_created.send(pv)
-        # remove artifacts
-        clean_upload(transaction_id)
     except (psycopg2.Error, FileNotFoundError, DataSyncError, IntegrityError) as err:
         db.session.rollback()
-        clean_upload(transaction_id)
         logging.exception(
             f"Failed to finish push for project: {project.id}, project version: {v_next_version}, "
             f"transaction id: {transaction_id}.: {str(err)}"
         )
         abort(422, "Failed to create new version: {}".format(str(err)))
+    finally:
+        # remove artifacts
+        upload.clear()
 
     # do not optimize on every version, every 10th is just fine
     if not project.latest_version % 10:
@@ -1208,7 +1205,7 @@ def clone_project(namespace, project_name):  # noqa: E501
     project_version = ProjectVersion(
         p,
         version,
-        current_user.username,
+        current_user.id,
         changes,
         get_ip(request),
         user_agent,

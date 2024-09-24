@@ -133,5 +133,5 @@ def test_remove_deleted_project_backups(client):
         .filter(Project.storage_params.isnot(None))
         .first()
     )
-    assert ProjectVersion.query.filter_by(project_id=rm_project.id).count() == 0
+    assert ProjectVersion.query.filter_by(project_id=rm_project.id).count() != 0
     assert str(rm_project.id) in rm_project.name

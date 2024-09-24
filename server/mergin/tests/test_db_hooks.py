@@ -42,7 +42,7 @@ def test_close_user_account(client, diff_project):
     flag_modified(diff_project.access, "writers")
     # user contributed to another user project so he is listed in projects history
     changes = UploadChanges(added=[], updated=[], removed=[])
-    pv = ProjectVersion(diff_project, 11, user.username, changes, "127.0.0.1")
+    pv = ProjectVersion(diff_project, 11, user.id, changes, "127.0.0.1")
     diff_project.latest_version = pv.name
     pv.project = diff_project
     db.session.add(pv)
@@ -98,7 +98,7 @@ def test_close_user_account(client, diff_project):
     )
     assert user_id not in diff_project.access.writers
     # user remains referenced in existing project version he created (as read-only ref)
-    assert diff_project.get_latest_version().author == "user"
+    assert diff_project.get_latest_version().author_id == user_id
     sync_fail_history = SyncFailuresHistory.query.filter(
         SyncFailuresHistory.project_id == diff_project.id
     ).all()
@@ -142,15 +142,15 @@ def test_remove_project(client, diff_project):
     diff_project.delete()
     assert Project.query.filter_by(id=project_id).count()
     assert not Upload.query.filter_by(project_id=project_id).count()
-    assert not ProjectVersion.query.filter_by(project_id=project_id).count()
+    assert ProjectVersion.query.filter_by(project_id=project_id).count()
     assert ProjectAccess.query.filter_by(project_id=project_id).count()
     cleanup(client, [project_dir])
     assert access_request.status == RequestStatus.DECLINED.value
-    # after removal only cached information in project table remains
+    # after removal cached information in project table remains and project versions, but not files details
     assert diff_project.disk_usage
     assert diff_project.latest_version is not None
     assert diff_project.files == []
-    assert not diff_project.get_latest_version()
+    assert diff_project.get_latest_version()
     assert (
         FileHistory.query.filter(FileHistory.version_id.in_(versions_ids)).count() == 0
     )
