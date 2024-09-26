@@ -98,10 +98,9 @@ def move_to_tmp(src, dest=None):
     if not os.path.exists(src):
         return
     dest = dest if dest else str(uuid.uuid4())
-    rel_path = os.path.relpath(
-        src, start=current_app.config["LOCAL_PROJECTS"]
-    )  # take relative path from parent of all project files
-    temp_path = os.path.join(current_app.config["TEMP_DIR"], dest, rel_path)
+    temp_path = os.path.join(
+        current_app.config["TEMP_DIR"], dest, os.path.basename(src)
+    )
     os.renames(src, temp_path)
     return temp_path
 
