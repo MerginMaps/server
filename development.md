@@ -58,6 +58,20 @@ yarn watch:lib:types
 Watching the type definitions is also useful to pick up any changes to imports or new components that are added.
 
 
+## Running locally in a docker composition
+
+```shell
+# Run the docker composition with the current Dockerfiles
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+# Give ownership of the ./projects folder to user that is running the gunicorn container
+sudo chown 901:999 projects/
+
+# init db and create user
+docker exec -it merginmaps-server flask init-db
+docker exec -it merginmaps-server flask user create admin topsecret --is-admin --email admin@example.com
+```
+
 ## Running tests
 To launch the unit tests run:
 ```shell

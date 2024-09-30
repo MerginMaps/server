@@ -96,7 +96,7 @@ def test_clean_temp_files(app):
     assert os.path.exists(path)
     # patch modification time of parent dir
     t = datetime.utcnow() - timedelta(days=(app.config["TEMP_EXPIRATION"] + 1))
-    parent_dir = os.path.dirname(os.path.dirname(path))
+    parent_dir = os.path.dirname(path)
     os.utime(parent_dir, (datetime.timestamp(t), datetime.timestamp(t)))
     remove_temp_files()
     assert not os.path.exists(path)

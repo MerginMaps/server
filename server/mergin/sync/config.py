@@ -50,5 +50,5 @@ class Configuration(object):
     # working directory for geodiff actions - should be a fast local storage
     GEODIFF_WORKING_DIR = config(
         "GEODIFF_WORKING_DIR",
-        default=os.path.join(LOCAL_PROJECTS, os.pardir, "geodiff_tmp"),
+        default=os.path.join(LOCAL_PROJECTS, "geodiff_tmp"),
     )
