@@ -104,7 +104,7 @@ $accordionHeaderPadding: 1rem .5rem;
 
 /// Background of an accordion panel header in hover state
 /// @group panel
-$accordionHeaderHoverBg: #e9ecef;
+$accordionHeaderHoverBg: var(--light-green-500);
 
 /// Border of an accordion panel header in hover state
 /// @group panel
@@ -128,7 +128,7 @@ $accordionHeaderTextActiveColor: $textColor;
 
 /// Hover background of an accordion panel header in expanded state
 /// @group panel
-$accordionHeaderActiveHoverBg: #e9ecef;
+$accordionHeaderActiveHoverBg: var(--light-green-500);
 
 /// Hover border of an accordion panel header in expanded state
 /// @group panel
