@@ -18,6 +18,9 @@ body, p, dd {
 p, span, dl {
   overflow-wrap: break-word;
 }
+dd {
+  overflow-wrap: anywhere;
+}
 a {
   text-decoration: inherit;
   color: inherit;
