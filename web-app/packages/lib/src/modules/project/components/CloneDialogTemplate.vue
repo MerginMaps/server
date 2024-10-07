@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <div class="flex flex-column gap-4">
+  <div class="flex flex-column gap-4 pb-4">
     <span class="flex p-float-label w-ful p-input-filled">
       <PInputText
         autofocus
