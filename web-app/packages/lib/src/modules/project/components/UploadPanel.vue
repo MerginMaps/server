@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         id="update-files-btn"
         @click="confirmUpload"
         :disabled="upload.running || remainingAnalyzingFiles > 0"
-        class="mt-2 w-full"
+        class="mt-2 w-full my-4"
         label="Update Changes"
       />
     </div>
