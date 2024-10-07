@@ -12,7 +12,7 @@ h6 {
   overflow-wrap: break-word;
   min-width: 0;
 }
-body, p, dd {
+body, p, dd, dl {
   margin: 0
 }
 p, span, dl {
@@ -28,6 +28,10 @@ a {
 /** In browsers is hardcoded min width for inputs... */
 input, textarea {
   min-width: 0;
+}
+
+img {
+  max-width: 100%;
 }
 
 /** Primevue overrides */
