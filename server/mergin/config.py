@@ -79,6 +79,7 @@ class Configuration(object):
     CELERYD_PREFETCH_MULTIPLIER = config(
         "CELERYD_PREFETCH_MULTIPLIER", default=4, cast=int
     )
+    CELERY_ROUTES = config("CELERY_ROUTES", default="{}", cast=eval)
 
     # deployment URL (e.g. for links generated in emails)
     MERGIN_BASE_URL = config("MERGIN_BASE_URL", default="")
