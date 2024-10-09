@@ -12,11 +12,14 @@ h6 {
   overflow-wrap: break-word;
   min-width: 0;
 }
-body, p {
+body, p, dd, dl {
   margin: 0
 }
 p, span, dl {
   overflow-wrap: break-word;
+}
+dd {
+  overflow-wrap: anywhere;
 }
 a {
   text-decoration: inherit;
@@ -25,6 +28,10 @@ a {
 /** In browsers is hardcoded min width for inputs... */
 input, textarea {
   min-width: 0;
+}
+
+img {
+  max-width: 100%;
 }
 
 /** Primevue overrides */

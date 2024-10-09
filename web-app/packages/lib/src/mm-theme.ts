@@ -1,3 +1,4 @@
+import { AccordionPassThroughOptions } from 'primevue/accordion'
 import { AutoCompletePassThroughOptions } from 'primevue/autocomplete'
 import { ButtonPassThroughOptions } from 'primevue/button'
 import { DataViewPassThroughOptions } from 'primevue/dataview'
@@ -115,6 +116,14 @@ export default usePassThrough(
       root: 'justify-content-start font-semibold'
     } as InlineMessagePassThroughOptions,
     dialog: {
+      root(options) {
+        const isBottom = ['bottom', 'bottomright', 'bottomleft'].some(
+          (item) => item === options?.props?.position
+        )
+        return {
+          style: { marginBottom: isBottom ? 0 : null }
+        }
+      },
       header: {
         class: 'border-none border-round-top-2xl',
         style: {
@@ -126,8 +135,11 @@ export default usePassThrough(
       },
       closeButton:
         'text-2xl hover:surface-ground text-color-forest hover:text-color',
-      content: {
-        class: 'border-round-bottom-2xl'
+      content(options) {
+        const isBottom = ['bottom', 'bottomright', 'bottomleft'].some(
+          (item) => item === options?.props?.position
+        )
+        return isBottom ? '' : 'border-round-bottom-2xl'
       },
       mask: {
         style: { zIndex: 7 }
@@ -139,7 +151,14 @@ export default usePassThrough(
     tag: {
       root: 'title-t5',
       value: 'title-t5'
-    } as TagPassThroughOptions
+    } as TagPassThroughOptions,
+    accordion: {
+      accordiontab: {
+        headerAction: {
+          class: 'border-noround border-x-none'
+        }
+      }
+    } as AccordionPassThroughOptions
   },
   {}
 )

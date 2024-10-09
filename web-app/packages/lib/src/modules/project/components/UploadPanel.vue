@@ -8,7 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <PDialog
     v-model:visible="visible"
     :position="isUnderOverlayBreakpoint ? 'topleft' : 'bottomright'"
-    class="upload-panel w-8 lg:w-3 mr-4 mb-4"
+    class="upload-panel w-8 lg:w-3"
+    :draggable="false"
   >
     <template #header>
       <p class="font-semibold">
@@ -30,16 +31,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <span class="paragraph-p5 opacity-80 capitalize">{{ key }}</span>
         <app-circle class="ml-auto">{{ upload.diff[key].length }}</app-circle>
       </div>
-      <div class="py-4 w-full">
-        <PButton
-          id="update-files-btn"
-          @click="confirmUpload"
-          :disabled="upload.running || remainingAnalyzingFiles > 0"
-          class="flex justify-content-center w-full text-center"
-        >
-          Update Changes
-        </PButton>
-      </div>
+      <PButton
+        id="update-files-btn"
+        @click="confirmUpload"
+        :disabled="upload.running || remainingAnalyzingFiles > 0"
+        class="mt-2 w-full my-4"
+        label="Update Changes"
+      />
     </div>
   </PDialog>
 </template>
