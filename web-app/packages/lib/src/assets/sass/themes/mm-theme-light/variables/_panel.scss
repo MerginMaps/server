@@ -60,7 +60,7 @@ $panelContentTextColor: $textColor;
 
 /// Padding for the content section of a panel
 /// @group panel
-$panelContentPadding: 1rem;
+$panelContentPadding: .5rem;
 
 /// Border for the footer section of a panel
 /// @group panel
@@ -84,11 +84,11 @@ $accordionSpacing: 0;
 
 /// Border of an accordion panel header
 /// @group panel
-$accordionHeaderBorder: $panelHeaderBorder;
+$accordionHeaderBorder: 1px solid #dee2e6;
 
 /// Background of an accordion panel header
 /// @group panel
-$accordionHeaderBg: $panelHeaderBg;
+$accordionHeaderBg: var(--surface-section);
 
 /// Text color of an accordion panel header
 /// @group panel
@@ -100,11 +100,11 @@ $accordionHeaderFontWeight: $panelHeaderFontWeight;
 
 /// Padding of an accordion panel header
 /// @group panel
-$accordionHeaderPadding: $panelHeaderPadding;
+$accordionHeaderPadding: 1rem .5rem;
 
 /// Background of an accordion panel header in hover state
 /// @group panel
-$accordionHeaderHoverBg: #e9ecef;
+$accordionHeaderHoverBg: var(--light-green-500);
 
 /// Border of an accordion panel header in hover state
 /// @group panel
@@ -116,7 +116,7 @@ $accordionHeaderTextHoverColor: $textColor;
 
 /// Background of an accordion panel header in expanded state
 /// @group panel
-$accordionHeaderActiveBg: $panelHeaderBg;
+$accordionHeaderActiveBg: var(--surface-section);
 
 /// Border of an accordion panel header in expanded state
 /// @group panel
@@ -128,7 +128,7 @@ $accordionHeaderTextActiveColor: $textColor;
 
 /// Hover background of an accordion panel header in expanded state
 /// @group panel
-$accordionHeaderActiveHoverBg: #e9ecef;
+$accordionHeaderActiveHoverBg: var(--light-green-500);
 
 /// Hover border of an accordion panel header in expanded state
 /// @group panel
@@ -140,7 +140,7 @@ $accordionHeaderTextActiveHoverColor: $textColor;
 
 /// Border for a content section of an accordion panel
 /// @group panel
-$accordionContentBorder: $panelContentBorder;
+$accordionContentBorder: none;
 
 /// Background for a content section of an accordion panel
 /// @group panel
@@ -152,7 +152,7 @@ $accordionContentTextColor: $panelContentTextColor;
 
 /// Padding for a content section of an accordion panel
 /// @group panel
-$accordionContentPadding: $panelContentPadding;
+$accordionContentPadding: .5rem;
 
 /// Border for a parent element containing all the headers of a tabview
 /// @group panel

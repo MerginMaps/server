@@ -61,12 +61,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           v-if="mimetype && file.size < 104857600"
           class="flex flex-column align-items-center w-full py-4"
         >
-          <PImage
-            :src="downloadUrl"
-            v-if="mimetype.match('image')"
-            preview
-            imageClass="w-full"
-          />
+          <PImage :src="downloadUrl" v-if="mimetype.match('image')" preview />
           <div
             class="file-detail-code border-round-xl p-4 paragraph-p4 w-full"
             v-else-if="mimetype.match('text')"
