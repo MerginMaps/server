@@ -13,12 +13,15 @@ h6 {
   min-width: 0;
   text-wrap: balance;
 }
-body, p, dd {
+body, p, dd, dl {
   margin: 0
 }
 p, span, dl, li {
   overflow-wrap: break-word;
   text-wrap: pretty;
+}
+dd {
+  overflow-wrap: anywhere;
 }
 a {
   text-decoration: inherit;
@@ -37,6 +40,10 @@ label {
 .p-float-label label {
   font-size: inherit;
   line-height: inherit;
+}
+
+img {
+  max-width: 100%;
 }
 
 /** Primevue overrides */

@@ -1,9 +1,9 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
-
 import os
 import io
+import tempfile
 import time
 import uuid
 import logging
@@ -98,11 +98,25 @@ def move_to_tmp(src, dest=None):
     if not os.path.exists(src):
         return
     dest = dest if dest else str(uuid.uuid4())
-    rel_path = os.path.relpath(
-        src, start=current_app.config["LOCAL_PROJECTS"]
-    )  # take relative path from parent of all project files
-    temp_path = os.path.join(current_app.config["TEMP_DIR"], dest, rel_path)
-    os.renames(src, temp_path)
+    temp_path = os.path.join(
+        current_app.config["TEMP_DIR"], dest, os.path.basename(src)
+    )
+    try:
+        os.renames(src, temp_path)
+    except OSError as e:
+        # in the case of specific cross-device error [Errno 18] Invalid cross-device link
+        # just rename it within the same root with prefix 'delete-me' for easier custom cleanup
+        if e.errno == 18:
+            if src.startswith(current_app.config["LOCAL_PROJECTS"]):
+                root = current_app.config["LOCAL_PROJECTS"]
+            elif src.startswith(current_app.config["GEODIFF_WORKING_DIR"]):
+                root = current_app.config["GEODIFF_WORKING_DIR"]
+            else:
+                root = tempfile.gettempdir()
+            temp_path = os.path.join(root, "delete-me-" + dest, os.path.basename(src))
+            os.renames(src, temp_path)
+        else:
+            raise
     return temp_path
 
 

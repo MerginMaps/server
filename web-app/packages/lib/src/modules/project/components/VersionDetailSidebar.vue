@@ -60,16 +60,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         collapse-icon="ti ti-chevron-right"
         expand-icon="ti ti-chevron-down"
         :active-index="activeAccordionItems"
-        :pt="{
-          accordiontab: {
-            headerAction: {
-              class: 'surface-section border-x-none border-noround p-2'
-            },
-            content: {
-              class: 'border-none'
-            }
-          }
-        }"
       >
         <PAccordionTab
           v-for="item in changeTabs"
@@ -88,9 +78,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <div
             v-for="change in changes[item.key]"
             :key="change.path"
-            class="py-2 paragraph-p6"
+            class="paragraph-p6"
           >
-            <div class="flex align-items-center justify-content-between mb-2">
+            <div class="flex align-items-center justify-content-between mb-1">
               <span class="w-10 font-semibold">{{ change.path }}</span>
               <span class="flex-shrink-0">{{
                 $filters.filesize(

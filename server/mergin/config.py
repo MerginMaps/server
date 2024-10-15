@@ -74,6 +74,12 @@ class Configuration(object):
     CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = config(
         "CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS", default="{}", cast=eval
     )
+    CELERY_ACKS_LATE = config("CELERY_ACKS_LATE", default=False, cast=bool)
+    CELERYD_CONCURRENCY = config("CELERYD_CONCURRENCY", default=1, cast=int)
+    CELERYD_PREFETCH_MULTIPLIER = config(
+        "CELERYD_PREFETCH_MULTIPLIER", default=4, cast=int
+    )
+    CELERY_ROUTES = config("CELERY_ROUTES", default="{}", cast=eval)
 
     # deployment URL (e.g. for links generated in emails)
     MERGIN_BASE_URL = config("MERGIN_BASE_URL", default="")

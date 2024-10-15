@@ -501,7 +501,7 @@ class FileHistory(db.Model):
                 END
                 """
             ),
-            name="file_history_changes_with_diff",
+            name="changes_with_diff",
         ),
     )
 
