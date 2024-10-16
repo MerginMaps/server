@@ -41,72 +41,79 @@
     </app-container>
 
     <app-container>
-      <app-section>
-        <template #title>Advanced</template>
-        <app-settings :items="settingsItems">
-          <template #publicProject>
-            <div class="flex-shrink-0 paragraph-p1">
-              <i v-if="project?.access?.public" class="ti ti-check" />
-              <i v-else class="ti ti-x" />
-            </div>
-          </template>
-          <template #deleteProject>
-            <div class="flex-shrink-0">
-              <PButton
-                @click="confirmDelete"
-                severity="danger"
-                data-cy="project-delete-btn"
-                label="Delete project"
-              />
-            </div>
-          </template>
-        </app-settings>
-      </app-section>
+      <PTabView
+        @tab-click="(e) => tabClick(e.index)"
+        data-cy="project-tab-nav"
+        :pt="{
+          root: {
+            class: 'relative z-auto'
+          },
+          nav: {
+            style: {
+              backgroundColor: 'transparent',
+              maxWidth: '1120px'
+            },
+            class: 'mx-auto px-3 lg:px-0 border-transparent'
+          },
+          panelContainer: {
+            style: {
+              backgroundColor: 'transparent'
+            },
+            class: 'py-0 px-3'
+          }
+        }"
+      >
+        <PTabPanel
+          v-for="tab in tabs"
+          :header="tab.header"
+          :key="tab.route"
+        ></PTabPanel>
+        <router-view />
+      </PTabView>
     </app-container>
   </admin-layout>
 </template>
 
 <script setup lang="ts">
-import {
-  ConfirmDialog,
-  useDialogStore,
-  AppSection,
-  AppContainer,
-  ConfirmDialogProps,
-  useProjectStore,
-  AppSettingsItemConfig,
-  AppSettings
-} from '@mergin/lib'
+import { AppSection, AppContainer, useProjectStore } from '@mergin/lib'
 import { computed, watch, defineProps } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
-import { useAdminStore } from '@/modules'
+import { AdminRoutes } from '@/modules'
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
 
+interface TabItem {
+  route: string
+  header?: string
+}
+
 const route = useRoute()
+const router = useRouter()
 const projectStore = useProjectStore()
-const dialogStore = useDialogStore()
-const adminStore = useAdminStore()
 
 defineProps<{
   projectName: string
   namespace: string
 }>()
 
-const settingsItems = computed<AppSettingsItemConfig[]>(() => [
-  {
-    key: 'publicProject',
-    title: 'Public project',
-    description:
-      'The project will be visible to everyone if it is marked as public.'
-  },
-  {
-    key: 'deleteProject',
-    title: 'Delete project',
-    description:
-      'Deleting this project will remove it and all its data. This action cannot be undone.'
-  }
-])
+const tabs = computed(() => {
+  const tabs: TabItem[] = [
+    {
+      route: AdminRoutes.ProjectTree,
+      header: 'Files'
+    },
+    {
+      route: AdminRoutes.ProjectHistory,
+      header: 'History'
+    },
+    {
+      route: AdminRoutes.ProjectHistory,
+      header: 'Settings'
+    }
+  ]
+  return tabs
+})
+
 const project = computed(() => projectStore.project)
 const routeProjectName = computed(() => route?.params?.projectName as string)
 const routeWorkspaceName = computed(() => route?.params?.namespace as string)
@@ -129,26 +136,14 @@ watch(
   { immediate: true }
 )
 
-const confirmDelete = () => {
-  const props: ConfirmDialogProps = {
-    text: `Are you sure you want to permanently delete this project?`,
-    description: `Deleting this project will remove it
-      and all its data. This action cannot be undone. Type in project name to confirm:`,
-    hint: project.value.name,
-    confirmText: 'Delete permanently',
-    confirmField: {
-      label: 'Project name',
-      expected: project.value.name
-    },
-    severity: 'danger'
-  }
-  const listeners = {
-    confirm: async () =>
-      await adminStore.deleteProject({ projectId: project.value.id })
-  }
-  dialogStore.show({
-    component: ConfirmDialog,
-    params: { props, listeners, dialog: { header: 'Delete project' } }
+/**
+ * Handles clicking on a tab by index.
+ *
+ * @param index - The index of the clicked tab.
+ */
+function tabClick(index: number) {
+  router.push({
+    name: tabs.value?.[index]?.route
   })
 }
 </script>

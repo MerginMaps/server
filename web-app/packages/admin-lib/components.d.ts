@@ -14,6 +14,8 @@ declare module 'vue' {
     PInputSwitch: typeof import('primevue/inputswitch')['default']
     PInputText: typeof import('primevue/inputtext')['default']
     PPassword: typeof import('primevue/password')['default']
+    PTabPanel: typeof import('primevue/tabpanel')['default']
+    PTabView: typeof import('primevue/tabview')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }

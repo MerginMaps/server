@@ -187,7 +187,6 @@ export const createRouter = (pinia: Pinia) => {
   /** Handles redirect to /login when user is not authenticated. */
   router.beforeEach((to, from, next) => {
     const userStore = useUserStore(pinia)
-    routeUtils.isAuthenticatedGuard(to, from, next, userStore)
     routeUtils.isSuperUser(to, from, next, userStore)
   })
 
