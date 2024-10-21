@@ -8,14 +8,16 @@ import {
   SettingsView,
   ProjectsView,
   ProjectView,
-  AdminRoutes
+  AdminRoutes,
+  ProjectFilesView,
+  ProjectSettingsView
 } from '@mergin/admin-lib'
 import {
   NotFoundView,
   routeUtils,
   // errorUtils,
   // FileBrowserView,
-  // ProjectVersionsView,
+  ProjectVersionsView,
   // FileVersionDetailView,
   useUserStore
 } from '@mergin/lib'
@@ -81,13 +83,78 @@ export const createRouter = (pinia: Pinia) => {
       },
       {
         path: '/projects/:namespace/:projectName?',
-        name: AdminRoutes.PROJECT,
         components: {
           default: ProjectView,
           sidebar: Sidebar,
           header: AppHeader
         },
-        props: true
+        props: true,
+        children: [
+          {
+            path: '',
+            name: AdminRoutes.PROJECT,
+            component: ProjectFilesView,
+            props: true
+          },
+          //     {
+          //       path: 'blob/:location*',
+          //       name: 'blob',
+          //       component: NotFoundView,
+          //       props(route) {
+          //         return {
+          //           asAdmin: true,
+          //           namespace: route.params.namespace,
+          //           projectName: route.params.projectName,
+          //           location: route.params.location
+          //         }
+          //       }
+          //     },
+          {
+            path: 'tree/:location*',
+            name: 'project-tree',
+            component: ProjectFilesView,
+            props: true
+          },
+          {
+            path: 'settings',
+            name: 'project-settings',
+            component: ProjectSettingsView,
+            props: true
+          },
+          {
+            path: 'history',
+            name: 'project-versions',
+            component: ProjectVersionsView,
+            props: true
+          }
+          //     {
+          //       path: 'history/:version_id',
+          //       name: 'project-versions-detail',
+          //       component: NotFoundView,
+          //       props(route) {
+          //         return {
+          //           asAdmin: true,
+          //           namespace: route.params.namespace,
+          //           projectName: route.params.projectName,
+          //           version_id: route.params.version_id
+          //         }
+          //       }
+          //     },
+          //     {
+          //       path: 'history/:version_id/:path',
+          //       name: 'file-version-detail',
+          //       component: FileVersionDetailView,
+          //       props(route) {
+          //         return {
+          //           asAdmin: true,
+          //           namespace: route.params.namespace,
+          //           projectName: route.params.projectName,
+          //           version_id: route.params.version_id,
+          //           path: route.params.path
+          //         }
+          //       }
+          //     }
+        ]
       },
 
       //   redirect: { name: 'project-tree' },

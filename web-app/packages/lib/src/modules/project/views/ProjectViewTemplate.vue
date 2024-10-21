@@ -109,7 +109,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </app-section>
     </app-container>
     <div slot="right">
-      <upload-panel v-if="upload" :namespace="namespace" />
+      <upload-dialog v-if="upload" :namespace="namespace" />
     </div>
   </div>
 </template>
@@ -129,7 +129,7 @@ import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useLayoutStore } from '@/modules/layout/store'
 import { useNotificationStore } from '@/modules/notification/store'
-import UploadPanel from '@/modules/project/components/UploadPanel.vue'
+import UploadDialog from '@/modules/project/components/UploadDialog.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
@@ -142,7 +142,7 @@ interface TabItem {
 export default defineComponent({
   name: 'ProjectViewTemplate',
   components: {
-    UploadPanel,
+    UploadDialog,
     AppContainer,
     AppSection
   },

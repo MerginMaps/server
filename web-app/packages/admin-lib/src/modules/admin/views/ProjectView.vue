@@ -1,5 +1,5 @@
 <template>
-  <admin-layout>
+  <admin-layout v-if="project">
     <app-container>
       <app-section ground>
         <template #header>
@@ -42,6 +42,7 @@
 
     <app-container>
       <PTabView
+        :active-index="activeTabIndex"
         @tab-click="(e) => tabClick(e.index)"
         data-cy="project-tab-nav"
         :pt="{
@@ -68,8 +69,8 @@
           :header="tab.header"
           :key="tab.route"
         ></PTabPanel>
-        <router-view />
       </PTabView>
+      <router-view />
     </app-container>
   </admin-layout>
 </template>
@@ -107,7 +108,7 @@ const tabs = computed(() => {
       header: 'History'
     },
     {
-      route: AdminRoutes.ProjectHistory,
+      route: AdminRoutes.ProjectSettings,
       header: 'Settings'
     }
   ]
@@ -117,6 +118,12 @@ const tabs = computed(() => {
 const project = computed(() => projectStore.project)
 const routeProjectName = computed(() => route?.params?.projectName as string)
 const routeWorkspaceName = computed(() => route?.params?.namespace as string)
+const activeTabIndex = computed((): number => {
+  const index = tabs.value.findIndex((item) =>
+    route.matched.some((m) => m.name === item.route)
+  )
+  return index >= 0 ? index : 0
+})
 
 const fetchProject = (projectName: string, workspaceName: string) => {
   projectStore.project = null
@@ -143,7 +150,11 @@ watch(
  */
 function tabClick(index: number) {
   router.push({
-    name: tabs.value?.[index]?.route
+    name: tabs.value?.[index]?.route,
+    params: {
+      projectName: routeProjectName.value,
+      namespace: routeWorkspaceName.value
+    }
   })
 }
 </script>
