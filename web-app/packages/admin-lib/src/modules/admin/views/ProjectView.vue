@@ -5,6 +5,16 @@
         <template #header>
           <h1 class="headline-h3">Project details</h1>
         </template>
+        <template #headerActions>
+          <PButton
+            severity="secondary"
+            @click="downloadArchive"
+            data-cy="project-download-btn"
+            icon="ti ti-download"
+            class="mr-2"
+            label="Download"
+          />
+        </template>
       </app-section>
     </app-container>
 
@@ -76,7 +86,12 @@
 </template>
 
 <script setup lang="ts">
-import { AppSection, AppContainer, useProjectStore } from '@mergin/lib'
+import {
+  AppSection,
+  AppContainer,
+  useProjectStore,
+  ProjectApi
+} from '@mergin/lib'
 import { computed, watch, defineProps } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
@@ -156,6 +171,14 @@ function tabClick(index: number) {
       namespace: routeWorkspaceName.value
     }
   })
+}
+
+function downloadArchive() {
+  const url = ProjectApi.constructDownloadProjectUrl(
+    routeWorkspaceName.value,
+    routeProjectName.value
+  )
+  projectStore.downloadArchive({ url })
 }
 </script>
 

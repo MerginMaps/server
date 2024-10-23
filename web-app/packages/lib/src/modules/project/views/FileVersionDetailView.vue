@@ -33,6 +33,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             size="small"
             :scrollable="true"
             scroll-height="400px"
+            :pt="{
+              bodyRow: {
+                style: {
+                  cursor: 'auto'
+                }
+              }
+            }"
           >
             <template v-for="col in value.headers" :key="col.value">
               <!-- Show icon with insert / update / delete -->
@@ -40,7 +47,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 v-if="col.value === 'operationTypeHeader'"
                 :header="col.text"
                 style="width: 50px"
-                :pt="ptColumn"
               >
                 <template #body="slotProps">
                   <app-circle
@@ -48,10 +54,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                     :severity="actions[slotProps.data[col.value]].severity"
                   >
                     <i
-                      :class="[
-                        'ti',
-                        `${actions[slotProps.data[col.value]].icon}`
-                      ]"
+                      :class="[`${actions[slotProps.data[col.value]].icon}`]"
                     ></i>
                   </app-circle>
                 </template>
@@ -61,7 +64,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 v-else
                 :header="col.text"
                 :style="{ minWidth: `${col.width}px` }"
-                :pt="ptColumn"
               >
                 <template #body="slotProps">{{
                   slotProps.data[col.value]
@@ -72,6 +74,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <div class="flex flex-column align-items-center p-4 text-center">
                 <p>No changeset for current layer</p>
               </div>
+              console.log('getChangeset', this.namespace, this.projectName,
+              this.version_id, this.path)
             </template>
           </PDataTable>
         </app-section>
@@ -129,9 +133,9 @@ export default defineComponent({
         { headers?: ColumnItem[]; changes?: Record<string, string | number>[] }
       > | null,
       actions: {
-        insert: { icon: 'ti-plus', severity: 'success' },
-        update: { icon: 'ti-pencil', severity: 'warn' },
-        delete: { icon: 'ti-trash', severity: 'danger' }
+        insert: { icon: 'ti ti-plus', severity: 'success' },
+        update: { icon: 'ti ti-pencil', severity: 'warn' },
+        delete: { icon: 'ti ti-trash', severity: 'danger' }
       },
       itemsPerPage: 10
     }
@@ -141,18 +145,6 @@ export default defineComponent({
     ...mapState(useProjectStore, ['versionsChangesetLoading']),
     docsLinkManageSynchronisation() {
       return `${this.configData?.docs_url ?? ''}/manage/synchronisation`
-    },
-    ptColumn() {
-      return {
-        headerCell: {
-          style: {
-            backgroundColor: '#F8F9FA'
-          }
-        },
-        headerTitle: {
-          class: 'paragraph-p6'
-        }
-      }
     }
   },
   created() {

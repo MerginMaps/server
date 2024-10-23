@@ -61,15 +61,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useProjectStore } from '@/modules/project/store'
-import Path from 'path'
+import escapeRegExp from 'lodash/escapeRegExp'
 import max from 'lodash/max'
 import orderBy from 'lodash/orderBy'
-import escapeRegExp from 'lodash/escapeRegExp'
-import FileIcon from '@/modules/project/components/FileIcon.vue'
+import Path from 'path'
+import { computed } from 'vue'
+
 import { dirname } from '@/common/path_utils'
 import { removeAccents } from '@/common/text_utils'
+import FileIcon from '@/modules/project/components/FileIcon.vue'
+import { useProjectStore } from '@/modules/project/store'
 
 interface Column {
   text: string

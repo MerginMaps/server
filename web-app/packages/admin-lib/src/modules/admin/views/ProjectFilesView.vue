@@ -32,10 +32,6 @@
         />
       </app-section>
     </app-container>
-    <!-- Sidebars -->
-    <file-detail-sidebar :namespace="namespace" :project-name="projectName" />
-    <!-- notifications -->
-    <upload-progress />
   </div>
 </template>
 
@@ -51,6 +47,7 @@ import {
 import { storeToRefs } from 'pinia'
 import { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 
 interface Props {
   namespace?: string
@@ -62,6 +59,7 @@ const props = withDefaults(defineProps<Props>(), {
   location: ''
 })
 
+const router = useRouter()
 const projectStore = useProjectStore()
 const { project } = storeToRefs(projectStore)
 
@@ -90,7 +88,16 @@ const filterMenuItems = computed<MenuItem[]>(() => {
   }))
 })
 
-const rowClick = (file: { path: string }) => {
+const rowClick = (file: {
+  // TODO: use proper interface with all attributes coming from files table
+  path: string
+  type: 'folder' | 'file'
+  link: string
+}) => {
+  if (file.type === 'folder') {
+    router.push({ path: file.link })
+    return
+  }
   // added random number to request avoid to browser caching files
   const url = ProjectApi.constructDownloadProjectFileUrl(
     props.namespace,
