@@ -174,7 +174,10 @@ export default usePassThrough(
         class: 'bg-primary-reverse opacity-50'
       },
       bodyRow: {
-        class: 'paragraph-p6 hover:bg-gray-50 cursor-pointer'
+        class: 'paragraph-p6 hover:bg-gray-50',
+        style: {
+          cursor: 'pointer'
+        }
       }
     } as DataTablePassThroughOptions,
     accordion: {
