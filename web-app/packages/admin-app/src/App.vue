@@ -32,6 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </router-view>
       <router-view v-slot="{ Component }">
         <instance-maintenance-message v-if="pingData && pingData.maintenance" />
+        <CheckForUpdates />
         <transition name="fade">
           <component :is="Component" />
         </transition>
@@ -42,6 +43,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+import { CheckForUpdates } from '@mergin/admin-lib'
 import {
   InstanceMaintenanceMessage,
   DialogWindows,
@@ -65,7 +67,8 @@ export default defineComponent({
   components: {
     Notifications,
     DialogWindows,
-    InstanceMaintenanceMessage
+    InstanceMaintenanceMessage,
+    CheckForUpdates
   },
   metaInfo() {
     return {
