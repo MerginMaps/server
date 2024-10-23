@@ -811,10 +811,10 @@ export const useProjectStore = defineStore('projectModule', {
         this.versionsChangesetLoading = true
         const { path, projectName, versionId, workspace } = payload
         response = await ProjectApi.getVersionChangeset(
-          path,
+          workspace,
           projectName,
           versionId,
-          workspace
+          path
         )
       } catch (err) {
         await notificationStore.error({
