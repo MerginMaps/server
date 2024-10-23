@@ -10,15 +10,14 @@ import {
   ProjectView,
   AdminRoutes,
   ProjectFilesView,
-  ProjectSettingsView
+  ProjectSettingsView,
+  ProjectVersionView,
+  ProjectVersionsView
 } from '@mergin/admin-lib'
 import {
   NotFoundView,
   routeUtils,
-  // errorUtils,
-  // FileBrowserView,
-  ProjectVersionsView,
-  // FileVersionDetailView,
+  FileVersionDetailView,
   useUserStore
 } from '@mergin/lib'
 import { Pinia } from 'pinia'
@@ -82,6 +81,25 @@ export const createRouter = (pinia: Pinia) => {
         props: true
       },
       {
+        path: '/projects/:namespace/:projectName/history/:version_id',
+        components: {
+          default: ProjectVersionView,
+          sidebar: Sidebar,
+          header: AppHeader
+        },
+        props: true
+      },
+      {
+        path: '/projects/:namespace/:projectName/history/:version_id/:path',
+        name: 'file-version-detail',
+        components: {
+          default: FileVersionDetailView,
+          sidebar: Sidebar,
+          header: AppHeader
+        },
+        props: true
+      },
+      {
         path: '/projects/:namespace/:projectName?',
         components: {
           default: ProjectView,
@@ -96,21 +114,8 @@ export const createRouter = (pinia: Pinia) => {
             component: ProjectFilesView,
             props: true
           },
-          //     {
-          //       path: 'blob/:location*',
-          //       name: 'blob',
-          //       component: NotFoundView,
-          //       props(route) {
-          //         return {
-          //           asAdmin: true,
-          //           namespace: route.params.namespace,
-          //           projectName: route.params.projectName,
-          //           location: route.params.location
-          //         }
-          //       }
-          //     },
           {
-            path: 'tree/:location*',
+            path: 'tree/:location?',
             name: 'project-tree',
             component: ProjectFilesView,
             props: true
@@ -127,117 +132,8 @@ export const createRouter = (pinia: Pinia) => {
             component: ProjectVersionsView,
             props: true
           }
-          //     {
-          //       path: 'history/:version_id',
-          //       name: 'project-versions-detail',
-          //       component: NotFoundView,
-          //       props(route) {
-          //         return {
-          //           asAdmin: true,
-          //           namespace: route.params.namespace,
-          //           projectName: route.params.projectName,
-          //           version_id: route.params.version_id
-          //         }
-          //       }
-          //     },
-          //     {
-          //       path: 'history/:version_id/:path',
-          //       name: 'file-version-detail',
-          //       component: FileVersionDetailView,
-          //       props(route) {
-          //         return {
-          //           asAdmin: true,
-          //           namespace: route.params.namespace,
-          //           projectName: route.params.projectName,
-          //           version_id: route.params.version_id,
-          //           path: route.params.path
-          //         }
-          //       }
-          //     }
         ]
       },
-
-      //   redirect: { name: 'project-tree' },
-      //   children: [
-      //     {
-      //       path: 'blob/:location*',
-      //       name: 'blob',
-      //       component: NotFoundView,
-      //       props(route) {
-      //         return {
-      //           asAdmin: true,
-      //           namespace: route.params.namespace,
-      //           projectName: route.params.projectName,
-      //           location: route.params.location
-      //         }
-      //       }
-      //     },
-      //     {
-      //       path: 'tree/:location*',
-      //       name: 'project-tree',
-      //       component: FileBrowserView,
-      //       props(route) {
-      //         return {
-      //           asAdmin: true,
-      //           namespace: route.params.namespace,
-      //           projectName: route.params.projectName,
-      //           location: route.params.location
-      //         }
-      //       }
-      //     },
-      //     {
-      //       path: 'settings',
-      //       name: 'project-settings',
-      //       component: ProjectSettingsView,
-      //       props(route) {
-      //         return {
-      //           asAdmin: true,
-      //           namespace: route.params.namespace,
-      //           projectName: route.params.projectName
-      //         }
-      //       }
-      //     },
-      //     {
-      //       path: 'history',
-      //       name: 'project-versions',
-      //       component: ProjectVersionsView,
-      //       props(route) {
-      //         return {
-      //           asAdmin: true,
-      //           namespace: route.params.namespace,
-      //           projectName: route.params.projectName
-      //         }
-      //       }
-      //     },
-      //     {
-      //       path: 'history/:version_id',
-      //       name: 'project-versions-detail',
-      //       component: NotFoundView,
-      //       props(route) {
-      //         return {
-      //           asAdmin: true,
-      //           namespace: route.params.namespace,
-      //           projectName: route.params.projectName,
-      //           version_id: route.params.version_id
-      //         }
-      //       }
-      //     },
-      //     {
-      //       path: 'history/:version_id/:path',
-      //       name: 'file-version-detail',
-      //       component: FileVersionDetailView,
-      //       props(route) {
-      //         return {
-      //           asAdmin: true,
-      //           namespace: route.params.namespace,
-      //           projectName: route.params.projectName,
-      //           version_id: route.params.version_id,
-      //           path: route.params.path
-      //         }
-      //       }
-      //     }
-      //   ]
-      // },
       {
         path: '/settings',
         name: AdminRoutes.SETTINGS,
