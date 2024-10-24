@@ -158,7 +158,7 @@ export default {
       return this.$route.params.reset === 'reset'
     }
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.clearErrors({
       componentId: this.merginComponentUuid,
       keepNotification: true

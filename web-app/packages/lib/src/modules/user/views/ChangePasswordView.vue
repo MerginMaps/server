@@ -106,7 +106,7 @@ export default defineComponent({
     }
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     this.clearErrors({
       componentId: this.merginComponentUuid,
       keepNotification: true

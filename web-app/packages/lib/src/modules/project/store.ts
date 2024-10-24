@@ -72,7 +72,7 @@ export interface ProjectState {
   accessSearch: string
   accessSorting: SortingParams
   availablePermissions: DropdownOption<ProjectPermissionName>[]
-  availableRoles: DropdownOption<ProjectRoleName>[],
+  availableRoles: DropdownOption<ProjectRoleName>[]
   versionsChangesetLoading: boolean
 }
 
@@ -465,7 +465,7 @@ export const useProjectStore = defineStore('projectModule', {
           payload.projectName
         )
         this.setProject({ project: projectResponse.data })
-      } catch (e) {
+      } catch {
         await notificationStore.error({ text: 'Failed to load project data' })
       }
     },
@@ -545,7 +545,7 @@ export const useProjectStore = defineStore('projectModule', {
         )
         this.versions = response.data?.versions
         this.versionsCount = response.data?.count
-      } catch (e) {
+      } catch {
         await notificationStore.error({
           text: 'Failed to fetch project versions'
         })
