@@ -4,12 +4,8 @@ module.exports = {
     es2021: true,
     browser: true
   },
-  extends: [
-    'plugin:vue/essential',
-    '@vue/standard',
-    'plugin:prettier/recommended'
-  ],
-  plugins: ['@typescript-eslint'],
+  extends: ['plugin:vue/vue3-essential', 'plugin:prettier/recommended'],
+  plugins: ['@typescript-eslint', 'eslint-plugin-import'],
   rules: {
     'prettier/prettier': 'warn',
     '@typescript-eslint/no-unused-vars': [
