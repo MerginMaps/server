@@ -12,8 +12,9 @@ defineProps<{ item: SideBarItemModel }>()
 const layoutStore = useLayoutStore()
 
 function closeDrawer() {
-  layoutStore.isUnderOverlayBreakpoint &&
+  if (layoutStore.isUnderOverlayBreakpoint) {
     layoutStore.setDrawer({ drawer: false })
+  }
 }
 </script>
 
@@ -25,7 +26,7 @@ function closeDrawer() {
         item.active && 'sidebar-item__link--active'
       ]"
       :to="item.to"
-      @click.native="closeDrawer"
+      @click="closeDrawer"
       ><div class="mr-2 flex align-items-center">
         <i :class="['paragraph-p3', item.icon]"></i>
       </div>
