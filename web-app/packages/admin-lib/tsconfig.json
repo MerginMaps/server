@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES5",
+    "target": "ES2022",
     "module": "ESNext",
     "strict": true,
     "noImplicitAny": false,

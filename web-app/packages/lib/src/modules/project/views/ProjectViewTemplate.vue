@@ -108,9 +108,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </div>
       </app-section>
     </app-container>
-    <div slot="right">
+    <slot name="right">
       <upload-dialog v-if="upload" :namespace="namespace" />
-    </div>
+    </slot>
   </div>
 </template>
 

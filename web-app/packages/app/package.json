@@ -20,12 +20,11 @@
   "dependencies": {
     "@tabler/icons-webfont": "^2.42.0",
     "axios": "^0.28.1",
-    "crypto-js": "^3.1.9-1",
     "lodash": "^4.17.21",
     "pinia": "^2.1.7",
     "primeflex": "^3.3.1",
     "primevue": "3.43.0",
-    "vue": "3.3.8",
+    "vue": "3.5.12",
     "vue-meta": "^3.0.0-alpha.10",
     "vue-router": "4.2.5"
   }

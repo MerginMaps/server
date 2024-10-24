@@ -48,7 +48,7 @@ export function isAuthenticatedGuard(
 /** Handles redirect to /login when user is not superUser and authenticated.
  *
  * Usage in admin routes
-*/
+ */
 export function isSuperUser(
   to: RouteLocationNormalized,
   from: RouteLocationNormalized,
