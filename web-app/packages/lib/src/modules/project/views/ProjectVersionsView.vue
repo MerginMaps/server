@@ -8,7 +8,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <project-versions-view-template
     :projectName="projectName"
     :namespace="namespace"
-    :asAdmin="asAdmin"
   />
 </template>
 
@@ -22,11 +21,7 @@ export default defineComponent({
   components: { ProjectVersionsViewTemplate },
   props: {
     projectName: String,
-    namespace: String,
-    asAdmin: {
-      type: Boolean,
-      default: false
-    }
+    namespace: String
   }
 })
 </script>

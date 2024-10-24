@@ -196,11 +196,6 @@ export default defineComponent({
   created() {
     this.fetchUserProfile()
   },
-  watch: {
-    name: function () {
-      this.fetchUserProfile()
-    }
-  },
   methods: {
     ...mapActions(useDialogStore, ['show']),
     ...mapActions(useUserStore, {

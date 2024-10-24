@@ -11,6 +11,7 @@ import { MenuPassThroughOptions } from 'primevue/menu'
 import { usePassThrough } from 'primevue/passthrough'
 import { PasswordPassThroughOptions } from 'primevue/password'
 import { ProgressBarPassThroughOptions } from 'primevue/progressbar'
+import { TabPanelPassThroughOptions } from 'primevue/tabpanel'
 import { TagPassThroughOptions } from 'primevue/tag'
 import { ToastPassThroughOptions } from 'primevue/toast'
 import { TreePassThroughOptions } from 'primevue/tree'
@@ -173,7 +174,10 @@ export default usePassThrough(
         class: 'bg-primary-reverse opacity-50'
       },
       bodyRow: {
-        class: 'paragraph-p6 hover:bg-gray-50 cursor-pointer'
+        class: 'paragraph-p6 hover:bg-gray-50',
+        style: {
+          cursor: 'pointer'
+        }
       }
     } as DataTablePassThroughOptions,
     accordion: {
@@ -182,7 +186,24 @@ export default usePassThrough(
           class: 'border-noround border-x-none'
         }
       }
-    } as AccordionPassThroughOptions
+    } as AccordionPassThroughOptions,
+    tabPanel: {
+      headerAction({ context }) {
+        // Custom handling of active styles for tabs
+        return {
+          style: {
+            backgroundColor: 'transparent',
+            borderBottomColor: context?.active
+              ? 'var(--forest-color)'
+              : 'transparent'
+          },
+          class: [
+            'hover:border-400 pb-4',
+            { 'text-color-forest': context?.active }
+          ]
+        }
+      }
+    } as TabPanelPassThroughOptions
   },
   {}
 )
