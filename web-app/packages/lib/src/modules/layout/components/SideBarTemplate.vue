@@ -75,13 +75,14 @@ import { useRoute } from 'vue-router'
 
 import { SideBarItemModel } from '../types'
 
-import { DashboardRouteName } from '@/main'
+import { DashboardRouteName, useUserStore } from '@/main'
 import SideBarItem from '@/modules/layout/components/SideBarItem.vue'
 import { useLayoutStore } from '@/modules/layout/store'
 import { ProjectRouteName } from '@/modules/project'
 
 const route = useRoute()
 const layoutStore = useLayoutStore()
+const userStore = useUserStore()
 const props = defineProps<{
   sidebarItems?: SideBarItemModel[]
 }>()
@@ -106,7 +107,17 @@ const initialSidebarItems = computed<SideBarItemModel[]>(() => {
         title: 'Projects',
         to: '/projects',
         icon: 'ti ti-article'
-      }
+      },
+      ...(userStore.isSuperUser
+        ? [
+            {
+              active: false,
+              title: 'Administration',
+              href: '/admin',
+              icon: 'ti ti-home-cog'
+            }
+          ]
+        : [])
     ]
   )
 })
