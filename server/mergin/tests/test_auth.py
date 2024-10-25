@@ -10,6 +10,7 @@ import json
 from flask import url_for
 from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy import desc
+from sqlalchemy.exc import IntegrityError
 from unittest.mock import patch
 
 from mergin.tests import test_workspace
@@ -116,8 +117,13 @@ test_user_reg_data = [
         "#pwd1234",
         400,
     ),  # tests with upper case, but email already exists
+<<<<<<< HEAD
     (" mergin@mergin.com  ", "#pwd123", 400),  # invalid password
     ("verylonglonglonglonglonglonglongemail@example.com", "#pwd1234", 201),
+=======
+    ("XmerginX", " mergin@mergin.com  ", "#pwd123", 400),  # invalid password
+    ("mergin4", "invalid\360@email.com", "#pwd1234", 400),  # non-ascii character in the email
+>>>>>>> 2935d80 (Add email address validation in registration)
 ]
 
 
@@ -889,3 +895,19 @@ def test_server_usage(client):
     assert resp.json["editors"] == 1
     assert resp.json["users"] == 1
     assert resp.json["projects"] == 1
+
+
+user_data = [
+    ("user1", True),  # no problem
+    ("user\360", False),  # non-ascii character
+    ("user\\", False),  # disallowed character
+]
+
+@pytest.mark.parametrize("username,success", user_data)
+def test_user_email_db_constraint(client, username, success):
+    if success:
+        add_user(username=username)
+    else:
+        with pytest.raises(IntegrityError):
+            add_user(username=username)
+    db.session.rollback()
