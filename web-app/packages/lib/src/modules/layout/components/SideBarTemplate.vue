@@ -60,11 +60,20 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </ul>
         </nav>
       </div>
-      <div>
+      <footer class="flex flex-column row-gap-3 p-3">
         <slot name="footer">
           <!-- footer content -->
+          <template v-if="userStore.isSuperUser">
+            <PDivider class="m-0" />
+            <a
+              href="/admin"
+              target="__blank"
+              class="flex justify-content-between align-items-center title-t5 no-underline cursor-pointer"
+              >Admin Panel <i class="title-t1 ti ti-external-link"
+            /></a>
+          </template>
         </slot>
-      </div>
+      </footer>
     </div>
   </aside>
 </template>
@@ -75,13 +84,14 @@ import { useRoute } from 'vue-router'
 
 import { SideBarItemModel } from '../types'
 
-import { DashboardRouteName } from '@/main'
+import { DashboardRouteName, useUserStore } from '@/main'
 import SideBarItem from '@/modules/layout/components/SideBarItem.vue'
 import { useLayoutStore } from '@/modules/layout/store'
 import { ProjectRouteName } from '@/modules/project'
 
 const route = useRoute()
 const layoutStore = useLayoutStore()
+const userStore = useUserStore()
 const props = defineProps<{
   sidebarItems?: SideBarItemModel[]
 }>()

@@ -11,6 +11,7 @@ declare module 'vue' {
     PButton: typeof import('primevue/button')['default']
     PColumn: typeof import('primevue/column')['default']
     PDataTable: typeof import('primevue/datatable')['default']
+    PDivider: typeof import('primevue/divider')['default']
     PInputSwitch: typeof import('primevue/inputswitch')['default']
     PInputText: typeof import('primevue/inputtext')['default']
     PPassword: typeof import('primevue/password')['default']

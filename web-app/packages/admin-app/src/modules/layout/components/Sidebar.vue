@@ -5,7 +5,7 @@ SPDX-License-Identifier: LicenseRef-MerginMaps-Commercial
 -->
 
 <script setup lang="ts">
-import { AdminRoutes } from '@mergin/admin-lib'
+import { AdminRoutes, SidebarFooter } from '@mergin/admin-lib'
 import { SideBarItemModel, SideBarTemplate } from '@mergin/lib'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
@@ -37,6 +37,9 @@ const sidebarItems = computed<SideBarItemModel[]>(() => [
 <template>
   <side-bar-template :sidebarItems="sidebarItems">
     <template #subtitle>Administration</template>
+    <template #footer>
+      <sidebar-footer />
+    </template>
   </side-bar-template>
 </template>
 

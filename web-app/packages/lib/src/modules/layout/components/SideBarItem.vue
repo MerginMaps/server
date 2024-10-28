@@ -21,6 +21,7 @@ function closeDrawer() {
 <template>
   <li class="px-2">
     <router-link
+      v-if="item.to"
       :class="[
         'sidebar-item__link p-3 flex align-items-center transition-color transition-duration-200 no-underline border-round-lg paragraph-p5',
         item.active && 'sidebar-item__link--active'
@@ -32,6 +33,20 @@ function closeDrawer() {
       </div>
       <span>{{ item.title }}</span></router-link
     >
+    <a
+      v-else-if="item.href"
+      :class="[
+        'sidebar-item__link p-3 flex align-items-center transition-color transition-duration-200 no-underline border-round-lg paragraph-p5',
+        item.active && 'sidebar-item__link--active'
+      ]"
+      :href="item.href"
+      target="_blank"
+    >
+      <div class="mr-2 flex align-items-center">
+        <i :class="['paragraph-p3', item.icon]"></i>
+      </div>
+      <span>{{ item.title }}</span>
+    </a>
   </li>
 </template>
 
