@@ -50,7 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 }"
               >
                 <template v-if="showNamespace"
-                  >{{ slotProps.data.namespace }} /</template
+                  >{{ slotProps.data.namespace }} / </template
                 >{{ slotProps.data.name }}</router-link
               ><PTag
                 v-if="slotProps.data.access.public && !onlyPublic"
@@ -187,7 +187,7 @@ export default defineComponent({
       columns = columns.concat(
         { header: 'Project name', field: 'name' },
         { header: 'Versions', field: 'version' },
-        { header: 'Size', field: 'meta.size' },
+        { header: 'Size', field: 'meta.size' }
         // {
         //   header: 'Collaborators',
         //   field: 'access.readers'
