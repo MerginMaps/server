@@ -102,3 +102,8 @@ class Configuration(object):
     USER_SELF_REGISTRATION = config("USER_SELF_REGISTRATION", default=False, cast=bool)
     # build hash number
     BUILD_HASH = config("BUILD_HASH", default="")
+
+    # whether to run flask app with gevent worker type in gunicorn
+    # using gevent type of worker impose some requirements on code, e.g. to be greenlet safe, custom timeouts
+    GEVENT_WORKER = config("GEVENT_WORKER", default=False, cast=bool)
+    GEVENT_REQUEST_TIMEOUT = config("GEVENT_REQUEST_TIMEOUT", default=30, cast=int)
