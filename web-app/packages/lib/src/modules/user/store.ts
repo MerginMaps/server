@@ -135,7 +135,7 @@ export const useUserStore = defineStore('userModule', {
       this.workspaces = payload.workspaces
     },
 
-    setWorkspaceId(payload) {
+    setWorkspaceId(payload: { id: number }) {
       this.workspaceId = payload.id
     },
 
