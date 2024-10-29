@@ -25,18 +25,6 @@
 """
 import logging
 
-try:
-    from psycogreen.gevent import patch_psycopg
-except ImportError:
-    import sys
-    import traceback
-
-    exception_info = traceback.format_exc()
-    sys.stderr.write(
-        f"Failed to load required functions from the psycogreen library: { exception_info }\n"
-    )
-    sys.exit(1)
-
 worker_class = "gevent"
 
 workers = 2
@@ -59,12 +47,7 @@ max_requests = 20000
 
 max_requests_jitter = 5000
 
-
-def do_post_fork(server, worker):
-    patch_psycopg()
-
-
-post_fork = do_post_fork
+timeout = 30
 
 
 """
