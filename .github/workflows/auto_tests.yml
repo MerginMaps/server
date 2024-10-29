@@ -36,7 +36,7 @@ jobs:
       - name: Run tests
         run: |
           cd server
-          pipenv run pytest -v --cov=mergin mergin/tests
+          pipenv run pytest -v --cov=mergin mergin/tests --format=python
 
       - name: Coveralls
         uses: coverallsapp/github-action@v2
