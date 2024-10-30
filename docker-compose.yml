@@ -81,6 +81,8 @@ services:
     image: nginxinc/nginx-unprivileged:1.25.5
     container_name: merginmaps-proxy
     restart: always
+    # run nginx as built-in user but with group mergin-family for files permissions
+    user: 101:999
     ports:
       - "8080:8080"
     volumes:
