@@ -75,13 +75,13 @@ def add_commands(app: Flask):
         os.mkdir(directory)
         files = pv.files
         for f in files:
-            project.storage.restore_versioned_file(f["path"], version)
-            f_dir = os.path.dirname(f["path"])
+            project.storage.restore_versioned_file(f.path, version)
+            f_dir = os.path.dirname(f.path)
             if f_dir:
                 os.makedirs(os.path.join(directory, f_dir), exist_ok=True)
             shutil.copy(
-                os.path.join(project.storage.project_dir, f["location"]),
-                os.path.join(directory, f["path"]),
+                os.path.join(project.storage.project_dir, f.location),
+                os.path.join(directory, f.path),
             )
         print("Project downloaded successfully")
 
