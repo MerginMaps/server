@@ -126,7 +126,7 @@ def test_remove_deleted_project_backups(client):
         rm_project.removed_at
         and not rm_project.storage_params
         and not rm_project.files
-        and rm_project.access.owners == []
+        and rm_project.project_users == []
     )
     assert (
         not Project.query.filter_by(id=rm_project.id)

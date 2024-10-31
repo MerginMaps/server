@@ -126,7 +126,7 @@ class ProjectSchemaForVersion(ma.SQLAlchemyAutoSchema):
         return [u.id for u in obj.project.uploads.all()]
 
     def _access(self, obj):
-        return ProjectAccessSchema().dump(obj.project.access)
+        return ProjectAccessSchema().dump(obj.project)
 
     def _permissions(self, obj):
         return project_user_permissions(obj.project)

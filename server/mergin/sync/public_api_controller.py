@@ -37,7 +37,6 @@ from ..auth import auth_required
 from ..auth.models import User
 from .models import (
     Project,
-    ProjectAccess,
     ProjectVersion,
     Upload,
     PushChangeType,
@@ -193,9 +192,13 @@ def add_project(namespace):  # noqa: E501
             "location": generate_location(),
         }
 
-        p = Project(**request.json, creator=current_user, workspace=workspace)
+        p = Project(
+            **request.json,
+            creator=current_user,
+            workspace=workspace,
+            public=request.json.get("public", False),
+        )
         p.updated = datetime.utcnow()
-        pa = ProjectAccess(p, public=request.json.get("public", False))
 
         template_name = request.json.get("template", None)
         if template_name:
@@ -231,7 +234,6 @@ def add_project(namespace):  # noqa: E501
         )
 
         db.session.add(p)
-        db.session.add(pa)
         db.session.add(version)
         db.session.commit()
         project_version_created.send(version)
@@ -498,13 +500,15 @@ def get_projects_by_names():  # noqa: E501
             Project.workspace_id == workspace.id, Project.name == name
         ).first()
         if result:
-            user_ids = (
-                result.access.owners + result.access.writers + result.access.readers
-            )
-            users_map = {
-                u.id: u.username
-                for u in User.query.filter(User.id.in_(set(user_ids))).all()
-            }
+            # FIXME
+            # user_ids = (
+            #     result.access.owners + result.access.writers + result.access.readers
+            # )
+            # users_map = {
+            #     u.id: u.username
+            #     for u in User.query.filter(User.id.in_(set(user_ids))).all()
+            # }
+            users_map = None
             workspaces_map = {workspace.id: workspace.name}
             ctx = {"users_map": users_map, "workspaces_map": workspaces_map}
             results[project] = ProjectListSchema(context=ctx).dump(result)
@@ -538,7 +542,8 @@ def get_projects_by_uuids(uuids):  # noqa: E501
         .all()
     )
     for p in projects:
-        user_ids.extend(p.access.owners + p.access.writers + p.access.readers)
+        # FIXME
+        # user_ids.extend(p.access.owners + p.access.writers + p.access.readers)
         ws_ids.append(p.workspace_id)
     users_map = {
         u.id: u.username for u in User.query.filter(User.id.in_(set(user_ids))).all()
@@ -621,7 +626,9 @@ def get_paginated_projects(
     # create user map id:username passed to project schema to minimize queries to db
     user_ids = []
     for p in result:
-        user_ids.extend(p.access.owners + p.access.writers + p.access.readers)
+        # FIXME
+        # user_ids.extend(p.access.owners + p.access.writers + p.access.readers)
+        pass
 
     users_map = {
         u.id: u.username for u in User.query.filter(User.id.in_(set(user_ids))).all()
@@ -660,7 +667,7 @@ def update_project(namespace, project_name):  # noqa: E501  # pylint: disable=W0
         return jsonify(error.to_dict()), 422
 
     if "public" in request.json["access"]:
-        project.access.public = request.json["access"]["public"]
+        project.public = request.json["access"]["public"]
         db.session.add(project)
         db.session.commit()
 
@@ -1186,7 +1193,6 @@ def clone_project(namespace, project_name):  # noqa: E501
         workspace=ws,
     )
     p.updated = datetime.utcnow()
-    pa = ProjectAccess(p, public=False)
 
     try:
         p.storage.initialize(template_project=cloned_project)
@@ -1212,7 +1218,6 @@ def clone_project(namespace, project_name):  # noqa: E501
         device_id,
     )
     db.session.add(p)
-    db.session.add(pa)
     db.session.add(project_version)
     db.session.commit()
     project_version_created.send(project_version)

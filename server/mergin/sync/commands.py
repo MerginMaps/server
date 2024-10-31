@@ -11,7 +11,7 @@ from flask import Flask, current_app
 
 from .files import UploadChanges
 from .. import db
-from .models import Project, ProjectAccess, ProjectVersion
+from .models import Project, ProjectVersion
 from .utils import split_project_path
 
 
@@ -40,7 +40,6 @@ def add_commands(app: Flask):
         p = Project(**project_params)
         p.updated = datetime.utcnow()
         db.session.add(p)
-        p.access = ProjectAccess(p, public=False)
         changes = UploadChanges(added=[], updated=[], removed=[])
         pv = ProjectVersion(p, 0, user.id, changes, "127.0.0.1")
         pv.project = p

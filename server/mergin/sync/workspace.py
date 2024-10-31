@@ -9,7 +9,7 @@ from sqlalchemy import or_, and_, Column, literal
 from sqlalchemy.orm import joinedload
 
 from .errors import UpdateProjectAccessError
-from .models import Project, ProjectAccess, AccessRequest, ProjectAccessDetail
+from .models import Project, AccessRequest, ProjectAccessDetail, ProjectUser
 from .permissions import projects_query, ProjectPermissions
 from .public_api_controller import parse_project_access_update_request
 from .. import db
@@ -160,10 +160,10 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
     ):
         if only_public:
             projects = (
-                Project.query.join(ProjectAccess)
+                Project.query.join(ProjectUser)
                 .filter(Project.storage_params.isnot(None))
                 .filter(Project.removed_at.is_(None))
-                .filter(ProjectAccess.public.is_(True))
+                .filter(Project.public.is_(True))
             )
         else:
             projects = projects_query(
@@ -185,7 +185,7 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
                     projects = projects.filter(
                         or_(
                             and_(
-                                ProjectAccess.readers.contains([user.id]),
+                                ProjectUser.user_id == user.id,
                                 Project.creator_id != user.id,
                             ),
                             and_(
@@ -267,7 +267,9 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
         """Update project members doing bulk access update"""
         error = None
         parsed_access = parse_project_access_update_request(access)
-        id_diffs = project.access.bulk_update(parsed_access)
+        # FIXME
+        id_diffs = set()
+        # id_diffs = project.access.bulk_update(parsed_access)
         db.session.add(project)
         db.session.commit()
         if parsed_access.get("invalid_usernames") or parsed_access.get("invalid_ids"):
@@ -295,12 +297,7 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
         elif Configuration.GLOBAL_READ:
             global_role = "reader"
 
-        direct_members_ids = set(
-            project.access.readers
-            + project.access.editors
-            + project.access.writers
-            + project.access.owners
-        )
+        direct_members_ids = [u.user_id for u in project.project_users]
         users = User.query.filter(User.active.is_(True)).order_by(User.email)
         direct_members = users.filter(User.id.in_(direct_members_ids)).all()
 

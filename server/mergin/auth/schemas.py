@@ -33,17 +33,16 @@ class UserProfileSchema(ma.SQLAlchemyAutoSchema):
 
     def _has_project(self, obj):
         # DEPRECATED functionality - kept for the backward-compatibility
-        from ..sync.models import Project, ProjectAccess
+        from ..sync.models import ProjectUser, Project
 
         ws = current_app.ws_handler.get_by_name(obj.user.username)
         if ws:
             projects_count = (
-                Project.query.filter(Project.creator_id == obj.user.id)
+                Project.query.join(ProjectUser)
+                .filter(Project.creator_id == obj.user.id)
                 .filter(Project.removed_at.is_(None))
-                .filter_by(workspace_id=ws.id)
-                .filter(
-                    Project.access.has(ProjectAccess.readers.contains([obj.user.id]))
-                )
+                .filter(Project.workspace_id == ws.id)
+                .filter(ProjectUser.user_id == obj.user.id)
                 .count()
             )
             return projects_count > 0
