@@ -27,6 +27,7 @@ services:
     user: 901:999
     volumes:
       - ./projects:/data
+      - ./server/entrypoint.sh:/app/entrypoint.sh
     env_file:
       - .prod.env
     depends_on:
@@ -38,8 +39,11 @@ services:
   celery-beat:
     image: lutraconsulting/merginmaps-backend:2024.2.2
     container_name: celery-beat
+    restart: always
     env_file:
       - .prod.env
+    volumes:
+      - ./server/entrypoint.sh:/app/entrypoint.sh
     depends_on:
       - redis
       - server-gunicorn
@@ -49,8 +53,13 @@ services:
   celery-worker:
     image: lutraconsulting/merginmaps-backend:2024.2.2
     container_name: celery-worker
+    restart: always
+    user: 901:999
     env_file:
       - .prod.env
+    volumes:
+      - ./projects:/data
+      - ./server/entrypoint.sh:/app/entrypoint.sh
     depends_on:
       - redis
       - server-gunicorn
@@ -72,6 +81,8 @@ services:
     image: nginxinc/nginx-unprivileged:1.25.5
     container_name: merginmaps-proxy
     restart: always
+    # run nginx as built-in user but with group mergin-family for files permissions
+    user: 101:999
     ports:
       - "8080:8080"
     volumes:

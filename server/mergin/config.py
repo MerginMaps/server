@@ -10,17 +10,15 @@ config_dir = os.path.abspath(os.path.dirname(__file__))
 
 
 class Configuration(object):
+    # flask/connexion variables
     DEBUG = config("FLASK_DEBUG", default=False, cast=bool)
     TESTING = config("TESTING", default=False, cast=bool)
     SECRET_KEY = config("SECRET_KEY")
-    PROXY_FIX = config("PROXY_FIX", default=True, cast=bool)
-    SWAGGER_UI = config(
-        "SWAGGER_UI", default=False, cast=bool
-    )  # to enable swagger UI console (for tests only)
-    VERSION = config("VERSION", default=get_version())
-    PUBLIC_DIR = config(
-        "PUBLIC_DIR", default=os.path.join(config_dir, os.pardir, "build", "static")
-    )
+    # to enable swagger UI console (for tests only)
+    SWAGGER_UI = config("SWAGGER_UI", default=False, cast=bool)
+    # expiration time in seconds
+    WTF_CSRF_TIME_LIMIT = config("WTF_CSRF_TIME_LIMIT", default=3600 * 24, cast=int)
+    WTF_CSRF_ENABLED = config("WTF_CSRF_ENABLED", default=True, cast=bool)
 
     # Mergin DB related
     SQLALCHEMY_TRACK_MODIFICATIONS = config(
@@ -42,11 +40,6 @@ class Configuration(object):
         "SQLALCHEMY_DATABASE_URI",
         f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_DATABASE}?application_name={DB_APPLICATION_NAME}",
     )
-
-    WTF_CSRF_TIME_LIMIT = config(
-        "WTF_CSRF_TIME_LIMIT", default=3600 * 24, cast=int
-    )  # in seconds
-    WTF_CSRF_ENABLED = config("WTF_CSRF_ENABLED", default=True, cast=bool)
 
     # for flask mail
     MAIL_SERVER = config("MAIL_SERVER", default="localhost")
@@ -97,11 +90,15 @@ class Configuration(object):
     GLOBAL_WRITE = config("GLOBAL_WRITE", default=False, cast=bool)
     GLOBAL_ADMIN = config("GLOBAL_ADMIN", default=False, cast=bool)
 
-    SERVER_TYPE = config("SERVER_TYPE", default="")
     # can users create their own account or is it reserved for superuser only
     USER_SELF_REGISTRATION = config("USER_SELF_REGISTRATION", default=False, cast=bool)
+
     # build hash number
     BUILD_HASH = config("BUILD_HASH", default="")
+
+    # backend version
+    VERSION = config("VERSION", default=get_version())
+    SERVER_TYPE = config("SERVER_TYPE", default="ce")
 
     # whether to run flask app with gevent worker type in gunicorn
     # using gevent type of worker impose some requirements on code, e.g. to be greenlet safe, custom timeouts

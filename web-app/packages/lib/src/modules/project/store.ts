@@ -129,6 +129,7 @@ export const useProjectStore = defineStore('projectModule', {
     },
 
     setProject(payload: { project: ProjectDetail }) {
+      const userStore = useUserStore()
       let enhancedProject: EnhancedProjectDetail = null
       if (payload.project) {
         enhancedProject = {
@@ -147,6 +148,14 @@ export const useProjectStore = defineStore('projectModule', {
         }
       }
       this.project = enhancedProject
+
+      // Update workspace
+      if (enhancedProject) {
+        userStore.setWorkspace({
+          workspaceId: enhancedProject?.workspace_id,
+          skipStorage: false
+        })
+      }
     },
     setProjects(payload: ProjectsPayload) {
       this.projects = payload.projects
