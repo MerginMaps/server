@@ -248,6 +248,10 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
     def workspace_count():
         return 1
 
+    @staticmethod
+    def monthly_contributors_count():
+        return 0
+
     def projects_query(self, name=None, workspace=None):
         ws = self.factory_method()
         query = db.session.query(
