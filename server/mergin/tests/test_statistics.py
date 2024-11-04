@@ -51,7 +51,7 @@ def test_send_statistics(app, caplog):
         assert data["workspaces_count"] == 1
         assert data["service_uuid"] == app.config["SERVICE_ID"]
         assert data["licence"] == "ce"
-        assert data["monthly_contributors"] == 0
+        assert data["monthly_contributors"] == 1
 
         # repeated action does not do anything
         task = send_statistics.s().apply()
