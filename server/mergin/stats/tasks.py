@@ -64,6 +64,7 @@ def send_statistics():
         "workspaces_count": current_app.ws_handler.workspace_count(),
         "last_change": str(last_change_item.updated) + "Z" if last_change_item else "",
         "server_version": current_app.config["VERSION"],
+        "monthly_contributors": current_app.ws_handler.monthly_contributors_count(),
     }
 
     try:
