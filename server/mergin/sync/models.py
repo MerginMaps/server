@@ -743,7 +743,9 @@ class ProjectVersion(db.Model):
         latest_files_map = {
             fh.path: fh.id
             for fh in FileHistory.query.filter(
-                FileHistory.id.in_(self.project.latest_project_files.file_history_ids or {})
+                FileHistory.id.in_(
+                    self.project.latest_project_files.file_history_ids or {}
+                )
             ).all()
         }
 
