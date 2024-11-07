@@ -183,7 +183,6 @@ def initialize():
             "added": project_files,
             "updated": [],
             "removed": [],
-            "renamed": [],
         }
     )
     pv = ProjectVersion(p, 1, user.id, upload_changes, "127.0.0.1")
