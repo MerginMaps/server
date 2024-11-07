@@ -13,6 +13,7 @@ from .files import UploadChanges
 from .. import db
 from .models import Project, ProjectAccess, ProjectVersion
 from .utils import split_project_path
+from ..auth.models import User
 
 
 def add_commands(app: Flask):
@@ -28,6 +29,7 @@ def add_commands(app: Flask):
     def create(name, namespace, user):  # pylint: disable=W0612
         """Create blank project"""
         workspace = current_app.ws_handler.get_by_name(namespace)
+        user = User.query.get(int(user))
         project_params = dict(
             creator=user,
             name=name,
