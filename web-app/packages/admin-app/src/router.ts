@@ -82,6 +82,7 @@ export const createRouter = (pinia: Pinia) => {
       },
       {
         path: '/projects/:namespace/:projectName/history/:version_id',
+        name: AdminRoutes.ProjectVersion,
         components: {
           default: ProjectVersionView,
           sidebar: Sidebar,
@@ -91,7 +92,7 @@ export const createRouter = (pinia: Pinia) => {
       },
       {
         path: '/projects/:namespace/:projectName/history/:version_id/:path',
-        name: 'file-version-detail',
+        name: AdminRoutes.FileVersionDetail,
         components: {
           default: FileVersionDetailView,
           sidebar: Sidebar,
@@ -116,19 +117,19 @@ export const createRouter = (pinia: Pinia) => {
           },
           {
             path: 'tree/:location?',
-            name: 'project-tree',
+            name: AdminRoutes.ProjectTree,
             component: ProjectFilesView,
             props: true
           },
           {
             path: 'settings',
-            name: 'project-settings',
+            name: AdminRoutes.ProjectSettings,
             component: ProjectSettingsView,
             props: true
           },
           {
             path: 'history',
-            name: 'project-versions',
+            name: AdminRoutes.ProjectHistory,
             component: ProjectVersionsView,
             props: true
           }

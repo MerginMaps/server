@@ -11,9 +11,17 @@
         @row-click="rowClick"
       >
         <template #col-name="{ item }">
-          <router-link :to="{ query: { version_id: item.name } }">{{
-            item.name
-          }}</router-link>
+          <router-link
+            :to="{
+              name: 'project-version',
+              params: {
+                namespace: item.namespace,
+                projectName: item.project_name,
+                version_id: item.name
+              }
+            }"
+            >{{ item.name }}</router-link
+          >
         </template>
       </project-versions-table>
     </app-section>
