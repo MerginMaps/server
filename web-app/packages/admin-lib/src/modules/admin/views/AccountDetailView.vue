@@ -68,8 +68,10 @@
         <app-settings :items="settingsItems">
           <template #notifications>
             <div class="flex-shrink-0 paragraph-p1">
-              <i v-if="profile?.receive_notifications" class="ti ti-check" />
-              <i v-else class="ti ti-x" />
+              <PInputSwitch
+                :model-value="profile?.receive_notifications"
+                disabled
+              />
             </div>
           </template>
           <template #adminAccess>
@@ -78,9 +80,15 @@
                 class="flex align-items-center flex-shrink-0"
                 data-cy="profile-notification"
               >
-                <PInputSwitch
+                <PButton
+                  :severity="user?.is_admin ? 'danger' : 'warning'"
                   :modelValue="user?.is_admin"
-                  @change="switchAdminAccess"
+                  @click="switchAdminAccess"
+                  :label="
+                    !user?.is_admin
+                      ? 'Grant admin access'
+                      : 'Revoke admin access'
+                  "
                 />
               </div>
             </div>
@@ -89,7 +97,7 @@
             <div class="flex-shrink-0">
               <PButton
                 @click="changeStatusDialog"
-                :severity="user?.active ? 'danger' : 'secondary'"
+                :severity="user?.active ? 'warning' : 'secondary'"
                 :label="
                   user?.active ? 'Deactivate account' : 'Activate account'
                 "
@@ -144,7 +152,9 @@ const settingsItems = computed<AppSettingsItemConfig[]>(() => [
   {
     key: 'adminAccess',
     title: 'Access to admin panel',
-    description: 'Enabling this option will provide access to the admin panel.'
+    description: user.value?.is_admin
+      ? 'User has access to the admin panel.'
+      : 'User does not have access to the admin panel.'
   },
   {
     key: 'accountActivation',
@@ -181,12 +191,18 @@ watch(
 )
 
 const changeStatusDialog = () => {
-  const props: ConfirmDialogProps = {
-    confirmText: 'Yes',
-    text: user.value.active
-      ? 'Do you really want deactivate this account?'
-      : 'Do you really want activate this account?'
-  }
+  const props: ConfirmDialogProps = user.value.active
+    ? {
+        confirmText: 'Deactivate',
+        severity: 'warning',
+        text: 'Do you really want deactivate this account?',
+        description:
+          'Deactivating this account will lead to a temporary ban from Mergin Maps usage.'
+      }
+    : {
+        text: 'Do you really want activate this account?',
+        confirmText: 'Activate'
+      }
   const dialog = { header: 'User activation' }
   const listeners = {
     confirm: async () => {
@@ -233,12 +249,42 @@ const confirmDeleteUser = () => {
 }
 
 const switchAdminAccess = async () => {
-  await adminStore.updateUser({
-    username: user.value.username,
-    data: {
-      active: user.value.active,
-      is_admin: !user.value.is_admin
-    }
+  const props: ConfirmDialogProps = !user.value?.is_admin
+    ? {
+        text: `Are you sure to grant access to admin panel to this user?`,
+        description: `This person will have full management access to all data on the server. They will see all users and projects and can update or remove them.`,
+        hint: user.value.username,
+        confirmText: 'Grant access',
+        confirmField: {
+          label: 'Username',
+          expected: user.value.username
+        },
+        severity: 'warning'
+      }
+    : {
+        text: `Are you sure you want to revoke access to admin panel to this user?`,
+        description: `This person will no longer have access to the admin panel.`,
+        hint: user.value.username,
+        confirmText: 'Revoke access',
+        confirmField: {
+          label: 'Username',
+          expected: user.value.username
+        },
+        severity: 'danger'
+      }
+  const listeners = {
+    confirm: async () =>
+      await adminStore.updateUser({
+        username: user.value.username,
+        data: {
+          active: user.value.active,
+          is_admin: !user.value.is_admin
+        }
+      })
+  }
+  dialogStore.show({
+    component: ConfirmDialog,
+    params: { props, listeners, dialog: { header: 'Admin access' } }
   })
 }
 </script>

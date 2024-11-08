@@ -23,11 +23,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       >
       <template #action>
         <div class="flex-shrink-0 paragraph-p1">
-          <i
-            v-if="instanceStore.configData?.collect_statistics"
-            class="ti ti-check"
+          <PInputSwitch
+            :model-value="Boolean(instanceStore.configData?.collect_statistics)"
+            disabled
           />
-          <i v-else class="ti ti-x" />
         </div>
       </template>
     </app-settings-item>

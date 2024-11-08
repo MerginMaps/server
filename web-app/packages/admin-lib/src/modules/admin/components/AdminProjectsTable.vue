@@ -55,15 +55,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               :sortable="header.sortable"
             >
               <template #body="slotProps">
-                <router-link
-                  class="title-t4"
-                  :to="{
-                    name: `adminWorkspace`,
-                    params: { id: slotProps.data.workspace_id }
-                  }"
-                >
-                  {{ slotProps.data.workspace }}
-                </router-link>
+                {{ slotProps.data.workspace }}
               </template>
             </PColumn>
 
@@ -74,7 +66,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               :sortable="header.sortable"
             >
               <template #body="slotProps">
+                <templte v-if="slotProps.data.removed_at">{{
+                  slotProps.data.name
+                }}</templte>
                 <router-link
+                  v-else
                   :to="{
                     name: 'project',
                     params: {
@@ -82,8 +78,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                       projectName: slotProps.data.name
                     }
                   }"
+                  class="font-semibold"
                 >
-                  <strong>{{ slotProps.data.name }}</strong>
+                  {{ slotProps.data.name }}
                 </router-link>
               </template>
             </PColumn>
@@ -119,7 +116,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               :sortable="header.sortable"
             >
               <template #body="slotProps">
-                <span :title="$filters.datetime(slotProps.data.removed_at)">
+                <span
+                  :title="`Scheduled for removal at ${$filters.datetime(
+                    slotProps.data.removed_at
+                  )}`"
+                >
                   {{ $filters.timediff(slotProps.data.removed_at) }}
                 </span>
               </template>
@@ -131,11 +132,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   class="justify-center px-0"
                   v-if="slotProps.data.removed_at"
                 >
-                  <div style="text-align: end">
+                  <div class="flex align-items-center gap-1">
                     <PButton
                       label="Restore"
                       severity="secondary"
+                      size="small"
                       @click="confirmRestore(slotProps.data)"
+                    />
+                    <PButton
+                      label="Delete"
+                      severity="danger"
+                      size="small"
+                      @click="confirmDelete(slotProps.data)"
                     />
                   </div>
                 </div>
@@ -228,7 +236,7 @@ export default defineComponent({
         { header: 'Name', field: 'name', sortable: true },
         { header: 'Last Update', field: 'updated', sortable: true },
         { header: 'Size', field: 'disk_usage', sortable: true },
-        { header: 'Removed', field: 'removed_at', sortable: true },
+        { header: 'Scheduled removal at', field: 'removed_at', sortable: true },
         { header: 'Removed by', field: 'removed_by', sortable: true },
         { header: '', field: 'buttons', sortable: false }
       ]
@@ -241,7 +249,11 @@ export default defineComponent({
   methods: {
     ...mapActions(useDialogStore, { showDialog: 'show' }),
     ...mapActions(useNotificationStore, ['error', 'show']),
-    ...mapActions(useAdminStore, ['getProjects', 'restoreProject']),
+    ...mapActions(useAdminStore, [
+      'getProjects',
+      'restoreProject',
+      'deleteProject'
+    ]),
 
     paginating(options) {
       this.options = options
@@ -299,6 +311,31 @@ export default defineComponent({
       this.showDialog({
         component: ConfirmDialog,
         params: { props, listeners, dialog: { header: 'Restore project' } }
+      })
+    },
+
+    confirmDelete(item) {
+      const props: ConfirmDialogProps = {
+        text: `Are you sure you want to permanently delete this project?`,
+        description: `Deleting this project will remove it
+      and all its data. This action cannot be undone. Type in project name to confirm:`,
+        hint: item.name,
+        confirmText: 'Delete permanently',
+        confirmField: {
+          label: 'Project name',
+          expected: item.name
+        },
+        severity: 'danger'
+      }
+      const listeners = {
+        confirm: async () => {
+          await this.deleteProject({ projectId: item.id })
+          this.fetchProjects()
+        }
+      }
+      this.showDialog({
+        component: ConfirmDialog,
+        params: { props, listeners, dialog: { header: 'Delete project' } }
       })
     },
 

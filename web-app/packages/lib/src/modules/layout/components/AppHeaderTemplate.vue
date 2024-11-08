@@ -186,11 +186,13 @@ export default defineComponent({
       return [
         {
           label: 'Documentation',
-          url: this.configData?.docs_url
+          url: this.configData?.docs_url,
+          target: '_blank',
         },
         {
           label: 'Community chat',
-          url: import.meta.env.VITE_VUE_APP_JOIN_COMMUNITY_LINK
+          url: import.meta.env.VITE_VUE_APP_JOIN_COMMUNITY_LINK,
+          target: '_blank'
         },
         ...(this.helpMenuItems ?? [])
       ].map((item) => ({ ...item, class: 'font-semibold p-1' })) as MenuItem[]
