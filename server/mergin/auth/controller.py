@@ -418,7 +418,6 @@ def update_user(username):  # pylint: disable=W0613,W0612
 
     # remove inactive since flag for ban or re-activation
     user.inactive_since = None
-    print("heeeere")
 
     db.session.add(user)
     db.session.commit()
