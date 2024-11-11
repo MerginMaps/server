@@ -412,6 +412,25 @@ def test_api_user_profile(client):
 def test_update_user(client):
     login_as_admin(client)
     user = User.query.filter_by(username="mergin").first()
+    data = {"active": True, "is_admin": True}
+    resp = client.patch(
+        url_for("/.mergin_auth_controller_update_user", username=user.username),
+        data=json.dumps(data),
+        headers=json_headers,
+    )
+    assert resp.status_code == 200
+    assert user.active
+    assert user.is_admin
+
+    client.application.config["ENABLE_SUPERADMIN_ASSIGNMENT"] = False
+    data = {"active": False, "is_admin": False}
+    resp = client.patch(
+        url_for("/.mergin_auth_controller_update_user", username=user.username),
+        data=json.dumps(data),
+        headers=json_headers,
+    )
+    assert resp.status_code == 400
+    assert user.active
     data = {"active": False}
     resp = client.patch(
         url_for("/.mergin_auth_controller_update_user", username=user.username),
@@ -421,6 +440,7 @@ def test_update_user(client):
     assert resp.status_code == 200
     assert not user.active
 
+    client.application.config["ENABLE_SUPERADMIN_ASSIGNMENT"] = True
     user.is_admin = False
     db.session.add(user)
     db.session.commit()

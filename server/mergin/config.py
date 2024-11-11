@@ -102,3 +102,7 @@ class Configuration(object):
     USER_SELF_REGISTRATION = config("USER_SELF_REGISTRATION", default=False, cast=bool)
     # build hash number
     BUILD_HASH = config("BUILD_HASH", default="")
+    # Allow changing access to admin panel
+    ENABLE_SUPERADMIN_ASSIGNMENT = config(
+        "ENABLE_SUPERADMIN_ASSIGNMENT", default=True, cast=bool
+    )
