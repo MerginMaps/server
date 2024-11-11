@@ -36,6 +36,7 @@ from .utils import is_versioned_file, is_qgis
 
 Storages = {"local": DiskStorage}
 project_deleted = signal("project_deleted")
+project_version_created = signal("project_version_created")
 
 
 class PushChangeType(Enum):
@@ -808,6 +809,8 @@ class ProjectVersion(db.Model):
         self.project.tags = self.resolve_tags()
         self.project_size = self.project.disk_usage
         db.session.flush()
+
+        project_version_created.send(self)
 
     @staticmethod
     def from_v_name(name: str) -> int:

@@ -10,7 +10,6 @@ import math
 from dataclasses import asdict
 from datetime import datetime
 
-import pysqlite3
 from flask import url_for, current_app
 import os
 from dateutil.tz import tzlocal
