@@ -82,7 +82,9 @@
               >
                 <PButton
                   :severity="user?.is_admin ? 'danger' : 'warning'"
-                  :modelValue="user?.is_admin"
+                  :disabled="
+                    !instanceStore.configData?.enable_superadmin_assignment
+                  "
                   @click="switchAdminAccess"
                   :label="
                     !user?.is_admin
@@ -130,6 +132,7 @@ import {
   ConfirmDialogProps,
   AppSettings,
   AppSettingsItemConfig,
+  useInstanceStore
   useUserStore
 } from '@mergin/lib'
 import { computed, watch } from 'vue'
@@ -141,6 +144,7 @@ import { useAdminStore } from '@/modules/admin/store'
 const route = useRoute()
 const adminStore = useAdminStore()
 const dialogStore = useDialogStore()
+const instanceStore = useInstanceStore()
 const userStore = useUserStore()
 
 const settingsItems = computed<AppSettingsItemConfig[]>(() => [
@@ -211,8 +215,7 @@ const changeStatusDialog = () => {
       await adminStore.updateUser({
         username: user.value.username,
         data: {
-          active: !user.value.active,
-          is_admin: user.value.is_admin
+          active: !user.value.active
         }
       })
     }

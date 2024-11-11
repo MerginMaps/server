@@ -408,11 +408,17 @@ def update_user(username):  # pylint: disable=W0613,W0612
     form = UserForm.from_json(request.json)
     if not form.validate_on_submit():
         return jsonify(form.errors), 400
+    if request.json.get("is_admin") is not None and not current_app.config.get(
+        "ENABLE_SUPERADMIN_ASSIGNMENT"
+    ):
+        abort(400, "Unable to assign super admin role")
 
     user = User.query.filter_by(username=username).first_or_404("User not found")
     form.update_obj(user)
+
     # remove inactive since flag for ban or re-activation
     user.inactive_since = None
+
     db.session.add(user)
     db.session.commit()
     return jsonify(UserSchema().dump(user))
