@@ -5,8 +5,7 @@
       <app-settings :items="settingsItems">
         <template #publicProject>
           <div class="flex-shrink-0 paragraph-p1">
-            <i v-if="project?.access?.public" class="ti ti-check" />
-            <i v-else class="ti ti-x" />
+            <PInputSwitch :model-value="project?.access?.public" disabled />
           </div>
         </template>
         <template #deleteProject>

@@ -14,6 +14,13 @@
             class="mr-2"
             label="Download"
           />
+          <PButton
+            severity="secondary"
+            @click="openDashboard"
+            data-cy="project-dashboard"
+            icon="ti ti-external-link"
+            label="Open in dashboard"
+          />
         </template>
       </app-section>
     </app-container>
@@ -22,7 +29,17 @@
       <app-section class="p-4">
         <div class="flex flex-column row-gap-3">
           <h2 class="headline-h2" data-cy="project-name">
-            {{ project?.name }}
+            <template v-if="showWorkspaceName"
+              ><router-link
+                :to="{
+                  name: 'adminWorkspace',
+                  params: { id: project?.workspace_id }
+                }"
+              >
+                {{ project?.namespace }}
+              </router-link>
+              / </template
+            >{{ project?.name }}
           </h2>
           <dl
             class="project-view-detail-list paragraph-p5 flex flex-column gap-3"
@@ -139,6 +156,10 @@ const activeTabIndex = computed((): number => {
   )
   return index >= 0 ? index : 0
 })
+// TODO: prevent hardcoded route names from hasRoute checks
+const showWorkspaceName = computed(
+  () => router.hasRoute('adminWorkspace') && project.value?.workspace_id
+)
 
 const fetchProject = (projectName: string, workspaceName: string) => {
   projectStore.project = null
@@ -179,6 +200,13 @@ function downloadArchive() {
     routeProjectName.value
   )
   projectStore.downloadArchive({ url })
+}
+
+function openDashboard() {
+  window.open(
+    `/projects/${project.value?.namespace}/${project.value?.name}`,
+    '_blank'
+  )
 }
 </script>
 

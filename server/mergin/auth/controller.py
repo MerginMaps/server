@@ -23,7 +23,7 @@ from .app import (
     user_account_closed,
 )
 from .bearer import encode_token
-from .models import User, LoginHistory
+from .models import User, LoginHistory, UserProfile
 from .schemas import UserSchema, UserSearchSchema, UserProfileSchema, UserInfoSchema
 from .forms import (
     LoginForm,
@@ -449,13 +449,16 @@ def get_paginated_users(
 
     :rtype: Dict[str: List[User], str: Integer]
     """
-    users = User.query.filter(
+    users = User.query.join(UserProfile).filter(
         is_(User.username.ilike("deleted_%"), False) | is_(User.active, True)
     )
 
     if like:
         users = users.filter(
-            User.username.ilike(f"%{like}%") | User.email.ilike(f"%{like}%")
+            User.username.ilike(f"%{like}%")
+            | User.email.ilike(f"%{like}%")
+            | UserProfile.first_name.ilike(f"%{like}%")
+            | UserProfile.last_name.ilike(f"%{like}%")
         )
 
     if descending and order_by:

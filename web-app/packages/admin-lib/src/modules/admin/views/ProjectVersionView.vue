@@ -20,7 +20,17 @@
       <app-section class="p-4">
         <div class="flex flex-column row-gap-3">
           <h2 class="headline-h2" data-cy="project-name">
-            {{ project?.name }} / {{ data?.name }}
+            <router-link
+              :to="{
+                name: AdminRoutes.PROJECT,
+                params: {
+                  namespace: project?.namespace,
+                  projectName: project?.name
+                }
+              }"
+              >{{ project?.name }}</router-link
+            >
+            / {{ data?.name }}
           </h2>
           <dl class="paragraph-p5 flex flex-column gap-3">
             <div>
@@ -68,6 +78,8 @@ import {
 } from '@mergin/lib'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+
+import { AdminRoutes } from '../routes'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
 

@@ -22,7 +22,7 @@
         <span class="p-input-icon-left w-full">
           <i class="ti ti-search paragraph-p3"></i>
           <PInputText
-            placeholder="Search members"
+            placeholder="Search accounts"
             data-cy="search-members-field"
             v-model="searchByName"
             class="w-full"
@@ -141,9 +141,9 @@ export default defineComponent({
       },
       searchByName: '',
       headers: [
-        { field: 'username', header: 'Name', sortable: true },
+        { field: 'username', header: 'Username', sortable: true },
         { field: 'email', header: 'Email', sortable: true },
-        { field: 'profile.name', header: 'Username' },
+        { field: 'profile.name', header: 'Full name' },
         { field: 'active', header: 'Active' }
       ] as TableDataHeader[]
     }

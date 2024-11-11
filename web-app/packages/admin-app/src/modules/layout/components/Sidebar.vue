@@ -36,7 +36,7 @@ const sidebarItems = computed<SideBarItemModel[]>(() => [
 
 <template>
   <side-bar-template :sidebarItems="sidebarItems">
-    <template #subtitle>Administration</template>
+    <template #subtitle>Admin panel</template>
     <template #footer>
       <sidebar-footer />
     </template>

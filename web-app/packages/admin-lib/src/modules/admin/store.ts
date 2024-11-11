@@ -6,6 +6,7 @@ import {
   errorUtils,
   htmlUtils,
   LoginPayload,
+  PaginatedUsersParams,
   SortingOptions,
   useFormStore,
   useInstanceStore,
@@ -14,6 +15,9 @@ import {
 } from '@mergin/lib'
 import { defineStore, getActivePinia } from 'pinia'
 import Cookies from 'universal-cookie'
+
+import { AdminRoutes } from './routes'
+
 import { AdminApi } from '@/modules/admin/adminApi'
 import {
   LatestServerVersionResponse,
@@ -22,7 +26,6 @@ import {
   UpdateUserPayload,
   UsersResponse
 } from '@/modules/admin/types'
-import { AdminRoutes } from './routes'
 
 export interface AdminState {
   loading: boolean
@@ -110,7 +113,7 @@ export const useAdminStore = defineStore('adminModule', {
       this.isServerConfigHidden = value
     },
 
-    async fetchUsers(payload) {
+    async fetchUsers(payload: { params: PaginatedUsersParams }) {
       const notificationStore = useNotificationStore()
 
       this.setLoading(true)

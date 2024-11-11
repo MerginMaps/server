@@ -6,6 +6,7 @@ import {
   ApiRequestSuccessInfo,
   errorUtils,
   LoginData,
+  PaginatedUsersParams,
   UserProfileResponse,
   UserResponse /*, getDefaultRetryOptions */
 } from '@mergin/lib'
@@ -27,7 +28,9 @@ export const AdminApi = {
     return AdminModule.httpService.post('/app/admin/login', data)
   },
 
-  async fetchUsers(params: UsersParams): Promise<AxiosResponse<UsersResponse>> {
+  async fetchUsers(
+    params: PaginatedUsersParams
+  ): Promise<AxiosResponse<UsersResponse>> {
     return AdminModule.httpService.get(`/app/admin/users`, { params })
   },
 
