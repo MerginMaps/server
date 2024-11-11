@@ -61,7 +61,7 @@
         </div>
       </app-section>
     </app-container>
-    <app-container>
+    <app-container v-if="userStore.loggedUser?.id !== user?.id">
       <app-section>
         <template #title>Advanced</template>
 
@@ -133,6 +133,7 @@ import {
   AppSettings,
   AppSettingsItemConfig,
   useInstanceStore
+  useUserStore
 } from '@mergin/lib'
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -144,6 +145,7 @@ const route = useRoute()
 const adminStore = useAdminStore()
 const dialogStore = useDialogStore()
 const instanceStore = useInstanceStore()
+const userStore = useUserStore()
 
 const settingsItems = computed<AppSettingsItemConfig[]>(() => [
   {
