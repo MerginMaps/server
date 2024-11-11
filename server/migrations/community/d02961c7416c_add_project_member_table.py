@@ -18,6 +18,9 @@ depends_on = None
 
 
 def upgrade():
+    conn = op.get_bind()
+    conn.execute(sa.text("CREATE EXTENSION IF NOT EXISTS intarray;"))
+
     op.create_table(
         "project_member",
         sa.Column("project_id", postgresql.UUID(as_uuid=True), nullable=False),
@@ -50,6 +53,7 @@ def upgrade():
     data_upgrade()
 
     op.drop_table("project_access")
+    conn.execute(sa.text("DROP EXTENSION IF EXISTS intarray;"))
 
 
 def downgrade():
