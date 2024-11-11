@@ -10,7 +10,6 @@ import math
 from dataclasses import asdict
 from datetime import datetime
 
-import pysqlite3
 from flask import url_for, current_app
 import os
 from dateutil.tz import tzlocal
@@ -182,7 +181,6 @@ def initialize():
             "added": project_files,
             "updated": [],
             "removed": [],
-            "renamed": [],
         }
     )
     pv = ProjectVersion(p, 1, user.id, upload_changes, "127.0.0.1")

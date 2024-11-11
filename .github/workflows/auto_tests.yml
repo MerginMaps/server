@@ -36,9 +36,10 @@ jobs:
       - name: Run tests
         run: |
           cd server
-          pipenv run pytest -v --cov=mergin mergin/tests
+          pipenv run pytest -v --cov=mergin --cov-report=lcov mergin/tests
 
-      # - name: Coveralls
-      #   uses: coverallsapp/github-action@v2
-      #   with:
-      #     base-path: server
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          base-path: server
+          format: lcov

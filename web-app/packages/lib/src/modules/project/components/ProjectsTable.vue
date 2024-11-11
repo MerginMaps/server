@@ -41,7 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 }"
               >
                 <template v-if="showNamespace"
-                  >{{ slotProps.data.namespace }} /</template
+                  >{{ slotProps.data.namespace }} / </template
                 >{{ slotProps.data.name }}</router-link
               ><PTag
                 v-if="slotProps.data.access.public && !onlyPublic"
