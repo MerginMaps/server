@@ -20,7 +20,6 @@ from ..sync.utils import generate_location, generate_checksum
 from ..sync.models import Project, ProjectAccess, ProjectVersion, FileHistory
 from ..sync.files import UploadChanges, ChangesSchema
 from ..sync.workspace import GlobalWorkspace
-from ..sync.public_api_controller import project_version_created
 from .. import db
 from . import json_headers, DEFAULT_USER, test_project, test_project_dir, TMP_DIR
 
@@ -88,7 +87,6 @@ def create_project(name, workspace, user, **kwargs):
     pv = ProjectVersion(p, 0, user.id, changes, "127.0.0.1")
     db.session.add(pv)
     db.session.commit()
-    project_version_created.send(pv)
 
     os.makedirs(p.storage.project_dir, exist_ok=True)
     return p
