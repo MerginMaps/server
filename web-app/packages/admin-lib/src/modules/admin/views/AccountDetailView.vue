@@ -132,7 +132,7 @@ import {
   ConfirmDialogProps,
   AppSettings,
   AppSettingsItemConfig,
-  useInstanceStore
+  useInstanceStore,
   useUserStore
 } from '@mergin/lib'
 import { computed, watch } from 'vue'
