@@ -194,7 +194,6 @@ def add_project(namespace):  # noqa: E501
         p = Project(**request.json, creator=current_user, workspace=workspace)
         p.updated = datetime.utcnow()
         db.session.add(p)
-        db.session.flush()
         pa = ProjectAccess(p, public=request.json.get("public", False))
 
         template_name = request.json.get("template", None)
