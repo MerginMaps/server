@@ -12,6 +12,7 @@ from dataclasses import asdict
 from typing import Dict
 from urllib.parse import quote
 import uuid
+from time import time
 from datetime import datetime
 import psycopg2
 from blinker import signal
@@ -86,6 +87,7 @@ from .errors import StorageLimitHit
 from ..utils import format_time_delta
 
 push_triggered = signal("push_triggered")
+project_version_created = signal("project_version_created")
 
 
 def parse_project_access_update_request(access: Dict) -> Dict:
@@ -232,6 +234,7 @@ def add_project(namespace):  # noqa: E501
         db.session.add(pa)
         db.session.add(version)
         db.session.commit()
+        project_version_created.send(version)
         return NoContent, 200
 
 
@@ -870,6 +873,7 @@ def project_push(namespace, project_name):
                 f"A project version {ProjectVersion.to_v_name(next_version)} for project: {project.id} created. "
                 f"Transaction id: {upload.id}. No upload."
             )
+            project_version_created.send(pv)
             return jsonify(ProjectSchema().dump(project)), 200
         except IntegrityError as err:
             db.session.rollback()
@@ -1079,6 +1083,7 @@ def push_finish(transaction_id):
         logging.info(
             f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
         )
+        project_version_created.send(pv)
     except (psycopg2.Error, FileNotFoundError, DataSyncError, IntegrityError) as err:
         db.session.rollback()
         logging.exception(
@@ -1210,6 +1215,7 @@ def clone_project(namespace, project_name):  # noqa: E501
     db.session.add(pa)
     db.session.add(project_version)
     db.session.commit()
+    project_version_created.send(project_version)
     return NoContent, 200
 
 
