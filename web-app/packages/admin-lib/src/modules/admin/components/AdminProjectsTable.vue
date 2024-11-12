@@ -18,7 +18,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <span class="p-input-icon-left w-full">
           <i class="ti ti-search paragraph-p3"></i>
           <PInputText
-            placeholder="Search projects"
+            :placeholder="
+              showNamespace
+                ? 'Search by workspace name or project name'
+                : 'Search projects'
+            "
             v-model="search"
             class="w-full"
             @input="onSearch"
