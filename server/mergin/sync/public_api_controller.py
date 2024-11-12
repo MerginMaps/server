@@ -193,6 +193,7 @@ def add_project(namespace):  # noqa: E501
 
         p = Project(**request.json, creator=current_user, workspace=workspace)
         p.updated = datetime.utcnow()
+        db.session.add(p)
         pa = ProjectAccess(p, public=request.json.get("public", False))
 
         template_name = request.json.get("template", None)
@@ -228,7 +229,6 @@ def add_project(namespace):  # noqa: E501
             get_device_id(request),
         )
 
-        db.session.add(p)
         db.session.add(pa)
         db.session.add(version)
         db.session.commit()
@@ -1181,6 +1181,7 @@ def clone_project(namespace, project_name):  # noqa: E501
         workspace=ws,
     )
     p.updated = datetime.utcnow()
+    db.session.add(p)
     pa = ProjectAccess(p, public=False)
 
     try:
@@ -1206,7 +1207,6 @@ def clone_project(namespace, project_name):  # noqa: E501
         user_agent,
         device_id,
     )
-    db.session.add(p)
     db.session.add(pa)
     db.session.add(project_version)
     db.session.commit()
