@@ -269,16 +269,17 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
             .count()
         )
 
-    def projects_query(self, name=None, workspace=None):
+    def projects_query(self, like: str = None):
         ws = self.factory_method()
         query = db.session.query(
-            Project, literal(ws.name).label("workspace_name")
+            Project,
+            literal(ws.name).label("workspace_name"),
         ).filter(Project.storage_params.isnot(None))
 
-        if name:
-            query = query.filter(Project.name.ilike(f"%{name}%"))
-        if workspace:
-            query = query.filter(literal(ws.name).ilike(f"%{workspace}%"))
+        if like:
+            query = query.filter(
+                Project.name.ilike(f"%{like}%") | literal(ws.name).ilike(f"%{like}%")
+            )
         return query
 
     @staticmethod

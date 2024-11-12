@@ -6,7 +6,7 @@ import os
 import pytz
 from datetime import datetime, timedelta
 from connexion import NoContent
-from sqlalchemy import func, desc, asc
+from sqlalchemy import func, desc, asc, or_
 from sqlalchemy.sql.operators import is_
 from flask import request, current_app, jsonify, abort, render_template
 from flask_login import login_user, logout_user, current_user
@@ -23,7 +23,7 @@ from .app import (
     user_account_closed,
 )
 from .bearer import encode_token
-from .models import User, LoginHistory
+from .models import User, LoginHistory, UserProfile
 from .schemas import UserSchema, UserSearchSchema, UserProfileSchema, UserInfoSchema
 from .forms import (
     LoginForm,
@@ -408,11 +408,17 @@ def update_user(username):  # pylint: disable=W0613,W0612
     form = UserForm.from_json(request.json)
     if not form.validate_on_submit():
         return jsonify(form.errors), 400
+    if request.json.get("is_admin") is not None and not current_app.config.get(
+        "ENABLE_SUPERADMIN_ASSIGNMENT"
+    ):
+        abort(400, "Unable to assign super admin role")
 
     user = User.query.filter_by(username=username).first_or_404("User not found")
     form.update_obj(user)
+
     # remove inactive since flag for ban or re-activation
     user.inactive_since = None
+
     db.session.add(user)
     db.session.commit()
     return jsonify(UserSchema().dump(user))
@@ -449,13 +455,17 @@ def get_paginated_users(
 
     :rtype: Dict[str: List[User], str: Integer]
     """
-    users = User.query.filter(
+    users = User.query.join(UserProfile).filter(
         is_(User.username.ilike("deleted_%"), False) | is_(User.active, True)
     )
 
     if like:
-        attr = User.email if "@" in like else User.username
-        users = users.filter(attr.ilike(f"%{like}%"))
+        users = users.filter(
+            User.username.ilike(f"%{like}%")
+            | User.email.ilike(f"%{like}%")
+            | UserProfile.first_name.ilike(f"%{like}%")
+            | UserProfile.last_name.ilike(f"%{like}%")
+        )
 
     if descending and order_by:
         users = users.order_by(desc(User.__table__.c[order_by]))
@@ -467,7 +477,7 @@ def get_paginated_users(
 
     result_users = UserSchema(many=True).dump(result)
 
-    data = {"users": result_users, "total": total}
+    data = {"items": result_users, "count": total}
     return data, 200
 
 
