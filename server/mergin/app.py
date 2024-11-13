@@ -120,7 +120,7 @@ class GeventTimeoutMiddleware:
                 return self.app(environ, start_response)
         except gevent.Timeout:
             logging.error(f"Gevent worker: Request {request.path} timed out")
-            resp = Response("Bad Gateway", mimetype="text/plain", status=502)
+            resp = Response("Gateway Timeout", mimetype="text/plain", status=504)
             return resp(environ, start_response)
 
 
