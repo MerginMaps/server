@@ -67,7 +67,7 @@ class Project(db.Model):
     removed_by = db.Column(
         db.Integer, db.ForeignKey("user.id"), nullable=True, index=True
     )
-    public = db.Column(db.Boolean, default=False, index=True)
+    public = db.Column(db.Boolean, default=False, index=True, nullable=False)
 
     creator = db.relationship(
         "User", uselist=False, backref=db.backref("projects"), foreign_keys=[creator_id]

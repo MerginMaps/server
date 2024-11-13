@@ -48,12 +48,12 @@ def upgrade():
     )
 
     op.add_column("project", sa.Column("public", sa.Boolean(), nullable=True))
-    op.create_index(op.f("ix_project_public"), "project", ["public"], unique=False)
 
     data_upgrade()
 
+    op.alter_column("project", "public", nullable=False)
+    op.create_index(op.f("ix_project_public"), "project", ["public"], unique=False)
     op.drop_table("project_access")
-    conn.execute(sa.text("DROP EXTENSION IF EXISTS intarray;"))
 
 
 def downgrade():
@@ -97,6 +97,9 @@ def downgrade():
         ),
         sa.PrimaryKeyConstraint("project_id", name="pk_project_access"),
     )
+
+    data_downgrade()
+
     op.create_index(
         "ix_project_access_writers",
         "project_access",
@@ -131,8 +134,6 @@ def downgrade():
         unique=False,
         postgresql_using="gin",
     )
-
-    data_downgrade()
 
     op.drop_index(op.f("ix_project_public"), table_name="project")
     op.drop_column("project", "public")
@@ -172,7 +173,7 @@ def data_upgrade():
                 FROM project_access
             )
             INSERT INTO project_member (project_id, user_id, role)
-            SELECT DISTINCT project_id, user_id, role::project_role FROM members;
+            SELECT project_id, user_id, role::project_role FROM members;
         """
         )
     )
@@ -182,7 +183,7 @@ def data_upgrade():
             """
             UPDATE project p
             SET
-                public = pa.public
+                public = coalesce(pa.public, 'false')
             FROM project_access pa
             WHERE pa.project_id = p.id;
         """
@@ -192,6 +193,17 @@ def data_upgrade():
 
 def data_downgrade():
     conn = op.get_bind()
+    # recreate 1:1 relationship for project
+    conn.execute(
+        sa.text(
+            """
+            INSERT INTO project_access (project_id, public)
+            SELECT id, coalesce(public, 'false') FROM project;
+        """
+        )
+    )
+
+    # update access fields from assigned roles
     conn.execute(
         sa.text(
             """
@@ -216,20 +228,14 @@ def data_downgrade():
                 LEFT OUTER JOIN (SELECT * FROM agg WHERE role = 'editor') AS e ON o.project_id = e.project_id
                 LEFT OUTER JOIN (SELECT * FROM agg WHERE role = 'writer') AS w ON o.project_id = w.project_id
                 )
-            INSERT INTO project_access (project_id, owners, writers, editors, readers)
-            SELECT DISTINCT project_id, owners, writers, editors, readers FROM members m;
-        """
-        )
-    )
-
-    conn.execute(
-        sa.text(
-            """
             UPDATE project_access pa
             SET
-                public = p.public
-            FROM project p
-            WHERE pa.project_id = p.id;
+                owners = m.owners,
+                writers = m.writers,
+                editors = m.editors,
+                readers = m.readers
+            FROM members m
+            WHERE m.project_id = pa.project_id;
         """
         )
     )
