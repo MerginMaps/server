@@ -8,7 +8,7 @@ from flask_login import current_user
 from sqlalchemy.orm import defer
 from sqlalchemy import text, and_, desc, asc
 
-from .. import db
+from ..app import db
 from ..auth import auth_required
 from ..auth.models import User, UserProfile
 from .forms import AccessPermissionForm

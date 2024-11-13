@@ -3,10 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import os
-from .version import get_version
 from decouple import config, Csv
 
-config_dir = os.path.abspath(os.path.dirname(__file__))
+from .version import get_version
 
 
 class Configuration(object):

@@ -12,7 +12,7 @@ from .errors import UpdateProjectAccessError
 from .models import Project, ProjectAccess, AccessRequest, ProjectAccessDetail
 from .permissions import projects_query, ProjectPermissions
 from .public_api_controller import parse_project_access_update_request
-from .. import db
+from ..app import db
 from ..auth.models import User
 from ..config import Configuration
 from .interfaces import AbstractWorkspace, WorkspaceHandler

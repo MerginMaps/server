@@ -6,7 +6,7 @@ import os
 
 from sqlalchemy import null
 
-from .. import db
+from ..app import db
 from ..config import Configuration
 from ..sync.models import FileHistory, ProjectVersion, PushChangeType, ProjectFilePath
 from ..sync.workspace import GlobalWorkspaceHandler

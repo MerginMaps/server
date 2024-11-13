@@ -12,7 +12,7 @@ from sqlalchemy import func
 from .commands import add_commands
 from .config import Configuration
 from .models import User, UserProfile
-from .. import db
+from ..app import db
 
 # signal for other versions to listen to
 user_account_closed = signal("user_account_closed")

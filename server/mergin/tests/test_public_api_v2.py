@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-from .. import db
+from ..app import db
 from mergin.sync.models import Project
 from tests import test_project, test_workspace_id
 

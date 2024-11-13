@@ -20,7 +20,7 @@ from ..sync.models import (
 )
 from ..sync.files import UploadChanges
 from ..auth.models import User
-from .. import db
+from ..app import db
 from . import DEFAULT_USER
 from .utils import add_user, create_project, create_workspace, cleanup
 

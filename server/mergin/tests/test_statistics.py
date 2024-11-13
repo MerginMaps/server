@@ -6,7 +6,7 @@ import json
 from unittest.mock import patch
 import requests
 
-from .. import db
+from ..app import db
 from ..stats.tasks import send_statistics
 from ..stats.models import MerginInfo
 from .utils import Response

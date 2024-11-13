@@ -30,7 +30,7 @@ from .files import (
     ProjectFile,
 )
 from .storages.disk import move_to_tmp
-from .. import db
+from ..app import db
 from .storages import DiskStorage
 from .utils import is_versioned_file, is_qgis
 

@@ -7,11 +7,10 @@ from marshmallow import fields, ValidationError, Schema, post_dump
 from flask_login import current_user
 from flask import current_app
 
-from .. import ma
 from .files import ProjectFileSchema, FileSchema
 from .permissions import ProjectPermissions
 from .models import Project, ProjectVersion, AccessRequest, FileHistory, PushChangeType
-from ..app import DateTimeWithZ
+from ..app import DateTimeWithZ, ma
 from ..auth.models import User
 
 

@@ -35,8 +35,7 @@ from .forms import (
     UserChangePasswordForm,
     ApiLoginForm,
 )
-from .. import db
-from ..app import DEPRECATION_API_MSG
+from ..app import DEPRECATION_API_MSG, db
 from ..utils import format_time_delta
 
 

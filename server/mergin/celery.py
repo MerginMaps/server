@@ -9,7 +9,7 @@ from flask_mail import Message
 from smtplib import SMTPException, SMTPServerDisconnected
 
 from .config import Configuration
-from . import mail
+from .app import mail
 
 
 # create on flask app independent object

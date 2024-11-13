@@ -10,7 +10,7 @@ from datetime import datetime
 from flask import Flask, current_app
 
 from .files import UploadChanges
-from .. import db
+from ..app import db
 from .models import Project, ProjectAccess, ProjectVersion
 from .utils import split_project_path
 

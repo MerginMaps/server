@@ -23,7 +23,7 @@ from flask import url_for, current_app
 import tempfile
 
 from sqlalchemy import desc
-from .. import db
+from ..app import db
 from ..sync.models import (
     Project,
     Upload,

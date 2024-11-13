@@ -6,7 +6,7 @@ import pytest
 import shutil
 from sqlalchemy.orm.attributes import flag_modified
 
-from .. import db
+from ..app import db
 from ..auth.models import User
 from ..sync.models import ProjectVersion, Project, GeodiffActionHistory
 from . import test_project_dir, TMP_DIR
