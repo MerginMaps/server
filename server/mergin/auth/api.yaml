@@ -171,7 +171,7 @@ paths:
                   count:
                     type: integer
                     example: 10
-                  users:
+                  items:
                     type: array
                     items:
                       $ref: "#/components/schemas/User"
@@ -666,6 +666,11 @@ components:
           type: boolean
           example: false
         scheduled_removal:
+          nullable: true
+          type: string
+          format: date-time
+          example: 2023-07-30T08:47:58Z
+        registration_date:
           nullable: true
           type: string
           format: date-time

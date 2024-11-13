@@ -23,14 +23,14 @@
   "scripts": {
     "dev": "vite",
     "preview": "vite preview",
-    "build:watch": "vue-demi-switch 2.7 && npm-run-all -p build:lib:watch build:types:watch",
-    "build:lib": "vue-demi-switch 2.7 && yarn clean:types:temp && vite build --mode development",
-    "build:lib:prod": "vue-demi-switch 2.7 && yarn clean:types:temp && vite build",
-    "build:lib:watch": "vue-demi-switch 2.7 && yarn clean:types:temp && vite build --mode development --watch",
-    "build:lib:all": "vue-demi-switch 2.7 && yarn build:lib && yarn build:types",
-    "build:lib:all:prod": "vue-demi-switch 2.7 && yarn build:lib:prod",
-    "build:types": "vue-demi-switch 2.7 && yarn clean:types && (vue-tsc --declaration --emitDeclarationOnly || true) && tsc-alias",
-    "build:types:watch": "vue-demi-switch 2.7 && yarn build:types && (concurrently \"vue-tsc --watch\" \"tsc-alias -w\")",
+    "build:watch": "vue-demi-switch 3 && npm-run-all -p build:lib:watch build:types:watch",
+    "build:lib": "vue-demi-switch 3 && yarn clean:types:temp && vite build --mode development",
+    "build:lib:prod": "vue-demi-switch 3 && yarn clean:types:temp && vite build",
+    "build:lib:watch": "vue-demi-switch 3 && yarn clean:types:temp && vite build --mode development --watch",
+    "build:lib:all": "vue-demi-switch 3 && yarn build:lib && yarn build:types",
+    "build:lib:all:prod": "vue-demi-switch 3 && yarn build:lib:prod",
+    "build:types": "vue-demi-switch 3 && yarn clean:types && (vue-tsc --declaration --emitDeclarationOnly || true) && tsc-alias",
+    "build:types:watch": "vue-demi-switch 3 && yarn build:types && (concurrently \"vue-tsc --watch\" \"tsc-alias -w\")",
     "clean": "yarn clean:lib && yarn clean:types",
     "clean:lib": "rimraf ./dist",
     "clean:types:temp": "rimraf ./**/*.vue.ts",
@@ -42,16 +42,15 @@
   "dependencies": {
     "axios": "^0.28.1",
     "axios-retry": "^3.2.4",
-    "date-fns": "^2.28.0",
     "lodash": "^4.17.21",
+    "pinia": "^2.1.7",
+    "primeflex": "^3.3.1",
+    "primevue": "3.43.0",
     "universal-cookie": "^4.0.4",
-    "vue": "^2.7.14",
-    "vuetify": "^2.6.15"
+    "vue": "3.5.12"
   },
   "peerDependencies": {
     "pinia": ">=2.x",
-    "portal-vue": "2.x",
-    "vue": "2.x",
-    "vuetify": "2.x"
+    "vue": "3.x"
   }
 }

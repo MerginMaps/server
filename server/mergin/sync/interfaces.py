@@ -154,6 +154,13 @@ class WorkspaceHandler(ABC):
         """
         pass
 
+    @staticmethod
+    def monthly_contributors_count():
+        """
+        Return number of workspace contributors in current month and year
+        """
+        pass
+
 
 class AbstractProjectHandler(ABC):
     @abstractmethod

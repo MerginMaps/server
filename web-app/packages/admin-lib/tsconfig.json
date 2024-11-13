@@ -1,8 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ES5",
+    "target": "ES2022",
     "module": "ESNext",
-    // setting strict to false
     "strict": true,
     "noImplicitAny": false,
     "strictNullChecks": false,

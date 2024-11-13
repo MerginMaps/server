@@ -16,6 +16,12 @@ import {
   initCsrfToken
 } from '@mergin/lib'
 
+import 'primevue/resources/primevue.min.css'
+import 'primeflex/primeflex.min.css'
+import '@mergin/lib/dist/sass/themes/mm-theme-light/theme.scss'
+import '@tabler/icons-webfont/tabler-icons.min.css'
+import '@mergin/lib/dist/style.css'
+
 import { createMerginApp } from './app'
 import { createPiniaInstance, getPiniaInstance } from './store'
 

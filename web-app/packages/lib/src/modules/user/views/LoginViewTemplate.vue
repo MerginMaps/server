@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       class="flex flex-column"
     >
       <div>
-        <label class="paragraph-p6" for="login">Email</label>
+        <label for="login">Email</label>
         <PInputText
           placeholder="Type your email"
           name="email"
@@ -53,7 +53,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </form>
     <form v-else @submit.prevent="loginUser" class="flex flex-column">
       <div>
-        <label class="paragraph-p6" for="login">Username or email</label>
+        <label for="login">Username or email</label>
         <PInputText
           id="login"
           name="login"
@@ -71,7 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </div>
 
       <div>
-        <label class="paragraph-p6" for="password">Password</label>
+        <label for="password">Password</label>
         <PPassword
           id="password"
           name="password"
@@ -158,7 +158,7 @@ export default {
       return this.$route.params.reset === 'reset'
     }
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.clearErrors({
       componentId: this.merginComponentUuid,
       keepNotification: true

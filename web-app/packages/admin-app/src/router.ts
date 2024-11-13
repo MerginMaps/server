@@ -3,229 +3,156 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import {
-  NotFoundView,
-  routeUtils,
-  Router,
-  errorUtils,
-  FileDetailView,
-  FileBrowserView,
-  ProjectVersionsView,
-  VersionDetailView,
-  FileVersionDetailView,
-  useUserStore
-} from '@mergin/lib-vue2'
-import Vue from 'vue'
-
-import {
-  AccountView,
-  ProfileView,
+  AccountsView,
+  AccountDetailView,
   SettingsView,
-  ProjectSettingsView,
   ProjectsView,
   ProjectView,
-  LoginView,
-  useAdminStore
+  AdminRoutes,
+  ProjectFilesView,
+  ProjectSettingsView,
+  ProjectVersionView,
+  ProjectVersionsView
 } from '@mergin/admin-lib'
-import { addRouterToPinia } from './store'
+import {
+  NotFoundView,
+  routeUtils,
+  FileVersionDetailView,
+  useUserStore
+} from '@mergin/lib'
 import { Pinia } from 'pinia'
+import {
+  createRouter as createRouterInstance,
+  createWebHistory
+} from 'vue-router'
 
-const router = new Router({
-  mode: 'history',
-  base: import.meta.env.BASE_URL
-})
-
-Vue.use(Router)
+import AppHeader from './modules/layout/components/AppHeader.vue'
+import Sidebar from './modules/layout/components/Sidebar.vue'
+import { LoginView } from './modules/user'
 
 export const createRouter = (pinia: Pinia) => {
-  const routes = [
-    {
-      path: '*',
-      component: NotFoundView
-    },
-    {
-      beforeEnter: (to, from, next) => {
-        const userStore = useUserStore(pinia)
-        if (userStore.isSuperUser) {
-          next('/dashboard')
-        } else {
-          next()
-        }
+  const router = createRouterInstance({
+    history: createWebHistory(),
+    routes: [
+      {
+        path: '/:pathMatch(.*)*',
+        component: NotFoundView
       },
-      path: '/login/:reset?',
-      name: 'login',
-      component: LoginView,
-      props: true,
-      meta: { public: true }
-    },
-    {
-      path: '/',
-      name: 'admin',
-      alias: '/dashboard',
-      beforeEnter: (to, from, next) => {
-        next('/accounts')
+      {
+        path: '/login/:reset?',
+        name: 'login',
+        component: LoginView,
+        props: true,
+        meta: { public: true }
       },
-      props: {
-        default: true
-      }
-    },
-    {
-      path: '/accounts',
-      name: 'accounts',
-      component: AccountView,
-      props: true,
-      beforeEnter: (to, from, next) => {
-        const userStore = useUserStore(pinia)
-        routeUtils.isAuthenticatedGuard(to, from, next, userStore)
-        routeUtils.isSuperUser(to, from, next, userStore)
-      }
-    },
-    {
-      path: '/user/:username',
-      name: 'profile',
-      component: ProfileView,
-      props: true,
-      beforeEnter: async (to, from, next) => {
-        const adminStore = useAdminStore(pinia)
-        adminStore.setUserAdminProfile(null)
-        try {
-          await adminStore.fetchUserProfileByName({
-            username: to.params.username
-          })
-          next()
-        } catch (e) {
-          next(
-            Error(errorUtils.getErrorMessage(e, 'Failed to fetch user profile'))
-          )
-        }
-      }
-    },
-    {
-      path: '/projects',
-      name: 'projects',
-      component: ProjectsView,
-      props: true,
-      children: [
-        {
-          path: ':namespace',
-          name: 'namespace-projects',
-          component: ProjectsView,
-          props: true
-        }
-      ]
-    },
-    {
-      path: '/projects/:namespace/:projectName',
-      name: 'project',
-      component: ProjectView,
-      props(route) {
-        return {
-          namespace: route.params.namespace,
-          projectName: route.params.projectName,
-          asAdmin: true
-        }
+      {
+        path: '/',
+        name: 'admin',
+        redirect: '/accounts'
       },
-      redirect: { name: 'project-tree' },
-      children: [
-        {
-          path: 'blob/:location*',
-          name: 'blob',
-          component: FileDetailView,
-          props(route) {
-            return {
-              asAdmin: true,
-              namespace: route.params.namespace,
-              projectName: route.params.projectName,
-              location: route.params.location
-            }
-          }
+      {
+        path: '/accounts',
+        name: AdminRoutes.ACCOUNTS,
+        components: {
+          default: AccountsView,
+          sidebar: Sidebar,
+          header: AppHeader
         },
-        {
-          path: 'tree/:location*',
-          name: 'project-tree',
-          component: FileBrowserView,
-          props(route) {
-            return {
-              asAdmin: true,
-              namespace: route.params.namespace,
-              projectName: route.params.projectName,
-              location: route.params.location
-            }
-          }
+        props: true
+      },
+      {
+        path: '/user/:username',
+        name: AdminRoutes.ACCOUNT,
+        components: {
+          default: AccountDetailView,
+          sidebar: Sidebar,
+          header: AppHeader
         },
-        {
-          path: 'settings',
-          name: 'project-settings',
-          component: ProjectSettingsView,
-          props(route) {
-            return {
-              asAdmin: true,
-              namespace: route.params.namespace,
-              projectName: route.params.projectName
-            }
-          }
+        props: true
+      },
+      {
+        path: '/projects',
+        name: AdminRoutes.PROJECTS,
+        components: {
+          default: ProjectsView,
+          sidebar: Sidebar,
+          header: AppHeader
         },
-        {
-          path: 'history',
-          name: 'project-versions',
-          component: ProjectVersionsView,
-          props(route) {
-            return {
-              asAdmin: true,
-              namespace: route.params.namespace,
-              projectName: route.params.projectName
-            }
-          }
+        props: true
+      },
+      {
+        path: '/projects/:namespace/:projectName/history/:version_id',
+        name: AdminRoutes.ProjectVersion,
+        components: {
+          default: ProjectVersionView,
+          sidebar: Sidebar,
+          header: AppHeader
         },
-        {
-          path: 'history/:version_id',
-          name: 'project-versions-detail',
-          component: VersionDetailView,
-          props(route) {
-            return {
-              asAdmin: true,
-              namespace: route.params.namespace,
-              projectName: route.params.projectName,
-              version_id: route.params.version_id
-            }
-          }
+        props: true
+      },
+      {
+        path: '/projects/:namespace/:projectName/history/:version_id/:path',
+        name: AdminRoutes.FileVersionDetail,
+        components: {
+          default: FileVersionDetailView,
+          sidebar: Sidebar,
+          header: AppHeader
         },
-        {
-          path: 'history/:version_id/:path',
-          name: 'file-version-detail',
-          component: FileVersionDetailView,
-          props(route) {
-            return {
-              asAdmin: true,
-              namespace: route.params.namespace,
-              projectName: route.params.projectName,
-              version_id: route.params.version_id,
-              path: route.params.path
-            }
+        props: true
+      },
+      {
+        path: '/projects/:namespace/:projectName?',
+        components: {
+          default: ProjectView,
+          sidebar: Sidebar,
+          header: AppHeader
+        },
+        props: true,
+        children: [
+          {
+            path: '',
+            name: AdminRoutes.PROJECT,
+            component: ProjectFilesView,
+            props: true
+          },
+          {
+            path: 'tree/:location?',
+            name: AdminRoutes.ProjectTree,
+            component: ProjectFilesView,
+            props: true
+          },
+          {
+            path: 'settings',
+            name: AdminRoutes.ProjectSettings,
+            component: ProjectSettingsView,
+            props: true
+          },
+          {
+            path: 'history',
+            name: AdminRoutes.ProjectHistory,
+            component: ProjectVersionsView,
+            props: true
           }
-        }
-      ]
-    },
-    {
-      path: '/settings',
-      name: 'settings',
-      component: SettingsView,
-      props: true
-    }
-  ]
-
-  routes.forEach((route) => {
-    router.addRoute(route)
+        ]
+      },
+      {
+        path: '/settings',
+        name: AdminRoutes.SETTINGS,
+        components: {
+          default: SettingsView,
+          sidebar: Sidebar,
+          header: AppHeader
+        },
+        props: true
+      }
+    ]
   })
 
   /** Handles redirect to /login when user is not authenticated. */
   router.beforeEach((to, from, next) => {
     const userStore = useUserStore(pinia)
-    routeUtils.isAuthenticatedGuard(to, from, next, userStore)
     routeUtils.isSuperUser(to, from, next, userStore)
   })
-  addRouterToPinia(router)
 
   return router
 }
-
-export default router

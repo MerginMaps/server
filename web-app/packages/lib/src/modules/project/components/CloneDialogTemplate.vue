@@ -73,7 +73,7 @@ export default defineComponent({
   created() {
     this.newProjectName = this.project
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.clearErrors({
       componentId: this.merginComponentUuid,
       keepNotification: true

@@ -31,6 +31,7 @@ from mergin.stats.app import register as register_stats
 
 Configuration.SERVER_TYPE = "ce"
 Configuration.USER_SELF_REGISTRATION = False
+
 application = create_app(
     [
         "DOCS_URL",
@@ -40,6 +41,7 @@ application = create_app(
         "GLOBAL_ADMIN",
         "GLOBAL_READ",
         "GLOBAL_WRITE",
+        "ENABLE_SUPERADMIN_ASSIGNMENT",
     ]
 )
 register_stats(application)

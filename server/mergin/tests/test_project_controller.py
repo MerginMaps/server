@@ -37,7 +37,7 @@ from ..sync.models import (
     ProjectFilePath,
 )
 from ..sync.files import ChangesSchema
-from ..sync.schemas import ProjectListSchema, ProjectSchema
+from ..sync.schemas import ProjectListSchema
 from ..sync.utils import generate_checksum, is_versioned_file
 from ..auth.models import User, UserProfile
 

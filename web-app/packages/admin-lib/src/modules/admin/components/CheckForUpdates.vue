@@ -5,33 +5,39 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <div />
+  <app-container v-if="adminStore.displayUpdateAvailable">
+    <app-section-banner>
+      <template #title>Update available 🎉!</template>
+      <template #description
+        >A new version of Mergin Maps is available for users. Let's explore its
+        new features.</template
+      >
+      <template #header-actions
+        ><PButton
+          @click="openUpdateUrl"
+          severity="secondary"
+          data-cy="check-for-updates-btn"
+          label="Update"
+      /></template>
+    </app-section-banner>
+  </app-container>
 </template>
 
-<script lang="ts">
-import { useInstanceStore } from '@mergin/lib-vue2'
-import { mapState, mapActions } from 'pinia'
-import { defineComponent } from 'vue'
+<script lang="ts" setup>
+import { AppSectionBanner, AppContainer } from '@mergin/lib'
+import { onMounted } from 'vue'
 
 import { useAdminStore } from '@/modules/admin/store'
 
-export default defineComponent({
-  name: 'CheckForUpdates',
-  computed: {
-    ...mapState(useInstanceStore, ['configData'])
-  },
-  methods: {
-    ...mapActions(useAdminStore, ['getCheckUpdateFromCookies', 'checkVersions'])
-  },
-  created() {
-    this.getCheckUpdateFromCookies()
-    this.checkVersions({
-      major: this.configData?.major,
-      minor: this.configData?.minor,
-      fix: this.configData?.fix ?? null
-    })
-  }
+const adminStore = useAdminStore()
+
+onMounted(async () => {
+  await adminStore.checkVersions()
 })
+
+function openUpdateUrl() {
+  window.open(adminStore.latestServerVersion?.info_url, '_blank')
+}
 </script>
 
 <style scoped></style>

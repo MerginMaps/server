@@ -6,15 +6,26 @@ import {
   errorUtils,
   htmlUtils,
   LoginPayload,
+  PaginatedUsersParams,
+  SortingOptions,
   useFormStore,
   useInstanceStore,
   useNotificationStore,
   UserResponse
-} from '@mergin/lib-vue2'
+} from '@mergin/lib'
 import { defineStore, getActivePinia } from 'pinia'
 import Cookies from 'universal-cookie'
+
+import { AdminRoutes } from './routes'
+
 import { AdminApi } from '@/modules/admin/adminApi'
-import { UpdateUserPayload } from '@/modules/admin/types'
+import {
+  LatestServerVersionResponse,
+  PaginatedAdminProjectsParams,
+  PaginatedAdminProjectsResponse,
+  UpdateUserPayload,
+  UsersResponse
+} from '@/modules/admin/types'
 
 export interface AdminState {
   loading: boolean
@@ -22,10 +33,15 @@ export interface AdminState {
     items: UserResponse[]
     count: number
   }
-  userAdminProfile?: UserResponse
+  projects: {
+    items: PaginatedAdminProjectsResponse[]
+    count: number
+    loading: boolean
+  }
+  user?: UserResponse
   checkForUpdates?: boolean
-  info_url?: string
   isServerConfigHidden: boolean
+  latestServerVersion?: LatestServerVersionResponse
 }
 
 const cookies = new Cookies()
@@ -38,40 +54,66 @@ export const useAdminStore = defineStore('adminModule', {
       items: [],
       count: 0
     },
-    userAdminProfile: null,
+    projects: {
+      items: [],
+      count: 0,
+      loading: false
+    },
+    user: null,
     checkForUpdates: undefined,
-    info_url: undefined,
-    isServerConfigHidden: false
+    isServerConfigHidden: false,
+    latestServerVersion: undefined
   }),
-
   getters: {
     displayUpdateAvailable: (state) => {
-      return !!state.checkForUpdates
+      if (!state.checkForUpdates) {
+        return false
+      }
+
+      const instanceStore = useInstanceStore()
+      const config = instanceStore.configData
+
+      if (!state.latestServerVersion || !config) {
+        return false
+      }
+
+      const { major, minor, fix } = state.latestServerVersion
+
+      if (
+        (config.major || config.major === 0) &&
+        (config.minor || config.minor === 0)
+      ) {
+        if (major > config.major) {
+          return true
+        } else if (major === config.major) {
+          if (minor > config.minor) {
+            return true
+          } else if (minor === config.minor) {
+            if (fix > config.fix) {
+              return true
+            }
+          }
+        }
+      }
+
+      return false
     }
   },
-
   actions: {
     setLoading(value) {
       this.loading = value
     },
-    setUsers(data) {
-      this.users.count = data.total
-      this.users.items = data.users
-    },
-    setUserAdminProfile(userAdminProfile) {
-      this.userAdminProfile = userAdminProfile
+    setUsers(data: UsersResponse) {
+      this.users = data
     },
     setCheckForUpdates(value) {
       this.checkForUpdates = value
-    },
-    setInfoUrl(value: string) {
-      this.info_url = value
     },
     setIsServerConfigHidden(value: boolean) {
       this.isServerConfigHidden = value
     },
 
-    async fetchUsers(payload) {
+    async fetchUsers(payload: { params: PaginatedUsersParams }) {
       const notificationStore = useNotificationStore()
 
       this.setLoading(true)
@@ -84,14 +126,14 @@ export const useAdminStore = defineStore('adminModule', {
         this.setLoading(false)
       }
     },
-    async fetchUserProfileByName(payload) {
+    async fetchUserByName(payload) {
       const notificationStore = useNotificationStore()
 
       htmlUtils.waitCursor(true)
       try {
-        const response = await AdminApi.fetchUserProfileByName(payload.username)
-        this.setUserAdminProfile(response.data)
-      } catch(e) {
+        const response = await AdminApi.fetchUserByName(payload.username)
+        this.user = response.data
+      } catch (e) {
         await notificationStore.error({ text: 'Failed to fetch user profile' })
       } finally {
         htmlUtils.waitCursor(false)
@@ -104,7 +146,7 @@ export const useAdminStore = defineStore('adminModule', {
       htmlUtils.waitCursor(true)
       try {
         await AdminApi.deleteUser(payload.username)
-        await getActivePinia().router.push({ name: 'accounts' })
+        await getActivePinia().router.push({ name: AdminRoutes.ACCOUNTS })
       } catch (err) {
         await notificationStore.error({
           text: errorUtils.getErrorMessage(err, 'Unable to close account')
@@ -123,11 +165,10 @@ export const useAdminStore = defineStore('adminModule', {
           payload.username,
           payload.data
         )
-        if (this.userAdminProfile?.id === response.data?.id) {
+        if (this.user?.id === response.data?.id) {
           // update stored user detail data
-          this.setUserAdminProfile(response.data)
+          this.user = response.data
         }
-        await getActivePinia().router.push({ name: 'accounts' })
       } catch (err) {
         await notificationStore.error({
           text: errorUtils.getErrorMessage(
@@ -138,14 +179,6 @@ export const useAdminStore = defineStore('adminModule', {
       } finally {
         htmlUtils.waitCursor(false)
       }
-    },
-
-    // TODO: deprecated?
-    async updateAccountStorage(_context, payload) {
-      return await AdminApi.updateAccountStorage(
-        payload.accountId,
-        payload.data
-      )
     },
 
     async adminLogin(payload: LoginPayload) {
@@ -164,31 +197,22 @@ export const useAdminStore = defineStore('adminModule', {
       }
     },
 
-    async checkVersions(payload) {
+    async getLatestServerVersion() {
+      const notificationStore = useNotificationStore()
       try {
-        const response = await AdminApi.getServerVersion()
-        const { major, minor, fix } = response.data
-        // compare payload - major, minor and fix version from config with latest-version from server
-        if (
-          (payload.major || payload.major === 0) &&
-          (payload.minor || payload.minor === 0)
-        ) {
-          let isUpdate = false
-          if (major > payload.major) {
-            isUpdate = true
-          } else if (major === payload.major) {
-            if (minor > payload.minor) {
-              isUpdate = true
-            } else if (minor === payload.minor) {
-              if (fix > payload.fix) {
-                isUpdate = true
-              }
-            }
-          }
-          if (isUpdate) {
-            this.setInfoUrl(response.data.info_url)
-          }
-        }
+        const response = await AdminApi.getLatestServerVersion()
+        this.latestServerVersion = response.data
+      } catch (e) {
+        notificationStore.error({ text: errorUtils.getErrorMessage(e) })
+      }
+    },
+
+    async checkVersions() {
+      try {
+        await this.getCheckUpdateFromCookies()
+        if (!this.checkForUpdates) return
+
+        await this.getLatestServerVersion()
       } catch (e) {
         console.error(e)
       }
@@ -228,6 +252,67 @@ export const useAdminStore = defineStore('adminModule', {
 
     async removeServerConfiguredCookies() {
       cookies.remove(COOKIES_HIDE_SERVER_CONFIGURED_BANNER)
+    },
+
+    async getProjects(payload: {
+      params: SortingOptions & Pick<PaginatedAdminProjectsParams, 'like'>
+    }) {
+      const notificationStore = useNotificationStore()
+
+      try {
+        this.projects.loading = true
+        const params: PaginatedAdminProjectsParams = {
+          page: payload.params.page,
+          per_page: payload.params.itemsPerPage,
+          order_params: `${payload.params.sortBy[0]} ${
+            payload.params.sortDesc[0] ? 'DESC' : 'ASC'
+          }`
+        }
+        if (payload.params.like) {
+          params.like = payload.params.like.trim()
+        }
+
+        const response = await AdminApi.getProjects(params)
+        this.projects.items = response.data.items
+        this.projects.count = response.data.count
+      } catch (e) {
+        notificationStore.error({
+          text: 'Failed to fetch projects'
+        })
+      } finally {
+        this.projects.loading = false
+      }
+    },
+
+    async restoreProject(payload: { projectId: string }) {
+      const notificationStore = useNotificationStore()
+
+      try {
+        this.projects.loading = true
+        await AdminApi.restoreProject(payload.projectId)
+      } catch (e) {
+        notificationStore.error({
+          text: 'Failed to restore project'
+        })
+      } finally {
+        this.projects.loading = false
+      }
+    },
+
+    async deleteProject(payload: { projectId: string }) {
+      const notificationStore = useNotificationStore()
+
+      try {
+        await AdminApi.deleteProject(payload.projectId)
+        await getActivePinia().router.push({ name: AdminRoutes.PROJECTS })
+        notificationStore.show({
+          text: 'Project removed successfully'
+        })
+      } catch (e) {
+        notificationStore.error({
+          text: 'Unable to remove project'
+        })
+      }
     }
   }
 })

@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div>
     <PMenubar
-      class="app-header py-1"
+      class="app-header"
       :pt="{
         menu: 'justify-content-between',
         start: {
@@ -116,7 +116,7 @@ import { defineComponent, ref, PropType } from 'vue'
 
 import { AppBreadcrumbs } from '.'
 
-import { AppMenu, useInstanceStore } from '@/main'
+import { AppMenu, UserRouteName, useInstanceStore } from '@/main'
 import { useLayoutStore } from '@/modules/layout/store'
 import { useUserStore } from '@/modules/user/store'
 
@@ -160,16 +160,19 @@ export default defineComponent({
     ]),
     profileMenuItems() {
       return [
-        {
-          label: 'Your profile',
-          icon: 'ti ti-user-circle',
-          command: () => {
-            this.$router.push({
-              name: 'user_profile',
-              username: this.loggedUser?.username
-            })
-          }
-        },
+        ...(this.$router.hasRoute(UserRouteName.UserProfile)
+          ? [
+              {
+                label: 'Your profile',
+                icon: 'ti ti-user-circle',
+                command: () => {
+                  this.$router.push({
+                    name: UserRouteName.UserProfile
+                  })
+                }
+              }
+            ]
+          : []),
         {
           label: 'Sign out',
           icon: 'ti ti-logout',
@@ -183,11 +186,13 @@ export default defineComponent({
       return [
         {
           label: 'Documentation',
-          url: this.configData?.docs_url
+          url: this.configData?.docs_url,
+          target: '_blank',
         },
         {
           label: 'Community chat',
-          url: import.meta.env.VITE_VUE_APP_JOIN_COMMUNITY_LINK
+          url: import.meta.env.VITE_VUE_APP_JOIN_COMMUNITY_LINK,
+          target: '_blank'
         },
         ...(this.helpMenuItems ?? [])
       ].map((item) => ({ ...item, class: 'font-semibold p-1' })) as MenuItem[]

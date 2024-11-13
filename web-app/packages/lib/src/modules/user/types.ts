@@ -44,6 +44,8 @@ export interface UserResponse {
   profile: UserProfileResponse
   username: string
   verified_email: boolean
+  scheduled_removal?: null | string
+  registration_date: string
 }
 
 export interface UserWorkspace {

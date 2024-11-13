@@ -95,6 +95,10 @@ class Configuration(object):
     # build hash number
     BUILD_HASH = config("BUILD_HASH", default="")
 
+    # Allow changing access to admin panel
+    ENABLE_SUPERADMIN_ASSIGNMENT = config(
+        "ENABLE_SUPERADMIN_ASSIGNMENT", default=True, cast=bool
+    )
     # backend version
     VERSION = config("VERSION", default=get_version())
     SERVER_TYPE = config("SERVER_TYPE", default="ce")

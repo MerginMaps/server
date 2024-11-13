@@ -79,7 +79,7 @@ def create_project(name, workspace, user, **kwargs):
 
     p = Project(**project_params, **kwargs)
     p.updated = datetime.utcnow()
-    db.session.add(p)
+    db.session.flush()
 
     public = kwargs.get("public", False)
     pa = ProjectAccess(p, public)
@@ -182,7 +182,6 @@ def initialize():
             "added": project_files,
             "updated": [],
             "removed": [],
-            "renamed": [],
         }
     )
     pv = ProjectVersion(p, 1, user.id, upload_changes, "127.0.0.1")
