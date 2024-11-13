@@ -674,13 +674,11 @@ export const useProjectStore = defineStore('projectModule', {
     },
 
     async pushProjectChanges(payload) {
-      const notificationStore = useNotificationStore()
-
       const { data, projectPath } = payload
       try {
         return await ProjectApi.pushProjectChanges(projectPath, data)
       } catch (err) {
-        await notificationStore.error({ text: getErrorMessage(err, 'Error') })
+        await this.handlePushError(err)
         return undefined
       }
     },
@@ -833,6 +831,13 @@ export const useProjectStore = defineStore('projectModule', {
         this.versionsChangesetLoading = false
       }
       return response?.data
+    },
+
+    async handlePushError(err: unknown) {
+      const notificationStore = useNotificationStore()
+      await notificationStore.error({
+        text: getErrorMessage(err, 'Failed to push changes')
+      })
     }
   }
 })
