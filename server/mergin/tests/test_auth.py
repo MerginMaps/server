@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 from ..auth.models import User, UserProfile, LoginHistory
 from ..auth.tasks import anonymize_removed_users
-from .. import db
+from ..app import db
 from ..sync.models import Project
 from . import (
     test_workspace_id,

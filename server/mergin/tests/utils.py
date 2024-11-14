@@ -21,7 +21,7 @@ from ..sync.utils import generate_location, generate_checksum
 from ..sync.models import Project, ProjectAccess, ProjectVersion, FileHistory
 from ..sync.files import UploadChanges, ChangesSchema
 from ..sync.workspace import GlobalWorkspace
-from .. import db
+from ..app import db
 from . import json_headers, DEFAULT_USER, test_project, test_project_dir, TMP_DIR
 
 CHUNK_SIZE = 1024

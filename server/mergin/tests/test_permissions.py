@@ -8,7 +8,7 @@ from flask_login import AnonymousUserMixin
 from ..sync.permissions import require_project, ProjectPermissions
 from ..sync.models import ProjectRole
 from ..auth.models import User
-from .. import db
+from ..app import db
 from ..config import Configuration
 from .utils import add_user, create_project, create_workspace
 

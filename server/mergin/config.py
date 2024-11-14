@@ -3,10 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import os
-from .version import get_version
 from decouple import config, Csv
 
-config_dir = os.path.abspath(os.path.dirname(__file__))
+from .version import get_version
 
 
 class Configuration(object):
@@ -95,6 +94,7 @@ class Configuration(object):
 
     # build hash number
     BUILD_HASH = config("BUILD_HASH", default="")
+
     # Allow changing access to admin panel
     ENABLE_SUPERADMIN_ASSIGNMENT = config(
         "ENABLE_SUPERADMIN_ASSIGNMENT", default=True, cast=bool
@@ -102,3 +102,8 @@ class Configuration(object):
     # backend version
     VERSION = config("VERSION", default=get_version())
     SERVER_TYPE = config("SERVER_TYPE", default="ce")
+
+    # whether to run flask app with gevent worker type in gunicorn
+    # using gevent type of worker impose some requirements on code, e.g. to be greenlet safe, custom timeouts
+    GEVENT_WORKER = config("GEVENT_WORKER", default=False, cast=bool)
+    GEVENT_REQUEST_TIMEOUT = config("GEVENT_REQUEST_TIMEOUT", default=30, cast=int)

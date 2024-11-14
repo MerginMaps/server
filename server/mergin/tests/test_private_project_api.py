@@ -9,7 +9,7 @@ import os
 import pytest
 from flask import url_for
 
-from .. import db
+from ..app import db
 from ..sync.models import AccessRequest, Project, ProjectRole, RequestStatus
 from ..auth.models import User
 from ..config import Configuration

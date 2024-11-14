@@ -32,7 +32,7 @@ from binaryornot.check import is_binary
 from gevent import sleep
 import base64
 from werkzeug.exceptions import HTTPException
-from .. import db
+from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
 from .models import (
