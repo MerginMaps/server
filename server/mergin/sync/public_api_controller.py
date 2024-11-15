@@ -86,7 +86,7 @@ from .utils import (
 from .errors import StorageLimitHit
 from ..utils import format_time_delta
 
-push_finished = signal("push_triggered")
+push_finished = signal("push_finished")
 # TODO: Move to database events to handle all commits to project versions
 project_version_created = signal("project_version_created")
 
