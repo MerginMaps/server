@@ -5,8 +5,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Tuple, Optional, Set, List
 from flask_login import current_user
-from sqlalchemy import or_, and_, Column, literal, extract
-from sqlalchemy.orm import joinedload
+from sqlalchemy import Column, literal, extract
 
 from .errors import UpdateProjectAccessError
 from .models import (
@@ -183,23 +182,12 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
                 if flag == "created":
                     projects = projects.filter(Project.creator_id == user.id)
                 if flag == "shared":
-                    # check global read permissions
+                    projects = projects.filter(Project.creator_id != user.id)
+                    # check global read permissions or direct project permissions
                     if workspace.user_has_permissions(user, "read"):
-                        read_access_workspace_id = workspace.id
+                        projects = projects.filter(Project.workspace_id == workspace.id)
                     else:
-                        read_access_workspace_id = None
-                    projects = projects.filter(
-                        or_(
-                            and_(
-                                ProjectUser.user_id == user.id,
-                                Project.creator_id != user.id,
-                            ),
-                            and_(
-                                Project.workspace_id == read_access_workspace_id,
-                                Project.creator_id != user.id,
-                            ),
-                        )
-                    )
+                        projects = projects.filter(ProjectUser.user_id == user.id)
 
         if name:
             projects = projects.filter(Project.name.ilike("%{}%".format(name)))

@@ -294,7 +294,7 @@ def test_get_paginated_projects(client):
     Configuration.GLOBAL_READ = False
     Configuration.GLOBAL_WRITE = False
     Configuration.GLOBAL_ADMIN = False
-    # add new user and let him create one project
+    # add new user and let him create one project (total 15+1)
     user2 = add_user("user2", "ilovemergin")
     assert not test_workspace.user_has_permissions(user2, "read")
     create_project("created", test_workspace, user2)
@@ -315,6 +315,8 @@ def test_get_paginated_projects(client):
 
     # make user reader of all projects
     Configuration.GLOBAL_READ = True
+    resp = client.get("/v1/project/paginated?page=1&per_page=10&flag=created")
+    assert resp.json["count"] == 1
     resp = client.get("/v1/project/paginated?page=1&per_page=20&flag=shared")
     resp_data = json.loads(resp.data)
     assert resp.status_code == 200

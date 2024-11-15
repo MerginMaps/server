@@ -281,6 +281,10 @@ class Project(db.Model):
         if member:
             self.project_users.remove(member)
 
+    def members_by_role(self, role: ProjectRole) -> List[int]:
+        """Project members' ids with at least required role (or higher)"""
+        return [u.user_id for u in self.project_users if ProjectRole(u.role) >= role]
+
 
 class ProjectRole(Enum):
     """Project roles ordered by rank (do not change)"""

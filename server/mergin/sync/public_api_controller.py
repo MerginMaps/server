@@ -26,11 +26,13 @@ from flask import (
 )
 from pygeodiff import GeoDiffLibError
 from flask_login import current_user
-from sqlalchemy import and_, desc, asc, text
+from sqlalchemy import and_, desc, asc, text, func, select
 from sqlalchemy.exc import IntegrityError
 from binaryornot.check import is_binary
 from gevent import sleep
 import base64
+
+from sqlalchemy.orm import load_only
 from werkzeug.exceptions import HTTPException
 from .. import db
 from ..auth import auth_required
@@ -42,6 +44,7 @@ from .models import (
     PushChangeType,
     FileHistory,
     ProjectFilePath,
+    ProjectUser,
 )
 from .files import (
     UploadChanges,
@@ -500,15 +503,13 @@ def get_projects_by_names():  # noqa: E501
             Project.workspace_id == workspace.id, Project.name == name
         ).first()
         if result:
-            # FIXME
-            # user_ids = (
-            #     result.access.owners + result.access.writers + result.access.readers
-            # )
-            # users_map = {
-            #     u.id: u.username
-            #     for u in User.query.filter(User.id.in_(set(user_ids))).all()
-            # }
-            users_map = None
+            users_map = {
+                u.id: u.username
+                for u in User.query.select_from(ProjectUser)
+                .join(User)
+                .filter(ProjectUser.project_id == result.id)
+                .all()
+            }
             workspaces_map = {workspace.id: workspace.name}
             ctx = {"users_map": users_map, "workspaces_map": workspaces_map}
             results[project] = ProjectListSchema(context=ctx).dump(result)
@@ -534,19 +535,19 @@ def get_projects_by_uuids(uuids):  # noqa: E501
     if len(proj_ids) > 10:
         abort(400, "Too many projects")
 
-    user_ids = []
-    ws_ids = []
     projects = (
         projects_query(ProjectPermissions.Read, as_admin=False)
         .filter(Project.id.in_(proj_ids))
         .all()
     )
-    for p in projects:
-        # FIXME
-        # user_ids.extend(p.access.owners + p.access.writers + p.access.readers)
-        ws_ids.append(p.workspace_id)
+    ws_ids = [p.workspace_id for p in projects]
+    projects_ids = [p.id for p in projects]
     users_map = {
-        u.id: u.username for u in User.query.filter(User.id.in_(set(user_ids))).all()
+        u.id: u.username
+        for u in User.query.select_from(ProjectUser)
+        .join(User)
+        .filter(ProjectUser.project_id.in_(projects_ids))
+        .all()
     }
     workspaces_map = {w.id: w.name for w in current_app.ws_handler.get_by_ids(ws_ids)}
     ctx = {"users_map": users_map, "workspaces_map": workspaces_map}
@@ -621,17 +622,23 @@ def get_paginated_projects(
         only_public,
     )
     result = projects.paginate(page, per_page).items
-    total = projects.paginate(page, per_page).total
+    # for count (done in subquery) we only need ids and then to do distinct for deduplications due to joins
+    # https://docs.sqlalchemy.org/en/20/faq/sessions.html#my-query-does-not-return-the-same-number-of-objects-as-query-count-tells-me-why
+    total = (
+        projects.order_by(None)
+        .options(load_only(Project.id))
+        .distinct(Project.id)
+        .count()
+    )
 
     # create user map id:username passed to project schema to minimize queries to db
-    user_ids = []
-    for p in result:
-        # FIXME
-        # user_ids.extend(p.access.owners + p.access.writers + p.access.readers)
-        pass
-
+    projects_ids = [p.id for p in result]
     users_map = {
-        u.id: u.username for u in User.query.filter(User.id.in_(set(user_ids))).all()
+        u.id: u.username
+        for u in User.query.select_from(ProjectUser)
+        .join(User)
+        .filter(ProjectUser.project_id.in_(projects_ids))
+        .all()
     }
     ws_ids = [p.workspace_id for p in projects]
     workspaces_map = {w.id: w.name for w in current_app.ws_handler.get_by_ids(ws_ids)}
