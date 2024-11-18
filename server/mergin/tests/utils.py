@@ -214,9 +214,7 @@ def file_info(project_dir, path, chunk_size=1024):
     }
 
 
-def push_file(project, filename, client) -> Tuple:
-    file = os.path.join(test_project_dir, filename)
-    assert os.path.exists(file)
+def mock_changes(project, filename) -> dict:
     changes = {
         "added": [file_info(test_project_dir, filename)],
         "updated": [],
@@ -226,15 +224,28 @@ def push_file(project, filename, client) -> Tuple:
         "version": ProjectVersion.to_v_name(project.latest_version),
         "changes": changes,
     }
+    return data
+
+
+def push_file_start(project, filename, client, mocked_changes=None) -> Tuple:
+    file = os.path.join(test_project_dir, filename)
+    assert os.path.exists(file)
+    data = mocked_changes or mock_changes(project, filename)
     resp = client.post(
         f"/v1/project/push/{project.workspace.name}/{project.name}",
         data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
         headers=json_headers,
     )
-    if resp.status_code != 200:
-        return (resp, None)
+    return resp
+
+
+def upload_file_to_project(project, filename, client):
+    """Add test file to project - start, upload and finish push process"""
+    file = os.path.join(test_project_dir, filename)
+    changes = mock_changes(project, filename)["changes"]
+    resp = push_file_start(project, filename, client, changes)
+    print(resp.json)
     upload_id = resp.json["transaction"]
-    changes = data["changes"]
     file_meta = changes["added"][0]
     for chunk_id in file_meta["chunks"]:
         url = f"/v1/project/push/chunk/{upload_id}/{chunk_id}"
@@ -243,14 +254,9 @@ def push_file(project, filename, client) -> Tuple:
         client.post(
             url, data=f_data, headers={"Content-Type": "application/octet-stream"}
         )
-    return (resp, client.post(f"/v1/project/push/finish/{upload_id}"))
-
-
-def upload_file_to_project(project, filename, client):
-    """Add test file to project - start, upload and finish push process"""
-    resp_push_start, resp_push_finish = push_file(project, filename, client)
-    assert resp_push_finish.status_code == 200
-    assert resp_push_start.status_code == 200
+    push_finish = client.post(f"/v1/project/push/finish/{upload_id}")
+    assert resp.status_code == 200
+    assert push_finish.status_code == 200
 
 
 def gpkgs_are_equal(file1, file2):
