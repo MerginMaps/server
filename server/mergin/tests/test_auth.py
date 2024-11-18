@@ -13,7 +13,7 @@ from unittest.mock import patch
 from ..auth.models import User, UserProfile, LoginHistory
 from ..auth.tasks import anonymize_removed_users
 from .. import db
-from ..sync.models import Project
+from ..sync.models import Project, ProjectRole
 from . import (
     test_workspace_id,
     json_headers,
@@ -647,7 +647,7 @@ def test_close_user_account(client):
     user = User.query.filter_by(username=DEFAULT_USER[0]).first()
     # check default project
     project = Project.query.filter_by(workspace_id=test_workspace_id).first()
-    assert user.id in project.access.owners
+    assert project.get_role(user.id) is ProjectRole.OWNER
 
     resp = client.delete("/v1/user")
     assert resp.status_code == 204
@@ -657,7 +657,7 @@ def test_close_user_account(client):
     assert not user.active
     assert user.inactive_since
     assert (
-        project.access.owners == []
+        project.project_users == []
     )  # project will be removed by cron job, but is not accessible
 
     # login should fail now

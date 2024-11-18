@@ -28,7 +28,6 @@ from ..sync.models import (
     Project,
     Upload,
     ProjectVersion,
-    ProjectAccess,
     SyncFailuresHistory,
     GeodiffActionHistory,
     ProjectRole,
@@ -288,7 +287,7 @@ def test_get_paginated_projects(client):
     assert resp_data.get("count") == 1
     assert not resp_data.get("projects")[0].get("has_conflict")
 
-    project.access.public = True
+    project.public = True
     db.session.commit()
 
     # reset permissions so new user would be only a guest
@@ -308,7 +307,7 @@ def test_get_paginated_projects(client):
     assert resp.json["count"] == 0
     # share project explicitly
     p = Project.query.filter_by(name="foo1").first()
-    p.access.set_role(user2.id, ProjectRole.READER)
+    p.set_role(user2.id, ProjectRole.READER)
     db.session.commit()
     resp = client.get("/v1/project/paginated?page=1&per_page=10&flag=shared")
     assert resp.json["count"] == 1
@@ -628,7 +627,7 @@ def test_update_project(client):
         name=test_project, workspace_id=test_workspace_id
     ).first()
     # need for private project
-    project.access.public = False
+    project.public = False
     db.session.add(project)
     # add some tester
     test_user = User(
@@ -640,18 +639,30 @@ def test_update_project(client):
     db.session.commit()
 
     # add tests user as reader to project
-    data = {"access": {"readers": project.access.readers + [test_user.id]}}
+    data = {
+        "access": {
+            "readers": [
+                u.id
+                for u in project.project_users
+                if u.role == ProjectRole.READER.value
+            ]
+            + [test_user.id]
+        }
+    }
     resp = client.put(
         "/v1/project/{}/{}".format(test_workspace_name, test_project),
         data=json.dumps(data),
         headers=json_headers,
     )
     assert resp.status_code == 200
-    assert test_user.id in project.access.readers
+    assert project.get_role(test_user.id) is ProjectRole.READER
 
     # add tests user as writer to project
+    current_writers = [
+        u.id for u in project.project_users if u.role == ProjectRole.WRITER.value
+    ]
     writers = [
-        u.username for u in User.query.filter(User.id.in_(project.access.writers)).all()
+        u.username for u in User.query.filter(User.id.in_(current_writers)).all()
     ]
     data = {"access": {"writersnames": writers + [test_user.username]}}
     resp = client.put(
@@ -660,7 +671,7 @@ def test_update_project(client):
         headers=json_headers,
     )
     assert resp.status_code == 200
-    assert test_user.id in project.access.writers
+    assert project.get_role(test_user.id) is ProjectRole.WRITER
 
     # try to remove project creator from owners
     data = {"access": {"owners": [test_user.id]}}
@@ -672,9 +683,11 @@ def test_update_project(client):
     assert resp.status_code == 200
 
     # try to add non-existing user
+    current_readers = [
+        u.id for u in project.project_users if u.role == ProjectRole.READER.value
+    ]
     readers = [
-        user.username
-        for user in User.query.filter(User.id.in_(project.access.readers)).all()
+        user.username for user in User.query.filter(User.id.in_(current_readers)).all()
     ]
     data = {"access": {"readersnames": readers + ["not-found-user"]}}
     resp = client.put(
@@ -688,9 +701,11 @@ def test_update_project(client):
     assert resp.json["invalid_usernames"] == ["not-found-user"]
 
     # try to add non-existing user plus make some valid update -> only partial success
+    current_readers = [
+        u.id for u in project.project_users if u.role == ProjectRole.READER.value
+    ]
     readers = [
-        user.username
-        for user in User.query.filter(User.id.in_(project.access.readers)).all()
+        user.username for user in User.query.filter(User.id.in_(current_readers)).all()
     ]
     data = {
         "access": {
@@ -1129,10 +1144,10 @@ def test_push_to_new_project(client):
     p = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
     ).first()
-    project = Project("blank", p.storage_params, p.creator, p.workspace, files=[])
+    project = Project(
+        "blank", p.storage_params, p.creator, p.workspace, files=[], public=True
+    )
     db.session.add(project)
-    pa = ProjectAccess(project, True)
-    db.session.add(pa)
     db.session.commit()
 
     current_app.config["BLACKLIST"] = ["test4"]
@@ -1431,7 +1446,7 @@ def test_push_finish(client):
     project = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
     ).first()
-    project.access.owners.append(user.id)
+    project.set_role(user.id, ProjectRole.OWNER)
     db.session.commit()
 
     upload, upload_dir = create_transaction(user.username, changes)
@@ -1775,7 +1790,7 @@ def test_clone_project(client, data, username, expected):
         assert os.path.exists(
             os.path.join(project.storage.project_dir, project.files[0].location)
         )
-        assert not project.access.public
+        assert not project.public
         # check if there is no diffs in cloned files
         assert not any(file.diff for file in project.files)
         pv = project.get_latest_version()
@@ -2111,7 +2126,7 @@ def test_orphan_project(client):
     test_workspace = create_workspace()
     project = create_project("orphan", test_workspace, user)
     assert project.creator_id == user_id
-    assert project.access.owners == [user_id]
+    assert project.get_role(user_id) is ProjectRole.OWNER
 
     # user is removed by superuser
     login_as_admin(client)
@@ -2124,7 +2139,7 @@ def test_orphan_project(client):
     # project still exists (it belongs to workspace)
     p = Project.query.filter_by(name="orphan").first()
     assert p.creator_id
-    assert p.access.owners == []
+    assert len(p.project_users) == 0
 
     # superuser as workspace owner has access to project and can assign new writer/owner
     resp = client.get(f"/v1/project/{test_workspace.name}/{p.name}")
@@ -2169,7 +2184,7 @@ def test_orphan_project(client):
 def test_inactive_project(client, diff_project):
     """Project set for removal is not listed and can not be updated"""
     user = add_user("tests", "tests")
-    diff_project.access.set_role(user.id, ProjectRole.OWNER)
+    diff_project.set_role(user.id, ProjectRole.OWNER)
     diff_project.removed_at = datetime.datetime.utcnow()
     db.session.commit()
     project_path = get_project_path(diff_project)
@@ -2208,7 +2223,7 @@ def test_inactive_project(client, diff_project):
     assert resp.status_code == 404
 
     # modify project
-    data = {"access": {"readers": diff_project.access.readers + [user.id]}}
+    data = {"access": {"readers": [user.id]}}
     resp = client.put(
         f"/v1/project/{project_path}", data=json.dumps(data), headers=json_headers
     )

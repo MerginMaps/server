@@ -20,7 +20,7 @@ from .utils import add_user, login, create_project, create_workspace
 def test_project_unsubscribe(client, diff_project):
     # create user and grant him write access
     user = add_user("reader", "reader")
-    diff_project.access.set_role(user.id, ProjectRole.WRITER)
+    diff_project.set_role(user.id, ProjectRole.WRITER)
     db.session.commit()
 
     # project owner is logged in
@@ -42,9 +42,7 @@ def test_project_unsubscribe(client, diff_project):
         )
     )
     assert resp.status_code == 200
-    assert not diff_project.access.get_role(user.id)
-    assert user.id not in diff_project.access.readers
-    assert user.id not in diff_project.access.writers
+    assert not diff_project.get_role(user.id)
 
 
 def test_project_access_request(client):
@@ -151,9 +149,7 @@ def test_project_access_request(client):
     project = Project.query.filter(
         Project.name == "testx", Project.workspace_id == test_workspace.id
     ).first()
-    assert user2.id in project.access.readers
-    assert user2.id in project.access.writers
-    assert user2.id not in project.access.owners
+    assert project.get_role(user2.id) is ProjectRole.WRITER
 
     # no request listed
     resp = client.get(
@@ -337,52 +333,49 @@ def test_update_project_access(client, diff_project):
     original_creator_id = diff_project.creator.id
     # create user and grant him write access
     user = add_user("reader", "reader")
-    assert user.id not in diff_project.access.readers
+    assert not diff_project.get_role(user.id)
 
     data = {"user_id": user.id, "role": "none"}
     # nothing happens
     resp = client.patch(url, headers=json_headers, data=json.dumps(data))
     assert resp.status_code == 200
-    assert user.id not in diff_project.access.readers
+    assert not diff_project.get_role(user.id)
 
     # grant read access
     data["role"] = "reader"
     resp = client.patch(url, headers=json_headers, data=json.dumps(data))
     assert resp.status_code == 200
-    assert user.id in diff_project.access.readers
+    assert diff_project.get_role(user.id) is ProjectRole.READER
 
     # grant editor access
     data["role"] = "editor"
     resp = client.patch(url, headers=json_headers, data=json.dumps(data))
     assert resp.status_code == 200
-    assert user.id in diff_project.access.editors
+    assert diff_project.get_role(user.id) is ProjectRole.EDITOR
 
     # change to write access
     data["role"] = "writer"
     resp = client.patch(url, headers=json_headers, data=json.dumps(data))
     assert resp.status_code == 200
-    assert user.id in diff_project.access.readers
-    assert user.id in diff_project.access.writers
+    assert diff_project.get_role(user.id) is ProjectRole.WRITER
 
     # downgrade to read access
     data["role"] = "reader"
     resp = client.patch(url, headers=json_headers, data=json.dumps(data))
     assert resp.status_code == 200
-    assert user.id in diff_project.access.readers
-    assert user.id not in diff_project.access.writers
+    assert diff_project.get_role(user.id) is ProjectRole.READER
 
     # remove access
     data["role"] = "none"
     resp = client.patch(url, headers=json_headers, data=json.dumps(data))
     assert resp.status_code == 200
-    assert user.id not in diff_project.access.readers
-    assert user.id not in diff_project.access.writers
+    assert not diff_project.get_role(user.id)
 
     # update public parameter => public: True
     data["public"] = True
     resp = client.patch(url, headers=json_headers, data=json.dumps(data))
     assert resp.status_code == 200
-    assert diff_project.access.public == True
+    assert diff_project.public == True
 
     # access of project creator can be removed
     data["user_id"] = diff_project.creator_id
@@ -393,8 +386,7 @@ def test_update_project_access(client, diff_project):
     )
     assert resp.status_code == 200
     db.session.rollback()
-    assert user.id not in diff_project.access.owners
-    assert user.id not in diff_project.access.readers
+    assert not diff_project.get_role(user.id)
     assert diff_project.creator_id == original_creator_id
 
     # try to grant access to inaccessible user
@@ -495,10 +487,9 @@ def test_get_project_access(client):
     assert resp.status_code == 200
     assert len(resp.json) == 1
     assert resp.json[0]["project_permission"] == "owner"
-    project.access.set_role(users[0].id, ProjectRole.OWNER)
-    project.access.set_role(users[1].id, ProjectRole.WRITER)
-    project.access.set_role(users[2].id, ProjectRole.READER)
-    db.session.add(project.access)
+    project.set_role(users[0].id, ProjectRole.OWNER)
+    project.set_role(users[1].id, ProjectRole.WRITER)
+    project.set_role(users[2].id, ProjectRole.READER)
     db.session.commit()
     resp = client.get(url)
     assert resp.status_code == 200

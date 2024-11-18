@@ -17,6 +17,7 @@ def test_project_permissions(client):
     owner = add_user("owner", "pwd")
     test_workspace = create_workspace()
     project = create_project("test_permissions", test_workspace, owner)
+    project.set_role(owner.id, ProjectRole.OWNER)
 
     # testing owner permissions -> has all of them
     assert ProjectPermissions.Read.check(project, owner)
@@ -47,7 +48,7 @@ def test_project_permissions(client):
 
     # tests user with editor access -> has read access
 
-    project.access.set_role(user.id, ProjectRole.EDITOR)
+    project.set_role(user.id, ProjectRole.EDITOR)
     db.session.commit()
     assert ProjectPermissions.Read.check(project, user)
     assert ProjectPermissions.Edit.check(project, user)
@@ -73,7 +74,7 @@ def test_project_permissions(client):
 
     # deactivate user -> no permissions
     user.active = False
-    project.access.unset_role(user.id)
+    project.unset_role(user.id)
     db.session.commit()
     assert not ProjectPermissions.Upload.check(project, user)
     assert not ProjectPermissions.Delete.check(project, user)
@@ -86,7 +87,7 @@ def test_project_permissions(client):
     # tests anonymous user -> only has read access if project is public
     user = AnonymousUserMixin()
     assert not ProjectPermissions.Read.check(project, user)
-    project.access.public = True
+    project.public = True
     db.session.commit()
     assert ProjectPermissions.Read.check(project, user)
     assert not ProjectPermissions.Edit.check(project, user)

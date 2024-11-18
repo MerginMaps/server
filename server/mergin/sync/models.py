@@ -67,9 +67,14 @@ class Project(db.Model):
     removed_by = db.Column(
         db.Integer, db.ForeignKey("user.id"), nullable=True, index=True
     )
+    public = db.Column(db.Boolean, default=False, index=True, nullable=False)
 
     creator = db.relationship(
         "User", uselist=False, backref=db.backref("projects"), foreign_keys=[creator_id]
+    )
+
+    project_users = db.relationship(
+        "ProjectUser", cascade="all, delete-orphan", back_populates="project"
     )
 
     __table_args__ = (db.UniqueConstraint("name", "workspace_id"),)
@@ -82,6 +87,7 @@ class Project(db.Model):
         self.workspace_id = workspace.id
         self.creator = creator
         self.latest_version = 0
+        self.public = kwargs.get("public", False)
         latest_files = LatestProjectFiles(project=self)
         db.session.add(latest_files)
 
@@ -240,9 +246,7 @@ class Project(db.Model):
         db.session.execute(
             upload_table.delete().where(upload_table.c.project_id == self.id)
         )
-        self.access.owners = self.access.writers = self.access.editors = (
-            self.access.readers
-        ) = []
+        self.project_users.clear()
         access_requests = (
             AccessRequest.query.filter_by(project_id=self.id)
             .filter(AccessRequest.status.is_(None))
@@ -253,24 +257,43 @@ class Project(db.Model):
         db.session.commit()
         project_deleted.send(self)
 
+    def _member(self, user_id: int) -> Optional[ProjectUser]:
+        """Return association object for user_id"""
+        return next((u for u in self.project_users if u.user_id == user_id), None)
+
+    def get_role(self, user_id: int) -> Optional[ProjectRole]:
+        """Get user role"""
+        member = self._member(user_id)
+        if member:
+            return ProjectRole(member.role)
+
+    def set_role(self, user_id: int, role: ProjectRole) -> None:
+        """Set user role"""
+        member = self._member(user_id)
+        if member:
+            member.role = role.value
+        else:
+            self.project_users.append(ProjectUser(user_id=user_id, role=role.value))
+
+    def unset_role(self, user_id: int) -> None:
+        """Remove user's role"""
+        member = self._member(user_id)
+        if member:
+            self.project_users.remove(member)
+
 
 class ProjectRole(Enum):
-    OWNER = "owner"
-    WRITER = "writer"
-    EDITOR = "editor"
+    """Project roles ordered by rank (do not change)"""
+
     READER = "reader"
+    EDITOR = "editor"
+    WRITER = "writer"
+    OWNER = "owner"
 
-    def __gt__(self, other):
-        """
-        Compare project roles
-
-        https://docs.python.org/3/library/enum.html#enum.EnumType.__members__
-        """
+    def __ge__(self, other):
+        """Compare project roles"""
         members = list(ProjectRole.__members__)
-        if members.index(self.name) < members.index(other.name):
-            return True
-        else:
-            return False
+        return members.index(self.name) >= members.index(other.name)
 
 
 @dataclass
@@ -282,113 +305,6 @@ class ProjectAccessDetail:
     name: Optional[str]
     project_permission: str
     type: str
-
-
-class ProjectAccess(db.Model):
-    project_id = db.Column(
-        UUID(as_uuid=True),
-        db.ForeignKey("project.id", ondelete="CASCADE"),
-        primary_key=True,
-        index=True,
-    )
-    public = db.Column(db.Boolean, default=False, index=True)
-    owners = db.Column(ARRAY(db.Integer), server_default="{}")
-    readers = db.Column(ARRAY(db.Integer), server_default="{}")
-    writers = db.Column(ARRAY(db.Integer), server_default="{}")
-    editors = db.Column(ARRAY(db.Integer), server_default="{}")
-
-    project = db.relationship(
-        "Project",
-        uselist=False,
-        backref=db.backref(
-            "access",
-            single_parent=True,
-            uselist=False,
-            cascade="all,delete",
-            lazy="joined",
-        ),
-    )
-
-    __table_args__ = (
-        db.Index("ix_project_access_owners", owners, postgresql_using="gin"),
-        db.Index("ix_project_access_readers", readers, postgresql_using="gin"),
-        db.Index("ix_project_access_writers", writers, postgresql_using="gin"),
-        db.Index("ix_project_access_editors", editors, postgresql_using="gin"),
-    )
-
-    def __init__(self, project, public=False):
-        self.project = project
-        self.owners = [project.creator.id]
-        self.writers = [project.creator.id]
-        self.readers = [project.creator.id]
-        self.editors = [project.creator.id]
-        self.project_id = project.id
-        self.public = public
-
-    def get_role(self, user_id: int) -> Optional[ProjectRole]:
-        """Get user role based on mapping to DB ACL"""
-        if user_id in self.owners:
-            return ProjectRole.OWNER
-        elif user_id in self.writers:
-            return ProjectRole.WRITER
-        elif user_id in self.editors:
-            return ProjectRole.EDITOR
-        elif user_id in self.readers:
-            return ProjectRole.READER
-        else:
-            return None
-
-    @staticmethod
-    def _permission_attrs(role: ProjectRole) -> List[str]:
-        """Return db attributes list related to permission"""
-        # because roles do not inherit, they must be un/set explicitly in db ACLs
-        perm_list = {
-            ProjectRole.READER: ["readers"],
-            ProjectRole.EDITOR: ["editors", "readers"],
-            ProjectRole.WRITER: ["writers", "editors", "readers"],
-            ProjectRole.OWNER: ["owners", "writers", "editors", "readers"],
-        }
-        return perm_list[role]
-
-    def set_role(self, user_id: int, role: ProjectRole) -> None:
-        """Set user role"""
-        self.unset_role(user_id)
-        for attr in self._permission_attrs(role):
-            ids = getattr(self, attr)
-            if user_id not in ids:
-                ids.append(user_id)
-                setattr(self, attr, ids)
-                flag_modified(self, attr)
-
-    def unset_role(self, user_id: int) -> None:
-        """Remove user's role"""
-        role = self.get_role(user_id)
-        if not role:
-            return
-
-        for attr in self._permission_attrs(role):
-            ids = getattr(self, attr)
-            if user_id in ids:
-                ids.remove(user_id)
-                setattr(self, attr, ids)
-                flag_modified(self, attr)
-
-    def bulk_update(self, new_access: Dict) -> Set[int]:
-        """From new access lists do bulk update and return ids with any change applied"""
-        diff = set()
-        for key in ("owners", "writers", "editors", "readers"):
-            new_value = new_access.get(key, None)
-            if not new_value:
-                continue
-            old_value = set(getattr(self, key))
-            diff = diff.union(set(new_value).symmetric_difference(old_value))
-            setattr(self, key, list(new_value))
-
-        # make sure lists are consistent (they inherit from each other)
-        self.writers = list(set(self.writers).union(set(self.owners)))
-        self.editors = list(set(self.editors).union(set(self.writers)))
-        self.readers = list(set(self.readers).union(set(self.editors)))
-        return diff
 
 
 class ProjectFilePath(db.Model):
@@ -1112,7 +1028,6 @@ class AccessRequest(db.Model):
 
     def accept(self, permissions):
         """Accept project access request"""
-        project_access = self.project.access
         PERMISSION_PROJECT_ROLE = {
             "read": ProjectRole.READER,
             "edit": ProjectRole.EDITOR,
@@ -1120,7 +1035,7 @@ class AccessRequest(db.Model):
             "owner": ProjectRole.OWNER,
         }
 
-        project_access.set_role(
+        self.project.set_role(
             self.requested_by, PERMISSION_PROJECT_ROLE.get(permissions)
         )
         self.resolve(RequestStatus.ACCEPTED, current_user.id)
@@ -1205,3 +1120,29 @@ class GeodiffActionHistory(db.Model):
         if os.path.exists(diff_path):
             self.diff_size = os.path.getsize(diff_path)
             self.changes = GeoDiff().changes_count(diff_path)
+
+
+class ProjectUser(db.Model):
+    """Association table for project membership"""
+
+    __tablename__ = "project_member"
+
+    project_id = db.Column(
+        UUID(as_uuid=True),
+        db.ForeignKey("project.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    role = db.Column(
+        ENUM(
+            *[member.value for member in ProjectRole.__members__.values()],
+            name="project_role",
+        ),
+        nullable=False,
+    )
+    project = db.relationship("Project", back_populates="project_users")
+    user = db.relationship("User")

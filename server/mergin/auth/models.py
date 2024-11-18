@@ -10,6 +10,7 @@ from flask import current_app, request
 from sqlalchemy import or_, func
 
 from .. import db
+from ..sync.models import ProjectUser
 from ..sync.utils import get_user_agent, get_ip, get_device_id
 
 
@@ -149,24 +150,10 @@ class User(db.Model):
         """Inactivate user account and remove explicitly shared projects as well clean references to created projects.
         User is then safe to be removed.
         """
-        from ..sync.models import Project, ProjectAccess, AccessRequest, RequestStatus
+        from ..sync.models import AccessRequest, RequestStatus
 
-        shared_projects = Project.query.filter(
-            or_(
-                Project.access.has(ProjectAccess.owners.contains([self.id])),
-                Project.access.has(ProjectAccess.writers.contains([self.id])),
-                Project.access.has(ProjectAccess.editors.contains([self.id])),
-                Project.access.has(ProjectAccess.readers.contains([self.id])),
-            )
-        ).all()
-
-        for p in shared_projects:
-            for key in ("owners", "writers", "editors", "readers"):
-                value = set(getattr(p.access, key))
-                if self.id in value:
-                    value.remove(self.id)
-                setattr(p.access, key, list(value))
-            db.session.add(p)
+        # remove explicit permissions
+        ProjectUser.query.filter(ProjectUser.user_id == self.id).delete()
 
         # decline all access requests
         for req in (

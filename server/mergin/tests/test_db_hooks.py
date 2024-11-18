@@ -4,19 +4,19 @@
 
 import os
 from pathlib import Path
-from sqlalchemy.orm.attributes import flag_modified
 
 from ..sync.models import (
     Project,
     ProjectVersion,
     Upload,
-    ProjectAccess,
     SyncFailuresHistory,
     AccessRequest,
     RequestStatus,
     FileHistory,
     ProjectFilePath,
     LatestProjectFiles,
+    ProjectRole,
+    ProjectUser,
 )
 from ..sync.files import UploadChanges
 from ..auth.models import User
@@ -38,8 +38,7 @@ def test_close_user_account(client, diff_project):
     user_id = user.id
 
     # user has access to mergin user diff_project
-    diff_project.access.writers.append(user.id)
-    flag_modified(diff_project.access, "writers")
+    diff_project.set_role(user.id, ProjectRole.WRITER)
     # user contributed to another user project so he is listed in projects history
     changes = UploadChanges(added=[], updated=[], removed=[])
     pv = ProjectVersion(diff_project, 11, user.id, changes, "127.0.0.1")
@@ -51,7 +50,7 @@ def test_close_user_account(client, diff_project):
     test_workspace = create_workspace()
     p = create_project(user_project, test_workspace, user)
     db.session.commit()
-    assert user.id in diff_project.access.writers
+    assert diff_project.get_role(user.id) is ProjectRole.WRITER
     proj_resp = client.get(
         f"/v1/project/{diff_project.workspace.name}/{diff_project.name}"
     )
@@ -67,7 +66,7 @@ def test_close_user_account(client, diff_project):
     # deactivate user first (direct hack in db to mimic inconsistency)
     user.active = False
     db.session.commit()
-    assert user.id in diff_project.access.writers  # not yet removed
+    assert diff_project.get_role(user.id) is ProjectRole.WRITER  # not yet removed
     proj_resp = client.get(
         f"/v1/project/{diff_project.workspace.name}/{diff_project.name}"
     )
@@ -96,7 +95,7 @@ def test_close_user_account(client, diff_project):
         ).count()
         == 1
     )
-    assert user_id not in diff_project.access.writers
+    assert not diff_project.get_role(user_id)
     # user remains referenced in existing project version he created (as read-only ref)
     assert diff_project.get_latest_version().author_id == user_id
     sync_fail_history = SyncFailuresHistory.query.filter(
@@ -143,7 +142,7 @@ def test_remove_project(client, diff_project):
     assert Project.query.filter_by(id=project_id).count()
     assert not Upload.query.filter_by(project_id=project_id).count()
     assert ProjectVersion.query.filter_by(project_id=project_id).count()
-    assert ProjectAccess.query.filter_by(project_id=project_id).count()
+    assert not ProjectUser.query.filter_by(project_id=project_id).count()
     cleanup(client, [project_dir])
     assert access_request.status == RequestStatus.DECLINED.value
     # after removal cached information in project table remains and project versions, but not files details
