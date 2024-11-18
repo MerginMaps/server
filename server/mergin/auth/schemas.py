@@ -71,6 +71,7 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
             "verified_email",
             "profile",
             "scheduled_removal",
+            "registration_date",
         )
         load_instance = True
 

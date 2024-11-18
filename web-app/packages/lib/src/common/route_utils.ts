@@ -40,22 +40,32 @@ export function isAuthenticatedGuard(
   } else {
     next({
       path: options?.notAuthenticatedRedirectPath ?? 'login',
-      // TODO: V3_UPGRADE - check this https://router.vuejs.org/guide/migration/#redirect-records-cannot-use-special-paths
       query: { redirect: to.fullPath }
     })
   }
 }
 
-/** Handles redirect to /login when user is not superUser. */
+/** Handles redirect to /login when user is not superUser and authenticated.
+ *
+ * Usage in admin routes
+ */
 export function isSuperUser(
   to: RouteLocationNormalized,
   from: RouteLocationNormalized,
   next: NavigationGuardNext,
-  userStore
+  userStore,
+  options?: IsAuthenticatedGuardOptions
 ) {
-  if (userStore.isSuperUser) {
-    next()
+  if (to.meta.public || (userStore.isLoggedIn && userStore.isSuperUser)) {
+    if (isTheSameRoute(from, to)) {
+      return false
+    } else {
+      next()
+    }
   } else {
-    next('/login')
+    next({
+      path: options?.notAuthenticatedRedirectPath ?? 'login',
+      query: { redirect: to.fullPath }
+    })
   }
 }

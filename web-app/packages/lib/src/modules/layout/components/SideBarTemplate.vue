@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   >
     <div class="flex flex-column justify-content-between h-screen">
       <div>
-        <header class="p-2 xl:p-5 mb-2">
+        <header class="p-2 xl:p-4 mb-2">
           <div class="xl:hidden flex justify-content-end">
             <PButton
               plain
@@ -38,6 +38,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <div class="flex justify-content-center">
             <img src="@/assets/mm-logo.svg" />
           </div>
+
+          <div
+            v-if="$slots.subtitle"
+            class="sidebar-subtitle w-full border-round-lg mt-4 p-2 text-center"
+          >
+            <p class="title-t3 text-color-forest">
+              <slot name="subtitle"></slot>
+            </p>
+          </div>
         </header>
 
         <nav>
@@ -51,11 +60,20 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </ul>
         </nav>
       </div>
-      <div>
+      <footer class="flex flex-column row-gap-3 p-3">
         <slot name="footer">
           <!-- footer content -->
+          <template v-if="userStore.isSuperUser">
+            <PDivider class="m-0" />
+            <a
+              href="/admin"
+              target="__blank"
+              class="flex justify-content-between align-items-center title-t5 no-underline cursor-pointer"
+              >Admin Panel <i class="title-t1 ti ti-external-link"
+            /></a>
+          </template>
         </slot>
-      </div>
+      </footer>
     </div>
   </aside>
 </template>
@@ -66,35 +84,41 @@ import { useRoute } from 'vue-router'
 
 import { SideBarItemModel } from '../types'
 
-import { DashboardRouteName } from '@/main'
+import { DashboardRouteName, useUserStore } from '@/main'
 import SideBarItem from '@/modules/layout/components/SideBarItem.vue'
 import { useLayoutStore } from '@/modules/layout/store'
 import { ProjectRouteName } from '@/modules/project'
 
 const route = useRoute()
 const layoutStore = useLayoutStore()
+const userStore = useUserStore()
+const props = defineProps<{
+  sidebarItems?: SideBarItemModel[]
+}>()
 
 const initialSidebarItems = computed<SideBarItemModel[]>(() => {
-  return [
-    {
-      active: route.matched.some(
-        (item) => item.name === DashboardRouteName.Dashboard
-      ),
-      title: 'Dashboard',
-      to: '/dashboard',
-      icon: 'ti ti-home'
-    },
-    {
-      active: route.matched.some(
-        (item) =>
-          item.name === ProjectRouteName.Projects ||
-          item.name === ProjectRouteName.Project
-      ),
-      title: 'Projects',
-      to: '/projects',
-      icon: 'ti ti-article'
-    }
-  ]
+  return (
+    props.sidebarItems || [
+      {
+        active: route.matched.some(
+          (item) => item.name === DashboardRouteName.Dashboard
+        ),
+        title: 'Dashboard',
+        to: '/dashboard',
+        icon: 'ti ti-home'
+      },
+      {
+        active: route.matched.some(
+          (item) =>
+            item.name === ProjectRouteName.Projects ||
+            item.name === ProjectRouteName.Project
+        ),
+        title: 'Projects',
+        to: '/projects',
+        icon: 'ti ti-article'
+      }
+    ]
+  )
 })
 const isOpen = computed<boolean>(() => layoutStore.drawer)
 
@@ -107,6 +131,16 @@ const onCloseClick = () => {
 .sidebar {
   // Based on <main> grid values
   max-width: 16.66%;
+
+  &-subtitle {
+    background: rgb(183, 205, 196);
+    background: linear-gradient(
+      187deg,
+      rgba(183, 205, 196, 1) 0%,
+      rgba(223, 240, 232, 1) 85%,
+      rgba(239, 245, 243, 1) 100%
+    );
+  }
 }
 
 @media screen and (max-width: $xl) {

@@ -50,7 +50,7 @@ def add_commands(app: Flask):
 
     @project.command()
     @click.argument("project-name")
-    @click.option("--version", required=True)
+    @click.option("--version", type=int, required=True)
     @click.option("--directory", type=click.Path(), required=True)
     def download(project_name, version, directory):  # pylint: disable=W0612
         """Download files for project at particular version"""

@@ -2,14 +2,20 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Tuple, Optional, Set, List
 from flask_login import current_user
-from sqlalchemy import or_, and_, Column, literal
+from sqlalchemy import or_, and_, Column, literal, extract
 from sqlalchemy.orm import joinedload
 
 from .errors import UpdateProjectAccessError
-from .models import Project, ProjectAccess, AccessRequest, ProjectAccessDetail
+from .models import (
+    Project,
+    ProjectAccess,
+    AccessRequest,
+    ProjectAccessDetail,
+    ProjectVersion,
+)
 from .permissions import projects_query, ProjectPermissions
 from .public_api_controller import parse_project_access_update_request
 from .. import db
@@ -248,16 +254,32 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
     def workspace_count():
         return 1
 
-    def projects_query(self, name=None, workspace=None):
+    @staticmethod
+    def monthly_contributors_count():
+        today = datetime.now(timezone.utc)
+        year = today.year
+        month = today.month
+        return (
+            db.session.query(ProjectVersion.author_id)
+            .filter(
+                extract("year", ProjectVersion.created) == year,
+                extract("month", ProjectVersion.created) == month,
+            )
+            .group_by(ProjectVersion.author_id)
+            .count()
+        )
+
+    def projects_query(self, like: str = None):
         ws = self.factory_method()
         query = db.session.query(
-            Project, literal(ws.name).label("workspace_name")
+            Project,
+            literal(ws.name).label("workspace_name"),
         ).filter(Project.storage_params.isnot(None))
 
-        if name:
-            query = query.filter(Project.name.ilike(f"%{name}%"))
-        if workspace:
-            query = query.filter(literal(ws.name).ilike(f"%{workspace}%"))
+        if like:
+            query = query.filter(
+                Project.name.ilike(f"%{like}%") | literal(ws.name).ilike(f"%{like}%")
+            )
         return query
 
     @staticmethod

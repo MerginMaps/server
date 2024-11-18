@@ -56,7 +56,8 @@ def test_workspace_implementation(client):
         diff=null(),
         change=PushChangeType.CREATE,
     )
-    file_history.version = project.get_latest_version()
+    latest_version = project.get_latest_version()
+    file_history.version = latest_version
     file_history.project_version_name = file_history.version.name
     default_project_usage = ws.disk_usage()
     db.session.add(file_history)
@@ -68,6 +69,19 @@ def test_workspace_implementation(client):
     project.removed_by = user.id
     db.session.commit()
     assert ws.disk_usage() == default_project_usage
+
+    current_time = datetime.datetime.now(datetime.timezone.utc)
+    latest_version.created = datetime.datetime.combine(
+        current_time.replace(day=1), datetime.time.max
+    ) - datetime.timedelta(days=1)
+    db.session.commit()
+    assert handler.monthly_contributors_count() == 1
+
+    # test group by author_id
+    create_project("test_second_project", ws, user)
+    latest_version.created = current_time
+    db.session.commit()
+    assert handler.monthly_contributors_count() == 2
 
 
 def test_workspace(client):

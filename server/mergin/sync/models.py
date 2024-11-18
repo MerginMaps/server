@@ -24,7 +24,6 @@ from flask import current_app
 
 from .files import (
     File,
-    UploadFile,
     UploadChanges,
     ChangesSchema,
     ProjectFile,

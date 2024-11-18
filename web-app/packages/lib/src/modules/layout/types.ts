@@ -4,7 +4,8 @@
 
 export interface SideBarItemModel {
   title: string
-  to: string
+  to?: string
+  href?: string
   icon: string
   active: boolean
 }
