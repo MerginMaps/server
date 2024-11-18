@@ -1793,6 +1793,8 @@ def test_clone_project(client, data, username, expected):
         # cleanup
         shutil.rmtree(project.storage.project_dir)
 
+    Configuration.GLOBAL_STORAGE = 104857600
+
 
 def test_optimize_storage(app, client, diff_project):
     """Test optimize storage for geopackages which could be restored from diffs
