@@ -214,7 +214,7 @@ def file_info(project_dir, path, chunk_size=1024):
     }
 
 
-def mock_changes(project, filename) -> dict:
+def mock_changes_data(project, filename) -> dict:
     changes = {
         "added": [file_info(test_project_dir, filename)],
         "updated": [],
@@ -227,10 +227,10 @@ def mock_changes(project, filename) -> dict:
     return data
 
 
-def push_file_start(project, filename, client, mocked_changes=None) -> Tuple:
+def push_file_start(project, filename, client, mocked_changes_data=None) -> Tuple:
     file = os.path.join(test_project_dir, filename)
     assert os.path.exists(file)
-    data = mocked_changes or mock_changes(project, filename)
+    data = mocked_changes_data or mock_changes_data(project, filename)
     resp = client.post(
         f"/v1/project/push/{project.workspace.name}/{project.name}",
         data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
@@ -242,8 +242,9 @@ def push_file_start(project, filename, client, mocked_changes=None) -> Tuple:
 def upload_file_to_project(project, filename, client):
     """Add test file to project - start, upload and finish push process"""
     file = os.path.join(test_project_dir, filename)
-    changes = mock_changes(project, filename)["changes"]
-    resp = push_file_start(project, filename, client, changes)
+    data = mock_changes_data(project, filename)
+    changes = data.get("changes")
+    resp = push_file_start(project, filename, client, data)
     print(resp.json)
     upload_id = resp.json["transaction"]
     file_meta = changes["added"][0]
