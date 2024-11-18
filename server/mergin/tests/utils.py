@@ -227,7 +227,12 @@ def mock_changes_data(project, filename) -> dict:
     return data
 
 
-def push_file_start(project, filename, client, mocked_changes_data=None) -> Tuple:
+def push_file_start(
+    project: Project, filename: str, client, mocked_changes_data=None
+) -> dict:
+    """
+    Initiate the process of pushing a file to a project by calling /push endpoint.
+    """
     file = os.path.join(test_project_dir, filename)
     assert os.path.exists(file)
     data = mocked_changes_data or mock_changes_data(project, filename)
@@ -239,13 +244,12 @@ def push_file_start(project, filename, client, mocked_changes_data=None) -> Tupl
     return resp
 
 
-def upload_file_to_project(project, filename, client):
+def upload_file_to_project(project: Project, filename: str, client) -> dict:
     """Add test file to project - start, upload and finish push process"""
     file = os.path.join(test_project_dir, filename)
     data = mock_changes_data(project, filename)
     changes = data.get("changes")
     resp = push_file_start(project, filename, client, data)
-    print(resp.json)
     upload_id = resp.json["transaction"]
     file_meta = changes["added"][0]
     for chunk_id in file_meta["chunks"]:
@@ -258,6 +262,7 @@ def upload_file_to_project(project, filename, client):
     push_finish = client.post(f"/v1/project/push/finish/{upload_id}")
     assert resp.status_code == 200
     assert push_finish.status_code == 200
+    return push_finish
 
 
 def gpkgs_are_equal(file1, file2):
