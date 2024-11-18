@@ -36,6 +36,7 @@ from ..sync.models import (
     ProjectFilePath,
 )
 from ..sync.files import ChangesSchema
+from ..sync.permissions import projects_query
 from ..sync.schemas import ProjectListSchema, ProjectSchema
 from ..sync.utils import generate_checksum, is_versioned_file
 from ..auth.models import User, UserProfile
@@ -628,6 +629,7 @@ def test_update_project(client):
     project = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
     ).first()
+    creator = User.query.get(project.creator_id)
     # need for private project
     project.public = False
     db.session.add(project)
@@ -641,16 +643,7 @@ def test_update_project(client):
     db.session.commit()
 
     # add tests user as reader to project
-    data = {
-        "access": {
-            "readers": [
-                u.id
-                for u in project.project_users
-                if u.role == ProjectRole.READER.value
-            ]
-            + [test_user.id]
-        }
-    }
+    data = {"access": {"readers": [test_user.id]}}
     resp = client.put(
         "/v1/project/{}/{}".format(test_workspace_name, test_project),
         data=json.dumps(data),
@@ -660,13 +653,7 @@ def test_update_project(client):
     assert project.get_role(test_user.id) is ProjectRole.READER
 
     # add tests user as writer to project
-    current_writers = [
-        u.id for u in project.project_users if u.role == ProjectRole.WRITER.value
-    ]
-    writers = [
-        u.username for u in User.query.filter(User.id.in_(current_writers)).all()
-    ]
-    data = {"access": {"writersnames": writers + [test_user.username]}}
+    data = {"access": {"writersnames": [test_user.username]}}
     resp = client.put(
         "/v1/project/{}/{}".format(test_workspace_name, test_project),
         data=json.dumps(data),
@@ -674,6 +661,7 @@ def test_update_project(client):
     )
     assert resp.status_code == 200
     assert project.get_role(test_user.id) is ProjectRole.WRITER
+    assert project.get_role(creator.id) is ProjectRole.OWNER
 
     # try to remove project creator from owners
     data = {"access": {"owners": [test_user.id]}}
@@ -683,15 +671,10 @@ def test_update_project(client):
         headers=json_headers,
     )
     assert resp.status_code == 200
+    assert not project.get_role(creator.id)
 
     # try to add non-existing user
-    current_readers = [
-        u.id for u in project.project_users if u.role == ProjectRole.READER.value
-    ]
-    readers = [
-        user.username for user in User.query.filter(User.id.in_(current_readers)).all()
-    ]
-    data = {"access": {"readersnames": readers + ["not-found-user"]}}
+    data = {"access": {"readersnames": ["not-found-user"]}}
     resp = client.put(
         f"/v1/project/{test_workspace_name}/{test_project}",
         data=json.dumps(data),
@@ -703,18 +686,16 @@ def test_update_project(client):
     assert resp.json["invalid_usernames"] == ["not-found-user"]
 
     # try to add non-existing user plus make some valid update -> only partial success
-    current_readers = [
-        u.id for u in project.project_users if u.role == ProjectRole.READER.value
-    ]
-    readers = [
-        user.username for user in User.query.filter(User.id.in_(current_readers)).all()
+    current_users = [u.user_id for u in project.project_users]
+    usernames = [
+        user.username for user in User.query.filter(User.id.in_(current_users)).all()
     ]
     data = {
         "access": {
-            "readersnames": readers + ["not-found-user"],
-            "editorsnames": readers,
-            "writersnames": readers,
-            "ownersnames": readers,
+            "readersnames": ["not-found-user"],
+            "editorsnames": usernames + [creator.username],
+            "writersnames": usernames + [creator.username],
+            "ownersnames": usernames,
         }
     }
     resp = client.put(
@@ -724,6 +705,8 @@ def test_update_project(client):
     )
     assert resp.status_code == 207
     assert resp.json["code"] == "UpdateProjectAccessError"
+    assert project.get_role(test_user.id) is ProjectRole.OWNER
+    assert project.get_role(creator.id) is ProjectRole.WRITER
 
     # login as a new project owner and check permissions
     login(client, test_user.username, "tester")

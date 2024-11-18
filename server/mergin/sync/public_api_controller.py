@@ -45,6 +45,7 @@ from .models import (
     FileHistory,
     ProjectFilePath,
     ProjectUser,
+    ProjectRole,
 )
 from .files import (
     UploadChanges,
@@ -95,14 +96,19 @@ project_version_created = signal("project_version_created")
 def parse_project_access_update_request(access: Dict) -> Dict:
     """Parse raw project access update request and filter out invalid entries.
     New access can be specified either by list of usernames or ids -> convert only to ids fur further processing.
+    Converted lists are flattened, e.g. user id is unique within all keys. Bear in mind roles keys are optional,
+    if missing, it means that we do not want to do any changes there.
+
+    Deprecated. Used only in legacy PUT /v1/project endpoint for project access replacement.
 
     :Example:
 
         >>> parse_project_access_update_request({"writersnames": ["john"], "readersnames": ["john, jack, bob.inactive"]})
-        {"writers": [1], "readers": [1,2], "invalid_usernames": ["bob.inactive"], "invalid_ids":[]}
+        {"ProjectRole.WRITER": [1], "ProjectRole.READER": [2], "invalid_usernames": ["bob.inactive"], "invalid_ids":[]}
         >>> parse_project_access_update_request({"writers": [1], "readers": [1,2,3]})
-        {"writers": [1], "readers": [1,2], "invalid_usernames": [], "invalid_ids":[3]"}
+        {"ProjectRole.WRITER": [1], "ProjectRole.READER": [2], "invalid_usernames": [], "invalid_ids":[3]"}
     """
+    resp = {}
     parsed_access = {}
     names = set(
         access.get("ownersnames", [])
@@ -139,9 +145,23 @@ def parse_project_access_update_request(access: Dict) -> Dict:
         # use legacy option
         elif key in access:
             parsed_access[key] = [id for id in access.get(key) if id in valid_ids]
-    parsed_access["invalid_usernames"] = list(names.difference(valid_usernames))
-    parsed_access["invalid_ids"] = list(ids.difference(valid_ids))
-    return parsed_access
+
+    # remove 'inheritance', prepare final map for direct assignments
+    processed_ids = []
+    for key in ("owners", "writers", "editors", "readers"):
+        # we might not want to modify all roles
+        if key not in parsed_access:
+            continue
+        role = ProjectRole(key[:-1])
+        resp[role] = []
+        for user_id in parsed_access.get(key):
+            if user_id not in processed_ids:
+                resp[role].append(user_id)
+                processed_ids.append(user_id)
+
+    resp["invalid_usernames"] = list(names.difference(valid_usernames))
+    resp["invalid_ids"] = list(ids.difference(valid_ids))
+    return resp
 
 
 @auth_required
