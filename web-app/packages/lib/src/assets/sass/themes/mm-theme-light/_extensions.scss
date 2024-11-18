@@ -18,6 +18,9 @@ body, p, dd, dl {
 }
 p, span, dl, li {
   overflow-wrap: break-word;
+}
+p, dl, li {
+  overflow-wrap: break-word;
   text-wrap: pretty;
 }
 dd {
