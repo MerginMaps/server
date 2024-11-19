@@ -8,7 +8,7 @@ from flask import current_app
 from flask_mail import Mail
 from unittest.mock import patch
 
-from .. import db
+from ..app import db
 from ..config import Configuration
 from ..sync.models import Project, AccessRequest, ProjectVersion
 from ..celery import send_email_async

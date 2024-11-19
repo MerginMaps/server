@@ -10,7 +10,7 @@ from flask import url_for, current_app
 from sqlalchemy import desc
 from unittest.mock import MagicMock
 
-from .. import db
+from ..app import db
 from ..sync.utils import parse_gpkgb_header_size, gpkg_wkb_to_wkt, is_name_allowed
 from ..auth.models import LoginHistory, User
 from . import json_headers

@@ -312,13 +312,6 @@ export interface ProjectVersionsTableItem extends ProjectVersionListItem {
   disabled: boolean
 }
 
-export interface TableDataHeader {
-  header: string
-  field: string
-  sortable?: boolean
-  width?: number
-}
-
 export interface DeleteProjectPayload {
   projectId: string
 }

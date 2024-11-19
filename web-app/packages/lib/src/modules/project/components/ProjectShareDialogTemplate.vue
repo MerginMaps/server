@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </div>
 
       <div class="flex flex-column p-input-filled">
-        <label class="paragraph-p6">Project permission</label>
+        <label>Project permission</label>
         <app-dropdown :options="permissions" v-model="permission" />
       </div>
     </div>

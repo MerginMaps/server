@@ -9,7 +9,7 @@ import bcrypt
 from flask import current_app, request
 from sqlalchemy import or_, func
 
-from .. import db
+from ..app import db
 from ..sync.models import ProjectUser
 from ..sync.utils import get_user_agent, get_ip, get_device_id
 

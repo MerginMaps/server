@@ -25,6 +25,7 @@ export interface BaseConfigResponse {
   global_read?: boolean
   global_write?: boolean
   global_admin?: boolean
+  enable_superadmin_assignment: boolean
 }
 
 export type ConfigResponse = BaseConfigResponse &

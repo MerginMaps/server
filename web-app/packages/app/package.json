@@ -15,23 +15,16 @@
     "clean": "echo 'Nothing to clean.'",
     "link:register": "echo '[@mergin/app] Nothing to register.'",
     "link:unregister": "echo '[@mergin/app] Nothing to unregister.'",
-    "lint": "eslint . --ext .js,.vue,.ts",
-    "i18n:report": "vue-cli-service i18n:report --src './src/admin/**/*.?(js|vue)' --locales './src/admin/locales/**/*.json'"
+    "lint": "eslint . --ext .js,.vue,.ts"
   },
   "dependencies": {
     "@tabler/icons-webfont": "^2.42.0",
     "axios": "^0.28.1",
-    "crypto-js": "^3.1.9-1",
-    "date-fns": "^2.28.0",
-    "file-saver": "^2.0.5",
     "lodash": "^4.17.21",
-    "pdfjs-dist": "2.5.207",
     "pinia": "^2.1.7",
-    "portal-vue": "^3.0.0",
     "primeflex": "^3.3.1",
-    "primevue": "^3.43.0",
-    "vue": "^3.3.8",
-    "vue-i18n": "^9.7.1",
+    "primevue": "3.43.0",
+    "vue": "3.5.12",
     "vue-meta": "^3.0.0-alpha.10",
     "vue-router": "4.2.5"
   }

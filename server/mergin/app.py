@@ -7,11 +7,12 @@ import logging
 import os
 import connexion
 import wtforms_json
+import gevent
 from marshmallow import fields
 from sqlalchemy.schema import MetaData
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
-from flask import json, jsonify, request, abort, current_app, Flask
+from flask import json, jsonify, request, abort, current_app, Flask, Request, Response
 from flask_login import current_user, LoginManager
 from flask_wtf.csrf import generate_csrf, CSRFProtect
 from flask_migrate import Migrate
@@ -27,6 +28,7 @@ from werkzeug.exceptions import HTTPException
 from typing import List, Dict, Optional
 
 from .sync.utils import get_blacklisted_dirs, get_blacklisted_files
+from .config import Configuration
 
 convention = {
     "ix": "ix_%(column_0_label)s",
@@ -105,9 +107,24 @@ class UpdateForm(FlaskForm):
                 field.populate_obj(obj, name)
 
 
-def create_simple_app() -> Flask:
-    from .config import Configuration
+class GeventTimeoutMiddleware:
+    """Middleware to implement gevent.Timeout() for all requests"""
 
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        request = Request(environ)
+        try:
+            with gevent.Timeout(Configuration.GEVENT_REQUEST_TIMEOUT):
+                return self.app(environ, start_response)
+        except gevent.Timeout:
+            logging.error(f"Gevent worker: Request {request.path} timed out")
+            resp = Response("Gateway Timeout", mimetype="text/plain", status=504)
+            return resp(environ, start_response)
+
+
+def create_simple_app() -> Flask:
     app = connexion.FlaskApp(__name__, specification_dir=os.path.join(this_dir))
     flask_app = app.app
 
@@ -117,6 +134,9 @@ def create_simple_app() -> Flask:
     ma.init_app(flask_app)
     Migrate(flask_app, db)
     flask_app.connexion_app = app
+    # in case of gevent worker type use middleware to implement custom request timeout
+    if Configuration.GEVENT_WORKER:
+        flask_app.wsgi_app = GeventTimeoutMiddleware(flask_app.wsgi_app)
 
     @flask_app.cli.command()
     def init_db():
@@ -133,7 +153,6 @@ def create_simple_app() -> Flask:
 def create_app(public_keys: List[str] = None) -> Flask:
     """Factory function to create Flask app instance"""
     from itsdangerous import BadTimeSignature, BadSignature
-    from .config import Configuration
     from .auth import auth_required, decode_token
     from .auth.models import User
 

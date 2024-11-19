@@ -42,6 +42,7 @@ import {
   ErrorCodes,
   ProjectAccessDetail,
   UpdateProjectAccessParams,
+  ProjectVersionFileChange,
   ProjectVersionListItem
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
@@ -72,6 +73,7 @@ export interface ProjectState {
   accessSorting: SortingParams
   availablePermissions: DropdownOption<ProjectPermissionName>[]
   availableRoles: DropdownOption<ProjectRoleName>[]
+  versionsChangesetLoading: boolean
 }
 
 export const useProjectStore = defineStore('projectModule', {
@@ -95,7 +97,8 @@ export const useProjectStore = defineStore('projectModule', {
     accessSearch: '',
     accessSorting: undefined,
     availablePermissions: permissionUtils.getProjectPermissionsValues(),
-    availableRoles: permissionUtils.getProjectRoleNameValues()
+    availableRoles: permissionUtils.getProjectRoleNameValues(),
+    versionsChangesetLoading: false
   }),
 
   getters: {
@@ -471,8 +474,7 @@ export const useProjectStore = defineStore('projectModule', {
           payload.projectName
         )
         this.setProject({ project: projectResponse.data })
-      } catch (e) {
-        console.warn('Failed to load project data', e)
+      } catch {
         await notificationStore.error({ text: 'Failed to load project data' })
       }
     },
@@ -552,7 +554,7 @@ export const useProjectStore = defineStore('projectModule', {
         )
         this.versions = response.data?.versions
         this.versionsCount = response.data?.count
-      } catch (e) {
+      } catch {
         await notificationStore.error({
           text: 'Failed to fetch project versions'
         })
@@ -672,13 +674,11 @@ export const useProjectStore = defineStore('projectModule', {
     },
 
     async pushProjectChanges(payload) {
-      const notificationStore = useNotificationStore()
-
       const { data, projectPath } = payload
       try {
         return await ProjectApi.pushProjectChanges(projectPath, data)
       } catch (err) {
-        await notificationStore.error({ text: getErrorMessage(err, 'Error') })
+        await this.handlePushError(err)
         return undefined
       }
     },
@@ -804,6 +804,40 @@ export const useProjectStore = defineStore('projectModule', {
       } finally {
         this.accessLoading = false
       }
+    },
+
+    async getVersionChangeset(payload: {
+      workspace: string
+      projectName: string
+      versionId: string
+      path: string
+    }): Promise<ProjectVersionFileChange[]> {
+      let response: AxiosResponse<ProjectVersionFileChange[]> = null
+      const notificationStore = useNotificationStore()
+      try {
+        this.versionsChangesetLoading = true
+        const { path, projectName, versionId, workspace } = payload
+        response = await ProjectApi.getVersionChangeset(
+          workspace,
+          projectName,
+          versionId,
+          path
+        )
+      } catch (err) {
+        await notificationStore.error({
+          text: getErrorMessage(err, 'Failed to display changeset of file')
+        })
+      } finally {
+        this.versionsChangesetLoading = false
+      }
+      return response?.data
+    },
+
+    async handlePushError(err: unknown) {
+      const notificationStore = useNotificationStore()
+      await notificationStore.error({
+        text: getErrorMessage(err, 'Failed to push changes')
+      })
     }
   }
 })

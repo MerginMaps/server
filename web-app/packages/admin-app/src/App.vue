@@ -5,68 +5,69 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <v-app :class="`${loggedUser ? 'appFont' : ''}`">
-    <check-for-updates />
+  <div class="grid grid-nogutter min-h-screen">
     <dialog-windows />
-    <v-layout column fill-height>
-      <transition name="fade">
-        <router-view name="header" />
-      </transition>
-      <transition name="fade">
-        <router-view :key="$route.fullPath" name="sidebar" />
-      </transition>
-      <v-card
-        v-if="pingData && pingData.maintenance"
-        outlined
-        class="maintenance_warning"
-      >
-        <v-card-text>
-          <b
-            >The service is currently in read-only mode for maintenance. Upload
-            and update functions are not available at this time. Please try
-            again later.</b
-          >
-        </v-card-text>
-      </v-card>
-      <global-warning
-        v-if="loggedUser"
-        class="white--text"
-        style="margin: auto"
-      ></global-warning>
-      <v-layout column fill-height class="app-content">
+    <router-view name="sidebar" v-slot="{ Component }" :key="$route.fullPath">
+      <component :is="Component" v-if="isSideBar" />
+    </router-view>
+
+    <main
+      :class="[
+        'surface-ground',
+        'transition-all',
+        'transition-duration-500',
+        'min-h-full',
+        'overflow-auto',
+        'pb-4',
+        isSideBar && drawer && !isUnderOverlayBreakpoint
+          ? 'col-offset-2 col-10'
+          : 'col-12'
+      ]"
+    >
+      <router-view name="header" v-slot="{ Component, route }">
+        <div :key="route.name">
+          <component :is="Component" />
+          <PDivider v-if="Component" class="m-0"></PDivider>
+        </div>
+      </router-view>
+      <router-view v-slot="{ Component }">
+        <instance-maintenance-message v-if="pingData && pingData.maintenance" />
+        <CheckForUpdates />
         <transition name="fade">
-          <router-view class="page" />
+          <component :is="Component" />
         </transition>
-      </v-layout>
-    </v-layout>
-    <!--    <upload-progress />-->
+      </router-view>
+    </main>
     <notifications />
-  </v-app>
+  </div>
 </template>
 
 <script lang="ts">
 import { CheckForUpdates } from '@mergin/admin-lib'
 import {
+  InstanceMaintenanceMessage,
   DialogWindows,
-  GlobalWarning,
   initRequestInterceptors,
   initResponseInterceptors,
   Notifications,
   useAppStore,
   useInstanceStore,
   useNotificationStore,
-  useUserStore
-  // UploadProgress
-} from '@mergin/lib-vue2'
+  useUserStore,
+  useLayoutStore,
+  useProjectStore
+} from '@mergin/lib'
 import { mapActions, mapState } from 'pinia'
+import { useToast } from 'primevue/usetoast'
 import { defineComponent } from 'vue'
+import { useMeta } from 'vue-meta'
 
 export default defineComponent({
   name: 'app',
   components: {
-    /* UploadProgress, */ Notifications,
+    Notifications,
     DialogWindows,
-    GlobalWarning,
+    InstanceMaintenanceMessage,
     CheckForUpdates
   },
   metaInfo() {
@@ -91,9 +92,18 @@ export default defineComponent({
     ...mapState(useInstanceStore, ['pingData']),
     ...mapState(useUserStore, ['loggedUser']),
     ...mapState(useAppStore, ['serverError']),
+    ...mapState(useLayoutStore, ['drawer', 'isUnderOverlayBreakpoint']),
 
     error() {
       return this.serverError
+    },
+
+    /** Check if sidebar is occuring in route */
+    isSideBar() {
+      return (
+        !!this.$route.matched.find((item) => item.components.sidebar) &&
+        !!this.loggedUser?.id
+      )
     }
   },
   watch: {
@@ -109,6 +119,32 @@ export default defineComponent({
       }
     }
   },
+  setup() {
+    useMeta({
+      title: 'Mergin Maps',
+      meta: [
+        {
+          name: 'description',
+          content:
+            'Store and track changes to your geo-data. Mergin Maps is a repository of geo-data for collaborative work.'
+        },
+        {
+          property: 'og:title',
+          content:
+            'Store and track changes to your geo-data. Mergin Maps is a repository of geo-data for collaborative work.'
+        },
+        { property: 'og:site_name', content: 'Mergin Maps' }
+      ]
+    })
+    const toast = useToast()
+    const notificationStore = useNotificationStore()
+    const layoutStore = useLayoutStore()
+    const projectStore = useProjectStore()
+
+    notificationStore.init(toast)
+    layoutStore.init()
+    projectStore.filterPermissions(['editor'], ['edit'])
+  },
   async created() {
     await this.fetchConfig()
     if (this.loggedUser) {
@@ -118,7 +154,7 @@ export default defineComponent({
 
     const pingDataResponse = await this.fetchPing()
     const getIsMaintenance = () => {
-      return pingDataResponse && pingDataResponse.maintenance
+      return pingDataResponse?.data?.maintenance
     }
 
     const resetUser = () => {
@@ -140,182 +176,12 @@ export default defineComponent({
 </script>
 
 <style lang="scss">
-@import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
-html,
-body,
-.v-application {
-  height: 100%;
-  overflow: hidden !important;
-  font-size: 14px;
+.fade-enter-active {
+  transition: opacity ease-in 0.25s;
 }
 
-.appFont {
-  font-family: Inter, sans-serif;
-}
-
-.app-content {
-  position: relative;
-}
-
-a {
-  outline: none;
-}
-
-h3 {
-  color: #2d052d;
-}
-
-.fade-leave-active {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.25s;
-}
-
-.fade-enter,
+.fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-.v-data-table {
-  .v-data-table__wrapper {
-    table {
-      tbody {
-        tr {
-          td {
-            font-size: 13px;
-          }
-        }
-      }
-    }
-  }
-}
-
-.maintenance_warning {
-  margin: auto;
-  width: 100%;
-  background-color: orange !important;
-  color: rgba(0, 0, 0, 0.87) !important;
-  padding-left: 400px;
-  text-align: center;
-  @media (max-width: 960px) {
-    padding-left: 40px;
-  }
-}
-
-.v-data-table {
-  .v-data-table__wrapper {
-    table {
-      thead {
-        tr {
-          th {
-            font-weight: 500;
-            font-size: 12px;
-          }
-        }
-      }
-    }
-  }
-}
-
-.v-btn.v-size--default {
-  font-size: 14px;
-  font-weight: 400;
-}
-
-.theme--light.v-data-table {
-  margin: 0.5em 0;
-  border: 1px solid #ddd;
-  border-radius: 3px;
-  padding: 0.5em;
-  background-color: #f9f9f9;
-}
-
-.v-card__subtitle,
-.v-card__text {
-  font-size: 13px;
-}
-
-.v-btn {
-  margin: 6px 8px 6px 8px;
-  text-transform: capitalize;
-}
-
-.v-list-item--link::before {
-  background-color: transparent;
-}
-
-.v-list-item--link:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-.v-list-item--active {
-  color: #2d052d !important;
-}
-
-.v-list--dense .v-list-item {
-  min-height: 20px;
-}
-
-.v-list-item.v-list-item__content.v-list-item__title {
-  font-weight: 300;
-}
-
-.theme--light.v-btn:not(.v-btn--flat):not(.v-btn--text):not(.v-btn--outlined) {
-  background-color: #f5f5f5;
-}
-
-.theme--light.v-btn:not(.v-btn--flat):not(.v-btn--text):not(.v-btn--outlined):hover {
-  background-color: #999;
-}
-
-.theme--light.v-input:not(.v-input--is-disabled) input,
-.theme--light.v-input:not(.v-input--is-disabled) textarea {
-  color: rgba(0, 0, 0, 0.87);
-}
-
-.v-table tr {
-  color: #555;
-}
-
-.v-label::first-letter {
-  text-transform: uppercase;
-}
-
-.v-label {
-  min-width: 50px;
-}
-/*
-  removing negative margin after upgrade vuetify from v2.3 to v2.4
-  @see: https://github.com/vuetifyjs/vuetify/issues/12848#issuecomment-828408183
-  .row:not([class*='my-']):not([class*='ma-']):not([class*='mt-']):not([class*='mb-']) {
-
-  .row:not([class*='my-']):not([class*='ma-']):not([class*='mt-'])
-  + .row:not([class*='my-']):not([class*='ma-']):not([class*='mt-']) {
-*/
-.row {
-  margin-top: 0;
-  margin-bottom: 0;
-}
-
-.blueButton {
-  background-color: #2d4470 !important;
-}
-
-.row + .row {
-  margin-top: 0;
-}
-</style>
-
-<style lang="scss" scoped>
-.layout.fill-height {
-  overflow: hidden;
-  min-height: 0;
 }
 </style>
