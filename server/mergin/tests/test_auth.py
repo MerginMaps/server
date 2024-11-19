@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 from ..auth.models import User, UserProfile, LoginHistory
 from ..auth.tasks import anonymize_removed_users
-from .. import db
+from ..app import db
 from ..sync.models import Project, ProjectRole
 from . import (
     test_workspace_id,
@@ -412,6 +412,25 @@ def test_api_user_profile(client):
 def test_update_user(client):
     login_as_admin(client)
     user = User.query.filter_by(username="mergin").first()
+    data = {"active": True, "is_admin": True}
+    resp = client.patch(
+        url_for("/.mergin_auth_controller_update_user", username=user.username),
+        data=json.dumps(data),
+        headers=json_headers,
+    )
+    assert resp.status_code == 200
+    assert user.active
+    assert user.is_admin
+
+    client.application.config["ENABLE_SUPERADMIN_ASSIGNMENT"] = False
+    data = {"active": False, "is_admin": False}
+    resp = client.patch(
+        url_for("/.mergin_auth_controller_update_user", username=user.username),
+        data=json.dumps(data),
+        headers=json_headers,
+    )
+    assert resp.status_code == 400
+    assert user.active
     data = {"active": False}
     resp = client.patch(
         url_for("/.mergin_auth_controller_update_user", username=user.username),
@@ -421,6 +440,7 @@ def test_update_user(client):
     assert resp.status_code == 200
     assert not user.active
 
+    client.application.config["ENABLE_SUPERADMIN_ASSIGNMENT"] = True
     user.is_admin = False
     db.session.add(user)
     db.session.commit()
@@ -694,27 +714,27 @@ def test_paginate_users(client):
     url = "/app/admin/users?page=1&per_page=10"
     # get 5 users (default + 5 new added - 1 deleted & inactive)
     resp = client.get(url)
-    list_of_usernames = [user["username"] for user in resp.json["users"]]
-    assert resp.json["total"] == 5
-    assert resp.json["users"][0]["username"] == "mergin"
+    list_of_usernames = [user["username"] for user in resp.json["items"]]
+    assert resp.json["count"] == 5
+    assert resp.json["items"][0]["username"] == "mergin"
     assert user_inactive.username in list_of_usernames
     assert deleted_active.username in list_of_usernames
     assert deleted_inactive.username not in list_of_usernames
     # order by username
     resp = client.get(url + "&order_by=username")
-    assert resp.json["total"] == 5
-    assert resp.json["users"][0]["username"] == "alice"
+    assert resp.json["count"] == 5
+    assert resp.json["items"][0]["username"] == "alice"
     # exact match with username
     resp = client.get(url + "&like=bob")
-    assert resp.json["total"] == 1
-    assert resp.json["users"][0]["username"] == "bob"
+    assert resp.json["count"] == 1
+    assert resp.json["items"][0]["username"] == "bob"
     # ilike search with email
     resp = client.get(url + "&like=@mergin.com")
-    assert resp.json["total"] == 5
+    assert resp.json["count"] == 5
     # exact search by email
     resp = client.get(url + "&like=alice@mergin.com")
-    assert resp.json["total"] == 1
-    assert resp.json["users"][0]["username"] == "alice"
+    assert resp.json["count"] == 1
+    assert resp.json["items"][0]["username"] == "alice"
     # invalid paging
     assert client.get("/app/admin/users?page=2&per_page=10").status_code == 404
 

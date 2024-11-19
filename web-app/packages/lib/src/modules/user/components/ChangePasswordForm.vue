@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div class="flex flex-column pb-4">
     <span class="p-input-filled">
-      <label class="paragraph-p6" for="oldPassowrd">Old password</label>
+      <label for="oldPassowrd">Old password</label>
       <PPassword
         id="oldPassowrd"
         v-model="oldPassword"
@@ -113,7 +113,7 @@ export default defineComponent({
       return this.getErrorByComponentId(this.merginComponentUuid) ?? {}
     }
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.clearErrors({
       componentId: this.merginComponentUuid,
       keepNotification: true

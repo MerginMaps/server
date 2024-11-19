@@ -12,7 +12,7 @@ from sqlalchemy import desc
 from pygeodiff import GeoDiff
 import pytest
 
-from .. import db, create_app
+from ..app import db, create_app
 from ..sync.models import Project, ProjectVersion
 from ..stats.app import register
 from ..stats.models import MerginInfo

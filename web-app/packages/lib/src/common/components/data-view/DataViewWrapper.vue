@@ -166,9 +166,7 @@ const props = withDefaults(defineProps<Props>(), {
   defaultCols: 2
 })
 
-interface EmitItem {
-  [key: string]: object
-}
+type EmitItem = Record<string, unknown>
 
 const emit = defineEmits<{
   (e: 'rowClick', item: EmitItem): void

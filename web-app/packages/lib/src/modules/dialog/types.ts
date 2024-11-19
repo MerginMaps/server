@@ -6,7 +6,7 @@ import { Component } from 'vue'
 
 export interface ConfirmDialogProps {
   text: string
-  severity?: 'primary' | 'danger'
+  severity?: 'primary' | 'danger' | 'warning'
   confirmText?: string
   cancelText?: string
   description?: string

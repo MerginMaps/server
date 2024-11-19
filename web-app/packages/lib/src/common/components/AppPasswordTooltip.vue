@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <label class="flex align-items-center paragraph-p6" :for="'for'"
+  <label class="flex align-items-center" :for="'for'"
     ><slot name="label"></slot>&nbsp;
     <i
       class="ti ti-info-circle-filled cursor-pointer text-color-medium-green hover:text-color paragraph-p4"

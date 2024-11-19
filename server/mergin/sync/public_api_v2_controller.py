@@ -8,7 +8,7 @@ from connexion import NoContent, request
 from flask import abort, jsonify
 from flask_login import current_user
 
-from mergin import db
+from mergin.app import db
 from mergin.auth import auth_required
 from mergin.sync.models import Project
 from mergin.sync.permissions import ProjectPermissions, require_project_by_uuid

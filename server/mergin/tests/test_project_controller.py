@@ -23,7 +23,7 @@ from flask import url_for, current_app
 import tempfile
 
 from sqlalchemy import desc
-from .. import db
+from ..app import db
 from ..sync.models import (
     Project,
     Upload,
@@ -58,6 +58,7 @@ from .utils import (
     login,
     file_info,
     login_as_admin,
+    upload_file_to_project,
 )
 from ..config import Configuration
 from ..sync.config import Configuration as SyncConfiguration
@@ -1791,6 +1792,8 @@ def test_clone_project(client, data, username, expected):
         # cleanup
         shutil.rmtree(project.storage.project_dir)
 
+    Configuration.GLOBAL_STORAGE = 104857600
+
 
 def test_optimize_storage(app, client, diff_project):
     """Test optimize storage for geopackages which could be restored from diffs
@@ -2461,3 +2464,14 @@ def test_delete_diff_file(client):
         change=PushChangeType.DELETE.value,
     ).first()
     assert fh.path == "base.gpkg" and fh.diff is None
+
+
+def test_signals(client):
+    workspace = create_workspace()
+    user = User.query.filter(User.username == "mergin").first()
+    project = create_project("test-project", workspace, user)
+    with patch(
+        "mergin.sync.public_api_controller.push_finished.send"
+    ) as push_finished_mock:
+        upload_file_to_project(project, "test.txt", client)
+        push_finished_mock.assert_called_once()

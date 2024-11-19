@@ -218,15 +218,16 @@ def data_downgrade():
                     GROUP BY project_id, role
                 )
                 SELECT
-                    o.project_id,
-                    o.users_ids AS owners,
-                    o.users_ids || w.users_ids AS writers,
-                    o.users_ids || w.users_ids || e.users_ids AS editors,
-                    o.users_ids || w.users_ids || e.users_ids || r.users_ids AS readers
-                FROM (SELECT * FROM agg WHERE role = 'owner') AS o
-                LEFT OUTER JOIN (SELECT * FROM agg WHERE role = 'reader') AS r ON o.project_id = r.project_id
-                LEFT OUTER JOIN (SELECT * FROM agg WHERE role = 'editor') AS e ON o.project_id = e.project_id
-                LEFT OUTER JOIN (SELECT * FROM agg WHERE role = 'writer') AS w ON o.project_id = w.project_id
+                    p.id AS project_id,
+                    COALESCE(o.users_ids, '{}'::INT[]) AS owners,
+                    COALESCE(o.users_ids || w.users_ids, '{}'::INT[]) AS writers,
+                    COALESCE(o.users_ids || w.users_ids || e.users_ids, '{}'::INT[]) AS editors,
+                    COALESCE(o.users_ids || w.users_ids || e.users_ids || r.users_ids, '{}'::INT[]) AS readers
+                FROM project p
+				LEFT OUTER JOIN (SELECT * FROM agg WHERE role = 'owner') AS o ON p.id = o.project_id
+                LEFT OUTER JOIN (SELECT * FROM agg WHERE role = 'reader') AS r ON p.id = r.project_id
+                LEFT OUTER JOIN (SELECT * FROM agg WHERE role = 'editor') AS e ON p.id = e.project_id
+                LEFT OUTER JOIN (SELECT * FROM agg WHERE role = 'writer') AS w ON p.id = w.project_id
                 )
             UPDATE project_access pa
             SET

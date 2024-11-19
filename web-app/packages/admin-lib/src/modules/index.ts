@@ -4,5 +4,3 @@
 
 export * from './admin'
 export * from './layout'
-export * from './project'
-export * from './user'

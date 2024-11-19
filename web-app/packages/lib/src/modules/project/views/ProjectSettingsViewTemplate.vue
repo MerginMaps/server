@@ -7,70 +7,51 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <div>
     <app-container>
-      <app-section>
-        <div class="flex flex-column row-gap-3 paragraph-p5 p-4">
-          <div
-            :class="[
-              'flex flex-column align-items-start',
-              'row-gap-2',
-              'md:align-items-center md:flex-row'
-            ]"
-          >
-            <div class="flex-grow-1">
+      <app-section class="pt-4">
+        <app-settings>
+          <app-settings-item>
+            <template #title>
+              <template v-if="project.access.public"
+                >This is public project</template
+              >
+              <template v-else>This is private project</template>
+            </template>
+
+            <template #description>
               <template v-if="project.access.public">
-                <p class="font-semibold">This is public project</p>
-                <span class="paragraph-p6 opacity-80"
-                  >Hide this project from everyone.</span
-                >
+                Hide this project from everyone
               </template>
-              <template v-else>
-                <p class="title-t3">This is private project</p>
-                <span class="paragraph-p6 opacity-80"
-                  >Make this project visible to anyone.</span
-                >
-              </template>
-            </div>
-            <div class="flex-shrink-0">
-              <PButton
-                @click="confirmPublicPrivate()"
-                severity="secondary"
-                data-cy="settings-public-btn"
-                :label="project.access.public ? 'Make private' : 'Make public'"
-              />
-            </div>
-          </div>
-          <div
-            :class="[
-              'flex flex-column align-items-start',
-              'row-gap-2',
-              'md:align-items-center md:flex-row'
-            ]"
-            v-if="$slots.operations"
-          >
-            <slot name="operations"></slot>
-          </div>
-          <div
-            :class="[
-              'flex flex-column align-items-start',
-              'row-gap-2',
-              'md:align-items-center md:flex-row'
-            ]"
-            v-if="project && project.permissions && project.permissions.delete"
-          >
-            <div class="flex-grow-1">
-              <p class="title-t3">Delete project</p>
-              <span class="paragraph-p6 opacity-80">All data will be lost</span>
-            </div>
-            <div class="flex-shrink-0">
-              <PButton
-                @click="confirmDelete"
-                severity="danger"
-                data-cy="settings-delete-btn"
-                label="Delete project"
-              />
-            </div>
-          </div>
-        </div>
+              <template v-else>Make this project visible to anyone.</template>
+            </template>
+
+            <template #action>
+              <div class="flex-shrink-0">
+                <PButton
+                  @click="confirmPublicPrivate()"
+                  severity="secondary"
+                  data-cy="settings-public-btn"
+                  :label="
+                    project.access.public ? 'Make private' : 'Make public'
+                  "
+                />
+              </div>
+            </template>
+          </app-settings-item>
+          <slot name="operations"></slot>
+          <app-settings-item>
+            <template #title>Delete project</template>
+            <template #description>All data will be lost</template>
+            <template #action
+              ><div class="flex-shrink-0">
+                <PButton
+                  @click="confirmDelete"
+                  severity="danger"
+                  data-cy="settings-delete-btn"
+                  label="Delete project"
+                /></div
+            ></template>
+          </app-settings-item>
+        </app-settings>
       </app-section>
     </app-container>
   </div>
@@ -80,6 +61,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { PropType, defineComponent } from 'vue'
 
+import AppSettings from '@/common/components/app-settings/AppSettings.vue'
+import AppSettingsItem from '@/common/components/app-settings/AppSettingsItem.vue'
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppSection from '@/common/components/AppSection.vue'
 import { ConfirmDialogProps } from '@/modules'
@@ -91,7 +74,9 @@ export default defineComponent({
   name: 'ProjectSettingsViewTemplate',
   components: {
     AppContainer,
-    AppSection
+    AppSection,
+    AppSettings,
+    AppSettingsItem
   },
   props: {
     projectName: String,
@@ -122,8 +107,9 @@ export default defineComponent({
     },
     confirmDelete() {
       const props: ConfirmDialogProps = {
-        text: `Are you sure to delete project: ${this.projectName}?`,
+        text: `Are you sure to delete project?`,
         description: 'All files will be lost. Type in project name to confirm:',
+        hint: `${this.projectName}`,
         severity: 'danger',
         confirmText: 'Delete',
         confirmField: {

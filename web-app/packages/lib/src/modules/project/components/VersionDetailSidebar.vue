@@ -22,109 +22,40 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       ></template>
       <dl class="grid grid-nogutter row-gap-4">
         <div class="col-12">
-          <dt class="paragraph-p6 opacity-80 mb-2">Version</dt>
-          <dl>
+          <dt class="paragraph-p6 opacity-80">Version</dt>
+          <dd>
             <h3 class="headline-h3 mt-0">
               {{ version.name }}
             </h3>
-          </dl>
+          </dd>
         </div>
         <PDivider class="m-0" />
         <div class="col-6">
-          <dt class="paragraph-p6 opacity-80 mb-2">Author</dt>
-          <dl class="font-semibold paragraph-p5">
+          <dt class="paragraph-p6 opacity-80">Author</dt>
+          <dd class="font-semibold paragraph-p5">
             {{ version.author }}
-          </dl>
+          </dd>
         </div>
         <div class="col-6 flex flex-column align-items-end">
-          <dt class="paragraph-p6 opacity-80 mb-2">Project size</dt>
-          <dl class="font-semibold paragraph-p5">
+          <dt class="paragraph-p6 opacity-80">Project size</dt>
+          <dd class="font-semibold paragraph-p5">
             {{ $filters.filesize(version.project_size) }}
-          </dl>
+          </dd>
         </div>
         <div class="col-12">
-          <dt class="paragraph-p6 opacity-80 mb-2">Created</dt>
-          <dl class="font-semibold paragraph-p5">
+          <dt class="paragraph-p6 opacity-80">Created</dt>
+          <dd class="font-semibold paragraph-p5">
             {{ $filters.datetime(version.created) }}
-          </dl>
+          </dd>
         </div>
         <div class="col-12">
-          <dt class="paragraph-p6 opacity-80 mb-2">User agent</dt>
-          <dl class="font-semibold paragraph-p5">
+          <dt class="paragraph-p6 opacity-80">User agent</dt>
+          <dd class="font-semibold paragraph-p5">
             {{ version.user_agent }}
-          </dl>
+          </dd>
         </div>
       </dl>
-      <PAccordion
-        multiple
-        collapse-icon="ti ti-chevron-right"
-        expand-icon="ti ti-chevron-down"
-        :active-index="activeAccordionItems"
-      >
-        <PAccordionTab
-          v-for="item in changeTabs"
-          :key="item.key"
-          :disabled="!changes[item.key].length"
-        >
-          <template #header>
-            <app-circle :severity="item.severity" class="mr-2">
-              <i :class="['ti', `${item.icon}`]"></i>
-            </app-circle>
-            <span class="paragraph-p5 opacity-80">{{ item.text }}</span>
-            <app-circle class="ml-auto">
-              {{ changes[item.key].length }}
-            </app-circle></template
-          >
-          <div
-            v-for="change in changes[item.key]"
-            :key="change.path"
-            class="paragraph-p6"
-          >
-            <div class="flex align-items-center justify-content-between mb-1">
-              <span class="w-10 font-semibold">{{ change.path }}</span>
-              <span class="flex-shrink-0">{{
-                $filters.filesize(
-                  version.changesets[change.path]
-                    ? version.changesets[change.path]['size']
-                    : change.size
-                )
-              }}</span>
-            </div>
-            <template
-              v-if="
-                version.changesets[change.path] &&
-                !version.changesets[change.path].error
-              "
-              ><router-link
-                class="text-color-forest text-underline font-semibold"
-                :to="{
-                  name: 'file-version-detail',
-                  params: {
-                    namespace: version.namespace,
-                    projectName: version.project_name,
-                    version_id: version.name,
-                    path: change.path
-                  }
-                }"
-                >Show advanced</router-link
-              >
-              <file-changeset-summary-table
-                :changesets="version.changesets[change.path]['summary']"
-              />
-            </template>
-            <div
-              v-else-if="
-                version.changesets[change.path] &&
-                version.changesets[change.path].error
-              "
-              class="text-center"
-            >
-              Details not available:
-              {{ version.changesets[change.path].error }}
-            </div>
-          </div>
-        </PAccordionTab>
-      </PAccordion>
+      <project-version-changes v-if="version" :version="version" />
     </app-sidebar-right>
   </div>
 </template>
@@ -133,24 +64,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
-import AppCircle from '@/common/components/AppCircle.vue'
+import ProjectVersionChanges from './ProjectVersionChanges.vue'
+
 import AppSidebarRight from '@/common/components/AppSidebarRight.vue'
 import { getErrorMessage } from '@/common/error_utils'
 import { ProjectVersion } from '@/modules'
 import { useNotificationStore } from '@/modules/notification/store'
-import FileChangesetSummaryTable from '@/modules/project/components/FileChangesetSummaryTable.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
 import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
-  name: 'VersionDetailView',
-  components: { FileChangesetSummaryTable, AppSidebarRight, AppCircle },
-  props: {
-    asAdmin: {
-      type: Boolean,
-      default: false
-    }
-  },
+  name: 'VersionDetailSidebar',
+  components: { AppSidebarRight, ProjectVersionChanges },
   data() {
     return {
       version: null as ProjectVersion
@@ -158,47 +83,6 @@ export default defineComponent({
   },
   computed: {
     ...mapState(useProjectStore, ['project', 'versions']),
-    changeTabs(): {
-      key: 'added' | 'updated' | 'removed'
-      severity: 'success' | 'warn' | 'danger'
-      text: string
-      icon: string
-    }[] {
-      return [
-        {
-          key: 'added',
-          severity: 'success',
-          text: 'Files added',
-          icon: 'ti-plus'
-        },
-        {
-          key: 'updated',
-          severity: 'warn',
-          text: 'Files edited',
-          icon: 'ti-pencil'
-        },
-        {
-          key: 'removed',
-          severity: 'danger',
-          text: 'Files removed',
-          icon: 'ti-trash'
-        }
-      ]
-    },
-    changes() {
-      return this.version?.changes
-    },
-    changesets() {
-      return this.version?.changesets
-    },
-    activeAccordionItems(): number[] {
-      return this.changeTabs.reduce<number[]>((acc, tab, index) => {
-        if (this.changes[tab.key].length > 0) {
-          acc.push(index)
-        }
-        return acc
-      }, [])
-    },
     downloadUrl() {
       return ProjectApi.constructDownloadProjectVersionUrl(
         this.project.namespace,

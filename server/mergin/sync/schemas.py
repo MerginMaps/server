@@ -7,7 +7,6 @@ from marshmallow import fields, ValidationError, Schema, post_dump
 from flask_login import current_user
 from flask import current_app
 
-from .. import ma
 from .files import ProjectFileSchema, FileSchema
 from .permissions import ProjectPermissions
 from .models import (
@@ -18,7 +17,7 @@ from .models import (
     PushChangeType,
     ProjectRole,
 )
-from ..app import DateTimeWithZ
+from ..app import DateTimeWithZ, ma
 from ..auth.models import User
 
 
@@ -299,7 +298,8 @@ class ProjectSchemaForDelete(ma.SQLAlchemyAutoSchema):
 class AdminProjectSchema(ma.SQLAlchemyAutoSchema):
     id = fields.UUID(attribute="Project.id")
     name = fields.Str(attribute="Project.name")
-    namespace = fields.Method("_workspace_name")
+    workspace = fields.Method("_workspace_name")
+    workspace_id = fields.Int(attribute="Project.workspace_id")
     version = fields.Function(
         lambda obj: ProjectVersion.to_v_name(obj.Project.latest_version)
     )

@@ -11,7 +11,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       src="@/assets/trash.svg"
       alt="Cover for confirm dialog"
     />
-    <img v-else src="@/assets/map-circle.svg" alt="Cover for confirm dialog" />
+    <img
+      v-else-if="severity === 'warning'"
+      src="@/assets/warning-dialog.svg"
+      alt="Cover for confirm dialog"
+    />
+    <img v-else src="@/assets/neutral.svg" alt="Cover for confirm dialog" />
     <span class="text-color-forest title-t1">{{ text }}</span>
     <span class="paragraph-p6 opacity-80">{{ description }}</span>
     <span class="title-t2">{{ hint }}</span>

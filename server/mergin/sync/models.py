@@ -24,13 +24,12 @@ from flask import current_app
 
 from .files import (
     File,
-    UploadFile,
     UploadChanges,
     ChangesSchema,
     ProjectFile,
 )
 from .storages.disk import move_to_tmp
-from .. import db
+from ..app import db
 from .storages import DiskStorage
 from .utils import is_versioned_file, is_qgis
 

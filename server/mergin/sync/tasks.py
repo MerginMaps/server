@@ -13,7 +13,7 @@ from .models import Project, ProjectVersion, FileHistory
 from .storages.disk import move_to_tmp
 from .config import Configuration
 from ..celery import celery
-from .. import db
+from ..app import db
 
 
 @celery.task
