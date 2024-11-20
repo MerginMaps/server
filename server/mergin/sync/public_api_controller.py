@@ -561,7 +561,7 @@ def get_projects_by_uuids(uuids):  # noqa: E501
         .filter(Project.id.in_(proj_ids))
         .all()
     )
-    ws_ids = [p.workspace_id for p in projects]
+    ws_ids = set([p.workspace_id for p in projects])
     projects_ids = [p.id for p in projects]
     users_map = {
         u.id: u.username
