@@ -16,7 +16,7 @@ from gevent import sleep
 from result import Err, Ok, Result
 
 from .storage import ProjectStorage, FileNotFound, InitializationError
-from ... import db
+from ...app import db
 from ..utils import (
     generate_checksum,
     is_versioned_file,

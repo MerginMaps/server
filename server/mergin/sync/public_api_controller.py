@@ -32,7 +32,7 @@ from binaryornot.check import is_binary
 from gevent import sleep
 import base64
 from werkzeug.exceptions import HTTPException
-from .. import db
+from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
 from .models import (
@@ -86,7 +86,8 @@ from .utils import (
 from .errors import StorageLimitHit
 from ..utils import format_time_delta
 
-push_triggered = signal("push_triggered")
+push_finished = signal("push_finished")
+# TODO: Move to database events to handle all commits to project versions
 project_version_created = signal("project_version_created")
 
 
@@ -195,6 +196,7 @@ def add_project(namespace):  # noqa: E501
 
         p = Project(**request.json, creator=current_user, workspace=workspace)
         p.updated = datetime.utcnow()
+        db.session.add(p)
         pa = ProjectAccess(p, public=request.json.get("public", False))
 
         template_name = request.json.get("template", None)
@@ -230,7 +232,6 @@ def add_project(namespace):  # noqa: E501
             get_device_id(request),
         )
 
-        db.session.add(p)
         db.session.add(pa)
         db.session.add(version)
         db.session.commit()
@@ -732,7 +733,6 @@ def project_push(namespace, project_name):
     if not ws:
         abort(404)
 
-    push_triggered.send(project)
     # fixme use get_latest
     pv = ProjectVersion.query.filter_by(
         project_id=project.id, name=project.latest_version
@@ -874,6 +874,7 @@ def project_push(namespace, project_name):
                 f"Transaction id: {upload.id}. No upload."
             )
             project_version_created.send(pv)
+            push_finished.send(pv)
             return jsonify(ProjectSchema().dump(project)), 200
         except IntegrityError as err:
             db.session.rollback()
@@ -1084,6 +1085,7 @@ def push_finish(transaction_id):
             f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
         )
         project_version_created.send(pv)
+        push_finished.send(pv)
     except (psycopg2.Error, FileNotFoundError, DataSyncError, IntegrityError) as err:
         db.session.rollback()
         logging.exception(
@@ -1186,6 +1188,7 @@ def clone_project(namespace, project_name):  # noqa: E501
         workspace=ws,
     )
     p.updated = datetime.utcnow()
+    db.session.add(p)
     pa = ProjectAccess(p, public=False)
 
     try:
@@ -1211,7 +1214,6 @@ def clone_project(namespace, project_name):  # noqa: E501
         user_agent,
         device_id,
     )
-    db.session.add(p)
     db.session.add(pa)
     db.session.add(project_version)
     db.session.commit()

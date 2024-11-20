@@ -5,19 +5,18 @@
 /* eslint-disable camelcase */
 import {
   PaginatedRequestParams,
+  PaginatedResponse,
   PaginatedResponseDefaults,
   Project,
   ProjectListItem,
   UserResponse
-} from '@mergin/lib-vue2'
+} from '@mergin/lib'
 
 export interface UsersParams extends PaginatedRequestParams {
   username?: string
 }
 
-export interface UsersResponse extends PaginatedResponseDefaults {
-  users: UserResponse[]
-}
+export type UsersResponse = PaginatedResponse<UserResponse>
 
 export interface UpdateUserData {
   is_admin: boolean
@@ -55,20 +54,18 @@ export interface AdminProjectListItem extends Project {
   disk_usage: number
   id: string
   name: string
-  namespace: string
+  workspace: string
+  workspace_id: number
   updated: string
   version: string
   removed_at: string
   removed_by: string
 }
 
-export interface PaginatedAdminProjectsResponse
-  extends PaginatedResponseDefaults {
-  projects: AdminProjectListItem[]
-}
+export type PaginatedAdminProjectsResponse =
+  PaginatedResponse<AdminProjectListItem>
 
 export interface PaginatedAdminProjectsParams extends PaginatedRequestParams {
-  workspace?: string
-  name?: string
+  like?: string
 }
 /* eslint-enable camelcase */

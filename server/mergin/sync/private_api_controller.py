@@ -8,7 +8,7 @@ from flask_login import current_user
 from sqlalchemy.orm import defer
 from sqlalchemy import text, and_, desc, asc
 
-from .. import db
+from ..app import db
 from ..auth import auth_required
 from ..auth.models import User, UserProfile
 from .forms import AccessPermissionForm
@@ -185,10 +185,8 @@ def list_namespace_project_access_requests(
 
 
 @auth_required(permissions=["admin"])
-def list_projects(
-    page, per_page, order_params=None, name=None, workspace=None
-):  # noqa: E501
-    projects = current_app.ws_handler.projects_query(name, workspace)
+def list_projects(page, per_page, order_params=None, like=None):  # noqa: E501
+    projects = current_app.ws_handler.projects_query(like)
     # do not fetch from db what is not needed
     projects = projects.options(
         defer(Project.storage_params),
@@ -211,7 +209,7 @@ def list_projects(
     result = projects.paginate(page, per_page).items
     total = projects.paginate(page, per_page).total
     data = AdminProjectSchema(many=True).dump(result)
-    data = {"projects": data, "count": total}
+    data = {"items": data, "count": total}
     return data, 200
 
 

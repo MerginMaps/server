@@ -10,7 +10,7 @@ from datetime import datetime
 from flask import Flask, current_app
 
 from .files import UploadChanges
-from .. import db
+from ..app import db
 from .models import Project, ProjectAccess, ProjectVersion
 from .utils import split_project_path
 from ..auth.models import User
@@ -62,7 +62,7 @@ def add_commands(app: Flask):
 
     @project.command()
     @click.argument("project-name")
-    @click.option("--version", required=True)
+    @click.option("--version", type=int, required=True)
     @click.option("--directory", type=click.Path(), required=True)
     def download(project_name, version, directory):  # pylint: disable=W0612
         """Download files for project at particular version"""

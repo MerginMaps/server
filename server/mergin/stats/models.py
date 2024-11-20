@@ -5,7 +5,7 @@
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 
-from .. import db
+from ..app import db
 
 
 class MerginInfo(db.Model):

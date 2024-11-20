@@ -2,4 +2,4 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-export { default as AppHeader } from './AppHeader.vue'
+export { default as SidebarFooter } from './SidebarFooter.vue'

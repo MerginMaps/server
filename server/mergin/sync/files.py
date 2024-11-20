@@ -8,8 +8,7 @@ from typing import Optional, List
 from marshmallow import fields, EXCLUDE, pre_load, post_load, post_dump
 from pathvalidate import sanitize_filename
 
-from .. import ma
-from ..app import DateTimeWithZ
+from ..app import DateTimeWithZ, ma
 
 
 def mergin_secure_filename(filename: str) -> str:

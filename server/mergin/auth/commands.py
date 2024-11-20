@@ -6,7 +6,7 @@ import click
 from flask import Flask
 from sqlalchemy import or_, func
 
-from .. import db
+from ..app import db
 from .models import User, UserProfile
 
 

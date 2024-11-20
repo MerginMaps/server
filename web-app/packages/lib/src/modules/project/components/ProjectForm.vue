@@ -82,7 +82,7 @@ export default defineComponent({
       return this.getErrorByComponentId(this.merginComponentUuid) ?? {}
     }
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.clearErrors({
       componentId: this.merginComponentUuid,
       keepNotification: true
@@ -112,7 +112,7 @@ export default defineComponent({
         this.$emit('error', err, dialogData)
       }
     },
-    beforeDestroy() {
+    beforeUnmount() {
       this.clearErrors({
         componentId: this.merginComponentUuid,
         keepNotification: true

@@ -6,15 +6,19 @@ import datetime
 import json
 import os
 
-import pytest
 from flask import url_for
 
-from .. import db
+from ..app import db
 from ..sync.models import AccessRequest, Project, ProjectRole, RequestStatus
 from ..auth.models import User
 from ..config import Configuration
 from . import json_headers
-from .utils import add_user, login, create_project, create_workspace
+from .utils import (
+    add_user,
+    login,
+    create_project,
+    create_workspace,
+)
 
 
 def test_project_unsubscribe(client, diff_project):
@@ -412,7 +416,7 @@ def test_restore_project(client, diff_project):
     # tests listing
     resp = client.get("/app/admin/projects?page=1&per_page=10")
     assert resp.json["count"] == 1
-    assert resp.json["projects"][0]["removed_at"]
+    assert resp.json["items"][0]["removed_at"]
 
     diff_project.workspace.active = True
     db.session.commit()
@@ -432,7 +436,7 @@ def test_admin_project_list(client):
     assert resp.status_code == 200
     assert resp.json.get("count") == 1
     # mark as inactive
-    p = Project.query.get(resp.json["projects"][0]["id"])
+    p = Project.query.get(resp.json["items"][0]["id"])
     p.removed_at = datetime.datetime.utcnow()
     p.removed_by = user.id
     db.session.commit()
@@ -445,7 +449,7 @@ def test_admin_project_list(client):
     resp = client.get("/app/admin/projects?page=1&per_page=10&order_params=name ASC")
     assert resp.status_code == 200
     assert resp.json.get("count") == 15
-    projects = resp.json.get("projects")
+    projects = resp.json.get("items")
     assert len(projects) == 10
     assert "foo5" in projects[9]["name"]
     assert "v0" == projects[9]["version"]
@@ -454,30 +458,30 @@ def test_admin_project_list(client):
         "/app/admin/projects?page=1&per_page=10&order_params=removed_at ASC"
     )
     assert resp.status_code == 200
-    assert resp.json["projects"][0]["name"] == p.name
+    assert resp.json["items"][0]["name"] == p.name
 
     resp = client.get(
         "/app/admin/projects?page=1&per_page=15&order_params=created DESC"
     )
-    assert resp.json["projects"][0]["name"] == "foo13"
+    assert resp.json["items"][0]["name"] == "foo13"
 
-    resp = client.get("/app/admin/projects?page=1&per_page=15&name=12")
-    assert len(resp.json["projects"]) == 1
-    assert resp.json["projects"][0]["name"] == "foo12"
+    resp = client.get("/app/admin/projects?page=1&per_page=15&like=12")
+    assert len(resp.json["items"]) == 1
+    assert resp.json["items"][0]["name"] == "foo12"
 
-    resp = client.get("/app/admin/projects?page=1&per_page=15&name=foo")
-    assert len(resp.json["projects"]) == 14
+    resp = client.get("/app/admin/projects?page=1&per_page=15&like=foo")
+    assert len(resp.json["items"]) == 14
 
-    resp = client.get("/app/admin/projects?page=1&per_page=15&workspace=invalid")
-    assert len(resp.json["projects"]) == 0
+    resp = client.get("/app/admin/projects?page=1&per_page=15&like=invalid")
+    assert len(resp.json["items"]) == 0
 
-    resp = client.get("/app/admin/projects?page=1&per_page=15&workspace=mergin")
-    assert len(resp.json["projects"]) == 15
+    resp = client.get("/app/admin/projects?page=1&per_page=15&like=mergin")
+    assert len(resp.json["items"]) == 15
 
     # delete project permanently
     p.delete()
-    resp = client.get("/app/admin/projects?page=1&per_page=15&workspace=mergin")
-    assert len(resp.json["projects"]) == 14
+    resp = client.get("/app/admin/projects?page=1&per_page=15&like=mergin")
+    assert len(resp.json["items"]) == 14
 
 
 def test_get_project_access(client):

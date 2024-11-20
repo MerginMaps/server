@@ -27,7 +27,7 @@ import { ref } from 'vue'
 withDefaults(
   defineProps<{
     items: MenuItem[]
-    icon: string
+    icon?: string
   }>(),
   { icon: 'ti ti-sort-descending' }
 )

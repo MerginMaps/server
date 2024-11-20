@@ -63,13 +63,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           }
         }"
       >
-        <PTabPanel :header="tabs[0].header" :pt="ptHeaderAction"></PTabPanel>
-        <slot name="map.tab" :ptHeaderAction="ptHeaderAction" />
+        <PTabPanel :header="tabs[0].header"></PTabPanel>
+        <slot name="map.tab" />
         <!-- Render other tabs with header -->
         <PTabPanel
           v-for="tab in tabs.slice(1).filter((item) => item.header)"
           :header="tab.header"
-          :pt="ptHeaderAction"
           :key="tab.route"
         ></PTabPanel>
       </PTabView>
@@ -109,15 +108,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </div>
       </app-section>
     </app-container>
-    <div slot="right">
-      <upload-panel v-if="upload" :namespace="namespace" />
-    </div>
+    <slot name="right">
+      <upload-dialog v-if="upload" :namespace="namespace" />
+    </slot>
   </div>
 </template>
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
-import { TabPanelPassThroughOptions } from 'primevue/tabpanel'
 import { defineComponent, PropType } from 'vue'
 
 import { AppContainer, AppSection } from '@/common'
@@ -131,7 +129,7 @@ import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useLayoutStore } from '@/modules/layout/store'
 import { useNotificationStore } from '@/modules/notification/store'
-import UploadPanel from '@/modules/project/components/UploadPanel.vue'
+import UploadDialog from '@/modules/project/components/UploadDialog.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
 import { useProjectStore } from '@/modules/project/store'
 import { useUserStore } from '@/modules/user/store'
@@ -144,16 +142,11 @@ interface TabItem {
 export default defineComponent({
   name: 'ProjectViewTemplate',
   components: {
-    UploadPanel,
+    UploadDialog,
     AppContainer,
     AppSection
   },
   props: {
-    /**  Show namespace (ws) label in breadcrumb of page */
-    showNamespace: {
-      type: Boolean as PropType<boolean>,
-      default: true
-    },
     namespace: String,
     projectName: String,
     showSettings: Boolean as PropType<boolean>,
@@ -217,27 +210,6 @@ export default defineComponent({
       return this.tabs.findIndex((item) =>
         this.$route.matched.some((m) => m.name === item.route)
       )
-    },
-
-    /** Rewrite of styles for TabPanels */
-    ptHeaderAction(): TabPanelPassThroughOptions {
-      return {
-        headerAction({ context }) {
-          // Custom handling of active styles for tabs
-          return {
-            style: {
-              backgroundColor: 'transparent',
-              borderBottomColor: context.active
-                ? 'var(--forest-color)'
-                : 'transparent'
-            },
-            class: [
-              'hover:border-400 pb-4',
-              { 'text-color-forest': context.active }
-            ]
-          }
-        }
-      }
     },
 
     canCloneProject() {
@@ -348,11 +320,8 @@ export default defineComponent({
         })
     },
     leaveDialog() {
-      const projPath = this.showNamespace
-        ? `${this.namespace}/${this.projectName}`
-        : this.projectName
       const props: ConfirmDialogProps = {
-        text: `Are you sure to leave the project ${projPath}?`,
+        text: `Are you sure to leave the project ${this.projectName}?`,
         description: 'You will not have access to it anymore.',
         severity: 'danger',
         confirmText: 'Yes',

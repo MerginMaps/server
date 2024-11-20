@@ -4,6 +4,7 @@
 
 import json
 import shutil
+from typing import Tuple
 import pysqlite3
 import uuid
 import math
@@ -21,7 +22,7 @@ from ..sync.utils import generate_location, generate_checksum
 from ..sync.models import Project, ProjectAccess, ProjectVersion, FileHistory
 from ..sync.files import UploadChanges, ChangesSchema
 from ..sync.workspace import GlobalWorkspace
-from .. import db
+from ..app import db
 from . import json_headers, DEFAULT_USER, test_project, test_project_dir, TMP_DIR
 
 CHUNK_SIZE = 1024
@@ -79,7 +80,7 @@ def create_project(name, workspace, user, **kwargs):
 
     p = Project(**project_params, **kwargs)
     p.updated = datetime.utcnow()
-    db.session.add(p)
+    db.session.flush()
 
     public = kwargs.get("public", False)
     pa = ProjectAccess(p, public)
@@ -213,10 +214,7 @@ def file_info(project_dir, path, chunk_size=1024):
     }
 
 
-def upload_file_to_project(project, filename, client):
-    """Add test file to project - start, upload and finish push process"""
-    file = os.path.join(test_project_dir, filename)
-    assert os.path.exists(file)
+def mock_changes_data(project, filename) -> dict:
     changes = {
         "added": [file_info(test_project_dir, filename)],
         "updated": [],
@@ -226,13 +224,33 @@ def upload_file_to_project(project, filename, client):
         "version": ProjectVersion.to_v_name(project.latest_version),
         "changes": changes,
     }
+    return data
+
+
+def push_file_start(
+    project: Project, filename: str, client, mocked_changes_data=None
+) -> dict:
+    """
+    Initiate the process of pushing a file to a project by calling /push endpoint.
+    """
+    file = os.path.join(test_project_dir, filename)
+    assert os.path.exists(file)
+    data = mocked_changes_data or mock_changes_data(project, filename)
     resp = client.post(
         f"/v1/project/push/{project.workspace.name}/{project.name}",
         data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
         headers=json_headers,
     )
+    return resp
+
+
+def upload_file_to_project(project: Project, filename: str, client) -> dict:
+    """Add test file to project - start, upload and finish push process"""
+    file = os.path.join(test_project_dir, filename)
+    data = mock_changes_data(project, filename)
+    changes = data.get("changes")
+    resp = push_file_start(project, filename, client, data)
     upload_id = resp.json["transaction"]
-    changes = data["changes"]
     file_meta = changes["added"][0]
     for chunk_id in file_meta["chunks"]:
         url = f"/v1/project/push/chunk/{upload_id}/{chunk_id}"
@@ -241,7 +259,10 @@ def upload_file_to_project(project, filename, client):
         client.post(
             url, data=f_data, headers={"Content-Type": "application/octet-stream"}
         )
-    assert client.post(f"/v1/project/push/finish/{upload_id}").status_code == 200
+    push_finish = client.post(f"/v1/project/push/finish/{upload_id}")
+    assert resp.status_code == 200
+    assert push_finish.status_code == 200
+    return push_finish
 
 
 def gpkgs_are_equal(file1, file2):
