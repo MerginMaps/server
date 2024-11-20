@@ -176,7 +176,7 @@ def test_get_paginated_projects(client):
     resp_data = json.loads(resp.data)
     assert len(resp_data.get("projects")) == 10
     assert resp_data.get("count") == 15
-    assert "foo8" in resp_data.get("projects")[9]["name"]
+    assert "foo7" in resp_data.get("projects")[9]["name"]
     assert "v0" == resp_data.get("projects")[9]["version"]
 
     resp = client.get(
@@ -199,7 +199,7 @@ def test_get_paginated_projects(client):
     )
     resp_data = json.loads(resp.data)
     assert len(resp_data.get("projects")) == 5
-    assert "foo13" in resp_data.get("projects")[-1]["name"]
+    assert "foo12" in resp_data.get("projects")[-1]["name"]
     # tests backward compatibility sort
     resp_alt = client.get(
         "/v1/project/paginated?page=2&per_page=10&order_by=namespace&descending=false"

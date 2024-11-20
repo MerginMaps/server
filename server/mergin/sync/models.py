@@ -89,6 +89,7 @@ class Project(db.Model):
         self.public = kwargs.get("public", False)
         latest_files = LatestProjectFiles(project=self)
         db.session.add(latest_files)
+        self.set_role(creator.id, ProjectRole.OWNER)
 
     @property
     def storage(self):
@@ -284,6 +285,29 @@ class Project(db.Model):
         """Project members' ids with at least required role (or higher)"""
         return [u.user_id for u in self.project_users if ProjectRole(u.role) >= role]
 
+    def bulk_roles_update(self, access: Dict) -> Set[int]:
+        """Update roles from access lists and return users ids of those affected by any action"""
+        id_diffs = []
+        for role in list(ProjectRole.__reversed__()):
+            # we might not want to modify all roles
+            if role not in access:
+                continue
+
+            for user_id in access.get(role):
+                if self.get_role(user_id) != role:
+                    self.set_role(user_id, role)
+                    id_diffs.append(user_id)
+
+            # make sure we do not have other user ids than in the list at this role
+            for user in self.project_users:
+                if ProjectRole(user.role) == role and user.user_id not in access.get(
+                    role
+                ):
+                    self.unset_role(user.user_id)
+                    id_diffs.append(user.user_id)
+
+        return set(id_diffs)
+
 
 class ProjectRole(Enum):
     """Project roles ordered by rank (do not change)"""
@@ -297,6 +321,14 @@ class ProjectRole(Enum):
         """Compare project roles"""
         members = list(ProjectRole.__members__)
         return members.index(self.name) >= members.index(other.name)
+
+    def __gt__(self, other):
+        members = list(ProjectRole.__members__)
+        return members.index(self.name) > members.index(other.name)
+
+    def __lt__(self, other):
+        members = list(ProjectRole.__members__)
+        return members.index(self.name) < members.index(other.name)
 
 
 @dataclass

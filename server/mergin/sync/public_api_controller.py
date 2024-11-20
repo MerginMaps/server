@@ -686,9 +686,11 @@ def update_project(namespace, project_name):  # noqa: E501  # pylint: disable=W0
     :rtype: ProjectDetail
     """
     project = require_project(namespace, project_name, ProjectPermissions.Update)
-    access = request.json.get("access", {})
-
-    id_diffs, error = current_app.ws_handler.update_project_members(project, access)
+    parsed_access = parse_project_access_update_request(request.json.get("access", {}))
+    # get set of modified user_ids and possible (custom) errors
+    id_diffs, error = current_app.ws_handler.update_project_members(
+        project, parsed_access
+    )
 
     if not id_diffs and error:
         # nothing was done but there are errors

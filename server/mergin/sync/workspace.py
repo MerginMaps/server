@@ -14,10 +14,8 @@ from .models import (
     ProjectAccessDetail,
     ProjectVersion,
     ProjectUser,
-    ProjectRole,
 )
 from .permissions import projects_query, ProjectPermissions
-from .public_api_controller import parse_project_access_update_request
 from ..app import db
 from ..auth.models import User
 from ..config import Configuration
@@ -277,33 +275,15 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
     ) -> Tuple[Set[int], Optional[UpdateProjectAccessError]]:
         """Update project members doing bulk access update"""
         error = None
-        parsed_access = parse_project_access_update_request(access)
-        id_diffs = []
-        for role in list(ProjectRole.__reversed__()):
-            # we might not want to modify all roles
-            if role not in parsed_access:
-                continue
-
-            for user_id in parsed_access.get(role):
-                if project.get_role(user_id) != role:
-                    project.set_role(user_id, role)
-                    id_diffs.append(user_id)
-
-            # make sure we do not have other user ids than in the list at this role
-            for user in project.project_users:
-                if ProjectRole(
-                    user.role
-                ) == role and user.user_id not in parsed_access.get(role):
-                    project.unset_role(user.user_id)
-                    id_diffs.append(user.user_id)
-
+        id_diffs = project.bulk_roles_update(access)
         db.session.add(project)
         db.session.commit()
-        if parsed_access.get("invalid_usernames") or parsed_access.get("invalid_ids"):
+
+        if access.get("invalid_usernames") or access.get("invalid_ids"):
             error = UpdateProjectAccessError(
-                parsed_access["invalid_usernames"], parsed_access["invalid_ids"]
+                access["invalid_usernames"], access["invalid_ids"]
             )
-        return set(id_diffs), error
+        return id_diffs, error
 
     @staticmethod
     def access_requests_query():
