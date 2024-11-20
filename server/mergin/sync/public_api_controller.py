@@ -12,7 +12,6 @@ from dataclasses import asdict
 from typing import Dict
 from urllib.parse import quote
 import uuid
-from time import time
 from datetime import datetime
 import psycopg2
 from blinker import signal
