@@ -14,6 +14,12 @@ const route = useRoute()
 
 const sidebarItems = computed<SideBarItemModel[]>(() => [
   {
+    title: 'Overview',
+    to: '/overview',
+    icon: 'ti ti-layout-dashboard',
+    active: route.matched.some((item) => item.name === AdminRoutes.OVERVIEW)
+  },
+  {
     title: 'Accounts',
     to: '/accounts',
     icon: 'ti ti-user-circle',

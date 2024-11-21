@@ -5,6 +5,7 @@
 import { ComponentCustomPropertyFilters } from '@mergin/lib'
 
 import { MerginComponentUuid } from './modules/form/types'
+import {Router} from "vue-router";
 
 
 declare module '*.vue' {
@@ -18,5 +19,6 @@ declare module '@vue/runtime-core' {
   interface ComponentCustomProperties {
     $filters: ComponentCustomPropertyFilters
     merginComponentUuid: MerginComponentUuid
+    $router: Router
   }
 }

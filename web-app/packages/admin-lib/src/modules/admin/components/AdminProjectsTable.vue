@@ -70,9 +70,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               :sortable="header.sortable"
             >
               <template #body="slotProps">
-                <templte v-if="slotProps.data.removed_at">{{
+                <template v-if="slotProps.data.removed_at">{{
                   slotProps.data.name
-                }}</templte>
+                }}</template>
                 <router-link
                   v-else
                   :to="{
