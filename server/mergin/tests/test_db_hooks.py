@@ -163,7 +163,7 @@ def test_remove_project(client, diff_project):
         LatestProjectFiles.query.filter_by(project_id=project_id)
         .first()
         .file_history_ids
-        is None
+        == []
     )
 
     # try to remove the deleted project
