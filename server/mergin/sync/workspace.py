@@ -164,8 +164,7 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
     ):
         if only_public:
             projects = (
-                Project.query.join(ProjectUser)
-                .filter(Project.storage_params.isnot(None))
+                Project.query.filter(Project.storage_params.isnot(None))
                 .filter(Project.removed_at.is_(None))
                 .filter(Project.public.is_(True))
             )
@@ -186,7 +185,12 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
                     if workspace.user_has_permissions(user, "read"):
                         projects = projects.filter(Project.workspace_id == workspace.id)
                     else:
-                        projects = projects.filter(ProjectUser.user_id == user.id)
+                        subquery = (
+                            db.session.query(ProjectUser.project_id)
+                            .filter(ProjectUser.user_id == user.id)
+                            .subquery()
+                        )
+                        projects = projects.filter(Project.id.in_(subquery))
 
         if name:
             projects = projects.filter(Project.name.ilike("%{}%".format(name)))

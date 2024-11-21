@@ -643,14 +643,7 @@ def get_paginated_projects(
         only_public,
     )
     result = projects.paginate(page, per_page).items
-    # for count (done in subquery) we only need ids and then to do distinct for deduplications due to joins
-    # https://docs.sqlalchemy.org/en/20/faq/sessions.html#my-query-does-not-return-the-same-number-of-objects-as-query-count-tells-me-why
-    total = (
-        projects.order_by(None)
-        .options(load_only(Project.id))
-        .distinct(Project.id)
-        .count()
-    )
+    total = projects.paginate().total
 
     # create user map id:username passed to project schema to minimize queries to db
     projects_ids = [p.id for p in result]
