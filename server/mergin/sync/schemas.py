@@ -9,16 +9,25 @@ from flask import current_app
 
 from .files import ProjectFileSchema, FileSchema
 from .permissions import ProjectPermissions
-from .models import Project, ProjectVersion, AccessRequest, FileHistory, PushChangeType
+from .models import (
+    Project,
+    ProjectVersion,
+    AccessRequest,
+    FileHistory,
+    PushChangeType,
+    ProjectRole,
+)
 from ..app import DateTimeWithZ, ma
 from ..auth.models import User
 
 
 class ProjectAccessSchema(ma.SQLAlchemyAutoSchema):
-    owners = fields.List(fields.Integer())
-    writers = fields.List(fields.Integer())
-    editors = fields.List(fields.Integer())
-    readers = fields.List(fields.Integer())
+    """Schema for legacy response with user arrays"""
+
+    owners = fields.Function(lambda obj: obj.members_by_role(ProjectRole.OWNER))
+    writers = fields.Function(lambda obj: obj.members_by_role(ProjectRole.WRITER))
+    editors = fields.Function(lambda obj: obj.members_by_role(ProjectRole.EDITOR))
+    readers = fields.Function(lambda obj: obj.members_by_role(ProjectRole.READER))
     public = fields.Boolean()
 
     @post_dump
@@ -106,7 +115,7 @@ class ProjectSchemaForVersion(ma.SQLAlchemyAutoSchema):
     uploads = fields.Method("_uploads")
     name = fields.Function(lambda obj: obj.project.name)
     namespace = fields.Function(lambda obj: obj.project.workspace.name)
-    access = fields.Method("_access")
+    access = fields.Function(lambda obj: ProjectAccessSchema().dump(obj.project))
     permissions = fields.Method("_permissions")
     disk_usage = fields.Method("_disk_usage")
     files = fields.Nested(ProjectFileSchema(), many=True)
@@ -123,9 +132,6 @@ class ProjectSchemaForVersion(ma.SQLAlchemyAutoSchema):
 
     def _uploads(self, obj):
         return [u.id for u in obj.project.uploads.all()]
-
-    def _access(self, obj):
-        return ProjectAccessSchema().dump(obj.project)
 
     def _permissions(self, obj):
         return project_user_permissions(obj.project)
@@ -156,7 +162,7 @@ class ProjectAccessRequestSchema(ma.SQLAlchemyAutoSchema):
 class ProjectSchema(ma.SQLAlchemyAutoSchema):
     id = fields.UUID()
     files = fields.Nested(ProjectFileSchema(), many=True)
-    access = fields.Nested(ProjectAccessSchema())
+    access = fields.Function(lambda obj: ProjectAccessSchema().dump(obj))
     permissions = fields.Function(project_user_permissions)
     version = fields.Function(lambda obj: ProjectVersion.to_v_name(obj.latest_version))
     namespace = fields.Function(lambda obj: obj.workspace.name)
@@ -185,7 +191,7 @@ class ProjectListSchema(ma.SQLAlchemyAutoSchema):
     id = fields.UUID()
     name = fields.Str()
     namespace = fields.Method("get_workspace_name")
-    access = fields.Nested(ProjectAccessSchema())
+    access = fields.Function(lambda obj: ProjectAccessSchema().dump(obj))
     permissions = fields.Function(project_user_permissions)
     version = fields.Function(lambda obj: ProjectVersion.to_v_name(obj.latest_version))
     updated = fields.Method("get_updated")

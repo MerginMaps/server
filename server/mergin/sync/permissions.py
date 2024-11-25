@@ -10,6 +10,7 @@ from flask_login import current_user
 from sqlalchemy import or_
 
 from .utils import is_valid_uuid
+from ..app import db
 from ..auth.models import User
 from .models import Project, Upload, ProjectRole, ProjectUser
 
@@ -62,10 +63,8 @@ class ProjectPermissions:
             if user.is_authenticated and user.is_admin and as_admin:
                 return Project.query
 
-            query = (
-                Project.query.join(ProjectUser)
-                .filter(Project.storage_params.isnot(None))
-                .filter(Project.removed_at.is_(None))
+            query = Project.query.filter(Project.storage_params.isnot(None)).filter(
+                Project.removed_at.is_(None)
             )
             if user.is_authenticated and user.active:
                 all_workspaces = current_app.ws_handler.list_user_workspaces(
@@ -76,19 +75,24 @@ class ProjectPermissions:
                     for ws in all_workspaces
                     if ws.user_has_permissions(user, "read")
                 ]
+                subquery = (
+                    db.session.query(ProjectUser.project_id)
+                    .filter(ProjectUser.user_id == user.id)
+                    .subquery()
+                )
                 if public:
                     query = query.filter(
                         or_(
                             Project.public.is_(True),
                             Project.workspace_id.in_(user_workspace_ids),
-                            ProjectUser.user_id == user.id,
+                            Project.id.in_(subquery),
                         )
                     )
                 else:
                     query = query.filter(
                         or_(
                             Project.workspace_id.in_(user_workspace_ids),
-                            ProjectUser.user_id == user.id,
+                            Project.id.in_(subquery),
                         )
                     )
             else:

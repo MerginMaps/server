@@ -232,6 +232,7 @@ paths:
       summary: Update an existing project
       description: Updates 'public' flag and access list for project
       operationId: update_project
+      deprecated: true
       requestBody:
         description: Data to be updated
         required: true

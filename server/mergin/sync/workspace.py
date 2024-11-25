@@ -5,8 +5,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Tuple, Optional, Set, List
 from flask_login import current_user
-from sqlalchemy import or_, and_, Column, literal, extract
-from sqlalchemy.orm import joinedload
+from sqlalchemy import Column, literal, extract
 
 from .errors import UpdateProjectAccessError
 from .models import (
@@ -17,7 +16,6 @@ from .models import (
     ProjectUser,
 )
 from .permissions import projects_query, ProjectPermissions
-from .public_api_controller import parse_project_access_update_request
 from ..app import db
 from ..auth.models import User
 from ..config import Configuration
@@ -166,8 +164,7 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
     ):
         if only_public:
             projects = (
-                Project.query.join(ProjectUser)
-                .filter(Project.storage_params.isnot(None))
+                Project.query.filter(Project.storage_params.isnot(None))
                 .filter(Project.removed_at.is_(None))
                 .filter(Project.public.is_(True))
             )
@@ -183,23 +180,17 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
                 if flag == "created":
                     projects = projects.filter(Project.creator_id == user.id)
                 if flag == "shared":
-                    # check global read permissions
+                    projects = projects.filter(Project.creator_id != user.id)
+                    # check global read permissions or direct project permissions
                     if workspace.user_has_permissions(user, "read"):
-                        read_access_workspace_id = workspace.id
+                        projects = projects.filter(Project.workspace_id == workspace.id)
                     else:
-                        read_access_workspace_id = None
-                    projects = projects.filter(
-                        or_(
-                            and_(
-                                ProjectUser.user_id == user.id,
-                                Project.creator_id != user.id,
-                            ),
-                            and_(
-                                Project.workspace_id == read_access_workspace_id,
-                                Project.creator_id != user.id,
-                            ),
+                        subquery = (
+                            db.session.query(ProjectUser.project_id)
+                            .filter(ProjectUser.user_id == user.id)
+                            .subquery()
                         )
-                    )
+                        projects = projects.filter(Project.id.in_(subquery))
 
         if name:
             projects = projects.filter(Project.name.ilike("%{}%".format(name)))
@@ -288,15 +279,13 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
     ) -> Tuple[Set[int], Optional[UpdateProjectAccessError]]:
         """Update project members doing bulk access update"""
         error = None
-        parsed_access = parse_project_access_update_request(access)
-        # FIXME
-        id_diffs = set()
-        # id_diffs = project.access.bulk_update(parsed_access)
+        id_diffs = project.bulk_roles_update(access)
         db.session.add(project)
         db.session.commit()
-        if parsed_access.get("invalid_usernames") or parsed_access.get("invalid_ids"):
+
+        if access.get("invalid_usernames") or access.get("invalid_ids"):
             error = UpdateProjectAccessError(
-                parsed_access["invalid_usernames"], parsed_access["invalid_ids"]
+                access["invalid_usernames"], access["invalid_ids"]
             )
         return id_diffs, error
 

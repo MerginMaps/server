@@ -26,11 +26,13 @@ from flask import (
 )
 from pygeodiff import GeoDiffLibError
 from flask_login import current_user
-from sqlalchemy import and_, desc, asc, text
+from sqlalchemy import and_, desc, asc, text, func, select
 from sqlalchemy.exc import IntegrityError
 from binaryornot.check import is_binary
 from gevent import sleep
 import base64
+
+from sqlalchemy.orm import load_only
 from werkzeug.exceptions import HTTPException
 from ..app import db
 from ..auth import auth_required
@@ -42,6 +44,8 @@ from .models import (
     PushChangeType,
     FileHistory,
     ProjectFilePath,
+    ProjectUser,
+    ProjectRole,
 )
 from .files import (
     UploadChanges,
@@ -93,14 +97,19 @@ project_version_created = signal("project_version_created")
 def parse_project_access_update_request(access: Dict) -> Dict:
     """Parse raw project access update request and filter out invalid entries.
     New access can be specified either by list of usernames or ids -> convert only to ids fur further processing.
+    Converted lists are flattened, e.g. user id is unique within all keys. Bear in mind roles keys are optional,
+    if missing, it means that we do not want to do any changes there.
+
+    Deprecated. Used only in legacy PUT /v1/project endpoint for project access replacement.
 
     :Example:
 
         >>> parse_project_access_update_request({"writersnames": ["john"], "readersnames": ["john, jack, bob.inactive"]})
-        {"writers": [1], "readers": [1,2], "invalid_usernames": ["bob.inactive"], "invalid_ids":[]}
+        {"ProjectRole.WRITER": [1], "ProjectRole.READER": [2], "invalid_usernames": ["bob.inactive"], "invalid_ids":[]}
         >>> parse_project_access_update_request({"writers": [1], "readers": [1,2,3]})
-        {"writers": [1], "readers": [1,2], "invalid_usernames": [], "invalid_ids":[3]"}
+        {"ProjectRole.WRITER": [1], "ProjectRole.READER": [2], "invalid_usernames": [], "invalid_ids":[3]"}
     """
+    resp = {}
     parsed_access = {}
     names = set(
         access.get("ownersnames", [])
@@ -137,9 +146,23 @@ def parse_project_access_update_request(access: Dict) -> Dict:
         # use legacy option
         elif key in access:
             parsed_access[key] = [id for id in access.get(key) if id in valid_ids]
-    parsed_access["invalid_usernames"] = list(names.difference(valid_usernames))
-    parsed_access["invalid_ids"] = list(ids.difference(valid_ids))
-    return parsed_access
+
+    # remove 'inheritance', prepare final map for direct assignments
+    processed_ids = []
+    for key in ("owners", "writers", "editors", "readers"):
+        # we might not want to modify all roles
+        if key not in parsed_access:
+            continue
+        role = ProjectRole(key[:-1])
+        resp[role] = []
+        for user_id in parsed_access.get(key):
+            if user_id not in processed_ids:
+                resp[role].append(user_id)
+                processed_ids.append(user_id)
+
+    resp["invalid_usernames"] = list(names.difference(valid_usernames))
+    resp["invalid_ids"] = list(ids.difference(valid_ids))
+    return resp
 
 
 @auth_required
@@ -501,15 +524,13 @@ def get_projects_by_names():  # noqa: E501
             Project.workspace_id == workspace.id, Project.name == name
         ).first()
         if result:
-            # FIXME
-            # user_ids = (
-            #     result.access.owners + result.access.writers + result.access.readers
-            # )
-            # users_map = {
-            #     u.id: u.username
-            #     for u in User.query.filter(User.id.in_(set(user_ids))).all()
-            # }
-            users_map = None
+            users_map = {
+                u.id: u.username
+                for u in User.query.select_from(ProjectUser)
+                .join(User)
+                .filter(ProjectUser.project_id == result.id)
+                .all()
+            }
             workspaces_map = {workspace.id: workspace.name}
             ctx = {"users_map": users_map, "workspaces_map": workspaces_map}
             results[project] = ProjectListSchema(context=ctx).dump(result)
@@ -535,19 +556,19 @@ def get_projects_by_uuids(uuids):  # noqa: E501
     if len(proj_ids) > 10:
         abort(400, "Too many projects")
 
-    user_ids = []
-    ws_ids = []
     projects = (
         projects_query(ProjectPermissions.Read, as_admin=False)
         .filter(Project.id.in_(proj_ids))
         .all()
     )
-    for p in projects:
-        # FIXME
-        # user_ids.extend(p.access.owners + p.access.writers + p.access.readers)
-        ws_ids.append(p.workspace_id)
+    ws_ids = set([p.workspace_id for p in projects])
+    projects_ids = [p.id for p in projects]
     users_map = {
-        u.id: u.username for u in User.query.filter(User.id.in_(set(user_ids))).all()
+        u.id: u.username
+        for u in User.query.select_from(ProjectUser)
+        .join(User)
+        .filter(ProjectUser.project_id.in_(projects_ids))
+        .all()
     }
     workspaces_map = {w.id: w.name for w in current_app.ws_handler.get_by_ids(ws_ids)}
     ctx = {"users_map": users_map, "workspaces_map": workspaces_map}
@@ -622,17 +643,16 @@ def get_paginated_projects(
         only_public,
     )
     result = projects.paginate(page, per_page).items
-    total = projects.paginate(page, per_page).total
+    total = projects.paginate().total
 
     # create user map id:username passed to project schema to minimize queries to db
-    user_ids = []
-    for p in result:
-        # FIXME
-        # user_ids.extend(p.access.owners + p.access.writers + p.access.readers)
-        pass
-
+    projects_ids = [p.id for p in result]
     users_map = {
-        u.id: u.username for u in User.query.filter(User.id.in_(set(user_ids))).all()
+        u.id: u.username
+        for u in User.query.select_from(ProjectUser)
+        .join(User)
+        .filter(ProjectUser.project_id.in_(projects_ids))
+        .all()
     }
     ws_ids = [p.workspace_id for p in projects]
     workspaces_map = {w.id: w.name for w in current_app.ws_handler.get_by_ids(ws_ids)}
@@ -659,9 +679,11 @@ def update_project(namespace, project_name):  # noqa: E501  # pylint: disable=W0
     :rtype: ProjectDetail
     """
     project = require_project(namespace, project_name, ProjectPermissions.Update)
-    access = request.json.get("access", {})
-
-    id_diffs, error = current_app.ws_handler.update_project_members(project, access)
+    parsed_access = parse_project_access_update_request(request.json.get("access", {}))
+    # get set of modified user_ids and possible (custom) errors
+    id_diffs, error = current_app.ws_handler.update_project_members(
+        project, parsed_access
+    )
 
     if not id_diffs and error:
         # nothing was done but there are errors
