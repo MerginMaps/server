@@ -6,7 +6,7 @@ import os
 from flask import current_app, abort
 from sqlalchemy import event
 
-from .. import db
+from ..app import db
 
 
 def check(session):

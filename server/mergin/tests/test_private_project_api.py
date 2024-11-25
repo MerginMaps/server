@@ -6,15 +6,19 @@ import datetime
 import json
 import os
 
-import pytest
 from flask import url_for
 
-from .. import db
+from ..app import db
 from ..sync.models import AccessRequest, Project, ProjectRole, RequestStatus
 from ..auth.models import User
 from ..config import Configuration
 from . import json_headers
-from .utils import add_user, login, create_project, create_workspace
+from .utils import (
+    add_user,
+    login,
+    create_project,
+    create_workspace,
+)
 
 
 def test_project_unsubscribe(client, diff_project):

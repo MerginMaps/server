@@ -9,14 +9,17 @@
 # Modules that had direct imports (NOT patched): ['urllib3.util, 'urllib3.util.ssl']"
 # which comes from using requests (its deps) lib in webhooks
 
-import os
-from random import randint
+from mergin.config import Configuration as MainConfig
 
-if not os.getenv("NO_MONKEY_PATCH", False):
+if MainConfig.GEVENT_WORKER:
     import gevent.monkey
+    import psycogreen.gevent
 
-    gevent.monkey.patch_all(subprocess=True)
+    gevent.monkey.patch_all()
+    psycogreen.gevent.patch_psycopg()
 
+
+from random import randint
 from celery.schedules import crontab
 from mergin.app import create_app
 from mergin.auth.tasks import anonymize_removed_users

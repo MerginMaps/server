@@ -5,9 +5,8 @@
 from flask import current_app
 from marshmallow import fields
 
-from .. import ma
 from .models import User, UserProfile
-from ..app import DateTimeWithZ
+from ..app import DateTimeWithZ, ma
 
 
 class UserProfileSchema(ma.SQLAlchemyAutoSchema):
