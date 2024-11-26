@@ -504,13 +504,12 @@ def get_user_info():
 @auth_required(permissions=["admin"])
 def get_server_usage():
     data = {
-        "active_monthly_contributors":
-            [
-                current_app.ws_handler.monthly_contributors_count(),
-                current_app.ws_handler.monthly_contributors_count(month_offset=1),
-                current_app.ws_handler.monthly_contributors_count(month_offset=2),
-                current_app.ws_handler.monthly_contributors_count(month_offset=3),
-            ],
+        "active_monthly_contributors": [
+            current_app.ws_handler.monthly_contributors_count(),
+            current_app.ws_handler.monthly_contributors_count(month_offset=1),
+            current_app.ws_handler.monthly_contributors_count(month_offset=2),
+            current_app.ws_handler.monthly_contributors_count(month_offset=3),
+        ],
         "projects": Project.query.count(),
         "storage": files_size(),
         "users": User.query.count(),
