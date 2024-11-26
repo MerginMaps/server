@@ -9,12 +9,12 @@ import re
 import secrets
 from threading import Timer
 from uuid import UUID
-from connexion import NoContent
 from shapely import wkb
 from shapely.errors import ShapelyError
 from gevent import sleep
 from flask import Request
 from typing import Optional
+from sqlalchemy import text
 
 
 def generate_checksum(file, chunk_size=4096):
@@ -304,3 +304,36 @@ def split_project_path(project_path):
 def get_device_id(request: Request) -> Optional[str]:
     """Get device uuid from http header X-Device-Id"""
     return request.headers.get("X-Device-Id")
+
+
+def files_size():
+    """Get total size of all files"""
+    from mergin.app import db
+
+    files_size = text(
+        f"""
+        WITH partials AS (
+            WITH latest_files AS (
+                SELECT distinct unnest(file_history_ids) AS file_id
+                FROM latest_project_files pf
+            )
+            SELECT
+                SUM(size)
+            FROM file_history
+            WHERE change = 'create'::push_change_type OR change = 'update'::push_change_type
+            UNION
+            SELECT
+                SUM(COALESCE((diff ->> 'size')::bigint, 0))
+            FROM file_history
+            WHERE change = 'update_diff'::push_change_type
+            UNION
+            SELECT
+                SUM(size)
+            FROM latest_files lf
+            LEFT OUTER JOIN file_history fh ON fh.id = lf.file_id
+            WHERE fh.change = 'update_diff'::push_change_type
+        )
+        SELECT pg_size_pretty(SUM(sum)) FROM partials;
+        """
+    )
+    return db.session.execute(files_size).scalar()

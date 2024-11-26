@@ -255,7 +255,7 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
         return 1
 
     @staticmethod
-    def monthly_contributors_count():
+    def monthly_contributors_count(month_offset=0):
         today = datetime.now(timezone.utc)
         year = today.year
         month = today.month
@@ -263,7 +263,7 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
             db.session.query(ProjectVersion.author_id)
             .filter(
                 extract("year", ProjectVersion.created) == year,
-                extract("month", ProjectVersion.created) == month,
+                extract("month", ProjectVersion.created) == month - month_offset,
             )
             .group_by(ProjectVersion.author_id)
             .count()

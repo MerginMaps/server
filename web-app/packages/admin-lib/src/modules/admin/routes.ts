@@ -7,6 +7,7 @@ import { RouteRecord } from 'vue-router'
 export enum AdminRoutes {
   ACCOUNTS = 'accounts',
   ACCOUNT = 'account',
+  OVERVIEW = 'overview',
   PROJECTS = 'projects',
   PROJECT = 'project',
   SETTINGS = 'settings',
