@@ -7,7 +7,7 @@ import datetime
 from typing import List, Optional
 import bcrypt
 from flask import current_app, request
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, text
 
 from ..app import db
 from ..sync.models import ProjectUser
@@ -178,6 +178,51 @@ class User(db.Model):
         self.profile.first_name = None
         self.profile.last_name = None
         db.session.commit()
+
+    @classmethod
+    def get_by_login(cls, username: str) -> Optional[User]:
+        """Find user by its username or email"""
+        username = username.strip().lower()
+        return cls.query.filter(
+            or_(
+                func.lower(User.email) == username,
+                func.lower(User.username) == username,
+            )
+        ).first()
+
+    @classmethod
+    def generate_username(cls, email: str) -> Optional[str]:
+        """Autogenerate username from email"""
+        if not "@" in email:
+            return
+        username = email.split("@")[0].strip().lower()
+        # check if we already do not have existing usernames
+        suffix = db.session.execute(
+            text(
+                """
+                SELECT
+                    replace(username, :username, '0')::int AS suffix
+                FROM "user"
+                WHERE
+                    username = :username OR
+                    username SIMILAR TO :username'\d+'
+                ORDER BY replace(username, :username, '0')::int DESC
+                LIMIT 1;
+                """
+            ),
+            {"username": username},
+        ).scalar()
+        return username if suffix is None else username + str(int(suffix) + 1)
+
+    @classmethod
+    def create(
+        cls, username: str, email: str, password: str, notifications: bool = True
+    ) -> User:
+        user = cls(username.strip(), email.strip(), password, False)
+        user.profile = UserProfile(receive_notifications=notifications)
+        db.session.add(user)
+        db.session.commit()
+        return user
 
 
 class UserProfile(db.Model):

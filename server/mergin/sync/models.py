@@ -28,6 +28,7 @@ from .files import (
     ChangesSchema,
     ProjectFile,
 )
+from .interfaces import WorkspaceRole
 from .storages.disk import move_to_tmp
 from ..app import db
 from .storages import DiskStorage
@@ -281,6 +282,18 @@ class Project(db.Model):
         if member:
             self.project_users.remove(member)
 
+    def get_member(self, user_id: int) -> Optional[ProjectMember]:
+        """Get project member"""
+        member = self._member(user_id)
+        if member:
+            return ProjectMember(
+                id=user_id,
+                username=member.user.username,
+                email=member.user.email,
+                project_role=ProjectRole(member.role),
+                workspace_role=self.workspace.get_user_role(member.user),
+            )
+
     def members_by_role(self, role: ProjectRole) -> List[int]:
         """Project members' ids with at least required role (or higher)"""
         return [u.user_id for u in self.project_users if ProjectRole(u.role) >= role]
@@ -329,6 +342,15 @@ class ProjectRole(Enum):
     def __lt__(self, other):
         members = list(ProjectRole.__members__)
         return members.index(self.name) < members.index(other.name)
+
+
+@dataclass
+class ProjectMember:
+    id: int
+    email: str
+    username: str
+    workspace_role: WorkspaceRole
+    project_role: Optional[ProjectRole]
 
 
 @dataclass

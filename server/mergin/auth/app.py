@@ -12,7 +12,6 @@ from sqlalchemy import func
 from .commands import add_commands
 from .config import Configuration
 from .models import User, UserProfile
-from ..app import db
 
 # signal for other versions to listen to
 user_account_closed = signal("user_account_closed")
@@ -97,12 +96,14 @@ def confirm_token(token, expiration=3600 * 24 * 3):
     return email
 
 
-def send_confirmation_email(app, user, url, template, header):
+def send_confirmation_email(app, user, url, template, header, **kwargs):
     from ..celery import send_email_async
 
     token = generate_confirmation_token(app, user.email)
     confirm_url = f"{url}/{token}"
-    html = render_template(template, subject=header, confirm_url=confirm_url, user=user)
+    html = render_template(
+        template, subject=header, confirm_url=confirm_url, user=user, **kwargs
+    )
     email_data = {
         "subject": header,
         "html": html,
@@ -110,11 +111,3 @@ def send_confirmation_email(app, user, url, template, header):
         "sender": app.config["MAIL_DEFAULT_SENDER"],
     }
     send_email_async.delay(**email_data)
-
-
-def do_register_user(username, email, password):
-    user = User(username.strip(), email.strip(), password, False)
-    user.profile = UserProfile()
-    db.session.add(user)
-    db.session.commit()
-    return user
