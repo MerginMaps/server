@@ -121,12 +121,6 @@ test_user_reg_data = [
     ("verylonglonglonglonglonglonglongemail@example.com", "#pwd1234", 201),
     ("XmerginX", " mergin@mergin.com  ", "#pwd123", 400),  # invalid password
     ("mergin4", "invalid\360@email.com", "#pwd1234", 400),  # non-ascii character in the email
-    (
-        "mergin4",
-        "invalid\360@email.com",
-        "#pwd1234",
-        400,
-    ),  # non-ascii character in the email
 ]
 
 
