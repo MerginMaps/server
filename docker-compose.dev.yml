@@ -6,18 +6,36 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
+    env_file:
+      - .prod.env
+      - .dev.env
   celery-beat:
     image: celery-beat
     build:
       context: ./server
       dockerfile: Dockerfile
+    env_file:
+      - .prod.env
+      - .dev.env
   celery-worker:
     image: celery-worker
     build:
       context: ./server
       dockerfile: Dockerfile
+    env_file:
+      - .prod.env
+      - .dev.env
   web:
     image: merginmaps-frontend
     build:
       context: ./web-app
       dockerfile: Dockerfile
+  maildev:
+    image: maildev/maildev
+    container_name: merginmaps-maildev
+    restart: always
+    ports:
+      - 1080:1080
+      - 1025:1025
+    networks:
+      - merginmaps
