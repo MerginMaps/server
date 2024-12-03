@@ -23,6 +23,7 @@ def test_send_statistics(app, caplog):
     with patch("requests.post") as mock:
         mock.return_value = Response(True, {})
         app.config["COLLECT_STATISTICS"] = False
+        app.config["CONTACT_EMAIL"] = "test@example.com"
         task = send_statistics.s().apply()
         # nothing was done
         assert task.status == "SUCCESS"
@@ -41,6 +42,7 @@ def test_send_statistics(app, caplog):
             "licence",
             "service_uuid",
             "url",
+            "contact_email",
             "projects_count",
             "users_count",
             "workspaces_count",
@@ -52,6 +54,7 @@ def test_send_statistics(app, caplog):
         assert data["service_uuid"] == app.config["SERVICE_ID"]
         assert data["licence"] == "ce"
         assert data["monthly_contributors"] == 1
+        assert data["contact_email"] == "test@example.com"
 
         # repeated action does not do anything
         task = send_statistics.s().apply()

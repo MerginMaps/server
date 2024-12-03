@@ -29,6 +29,7 @@ from typing import List, Dict, Optional
 
 from .sync.utils import get_blacklisted_dirs, get_blacklisted_files
 from .config import Configuration
+from .commands import add_commands
 
 convention = {
     "ix": "ix_%(column_0_label)s",
@@ -146,6 +147,8 @@ def create_simple_app() -> Flask:
         db.create_all(bind=None)
         db.session.commit()
         print("Done. Tables created.")
+
+    add_commands(flask_app)
 
     return flask_app
 

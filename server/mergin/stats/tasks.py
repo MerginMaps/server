@@ -58,6 +58,7 @@ def send_statistics():
     data = {
         "service_uuid": str(info.service_id),
         "url": current_app.config["MERGIN_BASE_URL"],
+        "contact_email": current_app.config["CONTACT_EMAIL"],
         "licence": current_app.config["SERVER_TYPE"],
         "projects_count": Project.query.count(),
         "users_count": User.query.count(),

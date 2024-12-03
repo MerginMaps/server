@@ -46,9 +46,9 @@ class Configuration(object):
     MAIL_USE_TLS = config("MAIL_USE_TLS", default=True, cast=bool)
     MAIL_USE_SSL = config("MAIL_USE_SSL", default=False, cast=bool)
     MAIL_DEFAULT_SENDER = config("MAIL_DEFAULT_SENDER")
-    MAIL_BCC = config("MAIL_BCC")
-    MAIL_USERNAME = config("MAIL_USERNAME")
-    MAIL_PASSWORD = config("MAIL_PASSWORD")
+    MAIL_BCC = config("MAIL_BCC", default=None)
+    MAIL_USERNAME = config("MAIL_USERNAME", default=None)
+    MAIL_PASSWORD = config("MAIL_PASSWORD", default=None)
     MAIL_DEBUG = config("MAIL_SUPPRESS_SEND", default=False, cast=bool)
     MAIL_SUPPRESS_SEND = config("MAIL_SUPPRESS_SEND", default=True, cast=bool)
 
