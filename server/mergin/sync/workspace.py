@@ -19,7 +19,7 @@ from .permissions import projects_query, ProjectPermissions
 from ..app import db
 from ..auth.models import User
 from ..config import Configuration
-from .interfaces import AbstractWorkspace, WorkspaceHandler
+from .interfaces import AbstractWorkspace, WorkspaceHandler, WorkspaceRole
 
 
 class GlobalWorkspace(AbstractWorkspace):
@@ -72,33 +72,33 @@ class GlobalWorkspace(AbstractWorkspace):
     def user_has_permissions(self, user, permissions):
         role = self.get_user_role(user)
         # mergin super-user has all permissions
-        if role == "owner":
+        if role is WorkspaceRole.OWNER:
             return True
 
         if permissions == "read":
-            return role in ["admin", "writer", "editor", "reader"]
+            return role >= WorkspaceRole.READER
         elif permissions == "edit":
-            return role in ["admin", "writer", "editor"]
+            return role >= WorkspaceRole.EDITOR
         elif permissions == "write":
-            return role in ["admin", "writer"]
+            return role >= WorkspaceRole.WRITER
         elif permissions == "admin":
-            return role == "admin"
+            return role >= WorkspaceRole.ADMIN
         else:
             return False
 
     def user_is_member(self, user):
         return True
 
-    def get_user_role(self, user):
+    def get_user_role(self, user) -> WorkspaceRole:
         if user.is_admin:
-            return "owner"
+            return WorkspaceRole.OWNER
         if Configuration.GLOBAL_ADMIN:
-            return "admin"
+            return WorkspaceRole.ADMIN
         if Configuration.GLOBAL_WRITE:
-            return "writer"
+            return WorkspaceRole.WRITER
         if Configuration.GLOBAL_READ:
-            return "reader"
-        return "guest"
+            return WorkspaceRole.READER
+        return WorkspaceRole.GUEST
 
     def project_count(self):
         from .models import Project
@@ -109,6 +109,17 @@ class GlobalWorkspace(AbstractWorkspace):
             .filter(Project.removed_at.is_(None))
             .count()
         )
+
+    def members(self):
+        return [
+            (user, self.get_user_role(user))
+            for user in User.query.filter(User.active.is_(True))
+            .order_by(User.email)
+            .all()
+        ]
+
+    def can_add_users(self, user: User) -> bool:
+        return user.is_admin
 
 
 class GlobalWorkspaceHandler(WorkspaceHandler):
@@ -317,7 +328,7 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
             member = ProjectAccessDetail(
                 id=dm.id,
                 username=dm.username,
-                role=ws.get_user_role(dm),
+                role=ws.get_user_role(dm).value,
                 name=dm.profile.name(),
                 email=dm.email,
                 project_permission=project_role and project_role.value,

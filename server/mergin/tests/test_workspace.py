@@ -8,6 +8,7 @@ from sqlalchemy import null
 
 from ..app import db
 from ..config import Configuration
+from ..sync.interfaces import WorkspaceRole
 from ..sync.models import FileHistory, ProjectVersion, PushChangeType, ProjectFilePath
 from ..sync.workspace import GlobalWorkspaceHandler
 from .utils import add_user, login, create_project
@@ -25,7 +26,7 @@ def test_workspace_implementation(client):
     Configuration.GLOBAL_READ = False
     Configuration.GLOBAL_WRITE = False
     Configuration.GLOBAL_ADMIN = False
-    assert ws.get_user_role(user) == "guest"
+    assert ws.get_user_role(user) == WorkspaceRole.GUEST
     assert not ws.user_has_permissions(user, "owner")
     assert not ws.user_has_permissions(user, "read")
     assert not ws.user_has_permissions(user, "write")

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.sql.operators import isnot
 
 from ..celery import celery
-from .app import db
+from ..app import db
 from .models import User
 from .config import Configuration
 
