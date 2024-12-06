@@ -216,6 +216,7 @@ def add_project(namespace):  # noqa: E501
         request.json["storage_params"] = {
             "type": "local",
             "location": generate_location(),
+            "public": request.json.get("public", False),
         }
 
         p = Project(
