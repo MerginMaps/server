@@ -222,7 +222,6 @@ def add_project(namespace):  # noqa: E501
             **request.json,
             creator=current_user,
             workspace=workspace,
-            public=request.json.get("public", False),
         )
         p.updated = datetime.utcnow()
 
