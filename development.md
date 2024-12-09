@@ -77,7 +77,13 @@ docker exec -it merginmaps-server flask user create admin topsecret --is-admin -
 To check if application is running, you can use following mand to verify you installation:
 
 ```shell
-docker exec -it merginmaps-server flask server check --email your@email.com
+docker exec -it merginmaps-server flask server check
+```
+
+To check if emails are sending correctly, you can use following mand to verify you installation:
+
+```shell
+docker exec -it merginmaps-server flask server send-check-email --email  admin@example.com
 ```
 
 In docker-compose.dev.yml is started maildev/maildev image that can be used to test emails (see [https://github.com/maildev/maildev/](https://github.com/maildev/maildev/)). In localhost:1080 you can see the emails sent by the application in web interface.
