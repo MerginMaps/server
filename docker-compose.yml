@@ -42,6 +42,8 @@ services:
     restart: always
     env_file:
       - .prod.env
+    environment:
+      - GEVENT_WORKER=0
     volumes:
       - ./server/entrypoint.sh:/app/entrypoint.sh
     depends_on:
@@ -57,6 +59,8 @@ services:
     user: 901:999
     env_file:
       - .prod.env
+    environment:
+      - GEVENT_WORKER=0
     volumes:
       - ./projects:/data
       - ./server/entrypoint.sh:/app/entrypoint.sh
