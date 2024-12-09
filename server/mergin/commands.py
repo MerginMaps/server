@@ -38,7 +38,7 @@ def add_commands(app: Flask):
             return
         email_data = {
             "subject": "Mergin Maps server check",
-            "html": "Awesome, your email congiruration of Mergin Maps server is working.",
+            "html": "Awesome, your email configuration of Mergin Maps server is working.",
             "recipients": [email],
             "sender": app.config["MAIL_DEFAULT_SENDER"],
         }
