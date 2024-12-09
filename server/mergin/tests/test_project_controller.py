@@ -449,6 +449,26 @@ def test_add_project(client, app, data, expected):
         )
 
 
+project_data = [
+    (
+        {"name": "project1", "public": True},
+        True,
+    ),  # project accessibility follows the request argument
+    ({"name": "project1"}, False),  # by default the project is private
+]
+
+
+@pytest.mark.parametrize("add_project_data,public", project_data)
+def test_add_public_project(client, add_project_data, public):
+    resp = client.post(
+        "/v1/project/{}".format(test_workspace_name),
+        data=json.dumps(add_project_data),
+        headers=json_headers,
+    )
+    p = Project.query.filter_by(name=add_project_data["name"]).first()
+    assert p.public == public
+
+
 def test_versioning(client):
     # tests if blank project has version set up to v0
     resp = client.post(
