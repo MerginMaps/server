@@ -15,11 +15,49 @@ def add_commands(app: Flask):
         pass
 
     @server.command()
-    @click.option("--email", required=False)
-    def check(email: str):  # pylint: disable=W0612
+    @click.option("--email", required=True)
+    def send_check_email(email: str):  # pylint: disable=W0612
+        """Send check email to specified email address."""
+        from .celery import send_email_async
+        if app.config["MAIL_SUPPRESS_SEND"]:
+            click.echo(
+                click.style(
+                    "Sending emails is disabled. Please set MAIL_SUPPRESS_SEND=False to enable sending emails.",
+                    fg="red",
+                )
+            )
+            return
+        if not app.config["MAIL_DEFAULT_SENDER"]:
+            click.echo(
+                click.style(
+                    "No default sender set. Please set MAIL_DEFAULT_SENDER environment variable",
+                    fg="red",
+                )
+            )
+            return
+        email_data = {
+            "subject": "Mergin Maps server check",
+            "html": "Awesome, your email congiruration of Mergin Maps server is working.",
+            "recipients": [email],
+            "sender": app.config["MAIL_DEFAULT_SENDER"],
+        }
+        click.echo(
+            f"Sending email to specified email address {email}. Check your inbox."
+        )
+        try:
+            send_email_async.delay(**email_data)
+        except Exception as e:
+            click.echo(
+                click.style(
+                    f"Error sending email: {e}",
+                    fg="red",
+                )
+            )
+
+    @server.command()
+    def check():  # pylint: disable=W0612
         """Check server configuration. Define email to send testing email."""
         from celery import current_app
-        from mergin.celery import send_email
 
         click.echo(f"Mergin Maps server version: {app.config['VERSION']}")
 
@@ -54,31 +92,3 @@ def add_commands(app: Flask):
             )
         else:
             click.echo("Celery running properly")
-
-        if email:
-            if not app.config["MAIL_DEFAULT_SENDER"]:
-                click.echo(
-                    click.style(
-                        "No default sender set. Please set MAIL_DEFAULT_SENDER environment variable",
-                        fg="red",
-                    )
-                )
-                return
-            email_data = {
-                "subject": "Mergin Maps server check",
-                "html": "Awesome, your email congiruration of Mergin Maps server is working.",
-                "recipients": [email],
-                "sender": app.config["MAIL_DEFAULT_SENDER"],
-            }
-            click.echo(
-                f"Sending email to specified email address {email}. Check your inbox."
-            )
-            try:
-                send_email(**email_data)
-            except Exception as e:
-                click.echo(
-                    click.style(
-                        f"Error sending email: {e}",
-                        fg="red",
-                    )
-                )

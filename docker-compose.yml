@@ -44,6 +44,7 @@ services:
       - .prod.env
     environment:
       - GEVENT_WORKER=0
+      - NO_MONKEY_PATCH=1
     volumes:
       - ./server/entrypoint.sh:/app/entrypoint.sh
     depends_on:
@@ -61,6 +62,7 @@ services:
       - .prod.env
     environment:
       - GEVENT_WORKER=0
+      - NO_MONKEY_PATCH=1
     volumes:
       - ./projects:/data
       - ./server/entrypoint.sh:/app/entrypoint.sh
