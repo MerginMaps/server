@@ -19,6 +19,7 @@ def add_commands(app: Flask):
     def send_check_email(email: str):  # pylint: disable=W0612
         """Send check email to specified email address."""
         from .celery import send_email_async
+
         if app.config["MAIL_SUPPRESS_SEND"]:
             click.echo(
                 click.style(
