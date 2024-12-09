@@ -97,6 +97,10 @@ def confirm_token(token, expiration=3600 * 24 * 3):
 
 
 def send_confirmation_email(app, user, url, template, header, **kwargs):
+    """
+    Send confirmation email from selected template with customizable email subject and confirmation URL.
+    Optional kwargs are passed to render_template method if needed for particular template.
+    """
     from ..celery import send_email_async
 
     token = generate_confirmation_token(app, user.email)

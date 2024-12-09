@@ -337,7 +337,8 @@ class UserWorkspaceSchema(ma.SQLAlchemyAutoSchema):
     def _user_role(self, obj):
         if not self.context.get("user"):
             return
-        return obj.get_user_role(self.context.get("user")).value
+        role = obj.get_user_role(self.context.get("user"))
+        return role and role.value
 
 
 class ProjectInvitationAccessSchema(Schema):

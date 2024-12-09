@@ -180,13 +180,13 @@ class User(db.Model):
         db.session.commit()
 
     @classmethod
-    def get_by_login(cls, username: str) -> Optional[User]:
-        """Find user by its username or email"""
-        username = username.strip().lower()
+    def get_by_login(cls, login: str) -> Optional[User]:
+        """Find user by its login which can be either username or email"""
+        login = login.strip().lower()
         return cls.query.filter(
             or_(
-                func.lower(User.email) == username,
-                func.lower(User.username) == username,
+                func.lower(User.email) == login,
+                func.lower(User.username) == login,
             )
         ).first()
 

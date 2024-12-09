@@ -206,7 +206,7 @@ paths:
       tags:
         - project
       summary: Remove project collaborator
-      operationId: remove_project_member
+      operationId: remove_project_collaborator
       parameters:
         - $ref: "#/components/parameters/ProjectId"
       responses:

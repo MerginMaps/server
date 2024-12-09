@@ -100,8 +100,8 @@ def add_project_member(id):
         abort(409, "User is already a project member")
 
     project.set_role(user.id, ProjectRole(request.json["role"]))
-    project_access_granted.send(project, user_id=user.id)
     db.session.commit()
+    project_access_granted.send(project, user_id=user.id)
     data = ProjectMemberSchema().dump(project.get_member(user.id))
     return data, 201
 
@@ -121,7 +121,7 @@ def update_project_member(id, user_id):
 
 
 @auth_required
-def remove_project_member(id, user_id):
+def remove_project_collaborator(id, user_id):
     """Remove project collaborator"""
     project = require_project_by_uuid(id, ProjectPermissions.Update)
     if not project.get_role(user_id):
