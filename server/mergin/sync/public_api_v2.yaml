@@ -105,7 +105,7 @@ paths:
       tags:
         - project
       summary: Get project collaborators
-      operationId: get_project_members
+      operationId: get_project_collaborators
       responses:
         "200":
           description: Project members
@@ -128,7 +128,7 @@ paths:
       tags:
         - project
       summary: Add project collaborator
-      operationId: add_project_member
+      operationId: add_project_collaborator
       requestBody:
         required: true
         content:
@@ -174,7 +174,7 @@ paths:
       tags:
         - project
       summary: Update project collaborator
-      operationId: update_project_member
+      operationId: update_project_collaborator
       requestBody:
         required: true
         content:

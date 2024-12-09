@@ -67,7 +67,7 @@ def update_project(id):
 
 
 @auth_required
-def get_project_members(id):
+def get_project_collaborators(id):
     """Get project collaborators, with both direct role and inherited role from workspace"""
     project = require_project_by_uuid(id, ProjectPermissions.Update)
     project_members = []
@@ -89,7 +89,7 @@ def get_project_members(id):
 
 
 @auth_required
-def add_project_member(id):
+def add_project_collaborator(id):
     """Add project collaborator"""
     project = require_project_by_uuid(id, ProjectPermissions.Update)
     user = User.get_by_login(request.json["username"])
@@ -107,7 +107,7 @@ def add_project_member(id):
 
 
 @auth_required
-def update_project_member(id, user_id):
+def update_project_collaborator(id, user_id):
     """Update project collaborator"""
     project = require_project_by_uuid(id, ProjectPermissions.Update)
     user = User.query.filter_by(id=user_id, active=True).first_or_404()
