@@ -135,10 +135,10 @@ def accept_project_access_request(request_id):
     project = access_request.project
     project_role = ProjectPermissions.get_user_project_role(project, current_user)
     if project_role == ProjectRole.OWNER:
+        access_request.accept(permission)
         project_access_granted.send(
             access_request.project, user_id=access_request.requested_by
         )
-        access_request.accept(permission)
         return "", 200
     abort(403, "You don't have permissions to accept project access request")
 

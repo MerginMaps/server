@@ -34,6 +34,8 @@ import base64
 
 from sqlalchemy.orm import load_only
 from werkzeug.exceptions import HTTPException
+
+from .interfaces import WorkspaceRole
 from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
@@ -220,7 +222,6 @@ def add_project(namespace):  # noqa: E501
             **request.json,
             creator=current_user,
             workspace=workspace,
-            public=request.json.get("public", False),
         )
         p.updated = datetime.utcnow()
 
@@ -1427,7 +1428,7 @@ def get_workspace_by_id(id):
 
     if not (
         ws.user_has_permissions(current_user, "read")
-        or ws.get_user_role(current_user) == "guest"
+        or ws.get_user_role(current_user) == WorkspaceRole.GUEST
     ):
         abort(403, f"You do not have permissions to workspace")
 

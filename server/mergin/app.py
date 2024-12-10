@@ -177,7 +177,6 @@ def create_app(public_keys: List[str] = None) -> Flask:
         arguments={"title": "Mergin"},
         options={"swagger_ui": Configuration.SWAGGER_UI},
         validate_responses=True,
-        pythonic_params=True,
     )
     app.add_api(
         "sync/private_api.yaml",

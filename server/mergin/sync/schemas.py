@@ -16,7 +16,9 @@ from .models import (
     FileHistory,
     PushChangeType,
     ProjectRole,
+    ProjectUser,
 )
+from .workspace import WorkspaceRole
 from ..app import DateTimeWithZ, ma
 from ..auth.models import User
 
@@ -335,7 +337,8 @@ class UserWorkspaceSchema(ma.SQLAlchemyAutoSchema):
     def _user_role(self, obj):
         if not self.context.get("user"):
             return
-        return obj.get_user_role(self.context.get("user"))
+        role = obj.get_user_role(self.context.get("user"))
+        return role and role.value
 
 
 class ProjectInvitationAccessSchema(Schema):
@@ -393,3 +396,11 @@ class ProjectVersionListSchema(ma.SQLAlchemyAutoSchema):
             "user_agent",
         ]
         load_instance = True
+
+
+class ProjectMemberSchema(Schema):
+    id = fields.Integer()
+    username = fields.String()
+    email = fields.Email()
+    project_role = fields.Enum(enum=ProjectRole, by_value=True)
+    workspace_role = fields.Enum(enum=WorkspaceRole, by_value=True)
