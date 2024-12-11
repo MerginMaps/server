@@ -108,7 +108,7 @@ class Project(db.Model):
         return project_workspace
 
     def cache_latest_files(self) -> None:
-        """Get project files from changes (FileHistory) and saved them for later use"""
+        """Get project files from changes (FileHistory) and save them for later use."""
         if self.latest_version is None:
             return
 
@@ -116,7 +116,7 @@ class Project(db.Model):
             WITH latest_changes AS (
                 SELECT
                     fp.id,
-                    fp.project_id,
+                    pv.project_id,
                     max(pv.name) AS version
                 FROM
                     project_version pv
@@ -126,14 +126,13 @@ class Project(db.Model):
                     pv.project_id = :project_id
                     AND pv.name <= :latest_version
                 GROUP BY
-                    fp.id, fp.project_id
+                    fp.id, pv.project_id
             ), aggregates AS (
                 SELECT
                     project_id,
-                    array_agg(fh.id) AS files_ids
+                    COALESCE(array_agg(fh.id) FILTER (WHERE fh.change != 'delete'), ARRAY[]::INTEGER[]) AS files_ids
                 FROM latest_changes ch
                 LEFT OUTER JOIN file_history fh ON (fh.file_path_id = ch.id AND fh.project_version_name = ch.version)
-                WHERE fh.change != 'delete'
                 GROUP BY project_id
             )
             UPDATE latest_project_files pf

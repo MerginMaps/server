@@ -313,6 +313,28 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFoundResp"
+  /app/admin/usage:
+    get:
+      tags:
+        - user
+        - admin
+        - project
+      summary: Get server usage statistics
+      description: List server storage, projects, active contributors for admin
+      operationId: mergin.auth.controller.get_server_usage
+      responses:
+        "200":
+          description: Server usage details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerUsage"
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /app/auth/login:
     post:
       summary: Login
@@ -898,3 +920,28 @@ components:
         - reader
         - guest
       example: reader
+    ServerUsage:
+      type: object
+      properties:
+        active_monthly_contributors:
+          type: array
+          description: count of users who made a project change last months
+          items:
+            type: integer
+            example: 2
+        projects:
+          type: integer
+          description: total number of projects
+          example: 12
+        storage:
+          type: string
+          description: projest files size in bytes
+          example: 1024 kB
+        users:
+          type: integer
+          description: count of registered accounts
+          example: 6
+        workspaces:
+          type: integer
+          description: number of workspaces on the server
+          example: 3

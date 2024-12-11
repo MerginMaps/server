@@ -12,7 +12,8 @@ import {
   ProjectFilesView,
   ProjectSettingsView,
   ProjectVersionView,
-  ProjectVersionsView
+  ProjectVersionsView,
+  OverviewView
 } from '@mergin/admin-lib'
 import {
   NotFoundView,
@@ -48,7 +49,7 @@ export const createRouter = (pinia: Pinia) => {
       {
         path: '/',
         name: 'admin',
-        redirect: '/accounts'
+        redirect: '/overview'
       },
       {
         path: '/accounts',
@@ -140,6 +141,16 @@ export const createRouter = (pinia: Pinia) => {
         name: AdminRoutes.SETTINGS,
         components: {
           default: SettingsView,
+          sidebar: Sidebar,
+          header: AppHeader
+        },
+        props: true
+      },
+      {
+        path: '/overview',
+        name: AdminRoutes.OVERVIEW,
+        components: {
+          default: OverviewView,
           sidebar: Sidebar,
           header: AppHeader
         },

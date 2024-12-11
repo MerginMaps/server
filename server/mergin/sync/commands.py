@@ -13,6 +13,7 @@ from .files import UploadChanges
 from ..app import db
 from .models import Project, ProjectVersion
 from .utils import split_project_path
+from ..auth.models import User
 
 
 def add_commands(app: Flask):
@@ -24,10 +25,21 @@ def add_commands(app: Flask):
     @project.command()
     @click.argument("name")
     @click.argument("namespace")
-    @click.argument("user")
-    def create(name, namespace, user):  # pylint: disable=W0612
+    @click.argument("username")
+    def create(name, namespace, username):  # pylint: disable=W0612
         """Create blank project"""
         workspace = current_app.ws_handler.get_by_name(namespace)
+        if not workspace:
+            print("ERROR: Workspace not found")
+            return
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            print("ERROR: User not found")
+            return
+        p = Project.query.filter_by(name=name, workspace_id=workspace.id).first()
+        if p:
+            print("ERROR: Project name already exists")
+            return
         project_params = dict(
             creator=user,
             name=name,

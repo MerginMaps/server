@@ -2486,6 +2486,24 @@ def test_delete_diff_file(client):
     assert fh.path == "base.gpkg" and fh.diff is None
 
 
+def test_cache_files_ids(client):
+    """Test caching latest project files when it is None"""
+    user = User.query.filter_by(username="mergin").first()
+    test_workspace = create_workspace()
+    project = create_project("no_file_history", test_workspace, user)
+    db.session.commit()
+    assert project.latest_project_files.file_history_ids is not None
+    project.latest_project_files.file_history_ids = None
+    db.session.commit()
+    assert project.latest_project_files.file_history_ids is None
+    # uploading to project caches
+    filename = "test.txt"
+    upload_file_to_project(project, filename, client)
+    fp = ProjectFilePath.query.filter_by(project_id=project.id, path=filename).first()
+    fh = FileHistory.query.filter_by(file_path_id=fp.id).first()
+    assert project.latest_project_files.file_history_ids == [fh.id]
+
+
 def test_signals(client):
     workspace = create_workspace()
     user = User.query.filter(User.username == "mergin").first()

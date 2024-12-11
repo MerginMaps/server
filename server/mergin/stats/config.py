@@ -8,6 +8,8 @@ from decouple import config
 class Configuration(object):
     # send statistics about usage
     COLLECT_STATISTICS = config("COLLECT_STATISTICS", default=True, cast=bool)
+    # contact email to send with statistics for support
+    CONTACT_EMAIL = config("CONTACT_EMAIL", default="")
     # deployment uuid
     SERVICE_ID = config("SERVICE_ID", default="")
     # monitoring service URL

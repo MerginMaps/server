@@ -6,7 +6,7 @@ import os
 import pytz
 from datetime import datetime, timedelta
 from connexion import NoContent
-from sqlalchemy import func, desc, asc, or_
+from sqlalchemy import func, desc, asc
 from sqlalchemy.sql.operators import is_
 from flask import request, current_app, jsonify, abort, render_template
 from flask_login import login_user, logout_user, current_user
@@ -34,8 +34,9 @@ from .forms import (
     UserChangePasswordForm,
     ApiLoginForm,
 )
-from ..app import DEPRECATION_API_MSG, db
-from ..utils import format_time_delta
+from ..app import db
+from ..sync.models import Project
+from ..sync.utils import files_size
 
 
 # public endpoints
@@ -539,3 +540,20 @@ def create_user():
         )
 
     return jsonify(UserInfoSchema().dump(user)), 201
+
+
+@auth_required(permissions=["admin"])
+def get_server_usage():
+    data = {
+        "active_monthly_contributors": [
+            current_app.ws_handler.monthly_contributors_count(),
+            current_app.ws_handler.monthly_contributors_count(month_offset=1),
+            current_app.ws_handler.monthly_contributors_count(month_offset=2),
+            current_app.ws_handler.monthly_contributors_count(month_offset=3),
+        ],
+        "projects": Project.query.count(),
+        "storage": files_size(),
+        "users": User.query.count(),
+        "workspaces": current_app.ws_handler.workspace_count(),
+    }
+    return data, 200
