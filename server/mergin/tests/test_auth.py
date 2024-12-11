@@ -10,6 +10,8 @@ from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy import desc
 from unittest.mock import patch
 
+from mergin.tests import test_workspace
+
 from ..auth.models import User, UserProfile, LoginHistory
 from ..auth.tasks import anonymize_removed_users
 from ..app import db
@@ -21,7 +23,14 @@ from . import (
     test_workspace_name,
     test_project,
 )
-from .utils import add_user, login_as_admin, login
+from .utils import (
+    add_user,
+    create_project,
+    create_workspace,
+    login_as_admin,
+    login,
+    upload_file_to_project,
+)
 
 
 @pytest.fixture(scope="function")
@@ -838,3 +847,22 @@ def test_username_generation(client):
 
     user = add_user("user25", "user")
     assert User.generate_username(user.email) == user.username + "1"
+
+
+def test_server_usage(client):
+    """Test server usage endpoint"""
+    login_as_admin(client)
+    workspace = create_workspace()
+    user = add_user()
+    admin = User.query.filter_by(username="mergin").first()
+    # create new project
+    project = create_project("project", workspace, admin)
+    project.set_role(user.id, ProjectRole.READER)
+    upload_file_to_project(project, "test.txt", client)
+    resp = client.get("/app/admin/usage")
+    assert resp.status_code == 200
+    assert resp.json["users"] == 2
+    assert resp.json["workspaces"] == 1
+    assert resp.json["projects"] == 2
+    assert resp.json["storage"] == "454 kB"
+    assert resp.json["active_monthly_contributors"] == 1

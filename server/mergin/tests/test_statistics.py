@@ -54,6 +54,8 @@ def test_send_statistics(app, caplog):
         assert data["service_uuid"] == app.config["SERVICE_ID"]
         assert data["licence"] == "ce"
         assert data["monthly_contributors"] == 1
+        assert data["users_count"] == 1
+        assert data["projects_count"] == 1
         assert data["contact_email"] == "test@example.com"
 
         # repeated action does not do anything

@@ -924,7 +924,7 @@ components:
       type: object
       properties:
         active_monthly_contributors:
-          type: array
+          type: integer
           description: count of users who made a project change last months
           items:
             type: integer

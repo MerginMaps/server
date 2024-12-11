@@ -7,6 +7,7 @@ import datetime
 import json
 import logging
 from flask import current_app
+from sqlalchemy.sql.operators import is_
 
 from .models import MerginInfo
 from ..celery import celery
@@ -60,8 +61,10 @@ def send_statistics():
         "url": current_app.config["MERGIN_BASE_URL"],
         "contact_email": current_app.config["CONTACT_EMAIL"],
         "licence": current_app.config["SERVER_TYPE"],
-        "projects_count": Project.query.count(),
-        "users_count": User.query.count(),
+        "projects_count": Project.query.filter(Project.removed_at.is_(None)).count(),
+        "users_count": User.query.filter(
+            is_(User.username.ilike("deleted_%"), False) | is_(User.active, True)
+        ).count(),
         "workspaces_count": current_app.ws_handler.workspace_count(),
         "last_change": str(last_change_item.updated) + "Z" if last_change_item else "",
         "server_version": current_app.config["VERSION"],

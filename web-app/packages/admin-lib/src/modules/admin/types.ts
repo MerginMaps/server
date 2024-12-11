@@ -72,7 +72,7 @@ export interface PaginatedAdminProjectsParams extends PaginatedRequestParams {
 export type ServerUsageResponse = ServerUsage
 
 export interface ServerUsage {
-  active_monthly_contributors: number[]
+  active_monthly_contributors: number
   projects: number
   storage: string
   users: number
