@@ -7,9 +7,10 @@ import datetime
 from typing import List, Optional
 import bcrypt
 from flask import current_app, request
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, text
 
 from ..app import db
+from ..sync.models import ProjectUser
 from ..sync.utils import get_user_agent, get_ip, get_device_id
 
 
@@ -149,24 +150,10 @@ class User(db.Model):
         """Inactivate user account and remove explicitly shared projects as well clean references to created projects.
         User is then safe to be removed.
         """
-        from ..sync.models import Project, ProjectAccess, AccessRequest, RequestStatus
+        from ..sync.models import AccessRequest, RequestStatus
 
-        shared_projects = Project.query.filter(
-            or_(
-                Project.access.has(ProjectAccess.owners.contains([self.id])),
-                Project.access.has(ProjectAccess.writers.contains([self.id])),
-                Project.access.has(ProjectAccess.editors.contains([self.id])),
-                Project.access.has(ProjectAccess.readers.contains([self.id])),
-            )
-        ).all()
-
-        for p in shared_projects:
-            for key in ("owners", "writers", "editors", "readers"):
-                value = set(getattr(p.access, key))
-                if self.id in value:
-                    value.remove(self.id)
-                setattr(p.access, key, list(value))
-            db.session.add(p)
+        # remove explicit permissions
+        ProjectUser.query.filter(ProjectUser.user_id == self.id).delete()
 
         # decline all access requests
         for req in (
@@ -191,6 +178,51 @@ class User(db.Model):
         self.profile.first_name = None
         self.profile.last_name = None
         db.session.commit()
+
+    @classmethod
+    def get_by_login(cls, login: str) -> Optional[User]:
+        """Find user by its login which can be either username or email"""
+        login = login.strip().lower()
+        return cls.query.filter(
+            or_(
+                func.lower(User.email) == login,
+                func.lower(User.username) == login,
+            )
+        ).first()
+
+    @classmethod
+    def generate_username(cls, email: str) -> Optional[str]:
+        """Autogenerate username from email"""
+        if not "@" in email:
+            return
+        username = email.split("@")[0].strip().lower()
+        # check if we already do not have existing usernames
+        suffix = db.session.execute(
+            text(
+                """
+                SELECT
+                    replace(username, :username, '0')::int AS suffix
+                FROM "user"
+                WHERE
+                    username = :username OR
+                    username SIMILAR TO :username'\d+'
+                ORDER BY replace(username, :username, '0')::int DESC
+                LIMIT 1;
+                """
+            ),
+            {"username": username},
+        ).scalar()
+        return username if suffix is None else username + str(int(suffix) + 1)
+
+    @classmethod
+    def create(
+        cls, username: str, email: str, password: str, notifications: bool = True
+    ) -> User:
+        user = cls(username.strip(), email.strip(), password, False)
+        user.profile = UserProfile(receive_notifications=notifications)
+        db.session.add(user)
+        db.session.commit()
+        return user
 
 
 class UserProfile(db.Model):

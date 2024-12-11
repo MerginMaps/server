@@ -10,6 +10,8 @@ tags:
     description: Mergin user
   - name: admin
     description: For mergin admin
+  - name: public
+    description: Public API
 paths:
   /app/auth/user/search:
     get:
@@ -642,6 +644,57 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v2/users:
+    post:
+      tags:
+        - user
+        - public
+      summary: Create user
+      operationId: create_user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - workspace_id
+                - role
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                username:
+                  type: string
+                  example: john.doe
+                password:
+                  type: string
+                  format: password
+                  example: topsecret
+                workspace_id:
+                  type: integer
+                  example: 1
+                role:
+                  $ref: "#/components/schemas/WorkspaceRole"
+                notify_user:
+                  type: boolean
+      responses:
+        "201":
+          description: User info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserInfo"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+      x-openapi-router-controller: mergin.auth.controller
 components:
   responses:
     UnauthorizedError:

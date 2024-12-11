@@ -5,23 +5,21 @@
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Tuple, Optional, Set, List
 from flask_login import current_user
-from sqlalchemy import or_, and_, Column, literal, extract
-from sqlalchemy.orm import joinedload
+from sqlalchemy import Column, literal, extract
 
 from .errors import UpdateProjectAccessError
 from .models import (
     Project,
-    ProjectAccess,
     AccessRequest,
     ProjectAccessDetail,
     ProjectVersion,
+    ProjectUser,
 )
 from .permissions import projects_query, ProjectPermissions
-from .public_api_controller import parse_project_access_update_request
 from ..app import db
 from ..auth.models import User
 from ..config import Configuration
-from .interfaces import AbstractWorkspace, WorkspaceHandler
+from .interfaces import AbstractWorkspace, WorkspaceHandler, WorkspaceRole
 
 
 class GlobalWorkspace(AbstractWorkspace):
@@ -74,33 +72,33 @@ class GlobalWorkspace(AbstractWorkspace):
     def user_has_permissions(self, user, permissions):
         role = self.get_user_role(user)
         # mergin super-user has all permissions
-        if role == "owner":
+        if role is WorkspaceRole.OWNER:
             return True
 
         if permissions == "read":
-            return role in ["admin", "writer", "editor", "reader"]
+            return role >= WorkspaceRole.READER
         elif permissions == "edit":
-            return role in ["admin", "writer", "editor"]
+            return role >= WorkspaceRole.EDITOR
         elif permissions == "write":
-            return role in ["admin", "writer"]
+            return role >= WorkspaceRole.WRITER
         elif permissions == "admin":
-            return role == "admin"
+            return role >= WorkspaceRole.ADMIN
         else:
             return False
 
     def user_is_member(self, user):
         return True
 
-    def get_user_role(self, user):
+    def get_user_role(self, user) -> WorkspaceRole:
         if user.is_admin:
-            return "owner"
+            return WorkspaceRole.OWNER
         if Configuration.GLOBAL_ADMIN:
-            return "admin"
+            return WorkspaceRole.ADMIN
         if Configuration.GLOBAL_WRITE:
-            return "writer"
+            return WorkspaceRole.WRITER
         if Configuration.GLOBAL_READ:
-            return "reader"
-        return "guest"
+            return WorkspaceRole.READER
+        return WorkspaceRole.GUEST
 
     def project_count(self):
         from .models import Project
@@ -111,6 +109,17 @@ class GlobalWorkspace(AbstractWorkspace):
             .filter(Project.removed_at.is_(None))
             .count()
         )
+
+    def members(self):
+        return [
+            (user, self.get_user_role(user))
+            for user in User.query.filter(User.active.is_(True))
+            .order_by(User.email)
+            .all()
+        ]
+
+    def can_add_users(self, user: User) -> bool:
+        return user.is_admin
 
 
 class GlobalWorkspaceHandler(WorkspaceHandler):
@@ -166,10 +175,9 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
     ):
         if only_public:
             projects = (
-                Project.query.join(ProjectAccess)
-                .filter(Project.storage_params.isnot(None))
+                Project.query.filter(Project.storage_params.isnot(None))
                 .filter(Project.removed_at.is_(None))
-                .filter(ProjectAccess.public.is_(True))
+                .filter(Project.public.is_(True))
             )
         else:
             projects = projects_query(
@@ -183,23 +191,17 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
                 if flag == "created":
                     projects = projects.filter(Project.creator_id == user.id)
                 if flag == "shared":
-                    # check global read permissions
+                    projects = projects.filter(Project.creator_id != user.id)
+                    # check global read permissions or direct project permissions
                     if workspace.user_has_permissions(user, "read"):
-                        read_access_workspace_id = workspace.id
+                        projects = projects.filter(Project.workspace_id == workspace.id)
                     else:
-                        read_access_workspace_id = None
-                    projects = projects.filter(
-                        or_(
-                            and_(
-                                ProjectAccess.readers.contains([user.id]),
-                                Project.creator_id != user.id,
-                            ),
-                            and_(
-                                Project.workspace_id == read_access_workspace_id,
-                                Project.creator_id != user.id,
-                            ),
+                        subquery = (
+                            db.session.query(ProjectUser.project_id)
+                            .filter(ProjectUser.user_id == user.id)
+                            .subquery()
                         )
-                    )
+                        projects = projects.filter(Project.id.in_(subquery))
 
         if name:
             projects = projects.filter(Project.name.ilike("%{}%".format(name)))
@@ -288,13 +290,13 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
     ) -> Tuple[Set[int], Optional[UpdateProjectAccessError]]:
         """Update project members doing bulk access update"""
         error = None
-        parsed_access = parse_project_access_update_request(access)
-        id_diffs = project.access.bulk_update(parsed_access)
+        id_diffs = project.bulk_roles_update(access)
         db.session.add(project)
         db.session.commit()
-        if parsed_access.get("invalid_usernames") or parsed_access.get("invalid_ids"):
+
+        if access.get("invalid_usernames") or access.get("invalid_ids"):
             error = UpdateProjectAccessError(
-                parsed_access["invalid_usernames"], parsed_access["invalid_ids"]
+                access["invalid_usernames"], access["invalid_ids"]
             )
         return id_diffs, error
 
@@ -317,12 +319,7 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
         elif Configuration.GLOBAL_READ:
             global_role = "reader"
 
-        direct_members_ids = set(
-            project.access.readers
-            + project.access.editors
-            + project.access.writers
-            + project.access.owners
-        )
+        direct_members_ids = [u.user_id for u in project.project_users]
         users = User.query.filter(User.active.is_(True)).order_by(User.email)
         direct_members = users.filter(User.id.in_(direct_members_ids)).all()
 
@@ -331,7 +328,7 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
             member = ProjectAccessDetail(
                 id=dm.id,
                 username=dm.username,
-                role=ws.get_user_role(dm),
+                role=ws.get_user_role(dm).value,
                 name=dm.profile.name(),
                 email=dm.email,
                 project_permission=project_role and project_role.value,

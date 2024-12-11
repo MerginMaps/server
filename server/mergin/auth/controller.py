@@ -15,7 +15,6 @@ from flask_wtf.csrf import generate_csrf
 from .app import (
     auth_required,
     authenticate,
-    do_register_user,
     send_confirmation_email,
     confirm_token,
     generate_confirmation_token,
@@ -92,7 +91,7 @@ def get_user_public(username=None):  # noqa: E501
         "storage": user_workspace.storage if user_workspace else 104857600,
         "storage_limit": user_workspace.storage if user_workspace else 104857600,
         "organisations": {
-            ws.name: ws.get_user_role(current_user) for ws in all_workspaces
+            ws.name: ws.get_user_role(current_user).value for ws in all_workspaces
         },
     }
     return user_info, 200
@@ -374,7 +373,7 @@ def register_user():  # pylint: disable=W0613,W0612
 
     form = UserRegistrationForm()
     if form.validate():
-        user = do_register_user(form.username.data, form.email.data, form.password.data)
+        user = User.create(form.username.data, form.email.data, form.password.data)
         user_created.send(user, source="admin")
         token = generate_confirmation_token(current_app, user.email)
         confirm_url = f"confirm-email/{token}"
@@ -486,7 +485,7 @@ def get_user_info():
     user_info = UserInfoSchema().dump(current_user)
     workspaces = current_app.ws_handler.list_user_workspaces(current_user.username)
     user_info["workspaces"] = [
-        {"id": ws.id, "name": ws.name, "role": ws.get_user_role(current_user)}
+        {"id": ws.id, "name": ws.name, "role": ws.get_user_role(current_user).value}
         for ws in workspaces
     ]
     preferred_workspace = current_app.ws_handler.get_preferred(current_user)
@@ -499,6 +498,48 @@ def get_user_info():
         for inv in invitations
     ]
     return user_info, 200
+
+
+@auth_required
+def create_user():
+    """Create new user"""
+    workspace = current_app.ws_handler.get(request.json.get("workspace_id"))
+    if not (workspace and workspace.can_add_users(current_user)):
+        abort(403)
+
+    username = request.json.get(
+        "username", User.generate_username(request.json["email"])
+    )
+    form = UserRegistrationForm()
+    form.confirm.data = form.password.data
+    form.username.data = username
+    if not form.validate():
+        return jsonify(form.errors), 400
+
+    user = User.create(
+        form.username.data,
+        form.email.data,
+        form.password.data,
+        request.json.get("notify_user", False),
+    )
+    user_created.send(
+        user,
+        source="api",
+        workspace_id=request.json["workspace_id"],
+        workspace_role=request.json["role"],
+    )
+
+    if user.profile.receive_notifications:
+        send_confirmation_email(
+            current_app,
+            user,
+            "confirm-email",
+            "email/user_created.html",
+            "Invitation to Mergin Maps",
+            password=form.password.data,
+        )
+
+    return jsonify(UserInfoSchema().dump(user)), 201
 
 
 @auth_required(permissions=["admin"])

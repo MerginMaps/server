@@ -19,7 +19,7 @@ from pygeodiff import GeoDiff
 
 from ..auth.models import User, UserProfile
 from ..sync.utils import generate_location, generate_checksum
-from ..sync.models import Project, ProjectAccess, ProjectVersion, FileHistory
+from ..sync.models import Project, ProjectVersion, FileHistory, ProjectRole
 from ..sync.files import UploadChanges, ChangesSchema
 from ..sync.workspace import GlobalWorkspace
 from ..app import db
@@ -80,11 +80,9 @@ def create_project(name, workspace, user, **kwargs):
 
     p = Project(**project_params, **kwargs)
     p.updated = datetime.utcnow()
+    p.set_role(user.id, ProjectRole.OWNER)
+    db.session.add(p)
     db.session.flush()
-
-    public = kwargs.get("public", False)
-    pa = ProjectAccess(p, public)
-    db.session.add(pa)
     changes = UploadChanges(added=[], updated=[], removed=[])
     pv = ProjectVersion(p, 0, user.id, changes, "127.0.0.1")
     db.session.add(pv)
@@ -170,12 +168,10 @@ def initialize():
                 }
             )
     p.latest_version = 1
+    p.public = True
+    p.set_role(user.id, ProjectRole.OWNER)
     p.updated = datetime.utcnow()
     db.session.add(p)
-
-    # add default project permissions
-    pa = ProjectAccess(p, True)
-    db.session.add(pa)
     db.session.commit()
 
     upload_changes = ChangesSchema(context={"version": 1}).load(

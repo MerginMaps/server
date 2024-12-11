@@ -98,6 +98,129 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
+  /projects/{id}/collaborators:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags:
+        - project
+      summary: Get project collaborators
+      operationId: get_project_collaborators
+      responses:
+        "200":
+          description: Project members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectMember"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
+    post:
+      tags:
+        - project
+      summary: Add project collaborator
+      operationId: add_project_collaborator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - role
+              properties:
+                username:
+                  type: string
+                  example: john.doe
+                  description: username or email
+                role:
+                  $ref: "#/components/schemas/ProjectRole"
+      responses:
+        "201":
+          description: New project member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMember"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
+  /projects/{id}/collaborators/{user_id}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - name: user_id
+        in: path
+        description: user id
+        required: true
+        schema:
+          type: integer
+    patch:
+      tags:
+        - project
+      summary: Update project collaborator
+      operationId: update_project_collaborator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+              properties:
+                role:
+                  $ref: "#/components/schemas/ProjectRole"
+      responses:
+        "200":
+          description: Updated project member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMember"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
+    delete:
+      tags:
+        - project
+      summary: Remove project collaborator
+      operationId: remove_project_collaborator
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
 components:
   responses:
     NoContent:
@@ -122,3 +245,40 @@ components:
         type: string
         format: uuid
         pattern: \b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b
+  schemas:
+    ProjectRole:
+      type: string
+      nullable: true
+      enum:
+        - owner
+        - writer
+        - editor
+        - reader
+      example: reader
+    WorkspaceRole:
+      type: string
+      enum:
+        - owner
+        - admin
+        - writer
+        - editor
+        - reader
+        - guest
+      example: writer
+    ProjectMember:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: john.doe
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        workspace_role:
+          $ref: '#/components/schemas/WorkspaceRole'
+        project_role:
+          $ref: '#/components/schemas/ProjectRole'
