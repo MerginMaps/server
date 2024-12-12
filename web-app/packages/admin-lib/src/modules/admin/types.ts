@@ -77,6 +77,7 @@ export interface ServerUsage {
   storage: string
   users: number
   workspaces: number
+  editors: number
 }
 
 /* eslint-enable camelcase */

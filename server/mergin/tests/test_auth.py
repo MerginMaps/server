@@ -858,6 +858,7 @@ def test_server_usage(client):
     # create new project
     project = create_project("project", workspace, admin)
     project.set_role(user.id, ProjectRole.READER)
+    db.session.commit()
     upload_file_to_project(project, "test.txt", client)
     resp = client.get("/app/admin/usage")
     assert resp.status_code == 200
@@ -866,3 +867,8 @@ def test_server_usage(client):
     assert resp.json["projects"] == 2
     assert resp.json["storage"] == "454 kB"
     assert resp.json["active_monthly_contributors"] == 1
+    assert resp.json["editors"] == 1
+    project.set_role(user.id, ProjectRole.EDITOR)
+    db.session.commit()
+    resp = client.get("/app/admin/usage")
+    assert resp.json["editors"] == 2

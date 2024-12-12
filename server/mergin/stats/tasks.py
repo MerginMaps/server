@@ -69,6 +69,7 @@ def send_statistics():
         "last_change": str(last_change_item.updated) + "Z" if last_change_item else "",
         "server_version": current_app.config["VERSION"],
         "monthly_contributors": current_app.ws_handler.monthly_contributors_count(),
+        "editors": current_app.ws_handler.server_editors_count(),
     }
 
     try:
