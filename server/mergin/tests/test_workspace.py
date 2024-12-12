@@ -45,7 +45,7 @@ def test_workspace_implementation(client):
     Configuration.GLOBAL_WRITE = True
     assert ws.user_has_permissions(user, "write")
     assert ws.user_has_permissions(user, "read")
-    assert handler.server_editors_count() == 1
+    assert handler.server_editors_count() == 2
     assert not ws.user_has_permissions(user, "admin")
     assert not ws.user_has_permissions(user, "owner")
 
@@ -76,7 +76,7 @@ def test_workspace_implementation(client):
     project.removed_by = user.id
     db.session.commit()
     assert ws.disk_usage() == default_project_usage
-    assert handler.server_editors_count() == 1
+    assert handler.server_editors_count() == 2
 
     current_time = datetime.datetime.now(datetime.timezone.utc)
     latest_version.created = datetime.datetime.combine(
