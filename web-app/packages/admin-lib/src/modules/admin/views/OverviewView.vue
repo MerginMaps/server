@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <app-container>
       <div class="grid" v-if="usage">
         <usage-card class="col-12 sm:col-6 lg:col-3">
-          <template #heading>Active monthly contributors</template>
+          <template #heading>Editors</template>
           <div
             class="w-full"
             :style="{
@@ -25,19 +25,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <PProgressBar :value="0" :show-value="false"></PProgressBar>
           </div>
           <template #title
-            ><span>{{ usage?.active_monthly_contributors }}</span></template
+            ><span>{{ usage?.editors }}</span></template
           >
-          <template #subtitle>this month</template>
-          <template #footer>
-            <!--            TODO: click to see last three month graph-->
-            <!--              <PButton-->
-            <!--                @click=""-->
-            <!--                class="w-full"-->
-            <!--                label="See more"-->
-            <!--              />-->
-          </template>
         </usage-card>
-        <usage-card v-if="usage?.storage" class="col-12 sm:col-6 lg:col-3">
+        <usage-card class="col-12 sm:col-6 lg:col-3">
           <template #heading>Used storage</template>
           <div
             class="w-full"
@@ -51,7 +42,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ><span>{{ usage?.storage }}</span></template
           >
         </usage-card>
-        <usage-card v-if="usage?.users" class="col-12 sm:col-6 lg:col-3">
+        <usage-card class="col-12 sm:col-6 lg:col-3">
           <template #heading>Registered accounts</template>
           <div
             class="w-full"
@@ -72,7 +63,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             />
           </template>
         </usage-card>
-        <usage-card v-if="usage?.projects" class="col-12 sm:col-6 lg:col-3">
+        <usage-card class="col-12 sm:col-6 lg:col-3">
           <template #heading>Projects</template>
           <div
             class="w-full"
@@ -91,6 +82,29 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               class="w-full"
               label="Manage projects"
             />
+          </template>
+        </usage-card>
+        <usage-card class="col-12 sm:col-6 lg:col-3">
+          <template #heading>Active monthly contributors</template>
+          <div
+            class="w-full"
+            :style="{
+              height: '40px'
+            }"
+          >
+            <PProgressBar :value="0" :show-value="false"></PProgressBar>
+          </div>
+          <template #title
+            ><span>{{ usage?.active_monthly_contributors }}</span></template
+          >
+          <template #subtitle>this month</template>
+          <template #footer>
+            <!--            TODO: click to see last three month graph-->
+            <!--              <PButton-->
+            <!--                @click=""-->
+            <!--                class="w-full"-->
+            <!--                label="See more"-->
+            <!--              />-->
           </template>
         </usage-card>
         <usage-card v-if="showWorkspaces" class="col-12 sm:col-6 lg:col-3">
