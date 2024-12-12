@@ -336,4 +336,4 @@ def files_size():
         SELECT pg_size_pretty(SUM(sum)) FROM partials;
         """
     )
-    return db.session.execute(files_size).scalar()
+    return db.session.execute(files_size).scalar() or "0 bytes"
