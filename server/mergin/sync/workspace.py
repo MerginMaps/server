@@ -355,12 +355,8 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
     def server_editors_count(self) -> int:
         if Configuration.GLOBAL_ADMIN or Configuration.GLOBAL_WRITE:
             return User.query.filter(
-                is_(User.username.ilike("deleted_%"), False) | User.active
-            ).count()
-        if Configuration.GLOBAL_READ:
-            return User.query.filter(
                 is_(User.username.ilike("deleted_%"), False) | User.active,
-                User.is_admin.is_(True),
+                User.is_admin.is_(False),
             ).count()
 
         return (
