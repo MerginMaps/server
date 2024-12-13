@@ -298,6 +298,12 @@ export interface UpdateProjectAccessParams {
   public?: boolean
 }
 
+export interface CreateProjectAccessParams {
+  user_id?: number
+  role?: ProjectRoleName
+  public?: boolean
+}
+
 export interface DownloadPayload {
   url: string
 }

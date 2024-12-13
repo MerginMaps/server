@@ -25,7 +25,7 @@ import {
   ProjectVersion,
   ProjectAccessDetail,
   ProjectAccess,
-  ProjectVersionFileChange
+  ProjectVersionFileChange, CreateProjectAccessParams
 } from '@/modules/project/types'
 
 export const ProjectApi = {
@@ -175,12 +175,32 @@ export const ProjectApi = {
 
   async updateProjectAccess(
     id: string,
+    userId: number,
     data: UpdateProjectAccessParams,
     withRetry?: boolean
   ): Promise<AxiosResponse<ProjectAccess>> {
-    return ProjectModule.httpService.patch(`/app/project/${id}/access`, data, {
-      ...(withRetry ? getDefaultRetryOptions() : {})
-    })
+    return ProjectModule.httpService.patch(
+      `/v2/projects/${id}/collaborators/${userId}`,
+      data,
+      {
+        ...(withRetry ? getDefaultRetryOptions() : {})
+      }
+    )
+  },
+
+  async createProjectAccess(
+    id: string,
+    userId: number,
+    data: CreateProjectAccessParams,
+    withRetry?: boolean
+  ): Promise<AxiosResponse<ProjectAccess>> {
+    return ProjectModule.httpService.post(
+      `/v2/projects/${id}/collaborators/${userId}`,
+      data,
+      {
+        ...(withRetry ? getDefaultRetryOptions() : {})
+      }
+    )
   },
 
   async pushProjectChanges(
