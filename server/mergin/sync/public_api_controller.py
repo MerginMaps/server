@@ -680,10 +680,33 @@ def update_project(namespace, project_name):  # noqa: E501  # pylint: disable=W0
     """
     project = require_project(namespace, project_name, ProjectPermissions.Update)
     parsed_access = parse_project_access_update_request(request.json.get("access", {}))
+
+    # get current status for easier rollback
+    modified_user_ids = []
+    for role in list(ProjectRole.__reversed__()):
+        modified_user_ids.extend(parsed_access.get(role, []))
+    current_permissions_map = {
+        user_id: project.get_role(user_id) for user_id in modified_user_ids
+    }
+
     # get set of modified user_ids and possible (custom) errors
     id_diffs, error = current_app.ws_handler.update_project_members(
         project, parsed_access
     )
+
+    # revert back rejected changes
+    if error and hasattr(error, "rejected_emails"):
+        rejected_users = (
+            db.session.query(User.id)
+            .filter(User.email.in_(error.rejected_emails))
+            .all()
+        )
+        for user in rejected_users:
+            if current_permissions_map[user.id] is None:
+                project.unset_role(user.id)
+            else:
+                project.set_role(user.id, current_permissions_map[user.id])
+        db.session.commit()
 
     if not id_diffs and error:
         # nothing was done but there are errors
