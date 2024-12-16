@@ -856,8 +856,6 @@ def test_server_usage(client):
     login_as_admin(client)
     workspace = create_workspace()
     init_project = Project.query.filter_by(workspace_id=workspace.id).first()
-    resp = client.get("/app/admin/usage")
-    print(resp.json)
     user = add_user()
     admin = User.query.filter_by(username="mergin").first()
     # create new project
@@ -877,3 +875,10 @@ def test_server_usage(client):
     db.session.commit()
     resp = client.get("/app/admin/usage")
     assert resp.json["editors"] == 2
+    user.inactivate()
+    user.anonymize()
+    project.delete()
+    resp = client.get("/app/admin/usage")
+    assert resp.json["editors"] == 1
+    assert resp.json["users"] == 1
+    assert resp.json["projects"] == 1

@@ -63,7 +63,7 @@ def send_statistics():
         "licence": current_app.config["SERVER_TYPE"],
         "projects_count": Project.query.filter(Project.removed_at.is_(None)).count(),
         "users_count": User.query.filter(
-            is_(User.username.ilike("deleted_%"), False) | is_(User.active, True)
+            is_(User.username.ilike("deleted_%"), False)
         ).count(),
         "workspaces_count": current_app.ws_handler.workspace_count(),
         "last_change": str(last_change_item.updated) + "Z" if last_change_item else "",

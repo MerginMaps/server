@@ -549,7 +549,7 @@ def get_server_usage():
         "projects": Project.query.filter(Project.removed_at.is_(None)).count(),
         "storage": files_size(),
         "users": User.query.filter(
-            is_(User.username.ilike("deleted_%"), False) | User.active,
+            is_(User.username.ilike("deleted_%"), False),
         ).count(),
         "workspaces": current_app.ws_handler.workspace_count(),
         "editors": current_app.ws_handler.server_editors_count(),
