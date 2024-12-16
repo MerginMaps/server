@@ -31,15 +31,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <usage-card class="col-12 sm:col-6 lg:col-3">
           <template #heading>Used storage</template>
           <div
-            class="w-full"
-            :style="{
+          class="w-full"
+          :style="{
               height: '40px'
             }"
           >
             <PProgressBar :value="0" :show-value="false"></PProgressBar>
           </div>
           <template #title
-            ><span>{{ usage?.storage }}</span></template
+          ><span>{{
+              $filters.filesize(usage.storage, null, 0)
+            }}</span></template
           >
         </usage-card>
         <usage-card class="col-12 sm:col-6 lg:col-3">
@@ -98,14 +100,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ><span>{{ usage?.active_monthly_contributors }}</span></template
           >
           <template #subtitle>this month</template>
-          <template #footer>
-            <!--            TODO: click to see last three month graph-->
-            <!--              <PButton-->
-            <!--                @click=""-->
-            <!--                class="w-full"-->
-            <!--                label="See more"-->
-            <!--              />-->
-          </template>
         </usage-card>
         <usage-card v-if="showWorkspaces" class="col-12 sm:col-6 lg:col-3">
           <template #heading>Workspaces</template>

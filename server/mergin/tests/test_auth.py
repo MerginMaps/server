@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 from datetime import datetime, timedelta
+import os
 import pytest
 import json
 from flask import url_for
@@ -30,6 +31,7 @@ from .utils import (
     login_as_admin,
     login,
     upload_file_to_project,
+    test_project_dir,
 )
 
 
@@ -853,6 +855,9 @@ def test_server_usage(client):
     """Test server usage endpoint"""
     login_as_admin(client)
     workspace = create_workspace()
+    init_project = Project.query.filter_by(workspace_id=workspace.id).first()
+    resp = client.get("/app/admin/usage")
+    print(resp.json)
     user = add_user()
     admin = User.query.filter_by(username="mergin").first()
     # create new project
@@ -865,7 +870,7 @@ def test_server_usage(client):
     assert resp.json["users"] == 2
     assert resp.json["workspaces"] == 1
     assert resp.json["projects"] == 2
-    assert resp.json["storage"] == "454 kB"
+    assert resp.json["storage"] == project.disk_usage + init_project.disk_usage
     assert resp.json["active_monthly_contributors"] == 1
     assert resp.json["editors"] == 1
     project.set_role(user.id, ProjectRole.EDITOR)
