@@ -6,12 +6,14 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, Tuple, Optional, Set, List
 from flask_login import current_user
 from sqlalchemy import Column, literal, extract
+from sqlalchemy.sql.operators import is_
 
 from .errors import UpdateProjectAccessError
 from .models import (
     Project,
     AccessRequest,
     ProjectAccessDetail,
+    ProjectRole,
     ProjectVersion,
     ProjectUser,
 )
@@ -349,3 +351,21 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
                 )
                 result.append(member)
         return result
+
+    def server_editors_count(self) -> int:
+        if Configuration.GLOBAL_ADMIN or Configuration.GLOBAL_WRITE:
+            return User.query.filter(
+                is_(User.username.ilike("deleted_%"), False),
+            ).count()
+
+        return (
+            db.session.query(ProjectUser.user_id)
+            .select_from(Project)
+            .join(ProjectUser)
+            .filter(
+                Project.removed_at.is_(None),
+                ProjectUser.role != ProjectRole.READER.value,
+            )
+            .group_by(ProjectUser.user_id)
+            .count()
+        )

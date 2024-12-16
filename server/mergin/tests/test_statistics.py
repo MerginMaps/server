@@ -5,11 +5,15 @@
 import json
 from unittest.mock import patch
 import requests
+from sqlalchemy.sql.operators import is_
+
+from mergin.auth.models import User
+from mergin.sync.models import Project, ProjectRole
 
 from ..app import db
 from ..stats.tasks import send_statistics
 from ..stats.models import MerginInfo
-from .utils import Response
+from .utils import Response, add_user, create_project, create_workspace
 
 
 def test_send_statistics(app, caplog):
@@ -24,6 +28,12 @@ def test_send_statistics(app, caplog):
         mock.return_value = Response(True, {})
         app.config["COLLECT_STATISTICS"] = False
         app.config["CONTACT_EMAIL"] = "test@example.com"
+        user = add_user()
+        admin = User.query.filter_by(username="mergin").first()
+        # create new project
+        workspace = create_workspace()
+        project = create_project("project", workspace, admin)
+        project.set_role(user.id, ProjectRole.EDITOR)
         task = send_statistics.s().apply()
         # nothing was done
         assert task.status == "SUCCESS"
@@ -49,17 +59,34 @@ def test_send_statistics(app, caplog):
             "last_change",
             "server_version",
             "monthly_contributors",
+            "editors",
         }
         assert data["workspaces_count"] == 1
         assert data["service_uuid"] == app.config["SERVICE_ID"]
         assert data["licence"] == "ce"
         assert data["monthly_contributors"] == 1
+        assert data["users_count"] == 2
+        assert data["projects_count"] == 2
         assert data["contact_email"] == "test@example.com"
+        assert data["editors"] == 2
 
         # repeated action does not do anything
         task = send_statistics.s().apply()
         assert task.status == "SUCCESS"
         assert info.last_reported == ts
+
+        # project removed / users removed in time
+        info.last_reported = None
+        project.delete()
+        user.inactivate()
+        user.anonymize()
+        db.session.commit()
+        task = send_statistics.s().apply()
+        url, data = mock.call_args
+        data = json.loads(data["data"])
+        assert data["projects_count"] == 1
+        assert data["users_count"] == 1
+        assert data["editors"] == 1
 
         info.last_reported = None
         db.session.commit()

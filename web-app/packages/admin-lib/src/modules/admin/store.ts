@@ -42,6 +42,7 @@ export interface AdminState {
   checkForUpdates?: boolean
   isServerConfigHidden: boolean
   latestServerVersion?: LatestServerVersionResponse
+  usage: ServerUsageResponse
 }
 
 const cookies = new Cookies()
@@ -62,7 +63,8 @@ export const useAdminStore = defineStore('adminModule', {
     user: null,
     checkForUpdates: undefined,
     isServerConfigHidden: false,
-    latestServerVersion: undefined
+    latestServerVersion: undefined,
+    usage: undefined
   }),
   getters: {
     displayUpdateAvailable: (state) => {
@@ -111,9 +113,6 @@ export const useAdminStore = defineStore('adminModule', {
     },
     setIsServerConfigHidden(value: boolean) {
       this.isServerConfigHidden = value
-    },
-    setUsage(data: ServerUsageResponse){
-      this.usage = data
     },
 
     async fetchUsers(payload: { params: PaginatedUsersParams }) {
@@ -322,7 +321,7 @@ export const useAdminStore = defineStore('adminModule', {
       const notificationStore = useNotificationStore()
       try {
         const response = await AdminApi.getServerUsage()
-        this.setUsage(response.data)
+        this.usage = response.data
       } catch (e) {
         notificationStore.error({ text: errorUtils.getErrorMessage(e) })
       }

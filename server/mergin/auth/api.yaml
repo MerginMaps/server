@@ -924,7 +924,7 @@ components:
       type: object
       properties:
         active_monthly_contributors:
-          type: array
+          type: integer
           description: count of users who made a project change last months
           items:
             type: integer
@@ -934,9 +934,9 @@ components:
           description: total number of projects
           example: 12
         storage:
-          type: string
+          type: number
           description: projest files size in bytes
-          example: 1024 kB
+          example: 1024
         users:
           type: integer
           description: count of registered accounts

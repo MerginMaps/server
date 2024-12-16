@@ -172,6 +172,13 @@ class WorkspaceHandler(ABC):
         """
         pass
 
+    @staticmethod
+    def server_editors_count():
+        """
+        Return number of workspace editors in current server instance
+        """
+        pass
+
 
 class AbstractProjectHandler(ABC):
     @abstractmethod
