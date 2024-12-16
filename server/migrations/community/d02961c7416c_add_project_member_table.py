@@ -173,7 +173,10 @@ def data_upgrade():
                 FROM project_access
             )
             INSERT INTO project_member (project_id, user_id, role)
-            SELECT project_id, user_id, role::project_role FROM members;
+            SELECT m.project_id, m.user_id, m.role::project_role
+            FROM members m
+            LEFT OUTER JOIN "user" u on u.id = m.user_id
+            WHERE u.username !~ 'deleted_\d{13}$';
         """
         )
     )
