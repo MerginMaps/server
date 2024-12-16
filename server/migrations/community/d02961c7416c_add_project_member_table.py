@@ -176,7 +176,10 @@ def data_upgrade():
             SELECT m.workspace_id, m.user_id, m.role::workspace_role
             FROM members m
             LEFT OUTER JOIN "user" u on u.id = m.user_id
-            WHERE u.username !~ 'deleted_\d{13}$';
+            LEFT OUTER JOIN project p ON p.id = m.project_id
+            WHERE
+                u.username !~ 'deleted_\d{13}$' AND
+                p.removed_at IS NULL;
         """
         )
     )
