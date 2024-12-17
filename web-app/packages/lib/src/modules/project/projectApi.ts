@@ -21,11 +21,12 @@ import {
   PushProjectChangesParams,
   PushProjectChangesResponse,
   SaveProjectSettings,
-  UpdateProjectAccessParams,
   ProjectVersion,
   ProjectAccessDetail,
   ProjectAccess,
-  ProjectVersionFileChange
+  ProjectVersionFileChange,
+  UpdateProjectPayload,
+  UpdatePublicFlagParams
 } from '@/modules/project/types'
 
 export const ProjectApi = {
@@ -175,12 +176,40 @@ export const ProjectApi = {
 
   async updateProjectAccess(
     id: string,
-    data: UpdateProjectAccessParams,
+    userId: number,
+    data: UpdateProjectPayload,
+    withRetry?: boolean
+  ): Promise<AxiosResponse<ProjectAccess>> {
+    return ProjectModule.httpService.patch(
+      `/v2/projects/${id}/collaborators/${userId}`,
+      data,
+      {
+        ...(withRetry ? getDefaultRetryOptions() : {})
+      }
+    )
+  },
+
+  async updatePublicFlag(
+    id: string,
+    data: UpdatePublicFlagParams,
     withRetry?: boolean
   ): Promise<AxiosResponse<ProjectAccess>> {
     return ProjectModule.httpService.patch(`/app/project/${id}/access`, data, {
       ...(withRetry ? getDefaultRetryOptions() : {})
     })
+  },
+
+  async removeProjectAccess(
+    id: string,
+    userId: number,
+    withRetry?: boolean
+  ): Promise<AxiosResponse<ProjectAccess>> {
+    return ProjectModule.httpService.delete(
+      `/v2/projects/${id}/collaborators/${userId}`,
+      {
+        ...(withRetry ? getDefaultRetryOptions() : {})
+      }
+    )
   },
 
   async pushProjectChanges(

@@ -292,9 +292,11 @@ export type EnhancedProjectDetail = ProjectDetail & {
   path: string
 }
 
-export interface UpdateProjectAccessParams {
-  user_id?: number
-  role?: ProjectRoleName
+export interface UpdateProjectPayload {
+  role: ProjectRoleName
+}
+
+export interface UpdatePublicFlagParams {
   public?: boolean
 }
 
