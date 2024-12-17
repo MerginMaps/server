@@ -43,7 +43,9 @@ import {
   ProjectAccessDetail,
   UpdateProjectAccessParams,
   ProjectVersionFileChange,
-  ProjectVersionListItem
+  ProjectVersionListItem,
+  UpdateProjectPayload,
+  UpdatePublicFlagParams
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
 
@@ -758,10 +760,10 @@ export const useProjectStore = defineStore('projectModule', {
       const notificationStore = useNotificationStore()
       this.accessLoading = true
       try {
-        const response = await ProjectApi.updateProjectAccess(this.project.id, {
-          user_id: item.id,
-          role: 'none'
-        })
+        const response = await ProjectApi.removeProjectAccess(
+          this.project.id,
+          item.id
+        )
         this.access = this.access.filter((access) => access.id !== item.id)
         this.project.access = response.data
       } catch {
@@ -774,24 +776,26 @@ export const useProjectStore = defineStore('projectModule', {
     },
 
     /**
-     * Updates the access for a user on the given project. `project.access` contains also public attribute. This attribute can be changed also.
+     * Updates the access for a user on the given project.
      *
      * @param payload - Object containing the project ID and access update details.
      * @returns Promise resolving when the API call completes.
      */
     async updateProjectAccess(payload: {
       projectId: string
-      data: UpdateProjectAccessParams
+      userId: number
+      data: UpdateProjectPayload
     }) {
       const notificationStore = useNotificationStore()
       this.accessLoading = true
       try {
         const response = await ProjectApi.updateProjectAccess(
           payload.projectId,
+          payload.userId,
           payload.data
         )
         this.access = this.access.map((access) => {
-          if (access.id === payload.data.user_id) {
+          if (access.id === payload.userId) {
             access.project_permission = payload.data.role
           }
           return access
@@ -800,6 +804,27 @@ export const useProjectStore = defineStore('projectModule', {
       } catch {
         notificationStore.error({
           text: `Failed to update project access`
+        })
+      } finally {
+        this.accessLoading = false
+      }
+    },
+
+    async updatePublicFlag(payload: {
+      projectId: string
+      data: UpdatePublicFlagParams
+    }) {
+      const notificationStore = useNotificationStore()
+      this.accessLoading = true
+      try {
+        const response = await ProjectApi.updatePublicFlag(
+          payload.projectId,
+          payload.data
+        )
+        this.project.access = response.data
+      } catch {
+        notificationStore.error({
+          text: `Failed to update public flag`
         })
       } finally {
         this.accessLoading = false

@@ -95,10 +95,10 @@ export default defineComponent({
     }
   },
   methods: {
-    ...mapActions(useProjectStore, ['deleteProject', 'updateProjectAccess']),
+    ...mapActions(useProjectStore, ['deleteProject', 'updatePublicFlag']),
     ...mapActions(useDialogStore, { showDialog: 'show' }),
     togglePublicPrivate() {
-      this.updateProjectAccess({
+      this.updatePublicFlag({
         projectId: this.project.id,
         data: {
           public: !this.project.access.public
