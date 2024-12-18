@@ -47,7 +47,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ]"
           >
             <PAvatar
-              :label="$filters.getAvatar(item.email, item.name)"
+              :label="$filters.getAvatar(item.email, item.username)"
               shape="circle"
               :pt="{
                 root: {
@@ -71,7 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <template #col-roles="{ item }">
           <AppDropdown
             :options="roles"
-            :model-value="item.project_permission"
+            :model-value="ProjectPermission(item)"
             @update:model-value="(e) => roleUpdate(item, e)"
             :disabled="item.id === loggedUser.id"
             class="w-6 lg:w-full"
@@ -96,7 +96,8 @@ import { DataViewWrapperColumnItem } from '@/common/components/data-view/types'
 import {
   GlobalRole,
   ProjectRoleName,
-  isAtLeastGlobalRole
+  isAtLeastGlobalRole,
+  calculateProjectPermission
 } from '@/common/permission_utils'
 import { useInstanceStore, useUserStore } from '@/main'
 
@@ -168,11 +169,15 @@ function roleUpdate(item: ProjectAccessDetail, value: ProjectRoleName) {
   })
 }
 
+function ProjectPermission(item: ProjectAccessDetail) {
+  return calculateProjectPermission(item.project_role, item.workspace_role)
+}
+
 onUnmounted(() => {
   projectStore.access = []
 })
 
-projectStore.getProjectAccess(projectStore.project?.id)
+projectStore.getProjectCollaborators(projectStore.project?.id)
 </script>
 
 <style scoped lang="scss"></style>

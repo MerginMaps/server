@@ -749,6 +749,22 @@ export const useProjectStore = defineStore('projectModule', {
       }
     },
 
+    async getProjectCollaborators(projectId: string) {
+      const notificationStore = useNotificationStore()
+
+      try {
+        this.accessLoading = true
+        const response = await ProjectApi.getProjectCollaborators(projectId)
+        this.access = response.data
+      } catch {
+        notificationStore.error({
+          text: 'Failed to get project access'
+        })
+      } finally {
+        this.accessLoading = false
+      }
+    },
+
     /**
      * Removes the given user's access to the current project.
      *

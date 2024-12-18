@@ -317,5 +317,11 @@ export const ProjectApi = {
     return ProjectModule.httpService.get(
       `/v1/resource/changesets/${workspace}/${projectName}/${versionId}?path=${path}`
     )
+  },
+
+  async getProjectCollaborators(
+    projectId: string
+  ): Promise<AxiosResponse<ProjectAccessDetail[]>> {
+    return ProjectModule.httpService.get(`/v2/projects/${projectId}/collaborators`)
   }
 }

@@ -4,7 +4,7 @@
 
 import { DropdownOption } from './components/types'
 
-import { ProjectAccess } from '@/modules'
+import {ProjectAccess, ProjectAccessDetail} from '@/modules'
 
 export enum WorkspaceRole {
   guest,
@@ -40,6 +40,14 @@ export type WorkspaceRoleName =
 export type ProjectRoleName =
   | Extract<WorkspaceRoleName, 'reader' | 'editor' | 'writer' | 'owner'>
   | 'none'
+
+const ROLE_HIERARCHY: ProjectRoleName[] = [
+  'none',
+  'reader',
+  'editor',
+  'writer',
+  'owner'
+]
 
 export type ProjectPermissionName = 'owner' | 'write' | 'edit' | 'read'
 
@@ -208,4 +216,23 @@ export function getProjectPermissionByRoleName(
     none: undefined
   }
   return mapper[roleName]
+}
+
+export function calculateProjectPermission(
+  project_role: ProjectRoleName,
+  workspace_role: WorkspaceRoleName
+): ProjectRoleName {
+  const mappedWorkspaceRole: ProjectRoleName =
+    workspace_role === 'admin' ? 'owner' : (workspace_role as ProjectRoleName)
+
+  if (project_role === 'none' && workspace_role === 'guest') {
+    return 'none'
+  }
+
+  const projectRoleIndex = ROLE_HIERARCHY.indexOf(project_role)
+  const workspaceRoleIndex = ROLE_HIERARCHY.indexOf(mappedWorkspaceRole)
+
+  return projectRoleIndex > workspaceRoleIndex
+    ? project_role
+    : mappedWorkspaceRole
 }
