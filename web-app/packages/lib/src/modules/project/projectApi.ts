@@ -184,7 +184,8 @@ export const ProjectApi = {
       `/v2/projects/${id}/collaborators/${userId}`,
       data,
       {
-        ...(withRetry ? getDefaultRetryOptions() : {})
+        ...(withRetry ? getDefaultRetryOptions() : {}),
+        validateStatus
       }
     )
   },
@@ -207,7 +208,8 @@ export const ProjectApi = {
     return ProjectModule.httpService.delete(
       `/v2/projects/${id}/collaborators/${userId}`,
       {
-        ...(withRetry ? getDefaultRetryOptions() : {})
+        ...(withRetry ? getDefaultRetryOptions() : {}),
+        validateStatus
       }
     )
   },

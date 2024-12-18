@@ -41,7 +41,6 @@ import {
   SaveProjectSettings,
   ErrorCodes,
   ProjectAccessDetail,
-  UpdateProjectAccessParams,
   ProjectVersionFileChange,
   ProjectVersionListItem,
   UpdateProjectPayload,
@@ -757,8 +756,8 @@ export const useProjectStore = defineStore('projectModule', {
     async removeProjectAccess(
       item: Pick<ProjectAccessDetail, 'id' | 'username'>
     ) {
-      const notificationStore = useNotificationStore()
       this.accessLoading = true
+      const notificationStore = useNotificationStore()
       try {
         const response = await ProjectApi.removeProjectAccess(
           this.project.id,
@@ -786,7 +785,6 @@ export const useProjectStore = defineStore('projectModule', {
       userId: number
       data: UpdateProjectPayload
     }) {
-      const notificationStore = useNotificationStore()
       this.accessLoading = true
       try {
         const response = await ProjectApi.updateProjectAccess(
@@ -801,13 +799,18 @@ export const useProjectStore = defineStore('projectModule', {
           return access
         })
         this.project.access = response.data
-      } catch {
-        notificationStore.error({
-          text: `Failed to update project access`
-        })
+      } catch (err) {
+        this.handleProjectAccessError(err, 'Failed to update project access')
       } finally {
         this.accessLoading = false
       }
+    },
+
+    handleProjectAccessError(err: unknown, defaultMessage: string) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error({
+        text: getErrorMessage(err, defaultMessage)
+      })
     },
 
     async updatePublicFlag(payload: {
