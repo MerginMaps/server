@@ -5,7 +5,8 @@
 /* eslint-disable camelcase */
 import {
   ProjectRoleName,
-  ProjectPermissionName
+  ProjectPermissionName,
+  WorkspaceRoleName
 } from '@/common/permission_utils'
 import {
   PaginatedRequestParamsApi,
@@ -348,4 +349,12 @@ export interface ProjectAccessDetail {
   username: string
   project_permission: ProjectRoleName
   name: string
+}
+
+export interface ProjectCollaborators {
+  id: number
+  email: string
+  username: string
+  workspace_role: WorkspaceRoleName
+  project_role: ProjectRoleName
 }

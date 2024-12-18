@@ -26,7 +26,8 @@ import {
   ProjectAccess,
   ProjectVersionFileChange,
   UpdateProjectPayload,
-  UpdatePublicFlagParams
+  UpdatePublicFlagParams,
+  ProjectCollaborators
 } from '@/modules/project/types'
 
 export const ProjectApi = {
@@ -317,5 +318,11 @@ export const ProjectApi = {
     return ProjectModule.httpService.get(
       `/v1/resource/changesets/${workspace}/${projectName}/${versionId}?path=${path}`
     )
+  },
+
+  async getProjectCollaborators(
+    projectId: string
+  ): Promise<AxiosResponse<ProjectCollaborators[]>> {
+    return ProjectModule.httpService.get(`/v2/projects/${projectId}/collaborators`)
   }
 }
