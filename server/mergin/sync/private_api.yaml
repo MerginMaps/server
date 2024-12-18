@@ -594,6 +594,14 @@ components:
             - writer
             - editor
             - reader
+        project_role:
+          type: string
+          nullable: true
+          enum:
+            - owner
+            - writer
+            - editor
+            - reader
         invitation:
           description: Present only for type `invitation`
           type: object
