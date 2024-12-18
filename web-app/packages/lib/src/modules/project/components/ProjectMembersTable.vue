@@ -163,7 +163,7 @@ function removeMember(item: ProjectAccessDetail) {
 function roleUpdate(item: ProjectAccessDetail, value: ProjectRoleName) {
   projectStore.updateProjectAccess({
     projectId: projectStore.project.id,
-    userId: item.id,
+    access: item,
     data: { role: value }
   })
 }
