@@ -5,7 +5,8 @@
 /* eslint-disable camelcase */
 import {
   ProjectRoleName,
-  ProjectPermissionName, WorkspaceRoleName
+  ProjectPermissionName,
+  WorkspaceRoleName
 } from '@/common/permission_utils'
 import {
   PaginatedRequestParamsApi,
@@ -342,6 +343,15 @@ export interface ProjectVersionFileChange {
 export type ErrorCodes = 'UpdateProjectAccessError'
 
 export interface ProjectAccessDetail {
+  id: number
+  type: 'member'
+  email: string
+  username: string
+  project_permission: ProjectRoleName
+  name: string
+}
+
+export interface ProjectCollaborators {
   id: number
   email: string
   username: string

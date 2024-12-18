@@ -26,7 +26,8 @@ import {
   ProjectAccess,
   ProjectVersionFileChange,
   UpdateProjectPayload,
-  UpdatePublicFlagParams
+  UpdatePublicFlagParams,
+  ProjectCollaborators
 } from '@/modules/project/types'
 
 export const ProjectApi = {
@@ -321,7 +322,7 @@ export const ProjectApi = {
 
   async getProjectCollaborators(
     projectId: string
-  ): Promise<AxiosResponse<ProjectAccessDetail[]>> {
+  ): Promise<AxiosResponse<ProjectCollaborators[]>> {
     return ProjectModule.httpService.get(`/v2/projects/${projectId}/collaborators`)
   }
 }

@@ -4,7 +4,7 @@
 
 import { DropdownOption } from './components/types'
 
-import {ProjectAccess, ProjectAccessDetail} from '@/modules'
+import { ProjectAccess } from '@/modules'
 
 export enum WorkspaceRole {
   guest,
