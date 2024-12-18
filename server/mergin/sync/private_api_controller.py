@@ -12,7 +12,14 @@ from ..app import db
 from ..auth import auth_required
 from ..auth.models import User, UserProfile
 from .forms import AccessPermissionForm
-from .models import Project, AccessRequest, ProjectRole, RequestStatus, ProjectVersion
+from .models import (
+    Project,
+    AccessRequest,
+    ProjectRole,
+    RequestStatus,
+    ProjectVersion,
+    ProjectUser,
+)
 from .schemas import (
     ProjectListSchema,
     ProjectAccessRequestSchema,
@@ -41,7 +48,7 @@ def create_project_access_request(namespace, project_name):  # noqa: E501
         Project.workspace_id == workspace.id,
         Project.removed_at.is_(None),
     ).first_or_404()
-    if current_user.id in project.access.readers:
+    if project.get_role(current_user.id):
         abort(409, "You already have access to project")
 
     access_request = (
@@ -59,9 +66,13 @@ def create_project_access_request(namespace, project_name):  # noqa: E501
     db.session.commit()
     # notify project owners
     owners = (
-        User.query.join(UserProfile)
-        .filter(User.verified_email, User.id.in_(project.access.owners))
-        .filter(UserProfile.receive_notifications)
+        User.query.join(UserProfile, ProjectUser)
+        .filter(
+            ProjectUser.project_id == project.id,
+            ProjectUser.role == ProjectRole.OWNER.value,
+            User.verified_email,
+            UserProfile.receive_notifications,
+        )
         .all()
     )
     for owner in owners:
@@ -124,10 +135,10 @@ def accept_project_access_request(request_id):
     project = access_request.project
     project_role = ProjectPermissions.get_user_project_role(project, current_user)
     if project_role == ProjectRole.OWNER:
+        access_request.accept(permission)
         project_access_granted.send(
             access_request.project, user_id=access_request.requested_by
         )
-        access_request.accept(permission)
         return "", 200
     abort(403, "You don't have permissions to accept project access request")
 
@@ -278,7 +289,7 @@ def unsubscribe_project(id):  # pylint: disable=W0612
     from ..celery import send_email_async
 
     project = require_project_by_uuid(id, ProjectPermissions.Read)
-    current_role = project.access.get_role(current_user.id)
+    current_role = project.get_role(current_user.id)
     if not current_role:
         return NoContent, 200  # nothing to do so request is idempotent
 
@@ -286,7 +297,7 @@ def unsubscribe_project(id):  # pylint: disable=W0612
     if current_role == ProjectRole.OWNER:
         abort(400, "Owner cannot leave a project")
 
-    project.access.unset_role(current_user.id)
+    project.unset_role(current_user.id)
     db.session.add(project)
     db.session.commit()
     return NoContent, 200
@@ -301,7 +312,7 @@ def update_project_access(id: str):
     project = require_project_by_uuid(id, ProjectPermissions.Update)
 
     if "public" in request.json:
-        project.access.public = request.json["public"]
+        project.public = request.json["public"]
 
     if "user_id" in request.json and "role" in request.json:
         user = User.query.filter_by(
@@ -309,12 +320,12 @@ def update_project_access(id: str):
         ).first_or_404("User does not exist")
 
         if request.json["role"] == "none":
-            project.access.unset_role(user.id)
+            project.unset_role(user.id)
         else:
-            project.access.set_role(user.id, ProjectRole(request.json["role"]))
+            project.set_role(user.id, ProjectRole(request.json["role"]))
             project_access_granted.send(project, user_id=user.id)
     db.session.commit()
-    return ProjectAccessSchema().dump(project.access), 200
+    return ProjectAccessSchema().dump(project), 200
 
 
 @auth_required

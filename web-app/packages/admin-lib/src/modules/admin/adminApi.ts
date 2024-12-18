@@ -3,8 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import {
-  ApiRequestSuccessInfo,
-  errorUtils,
   LoginData,
   PaginatedUsersParams,
   UserProfileResponse,
@@ -14,13 +12,13 @@ import { AxiosResponse } from 'axios'
 
 import { AdminModule } from '@/modules/admin/module'
 import {
-  UsersParams,
   UpdateUserData,
   UsersResponse,
   LatestServerVersionResponse,
   CreateUserData,
   PaginatedAdminProjectsResponse,
-  PaginatedAdminProjectsParams
+  PaginatedAdminProjectsParams,
+  ServerUsageResponse
 } from '@/modules/admin/types'
 
 export const AdminApi = {
@@ -98,5 +96,9 @@ export const AdminApi = {
       `/app/project/removed-project/restore/${id}`,
       null
     )
+  },
+
+  async getServerUsage(): Promise<AxiosResponse<ServerUsageResponse>> {
+    return AdminModule.httpService.get('/app/admin/usage', )
   }
 }

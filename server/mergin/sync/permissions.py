@@ -10,8 +10,9 @@ from flask_login import current_user
 from sqlalchemy import or_
 
 from .utils import is_valid_uuid
+from ..app import db
 from ..auth.models import User
-from .models import ProjectAccess, Project, Upload, ProjectRole
+from .models import Project, Upload, ProjectRole, ProjectUser
 
 
 def _is_superuser(f):
@@ -48,11 +49,12 @@ class ProjectPermissions:
         @_is_superuser
         def check(cls, project, user):
             # public active projects can be access by anyone
-            if project.access.public and not project.removed_at:
+            if project.public and not project.removed_at:
                 return True
 
+            project_role = project.get_role(user.id) if user.is_authenticated else None
             return super().check(project, user) and (
-                (user.id in project.access.readers)
+                (project_role and project_role >= ProjectRole.READER)
                 or (check_project_workspace_permissions(project, user, "read"))
             )
 
@@ -61,10 +63,8 @@ class ProjectPermissions:
             if user.is_authenticated and user.is_admin and as_admin:
                 return Project.query
 
-            query = (
-                Project.query.join(ProjectAccess)
-                .filter(Project.storage_params.isnot(None))
-                .filter(Project.removed_at.is_(None))
+            query = Project.query.filter(Project.storage_params.isnot(None)).filter(
+                Project.removed_at.is_(None)
             )
             if user.is_authenticated and user.active:
                 all_workspaces = current_app.ws_handler.list_user_workspaces(
@@ -75,23 +75,28 @@ class ProjectPermissions:
                     for ws in all_workspaces
                     if ws.user_has_permissions(user, "read")
                 ]
+                subquery = (
+                    db.session.query(ProjectUser.project_id)
+                    .filter(ProjectUser.user_id == user.id)
+                    .subquery()
+                )
                 if public:
                     query = query.filter(
                         or_(
-                            ProjectAccess.public.is_(True),
+                            Project.public.is_(True),
                             Project.workspace_id.in_(user_workspace_ids),
-                            ProjectAccess.readers.contains([user.id]),
+                            Project.id.in_(subquery),
                         )
                     )
                 else:
                     query = query.filter(
                         or_(
                             Project.workspace_id.in_(user_workspace_ids),
-                            ProjectAccess.readers.contains([user.id]),
+                            Project.id.in_(subquery),
                         )
                     )
             else:
-                query = query.filter(ProjectAccess.public.is_(True))
+                query = query.filter(Project.public.is_(True))
 
             return query
 
@@ -99,9 +104,10 @@ class ProjectPermissions:
         @classmethod
         @_is_superuser
         def check(self, project, user):
+            project_role = project.get_role(user.id) if user.is_authenticated else None
             return super().check(project, user) and (
                 (
-                    user.id in project.access.editors
+                    (project_role and project_role >= ProjectRole.EDITOR)
                     or check_project_workspace_permissions(project, user, "edit")
                 )
             )
@@ -110,9 +116,10 @@ class ProjectPermissions:
         @classmethod
         @_is_superuser
         def check(cls, project, user):
+            project_role = project.get_role(user.id) if user.is_authenticated else None
             return super().check(project, user) and (
                 (
-                    user.id in project.access.writers
+                    (project_role and project_role >= ProjectRole.WRITER)
                     or check_project_workspace_permissions(project, user, "write")
                 )
             )
@@ -121,9 +128,10 @@ class ProjectPermissions:
         @classmethod
         @_is_superuser
         def check(cls, project, user):
+            project_role = project.get_role(user.id) if user.is_authenticated else None
             return super().check(project, user) and (
                 (
-                    user.id in project.access.owners
+                    project_role is ProjectRole.OWNER
                     or check_project_workspace_permissions(project, user, "admin")
                 )
             )
@@ -132,9 +140,10 @@ class ProjectPermissions:
         @classmethod
         @_is_superuser
         def check(cls, project, user):
+            project_role = project.get_role(user.id) if user.is_authenticated else None
             return super().check(project, user) and (
                 (
-                    user.id in project.access.owners
+                    project_role is ProjectRole.OWNER
                     or check_project_workspace_permissions(project, user, "admin")
                 )
             )
@@ -143,9 +152,10 @@ class ProjectPermissions:
         @classmethod
         @_is_superuser
         def check(cls, project, user):
+            project_role = project.get_role(user.id) if user.is_authenticated else None
             return super().check(project, user) and (
                 (
-                    user.id in project.access.owners
+                    project_role is ProjectRole.OWNER
                     or check_project_workspace_permissions(project, user, "admin")
                 )
             )

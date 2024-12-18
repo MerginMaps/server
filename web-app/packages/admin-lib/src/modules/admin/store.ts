@@ -22,7 +22,7 @@ import { AdminApi } from '@/modules/admin/adminApi'
 import {
   LatestServerVersionResponse,
   PaginatedAdminProjectsParams,
-  PaginatedAdminProjectsResponse,
+  PaginatedAdminProjectsResponse, ServerUsageResponse,
   UpdateUserPayload,
   UsersResponse
 } from '@/modules/admin/types'
@@ -111,6 +111,9 @@ export const useAdminStore = defineStore('adminModule', {
     },
     setIsServerConfigHidden(value: boolean) {
       this.isServerConfigHidden = value
+    },
+    setUsage(data: ServerUsageResponse){
+      this.usage = data
     },
 
     async fetchUsers(payload: { params: PaginatedUsersParams }) {
@@ -312,6 +315,16 @@ export const useAdminStore = defineStore('adminModule', {
         notificationStore.error({
           text: 'Unable to remove project'
         })
+      }
+    },
+
+    async getServerUsage() {
+      const notificationStore = useNotificationStore()
+      try {
+        const response = await AdminApi.getServerUsage()
+        this.setUsage(response.data)
+      } catch (e) {
+        notificationStore.error({ text: errorUtils.getErrorMessage(e) })
       }
     }
   }

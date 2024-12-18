@@ -10,6 +10,8 @@ tags:
     description: Mergin user
   - name: admin
     description: For mergin admin
+  - name: public
+    description: Public API
 paths:
   /app/auth/user/search:
     get:
@@ -311,6 +313,28 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFoundResp"
+  /app/admin/usage:
+    get:
+      tags:
+        - user
+        - admin
+        - project
+      summary: Get server usage statistics
+      description: List server storage, projects, active contributors for admin
+      operationId: mergin.auth.controller.get_server_usage
+      responses:
+        "200":
+          description: Server usage details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerUsage"
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /app/auth/login:
     post:
       summary: Login
@@ -620,6 +644,57 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v2/users:
+    post:
+      tags:
+        - user
+        - public
+      summary: Create user
+      operationId: create_user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - workspace_id
+                - role
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                username:
+                  type: string
+                  example: john.doe
+                password:
+                  type: string
+                  format: password
+                  example: topsecret
+                workspace_id:
+                  type: integer
+                  example: 1
+                role:
+                  $ref: "#/components/schemas/WorkspaceRole"
+                notify_user:
+                  type: boolean
+      responses:
+        "201":
+          description: User info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserInfo"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+      x-openapi-router-controller: mergin.auth.controller
 components:
   responses:
     UnauthorizedError:
@@ -845,3 +920,28 @@ components:
         - reader
         - guest
       example: reader
+    ServerUsage:
+      type: object
+      properties:
+        active_monthly_contributors:
+          type: array
+          description: count of users who made a project change last months
+          items:
+            type: integer
+            example: 2
+        projects:
+          type: integer
+          description: total number of projects
+          example: 12
+        storage:
+          type: string
+          description: projest files size in bytes
+          example: 1024 kB
+        users:
+          type: integer
+          description: count of registered accounts
+          example: 6
+        workspaces:
+          type: integer
+          description: number of workspaces on the server
+          example: 3

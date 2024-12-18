@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 from abc import ABC, abstractmethod
+from enum import Enum
 
 
 class AbstractWorkspace:
@@ -72,6 +73,16 @@ class AbstractWorkspace:
     @abstractmethod
     def project_count(self):
         """Return number of workspace projects"""
+        pass
+
+    @abstractmethod
+    def members(self):
+        """Return workspace members"""
+        pass
+
+    @abstractmethod
+    def can_add_users(self, user):
+        """Check if user can add another user to workspace"""
         pass
 
 
@@ -169,3 +180,21 @@ class AbstractProjectHandler(ABC):
         Return project permission for user to push data to project
         """
         pass
+
+
+class WorkspaceRole(Enum):
+    GUEST = "guest"
+    READER = "reader"
+    EDITOR = "editor"
+    WRITER = "writer"
+    ADMIN = "admin"
+    OWNER = "owner"
+
+    @classmethod
+    def values(cls):
+        return [member.value for member in cls.__members__.values()]
+
+    def __ge__(self, other):
+        """Compare roles"""
+        members = list(WorkspaceRole.__members__)
+        return members.index(self.name) >= members.index(other.name)

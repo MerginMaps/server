@@ -48,7 +48,7 @@ def send_email(**kwargs):
     """
     msg = Message(**kwargs)
     # let's add default sender to BCC on production/staging server to make sure emails are in inbox
-    if not Configuration.MERGIN_TESTING:
+    if not Configuration.MERGIN_TESTING and Configuration.MAIL_BCC:
         msg.bcc.append(Configuration.MAIL_BCC)
     mail.send(msg)
 

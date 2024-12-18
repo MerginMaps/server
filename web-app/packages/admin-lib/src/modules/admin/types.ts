@@ -68,4 +68,15 @@ export type PaginatedAdminProjectsResponse =
 export interface PaginatedAdminProjectsParams extends PaginatedRequestParams {
   like?: string
 }
+
+export type ServerUsageResponse = ServerUsage
+
+export interface ServerUsage {
+  active_monthly_contributors: number[]
+  projects: number
+  storage: string
+  users: number
+  workspaces: number
+}
+
 /* eslint-enable camelcase */
