@@ -800,7 +800,7 @@ export const useProjectStore = defineStore('projectModule', {
         }
         this.access = this.access.map((access) => {
           if (access.id === payload.access.id) {
-            access.project_permission = payload.data.role
+            access.role = payload.data.role
             access.project_role = payload.data.role
           }
           return access

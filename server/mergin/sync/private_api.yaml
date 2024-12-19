@@ -551,8 +551,7 @@ components:
         - id
         - type
         - email
-        - project_permission
-        - role
+        - workspace_role
       properties:
         id:
           description: User/Invitation (uu)id
@@ -569,16 +568,9 @@ components:
           type: string
           format: email
           example: john.doe@example.com
-        role:
+        workspace_role:
           description: Workspace role
-          type: string
-          enum:
-            - owner
-            - admin
-            - writer
-            - editor
-            - reader
-            - guest
+          $ref: "#/components/schemas/WorkspaceRole"
         username:
           description: Present only for type `member`
           type: string
@@ -587,21 +579,13 @@ components:
           description: Present only for type `member`
           type: string
           example: John Doe
-        project_permission:
-          type: string
-          enum:
-            - owner
-            - writer
-            - editor
-            - reader
+        role:
+          description: Project role defined as combination of project and workspace roles
+          $ref: "#/components/schemas/ProjectRole"
         project_role:
-          type: string
           nullable: true
-          enum:
-            - owner
-            - writer
-            - editor
-            - reader
+          description: Project role defined in database, not calculated version
+          $ref: "#/components/schemas/ProjectRole"
         invitation:
           description: Present only for type `invitation`
           type: object
@@ -666,3 +650,19 @@ components:
           items:
             type: integer
             example: [1]
+    WorkspaceRole:
+      type: string
+      enum:
+        - owner
+        - admin
+        - writer
+        - editor
+        - reader
+        - guest
+    ProjectRole:
+      type: string
+      enum:
+        - owner
+        - writer
+        - editor
+        - reader

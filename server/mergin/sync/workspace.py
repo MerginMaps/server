@@ -331,10 +331,10 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
             member = ProjectAccessDetail(
                 id=dm.id,
                 username=dm.username,
-                role=ws.get_user_role(dm).value,
+                workspace_role=ws.get_user_role(dm).value,
                 name=dm.profile.name(),
                 email=dm.email,
-                project_permission=project_permission and project_permission.value,
+                role=project_permission and project_permission.value,
                 project_role=project_role.value if project_role else None,
                 type="member",
             )
@@ -347,8 +347,8 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
                     username=gm.username,
                     name=gm.profile.name(),
                     email=gm.email,
+                    workspace_role=global_role,
                     role=global_role,
-                    project_permission=global_role,
                     project_role=None,
                     type="member",
                 )
