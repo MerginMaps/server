@@ -490,7 +490,7 @@ def test_get_project_access(client):
     resp = client.get(url)
     assert resp.status_code == 200
     assert len(resp.json) == 1
-    assert resp.json[0]["project_permission"] == "owner"
+    assert resp.json[0]["role"] == "owner"
     project.set_role(users[0].id, ProjectRole.OWNER)
     project.set_role(users[1].id, ProjectRole.WRITER)
     project.set_role(users[2].id, ProjectRole.READER)
@@ -498,9 +498,9 @@ def test_get_project_access(client):
     resp = client.get(url)
     assert resp.status_code == 200
     assert len(resp.json) == 4
-    assert sum(map(lambda x: int(x["project_permission"] == "owner"), resp.json)) == 2
-    assert sum(map(lambda x: int(x["project_permission"] == "writer"), resp.json)) == 1
-    assert sum(map(lambda x: int(x["project_permission"] == "reader"), resp.json)) == 1
+    assert sum(map(lambda x: int(x["role"] == "owner"), resp.json)) == 2
+    assert sum(map(lambda x: int(x["role"] == "writer"), resp.json)) == 1
+    assert sum(map(lambda x: int(x["role"] == "reader"), resp.json)) == 1
     # user3 does not have access to the project
     assert not any(users[3].email == access["email"] for access in resp.json)
     assert any(users[2].email == access["email"] for access in resp.json)
@@ -508,27 +508,27 @@ def test_get_project_access(client):
     resp = client.get(url)
     assert resp.status_code == 200
     assert len(resp.json) == 6
-    assert sum(map(lambda x: int(x["project_permission"] == "owner"), resp.json)) == 2
-    assert sum(map(lambda x: int(x["project_permission"] == "writer"), resp.json)) == 1
-    assert sum(map(lambda x: int(x["project_permission"] == "reader"), resp.json)) == 3
+    assert sum(map(lambda x: int(x["role"] == "owner"), resp.json)) == 2
+    assert sum(map(lambda x: int(x["role"] == "writer"), resp.json)) == 1
+    assert sum(map(lambda x: int(x["role"] == "reader"), resp.json)) == 3
     Configuration.GLOBAL_WRITE = True
     resp = client.get(url)
     assert resp.status_code == 200
     assert len(resp.json) == 6
-    assert sum(map(lambda x: int(x["project_permission"] == "owner"), resp.json)) == 2
-    assert sum(map(lambda x: int(x["project_permission"] == "writer"), resp.json)) == 4
-    assert sum(map(lambda x: int(x["project_permission"] == "reader"), resp.json)) == 0
+    assert sum(map(lambda x: int(x["role"] == "owner"), resp.json)) == 2
+    assert sum(map(lambda x: int(x["role"] == "writer"), resp.json)) == 4
+    assert sum(map(lambda x: int(x["role"] == "reader"), resp.json)) == 0
     Configuration.GLOBAL_ADMIN = True
     resp = client.get(url)
     assert resp.status_code == 200
     assert len(resp.json) == 6
-    assert sum(map(lambda x: int(x["project_permission"] == "owner"), resp.json)) == 6
-    assert sum(map(lambda x: int(x["project_permission"] == "writer"), resp.json)) == 0
-    assert sum(map(lambda x: int(x["project_permission"] == "reader"), resp.json)) == 0
+    assert sum(map(lambda x: int(x["role"] == "owner"), resp.json)) == 6
+    assert sum(map(lambda x: int(x["role"] == "writer"), resp.json)) == 0
+    assert sum(map(lambda x: int(x["role"] == "reader"), resp.json)) == 0
     # pretend a user was deleted to test that api can handle it
     users[3].inactivate()
     users[3].anonymize()
     resp = client.get(url)
     assert resp.status_code == 200
     assert len(resp.json) == 5
-    assert sum(map(lambda x: int(x["project_permission"] == "owner"), resp.json)) == 5
+    assert sum(map(lambda x: int(x["role"] == "owner"), resp.json)) == 5

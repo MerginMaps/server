@@ -158,7 +158,7 @@ export default defineComponent({
         await this.acceptProjectAccessRequest({
           data,
           itemId: request.id,
-          namespace: this.project.namespace
+          workspace: this.project.namespace
         })
         await this.updatePaginationOrFetch()
       } catch (err) {
@@ -173,7 +173,7 @@ export default defineComponent({
     async cancelRequest(request) {
       await this.cancelProjectAccessRequest({
         itemId: request.id,
-        namespace: this.project.namespace
+        workspace: this.project.namespace
       })
       await this.updatePaginationOrFetch()
     },

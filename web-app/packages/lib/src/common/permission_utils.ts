@@ -16,7 +16,6 @@ export enum WorkspaceRole {
 }
 
 export enum ProjectRole {
-  none,
   reader,
   editor,
   writer,
@@ -37,9 +36,10 @@ export type WorkspaceRoleName =
   | 'admin'
   | 'owner'
 
-export type ProjectRoleName =
-  | Extract<WorkspaceRoleName, 'reader' | 'editor' | 'writer' | 'owner'>
-  | 'none'
+export type ProjectRoleName = Extract<
+  WorkspaceRoleName,
+  'reader' | 'editor' | 'writer' | 'owner'
+>
 
 export type ProjectPermissionName = 'owner' | 'write' | 'edit' | 'read'
 
@@ -63,7 +63,6 @@ export const USER_ROLE_BY_NAME: Record<WorkspaceRoleName, WorkspaceRole> = {
 }
 
 export const PROJECT_ROLE_NAME_BY_ROLE: Record<ProjectRole, ProjectRoleName> = {
-  [ProjectRole.none]: 'none',
   [ProjectRole.reader]: 'reader',
   [ProjectRole.editor]: 'editor',
   [ProjectRole.writer]: 'writer',
@@ -71,7 +70,6 @@ export const PROJECT_ROLE_NAME_BY_ROLE: Record<ProjectRole, ProjectRoleName> = {
 }
 
 export const PROJECT_ROLE_BY_NAME: Record<ProjectRoleName, ProjectRole> = {
-  none: ProjectRole.none,
   reader: ProjectRole.reader,
   editor: ProjectRole.editor,
   writer: ProjectRole.writer,
@@ -191,8 +189,7 @@ export function getProjectAccessKeyByRoleName(
     owner: 'ownersnames',
     writer: 'writersnames',
     editor: 'editorsnames',
-    reader: 'readersnames',
-    none: undefined
+    reader: 'readersnames'
   }
   return mapper[roleName]
 }
@@ -200,12 +197,11 @@ export function getProjectAccessKeyByRoleName(
 export function getProjectPermissionByRoleName(
   roleName: ProjectRoleName
 ): ProjectPermissionName {
-  const mapper: Record<ProjectRoleName, ProjectPermissionName | undefined> = {
+  const mapper: Record<ProjectRoleName, ProjectPermissionName> = {
     owner: 'owner',
     writer: 'write',
     editor: 'edit',
-    reader: 'read',
-    none: undefined
+    reader: 'read'
   }
   return mapper[roleName]
 }
