@@ -333,7 +333,7 @@ def files_size():
             LEFT OUTER JOIN file_history fh ON fh.id = lf.file_id
             WHERE fh.change = 'update_diff'::push_change_type
         )
-        SELECT pg_size_pretty(SUM(sum)) FROM partials;
+        SELECT COALESCE(SUM(sum), 0) FROM partials;
         """
     )
     return db.session.execute(files_size).scalar()

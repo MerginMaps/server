@@ -36,10 +36,16 @@ def test_workspace_implementation(client):
     assert handler.list_active()[0].name == ws.name
     assert len(handler.list_user_workspaces(user.username)) == 1
     assert handler.list_user_workspaces(user.username)[0].name == ws.name
+    Configuration.GLOBAL_READ = True
+    assert ws.user_has_permissions(user, "read")
+    assert not ws.user_has_permissions(user, "write")
+    # admin is counted as editor
+    assert handler.server_editors_count() == 1
     # change global flag to enable user push to any project
     Configuration.GLOBAL_WRITE = True
     assert ws.user_has_permissions(user, "write")
     assert ws.user_has_permissions(user, "read")
+    assert handler.server_editors_count() == 2
     assert not ws.user_has_permissions(user, "admin")
     assert not ws.user_has_permissions(user, "owner")
 
@@ -70,6 +76,7 @@ def test_workspace_implementation(client):
     project.removed_by = user.id
     db.session.commit()
     assert ws.disk_usage() == default_project_usage
+    assert handler.server_editors_count() == 2
 
     current_time = datetime.datetime.now(datetime.timezone.utc)
     latest_version.created = datetime.datetime.combine(

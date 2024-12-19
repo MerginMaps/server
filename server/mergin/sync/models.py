@@ -360,6 +360,7 @@ class ProjectAccessDetail:
     username: str
     name: Optional[str]
     project_permission: str
+    project_role: Optional[ProjectRole]
     type: str
 
 
