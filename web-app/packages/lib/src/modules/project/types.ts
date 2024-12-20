@@ -5,7 +5,8 @@
 /* eslint-disable camelcase */
 import {
   ProjectRoleName,
-  ProjectPermissionName
+  ProjectPermissionName,
+  WorkspaceRoleName
 } from '@/common/permission_utils'
 import {
   PaginatedRequestParamsApi,
@@ -184,12 +185,12 @@ export interface GetAccessRequestsPayload extends GetUserAccessRequestsPayload {
 export interface AcceptProjectAccessRequestPayload {
   itemId: number
   data: AcceptProjectAccessRequestData
-  namespace?: string
+  workspace?: string
 }
 
 export interface CancelProjectAccessRequestPayload {
   itemId: number
-  namespace: string
+  workspace: string
 }
 
 export interface CreateProjectParams {
@@ -292,7 +293,12 @@ export type EnhancedProjectDetail = ProjectDetail & {
   path: string
 }
 
-export interface UpdateProjectPayload {
+export interface AddProjectCollaboratorPayload {
+  role: ProjectRoleName
+  username: string
+}
+
+export interface UpdateProjectCollaboratorPayload {
   role: ProjectRoleName
 }
 
@@ -341,11 +347,30 @@ export interface ProjectVersionFileChange {
 
 export type ErrorCodes = 'UpdateProjectAccessError'
 
+export type ProjectAccessDetailType = 'invitation' | 'member'
+
 export interface ProjectAccessDetail {
-  id: number
-  type: 'member'
+  id: number | string
+  type: ProjectAccessDetailType
+  workspace_role: WorkspaceRoleName
+  name?: string
   email: string
-  username: string
-  project_permission: ProjectRoleName
-  name: string
+  username?: string
+  role?: ProjectRoleName
+  project_role?: ProjectRoleName | null
+  invitation?: {
+    expires_at: string
+    projects?: {
+      ids: string[]
+      permissions: ProjectPermissionName
+    }
+  }
+}
+
+export interface ProjectCollaborator {
+  id: number
+  usernaname: string
+  email: string
+  workspace_role: WorkspaceRoleName
+  project_role: ProjectRoleName
 }

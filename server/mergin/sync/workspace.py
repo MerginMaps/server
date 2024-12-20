@@ -323,17 +323,19 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
 
         direct_members_ids = [u.user_id for u in project.project_users]
         users = User.query.filter(User.active.is_(True)).order_by(User.email)
-        direct_members = users.filter(User.id.in_(direct_members_ids)).all()
+        direct_members: list[User] = users.filter(User.id.in_(direct_members_ids)).all()
 
         for dm in direct_members:
-            project_role = ProjectPermissions.get_user_project_role(project, dm)
+            project_permission = ProjectPermissions.get_user_project_role(project, dm)
+            project_role = project.get_role(dm.id)
             member = ProjectAccessDetail(
                 id=dm.id,
                 username=dm.username,
-                role=ws.get_user_role(dm).value,
+                workspace_role=ws.get_user_role(dm).value,
                 name=dm.profile.name(),
                 email=dm.email,
-                project_permission=project_role and project_role.value,
+                role=project_permission and project_permission.value,
+                project_role=project_role.value if project_role else None,
                 type="member",
             )
             result.append(member)
@@ -345,8 +347,9 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
                     username=gm.username,
                     name=gm.profile.name(),
                     email=gm.email,
+                    workspace_role=global_role,
                     role=global_role,
-                    project_permission=global_role,
+                    project_role=None,
                     type="member",
                 )
                 result.append(member)

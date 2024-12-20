@@ -60,10 +60,6 @@ export default defineComponent({
       default: false
     },
     namespace: String,
-    asAdmin: {
-      type: Boolean,
-      default: false
-    },
     public: {
       type: Boolean,
       default: true
@@ -135,9 +131,6 @@ export default defineComponent({
       }
       if (projectGridState.namespace) {
         params.only_namespace = projectGridState.namespace
-      }
-      if (this.asAdmin) {
-        params.as_admin = true
       }
       if (!this.public) {
         params.public = false

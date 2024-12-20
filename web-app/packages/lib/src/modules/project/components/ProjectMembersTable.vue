@@ -71,7 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <template #col-roles="{ item }">
           <AppDropdown
             :options="roles"
-            :model-value="item.project_permission"
+            :model-value="item.role"
             @update:model-value="(e) => roleUpdate(item, e)"
             :disabled="item.id === loggedUser.id"
             class="w-6 lg:w-full"
@@ -163,7 +163,7 @@ function removeMember(item: ProjectAccessDetail) {
 function roleUpdate(item: ProjectAccessDetail, value: ProjectRoleName) {
   projectStore.updateProjectAccess({
     projectId: projectStore.project.id,
-    userId: item.id,
+    access: item,
     data: { role: value }
   })
 }

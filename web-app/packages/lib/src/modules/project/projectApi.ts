@@ -25,8 +25,10 @@ import {
   ProjectAccessDetail,
   ProjectAccess,
   ProjectVersionFileChange,
-  UpdateProjectPayload,
-  UpdatePublicFlagParams
+  UpdateProjectCollaboratorPayload,
+  UpdatePublicFlagParams,
+  ProjectCollaborator,
+  AddProjectCollaboratorPayload
 } from '@/modules/project/types'
 
 export const ProjectApi = {
@@ -174,17 +176,29 @@ export const ProjectApi = {
     )
   },
 
-  async updateProjectAccess(
+  async addProjectCollaborator(
+    id: string,
+    data: AddProjectCollaboratorPayload
+  ): Promise<AxiosResponse<ProjectCollaborator>> {
+    return ProjectModule.httpService.post(
+      `/v2/projects/${id}/collaborators`,
+      data,
+      {
+        validateStatus
+      }
+    )
+  },
+
+  async updateProjectCollaborator(
     id: string,
     userId: number,
-    data: UpdateProjectPayload,
-    withRetry?: boolean
-  ): Promise<AxiosResponse<ProjectAccess>> {
+    data: UpdateProjectCollaboratorPayload
+  ): Promise<AxiosResponse<ProjectCollaborator>> {
     return ProjectModule.httpService.patch(
       `/v2/projects/${id}/collaborators/${userId}`,
       data,
       {
-        ...(withRetry ? getDefaultRetryOptions() : {})
+        validateStatus
       }
     )
   },
@@ -199,15 +213,14 @@ export const ProjectApi = {
     })
   },
 
-  async removeProjectAccess(
+  async removeProjectCollaborator(
     id: string,
-    userId: number,
-    withRetry?: boolean
-  ): Promise<AxiosResponse<ProjectAccess>> {
+    userId: number
+  ): Promise<AxiosResponse<void>> {
     return ProjectModule.httpService.delete(
       `/v2/projects/${id}/collaborators/${userId}`,
       {
-        ...(withRetry ? getDefaultRetryOptions() : {})
+        validateStatus
       }
     )
   },

@@ -26,7 +26,6 @@ from .schemas import (
     AdminProjectSchema,
     ProjectAccessSchema,
     ProjectAccessDetailSchema,
-    ProjectVersionListSchema,
 )
 from .permissions import (
     require_project_by_uuid,
