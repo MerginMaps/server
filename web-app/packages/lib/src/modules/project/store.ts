@@ -783,6 +783,9 @@ export const useProjectStore = defineStore('projectModule', {
           Number(item.id)
         )
         this.access = this.access.filter((access) => access.id !== item.id)
+        this.collaborators = this.collaborators.filter(
+          (collaborators) => collaborators.id !== item.id
+        )
       } catch {
         notificationStore.error({
           text: `Failed to update project access for user ${item.username}`
@@ -826,6 +829,42 @@ export const useProjectStore = defineStore('projectModule', {
         })
       } catch (err) {
         this.handleProjectAccessError(err, 'Failed to update project access')
+      } finally {
+        this.accessLoading = false
+      }
+    },
+
+    async updateProjectCollaborators(payload: {
+      projectId: string
+      collaborator: ProjectCollaborator
+      data: UpdateProjectCollaboratorPayload
+    }) {
+      this.accessLoading = true
+      try {
+        if (!payload.collaborator.project_role) {
+          await ProjectApi.addProjectCollaborator(payload.projectId, {
+            ...payload.data,
+            username: payload.collaborator.username
+          })
+        } else {
+          await ProjectApi.updateProjectCollaborator(
+            payload.projectId,
+            Number(payload.collaborator.id),
+            payload.data
+          )
+        }
+        this.collaborators = this.collaborators.map((collaborator) => {
+          if (collaborator.id === payload.collaborator.id) {
+            collaborator.role = payload.data.role
+            collaborator.project_role = payload.data.role
+          }
+          return collaborator
+        })
+      } catch (err) {
+        this.handleProjectAccessError(
+          err,
+          'Failed to update project collaborator'
+        )
       } finally {
         this.accessLoading = false
       }

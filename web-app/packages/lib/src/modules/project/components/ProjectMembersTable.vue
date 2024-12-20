@@ -106,7 +106,6 @@ const projectStore = useProjectStore()
 const userStore = useUserStore()
 const instanceStore = useInstanceStore()
 
-
 const itemsPerPage = ref(10)
 const columns = ref<DataViewWrapperColumnItem[]>([
   {
@@ -163,9 +162,9 @@ function removeMember(item: ProjectCollaborator) {
 }
 
 function roleUpdate(item: ProjectCollaborator, value: ProjectRoleName) {
-  projectStore.updateProjectAccess({
+  projectStore.updateProjectCollaborators({
     projectId: projectStore.project.id,
-    access: item,
+    collaborator: item,
     data: { role: value }
   })
 }
