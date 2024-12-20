@@ -333,14 +333,14 @@ def test_template_projects(client):
 
 
 def test_update_project_access(client, diff_project):
-    url = f"/app/project/{diff_project.id}/access"
+    url = f"/app/project/{diff_project.id}/public"
     original_creator_id = diff_project.creator.id
     data = {}
 
     # update public parameter => public: True
     data["public"] = True
     resp = client.patch(url, headers=json_headers, data=json.dumps(data))
-    assert resp.status_code == 200
+    assert resp.status_code == 204
     assert diff_project.public == True
 
 

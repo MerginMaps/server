@@ -303,17 +303,16 @@ def unsubscribe_project(id):  # pylint: disable=W0612
 
 
 @auth_required
-def update_project_access(id: str):
+def update_project_public_flag(id: str):
     """Modify the project's public flag
 
     :param id: Project uuid
     """
     project = require_project_by_uuid(id, ProjectPermissions.Update)
 
-    if "public" in request.json:
-        project.public = request.json["public"]
-        db.session.commit()
-    return ProjectAccessSchema().dump(project), 200
+    project.public = request.json.get("public", False)
+    db.session.commit()
+    return NoContent, 204
 
 
 @auth_required
