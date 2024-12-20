@@ -361,7 +361,7 @@ class ProjectAccessDetailSchema(Schema):
     role = fields.String()
     username = fields.String()
     name = fields.String()
-    project_permission = fields.String()
+    workspace_role = fields.String()
     project_role = fields.String()
     type = fields.String()
     invitation = fields.Nested(ProjectInvitationAccessSchema())

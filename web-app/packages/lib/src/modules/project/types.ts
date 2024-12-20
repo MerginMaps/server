@@ -351,12 +351,12 @@ export type ProjectAccessDetailType = 'invitation' | 'member'
 
 export interface ProjectAccessDetail {
   id: number | string
-  type?: ProjectAccessDetailType
-  role: WorkspaceRoleName
+  type: ProjectAccessDetailType
+  workspace_role: WorkspaceRoleName
   name?: string
   email: string
   username?: string
-  project_permission?: ProjectRoleName
+  role?: ProjectRoleName
   project_role?: ProjectRoleName | null
   invitation?: {
     expires_at: string
