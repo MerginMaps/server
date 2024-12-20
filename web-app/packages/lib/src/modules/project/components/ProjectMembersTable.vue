@@ -96,7 +96,9 @@ import { DataViewWrapperColumnItem } from '@/common/components/data-view/types'
 import {
   GlobalRole,
   ProjectRoleName,
-  isAtLeastGlobalRole, USER_ROLE_NAME_BY_ROLE, WorkspaceRole
+  isAtLeastGlobalRole,
+  USER_ROLE_NAME_BY_ROLE,
+  WorkspaceRole
 } from '@/common/permission_utils'
 import { useInstanceStore, useUserStore } from '@/main'
 
@@ -142,7 +144,7 @@ const roles = computed(() =>
 )
 const loggedUser = computed(() => userStore.loggedUser)
 const searchedItems = computed(() =>
-  projectStore.access.filter((item) => {
+  projectStore.collaborators.filter((item) => {
     return [item.username, item.email].some(
       (v) => v && v.toString().toLowerCase().includes(projectStore.accessSearch)
     )
@@ -169,7 +171,7 @@ function roleUpdate(item: ProjectCollaborator, value: ProjectRoleName) {
 }
 
 onUnmounted(() => {
-  projectStore.access = []
+  projectStore.collaborators = []
 })
 
 projectStore.getProjectCollaborators(projectStore.project?.id)

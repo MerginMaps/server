@@ -44,7 +44,8 @@ import {
   ProjectVersionFileChange,
   ProjectVersionListItem,
   UpdateProjectCollaboratorPayload,
-  UpdatePublicFlagParams
+  UpdatePublicFlagParams,
+  ProjectCollaborator
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
 
@@ -75,6 +76,7 @@ export interface ProjectState {
   availablePermissions: DropdownOption<ProjectPermissionName>[]
   availableRoles: DropdownOption<ProjectRoleName>[]
   versionsChangesetLoading: boolean
+  collaborators: ProjectCollaborator[]
 }
 
 export const useProjectStore = defineStore('projectModule', {
@@ -99,7 +101,8 @@ export const useProjectStore = defineStore('projectModule', {
     accessSorting: undefined,
     availablePermissions: permissionUtils.getProjectPermissionsValues(),
     availableRoles: permissionUtils.getProjectRoleNameValues(),
-    versionsChangesetLoading: false
+    versionsChangesetLoading: false,
+    collaborators: []
   }),
 
   getters: {
@@ -754,7 +757,7 @@ export const useProjectStore = defineStore('projectModule', {
       try {
         this.accessLoading = true
         const response = await ProjectApi.getProjectCollaborators(projectId)
-        this.access = response.data
+        this.collaborators = response.data
       } catch {
         notificationStore.error({
           text: 'Failed to get project collaborators'

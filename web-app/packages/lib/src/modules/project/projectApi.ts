@@ -315,6 +315,7 @@ export const ProjectApi = {
     return ProjectModule.httpService.get(url, { responseType: 'blob' })
   },
 
+  // Kept for EE (collaborators + invitation) access, TODO: remove when a separate invitation endpoint is implemented
   async getProjectAccess(
     projectId: string
   ): Promise<AxiosResponse<ProjectAccessDetail[]>> {
