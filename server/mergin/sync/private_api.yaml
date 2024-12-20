@@ -329,6 +329,7 @@ paths:
         required: true
         schema:
           type: string
+    #  // Kept for EE (collaborators + invitation) access, TODO: remove when a separate invitation endpoint is implemented
     get:
       tags:
         - project
@@ -351,30 +352,18 @@ paths:
           $ref: "#/components/responses/NotFoundResp"
       x-openapi-router-controller: mergin.sync.private_api_controller
     patch:
-      summary: Update direct project access (sharing)
+      summary: Update public project flag
       operationId: update_project_access
       requestBody:
         description: Request data
-        required: true
         content:
           application/json:
             schema:
               type: object
               properties:
-                user_id:
-                  type: integer
                 public:
                   type: boolean
                   nullable: true
-                role:
-                  type: string
-                  enum:
-                    - owner
-                    - writer
-                    - editor
-                    - reader
-                    - none
-                  example: writer
       responses:
         "200":
           $ref: "#/components/schemas/ProjectAccessUpdated"

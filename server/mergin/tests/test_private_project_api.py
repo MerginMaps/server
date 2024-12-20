@@ -335,69 +335,13 @@ def test_template_projects(client):
 def test_update_project_access(client, diff_project):
     url = f"/app/project/{diff_project.id}/access"
     original_creator_id = diff_project.creator.id
-    # create user and grant him write access
-    user = add_user("reader", "reader")
-    assert not diff_project.get_role(user.id)
-
-    data = {"user_id": user.id, "role": "none"}
-    # nothing happens
-    resp = client.patch(url, headers=json_headers, data=json.dumps(data))
-    assert resp.status_code == 200
-    assert not diff_project.get_role(user.id)
-
-    # grant read access
-    data["role"] = "reader"
-    resp = client.patch(url, headers=json_headers, data=json.dumps(data))
-    assert resp.status_code == 200
-    assert diff_project.get_role(user.id) is ProjectRole.READER
-
-    # grant editor access
-    data["role"] = "editor"
-    resp = client.patch(url, headers=json_headers, data=json.dumps(data))
-    assert resp.status_code == 200
-    assert diff_project.get_role(user.id) is ProjectRole.EDITOR
-
-    # change to write access
-    data["role"] = "writer"
-    resp = client.patch(url, headers=json_headers, data=json.dumps(data))
-    assert resp.status_code == 200
-    assert diff_project.get_role(user.id) is ProjectRole.WRITER
-
-    # downgrade to read access
-    data["role"] = "reader"
-    resp = client.patch(url, headers=json_headers, data=json.dumps(data))
-    assert resp.status_code == 200
-    assert diff_project.get_role(user.id) is ProjectRole.READER
-
-    # remove access
-    data["role"] = "none"
-    resp = client.patch(url, headers=json_headers, data=json.dumps(data))
-    assert resp.status_code == 200
-    assert not diff_project.get_role(user.id)
+    data = {}
 
     # update public parameter => public: True
     data["public"] = True
     resp = client.patch(url, headers=json_headers, data=json.dumps(data))
     assert resp.status_code == 200
     assert diff_project.public == True
-
-    # access of project creator can be removed
-    data["user_id"] = diff_project.creator_id
-    resp = client.patch(
-        f"/app/project/{diff_project.id}/access",
-        headers=json_headers,
-        data=json.dumps(data),
-    )
-    assert resp.status_code == 200
-    db.session.rollback()
-    assert not diff_project.get_role(user.id)
-    assert diff_project.creator_id == original_creator_id
-
-    # try to grant access to inaccessible user
-    data = {"user_id": 100, "role": "reader"}
-    # nothing happens
-    resp = client.patch(url, headers=json_headers, data=json.dumps(data))
-    assert resp.status_code == 404
 
 
 def test_restore_project(client, diff_project):
