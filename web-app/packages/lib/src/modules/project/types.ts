@@ -351,7 +351,7 @@ export type ProjectAccessDetailType = 'invitation' | 'member'
 
 export interface ProjectAccessDetail {
   id: number | string
-  type: ProjectAccessDetailType
+  type?: ProjectAccessDetailType
   role: WorkspaceRoleName
   name?: string
   email: string
@@ -369,16 +369,9 @@ export interface ProjectAccessDetail {
 
 export interface ProjectCollaborator {
   id: number
-  usernaname: string
-  email: string
-  workspace_role: WorkspaceRoleName
-  project_role: ProjectRoleName
-}
-
-export interface ProjectCollaborators {
-  id: number
   email: string
   username: string
   workspace_role: WorkspaceRoleName
-  project_role: ProjectRoleName
+  project_role: ProjectRoleName | null
+  role: ProjectRoleName
 }

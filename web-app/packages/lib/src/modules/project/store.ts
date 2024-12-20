@@ -757,7 +757,7 @@ export const useProjectStore = defineStore('projectModule', {
         this.access = response.data
       } catch {
         notificationStore.error({
-          text: 'Failed to get project access'
+          text: 'Failed to get project collaborators'
         })
       } finally {
         this.accessLoading = false
@@ -816,7 +816,7 @@ export const useProjectStore = defineStore('projectModule', {
         }
         this.access = this.access.map((access) => {
           if (access.id === payload.access.id) {
-            access.project_permission = payload.data.role
+            access.role = payload.data.role
             access.project_role = payload.data.role
           }
           return access

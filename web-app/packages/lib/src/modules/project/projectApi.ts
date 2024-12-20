@@ -334,7 +334,9 @@ export const ProjectApi = {
 
   async getProjectCollaborators(
     projectId: string
-  ): Promise<AxiosResponse<ProjectCollaborators[]>> {
-    return ProjectModule.httpService.get(`/v2/projects/${projectId}/collaborators`)
+  ): Promise<AxiosResponse<ProjectCollaborator[]>> {
+    return ProjectModule.httpService.get(
+      `/v2/projects/${projectId}/collaborators`
+    )
   }
 }

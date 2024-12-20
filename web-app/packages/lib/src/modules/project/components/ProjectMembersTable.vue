@@ -71,7 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <template #col-roles="{ item }">
           <AppDropdown
             :options="roles"
-            :model-value="ProjectPermission(item)"
+            :model-value="item.role"
             @update:model-value="(e) => roleUpdate(item, e)"
             :disabled="item.id === loggedUser.id"
             class="w-6 lg:w-full"
@@ -86,7 +86,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { computed, ref, onUnmounted } from 'vue'
 
 import { useProjectStore } from '../store'
-import { ProjectCollaborators } from '../types'
+import { ProjectCollaborator } from '../types'
 
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppDropdown from '@/common/components/AppDropdown.vue'
@@ -96,20 +96,14 @@ import { DataViewWrapperColumnItem } from '@/common/components/data-view/types'
 import {
   GlobalRole,
   ProjectRoleName,
-  isAtLeastGlobalRole,
-  calculateProjectPermission
+  isAtLeastGlobalRole, USER_ROLE_NAME_BY_ROLE, WorkspaceRole
 } from '@/common/permission_utils'
 import { useInstanceStore, useUserStore } from '@/main'
-
-interface Props {
-  allowRemove?: boolean
-}
 
 const projectStore = useProjectStore()
 const userStore = useUserStore()
 const instanceStore = useInstanceStore()
 
-const props = withDefaults(defineProps<Props>(), { allowRemove: true })
 
 const itemsPerPage = ref(10)
 const columns = ref<DataViewWrapperColumnItem[]>([
@@ -135,6 +129,8 @@ const columns = ref<DataViewWrapperColumnItem[]>([
     fixed: true
   }
 ])
+
+// TODO: do not bother with GlobalRole but use workspace_role attribute
 const roles = computed(() =>
   projectStore.availableRoles.map((item) => ({
     ...item,
@@ -153,24 +149,23 @@ const searchedItems = computed(() =>
   })
 )
 
-function canRemoveMember(item: ProjectCollaborators) {
-  return props.allowRemove && item.id !== loggedUser.value?.id
+function canRemoveMember(item: ProjectCollaborator) {
+  return (
+    item.workspace_role === USER_ROLE_NAME_BY_ROLE[WorkspaceRole.guest] &&
+    item.id !== loggedUser.value?.id
+  )
 }
 
-function removeMember(item: ProjectCollaborators) {
+function removeMember(item: ProjectCollaborator) {
   projectStore.removeProjectAccess(item)
 }
 
-function roleUpdate(item: ProjectCollaborators, value: ProjectRoleName) {
+function roleUpdate(item: ProjectCollaborator, value: ProjectRoleName) {
   projectStore.updateProjectAccess({
     projectId: projectStore.project.id,
     access: item,
     data: { role: value }
   })
-}
-
-function ProjectPermission(item: ProjectCollaborators) {
-  return calculateProjectPermission(item.project_role, item.workspace_role)
 }
 
 onUnmounted(() => {

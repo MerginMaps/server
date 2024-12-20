@@ -405,3 +405,4 @@ class ProjectMemberSchema(Schema):
     email = fields.Email()
     project_role = fields.Enum(enum=ProjectRole, by_value=True)
     workspace_role = fields.Enum(enum=WorkspaceRole, by_value=True)
+    role = fields.Enum(enum=ProjectRole, by_value=True)

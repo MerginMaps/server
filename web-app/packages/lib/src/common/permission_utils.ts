@@ -41,14 +41,6 @@ export type ProjectRoleName = Extract<
   'reader' | 'editor' | 'writer' | 'owner'
 >
 
-const ROLE_HIERARCHY: ProjectRoleName[] = [
-  'none',
-  'reader',
-  'editor',
-  'writer',
-  'owner'
-]
-
 export type ProjectPermissionName = 'owner' | 'write' | 'edit' | 'read'
 
 export const USER_ROLE_NAME_BY_ROLE: Record<WorkspaceRole, WorkspaceRoleName> =
@@ -136,8 +128,7 @@ export function isAtLeastGlobalRole(
   roleName: ProjectRoleName,
   globalRole: GlobalRole
 ): boolean {
-  // We have also none role, so we need to add 1 to the global role
-  return PROJECT_ROLE_BY_NAME[roleName] >= globalRole + 1
+  return PROJECT_ROLE_BY_NAME[roleName] >= globalRole
 }
 
 export function getProjectRoleNameValues(): DropdownOption<ProjectRoleName>[] {
@@ -212,23 +203,4 @@ export function getProjectPermissionByRoleName(
     reader: 'read'
   }
   return mapper[roleName]
-}
-
-export function calculateProjectPermission(
-  project_role: ProjectRoleName,
-  workspace_role: WorkspaceRoleName
-): ProjectRoleName {
-  const mappedWorkspaceRole: ProjectRoleName =
-    workspace_role === 'admin' ? 'owner' : (workspace_role as ProjectRoleName)
-
-  if (project_role === 'none' && workspace_role === 'guest') {
-    return 'none'
-  }
-
-  const projectRoleIndex = ROLE_HIERARCHY.indexOf(project_role)
-  const workspaceRoleIndex = ROLE_HIERARCHY.indexOf(mappedWorkspaceRole)
-
-  return projectRoleIndex > workspaceRoleIndex
-    ? project_role
-    : mappedWorkspaceRole
 }
