@@ -315,6 +315,7 @@ export const ProjectApi = {
     return ProjectModule.httpService.get(url, { responseType: 'blob' })
   },
 
+  // Kept for EE (collaborators + invitation) access, TODO: remove when a separate invitation endpoint is implemented
   async getProjectAccess(
     projectId: string
   ): Promise<AxiosResponse<ProjectAccessDetail[]>> {
@@ -329,6 +330,14 @@ export const ProjectApi = {
   ): Promise<AxiosResponse<ProjectVersionFileChange[]>> {
     return ProjectModule.httpService.get(
       `/v1/resource/changesets/${workspace}/${projectName}/${versionId}?path=${path}`
+    )
+  },
+
+  async getProjectCollaborators(
+    projectId: string
+  ): Promise<AxiosResponse<ProjectCollaborator[]>> {
+    return ProjectModule.httpService.get(
+      `/v2/projects/${projectId}/collaborators`
     )
   }
 }

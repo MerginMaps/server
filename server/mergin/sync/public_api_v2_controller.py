@@ -81,6 +81,7 @@ def get_project_collaborators(id):
                     email=user.email,
                     project_role=project_role,
                     workspace_role=workspace_role,
+                    role=ProjectPermissions.get_user_project_role(project, user),
                 )
             )
 

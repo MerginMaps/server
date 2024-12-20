@@ -358,11 +358,11 @@ class StrOrInt(fields.Field):
 class ProjectAccessDetailSchema(Schema):
     id = StrOrInt()
     email = fields.String()
-    role = fields.String()
+    role = fields.Enum(enum=ProjectRole, by_value=True)
     username = fields.String()
     name = fields.String()
-    workspace_role = fields.String()
-    project_role = fields.String()
+    project_role = fields.Enum(enum=ProjectRole, by_value=True)
+    workspace_role = fields.Enum(enum=WorkspaceRole, by_value=True)
     type = fields.String()
     invitation = fields.Nested(ProjectInvitationAccessSchema())
 
@@ -405,3 +405,4 @@ class ProjectMemberSchema(Schema):
     email = fields.Email()
     project_role = fields.Enum(enum=ProjectRole, by_value=True)
     workspace_role = fields.Enum(enum=WorkspaceRole, by_value=True)
+    role = fields.Enum(enum=ProjectRole, by_value=True)

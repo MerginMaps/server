@@ -369,8 +369,9 @@ export interface ProjectAccessDetail {
 
 export interface ProjectCollaborator {
   id: number
-  usernaname: string
   email: string
+  username: string
   workspace_role: WorkspaceRoleName
-  project_role: ProjectRoleName
+  project_role: ProjectRoleName | null
+  role: ProjectRoleName
 }

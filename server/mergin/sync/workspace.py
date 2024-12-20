@@ -307,6 +307,7 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
         """Project access base query"""
         return AccessRequest.query.join(Project)
 
+    # not used in CE, TODO: remove together with EE when it's replaced there
     def project_access(self, project: Project) -> List[ProjectAccessDetail]:
         """
         Project access users overview
