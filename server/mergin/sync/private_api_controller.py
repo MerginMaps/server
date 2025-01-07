@@ -303,28 +303,16 @@ def unsubscribe_project(id):  # pylint: disable=W0612
 
 
 @auth_required
-def update_project_access(id: str):
-    """Modify shared project access
+def update_project_public_flag(id: str):
+    """Modify the project's public flag
 
     :param id: Project uuid
     """
     project = require_project_by_uuid(id, ProjectPermissions.Update)
 
-    if "public" in request.json:
-        project.public = request.json["public"]
-
-    if "user_id" in request.json and "role" in request.json:
-        user = User.query.filter_by(
-            id=request.json["user_id"], active=True
-        ).first_or_404("User does not exist")
-
-        if request.json["role"] == "none":
-            project.unset_role(user.id)
-        else:
-            project.set_role(user.id, ProjectRole(request.json["role"]))
-            project_access_granted.send(project, user_id=user.id)
+    project.public = request.json.get("public", False)
     db.session.commit()
-    return ProjectAccessSchema().dump(project), 200
+    return NoContent, 204
 
 
 @auth_required
