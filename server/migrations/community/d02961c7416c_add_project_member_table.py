@@ -173,7 +173,7 @@ def data_upgrade():
                 FROM project_access
             )
             INSERT INTO project_member (project_id, user_id, role)
-            SELECT m.workspace_id, m.user_id, m.role::workspace_role
+            SELECT m.project_id, m.user_id, m.role::project_role
             FROM members m
             LEFT OUTER JOIN "user" u on u.id = m.user_id
             LEFT OUTER JOIN project p ON p.id = m.project_id
