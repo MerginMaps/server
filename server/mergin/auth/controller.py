@@ -512,7 +512,7 @@ def create_user():
     )
 
     # in public endpoint we want to disable form csrf - for browser clients endpoint is protected anyway
-    form = UserRegistrationForm(meta={'csrf': False})
+    form = UserRegistrationForm(meta={"csrf": False})
     form.confirm.data = form.password.data
     form.username.data = username
     if not form.validate():
