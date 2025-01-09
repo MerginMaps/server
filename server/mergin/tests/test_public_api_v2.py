@@ -90,7 +90,7 @@ def test_project_members(client):
     assert response.status_code == 404
 
     # add direct access
-    response = client.post(url, json={"role": role, "username": user.email})
+    response = client.post(url, json={"role": role, "user": user.email})
     assert response.status_code == 201
     assert response.json["id"] == user.id
     assert response.json["project_role"] == role

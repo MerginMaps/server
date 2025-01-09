@@ -295,7 +295,7 @@ export type EnhancedProjectDetail = ProjectDetail & {
 
 export interface AddProjectCollaboratorPayload {
   role: ProjectRoleName
-  username: string
+  user: string
 }
 
 export interface UpdateProjectCollaboratorPayload {
