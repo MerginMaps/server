@@ -36,10 +36,15 @@ export function formatFileSize(
   return `${unitsValue.toFixed(digits)} ${unit}`
 }
 
-export function formatToCurrency(value: number, currency: string): string {
+export function formatToCurrency(
+  value: number,
+  currency: string,
+  digits = 2
+): string {
   return value.toLocaleString('en-UK', {
     style: 'currency',
     currency,
-    currencySign: 'accounting'
+    currencySign: 'accounting',
+    maximumFractionDigits: digits
   })
 }
