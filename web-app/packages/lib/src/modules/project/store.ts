@@ -811,7 +811,7 @@ export const useProjectStore = defineStore('projectModule', {
         if (!payload.access.project_role) {
           await ProjectApi.addProjectCollaborator(payload.projectId, {
             ...payload.data,
-            username: payload.access.username
+            user: payload.access.username
           })
         } else {
           await ProjectApi.updateProjectCollaborator(
@@ -844,7 +844,7 @@ export const useProjectStore = defineStore('projectModule', {
         if (!payload.collaborator.project_role) {
           await ProjectApi.addProjectCollaborator(payload.projectId, {
             ...payload.data,
-            username: payload.collaborator.username
+            user: payload.collaborator.username
           })
         } else {
           await ProjectApi.updateProjectCollaborator(

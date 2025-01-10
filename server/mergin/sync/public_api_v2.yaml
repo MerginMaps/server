@@ -136,10 +136,10 @@ paths:
             schema:
               type: object
               required:
-                - username
+                - user
                 - role
               properties:
-                username:
+                user:
                   type: string
                   example: john.doe
                   description: username or email

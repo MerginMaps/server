@@ -93,7 +93,7 @@ def get_project_collaborators(id):
 def add_project_collaborator(id):
     """Add project collaborator"""
     project = require_project_by_uuid(id, ProjectPermissions.Update)
-    user = User.get_by_login(request.json["username"])
+    user = User.get_by_login(request.json["user"])
     if not user:
         abort(404)
 
