@@ -850,6 +850,9 @@ def test_username_generation(client):
     user = add_user("user25", "user")
     assert User.generate_username(user.email) == user.username + "1"
 
+    # generate username from email containing invalid chars for username, e.g. +
+    assert User.generate_username("tralala+test@example.com") == "tralalatest"
+
 
 def test_server_usage(client):
     """Test server usage endpoint"""

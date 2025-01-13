@@ -6,6 +6,7 @@ from __future__ import annotations
 import datetime
 from typing import List, Optional
 import bcrypt
+import re
 from flask import current_app, request
 from sqlalchemy import or_, func, text
 
@@ -196,6 +197,10 @@ class User(db.Model):
         if not "@" in email:
             return
         username = email.split("@")[0].strip().lower()
+        # remove forbidden chars
+        username = re.sub(
+            r"[\@\#\$\%\^\&\*\(\)\{\}\[\]\?\'\"`,;\:\+\=\~\\\/\|\<\>]", "", username
+        )
         # check if we already do not have existing usernames
         suffix = db.session.execute(
             text(
