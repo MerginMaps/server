@@ -208,7 +208,7 @@ export const ProjectApi = {
     data: UpdatePublicFlagParams,
     withRetry?: boolean
   ): Promise<AxiosResponse<ProjectAccess>> {
-    return ProjectModule.httpService.patch(`/app/project/${id}/access`, data, {
+    return ProjectModule.httpService.patch(`/app/project/${id}/public`, data, {
       ...(withRetry ? getDefaultRetryOptions() : {})
     })
   },

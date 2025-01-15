@@ -884,11 +884,8 @@ export const useProjectStore = defineStore('projectModule', {
       const notificationStore = useNotificationStore()
       this.accessLoading = true
       try {
-        const response = await ProjectApi.updatePublicFlag(
-          payload.projectId,
-          payload.data
-        )
-        this.project.access = response.data
+        await ProjectApi.updatePublicFlag(payload.projectId, payload.data)
+        this.project.access.public = !this.project.access?.public
       } catch {
         notificationStore.error({
           text: `Failed to update public flag`
