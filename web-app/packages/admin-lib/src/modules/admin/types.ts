@@ -19,8 +19,8 @@ export interface UsersParams extends PaginatedRequestParams {
 export type UsersResponse = PaginatedResponse<UserResponse>
 
 export interface UpdateUserData {
-  is_admin: boolean
-  active: boolean
+  is_admin?: boolean
+  active?: boolean
 }
 
 export interface CreateUserData {
