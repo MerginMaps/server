@@ -282,7 +282,6 @@ const switchAdminAccess = async () => {
       await adminStore.updateUser({
         username: user.value.username,
         data: {
-          active: user.value.active,
           is_admin: !user.value.is_admin
         }
       })

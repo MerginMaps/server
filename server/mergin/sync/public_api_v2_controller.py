@@ -81,6 +81,7 @@ def get_project_collaborators(id):
                     email=user.email,
                     project_role=project_role,
                     workspace_role=workspace_role,
+                    role=ProjectPermissions.get_user_project_role(project, user),
                 )
             )
 
@@ -92,7 +93,7 @@ def get_project_collaborators(id):
 def add_project_collaborator(id):
     """Add project collaborator"""
     project = require_project_by_uuid(id, ProjectPermissions.Update)
-    user = User.get_by_login(request.json["username"])
+    user = User.get_by_login(request.json["user"])
     if not user:
         abort(404)
 
@@ -112,7 +113,7 @@ def update_project_collaborator(id, user_id):
     project = require_project_by_uuid(id, ProjectPermissions.Update)
     user = User.query.filter_by(id=user_id, active=True).first_or_404()
     if not project.get_role(user_id):
-        abort(404, "User is not a project member")
+        abort(404)
 
     project.set_role(user.id, ProjectRole(request.json["role"]))
     db.session.commit()
@@ -125,7 +126,7 @@ def remove_project_collaborator(id, user_id):
     """Remove project collaborator"""
     project = require_project_by_uuid(id, ProjectPermissions.Update)
     if not project.get_role(user_id):
-        abort(404, "User is not a project member")
+        abort(404)
 
     project.unset_role(user_id)
     db.session.commit()

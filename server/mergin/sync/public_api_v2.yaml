@@ -136,10 +136,10 @@ paths:
             schema:
               type: object
               required:
-                - username
+                - user
                 - role
               properties:
-                username:
+                user:
                   type: string
                   example: john.doe
                   description: username or email
@@ -265,6 +265,11 @@ components:
         - reader
         - guest
       example: writer
+    Role:
+      allOf:
+        - $ref: '#/components/schemas/ProjectRole'
+          nullable: false
+          description: combination of workspace role and project role
     ProjectMember:
       type: object
       properties:
@@ -282,3 +287,5 @@ components:
           $ref: '#/components/schemas/WorkspaceRole'
         project_role:
           $ref: '#/components/schemas/ProjectRole'
+        role:
+          $ref: '#/components/schemas/Role'

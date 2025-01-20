@@ -252,7 +252,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
     _get_csrf_token = csrf._get_csrf_token
 
     def get_csrf_token():
-        if request.path.startswith("/v1/"):
+        if request.path.startswith("/v1/") or request.path.startswith("/v2/"):
             for header_name in app.app.config["WTF_CSRF_HEADERS"]:
                 csrf_token = request.headers.get(header_name)
                 if csrf_token:

@@ -41,9 +41,11 @@ import {
   SaveProjectSettings,
   ErrorCodes,
   ProjectAccessDetail,
-  UpdateProjectAccessParams,
   ProjectVersionFileChange,
-  ProjectVersionListItem
+  ProjectVersionListItem,
+  UpdateProjectCollaboratorPayload,
+  UpdatePublicFlagParams,
+  ProjectCollaborator
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
 
@@ -74,6 +76,7 @@ export interface ProjectState {
   availablePermissions: DropdownOption<ProjectPermissionName>[]
   availableRoles: DropdownOption<ProjectRoleName>[]
   versionsChangesetLoading: boolean
+  collaborators: ProjectCollaborator[]
 }
 
 export const useProjectStore = defineStore('projectModule', {
@@ -98,7 +101,8 @@ export const useProjectStore = defineStore('projectModule', {
     accessSorting: undefined,
     availablePermissions: permissionUtils.getProjectPermissionsValues(),
     availableRoles: permissionUtils.getProjectRoleNameValues(),
-    versionsChangesetLoading: false
+    versionsChangesetLoading: false,
+    collaborators: []
   }),
 
   getters: {
@@ -747,6 +751,22 @@ export const useProjectStore = defineStore('projectModule', {
       }
     },
 
+    async getProjectCollaborators(projectId: string) {
+      const notificationStore = useNotificationStore()
+
+      try {
+        this.accessLoading = true
+        const response = await ProjectApi.getProjectCollaborators(projectId)
+        this.collaborators = response.data
+      } catch {
+        notificationStore.error({
+          text: 'Failed to get project collaborators'
+        })
+      } finally {
+        this.accessLoading = false
+      }
+    },
+
     /**
      * Removes the given user's access to the current project.
      *
@@ -755,15 +775,17 @@ export const useProjectStore = defineStore('projectModule', {
     async removeProjectAccess(
       item: Pick<ProjectAccessDetail, 'id' | 'username'>
     ) {
-      const notificationStore = useNotificationStore()
       this.accessLoading = true
+      const notificationStore = useNotificationStore()
       try {
-        const response = await ProjectApi.updateProjectAccess(this.project.id, {
-          user_id: item.id,
-          role: 'none'
-        })
+        await ProjectApi.removeProjectCollaborator(
+          this.project.id,
+          Number(item.id)
+        )
         this.access = this.access.filter((access) => access.id !== item.id)
-        this.project.access = response.data
+        this.collaborators = this.collaborators.filter(
+          (collaborators) => collaborators.id !== item.id
+        )
       } catch {
         notificationStore.error({
           text: `Failed to update project access for user ${item.username}`
@@ -774,32 +796,99 @@ export const useProjectStore = defineStore('projectModule', {
     },
 
     /**
-     * Updates the access for a user on the given project. `project.access` contains also public attribute. This attribute can be changed also.
+     * Updates the access for a user on the given project.
      *
      * @param payload - Object containing the project ID and access update details.
      * @returns Promise resolving when the API call completes.
      */
     async updateProjectAccess(payload: {
       projectId: string
-      data: UpdateProjectAccessParams
+      access: ProjectAccessDetail
+      data: UpdateProjectCollaboratorPayload
+    }) {
+      this.accessLoading = true
+      try {
+        if (!payload.access.project_role) {
+          await ProjectApi.addProjectCollaborator(payload.projectId, {
+            ...payload.data,
+            user: payload.access.username
+          })
+        } else {
+          await ProjectApi.updateProjectCollaborator(
+            payload.projectId,
+            Number(payload.access.id),
+            payload.data
+          )
+        }
+        this.access = this.access.map((access) => {
+          if (access.id === payload.access.id) {
+            access.role = payload.data.role
+            access.project_role = payload.data.role
+          }
+          return access
+        })
+      } catch (err) {
+        this.handleProjectAccessError(err, 'Failed to update project access')
+      } finally {
+        this.accessLoading = false
+      }
+    },
+
+    async updateProjectCollaborators(payload: {
+      projectId: string
+      collaborator: ProjectCollaborator
+      data: UpdateProjectCollaboratorPayload
+    }) {
+      this.accessLoading = true
+      try {
+        if (!payload.collaborator.project_role) {
+          await ProjectApi.addProjectCollaborator(payload.projectId, {
+            ...payload.data,
+            user: payload.collaborator.username
+          })
+        } else {
+          await ProjectApi.updateProjectCollaborator(
+            payload.projectId,
+            Number(payload.collaborator.id),
+            payload.data
+          )
+        }
+        this.collaborators = this.collaborators.map((collaborator) => {
+          if (collaborator.id === payload.collaborator.id) {
+            collaborator.role = payload.data.role
+            collaborator.project_role = payload.data.role
+          }
+          return collaborator
+        })
+      } catch (err) {
+        this.handleProjectAccessError(
+          err,
+          'Failed to update project collaborator'
+        )
+      } finally {
+        this.accessLoading = false
+      }
+    },
+
+    handleProjectAccessError(err: unknown, defaultMessage: string) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error({
+        text: getErrorMessage(err, defaultMessage)
+      })
+    },
+
+    async updatePublicFlag(payload: {
+      projectId: string
+      data: UpdatePublicFlagParams
     }) {
       const notificationStore = useNotificationStore()
       this.accessLoading = true
       try {
-        const response = await ProjectApi.updateProjectAccess(
-          payload.projectId,
-          payload.data
-        )
-        this.access = this.access.map((access) => {
-          if (access.id === payload.data.user_id) {
-            access.project_permission = payload.data.role
-          }
-          return access
-        })
-        this.project.access = response.data
+        await ProjectApi.updatePublicFlag(payload.projectId, payload.data)
+        this.project.access.public = !this.project.access?.public
       } catch {
         notificationStore.error({
-          text: `Failed to update project access`
+          text: `Failed to update public flag`
         })
       } finally {
         this.accessLoading = false

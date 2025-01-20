@@ -510,7 +510,9 @@ def create_user():
     username = request.json.get(
         "username", User.generate_username(request.json["email"])
     )
-    form = UserRegistrationForm()
+
+    # in public endpoint we want to disable form csrf - for browser clients endpoint is protected anyway
+    form = UserRegistrationForm(meta={"csrf": False})
     form.confirm.data = form.password.data
     form.username.data = username
     if not form.validate():
@@ -545,15 +547,13 @@ def create_user():
 @auth_required(permissions=["admin"])
 def get_server_usage():
     data = {
-        "active_monthly_contributors": [
-            current_app.ws_handler.monthly_contributors_count(),
-            current_app.ws_handler.monthly_contributors_count(month_offset=1),
-            current_app.ws_handler.monthly_contributors_count(month_offset=2),
-            current_app.ws_handler.monthly_contributors_count(month_offset=3),
-        ],
-        "projects": Project.query.count(),
+        "active_monthly_contributors": current_app.ws_handler.monthly_contributors_count(),
+        "projects": Project.query.filter(Project.removed_at.is_(None)).count(),
         "storage": files_size(),
-        "users": User.query.count(),
+        "users": User.query.filter(
+            is_(User.username.ilike("deleted_%"), False),
+        ).count(),
         "workspaces": current_app.ws_handler.workspace_count(),
+        "editors": current_app.ws_handler.server_editors_count(),
     }
     return data, 200

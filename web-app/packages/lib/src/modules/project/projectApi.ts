@@ -21,11 +21,14 @@ import {
   PushProjectChangesParams,
   PushProjectChangesResponse,
   SaveProjectSettings,
-  UpdateProjectAccessParams,
   ProjectVersion,
   ProjectAccessDetail,
   ProjectAccess,
-  ProjectVersionFileChange
+  ProjectVersionFileChange,
+  UpdateProjectCollaboratorPayload,
+  UpdatePublicFlagParams,
+  ProjectCollaborator,
+  AddProjectCollaboratorPayload
 } from '@/modules/project/types'
 
 export const ProjectApi = {
@@ -173,14 +176,53 @@ export const ProjectApi = {
     )
   },
 
-  async updateProjectAccess(
+  async addProjectCollaborator(
     id: string,
-    data: UpdateProjectAccessParams,
+    data: AddProjectCollaboratorPayload
+  ): Promise<AxiosResponse<ProjectCollaborator>> {
+    return ProjectModule.httpService.post(
+      `/v2/projects/${id}/collaborators`,
+      data,
+      {
+        validateStatus
+      }
+    )
+  },
+
+  async updateProjectCollaborator(
+    id: string,
+    userId: number,
+    data: UpdateProjectCollaboratorPayload
+  ): Promise<AxiosResponse<ProjectCollaborator>> {
+    return ProjectModule.httpService.patch(
+      `/v2/projects/${id}/collaborators/${userId}`,
+      data,
+      {
+        validateStatus
+      }
+    )
+  },
+
+  async updatePublicFlag(
+    id: string,
+    data: UpdatePublicFlagParams,
     withRetry?: boolean
   ): Promise<AxiosResponse<ProjectAccess>> {
-    return ProjectModule.httpService.patch(`/app/project/${id}/access`, data, {
+    return ProjectModule.httpService.patch(`/app/project/${id}/public`, data, {
       ...(withRetry ? getDefaultRetryOptions() : {})
     })
+  },
+
+  async removeProjectCollaborator(
+    id: string,
+    userId: number
+  ): Promise<AxiosResponse<void>> {
+    return ProjectModule.httpService.delete(
+      `/v2/projects/${id}/collaborators/${userId}`,
+      {
+        validateStatus
+      }
+    )
   },
 
   async pushProjectChanges(
@@ -273,6 +315,7 @@ export const ProjectApi = {
     return ProjectModule.httpService.get(url, { responseType: 'blob' })
   },
 
+  // Kept for EE (collaborators + invitation) access, TODO: remove when a separate invitation endpoint is implemented
   async getProjectAccess(
     projectId: string
   ): Promise<AxiosResponse<ProjectAccessDetail[]>> {
@@ -287,6 +330,14 @@ export const ProjectApi = {
   ): Promise<AxiosResponse<ProjectVersionFileChange[]>> {
     return ProjectModule.httpService.get(
       `/v1/resource/changesets/${workspace}/${projectName}/${versionId}?path=${path}`
+    )
+  },
+
+  async getProjectCollaborators(
+    projectId: string
+  ): Promise<AxiosResponse<ProjectCollaborator[]>> {
+    return ProjectModule.httpService.get(
+      `/v2/projects/${projectId}/collaborators`
     )
   }
 }

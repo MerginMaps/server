@@ -1044,6 +1044,23 @@ components:
         detail: Maximum number of people in this workspace is reached. Please upgrade your subscription to add more people (UsersLimitHit)
         rejected_emails: [ rejected@example.com ]
         users_quota: 6
+    EditorsLimitHit:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      type: object
+      properties:
+        rejected_emails:
+          nullable: true
+          type: array
+          items:
+            type: string
+        editors_quota:
+          type: integer
+      example:
+        code: EditorsLimitHit
+        detail: Maximum number of editors in this workspace is reached. Please upgrade your subscription to add more (EditorsLimitHit)
+        rejected_emails: [ rejected@example.com ]
+        editors_quota: 6
     UpdateProjectAccessError:
       allOf:
         - $ref: '#/components/schemas/CustomError'

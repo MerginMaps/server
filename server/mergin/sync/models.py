@@ -283,6 +283,8 @@ class Project(db.Model):
 
     def get_member(self, user_id: int) -> Optional[ProjectMember]:
         """Get project member"""
+        from .permissions import ProjectPermissions
+
         member = self._member(user_id)
         if member:
             return ProjectMember(
@@ -291,6 +293,7 @@ class Project(db.Model):
                 email=member.user.email,
                 project_role=ProjectRole(member.role),
                 workspace_role=self.workspace.get_user_role(member.user),
+                role=ProjectPermissions.get_user_project_role(self, member.user),
             )
 
     def members_by_role(self, role: ProjectRole) -> List[int]:
@@ -350,6 +353,7 @@ class ProjectMember:
     username: str
     workspace_role: WorkspaceRole
     project_role: Optional[ProjectRole]
+    role: ProjectRole
 
 
 @dataclass
@@ -359,7 +363,8 @@ class ProjectAccessDetail:
     role: str
     username: str
     name: Optional[str]
-    project_permission: str
+    workspace_role: str
+    project_role: Optional[ProjectRole]
     type: str
 
 

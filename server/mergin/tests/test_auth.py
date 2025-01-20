@@ -3,12 +3,15 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 from datetime import datetime, timedelta
+import os
 import pytest
 import json
 from flask import url_for
 from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy import desc
 from unittest.mock import patch
+
+from mergin.tests import test_workspace
 
 from ..auth.models import User, UserProfile, LoginHistory
 from ..auth.tasks import anonymize_removed_users
@@ -21,7 +24,15 @@ from . import (
     test_workspace_name,
     test_project,
 )
-from .utils import add_user, login_as_admin, login
+from .utils import (
+    add_user,
+    create_project,
+    create_workspace,
+    login_as_admin,
+    login,
+    upload_file_to_project,
+    test_project_dir,
+)
 
 
 @pytest.fixture(scope="function")
@@ -838,3 +849,39 @@ def test_username_generation(client):
 
     user = add_user("user25", "user")
     assert User.generate_username(user.email) == user.username + "1"
+
+    # generate username from email containing invalid chars for username, e.g. +
+    assert User.generate_username("tralala+test@example.com") == "tralalatest"
+
+
+def test_server_usage(client):
+    """Test server usage endpoint"""
+    login_as_admin(client)
+    workspace = create_workspace()
+    init_project = Project.query.filter_by(workspace_id=workspace.id).first()
+    user = add_user()
+    admin = User.query.filter_by(username="mergin").first()
+    # create new project
+    project = create_project("project", workspace, admin)
+    project.set_role(user.id, ProjectRole.READER)
+    db.session.commit()
+    upload_file_to_project(project, "test.txt", client)
+    resp = client.get("/app/admin/usage")
+    assert resp.status_code == 200
+    assert resp.json["users"] == 2
+    assert resp.json["workspaces"] == 1
+    assert resp.json["projects"] == 2
+    assert resp.json["storage"] == project.disk_usage + init_project.disk_usage
+    assert resp.json["active_monthly_contributors"] == 1
+    assert resp.json["editors"] == 1
+    project.set_role(user.id, ProjectRole.EDITOR)
+    db.session.commit()
+    resp = client.get("/app/admin/usage")
+    assert resp.json["editors"] == 2
+    user.inactivate()
+    user.anonymize()
+    project.delete()
+    resp = client.get("/app/admin/usage")
+    assert resp.json["editors"] == 1
+    assert resp.json["users"] == 1
+    assert resp.json["projects"] == 1

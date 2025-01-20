@@ -19,8 +19,8 @@ export interface UsersParams extends PaginatedRequestParams {
 export type UsersResponse = PaginatedResponse<UserResponse>
 
 export interface UpdateUserData {
-  is_admin: boolean
-  active: boolean
+  is_admin?: boolean
+  active?: boolean
 }
 
 export interface CreateUserData {
@@ -72,11 +72,12 @@ export interface PaginatedAdminProjectsParams extends PaginatedRequestParams {
 export type ServerUsageResponse = ServerUsage
 
 export interface ServerUsage {
-  active_monthly_contributors: number[]
+  active_monthly_contributors: number
   projects: number
   storage: string
   users: number
   workspaces: number
+  editors: number
 }
 
 /* eslint-enable camelcase */

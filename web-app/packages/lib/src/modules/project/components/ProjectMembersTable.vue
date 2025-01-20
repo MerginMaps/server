@@ -47,7 +47,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ]"
           >
             <PAvatar
-              :label="$filters.getAvatar(item.email, item.name)"
+              :label="$filters.getAvatar(item.email, item.username)"
               shape="circle"
               :pt="{
                 root: {
@@ -71,7 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <template #col-roles="{ item }">
           <AppDropdown
             :options="roles"
-            :model-value="item.project_permission"
+            :model-value="item.role"
             @update:model-value="(e) => roleUpdate(item, e)"
             :disabled="item.id === loggedUser.id"
             class="w-6 lg:w-full"
@@ -86,7 +86,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { computed, ref, onUnmounted } from 'vue'
 
 import { useProjectStore } from '../store'
-import { ProjectAccessDetail } from '../types'
+import { ProjectCollaborator } from '../types'
 
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppDropdown from '@/common/components/AppDropdown.vue'
@@ -96,19 +96,15 @@ import { DataViewWrapperColumnItem } from '@/common/components/data-view/types'
 import {
   GlobalRole,
   ProjectRoleName,
-  isAtLeastGlobalRole
+  isAtLeastGlobalRole,
+  USER_ROLE_NAME_BY_ROLE,
+  WorkspaceRole
 } from '@/common/permission_utils'
 import { useInstanceStore, useUserStore } from '@/main'
-
-interface Props {
-  allowRemove?: boolean
-}
 
 const projectStore = useProjectStore()
 const userStore = useUserStore()
 const instanceStore = useInstanceStore()
-
-const props = withDefaults(defineProps<Props>(), { allowRemove: true })
 
 const itemsPerPage = ref(10)
 const columns = ref<DataViewWrapperColumnItem[]>([
@@ -134,6 +130,8 @@ const columns = ref<DataViewWrapperColumnItem[]>([
     fixed: true
   }
 ])
+
+// TODO: do not bother with GlobalRole but use workspace_role attribute
 const roles = computed(() =>
   projectStore.availableRoles.map((item) => ({
     ...item,
@@ -145,33 +143,37 @@ const roles = computed(() =>
 )
 const loggedUser = computed(() => userStore.loggedUser)
 const searchedItems = computed(() =>
-  projectStore.access.filter((item) => {
+  projectStore.collaborators.filter((item) => {
     return [item.username, item.email].some(
       (v) => v && v.toString().toLowerCase().includes(projectStore.accessSearch)
     )
   })
 )
 
-function canRemoveMember(item: ProjectAccessDetail) {
-  return props.allowRemove && item.id !== loggedUser.value?.id
+function canRemoveMember(item: ProjectCollaborator) {
+  return (
+    item.workspace_role === USER_ROLE_NAME_BY_ROLE[WorkspaceRole.guest] &&
+    item.id !== loggedUser.value?.id
+  )
 }
 
-function removeMember(item: ProjectAccessDetail) {
+function removeMember(item: ProjectCollaborator) {
   projectStore.removeProjectAccess(item)
 }
 
-function roleUpdate(item: ProjectAccessDetail, value: ProjectRoleName) {
-  projectStore.updateProjectAccess({
+function roleUpdate(item: ProjectCollaborator, value: ProjectRoleName) {
+  projectStore.updateProjectCollaborators({
     projectId: projectStore.project.id,
-    data: { role: value, user_id: item.id }
+    collaborator: item,
+    data: { role: value }
   })
 }
 
 onUnmounted(() => {
-  projectStore.access = []
+  projectStore.collaborators = []
 })
 
-projectStore.getProjectAccess(projectStore.project?.id)
+projectStore.getProjectCollaborators(projectStore.project?.id)
 </script>
 
 <style scoped lang="scss"></style>

@@ -83,7 +83,7 @@ export function formatRemainingTime(t2, t1 = new Date()) {
       return remainingFormatDuration(diffInYears(t2Parsed, t1Parsed), 'years')
     case days > 31:
       return remainingFormatDuration(diffInMonths(t2Parsed, t1Parsed), 'months')
-    case days > 6:
+    case days > 14:
       return remainingFormatDuration(diffInWeeks(t2Parsed, t1Parsed), 'weeks')
     case days < 1:
       if (days < 0) {
