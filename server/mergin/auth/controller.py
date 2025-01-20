@@ -143,7 +143,11 @@ def login_public():  # noqa: E501
                 "email": user.email,
                 "expire": str(expire),
             }
-            token = encode_token(current_app.config["SECRET_KEY"], token_data)
+            token = encode_token(
+                current_app.config["SECRET_KEY"],
+                current_app.config["SECURITY_BEARER_SALT"],
+                token_data,
+            )
 
             data = user_profile(user)
             data["session"] = {"token": token, "expire": expire}
@@ -297,7 +301,7 @@ def password_reset():  # pylint: disable=W0613,W0612
 
 
 def confirm_new_password(token):  # pylint: disable=W0613,W0612
-    email = confirm_token(token)
+    email = confirm_token(token, salt=current_app.config["SECURITY_PASSWORD_SALT"])
     if not email:
         abort(400, "Invalid token")
 
@@ -315,7 +319,9 @@ def confirm_new_password(token):  # pylint: disable=W0613,W0612
 
 
 def confirm_email(token):  # pylint: disable=W0613,W0612
-    email = confirm_token(token)
+    email = confirm_token(
+        token, expiration=12 * 3600, salt=current_app.config["SECURITY_EMAIL_SALT"]
+    )
     if not email:
         abort(400, "Invalid token")
 
@@ -375,7 +381,9 @@ def register_user():  # pylint: disable=W0613,W0612
     if form.validate():
         user = User.create(form.username.data, form.email.data, form.password.data)
         user_created.send(user, source="admin")
-        token = generate_confirmation_token(current_app, user.email)
+        token = generate_confirmation_token(
+            current_app, user.email, current_app.config["SECURITY_EMAIL_SALT"]
+        )
         confirm_url = f"confirm-email/{token}"
         html = render_template(
             "email/user_created.html",

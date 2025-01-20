@@ -211,6 +211,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
             try:
                 data = decode_token(
                     app.app.config["SECRET_KEY"],
+                    app.app.config["SECURITY_BEARER_SALT"],
                     header_val,
                     app.app.config["BEARER_TOKEN_EXPIRATION"],
                 )
