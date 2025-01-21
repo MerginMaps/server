@@ -94,5 +94,6 @@ services:
     volumes:
       - ./projects:/data  # map data dir to host
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./logs:/var/log/nginx/
     networks:
       - merginmaps
