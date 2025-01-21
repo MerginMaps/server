@@ -39,6 +39,9 @@ from ..sync.models import Project
 from ..sync.utils import files_size
 
 
+EMAIL_CONFIRMATION_EXPIRATION = 12 * 3600
+
+
 # public endpoints
 def user_profile(user, return_all=True):
     """Return user profile in json format
@@ -320,7 +323,9 @@ def confirm_new_password(token):  # pylint: disable=W0613,W0612
 
 def confirm_email(token):  # pylint: disable=W0613,W0612
     email = confirm_token(
-        token, expiration=12 * 3600, salt=current_app.config["SECURITY_EMAIL_SALT"]
+        token,
+        expiration=EMAIL_CONFIRMATION_EXPIRATION,
+        salt=current_app.config["SECURITY_EMAIL_SALT"],
     )
     if not email:
         abort(400, "Invalid token")
