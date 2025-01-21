@@ -4,6 +4,7 @@
 
 from datetime import datetime, timedelta
 import os
+import time
 import pytest
 import json
 from flask import url_for
@@ -12,7 +13,7 @@ from sqlalchemy import desc
 from unittest.mock import patch
 
 from mergin.tests import test_workspace
-
+from ..auth.app import generate_confirmation_token, confirm_token
 from ..auth.models import User, UserProfile, LoginHistory
 from ..auth.tasks import anonymize_removed_users
 from ..app import db
@@ -152,26 +153,20 @@ def test_user_register(client, username, email, pwd, expected):
 
 
 def test_confirm_email(app, client):
-    serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
-    token = serializer.dumps(
-        "mergin@mergin.com", salt=app.config["SECURITY_PASSWORD_SALT"]
-    )
-    resp = client.post(url_for("/.mergin_auth_controller_confirm_email", token=token))
-    assert resp.status_code == 200
-
     user = User.query.filter_by(username="mergin").first()
-    # tests with old registered user
+    token = generate_confirmation_token(
+        app, user.email, app.config["SECURITY_EMAIL_SALT"]
+    )
     user.verified_email = False
-    user.registration_date = datetime.utcnow() - timedelta(days=1)
     db.session.commit()
-    resp = client.post(url_for("/.mergin_auth_controller_confirm_email", token=token))
-    assert resp.status_code == 200
 
-    # try again with freshly registered user
-    user.verified_email = False
-    user.registration_date = datetime.utcnow()
-    db.session.add(user)
-    db.session.commit()
+    # verify token can't be used in different context
+    resp = client.post(
+        url_for("/.mergin_auth_controller_confirm_new_password", token=token),
+        json={"password": "ilovemergin#0", "confirm": "ilovemergin#0"},
+    )
+    assert resp.status_code == 400
+
     resp = client.post(url_for("/.mergin_auth_controller_confirm_email", token=token))
     assert resp.status_code == 200
 
@@ -187,21 +182,35 @@ def test_confirm_email(app, client):
     resp = client.post(
         url_for(
             "/.mergin_auth_controller_confirm_email",
-            token=serializer.dumps(
-                "tests@mergin.com", salt=app.config["SECURITY_PASSWORD_SALT"]
+            token=generate_confirmation_token(
+                app, "tests@mergin.com", app.config["SECURITY_EMAIL_SALT"]
             ),
         )
     )
     assert resp.status_code == 404
 
+    # test expired token
+    token = generate_confirmation_token(
+        app, user.email, app.config["SECURITY_EMAIL_SALT"]
+    )
+    time.sleep(2)
+    assert not confirm_token(
+        token=token, expiration=1, salt=app.config["SECURITY_EMAIL_SALT"]
+    )
+
 
 def test_confirm_password(app, client):
-    serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
-    token = serializer.dumps(
-        "mergin@mergin.com", salt=app.config["SECURITY_PASSWORD_SALT"]
+    user = User.query.filter_by(username="mergin").first()
+    token = generate_confirmation_token(
+        app, user.email, app.config["SECURITY_PASSWORD_SALT"]
     )
 
     form_data = {"password": "ilovemergin#0", "confirm": "ilovemergin#0"}
+
+    # verify token can't be used in different context
+    resp = client.post(url_for("/.mergin_auth_controller_confirm_email", token=token))
+    assert resp.status_code == 400
+
     resp = client.post(
         url_for("/.mergin_auth_controller_confirm_new_password", token=token),
         data=json.dumps(form_data),
@@ -221,8 +230,8 @@ def test_confirm_password(app, client):
     resp = client.post(
         url_for(
             "/.mergin_auth_controller_confirm_new_password",
-            token=serializer.dumps(
-                "tests@mergin.com", salt=app.config["SECURITY_PASSWORD_SALT"]
+            token=generate_confirmation_token(
+                app, "tests@mergin.com", app.config["SECURITY_PASSWORD_SALT"]
             ),
         ),
         data=json.dumps(form_data),
@@ -240,8 +249,8 @@ def test_confirm_password(app, client):
     resp = client.post(
         url_for(
             "/.mergin_auth_controller_confirm_new_password",
-            token=serializer.dumps(
-                "tests@mergin.com", salt=app.config["SECURITY_PASSWORD_SALT"]
+            token=generate_confirmation_token(
+                app, "tests@mergin.com", app.config["SECURITY_PASSWORD_SALT"]
             ),
         )
     )
