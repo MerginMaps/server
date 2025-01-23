@@ -4,6 +4,7 @@
 
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
+from datetime import datetime, timezone
 
 from ..app import db
 
@@ -19,3 +20,14 @@ class MerginInfo(db.Model):
             self.service_id = uuid.UUID(service_id)
         else:
             self.service_id = uuid.uuid4()
+
+
+class MerginStatistics(db.Model):
+    """Information about deployment"""
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    created_at = db.Column(
+        db.DateTime, index=True, nullable=False, server_default="now()"
+    )
+    # data with statistics
+    data = db.Column(db.JSON)

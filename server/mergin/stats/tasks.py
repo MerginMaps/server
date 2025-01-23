@@ -9,7 +9,7 @@ import logging
 from flask import current_app
 from sqlalchemy.sql.operators import is_
 
-from .models import MerginInfo
+from .models import MerginInfo, MerginStatistics
 from ..celery import celery
 from ..app import db
 from ..auth.models import User
@@ -71,6 +71,10 @@ def send_statistics():
         "monthly_contributors": current_app.ws_handler.monthly_contributors_count(),
         "editors": current_app.ws_handler.server_editors_count(),
     }
+
+    stats = MerginStatistics(data=data)
+    db.session.add(stats)
+    db.session.commit()
 
     try:
         resp = requests.post(
