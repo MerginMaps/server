@@ -349,7 +349,11 @@ export const useAdminStore = defineStore('adminModule', {
         })
         const fileName =
           resp.headers['content-disposition'].split('filename=')[1]
-        FileSaver.saveAs(resp.data, fileName)
+        const extension = fileName.split('.')[1]
+        new FileSaver.saveAs(
+          resp.data,
+          `usage-report-${date.toISOString().split('T')[0]}.${extension}`
+        )
       } catch (e) {
         // parse error details from blob
         if (axios.isAxiosError(e)) {

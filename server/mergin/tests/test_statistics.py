@@ -189,6 +189,11 @@ def test_download_report(app, client):
         assert len(lines) == 2
 
         stat = MerginStatistics.query.first()
+        keys = list(stat.data.keys())
+        keys.sort()
+        assert lines[0].decode("UTF-8") == ",".join(keys)
+
+        # test same day
         stat.created_at = datetime(2021, 1, 1, tzinfo=timezone.utc)
         db.session.commit()
 

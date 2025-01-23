@@ -73,10 +73,13 @@ def download_report(date_from: str, date_to: str):
     for item in data:
         columns.update(item.keys())
 
+    sorted_columns = list(columns)
+    sorted_columns.sort()
+
     builder = CsvTextBuilder()
     writer = DictWriter(
         builder,
-        fieldnames=list(columns),
+        fieldnames=sorted_columns,
     )
     writer.writeheader()
     writer.writerows(data)
