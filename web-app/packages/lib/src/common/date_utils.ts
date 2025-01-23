@@ -102,3 +102,13 @@ export function formatRemainingTime(t2, t1 = new Date()) {
       return remainingFormatDuration(days, 'days')
   }
 }
+
+/**
+ * Calculates date from today to given months number in past.
+ * Doest not convert to UTC.
+ */
+export function getDateFromMonthsAgo(months) {
+  const date = new Date()
+  date.setMonth(date.getMonth() - months)
+  return date
+}

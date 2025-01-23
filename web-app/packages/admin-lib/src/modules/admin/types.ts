@@ -80,4 +80,9 @@ export interface ServerUsage {
   editors: number
 }
 
+export interface DownloadReportParams {
+  date_from: string
+  date_to: string
+}
+
 /* eslint-enable camelcase */
