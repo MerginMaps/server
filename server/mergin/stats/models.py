@@ -5,7 +5,7 @@
 from dataclasses import dataclass
 from typing import Optional
 import uuid
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from datetime import datetime, timezone
 
 from ..app import db
@@ -47,4 +47,4 @@ class MerginStatistics(db.Model):
         db.DateTime, index=True, nullable=False, server_default="now()"
     )
     # data with statistics
-    data = db.Column(db.JSON)
+    data = db.Column(JSONB, nullable=False)
