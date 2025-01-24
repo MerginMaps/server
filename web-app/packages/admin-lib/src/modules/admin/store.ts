@@ -13,6 +13,7 @@ import {
   useNotificationStore,
   UserResponse
 } from '@mergin/lib'
+import FileSaver from 'file-saver'
 import { defineStore, getActivePinia } from 'pinia'
 import Cookies from 'universal-cookie'
 
@@ -22,10 +23,12 @@ import { AdminApi } from '@/modules/admin/adminApi'
 import {
   LatestServerVersionResponse,
   PaginatedAdminProjectsParams,
-  PaginatedAdminProjectsResponse, ServerUsageResponse,
+  PaginatedAdminProjectsResponse,
+  ServerUsageResponse,
   UpdateUserPayload,
   UsersResponse
 } from '@/modules/admin/types'
+import axios from 'axios'
 
 export interface AdminState {
   loading: boolean
@@ -324,6 +327,43 @@ export const useAdminStore = defineStore('adminModule', {
         this.usage = response.data
       } catch (e) {
         notificationStore.error({ text: errorUtils.getErrorMessage(e) })
+      }
+    },
+
+    async downloadReport(payload: { from: Date; to: Date }) {
+      const notificationStore = useNotificationStore()
+
+      try {
+        const { from, to } = payload
+        const url = AdminApi.contructDownloadStatisticsUrl()
+        const date = new Date()
+        // we need to sanitize hours from custom range in Calendar picker, because it's 00:00:00 by default. If you convert it to UTC -> it could be previous day, which is not what you selected.
+        from.setHours(date.getHours(), date.getMinutes(), date.getSeconds())
+        to.setHours(date.getHours(), date.getMinutes(), date.getSeconds())
+        // toISOString converts date to iso format and UTC zone
+        const date_from = payload.from.toISOString().split('T')[0]
+        const date_to = payload.to.toISOString().split('T')[0]
+        const resp = await AdminApi.downloadStatistics(url, {
+          date_from,
+          date_to
+        })
+        const fileName =
+          resp.headers['content-disposition'].split('filename=')[1]
+        const extension = fileName.split('.')[1]
+        new FileSaver.saveAs(
+          resp.data,
+          `usage-report-${date.toISOString().split('T')[0]}.${extension}`
+        )
+      } catch (e) {
+        // parse error details from blob
+        if (axios.isAxiosError(e)) {
+          let resp
+          const blob = new Blob([e.response.data], { type: 'text/plain' })
+          blob.text().then((text) => {
+            resp = JSON.parse(text)
+            notificationStore.error({ text: resp.detail })
+          })
+        }
       }
     }
   }

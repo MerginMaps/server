@@ -22,6 +22,37 @@ paths:
         "404":
           $ref: "#/components/responses/NotFoundResp"
       x-openapi-router-controller: mergin.stats.controller
+  /app/admin/report:
+    get:
+      summary: Download statistics for server
+      operationId: download_report
+      x-openapi-router-controller: mergin.stats.controller
+      parameters:
+        - name: date_from
+          in: query
+          description: Start date for statistics (YYYY-MM-DD)
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          description: End date for statistics (YYYY-MM-DD)
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: CSV file with statistics
+          content:
+            text/csv:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
 components:
   responses:
     UnauthorizedError:
