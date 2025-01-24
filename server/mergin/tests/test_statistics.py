@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import csv
-from datetime import timezone, datetime
+from dataclasses import asdict
+from datetime import timedelta, timezone, datetime
 import json
 from unittest.mock import patch
 import requests
@@ -13,8 +14,8 @@ from mergin.auth.models import User
 from mergin.sync.models import Project, ProjectRole
 
 from ..app import db
-from ..stats.tasks import send_statistics
-from ..stats.models import MerginInfo, MerginStatistics
+from ..stats.tasks import get_callhome_data, save_statistics, send_statistics
+from ..stats.models import MerginInfo, MerginStatistics, ServerCallhomeData
 from .utils import Response, add_user, create_project, create_workspace
 
 
@@ -37,7 +38,6 @@ def test_send_statistics(app, caplog):
         project = create_project("project", workspace, admin)
         project.set_role(user.id, ProjectRole.EDITOR)
         task = send_statistics.s().apply()
-        assert MerginStatistics.query.count() == 0
         # nothing was done
         assert task.status == "SUCCESS"
         assert not info.last_reported
@@ -72,12 +72,6 @@ def test_send_statistics(app, caplog):
         assert data["projects_count"] == 2
         assert data["contact_email"] == "test@example.com"
         assert data["editors"] == 2
-        assert MerginStatistics.query.count() == 1
-        stats = MerginStatistics.query.order_by(
-            MerginStatistics.created_at.desc()
-        ).first()
-        assert stats.created_at
-        assert stats.data == data
 
         # repeated action does not do anything
         task = send_statistics.s().apply()
@@ -96,7 +90,6 @@ def test_send_statistics(app, caplog):
         assert data["projects_count"] == 1
         assert data["users_count"] == 1
         assert data["editors"] == 1
-        assert MerginStatistics.query.count() == 2
 
         info.last_reported = None
         db.session.commit()
@@ -106,7 +99,6 @@ def test_send_statistics(app, caplog):
         assert task.status == "SUCCESS"
         assert not info.last_reported
         assert "Statistics error" in caplog.text
-        assert MerginStatistics.query.count() == 3
 
         # server does not respond
         mock.return_value = {}
@@ -165,6 +157,26 @@ def test_server_updates(client):
         assert resp.status_code == 400
 
 
+def test_save_statistics(app, client):
+    """Test save statistics celery job"""
+    info = MerginInfo.query.first()
+    app.config["CONTACT_EMAIL"] = "test@example.com"
+    assert MerginStatistics.query.count() == 0
+    save_statistics.s().apply()
+    assert MerginStatistics.query.count() == 1
+    stats = MerginStatistics.query.order_by(MerginStatistics.created_at.desc()).first()
+    stats_json_data = get_callhome_data(info)
+    assert stats.created_at
+    assert stats.data == asdict(stats_json_data)
+
+    # debouncing
+    save_statistics.s().apply()
+    assert MerginStatistics.query.count() == 1
+    stats.created_at = datetime.now(timezone.utc) - timedelta(hours=12)
+    save_statistics.s().apply()
+    assert MerginStatistics.query.count() == 2
+
+
 def test_download_report(app, client):
     """Test download report endpoint"""
     url = "/app/admin/report"
@@ -175,44 +187,41 @@ def test_download_report(app, client):
     resp = client.get(f"{url}?date_from=2021-01-01T00:00:00&date_to=2021-01-01")
     assert resp.status_code == 400
 
-    app.config["COLLECT_STATISTICS"] = True
     app.config["CONTACT_EMAIL"] = "test@example.com"
-    with patch("requests.post") as mock:
-        mock.return_value = Response(True, {})
-        send_statistics.s().apply()
-        resp = client.get(
-            f"{url}?date_from=2021-01-01&date_to={datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
-        )
-        assert resp.status_code == 200
-        assert resp.mimetype == "text/csv"
-        lines = resp.data.splitlines()
-        assert len(lines) == 2
+    save_statistics.s().apply()
+    resp = client.get(
+        f"{url}?date_from=2021-01-01&date_to={datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
+    )
+    assert resp.status_code == 200
+    assert resp.mimetype == "text/csv"
+    lines = resp.data.splitlines()
+    assert len(lines) == 2
 
-        stat = MerginStatistics.query.first()
-        keys = list(stat.data.keys())
-        keys.sort()
-        assert lines[0].decode("UTF-8") == ",".join(keys)
+    stat = MerginStatistics.query.first()
+    keys = list(asdict(ServerCallhomeData(**stat.data)).keys()) + ["created_at"]
+    assert lines[0].decode("UTF-8") == ",".join(keys)
 
-        # test same day
-        stat.created_at = datetime(2021, 1, 1, tzinfo=timezone.utc)
-        db.session.commit()
+    # test same day
+    stat.created_at = datetime(2021, 1, 1, tzinfo=timezone.utc)
+    db.session.commit()
 
-        resp = client.get(
-            f"{url}?date_from=2021-01-01&date_to={datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
-        )
-        assert resp.status_code == 200
-        assert resp.mimetype == "text/csv"
-        lines = resp.data.splitlines()
-        assert len(lines) == 2
+    resp = client.get(
+        f"{url}?date_from=2021-01-01&date_to={datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
+    )
+    assert resp.status_code == 200
+    assert resp.mimetype == "text/csv"
+    lines = resp.data.splitlines()
+    assert len(lines) == 2
 
-        # empty response
-        stat.created_at = datetime(2020, 1, 1, tzinfo=timezone.utc)
-        db.session.commit()
-        resp = client.get(
-            f"{url}?date_from=2021-01-01&date_to={datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
-        )
-        assert resp.status_code == 200
-        assert resp.mimetype == "text/csv"
-        lines = resp.data.splitlines()
-        assert resp.data == b"\r\n"
-        assert len(lines) == 1
+    # empty response
+    stat.created_at = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    db.session.commit()
+    resp = client.get(
+        f"{url}?date_from=2021-01-01&date_to={datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
+    )
+    assert resp.status_code == 200
+    assert resp.mimetype == "text/csv"
+    lines = resp.data.splitlines()
+    empty_file = f"{','.join(keys)}\r\n"
+    assert resp.data.decode("UTF-8") == empty_file
+    assert len(lines) == 1

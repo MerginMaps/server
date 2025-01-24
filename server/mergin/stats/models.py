@@ -2,11 +2,28 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+from dataclasses import dataclass
+from typing import Optional
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime, timezone
 
 from ..app import db
+
+
+@dataclass
+class ServerCallhomeData:
+    service_uuid: Optional[str]
+    url: Optional[str]
+    contact_email: Optional[str]
+    licence: Optional[str]
+    projects_count: Optional[int]
+    users_count: Optional[int]
+    workspaces_count: Optional[int]
+    last_change: Optional[str]
+    server_version: Optional[str]
+    monthly_contributors: Optional[int]
+    editors: Optional[int]
 
 
 class MerginInfo(db.Model):
