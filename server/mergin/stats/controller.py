@@ -68,7 +68,7 @@ def download_report(date_from: str, date_to: str):
         .order_by(MerginStatistics.created_at.desc())
         .all()
     )
-    createdColumn = "created_at"
+    created_column = "created_at"
     data = [
         {
             **stat.data,
@@ -76,7 +76,7 @@ def download_report(date_from: str, date_to: str):
         }
         for stat in stats
     ]
-    columns = list(ServerCallhomeData.__dataclass_fields__.keys()) + [createdColumn]
+    columns = list(ServerCallhomeData.__dataclass_fields__.keys()) + [created_column]
     # get columns for data, this is usefull when we will update data json format (removing columns, adding new ones)
 
     builder = CsvTextBuilder()

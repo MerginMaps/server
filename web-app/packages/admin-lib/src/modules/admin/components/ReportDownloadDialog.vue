@@ -44,12 +44,8 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  AppDropdown,
-  dateUtils,
-  DropdownOption,
-  useDialogStore
-} from '@mergin/lib'
+import { AppDropdown, DropdownOption, useDialogStore } from '@mergin/lib'
+import subMonths from 'date-fns/subMonths'
 import { ref, watchEffect } from 'vue'
 
 import { useAdminStore } from '@/main'
@@ -66,7 +62,7 @@ const periodOptions = ref<DropdownOption[]>([
   { label: 'Custom range', value: '-1' }
 ])
 const range = ref<Array<Date>>([
-  dateUtils.getDateFromMonthsAgo(Number(period.value)),
+  subMonths(new Date(), Number(period.value)),
   new Date()
 ])
 
@@ -76,7 +72,7 @@ watchEffect(() => {
     range.value = []
     return
   }
-  range.value = [dateUtils.getDateFromMonthsAgo(periodValue), new Date()]
+  range.value = [subMonths(new Date(), periodValue), new Date()]
 })
 
 function close() {
