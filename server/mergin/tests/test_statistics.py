@@ -169,13 +169,6 @@ def test_save_statistics(app, client):
     assert stats.created_at
     assert stats.data == asdict(stats_json_data)
 
-    # debouncing
-    save_statistics.s().apply()
-    assert MerginStatistics.query.count() == 1
-    stats.created_at = datetime.now(timezone.utc) - timedelta(hours=12)
-    save_statistics.s().apply()
-    assert MerginStatistics.query.count() == 2
-
 
 def test_download_report(app, client):
     """Test download report endpoint"""

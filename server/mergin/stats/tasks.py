@@ -46,16 +46,6 @@ def get_callhome_data(info: MerginInfo | None = None) -> ServerCallhomeData:
 @celery.task(ignore_result=True)
 def save_statistics():
     """Save statistics about usage."""
-    to_date = datetime.now(timezone.utc)
-    from_date = datetime.now(timezone.utc) - timedelta(hours=12)
-    # debounce to avoid sending multiple times in short after restart of server
-    last_stat = MerginStatistics.query.filter(
-        MerginStatistics.created_at > from_date,
-        MerginStatistics.created_at < to_date,
-    ).first()
-    if last_stat:
-        return
-
     info = MerginInfo.query.first()
     data = get_callhome_data(info)
     stat = MerginStatistics(data=data)
