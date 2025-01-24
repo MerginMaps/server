@@ -76,7 +76,7 @@ function downloadReport() {
   dialogStore.show({
     component: ReportDownloadDialog,
     params: {
-      dialog: { header: 'Doownload usage report' }
+      dialog: { header: 'Download report' }
     }
   })
 }

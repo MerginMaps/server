@@ -37,7 +37,7 @@
         type="submit"
         class="w-12 lg:w-6"
         label="Download"
-        :disabled="range.length === 0"
+        :disabled="range.filter(Boolean).length < 2"
       />
     </div>
   </form>
