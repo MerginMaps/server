@@ -386,6 +386,7 @@ add_project_data = [
     ({"name": "foo/bar", "template": test_project}, 400),  # invalid project name
     ({"name": "ba%r", "template": test_project}, 400),  # invalid project name
     ({"name": "bar*", "template": test_project}, 400),  # invalid project name
+    ({"name": "  ", "template": test_project}, 400),  # empty
     ({"name": "support", "template": test_project}, 400),  # forbidden project name
     ({"name": test_project}, 409),
 ]
@@ -423,6 +424,7 @@ def test_add_project(client, app, data, expected):
     )
     assert resp.status_code == expected
     if expected == 200:
+        print(resp.data)
         project = Project.query.filter_by(
             name=data["name"].strip(), workspace_id=test_workspace_id
         ).first()

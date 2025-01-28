@@ -64,7 +64,7 @@ def test_rename_project(client):
     assert response.status_code == 400
     assert response.json["code"] == "InvalidProjectName"
     response = client.patch(
-        f"v2/projects/{project.id}", json={"name": " new_project_name"}
+        f"v2/projects/{project.id}", json={"name": ".new_project_name"}
     )
     assert response.status_code == 400
     assert response.json["code"] == "InvalidProjectName"

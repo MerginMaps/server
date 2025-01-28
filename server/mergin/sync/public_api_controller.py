@@ -178,15 +178,13 @@ def add_project(namespace):  # noqa: E501
 
     :rtype: None
     """
-    name = request.json["name"].strip()
+    request.json["name"] = request.json["name"].strip()
 
-    if not name:
-        abort(400, "Project name cannot be empty")
-    validation = project_name_validation(name)
-    if validation:
+    validation_error = project_name_validation(request.json["name"])
+    if validation_error:
         abort(
             400,
-            validation,
+            validation_error,
         )
 
     if request.is_json:

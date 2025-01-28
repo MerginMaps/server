@@ -47,13 +47,10 @@ def update_project(id):
     """Rename project"""
     project = require_project_by_uuid(id, ProjectPermissions.Update)
     new_name = request.json["name"].strip()
-
-    if not new_name:
-        abort(400, "Project name cannot be empty")
-    validation = project_name_validation(new_name)
-    if validation:
+    validation_error = project_name_validation(new_name)
+    if validation_error:
         return (
-            jsonify(code="InvalidProjectName", detail=validation),
+            jsonify(code="InvalidProjectName", detail=validation_error),
             400,
         )
     new_name_exists = Project.query.filter_by(

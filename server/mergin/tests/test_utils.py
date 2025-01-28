@@ -15,8 +15,8 @@ from ..sync.utils import (
     parse_gpkgb_header_size,
     gpkg_wkb_to_wkt,
     is_reserved_word,
-    is_valid_character,
-    is_valid_first_character,
+    has_valid_characters,
+    has_valid_first_character,
     is_valid_filename,
 )
 from ..auth.models import LoginHistory, User
@@ -223,8 +223,11 @@ def test_is_name_allowed():
         expected = t[1]
         print(is_reserved_word(name))
         assert (
-            is_valid_character(name)
-            and is_valid_first_character(name)
-            and is_valid_filename(name)
-            and not is_reserved_word(name)
-        ) == expected
+            not (
+                has_valid_characters(name)
+                and has_valid_first_character(name)
+                and is_valid_filename(name)
+                and is_reserved_word(name)
+            )
+            == expected
+        )

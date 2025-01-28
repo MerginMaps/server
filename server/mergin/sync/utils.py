@@ -262,31 +262,36 @@ def convert_byte(size_bytes, unit):
     return size_bytes
 
 
-def is_reserved_word(name: str) -> bool:
+def is_reserved_word(name: str) -> str | None:
     """Check if name is reserved in system"""
     reserved = r"^support$|^helpdesk$|^merginmaps$|^lutraconsulting$|^mergin$|^lutra$|^input$|^admin$|^sales$"
-    return re.match(reserved, name) is not None
+    if re.match(reserved, name) is not None:
+        return "The provided value is invalid."
+    return None
 
 
-def is_valid_character(name: str) -> bool:
+def has_valid_characters(name: str) -> str | None:
     """Check if name contains only valid characters"""
-    return re.match(r"^[\w\s\-\.]+$", name) is not None
+    if re.match(r"^[\w\s\-\.]+$", name) is None:
+        return "Please use only alphanumeric or the following -_. characters."
+    return None
 
 
-def is_valid_first_character(name: str) -> bool:
+def has_valid_first_character(name: str) -> str | None:
     """Check if name contains only valid characters in first position"""
-    return re.match(r"^[\s^\.].*$", name) is None
+    if re.match(r"^[\s^\.].*$", name) is not None:
+        return f"Value can not start with space or dot."
+    return None
 
 
-def is_valid_filename(name: str) -> bool:
+def is_valid_filename(name: str) -> str | None:
     """Check if name contains only valid characters for filename"""
-    is_valid = True
+    error = None
     try:
         validate_filename(name)
     except ValidationError:
-        is_valid = False
-
-    return is_valid
+        error = "The provided value is invalid."
+    return error
 
 
 def workspace_names(workspaces):

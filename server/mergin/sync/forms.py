@@ -7,26 +7,25 @@ from wtforms.validators import DataRequired
 from flask_wtf import FlaskForm
 
 from mergin.sync.utils import (
-    is_valid_character,
+    is_reserved_word,
+    has_valid_characters,
     is_valid_filename,
-    is_valid_first_character,
+    has_valid_first_character,
 )
 
 
 def project_name_validation(name: str) -> str | None:
     """Check whether project name is valid"""
+    if not name.strip():
+        return "Project name cannot be empty"
     errors = [
-        "Please use only alphanumeric or these -_. characters.",
-        "Project name cannot start with space or dot.",
-        "Project name contains not allowed word.",
-    ]
-    validations = [
-        is_valid_character(name),
-        is_valid_first_character(name),
+        has_valid_characters(name),
+        has_valid_first_character(name),
+        is_reserved_word(name),
         is_valid_filename(name),
     ]
-    for index, error in enumerate(errors):
-        if not validations[index]:
+    for error in errors:
+        if error:
             return error
     return
 

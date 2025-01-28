@@ -21,24 +21,20 @@ from ..app import UpdateForm, CustomStringField
 
 def username_validation(form, field):
     from ..sync.utils import (
-        is_valid_character,
-        is_valid_first_character,
+        has_valid_characters,
+        has_valid_first_character,
         is_valid_filename,
         is_reserved_word,
     )
 
     errors = [
-        "Please use only alphanumeric or these -_. characters.",
-        "User name cannot start with space or dot.",
-        "User name contains not allowed word.",
+        has_valid_characters(field.data),
+        has_valid_first_character(field.data),
+        is_reserved_word(field.data),
+        is_valid_filename(field.data),
     ]
-    validations = [
-        is_valid_character(field.data),
-        is_valid_first_character(field.data),
-        not is_reserved_word(field.data) and is_valid_filename(field.data),
-    ]
-    for index, error in enumerate(errors):
-        if not validations[index]:
+    for error in errors:
+        if error:
             raise ValidationError(error)
 
 
