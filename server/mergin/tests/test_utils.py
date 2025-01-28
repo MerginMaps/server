@@ -221,7 +221,6 @@ def test_is_name_allowed():
     for t in test_cases:
         name = t[0]
         expected = t[1]
-        print(is_reserved_word(name))
         assert (
             not (
                 has_valid_characters(name)

@@ -424,7 +424,6 @@ def test_add_project(client, app, data, expected):
     )
     assert resp.status_code == expected
     if expected == 200:
-        print(resp.data)
         project = Project.query.filter_by(
             name=data["name"].strip(), workspace_id=test_workspace_id
         ).first()
