@@ -386,6 +386,7 @@ add_project_data = [
     ({"name": "foo/bar", "template": test_project}, 400),  # invalid project name
     ({"name": "ba%r", "template": test_project}, 400),  # invalid project name
     ({"name": "bar*", "template": test_project}, 400),  # invalid project name
+    ({"name": "  ", "template": test_project}, 400),  # empty
     ({"name": "support", "template": test_project}, 400),  # forbidden project name
     ({"name": test_project}, 409),
 ]
