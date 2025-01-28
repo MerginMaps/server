@@ -15,6 +15,7 @@ from gevent import sleep
 from flask import Request
 from typing import Optional
 from sqlalchemy import text
+from pathvalidate import validate_filename, ValidationError
 
 
 def generate_checksum(file, chunk_size=4096):
@@ -261,22 +262,31 @@ def convert_byte(size_bytes, unit):
     return size_bytes
 
 
-def is_name_allowed(string):
-    """Check if string is just has whitelisted character
+def is_reserved_word(name: str) -> bool:
+    """Check if name is reserved in system"""
+    reserved = r"^support$|^helpdesk$|^merginmaps$|^lutraconsulting$|^mergin$|^lutra$|^input$|^admin$|^sales$"
+    return re.match(reserved, name) is not None
 
-    :param string: string to be checked.
-    :type string: str
 
-    :return: boolean of has just whitelisted character
-    :rtype: bool
-    """
-    return (
-        re.match(
-            r".*[\@\#\$\%\^\&\*\(\)\{\}\[\]\?\'\"`,;\:\+\=\~\\\/\|\<\>].*|^[\s^\.].*$|^CON$|^PRN$|^AUX$|^NUL$|^COM\d$|^LPT\d|^support$|^helpdesk$|^merginmaps$|^lutraconsulting$|^mergin$|^lutra$|^input$|^admin$|^sales$|^$",
-            string,
-        )
-        is None
-    )
+def is_valid_character(name: str) -> bool:
+    """Check if name contains only valid characters"""
+    return re.match(r"^[\w\s\-\.]+$", name) is not None
+
+
+def is_valid_first_character(name: str) -> bool:
+    """Check if name contains only valid characters in first position"""
+    return re.match(r"^[\s^\.].*$", name) is None
+
+
+def is_valid_filename(name: str) -> bool:
+    """Check if name contains only valid characters for filename"""
+    is_valid = True
+    try:
+        validate_filename(name)
+    except ValidationError:
+        is_valid = False
+
+    return is_valid
 
 
 def workspace_names(workspaces):

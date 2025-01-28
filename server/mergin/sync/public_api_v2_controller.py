@@ -7,6 +7,8 @@ from connexion import NoContent, request
 from flask import abort, jsonify
 from flask_login import current_user
 
+from mergin.sync.forms import project_name_validation
+
 from .schemas import ProjectMemberSchema
 from .workspace import WorkspaceRole
 from ..app import db
@@ -15,7 +17,6 @@ from ..auth.models import User
 from .models import Project, ProjectRole, ProjectMember
 from .permissions import ProjectPermissions, require_project_by_uuid
 from .private_api_controller import project_access_granted
-from .utils import is_name_allowed
 
 
 @auth_required
@@ -45,13 +46,14 @@ def delete_project_now(id):
 def update_project(id):
     """Rename project"""
     project = require_project_by_uuid(id, ProjectPermissions.Update)
-    new_name = request.json["name"]
+    new_name = request.json["name"].strip()
 
-    if not is_name_allowed(new_name):
+    if not new_name:
+        abort(400, "Project name cannot be empty")
+    validation = project_name_validation(new_name)
+    if validation:
         return (
-            jsonify(
-                code="InvalidProjectName", detail="Entered project name is invalid"
-            ),
+            jsonify(code="InvalidProjectName", detail=validation),
             400,
         )
     new_name_exists = Project.query.filter_by(
