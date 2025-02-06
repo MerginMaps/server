@@ -15,7 +15,7 @@ from gevent import sleep
 from flask import Request
 from typing import Optional
 from sqlalchemy import text
-from pathvalidate import validate_filename, ValidationError
+from pathvalidate import validate_filename, ValidationError, validate_filepath
 import magic
 
 
@@ -433,6 +433,7 @@ ALLOWED_EXTENSIONS = {
     # Others
     ".zip",
 }
+
 ALLOWED_MIME_TYPES = {
     "application/x-shapefile",
     "application/x-dbf",
@@ -466,10 +467,22 @@ ALLOWED_MIME_TYPES = {
 
 
 def supported_extension(filename) -> bool:
+    """Check whether we support file extension."""
     ext = os.path.splitext(filename)[1].lower()
     return ext in ALLOWED_EXTENSIONS
 
 
 def supported_type(head) -> bool:
+    """Check whether the file type is whitelisted."""
     mime_type = magic.Magic(mime=True).from_buffer(head)
     return mime_type.startswith("image/") or mime_type in ALLOWED_MIME_TYPES
+
+
+def is_valid_filepath(filepath: str):
+    """Check filepath for invalid characters."""
+    error = None
+    try:
+        validate_filepath(filepath)
+    except ValidationError:
+        error = f"Invalid character in {filepath}"
+    return error

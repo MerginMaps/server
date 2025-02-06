@@ -92,6 +92,7 @@ from .utils import (
     is_valid_filename,
     supported_extension,
     supported_type,
+    is_valid_filepath,
 )
 from .errors import StorageLimitHit
 from ..utils import format_time_delta
@@ -1480,28 +1481,29 @@ def get_project_version(project_id: str, version: str):
 
 
 def validate_path(filepath: str):
+    """Check filepath, filename for invalid characters, and file extension for unsupported file types"""
     if filepath.startswith(("../", "./", "..\\", ".\\")) or ntpath.isabs(filepath):
         abort(
             400,
             f"File '{filepath}' is outside the project folder or uses absolute path.",
         )
+    error = is_valid_filepath(filepath)
+    if error:
+        abort(400, f"Filepath '{filepath}' contains invalid characters.")
+
     filename = os.path.basename(filepath)
-    validate_filename(filename)
+    error = is_valid_filename(filename)
+    if error:
+        abort(400, f"Filename '{filename}' contains invalid characters.")
+    if not supported_extension(filename):
+        abort(400, f"Unsupported extension of '{filename}' file.")
 
 
 def validate_file(stream, filename):
-    """Check validity of the file to be uploaded."""
+    """Check file type (from its content) for unsupported types"""
     buffer_for_mime_check = stream.read(2048)
     if not supported_type(buffer_for_mime_check):
         abort(400, f"Unsupported file type of '{filename}' file.")
     # reset the stream position for normal reading
     validated_stream = io.BytesIO(buffer_for_mime_check + stream.read())
     return validated_stream
-
-
-def validate_filename(filename: str):
-    error = is_valid_filename(filename)
-    if error:
-        abort(400, f"Filename '{filename}' contains invalid characters.")
-    if not supported_extension(filename):
-        abort(400, f"Unsupported extension of '{filename}' file.")
