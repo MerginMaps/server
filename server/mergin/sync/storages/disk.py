@@ -24,7 +24,7 @@ from ..utils import (
 from ..files import mergin_secure_filename, ProjectFile, UploadFile, File
 
 
-def save_to_file(stream, path, max_size=None):
+def save_to_file(stream, path, max_size=None, head=None):
     """Save readable object in file while yielding to gevent hub.
 
     :param stream: object implementing readable interface
@@ -35,6 +35,9 @@ def save_to_file(stream, path, max_size=None):
     os.makedirs(directory, exist_ok=True)
     with open(path, "wb") as output:
         writer = io.BufferedWriter(output, buffer_size=32768)
+        if head:
+            writer.write(head)
+            writer.flush()
         size = 0
         while True:
             part = stream.read(4096)

@@ -87,6 +87,9 @@ from .utils import (
     is_versioned_file,
     get_project_path,
     get_device_id,
+    is_valid_filename,
+    supported_extension,
+    supported_type,
 )
 from .errors import StorageLimitHit
 from ..utils import format_time_delta
@@ -807,10 +810,12 @@ def project_push(namespace, project_name):
         abort(400, "Another process is running. Please try later.")
 
     upload_changes = ChangesSchema(context={"version": version + 1}).load(changes)
-    # check if same file is not already uploaded
+
     for item in upload_changes.added:
+        # check if same file is not already uploaded
         if not all(ele.path != item.path for ele in project.files):
             abort(400, f"File {item.path} has been already uploaded")
+        validate_path(item.path)
 
     # changes' files must be unique
     changes_files = [
@@ -962,6 +967,8 @@ def chunk_upload(transaction_id, chunk_id):
         upload.changes
     )
     for f in upload_changes.added + upload_changes.updated:
+        head = request.stream.read(2048)
+        validate_file(head, f.path)
         if chunk_id in f.chunks:
             dest = os.path.join(upload_dir, "chunks", chunk_id)
             lockfile = os.path.join(upload_dir, "lockfile")
@@ -969,7 +976,7 @@ def chunk_upload(transaction_id, chunk_id):
                 try:
                     # we could have used request.data here, but it could eventually cause OOM issue
                     save_to_file(
-                        request.stream, dest, current_app.config["MAX_CHUNK_SIZE"]
+                        request.stream, dest, current_app.config["MAX_CHUNK_SIZE"], head
                     )
                 except IOError:
                     move_to_tmp(dest, transaction_id)
@@ -1469,3 +1476,26 @@ def get_project_version(project_id: str, version: str):
     ).first_or_404()
     data = ProjectVersionSchema(exclude=["files"]).dump(pv)
     return data, 200
+
+
+def validate_path(filepath: str):
+    if filepath.startswith(("C://", "../", "..\\")) or os.path.isabs(filepath):
+        abort(
+            400, f"File {filepath} is outside the project folder or uses absolute path."
+        )
+    filename = os.path.basename(filepath)
+    validate_filename(filename)
+
+
+def validate_file(head, filename):
+    """Check validity of the file to be uploaded."""
+    if not supported_type(head):
+        abort(400, f"Unsupported file type of '{filename}' file.")
+
+
+def validate_filename(filename: str):
+    error = is_valid_filename(filename)
+    if error:
+        abort(400, f"Filename '{filename}' contains invalid characters.")
+    if not supported_extension(filename):
+        abort(400, f"Unsupported extension of '{filename}' file.")

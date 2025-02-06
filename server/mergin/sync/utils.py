@@ -16,6 +16,7 @@ from flask import Request
 from typing import Optional
 from sqlalchemy import text
 from pathvalidate import validate_filename, ValidationError
+import magic
 
 
 def generate_checksum(file, chunk_size=4096):
@@ -352,3 +353,131 @@ def files_size():
         """
     )
     return db.session.execute(files_size).scalar()
+
+
+ALLOWED_EXTENSIONS = {
+    # Geospatial
+    # Shapefile components
+    ".shp",
+    ".shx",
+    ".dbf",
+    ".prj",
+    ".cpg",
+    ".qix",
+    ".sbn",
+    ".sbx",
+    # Vector data formats
+    ".geojson",
+    ".kml",
+    ".kmz",
+    ".gpx",
+    ".dxf",
+    ".svg",
+    ".gpkg",
+    ".json",
+    # Raster data formats
+    ".tif",
+    ".tiff",
+    ".geotiff",
+    ".asc",
+    ".vrt",
+    ".grd",
+    ".img",
+    ".adf",
+    # Point cloud data formats
+    ".las",
+    ".laz",
+    ".ply",
+    ".xyz",
+    ".e57",
+    ".pcd",
+    # Database and container formats
+    ".mbtiles",
+    ".sqlite",
+    ".gpkg",
+    # Geospatial metadata and styles
+    ".sld",
+    ".qml",
+    ".lyr",
+    ".qgz",
+    ".qgs",
+    # Other specialized formats
+    ".hdf",
+    ".hdf5",
+    ".netcdf",
+    ".nc",
+    ".dem",
+    ".dt2",
+    ".dt0",
+    ".map",
+    ".tab",
+    ".mif",
+    ".mid",
+    # Images
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".bmp",
+    ".gif",
+    ".heic",
+    ".webp",
+    ".tif",
+    ".tiff",
+    # Text documents
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".odt",
+    ".rtf",
+    ".txt",
+    # Others
+    ".zip",
+}
+ALLOWED_MIME_TYPES = {
+    "application/x-shapefile",
+    "application/x-dbf",
+    "text/plain",
+    "application/octet-stream",
+    "application/geo+json",
+    "application/vnd.google-earth.kml+xml",
+    "application/vnd.google-earth.kmz",
+    "application/gpx+xml",
+    "image/vnd.dxf",
+    "image/svg+xml",
+    "application/geopackage+sqlite3",
+    "application/vnd.sqlite3",
+    "application/json",
+    "image/tiff",
+    "text/xml",
+    "application/vnd.mapbox-vector-tile",
+    "application/x-sqlite3",
+    "application/vnd.ogc.sld+xml",
+    "application/xml",
+    "application/x-qgis",
+    "application/x-hdf",
+    "application/x-hdf5",
+    "application/x-netcdf",
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.oasis.opendocument.text",
+    "application/rtf",
+    "image/jpeg",
+    "image/png",
+    "image/bmp",
+    "image/gif",
+    "image/heic",
+    "image/webp",
+    "text/plain",
+    "application/zip",
+}
+
+
+def supported_extension(filename) -> bool:
+    ext = os.path.splitext(filename)[1].lower()
+    return ext in ALLOWED_EXTENSIONS
+
+
+def supported_type(head) -> bool:
+    mime_type = magic.Magic(mime=True).from_buffer(head)
+    return mime_type in ALLOWED_MIME_TYPES
