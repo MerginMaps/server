@@ -151,7 +151,7 @@ def test_is_name_allowed():
         ("-project", True),
         ("proj_ect", True),
         ("proj.ect", True),
-        # We are repmoving ! from valids
+        # We are removing ! from valids
         ("proj!ect", False),
         (" project", False),
         (".project", False),

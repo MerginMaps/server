@@ -59,6 +59,7 @@ from .utils import (
     file_info,
     login_as_admin,
     upload_file_to_project,
+    push_file_start,
 )
 from ..config import Configuration
 from ..sync.config import Configuration as SyncConfiguration
@@ -1487,7 +1488,6 @@ def test_whole_push_process(client):
         "テスト.txt",
         "£¥§.txt",
         "name_1_1.txt",
-        "name\\1\\1.txt",
         "+?%@&.qgs",
     ]
     # prepare dummy files
@@ -2514,3 +2514,108 @@ def test_signals(client):
     ) as push_finished_mock:
         upload_file_to_project(project, "test.txt", client)
         push_finished_mock.assert_called_once()
+
+
+def test_upload_validation(client):
+    push_start_url = url_for(
+        f"/v1.mergin_sync_public_api_controller_project_push",
+        namespace=test_workspace_name,
+        project_name=test_project,
+    )
+    content = """#!/bin/bash
+    echo "Hello Mergin!"
+    """
+    script_filename = "scri\\pt.sh"
+    with open(os.path.join(TMP_DIR, script_filename), "w") as f:
+        f.write(content)
+    changes = {
+        "added": [file_info(TMP_DIR, script_filename, chunk_size=CHUNK_SIZE)],
+        "updated": [],
+        "removed": [],
+    }
+    # Block script upload during in push_start because of the invalid characters in the filename
+    resp = client.post(
+        push_start_url,
+        data=json.dumps(
+            {"version": "v1", "changes": changes}, cls=DateTimeEncoder
+        ).encode("utf-8"),
+        headers=json_headers,
+    )
+    assert resp.status_code == 400
+    assert (
+        resp.json["detail"]
+        == f"Filename '{script_filename}' contains invalid characters."
+    )
+    # Rename to a valid filename but manipulate the path by prepending ../../
+    valid_characters = "script.sh"
+    os.rename(
+        os.path.join(TMP_DIR, script_filename), os.path.join(TMP_DIR, valid_characters)
+    )
+    changes = {
+        "added": [file_info(TMP_DIR, valid_characters, chunk_size=CHUNK_SIZE)],
+        "updated": [],
+        "removed": [],
+    }
+    manipulated_path = "../../script.sh"
+    changes["added"][0]["path"] = manipulated_path
+    # Block script upload in push_start because of the invalid path
+    resp = client.post(
+        push_start_url,
+        data=json.dumps(
+            {"version": "v1", "changes": changes}, cls=DateTimeEncoder
+        ).encode("utf-8"),
+        headers=json_headers,
+    )
+    assert resp.status_code == 400
+    assert (
+        resp.json["detail"]
+        == f"File '{manipulated_path}' is outside the project folder or uses absolute path."
+    )
+    # Fix the filepath
+    changes["added"][0]["path"] = valid_characters
+    # Block script upload during push_start because of the unsupported extension
+    resp = client.post(
+        push_start_url,
+        data=json.dumps(
+            {"version": "v1", "changes": changes}, cls=DateTimeEncoder
+        ).encode("utf-8"),
+        headers=json_headers,
+    )
+    assert resp.status_code == 400
+    assert resp.json["detail"] == f"Unsupported extension of '{valid_characters}' file."
+    # Extension spoofing to trick the validator
+    spoof_name = "mydata.gpkg"
+    os.rename(
+        os.path.join(TMP_DIR, valid_characters), os.path.join(TMP_DIR, spoof_name)
+    )
+    changes = {
+        "added": [file_info(TMP_DIR, spoof_name, chunk_size=CHUNK_SIZE)],
+        "updated": [],
+        "removed": [],
+    }
+    # File passes the extension check in push_start
+    resp = client.post(
+        push_start_url,
+        data=json.dumps(
+            {"version": "v1", "changes": changes}, cls=DateTimeEncoder
+        ).encode("utf-8"),
+        headers=json_headers,
+    )
+    assert resp.status_code == 200
+    upload = Upload.query.get(resp.json["transaction"])
+    assert upload
+    # Unsupported file type is revealed in chung_upload and upload is refused
+    for file in changes["added"]:
+        for chunk_id in file["chunks"]:
+            url = "/v1/project/push/chunk/{}/{}".format(upload.id, chunk_id)
+            with open(os.path.join(TMP_DIR, file["path"]), "rb") as f:
+                data = f.read(CHUNK_SIZE)
+                checksum = hashlib.sha1()
+                checksum.update(data)
+            resp = client.post(
+                url, data=data, headers={"Content-Type": "application/octet-stream"}
+            )
+            assert resp.status_code == 400
+            assert (
+                resp.json["detail"] == f"Unsupported file type of '{spoof_name}' file."
+            )

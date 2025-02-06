@@ -4,8 +4,10 @@
 
 import binascii
 import functools
+import io
 import json
 import mimetypes
+import ntpath
 import os
 import logging
 from dataclasses import asdict
@@ -967,16 +969,15 @@ def chunk_upload(transaction_id, chunk_id):
         upload.changes
     )
     for f in upload_changes.added + upload_changes.updated:
-        head = request.stream.read(2048)
-        validate_file(head, f.path)
         if chunk_id in f.chunks:
             dest = os.path.join(upload_dir, "chunks", chunk_id)
             lockfile = os.path.join(upload_dir, "lockfile")
             with Toucher(lockfile, 30):
                 try:
+                    validated_stream = validate_file(request.stream, f.path)
                     # we could have used request.data here, but it could eventually cause OOM issue
                     save_to_file(
-                        request.stream, dest, current_app.config["MAX_CHUNK_SIZE"], head
+                        validated_stream, dest, current_app.config["MAX_CHUNK_SIZE"]
                     )
                 except IOError:
                     move_to_tmp(dest, transaction_id)
@@ -1479,18 +1480,23 @@ def get_project_version(project_id: str, version: str):
 
 
 def validate_path(filepath: str):
-    if filepath.startswith(("C://", "../", "..\\")) or os.path.isabs(filepath):
+    if filepath.startswith(("../", "./", "..\\", ".\\")) or ntpath.isabs(filepath):
         abort(
-            400, f"File {filepath} is outside the project folder or uses absolute path."
+            400,
+            f"File '{filepath}' is outside the project folder or uses absolute path.",
         )
     filename = os.path.basename(filepath)
     validate_filename(filename)
 
 
-def validate_file(head, filename):
+def validate_file(stream, filename):
     """Check validity of the file to be uploaded."""
-    if not supported_type(head):
+    buffer_for_mime_check = stream.read(2048)
+    if not supported_type(buffer_for_mime_check):
         abort(400, f"Unsupported file type of '{filename}' file.")
+    # reset the stream position for normal reading
+    validated_stream = io.BytesIO(buffer_for_mime_check + stream.read())
+    return validated_stream
 
 
 def validate_filename(filename: str):
