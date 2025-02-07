@@ -88,65 +88,47 @@ def test_logout(client):
 
 # user registration tests
 test_user_reg_data = [
-    ("test", "test@test.com", "#pwd1234", 201),  # success
+    ("test@test.com", "#pwd1234", 201),  # success
     (
-        "TesTUser",
         "test@test.com",
         "#pwd1234",
         201,
     ),  # tests with upper case, but user does not exist
     (
-        "TesTUser2",
         "test2@test.com",
         "#pwd1234",
         201,
     ),  # tests with upper case, but user does not exist
-    ("bob", "test@test.com", "#pwd1234", 400),  # invalid (short) username
-    ("test", "test.com", "#pwd1234", 400),  # invalid email
-    ("mergin", "test@test.com", "#pwd1234", 400),  # existing user
+    ("test.com", "#pwd1234", 400),  # invalid email
+    ("admin@example.com", "#pwd1234", 400),  # existing user
     (
-        "MerGin",
-        "tests@test.com",
-        "#pwd1234",
-        400,
-    ),  # tests with upper case but mergin already exists
-    (
-        "  mergin  ",
-        "tests@test.com",
-        "#pwd1234",
-        400,
-    ),  # tests with blank spaces, but mergin user already exists
-    (
-        "XmerginX",
         " tests@test.com  ",
         "#pwd1234",
         201,
     ),  # tests with blank spaces, whitespace to be removed
     (
-        "mergin2",
         " mergin@mergin.com  ",
         "#pwd1234",
         400,
     ),  # tests with blank spaces, but email already exists
     (
-        "mergin3",
         " merGIN@mergin.com  ",
         "#pwd1234",
         400,
     ),  # tests with upper case, but email already exists
-    ("XmerginX", " mergin@mergin.com  ", "#pwd123", 400),  # invalid password
+    (" mergin@mergin.com  ", "#pwd123", 400),  # invalid password
 ]
 
 
-@pytest.mark.parametrize("username,email,pwd,expected", test_user_reg_data)
-def test_user_register(client, username, email, pwd, expected):
+@pytest.mark.parametrize("email,pwd,expected", test_user_reg_data)
+def test_user_register(client, email, pwd, expected):
     login_as_admin(client)
     url = url_for("/.mergin_auth_controller_register_user")
-    data = {"username": username, "email": email, "password": pwd, "confirm": pwd}
+    data = {"email": email, "password": pwd, "confirm": pwd}
     resp = client.post(url, data=json.dumps(data), headers=json_headers)
     assert resp.status_code == expected
     if expected == 201:
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter_by(email=email.strip()).first()
         assert user
         assert user.active
         assert not user.verified_email  # awaits user confirmation

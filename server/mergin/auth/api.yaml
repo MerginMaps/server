@@ -201,14 +201,10 @@ paths:
             schema:
               type: object
               required:
-                - username
                 - email
                 - password
                 - confirm
               properties:
-                username:
-                  type: string
-                  example: john.doe
                 email:
                   type: string
                   format: email

@@ -24,7 +24,6 @@ export interface UpdateUserData {
 }
 
 export interface CreateUserData {
-  username: string
   email: string
   password: string
   confirm: string
