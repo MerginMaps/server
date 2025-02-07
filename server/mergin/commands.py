@@ -33,12 +33,18 @@ def add_commands(app: Flask):
         return True
 
     def _send_statistics():
-        from .stats.tasks import send_statistics
-
-        if not app.config.get("COLLECT_STATISTICS"):
-            return
+        from .stats.tasks import send_statistics, save_statistics
 
         _echo_title("Sending statistics.")
+        # save rows to MerginStatistics table
+        save_statistics.delay()
+
+        if not app.config.get("COLLECT_STATISTICS"):
+            click.secho(
+                "Statistics sending is disabled.",
+            )
+            return
+
         if not _check_celery():
             return
         send_statistics.delay()
@@ -80,6 +86,13 @@ def add_commands(app: Flask):
         """Check server configuration."""
 
         _echo_title("Server health check")
+        edition_map = {
+            "ce": "Community Edition",
+            "ee": "Enterprise Edition",
+        }
+        edition = edition_map.get(app.config["SERVER_TYPE"])
+        if edition:
+            click.echo(f"Mergin Maps edition: {edition}")
         click.echo(f"Mergin Maps version: {app.config['VERSION']}")
 
         base_url = app.config["MERGIN_BASE_URL"]
@@ -148,7 +161,7 @@ def add_commands(app: Flask):
             _init_db()
 
             _echo_title("Creating admin user. Copy generated password.")
-            username = "admin"
+            username = User.generate_username(email)
             password_chars = string.ascii_letters + string.digits
             password = "".join(random.choice(password_chars) for i in range(12))
             user = User(username=username, passwd=password, email=email, is_admin=True)
@@ -159,9 +172,9 @@ def add_commands(app: Flask):
             click.secho(
                 "Admin user created. Please save generated password.", fg="green"
             )
+            click.secho(f"Email: {email}")
             click.secho(f"Username: {username}")
             click.secho(f"Password: {password}")
-            click.secho(f"Email: {email}")
         _check_server()
         _send_email(email)
         _send_statistics()
