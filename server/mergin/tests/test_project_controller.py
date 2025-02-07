@@ -2517,79 +2517,21 @@ def test_signals(client):
 
 
 def test_upload_validation(client):
-    """Test filepath, filename and filetype validation during file upload"""
+    """Test filepath and filename validation during file upload"""
     push_start_url = url_for(
         f"/v1.mergin_sync_public_api_controller_project_push",
         namespace=test_workspace_name,
         project_name=test_project,
     )
-    content = """#!/bin/bash
-    echo "Hello Mergin!"
-    """
-    script_filename = "script.sh"
-    with open(os.path.join(TMP_DIR, script_filename), "w") as f:
-        f.write(content)
+    filename = "image.png"
+    with open(os.path.join(TMP_DIR, filename), "w") as f:
+        f.write("Hello, Mergin!")
     changes = {
-        "added": [file_info(TMP_DIR, script_filename, chunk_size=CHUNK_SIZE)],
+        "added": [file_info(TMP_DIR, filename, chunk_size=CHUNK_SIZE)],
         "updated": [],
         "removed": [],
     }
-    # Rename to invalid filepath
-    invalid_filepath = "scr?ipt.sh"
-    os.rename(
-        os.path.join(TMP_DIR, script_filename), os.path.join(TMP_DIR, invalid_filepath)
-    )
-    changes = {
-        "added": [file_info(TMP_DIR, invalid_filepath, chunk_size=CHUNK_SIZE)],
-        "updated": [],
-        "removed": [],
-    }
-    # Block script upload during in push_start because of the invalid characters in the filepath
-    resp = client.post(
-        push_start_url,
-        data=json.dumps(
-            {"version": "v1", "changes": changes}, cls=DateTimeEncoder
-        ).encode("utf-8"),
-        headers=json_headers,
-    )
-    assert resp.status_code == 400
-    assert (
-        resp.json["detail"]
-        == f"Filepath '{invalid_filepath}' contains invalid characters."
-    )
-    # Rename to invalid filename
-    invalid_filename = "scri\\pt.sh"
-    os.rename(
-        os.path.join(TMP_DIR, invalid_filepath), os.path.join(TMP_DIR, invalid_filename)
-    )
-    changes = {
-        "added": [file_info(TMP_DIR, invalid_filename, chunk_size=CHUNK_SIZE)],
-        "updated": [],
-        "removed": [],
-    }
-    # Block script upload during in push_start because of the invalid characters in the filename
-    resp = client.post(
-        push_start_url,
-        data=json.dumps(
-            {"version": "v1", "changes": changes}, cls=DateTimeEncoder
-        ).encode("utf-8"),
-        headers=json_headers,
-    )
-    assert resp.status_code == 400
-    assert (
-        resp.json["detail"]
-        == f"Filename '{invalid_filename}' contains invalid characters."
-    )
-    # Rename to a valid filename but manipulate the path by prepending ../../
-    valid_characters = "script.sh"
-    os.rename(
-        os.path.join(TMP_DIR, invalid_filename), os.path.join(TMP_DIR, valid_characters)
-    )
-    changes = {
-        "added": [file_info(TMP_DIR, valid_characters, chunk_size=CHUNK_SIZE)],
-        "updated": [],
-        "removed": [],
-    }
+    # Manipulate the path by prepending ../../
     manipulated_path = "../../script.sh"
     changes["added"][0]["path"] = manipulated_path
     # Block script upload in push_start because of the invalid path
@@ -2602,54 +2544,5 @@ def test_upload_validation(client):
     )
     assert resp.status_code == 400
     assert (
-        resp.json["detail"]
-        == f"File '{manipulated_path}' is outside the project folder or uses absolute path."
+        resp.json["detail"] == f"File {manipulated_path} contains invalid characters."
     )
-    # Fix the filepath
-    changes["added"][0]["path"] = valid_characters
-    # Block script upload during push_start because of the unsupported extension
-    resp = client.post(
-        push_start_url,
-        data=json.dumps(
-            {"version": "v1", "changes": changes}, cls=DateTimeEncoder
-        ).encode("utf-8"),
-        headers=json_headers,
-    )
-    assert resp.status_code == 400
-    assert resp.json["detail"] == f"Unsupported extension of '{valid_characters}' file."
-    # Extension spoofing to trick the validator
-    spoof_name = "mydata.gpkg"
-    os.rename(
-        os.path.join(TMP_DIR, valid_characters), os.path.join(TMP_DIR, spoof_name)
-    )
-    changes = {
-        "added": [file_info(TMP_DIR, spoof_name, chunk_size=CHUNK_SIZE)],
-        "updated": [],
-        "removed": [],
-    }
-    # File passes the extension check in push_start
-    resp = client.post(
-        push_start_url,
-        data=json.dumps(
-            {"version": "v1", "changes": changes}, cls=DateTimeEncoder
-        ).encode("utf-8"),
-        headers=json_headers,
-    )
-    assert resp.status_code == 200
-    upload = Upload.query.get(resp.json["transaction"])
-    assert upload
-    # Unsupported file type is revealed in chung_upload and upload is refused
-    for file in changes["added"]:
-        for chunk_id in file["chunks"]:
-            url = "/v1/project/push/chunk/{}/{}".format(upload.id, chunk_id)
-            with open(os.path.join(TMP_DIR, file["path"]), "rb") as f:
-                data = f.read(CHUNK_SIZE)
-                checksum = hashlib.sha1()
-                checksum.update(data)
-            resp = client.post(
-                url, data=data, headers={"Content-Type": "application/octet-stream"}
-            )
-            assert resp.status_code == 400
-            assert (
-                resp.json["detail"] == f"Unsupported file type of '{spoof_name}' file."
-            )

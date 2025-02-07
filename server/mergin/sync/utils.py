@@ -15,7 +15,12 @@ from gevent import sleep
 from flask import Request
 from typing import Optional
 from sqlalchemy import text
-from pathvalidate import validate_filename, ValidationError, validate_filepath
+from pathvalidate import (
+    validate_filename,
+    ValidationError,
+    is_valid_filepath,
+    is_valid_filename,
+)
 import magic
 
 
@@ -285,7 +290,7 @@ def has_valid_first_character(name: str) -> str | None:
     return None
 
 
-def is_valid_filename(name: str) -> str | None:
+def check_filename(name: str) -> str | None:
     """Check if name contains only valid characters for filename"""
     error = None
     try:
@@ -355,134 +360,12 @@ def files_size():
     return db.session.execute(files_size).scalar()
 
 
-ALLOWED_EXTENSIONS = {
-    # Geospatial
-    # Shapefile components
-    ".shp",
-    ".shx",
-    ".dbf",
-    ".prj",
-    ".cpg",
-    ".qix",
-    ".sbn",
-    ".sbx",
-    # Vector data formats
-    ".geojson",
-    ".kml",
-    ".kmz",
-    ".gpx",
-    ".dxf",
-    ".svg",
-    ".gpkg",
-    ".json",
-    # Raster data formats
-    ".tif",
-    ".tiff",
-    ".geotiff",
-    ".asc",
-    ".vrt",
-    ".grd",
-    ".img",
-    ".adf",
-    # Point cloud data formats
-    ".las",
-    ".laz",
-    ".ply",
-    ".xyz",
-    ".e57",
-    ".pcd",
-    # Database and container formats
-    ".mbtiles",
-    ".sqlite",
-    ".gpkg",
-    # Geospatial metadata and styles
-    ".sld",
-    ".qml",
-    ".lyr",
-    ".qgz",
-    ".qgs",
-    # Other specialized formats
-    ".hdf",
-    ".hdf5",
-    ".netcdf",
-    ".nc",
-    ".dem",
-    ".dt2",
-    ".dt0",
-    ".map",
-    ".tab",
-    ".mif",
-    ".mid",
-    # Images
-    ".jpg",
-    ".jpeg",
-    ".png",
-    ".bmp",
-    ".gif",
-    ".heic",
-    ".webp",
-    ".tif",
-    ".tiff",
-    # Text documents
-    ".pdf",
-    ".doc",
-    ".docx",
-    ".odt",
-    ".rtf",
-    ".txt",
-    # Others
-    ".zip",
-}
-
-ALLOWED_MIME_TYPES = {
-    "application/x-shapefile",
-    "application/x-dbf",
-    "text/plain",
-    "application/octet-stream",
-    "application/geo+json",
-    "application/vnd.google-earth.kml+xml",
-    "application/vnd.google-earth.kmz",
-    "application/gpx+xml",
-    "application/geopackage+sqlite3",
-    "application/vnd.sqlite3",
-    "application/json",
-    "text/xml",
-    "text/html",
-    "application/vnd.mapbox-vector-tile",
-    "application/x-sqlite3",
-    "application/vnd.ogc.sld+xml",
-    "application/xml",
-    "application/x-qgis",
-    "application/x-hdf",
-    "application/x-hdf5",
-    "application/x-netcdf",
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.oasis.opendocument.text",
-    "application/rtf",
-    "text/plain",
-    "application/zip",
-}
-
-
-def supported_extension(filename) -> bool:
-    """Check whether we support file extension."""
-    ext = os.path.splitext(filename)[1].lower()
-    return ext in ALLOWED_EXTENSIONS
-
-
-def supported_type(head) -> bool:
-    """Check whether the file type is whitelisted."""
-    mime_type = magic.Magic(mime=True).from_buffer(head)
-    return mime_type.startswith("image/") or mime_type in ALLOWED_MIME_TYPES
-
-
-def is_valid_filepath(filepath: str):
-    """Check filepath for invalid characters."""
-    error = None
-    try:
-        validate_filepath(filepath)
-    except ValidationError:
-        error = f"Invalid character in {filepath}"
-    return error
+def is_valid_path(filepath: str) -> bool:
+    """Check filepath and filename for invalid characters, absolute path or path traversal"""
+    return (
+        not len(re.split(r"\.[/\\]", filepath)) > 1  # ./ or .\
+        and is_valid_filepath(filepath)  # invalid characters in filepath, absolute path
+        and is_valid_filename(
+            os.path.basename(filepath)
+        )  # invalid characters in filename, reserved filenames
+    )

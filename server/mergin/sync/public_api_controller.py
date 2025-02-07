@@ -4,10 +4,8 @@
 
 import binascii
 import functools
-import io
 import json
 import mimetypes
-import ntpath
 import os
 import logging
 from dataclasses import asdict
@@ -27,13 +25,12 @@ from flask import (
 )
 from pygeodiff import GeoDiffLibError
 from flask_login import current_user
-from sqlalchemy import and_, desc, asc, text, func, select
+from sqlalchemy import and_, desc, asc
 from sqlalchemy.exc import IntegrityError
 from binaryornot.check import is_binary
 from gevent import sleep
 import base64
 
-from sqlalchemy.orm import load_only
 from werkzeug.exceptions import HTTPException
 
 from mergin.sync.forms import project_name_validation
@@ -89,10 +86,7 @@ from .utils import (
     is_versioned_file,
     get_project_path,
     get_device_id,
-    is_valid_filename,
-    supported_extension,
-    supported_type,
-    is_valid_filepath,
+    is_valid_path,
 )
 from .errors import StorageLimitHit
 from ..utils import format_time_delta
@@ -818,7 +812,8 @@ def project_push(namespace, project_name):
         # check if same file is not already uploaded
         if not all(ele.path != item.path for ele in project.files):
             abort(400, f"File {item.path} has been already uploaded")
-        validate_path(item.path)
+        if not is_valid_path(item.path):
+            abort(400, f"File {item.path} contains invalid characters.")
 
     # changes' files must be unique
     changes_files = [
@@ -975,10 +970,9 @@ def chunk_upload(transaction_id, chunk_id):
             lockfile = os.path.join(upload_dir, "lockfile")
             with Toucher(lockfile, 30):
                 try:
-                    validated_stream = validate_file(request.stream, f.path)
                     # we could have used request.data here, but it could eventually cause OOM issue
                     save_to_file(
-                        validated_stream, dest, current_app.config["MAX_CHUNK_SIZE"]
+                        request.stream, dest, current_app.config["MAX_CHUNK_SIZE"]
                     )
                 except IOError:
                     move_to_tmp(dest, transaction_id)
@@ -1478,32 +1472,3 @@ def get_project_version(project_id: str, version: str):
     ).first_or_404()
     data = ProjectVersionSchema(exclude=["files"]).dump(pv)
     return data, 200
-
-
-def validate_path(filepath: str):
-    """Check filepath, filename for invalid characters, and file extension for unsupported file types"""
-    if filepath.startswith(("../", "./", "..\\", ".\\")) or ntpath.isabs(filepath):
-        abort(
-            400,
-            f"File '{filepath}' is outside the project folder or uses absolute path.",
-        )
-    error = is_valid_filepath(filepath)
-    if error:
-        abort(400, f"Filepath '{filepath}' contains invalid characters.")
-
-    filename = os.path.basename(filepath)
-    error = is_valid_filename(filename)
-    if error:
-        abort(400, f"Filename '{filename}' contains invalid characters.")
-    if not supported_extension(filename):
-        abort(400, f"Unsupported extension of '{filename}' file.")
-
-
-def validate_file(stream, filename):
-    """Check file type (from its content) for unsupported types"""
-    buffer_for_mime_check = stream.read(2048)
-    if not supported_type(buffer_for_mime_check):
-        abort(400, f"Unsupported file type of '{filename}' file.")
-    # reset the stream position for normal reading
-    validated_stream = io.BytesIO(buffer_for_mime_check + stream.read())
-    return validated_stream
