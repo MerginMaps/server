@@ -27,12 +27,16 @@ def username_validation(form, field):
         is_reserved_word,
     )
 
-    errors = [
-        has_valid_characters(field.data),
-        has_valid_first_character(field.data),
-        is_reserved_word(field.data),
-        is_valid_filename(field.data),
-    ]
+    errors = (
+        [
+            has_valid_characters(field.data),
+            has_valid_first_character(field.data),
+            is_reserved_word(field.data),
+            is_valid_filename(field.data),
+        ]
+        if field.data
+        else []
+    )
     for error in errors:
         if error:
             raise ValidationError(error)
