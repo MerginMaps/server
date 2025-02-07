@@ -34,8 +34,3 @@ class StorageLimitHit(ResponseError):
         data["current_usage"] = self.current_usage
         data["storage_limit"] = self.storage_limit
         return data
-
-
-class ValueValidationError(ResponseError):
-    code = "ValueValidationError"
-    detail = "Value is invalid"

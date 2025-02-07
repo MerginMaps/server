@@ -21,7 +21,6 @@ from pathvalidate import (
     is_valid_filepath,
     is_valid_filename,
 )
-import magic
 
 
 def generate_checksum(file, chunk_size=4096):

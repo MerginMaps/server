@@ -36,8 +36,7 @@ from ..sync.models import (
     ProjectFilePath,
 )
 from ..sync.files import ChangesSchema
-from ..sync.permissions import projects_query
-from ..sync.schemas import ProjectListSchema, ProjectSchema
+from ..sync.schemas import ProjectListSchema
 from ..sync.utils import generate_checksum, is_versioned_file
 from ..auth.models import User, UserProfile
 
@@ -59,7 +58,6 @@ from .utils import (
     file_info,
     login_as_admin,
     upload_file_to_project,
-    push_file_start,
 )
 from ..config import Configuration
 from ..sync.config import Configuration as SyncConfiguration
