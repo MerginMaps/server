@@ -2530,7 +2530,7 @@ def test_upload_validation(client):
         "removed": [],
     }
     # Manipulate the path by prepending ../../
-    manipulated_path = "../../script.sh"
+    manipulated_path = "../../image.png"
     changes["added"][0]["path"] = manipulated_path
     # Block script upload in push_start because of the invalid path
     resp = client.post(
