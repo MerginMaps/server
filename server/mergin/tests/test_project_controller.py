@@ -36,8 +36,7 @@ from ..sync.models import (
     ProjectFilePath,
 )
 from ..sync.files import ChangesSchema
-from ..sync.permissions import projects_query
-from ..sync.schemas import ProjectListSchema, ProjectSchema
+from ..sync.schemas import ProjectListSchema
 from ..sync.utils import generate_checksum, is_versioned_file
 from ..auth.models import User, UserProfile
 
@@ -1487,8 +1486,7 @@ def test_whole_push_process(client):
         "テスト.txt",
         "£¥§.txt",
         "name_1_1.txt",
-        "name\\1\\1.txt",
-        "+?%@&.qgs",
+        "+%@&.qgs",
     ]
     # prepare dummy files
     os.mkdir(test_dir)
@@ -2514,3 +2512,35 @@ def test_signals(client):
     ) as push_finished_mock:
         upload_file_to_project(project, "test.txt", client)
         push_finished_mock.assert_called_once()
+
+
+def test_upload_validation(client):
+    """Test filepath and filename validation during file upload"""
+    push_start_url = url_for(
+        f"/v1.mergin_sync_public_api_controller_project_push",
+        namespace=test_workspace_name,
+        project_name=test_project,
+    )
+    filename = "image.png"
+    with open(os.path.join(TMP_DIR, filename), "w") as f:
+        f.write("Hello, Mergin!")
+    changes = {
+        "added": [file_info(TMP_DIR, filename, chunk_size=CHUNK_SIZE)],
+        "updated": [],
+        "removed": [],
+    }
+    # Manipulate the path by prepending ../../
+    manipulated_path = "../../image.png"
+    changes["added"][0]["path"] = manipulated_path
+    # Block script upload in push_start because of the invalid path
+    resp = client.post(
+        push_start_url,
+        data=json.dumps(
+            {"version": "v1", "changes": changes}, cls=DateTimeEncoder
+        ).encode("utf-8"),
+        headers=json_headers,
+    )
+    assert resp.status_code == 400
+    assert (
+        resp.json["detail"] == f"File {manipulated_path} contains invalid characters."
+    )

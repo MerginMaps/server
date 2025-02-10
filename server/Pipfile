@@ -39,7 +39,7 @@ urllib3 = "==2.2.2"
 shapely = "==2.0.6"
 psycogreen = "==1.0.2"
 importlib-metadata = "==8.4.0"  # https://github.com/pallets/flask/issues/4502
-typing_extensions= "==4.12.2"
+typing_extensions = "==4.12.2"
 # requirements for development on windows
 colorama = "==0.4.5"
 
