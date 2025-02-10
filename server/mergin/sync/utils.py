@@ -366,8 +366,8 @@ def is_valid_path(filepath: str) -> bool:
         not len(re.split(r"\.[/\\]", filepath)) > 1  # ./ or .\
         and is_valid_filepath(filepath)  # invalid characters in filepath, absolute path
         and is_valid_filename(
-        os.path.basename(filepath)
-    )  # invalid characters in filename, reserved filenames
+            os.path.basename(filepath)
+        )  # invalid characters in filename, reserved filenames
     )
 
 
