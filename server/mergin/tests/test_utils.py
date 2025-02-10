@@ -246,6 +246,7 @@ filepaths = [
     ("images/image.png", True),
     ("media/photos/image.png", True),
     ("med..ia/pho.tos/ima...ge.png", True),
+    ("med/../ia/pho.tos/ima...ge.png", False),
 ]
 
 
