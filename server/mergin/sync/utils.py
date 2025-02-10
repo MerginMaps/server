@@ -374,7 +374,7 @@ def is_valid_path(filepath: str) -> bool:
 def is_supported_extension(filepath) -> bool:
     """Check whether file's extension is supported."""
     ext = os.path.splitext(filepath)[1].lower()
-    return ext not in FORBIDDEN_EXTENSIONS
+    return ext and ext not in FORBIDDEN_EXTENSIONS
 
 
 FORBIDDEN_EXTENSIONS = {
@@ -537,7 +537,12 @@ FORBIDDEN_MIME_TYPES = {
 }
 
 
-def is_supported_type(head) -> bool:
+def is_supported_type(filepath) -> bool:
     """Check whether the file mimetype is supported."""
-    mime_type = magic.Magic(mime=True).from_buffer(head)
+    mime_type = get_mimetype(filepath)
     return mime_type.startswith("image/") or mime_type not in FORBIDDEN_MIME_TYPES
+
+
+def get_mimetype(filepath: str) -> str:
+    """Identifies file types by checking their headers"""
+    return magic.from_file(filepath, mime=True)

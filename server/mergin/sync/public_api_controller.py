@@ -6,7 +6,6 @@ import binascii
 import functools
 import io
 import json
-import mimetypes
 import os
 import logging
 from dataclasses import asdict
@@ -14,6 +13,7 @@ from typing import Dict
 from urllib.parse import quote
 import uuid
 from datetime import datetime
+
 import psycopg2
 from blinker import signal
 from connexion import NoContent, request
@@ -90,6 +90,7 @@ from .utils import (
     is_valid_path,
     is_supported_type,
     is_supported_extension,
+    get_mimetype,
 )
 from .errors import StorageLimitHit
 from ..utils import format_time_delta
@@ -409,7 +410,7 @@ def download_project_file(
     if not is_binary(abs_path):
         mime_type = "text/plain"
     else:
-        mime_type = mimetypes.guess_type(abs_path)[0]
+        mime_type = get_mimetype(abs_path)
     resp.headers["Content-Type"] = mime_type
     resp.headers["Content-Disposition"] = "attachment; filename={}".format(
         quote(os.path.basename(file).encode("utf-8"))
@@ -1047,6 +1048,9 @@ def push_finish(transaction_id):
                 )
                 corrupted_files.append(f.path)
                 continue
+        if not is_supported_type(dest_file):
+            logging.info(f"Rejecting blacklisted file: {dest_file}")
+            abort(400, f"Unsupported file type of '{f.path}' file.")
 
         if expected_size != os.path.getsize(dest_file):
             logging.error(
@@ -1477,14 +1481,3 @@ def get_project_version(project_id: str, version: str):
     ).first_or_404()
     data = ProjectVersionSchema(exclude=["files"]).dump(pv)
     return data, 200
-
-
-def validate_file(stream, filename):
-    """Check file type (from its content) for unsupported types"""
-    buffer_for_mime_check = stream.read(2048)
-    if not is_supported_type(buffer_for_mime_check):
-        abort(400, f"Unsupported file type of '{filename}' file.")
-    # reset the stream position for normal reading
-    validated_stream = io.BytesIO(buffer_for_mime_check + stream.read())
-    return validated_stream
-

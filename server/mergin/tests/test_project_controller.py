@@ -801,7 +801,7 @@ test_download_file_data = [
     (test_project, "test.txt", "text/plain", 200),
     (test_project, "logo.pdf", "application/pdf", 200),
     (test_project, "logo.jpeg", "image/jpeg", 200),
-    (test_project, "base.gpkg", "application/geopackage+sqlite3", 200),
+    (test_project, "base.gpkg", "application/vnd.sqlite3", 200),
     (test_project, "json.json", "text/plain", 200),
     (test_project, "foo.txt", None, 404),
     ("bar", "test.txt", None, 404),
@@ -2593,7 +2593,7 @@ def test_supported_file_upload(client):
     assert resp.status_code == 200
     upload = Upload.query.get(resp.json["transaction"])
     assert upload
-    # Unsupported file type is revealed in chunk_upload based on the mime type and upload is refused
+    # Even chunks are correctly uploaded
     for file in changes["added"]:
         for chunk_id in file["chunks"]:
             url = "/v1/project/push/chunk/{}/{}".format(upload.id, chunk_id)
@@ -2604,7 +2604,9 @@ def test_supported_file_upload(client):
             resp = client.post(
                 url, data=data, headers={"Content-Type": "application/octet-stream"}
             )
-            assert resp.status_code == 400
-            assert (
-                resp.json["detail"] == f"Unsupported file type of '{spoof_name}' file."
-            )
+            assert resp.status_code == 200
+            assert resp.json["checksum"] == checksum.hexdigest()
+    # Unsupported file type is revealed when reconstructed from chunks - based on the mime type - and upload is refused
+    resp = client.post(f"/v1/project/push/finish/{upload.id}")
+    assert resp.status_code == 400
+    assert resp.json["detail"] == f"Unsupported file type of '{spoof_name}' file."
