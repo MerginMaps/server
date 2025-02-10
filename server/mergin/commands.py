@@ -103,6 +103,14 @@ def add_commands(app: Flask):
         else:
             click.secho(f"Base URL of server is {base_url}", fg="green")
 
+        contact_email = app.config["CONTACT_EMAIL"]
+        if not contact_email:
+            _echo_error(
+                "No contact email set. Please set CONTACT_EMAIL environment variable",
+            )
+        else:
+            click.secho(f"Base URL of server is {base_url}", fg="green")
+
         tables = db.engine.table_names()
         if not tables:
             _echo_error("Database not initialized. Run flask init-db command")
@@ -143,7 +151,7 @@ def add_commands(app: Flask):
         _init_db()
 
     @app.cli.command()
-    @click.option("--email", "-e", required=True)
+    @click.option("--email", "-e", required=True, envvar="CONTACT_EMAIL")
     @click.option(
         "--recreate",
         "-r",
@@ -155,6 +163,13 @@ def add_commands(app: Flask):
         """Initialize database if does not exist or -r is provided. Perform check of server configuration. Send statistics, respecting your setup."""
 
         from .auth.models import User
+
+        if recreate:
+            click.confirm(
+                "Are you sure you want to recreate database and admin user? This will remove all data!",
+                default=False,
+                abort=True,
+            )
 
         tables = db.engine.table_names()
         if not tables or recreate:
