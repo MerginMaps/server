@@ -164,14 +164,14 @@ def add_commands(app: Flask):
 
         from .auth.models import User
 
-        if recreate:
+        tables = db.engine.table_names()
+        if recreate and tables:
             click.confirm(
                 "Are you sure you want to recreate database and admin user? This will remove all data!",
                 default=False,
                 abort=True,
             )
 
-        tables = db.engine.table_names()
         if not tables or recreate:
             _init_db()
 
