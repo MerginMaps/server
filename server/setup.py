@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="mergin",
-    version="2024.5.3",
+    version="2025.2.0",
     url="https://github.com/MerginMaps/mergin",
     license="AGPL-3.0-only",
     author="Lutra Consulting Limited",
