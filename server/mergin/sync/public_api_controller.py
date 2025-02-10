@@ -4,7 +4,6 @@
 
 import binascii
 import functools
-import io
 import json
 import os
 import logging
