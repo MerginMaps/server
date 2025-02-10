@@ -139,15 +139,6 @@ def create_simple_app() -> Flask:
     if Configuration.GEVENT_WORKER:
         flask_app.wsgi_app = GeventTimeoutMiddleware(flask_app.wsgi_app)
 
-    @flask_app.cli.command()
-    def init_db():
-        """Re-creates application database"""
-        print("Database initialization ...")
-        db.drop_all(bind=None)
-        db.create_all(bind=None)
-        db.session.commit()
-        print("Done. Tables created.")
-
     add_commands(flask_app)
 
     return flask_app

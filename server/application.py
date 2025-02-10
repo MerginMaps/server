@@ -76,8 +76,3 @@ def setup_periodic_tasks(sender, **kwargs):
             send_statistics,
             name="send usage statistics",
         )
-
-
-# send report after start
-if Configuration.COLLECT_STATISTICS:
-    send_statistics.delay()
