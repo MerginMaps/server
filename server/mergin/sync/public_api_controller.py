@@ -1212,7 +1212,7 @@ def clone_project(namespace, project_name):  # noqa: E501
     if not ws.user_has_permissions(current_user, "admin"):
         abort(403, "You do not have permissions for this workspace")
     validation = project_name_validation(dest_project)
-    if validation:
+    if validation and dest_project != cloned_project.name:
         abort(400, validation)
 
     _project = Project.query.filter_by(name=dest_project, workspace_id=ws.id).first()
