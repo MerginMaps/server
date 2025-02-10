@@ -240,7 +240,6 @@ filepaths = [
     ("../image.png", False),
     ("./image.png", False),
     ("assets/photos/im?age.png", False),
-    ("assets/photos/im?age.png", False),
     ("assets/photos/CON.png", False),
     ("assets/photos/CONfile.png", True),
     ("image.png", True),
