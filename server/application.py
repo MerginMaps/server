@@ -66,7 +66,7 @@ def setup_periodic_tasks(sender, **kwargs):
         name="remove old project backups",
     )
     sender.add_periodic_task(
-        crontab(hour="*/12"),
+        crontab(hour="*/12", minute=0),
         save_statistics,
         name="Save usage statistics to database",
     )
