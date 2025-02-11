@@ -15,7 +15,12 @@ from gevent import sleep
 from flask import Request
 from typing import Optional
 from sqlalchemy import text
-from pathvalidate import validate_filename, ValidationError
+from pathvalidate import (
+    validate_filename,
+    ValidationError,
+    is_valid_filepath,
+    is_valid_filename,
+)
 
 
 def generate_checksum(file, chunk_size=4096):
@@ -284,7 +289,7 @@ def has_valid_first_character(name: str) -> str | None:
     return None
 
 
-def is_valid_filename(name: str) -> str | None:
+def check_filename(name: str) -> str | None:
     """Check if name contains only valid characters for filename"""
     error = None
     try:
@@ -352,3 +357,14 @@ def files_size():
         """
     )
     return db.session.execute(files_size).scalar()
+
+
+def is_valid_path(filepath: str) -> bool:
+    """Check filepath and filename for invalid characters, absolute path or path traversal"""
+    return (
+        not len(re.split(r"\.[/\\]", filepath)) > 1  # ./ or .\
+        and is_valid_filepath(filepath)  # invalid characters in filepath, absolute path
+        and is_valid_filename(
+            os.path.basename(filepath)
+        )  # invalid characters in filename, reserved filenames
+    )

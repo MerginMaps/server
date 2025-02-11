@@ -44,7 +44,7 @@ class MerginStatistics(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_at = db.Column(
-        db.DateTime, index=True, nullable=False, server_default="now()"
+        db.DateTime, index=True, nullable=False, default=datetime.utcnow
     )
     # data with statistics
     data = db.Column(JSONB, nullable=False)

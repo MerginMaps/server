@@ -9,7 +9,7 @@ from flask_wtf import FlaskForm
 from mergin.sync.utils import (
     is_reserved_word,
     has_valid_characters,
-    is_valid_filename,
+    check_filename,
     has_valid_first_character,
 )
 
@@ -23,7 +23,7 @@ def project_name_validation(name: str) -> str | None:
         has_valid_characters(name),
         has_valid_first_character(name),
         is_reserved_word(name),
-        is_valid_filename(name),
+        check_filename(name),
     ]
     for error in errors:
         if error:

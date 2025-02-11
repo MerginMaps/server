@@ -17,7 +17,8 @@ from ..sync.utils import (
     is_reserved_word,
     has_valid_characters,
     has_valid_first_character,
-    is_valid_filename,
+    check_filename,
+    is_valid_path,
 )
 from ..auth.models import LoginHistory, User
 from . import json_headers
@@ -151,7 +152,7 @@ def test_is_name_allowed():
         ("-project", True),
         ("proj_ect", True),
         ("proj.ect", True),
-        # We are repmoving ! from valids
+        # We are removing ! from valids
         ("proj!ect", False),
         (" project", False),
         (".project", False),
@@ -225,8 +226,30 @@ def test_is_name_allowed():
             not (
                 has_valid_characters(name)
                 and has_valid_first_character(name)
-                and is_valid_filename(name)
+                and check_filename(name)
                 and is_reserved_word(name)
             )
             == expected
         )
+
+
+filepaths = [
+    ("/home/user/mm/project/survey.gpkg", False),
+    ("C:\Documents\Summer2018.pdf", False),
+    ("\Desktop\Summer2019.pdf", False),
+    ("../image.png", False),
+    ("./image.png", False),
+    ("assets/photos/im?age.png", False),
+    ("assets/photos/CON.png", False),
+    ("assets/photos/CONfile.png", True),
+    ("image.png", True),
+    ("images/image.png", True),
+    ("media/photos/image.png", True),
+    ("med..ia/pho.tos/ima...ge.png", True),
+    ("med/../ia/pho.tos/ima...ge.png", False),
+]
+
+
+@pytest.mark.parametrize("filepath,allow", filepaths)
+def test_is_valid_path(client, filepath, allow):
+    assert is_valid_path(filepath) == allow

@@ -25,13 +25,12 @@ from flask import (
 )
 from pygeodiff import GeoDiffLibError
 from flask_login import current_user
-from sqlalchemy import and_, desc, asc, text, func, select
+from sqlalchemy import and_, desc, asc
 from sqlalchemy.exc import IntegrityError
 from binaryornot.check import is_binary
 from gevent import sleep
 import base64
 
-from sqlalchemy.orm import load_only
 from werkzeug.exceptions import HTTPException
 
 from mergin.sync.forms import project_name_validation
@@ -87,6 +86,7 @@ from .utils import (
     is_versioned_file,
     get_project_path,
     get_device_id,
+    is_valid_path,
 )
 from .errors import StorageLimitHit
 from ..utils import format_time_delta
@@ -807,10 +807,13 @@ def project_push(namespace, project_name):
         abort(400, "Another process is running. Please try later.")
 
     upload_changes = ChangesSchema(context={"version": version + 1}).load(changes)
-    # check if same file is not already uploaded
+
     for item in upload_changes.added:
+        # check if same file is not already uploaded
         if not all(ele.path != item.path for ele in project.files):
             abort(400, f"File {item.path} has been already uploaded")
+        if not is_valid_path(item.path):
+            abort(400, f"File {item.path} contains invalid characters.")
 
     # changes' files must be unique
     changes_files = [

@@ -23,7 +23,7 @@ def username_validation(form, field):
     from ..sync.utils import (
         has_valid_characters,
         has_valid_first_character,
-        is_valid_filename,
+        check_filename,
         is_reserved_word,
     )
 
@@ -32,7 +32,7 @@ def username_validation(form, field):
             has_valid_characters(field.data),
             has_valid_first_character(field.data),
             is_reserved_word(field.data),
-            is_valid_filename(field.data),
+            check_filename(field.data),
         ]
         if field.data
         else []
