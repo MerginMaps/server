@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <app-container>
       <div class="grid" v-if="usage">
         <usage-card class="col-12 sm:col-6 lg:col-3">
-          <template #heading>Editors</template>
+          <template #heading>Contributors</template>
           <div
             class="w-full"
             :style="{

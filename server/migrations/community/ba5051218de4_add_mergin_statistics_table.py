@@ -21,7 +21,9 @@ def upgrade():
     op.create_table(
         "mergin_statistics",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
-        sa.Column("created_at", sa.DateTime(), server_default="now()", nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+        ),
         sa.Column("data", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_mergin_statistics")),
     )
