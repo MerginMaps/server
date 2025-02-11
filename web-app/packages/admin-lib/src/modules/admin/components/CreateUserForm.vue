@@ -7,22 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <form @submit.prevent="submit" class="flex flex-column pb-4">
     <span class="p-input-filled">
-      <label for="username">First name</label>
-      <PInputText
-        id="username"
-        v-model="username"
-        data-cy="create-user-username"
-        :class="['w-full', errors.username ? 'p-invalid' : '']"
-        toggleMask
-        :feedback="false"
-        aria-describedby="username-error"
-      />
-      <span class="p-error paragraph-p6" id="username-error">{{
-        errors.username?.[0] || '&nbsp;'
-      }}</span>
-    </span>
-
-    <span class="p-input-filled">
       <label for="email">Email</label>
       <PInputText
         id="email"
@@ -101,7 +85,6 @@ export default defineComponent({
   data() {
     return {
       isValid: null,
-      username: '',
       email: '',
       password: '',
       passwordVisible: false
@@ -132,11 +115,10 @@ export default defineComponent({
     ...mapActions(useFormStore, ['clearErrors', 'handleError']),
 
     validateInput(data) {
-      return ['username', 'email', 'password'].some((k) => data[k] === '')
+      return ['email', 'password'].some((k) => data[k] === '')
     },
     submit() {
       const data: CreateUserData = {
-        username: this.username.trim(),
         email: this.email.trim(),
         password: this.password,
         confirm: this.password

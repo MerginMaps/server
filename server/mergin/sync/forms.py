@@ -16,7 +16,8 @@ from mergin.sync.utils import (
 
 def project_name_validation(name: str) -> str | None:
     """Check whether project name is valid"""
-    if not name.strip():
+    name = name.strip() if name is not None else name
+    if not name:
         return "Project name cannot be empty"
     errors = [
         has_valid_characters(name),
