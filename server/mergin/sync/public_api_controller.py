@@ -816,9 +816,16 @@ def project_push(namespace, project_name):
         if not all(ele.path != item.path for ele in project.files):
             abort(400, f"File {item.path} has been already uploaded")
         if not is_valid_path(item.path):
-            abort(400, f"File '{item.path}' contains invalid characters.")
+            abort(
+                400,
+                f"Unsupported file name detected: {item.path}. Please remove the invalid characters.",
+            )
         if not is_supported_extension(item.path):
-            abort(400, f"Unsupported extension of '{item.path}' file.")
+            abort(
+                400,
+                f"Unsupported file type detected: {item.path}. "
+                f"Please remove the file or try compressing it into a ZIP file before uploading",
+            )
 
     # changes' files must be unique
     changes_files = [
@@ -1049,7 +1056,7 @@ def push_finish(transaction_id):
                 continue
         if not is_supported_type(dest_file):
             logging.info(f"Rejecting blacklisted file: {dest_file}")
-            abort(400, f"Unsupported file type of '{f.path}' file.")
+            abort(400, f"Unsupported file type detected: {f.path}")
 
         if expected_size != os.path.getsize(dest_file):
             logging.error(
