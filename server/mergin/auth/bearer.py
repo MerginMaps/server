@@ -7,8 +7,7 @@ from itsdangerous import URLSafeTimedSerializer
 from flask.sessions import TaggedJSONSerializer
 
 
-def decode_token(secret_key, token, max_age=None):
-    salt = "bearer-session"
+def decode_token(secret_key, salt, token, max_age=None):
     serializer = TaggedJSONSerializer()
     signer_kwargs = {"key_derivation": "hmac", "digest_method": hashlib.sha1}
     s = URLSafeTimedSerializer(
@@ -17,8 +16,7 @@ def decode_token(secret_key, token, max_age=None):
     return s.loads(token, max_age=max_age)
 
 
-def encode_token(secret_key, data):
-    salt = "bearer-session"
+def encode_token(secret_key, salt, data):
     serializer = TaggedJSONSerializer()
     signer_kwargs = {"key_derivation": "hmac", "digest_method": hashlib.sha1}
     s = URLSafeTimedSerializer(

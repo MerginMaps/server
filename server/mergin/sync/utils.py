@@ -15,6 +15,12 @@ from gevent import sleep
 from flask import Request
 from typing import Optional
 from sqlalchemy import text
+from pathvalidate import (
+    validate_filename,
+    ValidationError,
+    is_valid_filepath,
+    is_valid_filename,
+)
 
 
 def generate_checksum(file, chunk_size=4096):
@@ -261,22 +267,36 @@ def convert_byte(size_bytes, unit):
     return size_bytes
 
 
-def is_name_allowed(string):
-    """Check if string is just has whitelisted character
+def is_reserved_word(name: str) -> str | None:
+    """Check if name is reserved in system"""
+    reserved = r"^support$|^helpdesk$|^merginmaps$|^lutraconsulting$|^mergin$|^lutra$|^input$|^admin$|^sales$"
+    if re.match(reserved, name) is not None:
+        return "The provided value is invalid."
+    return None
 
-    :param string: string to be checked.
-    :type string: str
 
-    :return: boolean of has just whitelisted character
-    :rtype: bool
-    """
-    return (
-        re.match(
-            r".*[\@\#\$\%\^\&\*\(\)\{\}\[\]\?\'\"`,;\:\+\=\~\\\/\|\<\>].*|^[\s^\.].*$|^CON$|^PRN$|^AUX$|^NUL$|^COM\d$|^LPT\d|^support$|^helpdesk$|^merginmaps$|^lutraconsulting$|^mergin$|^lutra$|^input$|^admin$|^sales$|^$",
-            string,
-        )
-        is None
-    )
+def has_valid_characters(name: str) -> str | None:
+    """Check if name contains only valid characters"""
+    if re.match(r"^[\w\s\-\.]+$", name) is None:
+        return "Please use only alphanumeric or the following -_. characters."
+    return None
+
+
+def has_valid_first_character(name: str) -> str | None:
+    """Check if name contains only valid characters in first position"""
+    if re.match(r"^[\s^\.].*$", name) is not None:
+        return f"Value can not start with space or dot."
+    return None
+
+
+def check_filename(name: str) -> str | None:
+    """Check if name contains only valid characters for filename"""
+    error = None
+    try:
+        validate_filename(name)
+    except ValidationError:
+        error = "The provided value is invalid."
+    return error
 
 
 def workspace_names(workspaces):
@@ -337,3 +357,14 @@ def files_size():
         """
     )
     return db.session.execute(files_size).scalar()
+
+
+def is_valid_path(filepath: str) -> bool:
+    """Check filepath and filename for invalid characters, absolute path or path traversal"""
+    return (
+        not len(re.split(r"\.[/\\]", filepath)) > 1  # ./ or .\
+        and is_valid_filepath(filepath)  # invalid characters in filepath, absolute path
+        and is_valid_filename(
+            os.path.basename(filepath)
+        )  # invalid characters in filename, reserved filenames
+    )

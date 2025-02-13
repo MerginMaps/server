@@ -11,7 +11,15 @@ from sqlalchemy import desc
 from unittest.mock import MagicMock
 
 from ..app import db
-from ..sync.utils import parse_gpkgb_header_size, gpkg_wkb_to_wkt, is_name_allowed
+from ..sync.utils import (
+    parse_gpkgb_header_size,
+    gpkg_wkb_to_wkt,
+    is_reserved_word,
+    has_valid_characters,
+    has_valid_first_character,
+    check_filename,
+    is_valid_path,
+)
 from ..auth.models import LoginHistory, User
 from . import json_headers
 from .utils import login
@@ -137,13 +145,15 @@ def test_is_name_allowed():
         ("Pro123ject", True),
         ("123PROJECT", True),
         ("PROJECT", True),
-        ("project ", True),
+        # Not valid filename
+        ("project ", False),
         ("pro ject", True),
         ("proj-ect", True),
         ("-project", True),
         ("proj_ect", True),
         ("proj.ect", True),
-        ("proj!ect", True),
+        # We are removing ! from valids
+        ("proj!ect", False),
         (" project", False),
         (".project", False),
         ("proj~ect", False),
@@ -182,14 +192,15 @@ def test_is_name_allowed():
         ("NUL", False),
         ("NULL", True),
         ("PRN", False),
-        ("LPT0", False),
+        # is not reserved word
+        ("LPT0", True),
         ("lpt0", True),
         ("LPT1", False),
-        ("lpt1", True),
+        ("lpt1", False),
         ("COM1", False),
-        ("com1", True),
+        ("com1", False),
         ("AUX", False),
-        ("AuX", True),
+        ("AuX", False),
         ("projAUXect", True),
         ("CONproject", True),
         ("projectCON", True),
@@ -204,7 +215,41 @@ def test_is_name_allowed():
         ("sales", False),
         ("", False),
         ("    ", False),
+        ("😄guy", False),
+        ("会社", True),
     ]
 
     for t in test_cases:
-        assert is_name_allowed(t[0]) == t[1]
+        name = t[0]
+        expected = t[1]
+        assert (
+            not (
+                has_valid_characters(name)
+                and has_valid_first_character(name)
+                and check_filename(name)
+                and is_reserved_word(name)
+            )
+            == expected
+        )
+
+
+filepaths = [
+    ("/home/user/mm/project/survey.gpkg", False),
+    ("C:\Documents\Summer2018.pdf", False),
+    ("\Desktop\Summer2019.pdf", False),
+    ("../image.png", False),
+    ("./image.png", False),
+    ("assets/photos/im?age.png", False),
+    ("assets/photos/CON.png", False),
+    ("assets/photos/CONfile.png", True),
+    ("image.png", True),
+    ("images/image.png", True),
+    ("media/photos/image.png", True),
+    ("med..ia/pho.tos/ima...ge.png", True),
+    ("med/../ia/pho.tos/ima...ge.png", False),
+]
+
+
+@pytest.mark.parametrize("filepath,allow", filepaths)
+def test_is_valid_path(client, filepath, allow):
+    assert is_valid_path(filepath) == allow

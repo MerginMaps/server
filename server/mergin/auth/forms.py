@@ -20,13 +20,26 @@ from ..app import UpdateForm, CustomStringField
 
 
 def username_validation(form, field):
-    from ..sync.utils import is_name_allowed
+    from ..sync.utils import (
+        has_valid_characters,
+        has_valid_first_character,
+        check_filename,
+        is_reserved_word,
+    )
 
-    if field.data and (not is_name_allowed(field.data) or "@" in field.data):
-        raise ValidationError(
-            f"Please don't start username with . and "
-            f"use only alphanumeric or these -._! characters in {field.name}."
-        )
+    errors = (
+        [
+            has_valid_characters(field.data),
+            has_valid_first_character(field.data),
+            is_reserved_word(field.data),
+            check_filename(field.data),
+        ]
+        if field.data
+        else []
+    )
+    for error in errors:
+        if error:
+            raise ValidationError(error)
 
 
 class PasswordValidator:

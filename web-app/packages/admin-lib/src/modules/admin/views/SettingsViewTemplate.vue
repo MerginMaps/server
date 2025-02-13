@@ -16,11 +16,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <app-section>
         <template #title>Advanced</template>
         <app-settings :items="settingsItems">
-          <slot />
+          <template #items-start><slot /></template>
+
           <template #checkForUpdates
             ><PInputSwitch
               :modelValue="adminStore.checkForUpdates"
               @change="switchCheckForUpdates"
+          /></template>
+          <template #downloadReport
+            ><PButton
+              severity="secondary"
+              @click="downloadReport"
+              label="Download"
           /></template>
         </app-settings>
       </app-section>
@@ -33,9 +40,11 @@ import {
   AppContainer,
   AppSection,
   AppSettings,
-  AppSettingsItemConfig
+  AppSettingsItemConfig,
+  useDialogStore
 } from '@mergin/lib'
 
+import ReportDownloadDialog from '../components/ReportDownloadDialog.vue'
 import { useAdminStore } from '../store'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
@@ -46,15 +55,30 @@ withDefaults(defineProps<{ settingsItems?: AppSettingsItemConfig[] }>(), {
       title: 'Check for updates',
       description: 'Let Mergin Maps automatically check for new updates',
       key: 'checkForUpdates'
+    },
+    {
+      title: 'Server usage report',
+      description: 'Download usage statistics for your server deployment.',
+      key: 'downloadReport'
     }
   ]
 })
 
 const adminStore = useAdminStore()
+const dialogStore = useDialogStore()
 
 function switchCheckForUpdates() {
   const value = !adminStore.checkForUpdates
   adminStore.setCheckUpdatesToCookies({ value })
+}
+
+function downloadReport() {
+  dialogStore.show({
+    component: ReportDownloadDialog,
+    params: {
+      dialog: { header: 'Download report' }
+    }
+  })
 }
 </script>
 

@@ -192,7 +192,7 @@ def is_active_workspace(workspace):
     return workspace.is_active or is_admin
 
 
-def require_project(ws, project_name, permission):
+def require_project(ws, project_name, permission) -> Project:
     workspace = current_app.ws_handler.get_by_name(ws)
     if not workspace:
         abort(404)

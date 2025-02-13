@@ -80,17 +80,15 @@ def authenticate(login, password):
         return user
 
 
-def generate_confirmation_token(app, email):
+def generate_confirmation_token(app, email, salt):
     serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
-    return serializer.dumps(email, salt=app.config["SECURITY_PASSWORD_SALT"])
+    return serializer.dumps(email, salt=salt)
 
 
-def confirm_token(token, expiration=3600 * 24 * 3):
+def confirm_token(token, salt, expiration=3600):
     serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
     try:
-        email = serializer.loads(
-            token, salt=current_app.config["SECURITY_PASSWORD_SALT"], max_age=expiration
-        )
+        email = serializer.loads(token, salt=salt, max_age=expiration)
     except:
         return
     return email
@@ -103,7 +101,12 @@ def send_confirmation_email(app, user, url, template, header, **kwargs):
     """
     from ..celery import send_email_async
 
-    token = generate_confirmation_token(app, user.email)
+    salt = (
+        app.config["SECURITY_EMAIL_SALT"]
+        if url == "confirm-email"
+        else app.config["SECURITY_PASSWORD_SALT"]
+    )
+    token = generate_confirmation_token(app, user.email, salt)
     confirm_url = f"{url}/{token}"
     html = render_template(
         template, subject=header, confirm_url=confirm_url, user=user, **kwargs

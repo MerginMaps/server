@@ -25,14 +25,15 @@ from flask import (
 )
 from pygeodiff import GeoDiffLibError
 from flask_login import current_user
-from sqlalchemy import and_, desc, asc, text, func, select
+from sqlalchemy import and_, desc, asc
 from sqlalchemy.exc import IntegrityError
 from binaryornot.check import is_binary
 from gevent import sleep
 import base64
 
-from sqlalchemy.orm import load_only
 from werkzeug.exceptions import HTTPException
+
+from mergin.sync.forms import project_name_validation
 
 from .interfaces import WorkspaceRole
 from ..app import db
@@ -83,9 +84,9 @@ from .utils import (
     is_valid_uuid,
     gpkg_wkb_to_wkt,
     is_versioned_file,
-    is_name_allowed,
     get_project_path,
     get_device_id,
+    is_valid_path,
 )
 from .errors import StorageLimitHit
 from ..utils import format_time_delta
@@ -179,10 +180,11 @@ def add_project(namespace):  # noqa: E501
     """
     request.json["name"] = request.json["name"].strip()
 
-    if not is_name_allowed(request.json["name"]):
+    validation_error = project_name_validation(request.json["name"])
+    if validation_error:
         abort(
             400,
-            "Please don't start project name with . and use only alphanumeric or these -._! characters in project name.",
+            validation_error,
         )
 
     if request.is_json:
@@ -805,10 +807,13 @@ def project_push(namespace, project_name):
         abort(400, "Another process is running. Please try later.")
 
     upload_changes = ChangesSchema(context={"version": version + 1}).load(changes)
-    # check if same file is not already uploaded
+
     for item in upload_changes.added:
+        # check if same file is not already uploaded
         if not all(ele.path != item.path for ele in project.files):
             abort(400, f"File {item.path} has been already uploaded")
+        if not is_valid_path(item.path):
+            abort(400, f"File {item.path} contains invalid characters.")
 
     # changes' files must be unique
     changes_files = [
@@ -1194,6 +1199,8 @@ def clone_project(namespace, project_name):  # noqa: E501
     dest_ns = request.json.get("namespace", cp_workspace_name).strip()
     dest_project = request.json.get("project", cloned_project.name).strip()
     ws = current_app.ws_handler.get_by_name(dest_ns)
+    if not dest_project:
+        abort(400, "Project name cannot be empty")
     if not ws:
         if dest_ns == current_user.username:
             abort(
@@ -1204,12 +1211,9 @@ def clone_project(namespace, project_name):  # noqa: E501
             abort(404, "Workspace does not exist")
     if not ws.user_has_permissions(current_user, "admin"):
         abort(403, "You do not have permissions for this workspace")
-
-    if not is_name_allowed(dest_project):
-        abort(
-            400,
-            "Please don't start project name with . and use only alphanumeric or these -._! characters in project name.",
-        )
+    validation = project_name_validation(dest_project)
+    if validation and dest_project != cloned_project.name:
+        abort(400, validation)
 
     _project = Project.query.filter_by(name=dest_project, workspace_id=ws.id).first()
     if _project:

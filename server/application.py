@@ -26,7 +26,7 @@ from mergin.auth.tasks import anonymize_removed_users
 from mergin.sync.tasks import remove_temp_files, remove_projects_backups
 from mergin.celery import celery, configure_celery
 from mergin.stats.config import Configuration
-from mergin.stats.tasks import send_statistics
+from mergin.stats.tasks import save_statistics, send_statistics
 from mergin.stats.app import register as register_stats
 
 Configuration.SERVER_TYPE = "ce"
@@ -65,14 +65,14 @@ def setup_periodic_tasks(sender, **kwargs):
         remove_projects_backups,
         name="remove old project backups",
     )
+    sender.add_periodic_task(
+        crontab(hour="*/12", minute=0),
+        save_statistics,
+        name="Save usage statistics to database",
+    )
     if Configuration.COLLECT_STATISTICS:
         sender.add_periodic_task(
             crontab(hour=randint(0, 5), minute=randint(0, 60)),
             send_statistics,
             name="send usage statistics",
         )
-
-
-# send report after start
-if Configuration.COLLECT_STATISTICS:
-    send_statistics.delay()

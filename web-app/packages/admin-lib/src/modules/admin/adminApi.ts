@@ -18,7 +18,8 @@ import {
   CreateUserData,
   PaginatedAdminProjectsResponse,
   PaginatedAdminProjectsParams,
-  ServerUsageResponse
+  ServerUsageResponse,
+  DownloadReportParams
 } from '@/modules/admin/types'
 
 export const AdminApi = {
@@ -99,6 +100,23 @@ export const AdminApi = {
   },
 
   async getServerUsage(): Promise<AxiosResponse<ServerUsageResponse>> {
-    return AdminModule.httpService.get('/app/admin/usage', )
+    return AdminModule.httpService.get('/app/admin/usage')
+  },
+
+  /**
+   * Create url for csv file with server statistics
+   */
+  contructDownloadStatisticsUrl(): string {
+    return AdminModule.httpService.absUrl('/app/admin/report')
+  },
+
+  async downloadStatistics(
+    url: string,
+    params: DownloadReportParams
+  ): Promise<AxiosResponse<Blob>> {
+    return AdminModule.httpService.get(url, {
+      responseType: 'blob',
+      params
+    })
   }
 }
