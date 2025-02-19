@@ -11,6 +11,7 @@ export interface LayoutState {
   isUnderOverlayBreakpoint: boolean
   /** Parsed closed elements from local storage and pushed back to local storage */
   closedElements: string[]
+  breadcrumps: { title: string; path: string }[]
 }
 
 const CLOSED_ELEMENTS_KEY = 'mm-closed-elements'
@@ -20,7 +21,8 @@ export const useLayoutStore = defineStore('layoutModule', {
     overlayBreakpoint: 1200,
     drawer: false,
     isUnderOverlayBreakpoint: false,
-    closedElements: []
+    closedElements: [],
+    breadcrumps: []
   }),
   getters: {
     /**

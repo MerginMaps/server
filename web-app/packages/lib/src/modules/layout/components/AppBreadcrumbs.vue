@@ -49,35 +49,44 @@ import { MenuItem } from 'primevue/menuitem'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { useLayoutStore } from '../store'
+
 type EnhancedMenuItem = MenuItem & { path: string; active?: boolean }
 
+const layoutStore = useLayoutStore()
 const route = useRoute()
 // Merge all matched meta.breadcrumps with current route breadcrumps
 
 const items = computed(() =>
-  [
-    ...route.matched.reduce<EnhancedMenuItem[]>((acc, curr) => {
-      if (curr.name === route.name) return acc
+  layoutStore.breadcrumps?.length
+    ? layoutStore.breadcrumps?.map((item, index, items) => ({
+        label: item.title,
+        path: item.path,
+        active: index === items.length - 1
+      }))
+    : [
+        ...route.matched.reduce<EnhancedMenuItem[]>((acc, curr) => {
+          if (curr.name === route.name) return acc
 
-      return [
-        ...acc,
-        ...(curr.meta?.breadcrump ?? []).map((item) => ({
+          return [
+            ...acc,
+            ...(curr.meta?.breadcrump ?? []).map((item) => ({
+              label: item.title,
+              path: item.path
+            }))
+          ]
+        }, []),
+        // adding current route wich is not in matched meta
+        ...(route.meta.breadcrump ?? []).map((item) => ({
           label: item.title,
           path: item.path
         }))
       ]
-    }, []),
-    // adding current route wich is not in matched meta
-    ...(route.meta.breadcrump ?? []).map((item) => ({
-      label: item.title,
-      path: item.path
-    }))
-  ]
-    // last will be active
-    .map((item, index, items) => ({
-      ...item,
-      active: index === items.length - 1
-    }))
+        // last will be active
+        .map((item, index, items) => ({
+          ...item,
+          active: index === items.length - 1
+        }))
 )
 </script>
 

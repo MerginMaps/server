@@ -352,7 +352,8 @@ export default defineComponent({
      */
     tabClick(index: number) {
       this.$router.push({
-        name: this.tabs[index].route
+        name: this.tabs[index].route,
+        query: {}
       })
     }
   }
