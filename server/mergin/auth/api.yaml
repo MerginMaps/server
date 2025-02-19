@@ -682,6 +682,7 @@ paths:
           description: User info
           content:
             application/json:
+              # TODO: fix this to match the ma.SQLAlchemy schema or use UserDetail schema
               schema:
                 $ref: "#/components/schemas/UserInfo"
         "401":
