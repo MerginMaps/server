@@ -1121,7 +1121,7 @@ class SyncFailuresHistory(db.Model):
     error_type = db.Column(
         db.String, index=True
     )  # e.g. push_start, push_finish, push_lost
-    error_details = db.Column(db.String, index=True)
+    error_details = db.Column(db.String)
     timestamp = db.Column(db.DateTime(), default=datetime.utcnow, index=True)
     user_id = db.Column(
         db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True

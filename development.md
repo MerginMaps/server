@@ -60,7 +60,7 @@ Watching the type definitions is also useful to pick up any changes to imports o
 
 ## Running locally in a docker composition
 
-If you want to run the whole stack locally, you can use the docker. Docker will build the images from yout local files and run the services.
+If you want to run the whole stack locally, you can use the docker. Docker will build the images from your local files and run the services.
 
 ```shell
 # Run the docker composition with the current Dockerfiles

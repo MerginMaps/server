@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-""" Base migration for CE, reflects the state of release 2021.6.1
+"""Base migration for CE, reflects the state of release 2021.6.1
 
 Revision ID: 2686074eff45
-Revises: 
+Revises:
 Create Date: 2022-12-15 10:40:42.234210
 
 """
