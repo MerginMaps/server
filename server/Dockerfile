@@ -16,7 +16,7 @@ RUN apt-get update -y && \
     python3-pip \
     python3-setuptools \
     iputils-ping \
-    gcc build-essential binutils cmake extra-cmake-modules libsqlite3-mod-spatialite && \
+    gcc build-essential binutils cmake extra-cmake-modules libsqlite3-mod-spatialite libmagic1 && \
     rm -rf /var/lib/apt/lists/*
 
 
