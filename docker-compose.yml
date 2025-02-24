@@ -79,12 +79,13 @@ services:
     restart: always
     depends_on:
       - server-gunicorn
+    user: 101:999
     links:
       - db
     networks:
       - merginmaps
   proxy:
-    image: nginxinc/nginx-unprivileged:1.25.5
+    image: nginxinc/nginx-unprivileged:1.27
     container_name: merginmaps-proxy
     restart: always
     # run nginx as built-in user but with group mergin-family for files permissions
