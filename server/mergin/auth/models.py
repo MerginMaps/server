@@ -200,7 +200,7 @@ class User(db.Model):
         # remove forbidden chars
         username = re.sub(
             r"[\@\#\$\%\^\&\*\(\)\{\}\[\]\?\'\"`,;\:\+\=\~\\\/\|\<\>]", "", username
-        )
+        ).ljust(4, "0")
         # check if we already do not have existing usernames
         suffix = db.session.execute(
             text(
