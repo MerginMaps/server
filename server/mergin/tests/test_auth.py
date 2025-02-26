@@ -117,6 +117,7 @@ test_user_reg_data = [
         400,
     ),  # tests with upper case, but email already exists
     (" mergin@mergin.com  ", "#pwd123", 400),  # invalid password
+    ("verylonglonglonglonglonglonglongemail@example.com", "#pwd1234", 201),
 ]
 
 
@@ -851,6 +852,10 @@ def test_username_generation(client):
 
     user = add_user("support1", "user")
     assert User.generate_username("support@example.com") == "support0"
+    assert (
+        User.generate_username("verylonglonglonglonglong@example.com")
+        == "verylonglonglonglonglo"
+    )
 
 
 def test_server_usage(client):
