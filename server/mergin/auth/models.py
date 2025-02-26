@@ -203,6 +203,8 @@ class User(db.Model):
         ).ljust(4, "0")
         # additional check for reserved words
         username = f"{username}0" if is_reserved_word(username) else username
+        # some value until 25 + space for suffix
+        username = username[:22]
         # check if we already do not have existing usernames
         query = db.session.execute(
             text(
