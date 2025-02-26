@@ -383,7 +383,8 @@ def register_user():  # pylint: disable=W0613,W0612
     from ..celery import send_email_async
 
     form = UserRegistrationForm()
-    if form.validate():
+    form.username.data = User.generate_username(form.email.data)
+    if form.validate_on_submit():
         user = User.create(form.username.data, form.email.data, form.password.data)
         user_created.send(user, source="admin")
         token = generate_confirmation_token(

@@ -109,7 +109,7 @@ def add_commands(app: Flask):
                 "No contact email set. Please set CONTACT_EMAIL environment variable",
             )
         else:
-            click.secho(f"Base URL of server is {base_url}", fg="green")
+            click.secho(f"Your contact email is {contact_email}.", fg="green")
 
         tables = db.engine.table_names()
         if not tables:

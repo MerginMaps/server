@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         toggleMask
         :feedback="false"
         aria-describedby="old-password-error"
-        placeholder="Please enter your password"
+        placeholder="Must be at least 8 characters"
       />
       <span class="p-error paragraph-p6" id="old-password-error">{{
         errors.old_password?.[0] || '&nbsp;'
@@ -36,10 +36,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         aria-describedby="password-error"
         toggleMask
         :feedback="false"
-        placeholder="Please enter your new password"
+        placeholder="Must be at least 8 characters"
       />
       <span class="p-error paragraph-p6" id="password-error">{{
-        errors.password?.[0] || '&nbsp;'
+        errors.password?.[0]
+          ? errors.password?.[0].startsWith('Password')
+            ? 'Password must be at least 8 characters long and include at least three of the following: lowercase letters, uppercase letters, numbers or special characters.'
+            : errors.password[0]
+          : '&nbsp;'
       }}</span>
     </span>
 
@@ -56,7 +60,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         aria-describedby="confirm-password-error"
         toggleMask
         :feedback="false"
-        placeholder="Please enter your new password"
+        placeholder="Must be at least 8 characters"
       />
 
       <span class="p-error paragraph-p6" id="confirm-password-error">{{
