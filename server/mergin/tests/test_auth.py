@@ -100,7 +100,7 @@ test_user_reg_data = [
         201,
     ),  # tests with upper case, but user does not exist
     ("test.com", "#pwd1234", 400),  # invalid email
-    ("admin@example.com", "#pwd1234", 400),  # existing user
+    ("admin@example.com", "#pwd1234", 201),  # some random admin with diff email,
     (
         " tests@test.com  ",
         "#pwd1234",
