@@ -12,7 +12,7 @@ from sqlalchemy import or_, func, text
 
 from ..app import db
 from ..sync.models import ProjectUser
-from ..sync.utils import get_user_agent, get_ip, get_device_id
+from ..sync.utils import get_user_agent, get_ip, get_device_id, is_reserved_word
 
 
 class User(db.Model):
@@ -200,7 +200,9 @@ class User(db.Model):
         # remove forbidden chars
         username = re.sub(
             r"[\@\#\$\%\^\&\*\(\)\{\}\[\]\?\'\"`,;\:\+\=\~\\\/\|\<\>]", "", username
-        )
+        ).ljust(4, "0")
+        # additional check for reserved words
+        username = f"{username}0" if is_reserved_word(username) else username
         # check if we already do not have existing usernames
         suffix = db.session.execute(
             text(
