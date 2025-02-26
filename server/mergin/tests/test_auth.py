@@ -849,6 +849,9 @@ def test_username_generation(client):
     assert User.generate_username("t@example.com") == "t0001"
     assert User.generate_username("t11@example.com") == "t110"
 
+    user = add_user("support1", "user")
+    assert User.generate_username("support@example.com") == "support0"
+
 
 def test_server_usage(client):
     """Test server usage endpoint"""
