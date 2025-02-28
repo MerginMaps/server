@@ -1,4 +1,4 @@
-"""Migrage project version author name to user.id
+"""Migrate project version author name to user.id
 
 Revision ID: 1ab5b02ce532
 Revises: 1c23e3be03a3

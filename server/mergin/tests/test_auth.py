@@ -3,16 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 from datetime import datetime, timedelta
-import os
 import time
 import pytest
 import json
 from flask import url_for
-from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy import desc
 from unittest.mock import patch
 
-from mergin.tests import test_workspace
 from ..auth.app import generate_confirmation_token, confirm_token
 from ..auth.models import User, UserProfile, LoginHistory
 from ..auth.tasks import anonymize_removed_users
@@ -32,7 +29,6 @@ from .utils import (
     login_as_admin,
     login,
     upload_file_to_project,
-    test_project_dir,
 )
 
 
@@ -889,3 +885,31 @@ def test_server_usage(client):
     assert resp.json["editors"] == 1
     assert resp.json["users"] == 1
     assert resp.json["projects"] == 1
+
+
+user_data = [
+    ("user1", 201),  # no problem
+    ("user\260", 400),  # disallowed character
+    ("usér", 201),  # non-ascii character
+    ("user\\", 400),  # disallowed character
+    ("日人日本人", 201),  # non-ascii character
+    ("user|", 400),  # vertical bar
+    ("us er", 400),  # whitespace
+    ("us,er", 400),  # comma
+    ("us—er", 400),  # dash
+    ("us'er", 400),  # apostrophe
+]
+
+
+@pytest.mark.parametrize("username,expected", user_data)
+def test_user_email_format(client, username, expected):
+    login_as_admin(client)
+    email = username + "@example.com"
+    url = url_for("/.mergin_auth_controller_register_user")
+    data = {
+        "email": email,
+        "password": "#pwd1234",
+        "confirm": "#pwd1234",
+    }
+    resp = client.post(url, data=json.dumps(data), headers=json_headers)
+    assert resp.status_code == expected
