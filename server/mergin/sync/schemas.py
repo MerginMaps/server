@@ -16,7 +16,6 @@ from .models import (
     FileHistory,
     PushChangeType,
     ProjectRole,
-    ProjectUser,
 )
 from .workspace import WorkspaceRole
 from ..app import DateTimeWithZ, ma

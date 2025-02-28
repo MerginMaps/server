@@ -2613,4 +2613,7 @@ def test_supported_file_upload(client):
     # Unsupported file type is revealed when reconstructed from chunks - based on the mime type - and upload is refused
     resp = client.post(f"/v1/project/push/finish/{upload.id}")
     assert resp.status_code == 400
-    assert resp.json["detail"] == f"Unsupported file type detected: {spoof_name}. Please remove the file or try compressing it into a ZIP file before uploading."
+    assert (
+        resp.json["detail"]
+        == f"Unsupported file type detected: {spoof_name}. Please remove the file or try compressing it into a ZIP file before uploading."
+    )
