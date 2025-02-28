@@ -2,6 +2,7 @@
 projects/
 mergin_db
 
+logs
 *.log
 .DS_Store
 *.stackdump

@@ -203,8 +203,10 @@ class User(db.Model):
         ).ljust(4, "0")
         # additional check for reserved words
         username = f"{username}0" if is_reserved_word(username) else username
+        # some value until 25 + space for suffix
+        username = username[:22]
         # check if we already do not have existing usernames
-        suffix = db.session.execute(
+        query = db.session.execute(
             text(
                 """
                 SELECT
@@ -212,13 +214,14 @@ class User(db.Model):
                 FROM "user"
                 WHERE
                     username = :username OR
-                    username SIMILAR TO :username'\d+'
+                    username SIMILAR TO :username_like
                 ORDER BY replace(username, :username, '0')::int DESC
                 LIMIT 1;
                 """
             ),
-            {"username": username},
-        ).scalar()
+            {"username": username, "username_like": f"{username}\d+"},
+        )
+        suffix = query.scalar()
         return username if suffix is None else username + str(int(suffix) + 1)
 
     @classmethod

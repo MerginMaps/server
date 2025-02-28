@@ -67,7 +67,8 @@ If you want to run the whole stack locally, you can use the docker. Docker will 
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 # Give ownership of the ./projects folder to user that is running the gunicorn container
-sudo chown 901:999 projects/
+sudo chown 901:999 projects
+sudo chown 101:999 logs
 
 # init db and create user
 docker exec -it merginmaps-server flask init-db
