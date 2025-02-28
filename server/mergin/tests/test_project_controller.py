@@ -2576,7 +2576,7 @@ def test_supported_file_upload(client):
     assert resp.status_code == 400
     assert (
         resp.json["detail"]
-        == f"Unsupported file type detected: {script_filename}. Please remove the file or try compressing it into a ZIP file before uploading"
+        == f"Unsupported file type detected: {script_filename}. Please remove the file or try compressing it into a ZIP file before uploading."
     )
     # Extension spoofing to trick the validator
     spoof_name = "script.gpkg"
@@ -2613,4 +2613,4 @@ def test_supported_file_upload(client):
     # Unsupported file type is revealed when reconstructed from chunks - based on the mime type - and upload is refused
     resp = client.post(f"/v1/project/push/finish/{upload.id}")
     assert resp.status_code == 400
-    assert resp.json["detail"] == f"Unsupported file type detected: {spoof_name}"
+    assert resp.json["detail"] == f"Unsupported file type detected: {spoof_name}. Please remove the file or try compressing it into a ZIP file before uploading."
