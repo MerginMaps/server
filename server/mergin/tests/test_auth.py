@@ -914,6 +914,7 @@ def test_user_email_format(client, username, expected):
     data = {
         "email": email,
         "password": "#pwd1234",
+        "confirm": "#pwd1234",
     }
     resp = client.post(url, data=json.dumps(data), headers=json_headers)
     assert resp.status_code == expected
