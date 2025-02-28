@@ -3,17 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 from datetime import datetime, timedelta
-import os
 import time
 import pytest
 import json
 from flask import url_for
-from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy import desc
-from sqlalchemy.exc import IntegrityError
 from unittest.mock import patch
 
-from mergin.tests import test_workspace
 from ..auth.app import generate_confirmation_token, confirm_token
 from ..auth.models import User, UserProfile, LoginHistory
 from ..auth.tasks import anonymize_removed_users
@@ -33,7 +29,6 @@ from .utils import (
     login_as_admin,
     login,
     upload_file_to_project,
-    test_project_dir,
 )
 
 
