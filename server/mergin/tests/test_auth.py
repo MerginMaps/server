@@ -119,8 +119,6 @@ test_user_reg_data = [
     ),  # tests with upper case, but email already exists
     (" mergin@mergin.com  ", "#pwd123", 400),  # invalid password
     ("verylonglonglonglonglonglonglongemail@example.com", "#pwd1234", 201),
-    ("XmerginX", " mergin@mergin.com  ", "#pwd123", 400),  # invalid password
-    ("mergin4", "invalid\360@email.com", "#pwd1234", 400),  # non-ascii character in the email
 ]
 
 
@@ -894,32 +892,28 @@ def test_server_usage(client):
     assert resp.json["projects"] == 1
 
 
-#  Due to Python's internal handling of strings which is inherently Unicode we need to decode the string in the test
 user_data = [
-    ("user1", True, 201),  # no problem
-    ("user\260", True, 201),  # non-ascii character
-    ("usér", True, 201),  # non-ascii character
-    ("user\\", True, 400),  # disallowed character
-    ("日人日本人", True, 201),  # non-ascii character
-    ("usér", False, 400),  # not utf-8 encoding
-    ("us er", True, 400),  # whitespace
-    ("us—er", True, 400),  # dash
+    ("user1", 201),  # no problem
+    ("user\260", 400),  # disallowed character
+    ("usér", 201),  # non-ascii character
+    ("user\\", 400),  # disallowed character
+    ("日人日本人", 201),  # non-ascii character
+    ("user|", 400),  # vertical bar
+    ("us er", 400),  # whitespace
+    ("us,er", 400),  # comma
+    ("us—er", 400),  # dash
+    ("us'er", 400),  # apostrophe
 ]
 
 
-@pytest.mark.parametrize("username,utf8,expected", user_data)
-def test_user_email_format(client, username, expected, utf8):
+@pytest.mark.parametrize("username,expected", user_data)
+def test_user_email_format(client, username, expected):
     login_as_admin(client)
     email = username + "@example.com"
-    if not utf8:
-        # simulate server misinterpreting the input encoding
-        email = email.encode("latin1").decode("utf-8", errors="replace")
     url = url_for("/.mergin_auth_controller_register_user")
     data = {
-        "username": username,
         "email": email,
         "password": "#pwd1234",
-        "confirm": "#pwd1234",
     }
     resp = client.post(url, data=json.dumps(data), headers=json_headers)
     assert resp.status_code == expected
