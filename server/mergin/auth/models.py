@@ -199,7 +199,7 @@ class User(db.Model):
         username = email.split("@")[0].strip().lower()
         # remove forbidden chars
         username = re.sub(
-            r"[\@\#\$\%\^\&\*\(\)\{\}\[\]\?\'\"`,;\:\+\=\~\\\/\|\<\>]", "", username
+            r"[\@\#\$\%\^\&\*\(\)\{\}\[\]\?\'\"`,;\:\+\=\~\\\/\|\<\>—]", "", username
         ).ljust(4, "0")
         # additional check for reserved words
         username = f"{username}0" if is_reserved_word(username) else username
