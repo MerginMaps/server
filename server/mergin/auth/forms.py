@@ -43,14 +43,22 @@ def username_validation(form, field):
 
 
 class ExtendedEmail(Email):
-    """Custom email validation extending WTForms email validation"""
+    """Custom email validation extending WTForms email validation.
+    WTForms checks for
+    1. spaces,
+    2. special characters ,:;()<>[]\"
+    3, multiple @ symbols,
+    4, leading, trailing, or consecutive dots in the local part
+    5, invalid domain part - missing top level domain (user@example), consecutive dots
+    Custom check for additional invalid characters disallows |'— because they make our email sending service to fail
+    """
 
     def __call__(self, form, field):
         super().__call__(form, field)
 
         if re.search(r"[|'—]", field.data):
             raise ValidationError(
-                f"Email address '{field.data}' contains invalid characters."
+                f"Email address '{field.data}' contains an invalid character."
             )
 
 
