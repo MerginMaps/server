@@ -69,3 +69,5 @@ def test_catch_timeout():
     # in case of missing rollback sqlalchemy would raise error
     with pytest.raises(sqlalchemy.exc.PendingRollbackError):
         application.test_client().get("/unhandled")
+    
+    db.session.rollback()
