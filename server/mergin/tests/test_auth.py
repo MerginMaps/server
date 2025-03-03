@@ -10,6 +10,7 @@ from flask import url_for
 from sqlalchemy import desc
 from unittest.mock import patch
 
+from ..auth.forms import ResetPasswordForm
 from ..auth.app import generate_confirmation_token, confirm_token
 from ..auth.models import User, UserProfile, LoginHistory
 from ..auth.tasks import anonymize_removed_users
@@ -114,6 +115,8 @@ test_user_reg_data = [
     ),  # tests with upper case, but email already exists
     (" mergin@mergin.com  ", "#pwd123", 400),  # invalid password
     ("verylonglonglonglonglonglonglongemail@example.com", "#pwd1234", 201),
+    ("us.er@mergin.com", "#pwd1234", 201),  # dot is allowed
+    ("us er@mergin.com", "#pwd1234", 400),  # space is disallowed
 ]
 
 
@@ -888,28 +891,28 @@ def test_server_usage(client):
 
 
 user_data = [
-    ("user1", 201),  # no problem
-    ("user\260", 400),  # disallowed character
-    ("usér", 201),  # non-ascii character
-    ("user\\", 400),  # disallowed character
-    ("日人日本人", 201),  # non-ascii character
-    ("user|", 400),  # vertical bar
-    ("us er", 400),  # whitespace
-    ("us,er", 400),  # comma
-    ("us—er", 400),  # dash
-    ("us'er", 400),  # apostrophe
+    ("user1", True),  # no problem
+    ("日人日本人", True),  # non-ascii character
+    ("usér", True),  # non-ascii character
+    ("user\\", False),  # disallowed character
+    ("user\260", True),  # non-ascii character (°)
+    ("user|", False),  # vertical bar
+    ("us er", False),  # space in the middle
+    ("us,er", False),  # comma
+    ("us—er", False),  # dash
+    ("us'er", False),  # apostrophe
+    (" user", True),  # starting with space (will be stripped)
+    ("us.er", True),  # dot in the middle
+    (".user", False),  # starting with dot
 ]
 
 
-@pytest.mark.parametrize("username,expected", user_data)
-def test_user_email_format(client, username, expected):
-    login_as_admin(client)
-    email = username + "@example.com"
-    url = url_for("/.mergin_auth_controller_register_user")
-    data = {
-        "email": email,
-        "password": "#pwd1234",
-        "confirm": "#pwd1234",
-    }
-    resp = client.post(url, data=json.dumps(data), headers=json_headers)
-    assert resp.status_code == expected
+@pytest.mark.parametrize("username,is_valid", user_data)
+def test_email_format_validation(app, username, is_valid):
+    """Test email form format validation"""
+    email = username + "@email.com"
+    with app.test_request_context(method="POST"):
+        form = ResetPasswordForm(
+            data={"email": email}
+        )  # ResetPasswordForm has only email field
+        assert form.validate() == is_valid
