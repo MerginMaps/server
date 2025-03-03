@@ -13,6 +13,7 @@ from urllib.parse import quote
 import uuid
 from datetime import datetime
 
+import gevent
 import psycopg2
 from blinker import signal
 from connexion import NoContent, request
@@ -951,6 +952,9 @@ def project_push(namespace, project_name):
                 f"Failed to upload a new project version using transaction id: {upload.id}: {str(err)}"
             )
             abort(422, "Failed to upload a new project version. Please try later.")
+        except gevent.timeout.Timeout:
+            db.session.rollback()
+            raise
         finally:
             upload.clear()
 
@@ -1169,6 +1173,10 @@ def push_finish(transaction_id):
             f"transaction id: {transaction_id}.: {str(err)}"
         )
         abort(422, "Failed to create new version: {}".format(str(err)))
+    # catch exception during pg transaction so we can rollback and prevent PendingRollbackError during upload clean up
+    except gevent.timeout.Timeout:
+        db.session.rollback()
+        raise
     finally:
         # remove artifacts
         upload.clear()
