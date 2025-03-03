@@ -3,16 +3,14 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 from datetime import datetime, timedelta
-import os
 import time
 import pytest
 import json
 from flask import url_for
-from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy import desc
 from unittest.mock import patch
 
-from mergin.tests import test_workspace
+from ..auth.forms import ResetPasswordForm
 from ..auth.app import generate_confirmation_token, confirm_token
 from ..auth.models import User, UserProfile, LoginHistory
 from ..auth.tasks import anonymize_removed_users
@@ -32,7 +30,6 @@ from .utils import (
     login_as_admin,
     login,
     upload_file_to_project,
-    test_project_dir,
 )
 
 
@@ -118,6 +115,8 @@ test_user_reg_data = [
     ),  # tests with upper case, but email already exists
     (" mergin@mergin.com  ", "#pwd123", 400),  # invalid password
     ("verylonglonglonglonglonglonglongemail@example.com", "#pwd1234", 201),
+    ("us.er@mergin.com", "#pwd1234", 201),  # dot is allowed
+    ("us er@mergin.com", "#pwd1234", 400),  # space is disallowed
 ]
 
 
@@ -889,3 +888,31 @@ def test_server_usage(client):
     assert resp.json["editors"] == 1
     assert resp.json["users"] == 1
     assert resp.json["projects"] == 1
+
+
+user_data = [
+    ("user1", True),  # no problem
+    ("日人日本人", True),  # non-ascii character
+    ("usér", True),  # non-ascii character
+    ("user\\", False),  # disallowed character
+    ("user\260", True),  # non-ascii character (°)
+    ("user|", False),  # vertical bar
+    ("us er", False),  # space in the middle
+    ("us,er", False),  # comma
+    ("us—er", False),  # dash
+    ("us'er", False),  # apostrophe
+    (" user", True),  # starting with space (will be stripped)
+    ("us.er", True),  # dot in the middle
+    (".user", False),  # starting with dot
+]
+
+
+@pytest.mark.parametrize("username,is_valid", user_data)
+def test_email_format_validation(app, username, is_valid):
+    """Test email form format validation"""
+    email = username + "@email.com"
+    with app.test_request_context(method="POST"):
+        form = ResetPasswordForm(
+            data={"email": email}
+        )  # ResetPasswordForm has only email field
+        assert form.validate() == is_valid

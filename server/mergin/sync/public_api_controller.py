@@ -824,7 +824,7 @@ def project_push(namespace, project_name):
             abort(
                 400,
                 f"Unsupported file type detected: {item.path}. "
-                f"Please remove the file or try compressing it into a ZIP file before uploading",
+                f"Please remove the file or try compressing it into a ZIP file before uploading.",
             )
 
     # changes' files must be unique
@@ -1056,7 +1056,11 @@ def push_finish(transaction_id):
                 continue
         if not is_supported_type(dest_file):
             logging.info(f"Rejecting blacklisted file: {dest_file}")
-            abort(400, f"Unsupported file type detected: {f.path}")
+            abort(
+                400,
+                f"Unsupported file type detected: {f.path}. "
+                f"Please remove the file or try compressing it into a ZIP file before uploading.",
+            )
 
         if expected_size != os.path.getsize(dest_file):
             logging.error(
