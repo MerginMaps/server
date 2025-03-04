@@ -163,7 +163,7 @@ const share = async () => {
       roleName: data.permission,
       projectName: projectStore.project.name
     })
-    await projectStore.getProjectAccess(projectStore.project?.id)
+    await projectStore.getProjectCollaborators(projectStore.project?.id)
     dialogStore.close()
   } catch (err) {
     emit('onShareError', err as Error)
