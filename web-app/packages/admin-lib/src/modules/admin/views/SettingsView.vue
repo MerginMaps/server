@@ -49,7 +49,7 @@ const settingsItems = ref<AppSettingsItemConfig[]>([
   {
     title: 'Collect statistics',
     description:
-      'Help us improve Mergin Maps by sharing usage information. Mergin Maps collects anonymous usage information to make the service better overtime. You can opt-out anytime.',
+      'Help us improve Mergin Maps by sharing usage information. Mergin Maps collects anonymous usage information to make the service better overtime.',
     key: 'usageInformation'
   }
 ])
