@@ -33,7 +33,7 @@ import { LoginView } from './modules/user'
 
 export const createRouter = (pinia: Pinia) => {
   const router = createRouterInstance({
-    history: createWebHistory(),
+    history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
       {
         path: '/:pathMatch(.*)*',
