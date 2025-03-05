@@ -128,7 +128,12 @@ export function isAtLeastGlobalRole(
   roleName: ProjectRoleName,
   globalRole: GlobalRole
 ): boolean {
-  return PROJECT_ROLE_BY_NAME[roleName] >= globalRole
+  const globalProjectRole = {
+    [GlobalRole.global_read]: ProjectRole.reader,
+    [GlobalRole.global_write]: ProjectRole.writer,
+    [GlobalRole.global_admin]: ProjectRole.owner
+  }
+  return PROJECT_ROLE_BY_NAME[roleName] >= globalProjectRole[globalRole]
 }
 
 export function getProjectRoleNameValues(): DropdownOption<ProjectRoleName>[] {
