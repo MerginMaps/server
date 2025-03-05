@@ -856,6 +856,13 @@ def test_username_generation(client):
         == "verylonglonglonglonglo"
     )
 
+    # test username generation with existing user, case insensitive
+    user = add_user("Testuser")
+    assert User.generate_username("Testuser@example.com") == "testuser1"
+    assert User.generate_username("testuser@example.com") == "testuser1"
+    user = add_user("testuser1")
+    assert User.generate_username("Testuser@example.com") == "testuser2"
+
 
 def test_server_usage(client):
     """Test server usage endpoint"""

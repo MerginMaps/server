@@ -210,12 +210,12 @@ class User(db.Model):
             text(
                 """
                 SELECT
-                    replace(username, :username, '0')::int AS suffix
+                    replace(lower(username), :username, '0')::int AS suffix
                 FROM "user"
                 WHERE
-                    username = :username OR
-                    username SIMILAR TO :username_like
-                ORDER BY replace(username, :username, '0')::int DESC
+                    lower(username) = :username OR
+                    lower(username) SIMILAR TO :username_like
+                ORDER BY replace(lower(username), :username, '0')::int DESC
                 LIMIT 1;
                 """
             ),
