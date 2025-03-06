@@ -199,7 +199,7 @@ class User(db.Model):
         username = email.split("@")[0].strip().lower()
         # remove forbidden chars
         username = re.sub(
-            r"[\@\#\$\%\^\&\*\(\)\{\}\[\]\?\'\"`,;\:\+\=\~\\\/\|\<\>]", "", username
+            r"[\@\#\$\%\^\&\*\(\)\{\}\[\]\?\'\"`,;\:\+\=\~\\\/\|\<\>—]", "", username
         ).ljust(4, "0")
         # additional check for reserved words
         username = f"{username}0" if is_reserved_word(username) else username
@@ -210,12 +210,12 @@ class User(db.Model):
             text(
                 """
                 SELECT
-                    replace(username, :username, '0')::int AS suffix
+                    replace(lower(username), :username, '0')::int AS suffix
                 FROM "user"
                 WHERE
-                    username = :username OR
-                    username SIMILAR TO :username_like
-                ORDER BY replace(username, :username, '0')::int DESC
+                    lower(username) = :username OR
+                    lower(username) SIMILAR TO :username_like
+                ORDER BY replace(lower(username), :username, '0')::int DESC
                 LIMIT 1;
                 """
             ),

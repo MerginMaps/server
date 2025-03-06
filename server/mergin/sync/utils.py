@@ -285,7 +285,7 @@ def has_valid_characters(name: str) -> str | None:
 
 def has_valid_first_character(name: str) -> str | None:
     """Check if name contains only valid characters in first position"""
-    if re.match(r"^[\s^\.].*$", name) is not None:
+    if re.match(r"^[\s.].*$", name) is not None:
         return f"Value can not start with space or dot."
     return None
 

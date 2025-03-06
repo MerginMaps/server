@@ -1,7 +1,7 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
-
+import re
 import safe
 from flask_wtf import FlaskForm
 from sqlalchemy import func
@@ -42,6 +42,26 @@ def username_validation(form, field):
             raise ValidationError(error)
 
 
+class ExtendedEmail(Email):
+    """Custom email validation extending WTForms email validation.
+    WTForms checks for
+    1. spaces,
+    2. special characters ,:;()<>[]\"
+    3, multiple @ symbols,
+    4, leading, trailing, or consecutive dots in the local part
+    5, invalid domain part - missing top level domain (user@example), consecutive dots
+    Custom check for additional invalid characters disallows |'— because they make our email sending service to fail
+    """
+
+    def __call__(self, form, field):
+        super().__call__(form, field)
+
+        if re.search(r"[|'—]", field.data):
+            raise ValidationError(
+                f"Email address '{field.data}' contains an invalid character."
+            )
+
+
 class PasswordValidator:
     def __init__(self, min_length=8):
         self.min_length = min_length
@@ -71,7 +91,7 @@ class RegisterUserForm(FlaskForm):
     )
     email = CustomStringField(
         "Email Address",
-        validators=[DataRequired(), Email()],
+        validators=[DataRequired(), ExtendedEmail()],
     )
 
     def validate(self):
@@ -94,7 +114,7 @@ class RegisterUserForm(FlaskForm):
 class ResetPasswordForm(FlaskForm):
     email = CustomStringField(
         "Email Address",
-        [DataRequired(), Email()],
+        [DataRequired(), ExtendedEmail()],
     )
 
 
@@ -129,7 +149,7 @@ class UserProfileDataForm(UpdateForm):
     receive_notifications = BooleanField("Receive notifications", [Optional()])
     first_name = CustomStringField("First Name", [Optional()])
     last_name = CustomStringField("Last Name", [Optional()])
-    email = CustomStringField("Email", [Optional(), Email()])
+    email = CustomStringField("Email", [Optional(), ExtendedEmail()])
 
 
 class ApiLoginForm(LoginForm):
