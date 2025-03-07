@@ -80,7 +80,6 @@ def create_project(name, workspace, user, **kwargs):
 
     p = Project(**project_params, **kwargs)
     p.updated = datetime.utcnow()
-    p.set_role(user.id, ProjectRole.OWNER)
     db.session.add(p)
     db.session.flush()
     changes = UploadChanges(added=[], updated=[], removed=[])

@@ -90,7 +90,6 @@ class Project(db.Model):
         self.public = kwargs.get("public", False)
         latest_files = LatestProjectFiles(project=self)
         db.session.add(latest_files)
-        self.set_role(creator.id, ProjectRole.OWNER)
 
     @property
     def storage(self):
