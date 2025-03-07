@@ -150,6 +150,7 @@ export default defineComponent({
     namespace: String,
     projectName: String,
     showSettings: Boolean as PropType<boolean>,
+    showMap: Boolean as PropType<boolean>,
     showHistory: { type: Boolean as PropType<boolean>, default: true },
     hideCloneButton: {
       type: Boolean,
@@ -180,8 +181,8 @@ export default defineComponent({
       ]
 
       if (this.loggedUser) {
-        // If map in slots, add route to map tab
-        if (this.$slots['map.tab']) {
+        // If map in slots and user is project member, add route to map tab
+        if (this.$slots['map.tab'] && this.showMap) {
           tabs.push({
             route: this.mapRoute
           })
