@@ -170,7 +170,9 @@ def test_get_paginated_projects(client):
     for i in range(14):
         create_project("foo" + str(i), test_workspace, user)
 
-    resp = client.get("/v1/project/paginated?page=1&per_page=10&order_params=created_asc")
+    resp = client.get(
+        "/v1/project/paginated?page=1&per_page=10&order_params=created_asc"
+    )
     assert resp.status_code == 200
     resp_data = json.loads(resp.data)
     assert len(resp_data.get("projects")) == 10
