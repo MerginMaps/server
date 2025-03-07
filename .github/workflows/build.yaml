@@ -25,16 +25,16 @@ jobs:
         env:
           BUILD_HASH: ${{ github.sha }}
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: mergin
+          REPOSITORY: mergin/mergin-ce
         run: |
-          IMAGE_TAG="build-ce-$GITHUB_SHA"
+          IMAGE_TAG="build-$GITHUB_SHA"
           echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
           cd server
-          docker build -f Dockerfile . --build-arg BUILD_HASH=${BUILD_HASH} -t $ECR_REGISTRY/mergin/$REPOSITORY-back:$IMAGE_TAG;          
+          docker build -f Dockerfile . --build-arg BUILD_HASH=${BUILD_HASH} -t $ECR_REGISTRY/$REPOSITORY-back:$IMAGE_TAG;          
           cd ../web-app
-          docker build -f Dockerfile . -t $ECR_REGISTRY/mergin/$REPOSITORY-front:$IMAGE_TAG
-          docker push $ECR_REGISTRY/mergin/$REPOSITORY-back:$IMAGE_TAG
-          docker push $ECR_REGISTRY/mergin/$REPOSITORY-front:$IMAGE_TAG
+          docker build -f Dockerfile . -t $ECR_REGISTRY/$REPOSITORY-front:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$REPOSITORY-back:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$REPOSITORY-front:$IMAGE_TAG
       - name: Build info
         run: |
           echo "IMAGE_TAG=$IMAGE_TAG"
