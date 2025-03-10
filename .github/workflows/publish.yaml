@@ -1,0 +1,40 @@
+name: Build and publish public images
+on:
+  workflow_dispatch:
+
+env:
+  REGISTRY: docker.io
+  REPOSITORY: lutraconsulting/merginmaps
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_LOGIN }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build, tag, and push CE images to Dockerhub
+        env:
+          BUILD_HASH: ${{ github.sha }}
+        run: |
+          IMAGE_TAG=${{ github.ref_name }}
+          if [[ $GITHUB_REF_TYPE != "tag" ]]; then
+            echo "Not a tag, exiting"
+            exit 1
+          fi
+          echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
+          cd server
+          docker build -f Dockerfile . --build-arg BUILD_HASH=${BUILD_HASH} -t $REGISTRY/$REPOSITORY-backend:$IMAGE_TAG;          
+          cd ../web-app
+          docker build -f Dockerfile . -t $REGISTRY/$REPOSITORY-frontend:$IMAGE_TAG
+          docker push $REGISTRY/$REPOSITORY-backend:$IMAGE_TAG
+          docker push $REGISTRY/$REPOSITORY-frontend:$IMAGE_TAG
+      - name: Build info
+        run: |
+          echo "IMAGE_TAG=$IMAGE_TAG"
+          echo "GITHUB_SHA=$GITHUB_SHA"
