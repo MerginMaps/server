@@ -21,8 +21,8 @@ jobs:
       - name: Build, tag, and push CE images to Dockerhub
         env:
           BUILD_HASH: ${{ github.sha }}
+          IMAGE_TAG: ${{ github.ref_name }}
         run: |
-          IMAGE_TAG=${{ github.ref_name }}
           if [[ $GITHUB_REF_TYPE != "tag" ]]; then
             echo "Not a tag, exiting"
             exit 1
