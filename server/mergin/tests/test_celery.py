@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 from ..app import db
 from ..config import Configuration
-from ..sync.models import Project, AccessRequest, ProjectVersion
+from ..sync.models import Project, AccessRequest, ProjectRole, ProjectVersion
 from ..celery import send_email_async
 from ..sync.tasks import remove_temp_files, remove_projects_backups
 from ..sync.storages.disk import move_to_tmp
@@ -60,6 +60,7 @@ def test_send_email_from_flask(send_email_mock, client):
     user = User.query.filter(User.username == "mergin").first()
     test_workspace = create_workspace()
     p = create_project("testx", test_workspace, user)
+    p.set_role(user.id, ProjectRole.OWNER)
     user2 = add_user("test_user", "ilovemergin")
     login(client, "test_user", "ilovemergin")
     email_data = {
