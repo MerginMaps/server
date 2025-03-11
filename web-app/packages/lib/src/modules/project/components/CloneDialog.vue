@@ -5,7 +5,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <clone-dialog-template v-bind="$props" @on-clone-project="onCloneProject" />
+  <clone-dialog-template
+    v-bind="$props"
+    :target-workspace="namespace"
+    @on-clone-project="onCloneProject"
+  />
 </template>
 
 <script lang="ts">
