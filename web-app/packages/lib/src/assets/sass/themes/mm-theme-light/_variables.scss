@@ -29,6 +29,7 @@ $colors: (
     "grape": #5A2740,
     "positive": #C0EBCF,
     "negative": #F0C4BC,
+    "negative-light": #FFF0ED,
     "warning": #F7DDAF,
     "earth": #4D2A24,
     "deep-ocean": #1C324A,
@@ -112,5 +113,6 @@ $colors: (
     --sand-color: #{map-get($colors, "sand")};
     --rose-color: #{map-get($colors, "rose")};
     --dark-green-color: #{map-get($colors, "dark-green")};
+    --negative-light-color: #{map-get($colors, "negative-light")};
     color-scheme: light;
 }
