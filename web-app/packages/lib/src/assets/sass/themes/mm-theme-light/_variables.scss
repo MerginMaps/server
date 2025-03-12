@@ -21,6 +21,7 @@ $colors: (
     "night": #12181F,
     "light-green": #EFF5F3,
     "medium-green": #B7CDC4,
+    "dark-green": #6E9991,
     "sun": #F4CB46,
     "sunset": #FFB673,
     "sand": #FFF4E2,
@@ -110,5 +111,6 @@ $colors: (
     --sun-color: #{map-get($colors, "sun")};
     --sand-color: #{map-get($colors, "sand")};
     --rose-color: #{map-get($colors, "rose")};
+    --dark-green-color: #{map-get($colors, "dark-green")};
     color-scheme: light;
 }
