@@ -82,6 +82,16 @@ def add_commands(app: Flask):
                 f"Error sending email: {e}",
             )
 
+    def _check_permissions(path):
+        import os
+
+        if not os.access(path, os.W_OK):
+            _echo_error(
+                f"Permissions for {path} folder not set correctly. Please review these settings.",
+            )
+        else:
+            click.secho(f"Permissions granted for {path} folder", fg="green")
+
     def _check_server():  # pylint: disable=W0612
         """Check server configuration."""
 
@@ -116,6 +126,12 @@ def add_commands(app: Flask):
             _echo_error("Database not initialized. Run flask init-db command")
         else:
             click.secho("Database initialized properly", fg="green")
+
+        if edition == "Community Edition":
+            _check_permissions('/data')
+        else:
+            _check_permissions('/data')
+            _check_permissions('/overviews')
 
         _check_celery()
 
