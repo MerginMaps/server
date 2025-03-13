@@ -2,6 +2,7 @@ import click
 from flask import Flask
 import random
 import string
+import os
 from datetime import datetime, timezone
 
 
@@ -82,6 +83,16 @@ def add_commands(app: Flask):
                 f"Error sending email: {e}",
             )
 
+    def _check_permissions(path):
+        """Check for write permission on working folders"""
+
+        if not os.access(path, os.W_OK):
+            _echo_error(
+                f"Permissions for {path} folder not set correctly. Please review these settings.",
+            )
+        else:
+            click.secho(f"Permissions granted for {path} folder", fg="green")
+
     def _check_server():  # pylint: disable=W0612
         """Check server configuration."""
 
@@ -116,6 +127,8 @@ def add_commands(app: Flask):
             _echo_error("Database not initialized. Run flask init-db command")
         else:
             click.secho("Database initialized properly", fg="green")
+
+        _check_permissions("/data")
 
         _check_celery()
 
