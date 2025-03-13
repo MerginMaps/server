@@ -13,7 +13,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     :hint="username"
     :confirmField="{
       label: 'Username',
-      expected: username
+      expected: username,
+      placeholder: 'Type in your username to confirm deletion'
     }"
     severity="danger"
     @confirm="confirm"

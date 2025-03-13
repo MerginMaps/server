@@ -114,7 +114,8 @@ export default defineComponent({
         confirmText: 'Delete',
         confirmField: {
           label: 'Project name',
-          expected: this.projectName
+          expected: this.projectName,
+          placeholder: 'Type in project name to confirm deletion'
         }
       }
       const listeners = {
