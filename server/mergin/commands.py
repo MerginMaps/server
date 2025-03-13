@@ -2,6 +2,7 @@ import click
 from flask import Flask
 import random
 import string
+import os
 from datetime import datetime, timezone
 
 
@@ -83,7 +84,7 @@ def add_commands(app: Flask):
             )
 
     def _check_permissions(path):
-        import os
+        """ Check for write permission on working folders """
 
         if not os.access(path, os.W_OK):
             _echo_error(
@@ -127,11 +128,7 @@ def add_commands(app: Flask):
         else:
             click.secho("Database initialized properly", fg="green")
 
-        if edition == "Community Edition":
-            _check_permissions("/data")
-        else:
-            _check_permissions("/data")
-            _check_permissions("/overviews")
+        _check_permissions("/data")
 
         _check_celery()
 
