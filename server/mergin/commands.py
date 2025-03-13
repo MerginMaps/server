@@ -84,7 +84,7 @@ def add_commands(app: Flask):
             )
 
     def _check_permissions(path):
-        """ Check for write permission on working folders """
+        """Check for write permission on working folders"""
 
         if not os.access(path, os.W_OK):
             _echo_error(
