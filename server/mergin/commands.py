@@ -128,10 +128,10 @@ def add_commands(app: Flask):
             click.secho("Database initialized properly", fg="green")
 
         if edition == "Community Edition":
-            _check_permissions('/data')
+            _check_permissions("/data")
         else:
-            _check_permissions('/data')
-            _check_permissions('/overviews')
+            _check_permissions("/data")
+            _check_permissions("/overviews")
 
         _check_celery()
 
