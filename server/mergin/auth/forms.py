@@ -15,7 +15,7 @@ from wtforms.validators import (
     EqualTo,
 )
 
-from .models import User
+from .models import MAX_USERNAME_LENGTH, User
 from ..app import UpdateForm, CustomStringField
 
 
@@ -87,7 +87,10 @@ class LoginForm(FlaskForm):
 class RegisterUserForm(FlaskForm):
     username = CustomStringField(
         "Username",
-        validators=[validators.Length(min=4, max=25), username_validation],
+        validators=[
+            validators.Length(min=4, max=MAX_USERNAME_LENGTH),
+            username_validation,
+        ],
     )
     email = CustomStringField(
         "Email Address",
