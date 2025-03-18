@@ -11,7 +11,7 @@ jobs:
 
       - uses: psf/black@stable
         with:
-          version: 24.4.0
+          version: 25.1.0
           options: "--check --verbose --diff"
           src: "./server"
 
