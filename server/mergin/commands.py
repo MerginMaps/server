@@ -1,3 +1,5 @@
+from email.policy import default
+
 import click
 from flask import Flask
 import random
@@ -222,3 +224,9 @@ def add_commands(app: Flask):
     def check():
         """Check server configuration."""
         _check_server()
+
+    @server.command()
+    @click.option("--path", required=False, default="/data")
+    def permissions(path: str):
+        """Check for specific path write permission"""
+        _check_permissions(path)
