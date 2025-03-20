@@ -172,7 +172,7 @@ const breadcrumps = computed(() => {
   return [
     {
       icon: 'ti ti-folder',
-      label: 'Project home',
+      label: 'Files',
       path: folderLink(''),
       active: parts.length === 0
     },

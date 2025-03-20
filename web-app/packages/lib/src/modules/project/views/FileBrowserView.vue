@@ -6,38 +6,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div>
-    <!-- Searching -->
-    <app-container
-      v-if="searchFilter !== '' || Object.keys(project?.files ?? {}).length > 0"
-    >
-      <app-section ground>
-        <div class="flex align-items-center">
-          <span class="p-input-icon-left flex-grow-1">
-            <i class="ti ti-search paragraph-p3"></i>
-            <PInputText
-              placeholder="Search files"
-              data-cy="search-files-field"
-              v-model="searchFilter"
-              class="w-full"
-            />
-          </span>
-          <AppMenu :items="filterMenuItems" />
-        </div>
-      </app-section>
-    </app-container>
-
-    <app-container v-if="dataTableOpen && projectName">
-      <app-section>
-        <files-table
-          :project-name="projectName"
-          :namespace="namespace"
-          :location="location"
-          :options="options"
-          :search="searchFilter"
-          @row-click="rowClick"
-        />
-      </app-section>
-    </app-container>
     <app-container
       v-if="project && $route.name === 'project-tree' && isProjectWriter"
     >
@@ -76,6 +44,38 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </div>
         </div>
       </app-panel-toggleable>
+    </app-container>
+    <!-- Searching -->
+    <app-container
+      v-if="searchFilter !== '' || Object.keys(project?.files ?? {}).length > 0"
+    >
+      <app-section ground>
+        <div class="flex align-items-center">
+          <span class="p-input-icon-left flex-grow-1">
+            <i class="ti ti-search paragraph-p3"></i>
+            <PInputText
+              placeholder="Search files"
+              data-cy="search-files-field"
+              v-model="searchFilter"
+              class="w-full"
+            />
+          </span>
+          <AppMenu :items="filterMenuItems" />
+        </div>
+      </app-section>
+    </app-container>
+
+    <app-container v-if="dataTableOpen && projectName">
+      <app-section>
+        <files-table
+          :project-name="projectName"
+          :namespace="namespace"
+          :location="location"
+          :options="options"
+          :search="searchFilter"
+          @row-click="rowClick"
+        />
+      </app-section>
     </app-container>
     <!-- Sidebars -->
     <file-detail-sidebar :namespace="namespace" :project-name="projectName" />
