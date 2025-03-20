@@ -21,27 +21,27 @@ def test_email_receivers(client):
     project = create_project("test_project", workspace, user)
     project.set_role(user.id, ProjectRole.READER)
     db.session.commit()
-    receivers = project_handler.get_email_receivers(project.id)
+    receivers = project_handler.get_email_receivers(project)
     assert len(receivers) == 1
 
     project.set_role(user.id, ProjectRole.OWNER)
     db.session.commit()
-    receivers = project_handler.get_email_receivers(project.id)
+    receivers = project_handler.get_email_receivers(project)
     assert len(receivers) == 2
 
     user.verified_email = False
     db.session.commit()
-    receivers = project_handler.get_email_receivers(project.id)
+    receivers = project_handler.get_email_receivers(project)
     assert len(receivers) == 1
 
     user.verified_email = True
     user.profile.receive_notifications = False
     db.session.commit()
-    receivers = project_handler.get_email_receivers(project.id)
+    receivers = project_handler.get_email_receivers(project)
     assert len(receivers) == 1
 
     admin = User.query.filter(User.username == "mergin").first()
     admin.is_admin = False
     db.session.commit()
-    receivers = project_handler.get_email_receivers(project.id)
+    receivers = project_handler.get_email_receivers(project)
     assert len(receivers) == 0
