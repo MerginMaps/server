@@ -26,6 +26,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </app-section>
     </app-container>
 
+    <app-container v-if="dataTableOpen && projectName">
+      <app-section>
+        <files-table
+          :project-name="projectName"
+          :namespace="namespace"
+          :location="location"
+          :options="options"
+          :search="searchFilter"
+          @row-click="rowClick"
+        />
+      </app-section>
+    </app-container>
     <app-container
       v-if="project && $route.name === 'project-tree' && isProjectWriter"
     >
@@ -64,19 +76,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </div>
         </div>
       </app-panel-toggleable>
-    </app-container>
-
-    <app-container v-if="dataTableOpen && projectName">
-      <app-section>
-        <files-table
-          :project-name="projectName"
-          :namespace="namespace"
-          :location="location"
-          :options="options"
-          :search="searchFilter"
-          @row-click="rowClick"
-        />
-      </app-section>
     </app-container>
     <!-- Sidebars -->
     <file-detail-sidebar :namespace="namespace" :project-name="projectName" />

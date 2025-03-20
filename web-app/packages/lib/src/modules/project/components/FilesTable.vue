@@ -1,69 +1,110 @@
 <template>
-  <PDataView
-    :value="items"
-    :data-key="'path'"
-    :paginator="items.length > itemPerPage"
-    :sort-field="options.sortBy"
-    :sort-order="options.sortDesc"
-    :rows="itemPerPage"
-    :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
-    data-cy="file-browser-table"
-  >
-    <template #header>
-      <div class="grid grid-nogutter">
-        <div
-          v-for="col in columns"
-          :class="[`col-${col.cols ?? 3}`, 'paragraph-p6 hidden lg:flex']"
-          :key="col.text"
+  <div>
+    <PBreadcrumb
+      :model="breadcrumps"
+      :pt="{
+        root: {
+          style: {
+            backgroundColor: 'transparent'
+          },
+          class: 'border-none p-4 w-full overflow-x-auto'
+        }
+      }"
+    >
+      <template #separator>
+        <i class="ti ti-slash" />
+      </template>
+      <template #item="{ item, props }">
+        <router-link
+          v-if="item.path"
+          v-slot="{ href, navigate }"
+          :to="{
+            path: item.path
+          }"
+          custom
         >
-          {{ col.text }}
+          <a :href="href" v-bind="props.action" @click="navigate">
+            <span :class="[item.icon, 'paragraph-p6']" />
+            {{ '&nbsp;' }}
+            <span
+              :class="[
+                'opacity-80 paragraph-p6',
+                item.active ? 'text-color-forest font-semibold' : 'text-color'
+              ]"
+              >{{ item.label }}</span
+            >
+          </a>
+        </router-link>
+      </template>
+    </PBreadcrumb>
+    <PDataView
+      :value="items"
+      :data-key="'path'"
+      :paginator="items.length > ITEMS_PER_PAGE"
+      :sort-field="options.sortBy"
+      :sort-order="options.sortDesc"
+      :rows="ITEMS_PER_PAGE"
+      :paginator-template="'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'"
+      data-cy="file-browser-table"
+    >
+      <template #header>
+        <div class="grid grid-nogutter">
+          <div
+            v-for="col in columns"
+            :class="[`col-${col.cols ?? 2}`, 'paragraph-p6 hidden lg:flex']"
+            :key="col.text"
+          >
+            {{ col.text }}
+          </div>
+          <div class="col-12 flex lg:hidden">Files</div>
         </div>
-        <div class="col-12 flex lg:hidden">Files</div>
-      </div>
-    </template>
-    <template #list="slotProps">
-      <div
-        v-for="item in slotProps.items"
-        :key="item.id"
-        class="grid grid-nogutter px-4 py-3 mt-0 border-bottom-1 border-gray-200 paragraph-p6 hover:bg-gray-50 cursor-pointer row-gap-2"
-        @click.prevent="rowClick(item)"
-      >
+      </template>
+      <template #list="slotProps">
         <div
-          v-for="col in columns"
-          :class="[`lg:col-${col.cols ?? 3}`, 'flex align-items-center col-12']"
-          :key="col.key"
+          v-for="item in slotProps.items"
+          :key="item.id"
+          class="grid grid-nogutter px-4 py-3 mt-0 border-bottom-1 border-gray-200 paragraph-p6 hover:bg-gray-50 cursor-pointer row-gap-2"
+          @click.prevent="rowClick(item)"
         >
-          <span
-            v-if="col.key === 'name'"
-            class="font-semibold mb-2 lg:mb-0 m-0"
+          <div
+            v-for="col in columns"
+            :class="[
+              `lg:col-${col.cols ?? 2}`,
+              'flex align-items-center col-12'
+            ]"
+            :key="col.key"
           >
-            <file-icon :file="item" />{{ item.name }}
-          </span>
-          <span
-            v-else-if="col.key === 'mtime'"
-            v-tooltip.bottom="{ value: $filters.datetime(item.mtime) }"
-            class="opacity-80"
-          >
-            {{ $filters.timediff(item.mtime) }}
-          </span>
-          <span v-else class="opacity-80">{{
-            item.size !== undefined ? $filters.filesize(item.size) : ''
-          }}</span>
+            <span
+              v-if="col.key === 'name'"
+              class="font-semibold mb-2 lg:mb-0 m-0"
+            >
+              <file-icon :file="item" />{{ item.name }}
+            </span>
+            <span
+              v-else-if="col.key === 'mtime'"
+              v-tooltip.bottom="{ value: $filters.datetime(item.mtime) }"
+              class="opacity-80"
+            >
+              {{ item.mtime ? $filters.timediff(item.mtime) : '' }}
+            </span>
+            <span v-else class="opacity-80">{{
+              item.size !== undefined ? $filters.filesize(item.size) : ''
+            }}</span>
+          </div>
         </div>
-      </div>
-    </template>
-    <template #empty>
-      <div class="w-full text-center p-4">
-        <span>No files found.</span>
-      </div>
-    </template>
-  </PDataView>
+      </template>
+      <template #empty>
+        <div class="w-full text-center p-4">
+          <span>No files found.</span>
+        </div>
+      </template>
+    </PDataView>
+  </div>
 </template>
 
 <script setup lang="ts">
 import escapeRegExp from 'lodash/escapeRegExp'
 import max from 'lodash/max'
-import orderBy from 'lodash/orderBy'
 import Path from 'path'
 import { computed } from 'vue'
 
@@ -81,7 +122,7 @@ interface Column {
 interface FileItem {
   name?: string
   path: string
-  type?: string
+  type?: 'folder' | 'file'
   link?: string
   size?: number
   mtime?: string
@@ -108,13 +149,36 @@ const emit = defineEmits<{
 
 const projectStore = useProjectStore()
 
-const itemPerPage = 50
+const ITEMS_PER_PAGE = 100
 
 const columns: Column[] = [
-  { text: 'Name', key: 'name', cols: 6 },
+  { text: 'Name', key: 'name', cols: 8 },
   { text: 'Modified', key: 'mtime' },
   { text: 'Size', key: 'size' }
 ]
+
+const breadcrumps = computed(() => {
+  const location = props.location
+  const parts = location.split('/').filter(Boolean)
+  let path = ''
+  const result = parts.map((part, index) => {
+    path = Path.join(path, part)
+    return {
+      label: part,
+      path: folderLink(path),
+      active: index === parts.length - 1
+    }
+  })
+  return [
+    {
+      icon: 'ti ti-folder',
+      label: 'Project home',
+      path: folderLink(''),
+      active: parts.length === 0
+    },
+    ...result
+  ]
+})
 
 const projectFiles = computed(() => {
   let files = projectStore.project.files
@@ -133,7 +197,7 @@ const directoryFiles = computed(() => {
   )
 })
 
-const folders = computed(() => {
+const folders = computed<FileItem[]>(() => {
   const folders: { [key: string]: FileItem[] } = {}
   const prefix = props.location ? escapeRegExp(props.location + '/') : ''
   const regex = new RegExp(`^${prefix}([^/]+)/`)
@@ -190,34 +254,13 @@ function filterByLocation(files) {
 }
 
 const items = computed(() => {
+  const result: FileItem[] = [...folders.value, ...directoryFiles.value]
   if (props.search) {
     const regex = new RegExp(escapeRegExp(removeAccents(props.search)), 'i')
-    // TODO: Replace with DataView sorting instead this order_by with lodash
-    return orderBy(
-      filterByLocation(projectFiles.value).filter(
-        (f) => f.path.search(regex) !== -1
-      ),
-      props.options.sortBy,
-      props.options.sortDesc < 0 ? 'desc' : 'asc'
-    )
+    return filterByLocation(result).filter((f) => f.path.search(regex) !== -1)
   }
 
-  let result: FileItem[] = []
-  if (props.location) {
-    result.push({
-      name: '..',
-      type: 'folder',
-      link: Path.normalize(Path.join(props.location, '..')),
-      mtime: '',
-      path: ''
-    })
-  }
-  result = result.concat(folders.value, directoryFiles.value)
-  return orderBy(
-    result,
-    props.options?.sortBy,
-    props.options.sortDesc < 0 ? 'desc' : 'asc'
-  )
+  return result
 })
 
 function fileFlags(file: FileItem) {
@@ -250,7 +293,7 @@ function folderDiffStats(files: FileItem[]) {
   }
 }
 
-function fileTreeView(file: FileItem) {
+function fileTreeView(file): FileItem {
   const filename = Path.basename(file.path)
   return {
     ...file,

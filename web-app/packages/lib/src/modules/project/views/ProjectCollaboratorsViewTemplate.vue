@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <app-section
         ><template #title
           >Requests
-          <span class="opacity-80"
+          <span class="text-color-medium-green"
             >({{ projectStore.accessRequestsCount }})</span
           ></template
         ><project-access-requests

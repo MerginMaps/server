@@ -186,12 +186,12 @@ export const createRouter = (pinia: Pinia) => {
         meta: {
           breadcrump: [{ title: 'Projects', path: '/projects' }]
         },
-        redirect: { name: 'project-tree' },
+        redirect: { name: ProjectRouteName.ProjectTree },
 
         children: [
           {
-            path: 'tree/:location?',
-            name: 'project-tree',
+            path: 'tree/:location(.*)?',
+            name: ProjectRouteName.ProjectTree,
             component: FileBrowserView,
             props: true,
             meta: { public: true }
