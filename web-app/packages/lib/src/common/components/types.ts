@@ -15,3 +15,9 @@ export interface TableDataHeader {
   sortable?: boolean
   width?: number
 }
+
+export type TipMessageSeverity = 'info' | 'danger'
+
+export interface TipMessageProps {
+  severity?: TipMessageSeverity
+}

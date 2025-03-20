@@ -14,6 +14,8 @@ from ..app import db
 from ..sync.models import ProjectUser
 from ..sync.utils import get_user_agent, get_ip, get_device_id, is_reserved_word
 
+MAX_USERNAME_LENGTH = 50
+
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -203,8 +205,8 @@ class User(db.Model):
         ).ljust(4, "0")
         # additional check for reserved words
         username = f"{username}0" if is_reserved_word(username) else username
-        # some value until 25 + space for suffix
-        username = username[:22]
+        # keep some space for suffix
+        username = username[: MAX_USERNAME_LENGTH - 3]
         # check if we already do not have existing usernames
         query = db.session.execute(
             text(

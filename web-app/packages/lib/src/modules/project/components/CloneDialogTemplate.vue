@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
       <PButton
         id="clone-project-btn"
-        :disabled="!newProjectName || !currentWorkspace"
+        :disabled="!newProjectName || !targetWorkspace"
         @click="onCloneProject"
         data-cy="project-form-create-btn"
         class="flex w-12 lg:w-6 justify-content-center"
@@ -60,7 +60,8 @@ export default defineComponent({
   name: 'clone-dialog-template',
   props: {
     namespace: String,
-    project: String
+    project: String,
+    targetWorkspace: String
   },
   data() {
     return {
