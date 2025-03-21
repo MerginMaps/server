@@ -22,6 +22,7 @@ class ProjectHandler(AbstractProjectHandler):
                     ),
                     User.is_admin,
                 ),
+                User.active,
                 User.verified_email,
                 UserProfile.receive_notifications,
             )
