@@ -40,6 +40,12 @@ def test_email_receivers(client):
     receivers = project_handler.get_email_receivers(project)
     assert len(receivers) == 1
 
+    user.profile.receive_notifications = True
+    user.active = False
+    db.session.commit()
+    receivers = project_handler.get_email_receivers(project)
+    assert len(receivers) == 1
+
     admin = User.query.filter(User.username == "mergin").first()
     admin.is_admin = False
     db.session.commit()
