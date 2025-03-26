@@ -114,5 +114,6 @@ $colors: (
     --rose-color: #{map-get($colors, "rose")};
     --dark-green-color: #{map-get($colors, "dark-green")};
     --negative-light-color: #{map-get($colors, "negative-light")};
+    --earth-color: #{map-get($colors, "earth")};
     color-scheme: light;
 }
