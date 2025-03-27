@@ -128,7 +128,7 @@ def add_commands(app: Flask):
         else:
             click.secho("Database initialized properly", fg="green")
 
-        _check_permissions("/data")
+        _check_permissions(app.config.get("LOCAL_PROJECTS", "/data"))
 
         _check_celery()
 
