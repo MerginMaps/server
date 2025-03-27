@@ -128,7 +128,7 @@ def add_commands(app: Flask):
         else:
             click.secho("Database initialized properly", fg="green")
 
-        _check_permissions(app.config.get("LOCAL_PROJECTS", "/data"))
+        _check_permissions(app.config.get("LOCAL_PROJECTS"))
 
         _check_celery()
 
@@ -224,9 +224,7 @@ def add_commands(app: Flask):
         _check_server()
 
     @server.command()
-    @click.option(
-        "--path", required=False, default=app.config.get("LOCAL_PROJECTS", "/data")
-    )
+    @click.option("--path", required=False, default=app.config.get("LOCAL_PROJECTS"))
     def permissions(path: str):
         """Check for specific path write permission"""
         _check_permissions(path)
