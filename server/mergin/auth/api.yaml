@@ -68,8 +68,8 @@ paths:
     post:
       tags:
         - user
-      summary: Update profile of user in sesssion
-      description: Update profile of user in sesssion
+      summary: Update profile of user in session
+      description: Update profile of user in session
       operationId: mergin.auth.controller.update_user_profile
       requestBody:
         description: Updated profile
@@ -101,6 +101,8 @@ paths:
           $ref: "#/components/responses/BadStatusResp"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /app/auth/refresh/csrf:
     get:
       summary: Get refreshed csrf token
@@ -426,6 +428,8 @@ paths:
           description: OK
         "400":
           $ref: "#/components/responses/BadStatusResp"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFoundResp"
   /app/auth/reset-password/{token}:

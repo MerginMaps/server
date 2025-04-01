@@ -255,6 +255,8 @@ def logout():  # pylint: disable=W0613,W0612
 
 @auth_required
 def change_password():  # pylint: disable=W0613,W0612
+    if not current_user.can_edit_profile:
+        abort(403, "You cannot edit your profile")
     form = UserChangePasswordForm()
     if form.validate_on_submit():
         if not current_user.check_password(form.old_password.data):
@@ -292,6 +294,9 @@ def password_reset():  # pylint: disable=W0613,W0612
     if not user.active:
         # user should confirm email first
         return jsonify({"email": ["Account is not active"]}), 400
+    if not user.can_edit_profile:
+        # using SSO
+        abort(403, "You cannot edit your profile")
 
     send_confirmation_email(
         current_app,
@@ -344,6 +349,8 @@ def confirm_email(token):  # pylint: disable=W0613,W0612
 
 @auth_required
 def update_user_profile():  # pylint: disable=W0613,W0612
+    if not current_user.can_edit_profile:
+        abort(403, "You cannot edit your profile")
     form = UserProfileDataForm.from_json(request.json)
     email_changed = current_user.email != form.email.data.strip()
     if not form.validate_on_submit():
@@ -427,6 +434,8 @@ def update_user(username):  # pylint: disable=W0613,W0612
         abort(400, "Unable to assign super admin role")
 
     user = User.query.filter_by(username=username).first_or_404("User not found")
+    if not user.can_edit_profile:
+        abort(403, "You cannot edit profile of this user")
     form.update_obj(user)
 
     # remove inactive since flag for ban or re-activation

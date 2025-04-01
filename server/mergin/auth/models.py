@@ -239,6 +239,7 @@ class User(db.Model):
     @property
     def can_edit_profile(self) -> bool:
         """Flag if we allow user to edit their email and name"""
+        # False when user is created by SSO login
         return self.passwd is not None
 
 
