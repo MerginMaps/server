@@ -41,8 +41,8 @@ class User(db.Model):
         db.Index("ix_user_email", func.lower(email), unique=True),
     )
 
-    def __init__(self, username, email, passwd, is_admin=False):
-        self.username = username
+    def __init__(self, username, email, passwd=None, is_admin=False):
+        self.username = username or self.generate_username(email)
         self.email = email
         self.assign_password(passwd)
         self.is_admin = is_admin
@@ -58,7 +58,7 @@ class User(db.Model):
     def assign_password(self, password):
         if isinstance(password, str):
             password = password.encode("utf-8")
-        self.passwd = bcrypt.hashpw(password, bcrypt.gensalt()).decode("utf-8")
+        self.passwd = bcrypt.hashpw(password, bcrypt.gensalt()).decode("utf-8") if password else None
 
     @property
     def is_authenticated(self):
