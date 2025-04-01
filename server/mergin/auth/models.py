@@ -58,7 +58,11 @@ class User(db.Model):
     def assign_password(self, password):
         if isinstance(password, str):
             password = password.encode("utf-8")
-        self.passwd = bcrypt.hashpw(password, bcrypt.gensalt()).decode("utf-8") if password else None
+        self.passwd = (
+            bcrypt.hashpw(password, bcrypt.gensalt()).decode("utf-8")
+            if password
+            else None
+        )
 
     @property
     def is_authenticated(self):
