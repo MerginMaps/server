@@ -42,7 +42,7 @@ class User(db.Model):
     )
 
     def __init__(self, username, email, passwd=None, is_admin=False):
-        self.username = username or self.generate_username(email)
+        self.username = username
         self.email = email
         self.assign_password(passwd)
         self.is_admin = is_admin
@@ -244,7 +244,7 @@ class User(db.Model):
     def can_edit_profile(self) -> bool:
         """Flag if we allow user to edit their email and name"""
         # False when user is created by SSO login
-        return self.passwd is not None
+        return self.passwd is not None and self.active
 
 
 class UserProfile(db.Model):

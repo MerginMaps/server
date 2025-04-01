@@ -40,6 +40,7 @@ from ..sync.utils import files_size
 
 
 EMAIL_CONFIRMATION_EXPIRATION = 12 * 3600
+CANNOT_EDIT_PROFILE_MSG = "You cannot edit profile of this user"
 
 
 # public endpoints
@@ -256,7 +257,7 @@ def logout():  # pylint: disable=W0613,W0612
 @auth_required
 def change_password():  # pylint: disable=W0613,W0612
     if not current_user.can_edit_profile:
-        abort(403, "You cannot edit your profile")
+        abort(403, CANNOT_EDIT_PROFILE_MSG)
     form = UserChangePasswordForm()
     if form.validate_on_submit():
         if not current_user.check_password(form.old_password.data):
@@ -271,6 +272,8 @@ def change_password():  # pylint: disable=W0613,W0612
 
 @auth_required
 def resend_confirm_email():  # pylint: disable=W0613,W0612
+    if not current_user.can_edit_profile:
+        abort(403, CANNOT_EDIT_PROFILE_MSG)
     send_confirmation_email(
         current_app,
         current_user,
@@ -296,7 +299,7 @@ def password_reset():  # pylint: disable=W0613,W0612
         return jsonify({"email": ["Account is not active"]}), 400
     if not user.can_edit_profile:
         # using SSO
-        abort(403, "You cannot edit your profile")
+        abort(403, CANNOT_EDIT_PROFILE_MSG)
 
     send_confirmation_email(
         current_app,
@@ -316,6 +319,8 @@ def confirm_new_password(token):  # pylint: disable=W0613,W0612
     user = User.query.filter_by(email=email).first_or_404()
     if not user.active:
         abort(400, "Account is not active")
+    if not user.can_edit_profile:
+        abort(403, CANNOT_EDIT_PROFILE_MSG)
 
     form = UserPasswordForm.from_json(request.json)
     if form.validate():
@@ -336,6 +341,8 @@ def confirm_email(token):  # pylint: disable=W0613,W0612
         abort(400, "Invalid token")
 
     user = User.query.filter_by(email=email).first_or_404()
+    if not user.can_edit_profile:
+        abort(403, CANNOT_EDIT_PROFILE_MSG)
     if user.verified_email:
         return "", 200
 
@@ -350,7 +357,7 @@ def confirm_email(token):  # pylint: disable=W0613,W0612
 @auth_required
 def update_user_profile():  # pylint: disable=W0613,W0612
     if not current_user.can_edit_profile:
-        abort(403, "You cannot edit your profile")
+        abort(403, CANNOT_EDIT_PROFILE_MSG)
     form = UserProfileDataForm.from_json(request.json)
     email_changed = current_user.email != form.email.data.strip()
     if not form.validate_on_submit():
@@ -434,8 +441,6 @@ def update_user(username):  # pylint: disable=W0613,W0612
         abort(400, "Unable to assign super admin role")
 
     user = User.query.filter_by(username=username).first_or_404("User not found")
-    if not user.can_edit_profile:
-        abort(403, "You cannot edit profile of this user")
     form.update_obj(user)
 
     # remove inactive since flag for ban or re-activation

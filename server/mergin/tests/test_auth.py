@@ -453,17 +453,6 @@ def test_update_user(client):
     )
     assert resp.status_code == 403
 
-    #  do not allow to update sso user
-    sso_user = User("", email="user@sso.com")
-    db.session.add(sso_user)
-    db.session.commit()
-    resp = client.patch(
-        url_for("/.mergin_auth_controller_update_user", username=sso_user.username),
-        data=json.dumps(data),
-        headers=json_headers,
-    )
-    assert resp.status_code == 403
-
 
 def test_update_user_profile(client):
     login_as_admin(client)
@@ -512,6 +501,21 @@ def test_update_user_profile(client):
     assert not user.profile.receive_notifications
     assert not user.verified_email
     assert user.email == "changed_email@mergin.co.uk"
+
+    #  do not allow to update sso user
+    sso_user = add_user("sso_user", "sso")
+    login(client, sso_user.username, "sso")
+    sso_user.passwd = None
+    db.session.add(sso_user)
+    db.session.commit()
+    resp = client.post(
+        url_for("/.mergin_auth_controller_update_user_profile"),
+        data=json.dumps(
+            {"email": "changed_email@sso.co.uk"}
+        ),
+        headers=json_headers,
+    )
+    assert resp.status_code == 403
 
 
 def test_search_user(client):
