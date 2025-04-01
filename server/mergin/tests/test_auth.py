@@ -453,6 +453,17 @@ def test_update_user(client):
     )
     assert resp.status_code == 403
 
+    #  do not allow to update sso user
+    sso_user = User("", email="user@sso.com")
+    db.session.add(sso_user)
+    db.session.commit()
+    resp = client.patch(
+        url_for("/.mergin_auth_controller_update_user", username=sso_user.username),
+        data=json.dumps(data),
+        headers=json_headers,
+    )
+    assert resp.status_code == 403
+
 
 def test_update_user_profile(client):
     login_as_admin(client)
