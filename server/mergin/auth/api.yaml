@@ -895,6 +895,8 @@ components:
                 example: my-workspace
               role:
                 $ref: "#/components/schemas/WorkspaceRole"
+        can_edit_profile:
+          type: boolean
     LoginResponse:
       allOf:
         - $ref: "#/components/schemas/UserDetail"

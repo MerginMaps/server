@@ -12,7 +12,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       >
         <!-- Title with buttons -->
         <h1 class="headline-h3 text-color font-semibold">Account details</h1>
-        <div class="flex flex-grow-1 align-items-center lg:justify-content-end">
+        <div
+          v-if="loggedUser.can_edit_profile"
+          class="flex flex-grow-1 align-items-center lg:justify-content-end"
+        >
           <PButton
             @click="editProfileDialog"
             icon="ti ti-pencil"

@@ -236,6 +236,11 @@ class User(db.Model):
         db.session.commit()
         return user
 
+    @property
+    def can_edit_profile(self) -> bool:
+        """Flag if we allow user to edit their email and name"""
+        return self.passwd is not None
+
 
 class UserProfile(db.Model):
     user_id = db.Column(
