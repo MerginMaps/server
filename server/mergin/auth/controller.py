@@ -20,6 +20,7 @@ from .app import (
     generate_confirmation_token,
     user_created,
     user_account_closed,
+    edit_profile_enabled,
 )
 from .bearer import encode_token
 from .models import User, LoginHistory, UserProfile
@@ -255,6 +256,7 @@ def logout():  # pylint: disable=W0613,W0612
 
 
 @auth_required
+@edit_profile_enabled
 def change_password():  # pylint: disable=W0613,W0612
     if not current_user.can_edit_profile:
         abort(403, CANNOT_EDIT_PROFILE_MSG)
@@ -271,6 +273,7 @@ def change_password():  # pylint: disable=W0613,W0612
 
 
 @auth_required
+@edit_profile_enabled
 def resend_confirm_email():  # pylint: disable=W0613,W0612
     if not current_user.can_edit_profile:
         abort(403, CANNOT_EDIT_PROFILE_MSG)
@@ -355,6 +358,7 @@ def confirm_email(token):  # pylint: disable=W0613,W0612
 
 
 @auth_required
+@edit_profile_enabled
 def update_user_profile():  # pylint: disable=W0613,W0612
     if not current_user.can_edit_profile:
         abort(403, CANNOT_EDIT_PROFILE_MSG)

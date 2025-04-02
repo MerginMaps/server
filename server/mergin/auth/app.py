@@ -11,7 +11,7 @@ from sqlalchemy import func
 
 from .commands import add_commands
 from .config import Configuration
-from .models import User, UserProfile
+from .models import User
 
 # signal for other versions to listen to
 user_account_closed = signal("user_account_closed")
@@ -67,6 +67,17 @@ def auth_required(f=None, permissions=None):
                     return "Permission denied.", 403
         return f(*args, **kwargs)
 
+    return wrapped_func
+
+
+def edit_profile_enabled(f):
+    from .controller import CANNOT_EDIT_PROFILE_MSG
+
+    @functools.wraps(f)
+    def wrapped_func(*args, **kwargs):
+        if not current_user.can_edit_profile:
+            return CANNOT_EDIT_PROFILE_MSG, 403
+        return f(*args, **kwargs)
     return wrapped_func
 
 
