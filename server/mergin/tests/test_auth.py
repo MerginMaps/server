@@ -510,9 +510,7 @@ def test_update_user_profile(client):
     db.session.commit()
     resp = client.post(
         url_for("/.mergin_auth_controller_update_user_profile"),
-        data=json.dumps(
-            {"email": "changed_email@sso.co.uk"}
-        ),
+        data=json.dumps({"email": "changed_email@sso.co.uk"}),
         headers=json_headers,
     )
     assert resp.status_code == 403

@@ -78,6 +78,7 @@ def edit_profile_enabled(f):
         if not current_user.can_edit_profile:
             return CANNOT_EDIT_PROFILE_MSG, 403
         return f(*args, **kwargs)
+
     return wrapped_func
 
 
