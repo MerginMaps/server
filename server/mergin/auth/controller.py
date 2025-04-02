@@ -20,6 +20,8 @@ from .app import (
     generate_confirmation_token,
     user_created,
     user_account_closed,
+    edit_profile_enabled,
+    CANNOT_EDIT_PROFILE_MSG,
 )
 from .bearer import encode_token
 from .models import User, LoginHistory, UserProfile
@@ -254,6 +256,7 @@ def logout():  # pylint: disable=W0613,W0612
 
 
 @auth_required
+@edit_profile_enabled
 def change_password():  # pylint: disable=W0613,W0612
     form = UserChangePasswordForm()
     if form.validate_on_submit():
@@ -268,6 +271,7 @@ def change_password():  # pylint: disable=W0613,W0612
 
 
 @auth_required
+@edit_profile_enabled
 def resend_confirm_email():  # pylint: disable=W0613,W0612
     send_confirmation_email(
         current_app,
@@ -292,6 +296,9 @@ def password_reset():  # pylint: disable=W0613,W0612
     if not user.active:
         # user should confirm email first
         return jsonify({"email": ["Account is not active"]}), 400
+    if not user.can_edit_profile:
+        # using SSO
+        abort(403, CANNOT_EDIT_PROFILE_MSG)
 
     send_confirmation_email(
         current_app,
@@ -311,6 +318,8 @@ def confirm_new_password(token):  # pylint: disable=W0613,W0612
     user = User.query.filter_by(email=email).first_or_404()
     if not user.active:
         abort(400, "Account is not active")
+    if not user.can_edit_profile:
+        abort(403, CANNOT_EDIT_PROFILE_MSG)
 
     form = UserPasswordForm.from_json(request.json)
     if form.validate():
@@ -331,6 +340,8 @@ def confirm_email(token):  # pylint: disable=W0613,W0612
         abort(400, "Invalid token")
 
     user = User.query.filter_by(email=email).first_or_404()
+    if not user.can_edit_profile:
+        abort(403, CANNOT_EDIT_PROFILE_MSG)
     if user.verified_email:
         return "", 200
 
@@ -343,6 +354,7 @@ def confirm_email(token):  # pylint: disable=W0613,W0612
 
 
 @auth_required
+@edit_profile_enabled
 def update_user_profile():  # pylint: disable=W0613,W0612
     form = UserProfileDataForm.from_json(request.json)
     email_changed = current_user.email != form.email.data.strip()

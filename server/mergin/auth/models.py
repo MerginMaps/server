@@ -41,7 +41,7 @@ class User(db.Model):
         db.Index("ix_user_email", func.lower(email), unique=True),
     )
 
-    def __init__(self, username, email, passwd, is_admin=False):
+    def __init__(self, username, email, passwd=None, is_admin=False):
         self.username = username
         self.email = email
         self.assign_password(passwd)
@@ -58,7 +58,11 @@ class User(db.Model):
     def assign_password(self, password):
         if isinstance(password, str):
             password = password.encode("utf-8")
-        self.passwd = bcrypt.hashpw(password, bcrypt.gensalt()).decode("utf-8")
+        self.passwd = (
+            bcrypt.hashpw(password, bcrypt.gensalt()).decode("utf-8")
+            if password
+            else None
+        )
 
     @property
     def is_authenticated(self):
@@ -235,6 +239,12 @@ class User(db.Model):
         db.session.add(user)
         db.session.commit()
         return user
+
+    @property
+    def can_edit_profile(self) -> bool:
+        """Flag if we allow user to edit their email and name"""
+        # False when user is created by SSO login
+        return self.passwd is not None and self.active
 
 
 class UserProfile(db.Model):
