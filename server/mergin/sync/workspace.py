@@ -373,3 +373,8 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
             .group_by(ProjectUser.user_id)
             .count()
         )
+
+    @staticmethod
+    def sso_connections_count() -> int:
+        """Number of SSO connections for the server"""
+        return 0

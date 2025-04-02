@@ -63,6 +63,7 @@ def test_send_statistics(app, caplog):
             "server_version",
             "monthly_contributors",
             "editors",
+            "sso_connections",
         }
         assert data["workspaces_count"] == 1
         assert data["service_uuid"] == app.config["SERVICE_ID"]
@@ -72,6 +73,7 @@ def test_send_statistics(app, caplog):
         assert data["projects_count"] == 2
         assert data["contact_email"] == "test@example.com"
         assert data["editors"] == 2
+        assert data["sso_connections"] == 0
 
         # repeated action does not do anything
         task = send_statistics.s().apply()
