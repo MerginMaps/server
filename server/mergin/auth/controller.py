@@ -21,6 +21,7 @@ from .app import (
     user_created,
     user_account_closed,
     edit_profile_enabled,
+    CANNOT_EDIT_PROFILE_MSG,
 )
 from .bearer import encode_token
 from .models import User, LoginHistory, UserProfile
@@ -41,7 +42,6 @@ from ..sync.utils import files_size
 
 
 EMAIL_CONFIRMATION_EXPIRATION = 12 * 3600
-CANNOT_EDIT_PROFILE_MSG = "You cannot edit profile of this user"
 
 
 # public endpoints
@@ -258,8 +258,6 @@ def logout():  # pylint: disable=W0613,W0612
 @auth_required
 @edit_profile_enabled
 def change_password():  # pylint: disable=W0613,W0612
-    if not current_user.can_edit_profile:
-        abort(403, CANNOT_EDIT_PROFILE_MSG)
     form = UserChangePasswordForm()
     if form.validate_on_submit():
         if not current_user.check_password(form.old_password.data):
@@ -275,8 +273,6 @@ def change_password():  # pylint: disable=W0613,W0612
 @auth_required
 @edit_profile_enabled
 def resend_confirm_email():  # pylint: disable=W0613,W0612
-    if not current_user.can_edit_profile:
-        abort(403, CANNOT_EDIT_PROFILE_MSG)
     send_confirmation_email(
         current_app,
         current_user,
@@ -360,8 +356,6 @@ def confirm_email(token):  # pylint: disable=W0613,W0612
 @auth_required
 @edit_profile_enabled
 def update_user_profile():  # pylint: disable=W0613,W0612
-    if not current_user.can_edit_profile:
-        abort(403, CANNOT_EDIT_PROFILE_MSG)
     form = UserProfileDataForm.from_json(request.json)
     email_changed = current_user.email != form.email.data.strip()
     if not form.validate_on_submit():

@@ -17,6 +17,8 @@ from .models import User
 user_account_closed = signal("user_account_closed")
 user_created = signal("user_created")
 
+CANNOT_EDIT_PROFILE_MSG = "You cannot edit profile of this user"
+
 
 def register(app):
     """Register mergin auth module in Flask app
@@ -71,10 +73,12 @@ def auth_required(f=None, permissions=None):
 
 
 def edit_profile_enabled(f):
-    from .controller import CANNOT_EDIT_PROFILE_MSG
+    """Decorator to check if user can edit their profile (it is not allowed for SSO users)"""
 
     @functools.wraps(f)
     def wrapped_func(*args, **kwargs):
+        if not current_user or not current_user.is_authenticated:
+            return "Authentication information is missing or invalid.", 401
         if not current_user.can_edit_profile:
             return CANNOT_EDIT_PROFILE_MSG, 403
         return f(*args, **kwargs)
