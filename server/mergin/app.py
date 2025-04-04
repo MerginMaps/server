@@ -139,8 +139,6 @@ def create_simple_app() -> Flask:
     if Configuration.GEVENT_WORKER:
         flask_app.wsgi_app = GeventTimeoutMiddleware(flask_app.wsgi_app)
 
-    server_commands(flask_app)
-
     return flask_app
 
 
