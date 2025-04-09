@@ -84,6 +84,7 @@ def add_commands(app: Flask):
 
     def _check_server():  # pylint: disable=W0612
         """Check server configuration."""
+        from .stats.models import MerginInfo
 
         _echo_title("Server health check")
         edition_map = {
@@ -110,6 +111,14 @@ def add_commands(app: Flask):
             )
         else:
             click.secho(f"Your contact email is {contact_email}.", fg="green")
+
+        info = MerginInfo.query.first()
+        service_id = app.config.get("SERVICE_ID") or (info.service_id if info else None)
+
+        if service_id:
+            click.secho(f"Service ID is {service_id}.", fg="green")
+        else:
+            _echo_error("No service ID set.")
 
         tables = db.engine.table_names()
         if not tables:
