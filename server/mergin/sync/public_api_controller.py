@@ -785,6 +785,11 @@ def project_push(namespace, project_name):
     changes = request.json["changes"]
     project_permission = current_app.project_handler.get_push_permission(changes)
     project = require_project(namespace, project_name, project_permission)
+    if project.locked_until:
+        abort(
+            423,
+            f"This project is currently locked. You cannot make changes to it until {project.locked_until.strftime('%Y-%m-%d %H:%M UTC')}.",
+        )
     # pass full project object to request for later use
     request.view_args["project"] = project
     ws = project.workspace
@@ -1027,6 +1032,11 @@ def push_finish(transaction_id):
         upload.changes
     )
     project = upload.project
+    if project.locked_until:
+        abort(
+            423,
+            f"This project is currently locked. You cannot make changes to it until {project.locked_until.strftime('%Y-%m-%d %H:%M UTC')}.",
+        )
     project_path = get_project_path(project)
     corrupted_files = []
 
