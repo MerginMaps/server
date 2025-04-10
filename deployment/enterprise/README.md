@@ -59,7 +59,7 @@ For more info check [documentation](https://merginmaps.com/docs/server/install/#
 
 Alternatively, you can run the following provisioning commands with some extra steps.
 
-### Before version 2025.2.0:
+### Prior to version 2025.2.0:
 ```
 sudo docker compose --env-file .prod.env -f docker-compose.yaml up
 sudo docker exec mergin-server-enterprise flask init-db
@@ -70,9 +70,13 @@ sudo docker exec mergin-server-enterprise flask user create <username> <password
 ## WebMaps
 
 If you want to deploy MerginMaps Webmaps infrastructure, please adjust `.prod.env` related environment variables and run:
+> [!NOTE]
+> Please remember the main Mergin Maps stack needs to be running already.
+> Otherwise, run it:
+> `docker compose --env-file .prod.env -f docker-compose.yaml up -d`
 
 ```
- sudo docker compose --env-file .prod.env -f docker-compose.maps.yaml up -d
+ sudo docker compose -f docker-compose.maps.yaml up -d
 ```
 
 ## Install and configure nginx for TLS termination

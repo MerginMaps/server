@@ -30,12 +30,12 @@ services:
     build:
       context: ../../web-app
       dockerfile: Dockerfile
-  #maildev:
-  #  image: maildev/maildev
-  #  container_name: merginmaps-maildev
-  #  restart: always
-  #  ports:
-  #    - 1080:1080
-  #    - 1025:1025
-  #  networks:
-  #    - merginmaps
+  maildev:
+    image: maildev/maildev
+    container_name: merginmaps-maildev
+    restart: always
+    ports:
+      - 1080:1080
+      - 1025:1025
+    networks:
+      - merginmaps

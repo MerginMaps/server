@@ -25,8 +25,8 @@ services:
       - mergin-net
     depends_on:
       - qgis
-    #volumes:
-    #  - ./qgis_nginx_nginx-conf:/etc/nginx/conf.d/default.conf
+    volumes:
+      - ./qgis_nginx.conf:/etc/nginx/conf.d/default.conf
   qgis_extractor:
     container_name: mergin-qgis-extractor
     image: 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/qgis-extractor-ee:2025.1.0
