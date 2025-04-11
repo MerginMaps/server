@@ -7,5 +7,5 @@ export interface SideBarItemModel {
   to?: string
   href?: string
   icon: string
-  active: boolean
+  active?: boolean
 }
