@@ -74,7 +74,7 @@ Admin users can enter the admin interface available at `/admin` URL which provid
 
 ### Contributing
 
-Contributions are welcomed! You can set up development environment by following a guide in [development.md](./development.md). Before you create your first pull request, we kindly ask you to sign the CLA with your GitHub user name and date [here](LICENSES/CLA-signed-list.md).
+Contributions are welcomed! You can set up development environment by following a guide in [development.md](./deployment/community/development.md). Before you create your first pull request, we kindly ask you to sign the CLA with your GitHub user name and date [here](LICENSES/CLA-signed-list.md).
 
 ## Documentation
 
@@ -93,7 +93,7 @@ If you need support, a custom deployment, extending the service capabilities and
 
 Contributions are welcome!
 
-More information for developers can be found in the dedicated [development](development.md) page.
+More information for developers can be found in the dedicated [development](./deployment/community/development.md) page.
 
 Client side modules:
 - [Python](https://github.com/MerginMaps/python-api-client) client library + CLI
