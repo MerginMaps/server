@@ -988,6 +988,13 @@ class ProjectVersion(db.Model):
         result = db.session.execute(query, params).fetchall()
         return {row[0]: row[1] for row in result}
 
+    @property
+    def zip_path(self):
+        return os.path.join(
+            current_app.config["PROJECTS_ARCHIVES_DIR"],
+            f"{self.project_id}-{self.to_v_name(self.name)}.zip",
+        )
+
 
 class Upload(db.Model):
     id = db.Column(db.String, primary_key=True)

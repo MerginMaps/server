@@ -20,6 +20,7 @@ from connexion import NoContent, request
 from flask import (
     abort,
     current_app,
+    send_file,
     send_from_directory,
     jsonify,
     make_response,
@@ -35,7 +36,6 @@ import base64
 from werkzeug.exceptions import HTTPException
 
 from mergin.sync.forms import project_name_validation
-
 from .interfaces import WorkspaceRole
 from ..app import db
 from ..auth import auth_required
@@ -94,6 +94,8 @@ from .utils import (
 )
 from .errors import StorageLimitHit
 from ..utils import format_time_delta
+from .tasks import create_project_version_zip
+
 
 push_finished = signal("push_finished")
 # TODO: Move to database events to handle all commits to project versions
@@ -291,18 +293,16 @@ def delete_project(namespace, project_name):  # noqa: E501
 
 
 def download_project(
-    namespace, project_name, format=None, version=None
+    namespace, project_name, version=None
 ):  # noqa: E501 # pylint: disable=W0622
-    """Download full project
+    """Download full project in any version
 
-    Download whole project folder as zip file or multipart stream # noqa: E501
+    Download whole project folder as zip file
 
     :param project_name: Name of project to download.
     :type project_name: str
     :param namespace: Workspace for project to look into.
     :type namespace: str
-    :param format: Output format (only zip available).
-    :type format: str
     :param version: Particular version to download
     :type version: str
 
@@ -322,14 +322,28 @@ def download_project(
             "The total size of requested files is too large to download as a single zip, "
             "please use different method/client for download",
         )
-    try:
-        return project.storage.download_files(
-            project_version.files,
-            format,
-            version=ProjectVersion.from_v_name(version) if version else None,
+
+    # check zip is already created
+    if os.path.exists(project_version.zip_path):
+        if current_app.config["USE_X_ACCEL"]:
+            resp = make_response()
+            resp.headers["X-Accel-Redirect"] = f"/download/{project_version.zip_path}"
+            resp.headers["X-Accel-Buffering"] = True
+            resp.headers["X-Accel-Expires"] = "off"
+            resp.headers["Content-Type"] = "application/zip"
+        else:
+            resp = send_file(project_version.zip_path, mimetype="application/zip")
+
+        resp.headers["Content-Disposition"] = (
+            f"attachment; filename={project.id}-{lookup_version}.zip"
         )
-    except FileNotFound as e:
-        abort(404, str(e))
+        return resp
+
+    temp_zip_path = project_version.zip_path + ".partial"
+    if not os.path.exists(temp_zip_path):
+        create_project_version_zip.delay(project_version.id)
+
+    return "Project zip being prepared, please try again later", 202
 
 
 def download_project_file(
