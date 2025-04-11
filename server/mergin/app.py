@@ -29,7 +29,7 @@ from typing import List, Dict, Optional
 
 from .sync.utils import get_blacklisted_dirs, get_blacklisted_files
 from .config import Configuration
-from .commands import add_commands
+from .commands import add_commands as server_commands
 
 convention = {
     "ix": "ix_%(column_0_label)s",
@@ -139,8 +139,6 @@ def create_simple_app() -> Flask:
     if Configuration.GEVENT_WORKER:
         flask_app.wsgi_app = GeventTimeoutMiddleware(flask_app.wsgi_app)
 
-    add_commands(flask_app)
-
     return flask_app
 
 
@@ -189,6 +187,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
     login_manager.init_app(app.app)
     # register auth blueprint
     register_auth(app.app)
+    server_commands(app.app)
 
     # adjust login manager
     @login_manager.user_loader
