@@ -56,15 +56,23 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </div>
         </dl>
 
-        <!--     render only if file is smaller than 100MB-->
+        <!--     render only if file is smaller than 10MB-->
+        <p
+          v-if="isOverLimit"
+          class="flex justify-content-center m-4 opacity-60"
+        >
+          File too large to preview — download to view instead.
+        </p>
         <output
-          v-if="mimetype && file.size < 104857600"
+          v-else-if="mimetype"
           class="flex flex-column align-items-center w-full py-4"
         >
-          <PImage :src="downloadUrl" v-if="mimetype.match('image')" preview />
+          <template v-if="mimetype.match('image')">
+            <PImage :src="downloadUrl" v-if="mimetype.match('image')" preview />
+          </template>
           <div
             class="file-detail-code border-round-xl p-4 paragraph-p4 w-full"
-            v-else-if="mimetype.match('text')"
+            v-else-if="content"
           >
             <span class="opacity-80 paragraph-p5">{{ content }}</span>
           </div>
@@ -104,6 +112,7 @@ enum State {
   UPDATED = 'updated'
 }
 
+const MAX_PREVIEW_FILE_SIZE = 40000000 // 20MB
 export default defineComponent({
   name: 'FileDetailSidebar',
   props: {
@@ -164,6 +173,9 @@ export default defineComponent({
     filePath(): string {
       return this.$route.query.file_path as string
     },
+    isOverLimit() {
+      return this.file.size > MAX_PREVIEW_FILE_SIZE
+    },
     sidebarVisible: {
       get() {
         return !!this.filePath && !!this.file
@@ -194,13 +206,19 @@ export default defineComponent({
           this.txtPreview()
           return
         }
-        this.sidebarVisible = false
+        this.cleanup()
       }
     }
   },
   methods: {
     ...mapActions(useProjectStore, ['deleteFiles']),
     txtPreview() {
+      if (this.isOverLimit) {
+        this.content = null
+        this.mimetype = null
+        return
+      }
+
       ProjectApi.getProjectFileByUrl(this.downloadUrl).then((resp) => {
         this.mimetype = resp.headers['content-type']
         if (resp.headers['content-type'].match('text')) {
@@ -225,6 +243,11 @@ export default defineComponent({
     },
     downloadFile() {
       window.location.href = this.downloadUrl
+    },
+    cleanup() {
+      this.sidebarVisible = false
+      this.content = null
+      this.mimetype = null
     }
   },
   components: { AppSidebarRight, FileIcon }
