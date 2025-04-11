@@ -6,11 +6,10 @@ from connexion import NoContent
 from flask import render_template, request, current_app, jsonify, abort
 from flask_login import current_user
 from sqlalchemy.orm import defer
-from sqlalchemy import text, and_, desc, asc
+from sqlalchemy import text
 
 from ..app import db
 from ..auth import auth_required
-from ..auth.models import User, UserProfile
 from .forms import AccessPermissionForm
 from .models import (
     Project,
@@ -22,7 +21,6 @@ from .schemas import (
     ProjectListSchema,
     ProjectAccessRequestSchema,
     AdminProjectSchema,
-    ProjectAccessSchema,
     ProjectAccessDetailSchema,
 )
 from .permissions import (
