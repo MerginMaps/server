@@ -2624,7 +2624,7 @@ def test_supported_file_upload(client):
 
 
 def test_locked_project(client, diff_project):
-    """Users cannot push to the locked project. Moreover, it does not count to the storage and project count67"""
+    """Users cannot push to the locked project. Moreover, it does not count to the storage and project count"""
     # before project is locked
     orig_p_count = diff_project.workspace.project_count()
     orig_storage = diff_project.workspace.disk_usage()
@@ -2644,10 +2644,14 @@ def test_locked_project(client, diff_project):
         data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
         headers=json_headers,
     )
-    assert resp.status_code == 423
+    assert resp.status_code == 400
+    assert (
+        resp.json.get("detail")
+        == "This project is currently locked and you cannot make changes to it."
+    )
     # to play safe push finish is also blocked
     upload, upload_dir = create_transaction("mergin", changes)
     url = "/v1/project/push/finish/{}".format(upload.id)
 
     resp = client.post(url, headers=json_headers)
-    assert resp.status_code == 423
+    assert resp.status_code == 400

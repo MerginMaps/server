@@ -88,7 +88,6 @@ class Project(db.Model):
         self.creator = creator
         self.latest_version = 0
         self.public = kwargs.get("public", False)
-        self.locked_until = None
         latest_files = LatestProjectFiles(project=self)
         db.session.add(latest_files)
 
