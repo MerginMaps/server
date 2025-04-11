@@ -15,6 +15,8 @@ deps/
 venv/
 .vscode
 
+# production env
+.prod.env
 
 # generated documentation
 gen

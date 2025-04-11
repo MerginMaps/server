@@ -7,7 +7,11 @@ Suitable for Ubuntu servers, one node deployment using docker compose and system
 
 Then modify [docker-compose file](docker-compose.yml) and most notably settings in `.prod.env` (search for FIXME). Details about configuration can be find in [docs](https://merginmaps.com/docs/server/install/).
 
-Next step is to create data directory for mergin maps `projects` and `overviews` with proper permissions. This guide assumes data will be stored at  `/mnt/data` directory. Should you prefer a different location, please do search and replace it in config files (`.prod.env`, `docker-compose.yaml`). Make sure your volume is large enough since mergin maps keeps all projects files, their history and also needs some space for temporary processing.
+```
+cp .env.template .prod.env
+```
+
+Next step is to create data directory for mergin maps `projects` with proper permissions. This guide assumes data will be stored at  `/mnt/data` directory. Should you prefer a different location, please do search and replace it in config files (`.prod.env`, `docker-compose.yaml`). Make sure your volume is large enough since mergin maps keeps all projects files, their history and also needs some space for temporary processing.
 
 Projects (default `./projects`)
 ```
@@ -17,6 +21,15 @@ sudo find $MERGIN_DIR -type f -exec sudo chmod 640 {} \;
 sudo find $MERGIN_DIR -type d -exec sudo chmod 750 {} \;
 sudo find $MERGIN_DIR -type d -exec sudo chmod g+s {} \;
 sudo chown -R 901:999 $MERGIN_DIR
+```
+
+You can use the auxiliary script `check_permissions.sh` in `common` folder for this.
+Example, if you using the default `community` deployment folder:
+
+```shell
+
+sh deployment/community/check_permission.sh deployment/community/projects
+
 ```
 
 Once configured, mergin maps can be started (accessible on http://localhost:8080):

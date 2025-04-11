@@ -12,7 +12,7 @@ services:
     command: ["gunicorn -w 4 --config config.py application:application"]
     volumes:
       - ./data:/data  # map data dir to host
-      - ./entrypoint.sh:/app/entrypoint.sh
+      - ../common/entrypoint.sh:/app/entrypoint.sh
     env_file:
       - .prod.env
     depends_on:
@@ -41,7 +41,7 @@ services:
       - "8080:8080"
     volumes:
       - ./data:/data  # map data dir to host
-      - ./nginx.template:/etc/nginx/templates/default.conf.template
+      - ../common/nginx.conf:/etc/nginx/templates/default.conf.template
     networks:
       - mergin
     depends_on:
@@ -55,7 +55,7 @@ services:
     user: 901:999
     command: ["celery -A application.celery beat --loglevel=info"]
     volumes:
-      - ./entrypoint.sh:/app/entrypoint.sh
+      - ../common/entrypoint.sh:/app/entrypoint.sh
     env_file:
       - .prod.env
     depends_on:
@@ -72,7 +72,7 @@ services:
     command: ["celery -A application.celery worker --pool prefork --loglevel=info"]
     volumes:
       - ./data:/data  # map data dir to host
-      - ./entrypoint.sh:/app/entrypoint.sh
+      - ../common/entrypoint.sh:/app/entrypoint.sh
     env_file:
       - .prod.env
     depends_on:
@@ -85,14 +85,12 @@ services:
     image: postgres:14
     container_name: mergin-db-enterprise
     restart: always
-    env_file:
-      - .prod.env
     volumes:
       - ./mergin-db-enterprise:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=mergin
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres # fixme
+      - POSTGRES_PASSWORD=postgres # !TODO Change this and also change .prod.env $DB_PASSWORD accordingly
     networks:
       - mergin
 

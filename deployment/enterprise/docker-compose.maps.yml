@@ -15,6 +15,7 @@ services:
       - QGIS_SERVER_MAX_THREADS=-1
       - QGIS_SERVER_WMS_MAX_HEIGHT=1536
       - QGIS_SERVER_WMS_MAX_WIDTH=1536
+      - QGIS_SERVER_LOG_LEVEL=2
     volumes:
       - ./overviews/projects:/overviews/projects
   qgis_nginx:

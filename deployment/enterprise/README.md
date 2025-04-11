@@ -45,6 +45,16 @@ sudo find $MERGIN_DIR -type d -exec sudo chmod g+s {} \;
 sudo chown -R 901:999 $MERGIN_DIR
 ```
 
+You can use the auxiliary script `check_permissions.sh` in `common` folder for this.
+Example, if you using the default `enterprise` deployment folder:
+
+```shell
+
+sh deployment/community/check_permission.sh deployment/community/data
+sh deployment/community/check_permission.sh deployment/community/overviews
+
+```
+
 Once configured, mergin maps can be started (accessible on http://localhost:8080):
 
 ## Provision Database and init application
