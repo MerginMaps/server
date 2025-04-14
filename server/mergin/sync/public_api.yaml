@@ -652,6 +652,7 @@ paths:
                   - $ref: "#/components/schemas/UnprocessableEntityError"
                   - $ref: "#/components/schemas/TrialExpired"
                   - $ref: "#/components/schemas/StorageLimitHit"
+                  - $ref: "#/components/schemas/ProjectLocked"
       x-openapi-router-controller: mergin.sync.public_api_controller
   #not implemented in connexion, going directly to flask endpoint
   #  /project/push/chunk/{transaction_id}/{chunk_id}:
@@ -760,6 +761,12 @@ paths:
           $ref: "#/components/responses/NotFoundResp"
         "409":
           $ref: "#/components/responses/ConflictResp"
+        "422":
+          description: Push is not allowed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProjectLocked'
       x-openapi-router-controller: mergin.sync.public_api_controller
   /project/push/cancel/{transaction_id}:
     post:
@@ -1493,3 +1500,9 @@ components:
         size:
           type: integer
           example: 512
+    ProjectLocked:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      example:
+        code: ProjectLocked
+        detail: The project is currently locked and you cannot make changes to it

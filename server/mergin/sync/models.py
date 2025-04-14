@@ -16,7 +16,6 @@ from flask_login import current_user
 from pygeodiff import GeoDiff
 from sqlalchemy import text, null, desc, nullslast
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM
-from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.types import String
 from sqlalchemy.ext.hybrid import hybrid_property
 from pygeodiff.geodifflib import GeoDiffLibError
@@ -68,6 +67,7 @@ class Project(db.Model):
         db.Integer, db.ForeignKey("user.id"), nullable=True, index=True
     )
     public = db.Column(db.Boolean, default=False, index=True, nullable=False)
+    locked_until = db.Column(db.DateTime, index=True)
 
     creator = db.relationship(
         "User", uselist=False, backref=db.backref("projects"), foreign_keys=[creator_id]

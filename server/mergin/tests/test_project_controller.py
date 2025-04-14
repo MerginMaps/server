@@ -2621,3 +2621,37 @@ def test_supported_file_upload(client):
         resp.json["detail"]
         == f"Unsupported file type detected: {spoof_name}. Please remove the file or try compressing it into a ZIP file before uploading."
     )
+
+
+def test_locked_project(client, diff_project):
+    """Users cannot push to the locked project. Moreover, it does not count to the storage and project count"""
+    # before project is locked
+    orig_p_count = diff_project.workspace.project_count()
+    orig_storage = diff_project.workspace.disk_usage()
+    # after locking the project
+    diff_project.locked_until = datetime.datetime.utcnow() + datetime.timedelta(
+        weeks=26
+    )
+    db.session.commit()
+    assert diff_project.workspace.project_count() == orig_p_count - 1
+    assert diff_project.workspace.disk_usage() == orig_storage - diff_project.disk_usage
+    # push is not possible to the locked project
+    changes = _get_changes_without_added(test_project_dir)
+    project_path = get_project_path(diff_project)
+    data = {"version": "v1", "changes": changes}
+    resp = client.post(
+        f"/v1/project/push/{project_path}",
+        data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
+        headers=json_headers,
+    )
+    assert resp.status_code == 422
+    assert resp.headers["Content-Type"] == "application/problem+json"
+    assert resp.json["code"] == "ProjectLocked"
+    # to play safe push finish is also blocked
+    upload, upload_dir = create_transaction("mergin", changes)
+    url = "/v1/project/push/finish/{}".format(upload.id)
+
+    resp = client.post(url, headers=json_headers)
+    assert resp.status_code == 422
+    assert resp.headers["Content-Type"] == "application/problem+json"
+    assert resp.json["code"] == "ProjectLocked"
