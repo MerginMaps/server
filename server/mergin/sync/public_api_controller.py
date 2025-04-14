@@ -92,7 +92,7 @@ from .utils import (
     is_supported_extension,
     get_mimetype,
 )
-from .errors import StorageLimitHit
+from .errors import StorageLimitHit, ProjectLocked
 from ..utils import format_time_delta
 
 push_finished = signal("push_finished")
@@ -786,10 +786,7 @@ def project_push(namespace, project_name):
     project_permission = current_app.project_handler.get_push_permission(changes)
     project = require_project(namespace, project_name, project_permission)
     if project.locked_until:
-        abort(
-            400,
-            f"This project is currently locked and you cannot make changes to it.",
-        )
+        abort(make_response(jsonify(ProjectLocked().to_dict()), 422))
     # pass full project object to request for later use
     request.view_args["project"] = project
     ws = project.workspace
@@ -1033,10 +1030,7 @@ def push_finish(transaction_id):
     )
     project = upload.project
     if project.locked_until:
-        abort(
-            400,
-            f"This project is currently locked and you cannot make changes to it.",
-        )
+        abort(make_response(jsonify(ProjectLocked().to_dict()), 422))
     project_path = get_project_path(project)
     corrupted_files = []
 

@@ -34,3 +34,8 @@ class StorageLimitHit(ResponseError):
         data["current_usage"] = self.current_usage
         data["storage_limit"] = self.storage_limit
         return data
+
+
+class ProjectLocked(ResponseError):
+    code = "ProjectLocked"
+    detail = "The project is currently locked and you cannot make changes to it"
