@@ -292,60 +292,6 @@ def delete_project(namespace, project_name):  # noqa: E501
     return NoContent, 200
 
 
-def download_project(
-    namespace, project_name, version=None
-):  # noqa: E501 # pylint: disable=W0622
-    """Download full project in any version
-
-    Download whole project folder as zip file
-
-    :param project_name: Name of project to download.
-    :type project_name: str
-    :param namespace: Workspace for project to look into.
-    :type namespace: str
-    :param version: Particular version to download
-    :type version: str
-
-    :rtype: file - zip archive or multipart stream with project files
-    """
-    project = require_project(namespace, project_name, ProjectPermissions.Read)
-    lookup_version = (
-        ProjectVersion.from_v_name(version) if version else project.latest_version
-    )
-    project_version = ProjectVersion.query.filter_by(
-        project_id=project.id, name=lookup_version
-    ).first_or_404("Project version does not exist")
-
-    if project_version.project_size > current_app.config["MAX_DOWNLOAD_ARCHIVE_SIZE"]:
-        abort(
-            400,
-            "The total size of requested files is too large to download as a single zip, "
-            "please use different method/client for download",
-        )
-
-    # check zip is already created
-    if os.path.exists(project_version.zip_path):
-        if current_app.config["USE_X_ACCEL"]:
-            resp = make_response()
-            resp.headers["X-Accel-Redirect"] = f"/download/{project_version.zip_path}"
-            resp.headers["X-Accel-Buffering"] = True
-            resp.headers["X-Accel-Expires"] = "off"
-            resp.headers["Content-Type"] = "application/zip"
-        else:
-            resp = send_file(project_version.zip_path, mimetype="application/zip")
-
-        resp.headers["Content-Disposition"] = (
-            f"attachment; filename={project.id}-{lookup_version}.zip"
-        )
-        return resp
-
-    temp_zip_path = project_version.zip_path + ".partial"
-    if not os.path.exists(temp_zip_path):
-        create_project_version_zip.delay(project_version.id)
-
-    return "Project zip being prepared, please try again later", 202
-
-
 def download_project_file(
     project_name, namespace, file, version=None, diff=None
 ):  # noqa: E501

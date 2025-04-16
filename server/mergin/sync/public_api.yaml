@@ -494,45 +494,6 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundResp'
       x-openapi-router-controller: mergin.sync.public_api_controller
-  /project/download/{namespace}/{project_name}:
-    get:
-      tags:
-        - project
-      summary: Download full project
-      description: Download whole project folder as zip file or multipart stream
-      operationId: download_project
-      parameters:
-        - $ref: "#/components/parameters/projectName"
-        - $ref: "#/components/parameters/namespace"
-        - name: format
-          in: query
-          description: Output format (only zip available).
-          required: false
-          schema:
-            type: string
-            enum:
-              - zip
-        - name: version
-          in: query
-          description: Particular version to download
-          required: false
-          schema:
-            $ref: "#/components/schemas/VersionName"
-      responses:
-        "200":
-          description: Zip file or stream
-          content:
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-        "400":
-          $ref: "#/components/responses/BadStatusResp"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFoundResp"
-      x-openapi-router-controller: mergin.sync.public_api_controller
   /project/raw/{namespace}/{project_name}:
     get:
       tags:

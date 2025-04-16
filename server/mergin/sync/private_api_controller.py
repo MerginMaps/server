@@ -1,9 +1,19 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+import os
+from datetime import datetime, timedelta
 from blinker import signal
 from connexion import NoContent
-from flask import render_template, request, current_app, jsonify, abort
+from flask import (
+    render_template,
+    request,
+    current_app,
+    jsonify,
+    abort,
+    make_response,
+    send_file,
+)
 from flask_login import current_user
 from sqlalchemy.orm import defer
 from sqlalchemy import text
@@ -16,6 +26,7 @@ from .models import (
     AccessRequest,
     ProjectRole,
     RequestStatus,
+    ProjectVersion,
 )
 from .schemas import (
     ProjectListSchema,
@@ -29,8 +40,11 @@ from .permissions import (
     check_workspace_permissions,
 )
 from ..utils import parse_order_params, split_order_param, get_order_param
+from .tasks import create_project_version_zip
+from .storages.disk import move_to_tmp
 
 project_access_granted = signal("project_access_granted")
+PARTIAL_ZIP_EXPIRATION = 5  # minutes
 
 
 @auth_required
@@ -309,3 +323,48 @@ def get_project_access(id: str):
     result = current_app.ws_handler.project_access(project)
     data = ProjectAccessDetailSchema(many=True).dump(result)
     return data, 200
+
+
+@auth_required
+def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W0622
+    """Download whole project folder as zip file in any version
+
+    :rtype: file - zip archive or multipart stream with project files
+    """
+    project = require_project_by_uuid(id, ProjectPermissions.Read)
+    lookup_version = (
+        ProjectVersion.from_v_name(version) if version else project.latest_version
+    )
+    project_version = ProjectVersion.query.filter_by(
+        project_id=project.id, name=lookup_version
+    ).first_or_404("Project version does not exist")
+
+    if project_version.project_size > current_app.config["MAX_DOWNLOAD_ARCHIVE_SIZE"]:
+        abort(
+            400,
+            "The total size of requested files is too large to download as a single zip, "
+            "please use different method/client for download",
+        )
+
+    # check zip is already created
+    if os.path.exists(project_version.zip_path):
+        if current_app.config["USE_X_ACCEL"]:
+            resp = make_response()
+            resp.headers["X-Accel-Redirect"] = f"/download/{project_version.zip_path}"
+            resp.headers["X-Accel-Buffering"] = True
+            resp.headers["X-Accel-Expires"] = "off"
+            resp.headers["Content-Type"] = "application/zip"
+        else:
+            resp = send_file(project_version.zip_path, mimetype="application/zip")
+
+        resp.headers["Content-Disposition"] = (
+            f"attachment; filename={project.id}-{lookup_version}.zip"
+        )
+        return resp
+
+    temp_zip_path = project_version.zip_path + ".partial"
+
+    if not os.path.exists(temp_zip_path):
+        create_project_version_zip.delay(project_version.id)
+
+    return "Project zip being prepared, please try again later", 202
