@@ -363,6 +363,13 @@ def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W06
         return resp
 
     temp_zip_path = project_version.zip_path + ".partial"
+    # to be safe we are not in vicious circle remove inactive partial zip
+    if os.path.exists(temp_zip_path) and datetime.fromtimestamp(
+        os.path.getmtime(temp_zip_path)
+    ) < datetime.now(datetime.timezone.utc) - timedelta(
+        minutes=current_app.config["PARTIAL_ZIP_EXPIRATION"]
+    ):
+        move_to_tmp(temp_zip_path)
 
     if not os.path.exists(temp_zip_path):
         create_project_version_zip.delay(project_version.id)
