@@ -60,7 +60,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </ul>
         </nav>
       </div>
-      <footer class="flex flex-column row-gap-3 p-3">
+      <footer class="flex flex-column row-gap-3 p-4">
         <slot name="footer">
           <!-- footer content -->
           <template v-if="userStore.isSuperUser">

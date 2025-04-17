@@ -117,7 +117,7 @@ export const createRouter = (pinia: Pinia) => {
             props: true
           },
           {
-            path: 'tree/:location?',
+            path: 'tree/:location(.*)?',
             name: AdminRoutes.ProjectTree,
             component: ProjectFilesView,
             props: true
