@@ -256,10 +256,6 @@
         "version": "2.31.0"
     },
     {
-        "library": "requests-toolbelt",
-        "version": "0.9.1"
-    },
-    {
         "library": "result",
         "version": "0.5.0"
     },
@@ -334,10 +330,6 @@
     {
         "library": "WTForms-JSON",
         "version": "0.3.5"
-    },
-    {
-        "library": "zipfly",
-        "version": "6.0.3"
     },
     {
         "library": "zipp",

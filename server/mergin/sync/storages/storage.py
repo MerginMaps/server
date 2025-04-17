@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-from urllib.parse import quote
-from flask import Response
-from requests_toolbelt import MultipartEncoder
-from gevent import sleep
-import zipfly
-
 
 class InvalidProject(Exception):
     pass
@@ -76,37 +70,3 @@ class ProjectStorage:
 
     def restore_versioned_file(self, file, version):
         raise NotImplementedError
-
-    def download_files(self, files, files_format: str = None, version: int = None):
-        """Download files"""
-        if version:
-            for f in files:
-                sleep(0)
-                self.restore_versioned_file(f.path, version)
-        if files_format == "zip":
-            paths = [{"fs": self.file_path(f.location), "n": f.path} for f in files]
-            z = zipfly.ZipFly(mode="w", paths=paths)
-            response = Response(z.generator(), mimetype="application/zip")
-            archive_name = quote(self.project.name.encode("utf-8"))
-            if version is not None:
-                archive_name += f"-v{version}"
-            response.headers["Content-Disposition"] = (
-                f"attachment; filename={archive_name}.zip"
-            )
-            return response
-        files_dict = {}
-        for f in files:
-            path = f.path
-            files_dict[path] = (path, StorageFile(self, f.location))
-        encoder = MultipartEncoder(files_dict)
-
-        def _generator():
-            while True:
-                data = encoder.read(4096)
-                sleep(0)
-                if data:
-                    yield data
-                else:
-                    break
-
-        return Response(_generator(), mimetype=encoder.content_type)

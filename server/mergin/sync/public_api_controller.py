@@ -20,7 +20,6 @@ from connexion import NoContent, request
 from flask import (
     abort,
     current_app,
-    send_file,
     send_from_directory,
     jsonify,
     make_response,
@@ -66,7 +65,7 @@ from .schemas import (
     FileHistorySchema,
     ProjectVersionListSchema,
 )
-from .storages.storage import FileNotFound, DataSyncError, InitializationError
+from .storages.storage import DataSyncError, InitializationError
 from .storages.disk import save_to_file, move_to_tmp
 from .permissions import (
     require_project,
@@ -94,7 +93,6 @@ from .utils import (
 )
 from .errors import StorageLimitHit, ProjectLocked
 from ..utils import format_time_delta
-from .tasks import create_project_version_zip
 
 
 push_finished = signal("push_finished")

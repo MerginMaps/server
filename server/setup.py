@@ -25,7 +25,6 @@ setup(
         "psycopg2-binary",
         "itsdangerous",
         "Flask-SQLAlchemy",
-        "zipfly",
         "python-dotenv",
         "flask-login",
         "bcrypt",
