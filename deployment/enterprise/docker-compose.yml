@@ -91,6 +91,8 @@ services:
       - POSTGRES_DB=mergin
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres # !TODO Change this and also change .prod.env $DB_PASSWORD accordingly
+    ports:
+      - 5432:5432
     networks:
       - mergin
 

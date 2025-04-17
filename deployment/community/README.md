@@ -23,7 +23,7 @@ sudo find $MERGIN_DIR -type d -exec sudo chmod g+s {} \;
 sudo chown -R 901:999 $MERGIN_DIR
 ```
 
-You can use the auxiliary script `check_permissions.sh` in `common` folder for this.
+You can use the auxiliary script `set_permissions.sh` in `common` folder for this.
 Example, if you using the default `community` deployment folder:
 
 ```shell
