@@ -5,14 +5,16 @@
 import datetime
 import json
 import os
+from unittest.mock import patch
 
+import pytest
 from flask import url_for
 
 from ..app import db
 from ..sync.models import AccessRequest, Project, ProjectRole, RequestStatus
 from ..auth.models import User
 from ..config import Configuration
-from . import json_headers
+from . import json_headers, test_project, test_workspace_name
 from .utils import (
     add_user,
     login,
@@ -418,3 +420,50 @@ def test_admin_project_list(client):
     p.delete()
     resp = client.get("/app/admin/projects?page=1&per_page=15&like=mergin")
     assert len(resp.json["items"]) == 14
+
+
+test_download_proj_data = [
+    (None, 202),
+    ("v1", 202),
+    ("v100", 404),
+]
+
+
+@pytest.mark.parametrize("version,expected", test_download_proj_data)
+@patch("mergin.sync.tasks.create_project_version_zip.delay")
+def test_download_project(mock_create_zip, client, version, expected, diff_project):
+    resp = client.get(
+        url_for(
+            "/app.mergin_sync_private_api_controller_download_project",
+            id=diff_project.id,
+            version=version if version else "",
+        )
+    )
+    assert resp.status_code == expected
+    assert mock_create_zip.called if expected == 202 else not mock_create_zip.called
+    if not version:
+        call_args, _ = mock_create_zip.call_args
+        args = call_args[0]
+        assert args == diff_project.latest_version
+
+
+def test_large_project_download_fail(client, diff_project):
+    resp = client.get(
+        url_for(
+            "/app.mergin_sync_private_api_controller_download_project",
+            id=diff_project.id,
+            version="v1",
+        )
+    )
+    assert resp.status_code == 202
+    # pretend testing project to be too large by lowering limit
+    client.application.config["MAX_DOWNLOAD_ARCHIVE_SIZE"] = 10
+    resp = client.get(
+        url_for(
+            "/app.mergin_sync_private_api_controller_download_project",
+            id=diff_project.id,
+            version="v1",
+        )
+    )
+    assert resp.status_code == 400
+    assert "The total size of requested files is too large" in resp.json["detail"]

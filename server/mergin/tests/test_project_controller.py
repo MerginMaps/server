@@ -786,18 +786,20 @@ def test_download_project(client, proj_name, out_format, expected, version):
     assert resp.status_code == expected
 
 
-def test_large_project_download_fail(client, diff_project):
-    resp = client.get(
-        f"/v1/project/download/{test_workspace_name}/{diff_project.name}?v1format=zip"
-    )
-    assert resp.status_code == 200
-    # pretend testing project to be too large by lowering limit
-    client.application.config["MAX_DOWNLOAD_ARCHIVE_SIZE"] = 10
-    resp = client.get(
-        f"/v1/project/download/{test_workspace_name}/{diff_project.name}?v1format=zip"
-    )
-    assert resp.status_code == 400
-    assert "The total size of requested files is too large" in resp.json["detail"]
+#
+#
+# def test_large_project_download_fail(client, diff_project):
+#     resp = client.get(
+#         f"/v1/project/download/{test_workspace_name}/{diff_project.name}?v1format=zip"
+#     )
+#     assert resp.status_code == 200
+#     # pretend testing project to be too large by lowering limit
+#     client.application.config["MAX_DOWNLOAD_ARCHIVE_SIZE"] = 10
+#     resp = client.get(
+#         f"/v1/project/download/{test_workspace_name}/{diff_project.name}?v1format=zip"
+#     )
+#     assert resp.status_code == 400
+#     assert "The total size of requested files is too large" in resp.json["detail"]
 
 
 test_download_file_data = [

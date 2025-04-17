@@ -6,7 +6,7 @@ import logging
 import shutil
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zipfile import ZIP_DEFLATED, ZipFile
 from flask import current_app
 
@@ -144,12 +144,14 @@ def create_project_version_zip(version_id: int):
 @celery.task
 def remove_projects_archives():
     """Remove created zip files for project versions if they were not accessed for certain time"""
-    for file in os.listdir(current_app.config["PROJECT_ARCHIVES_DIR"]):
-        path = os.path.join(current_app.config["PROJECT_ARCHIVES_DIR"], file)
-        if datetime.fromtimestamp(os.path.getatime(path)) < datetime.now(
-            datetime.timezone.utc
-        ) - timedelta(days=current_app.config["PROJECT_ARCHIVES_EXPIRATION"]):
+    for file in os.listdir(current_app.config["PROJECTS_ARCHIVES_DIR"]):
+        path = os.path.join(current_app.config["PROJECTS_ARCHIVES_DIR"], file)
+        if datetime.fromtimestamp(
+            os.path.getatime(path), tz=timezone.utc
+        ) < datetime.now(timezone.utc) - timedelta(
+            days=current_app.config["PROJECTS_ARCHIVES_EXPIRATION"]
+        ):
             try:
-                shutil.rmtree(path)
+                os.remove(path)
             except OSError as e:
-                print(f"Unable to remove {path}: {str(e)}")
+                logging.error(f"Unable to remove {path}: {str(e)}")

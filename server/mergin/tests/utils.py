@@ -371,3 +371,19 @@ def push_change(project, action, path, src_dir):
     db.session.add(project)
     db.session.commit()
     return pv
+
+
+def modify_file_times(path, time: datetime, accessed=True, modified=True):
+    """Modifies files access and modification time
+
+    :param path: path to file to be modified
+    :param time: new time - seconds since the epoch
+    :param accessed: modify access time
+    :param modified: modify modification time
+    """
+    file_stat = os.stat(path)
+    epoch_time = time.timestamp()
+    atime = epoch_time if accessed else file_stat.st_atime
+    mtime = epoch_time if modified else file_stat.st_mtime
+
+    os.utime(path, (atime, mtime))
