@@ -28,7 +28,7 @@ Example, if you using the default `community` deployment folder:
 
 ```shell
 
-sh deployment/community/check_permission.sh deployment/community/projects
+sh ../common/set_permission.sh projects
 
 ```
 
