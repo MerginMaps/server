@@ -57,6 +57,8 @@ export interface UploadFilesPayload {
   files: File[]
 }
 
+let downloadArchiveTimeout = null
+
 export interface ProjectState {
   accessRequests: AccessRequest[]
   accessRequestsCount: number
@@ -77,6 +79,7 @@ export interface ProjectState {
   availableRoles: DropdownOption<ProjectRoleName>[]
   versionsChangesetLoading: boolean
   collaborators: ProjectCollaborator[]
+  projectDownloading: boolean
 }
 
 export const useProjectStore = defineStore('projectModule', {
@@ -102,7 +105,8 @@ export const useProjectStore = defineStore('projectModule', {
     availablePermissions: permissionUtils.getProjectPermissionsValues(),
     availableRoles: permissionUtils.getProjectRoleNameValues(),
     versionsChangesetLoading: false,
-    collaborators: []
+    collaborators: [],
+    projectDownloading: false
   }),
 
   getters: {
@@ -702,33 +706,48 @@ export const useProjectStore = defineStore('projectModule', {
 
     async downloadArchive(payload: DownloadPayload) {
       const notificationStore = useNotificationStore()
+      this.cancelDownloadArchive()
+      this.projectDownloading = true
 
-      try {
-        const resp = await ProjectApi.downloadFile(payload.url)
-        const fileName =
-          resp.headers['content-disposition'].split('filename=')[1]
-        FileSaver.saveAs(resp.data, fileName)
-      } catch (e) {
-        // parse error details from blob
-        if (axios.isAxiosError(e)) {
-          let resp
-          const blob = new Blob([e.response.data], { type: 'text/plain' })
-          blob.text().then((text) => {
-            resp = JSON.parse(text)
-            notificationStore.error({ text: resp.detail })
-          })
+      const delays = [...Array(3).fill(1000), ...Array(3).fill(3000), 5000]
+      let retryCount = 0
+      const pollDownloadArchive = async () => {
+        try {
+          const head = await ProjectApi.getHeadDownloadFile(payload.url)
+          const polling = head.status == 202
+
+          if (polling) {
+            const delay = delays[Math.min(retryCount, delays.length - 1)] // Select delay based on retry count
+            retryCount++ // Increment retry count
+            downloadArchiveTimeout = setTimeout(async () => {
+              await pollDownloadArchive()
+            }, delay)
+            return
+          }
+          // Use browser download instead of playing around with the blob
+          FileSaver.saveAs(payload.url, payload.fileName)
+          notificationStore.closeNotification()
+          clearTimeout(downloadArchiveTimeout)
+          downloadArchiveTimeout = null
+          this.projectDownloading = false
+        } catch {
+          notificationStore.error({ text: 'Failed to download project' })
+          this.cancelDownloadArchive()
         }
       }
+      pollDownloadArchive()
     },
 
-    constructDownloadProjectUrl(payload: {
-      namespace: string
-      projectName: string
-    }) {
-      return ProjectApi.constructDownloadProjectUrl(
-        payload.namespace,
-        payload.projectName
-      )
+    cancelDownloadArchive() {
+      if (downloadArchiveTimeout) {
+        clearTimeout(downloadArchiveTimeout)
+        downloadArchiveTimeout = null
+      }
+      this.projectDownloading = false
+    },
+
+    constructDownloadProjectUrl(payload: { projectId: string }) {
+      return ProjectApi.constructDownloadProjectUrl(payload.projectId)
     },
 
     setProjectsSorting(payload: SortingParams) {

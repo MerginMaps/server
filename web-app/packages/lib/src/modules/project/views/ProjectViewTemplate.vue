@@ -14,11 +14,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div class="relative z-1">
           <PButton
             severity="secondary"
-            @click="downloadArchive({ url: downloadUrl })"
+            @click="
+              downloadArchive({ url: downloadUrl, fileName: project.name })
+            "
             data-cy="project-download-btn"
             icon="ti ti-download"
             class="mr-2"
             label="Download"
+            :disabled="projectDownloading"
           />
           <PButton
             severity="secondary"
@@ -111,12 +114,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <slot name="right">
       <upload-dialog v-if="upload" :namespace="namespace" />
     </slot>
+    <DownloadProgress />
   </div>
 </template>
 
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
 import { defineComponent, PropType } from 'vue'
+
+import DownloadProgress from '../components/DownloadProgress.vue'
 
 import { AppContainer, AppSection } from '@/common'
 import { waitCursor } from '@/common/html_utils'
@@ -144,7 +150,8 @@ export default defineComponent({
   components: {
     UploadDialog,
     AppContainer,
-    AppSection
+    AppSection,
+    DownloadProgress
   },
   props: {
     namespace: String,
@@ -168,7 +175,7 @@ export default defineComponent({
     ...mapState(useLayoutStore, ['drawer']),
     ...mapState(useProjectStore, ['project', 'uploads']),
     ...mapState(useUserStore, ['loggedUser']),
-    ...mapState(useProjectStore, ['isProjectOwner']),
+    ...mapState(useProjectStore, ['isProjectOwner', 'projectDownloading']),
     ...mapState(useUserStore, ['currentWorkspace', 'isLoggedIn']),
 
     tabs(): TabItem[] {
@@ -237,14 +244,12 @@ export default defineComponent({
     downloadUrl() {
       if (this.$route.name === 'project-versions-detail') {
         return ProjectApi.constructDownloadProjectVersionUrl(
-          this.namespace,
-          this.projectName,
+          this.project.id,
           this.$route.params.version_id as string
         )
       } else {
         return this.constructDownloadProjectUrl({
-          namespace: this.namespace,
-          projectName: this.projectName
+          projectId: this.project.id
         })
       }
     }
