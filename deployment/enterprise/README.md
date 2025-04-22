@@ -23,7 +23,7 @@ Then modify [docker-compose file](docker-compose.yml) and most notably settings 
 cp .env.template .prod.env
 ```
 
-Next step is to create data directory for mergin maps `projects` and `overviews` with proper permissions. This guide assumes data will be stored at  `/mnt/data` directory. Should you prefer a different location, please do search and replace it in config files (`.prod.env`, `docker-compose.yaml`). Make sure your volume is large enough since mergin maps keeps all projects files, their history and also needs some space for temporary processing.
+Next step is to create data directory for mergin maps `projects` and `overviews` with proper permissions. This guide assumes data will be stored at  `/mnt/data` directory. Should you prefer a different location, please do search and replace it in config files (`.prod.env`, `docker-compose.yml`). Make sure your volume is large enough since mergin maps keeps all projects files, their history and also needs some space for temporary processing.
 
 Projects (default `./data`)
 ```
@@ -61,7 +61,7 @@ Once configured, mergin maps can be started (accessible on http://localhost:8080
 
 ### After version 2025.2.0:
 ```
-sudo docker compose --env-file .prod.env -f docker-compose.yaml up -d
+sudo docker compose --env-file .prod.env -f docker-compose.yml up -d
 sudo docker exec mergin-server-enterprise flask init --email myuser@mycompany.com
 ```
 Check command output info for database setup and provision, set initial superuser, celery settings and email test.
@@ -71,7 +71,7 @@ Alternatively, you can run the following provisioning commands with some extra s
 
 ### Prior to version 2025.2.0:
 ```
-sudo docker compose --env-file .prod.env -f docker-compose.yaml up
+sudo docker compose --env-file .prod.env -f docker-compose.yml up
 sudo docker exec mergin-server-enterprise flask init-db
 # now create super user account
 sudo docker exec mergin-server-enterprise flask user create <username> <password> --is-admin --email <email>
@@ -83,10 +83,10 @@ If you want to deploy MerginMaps Webmaps infrastructure, please adjust `.prod.en
 > [!NOTE]
 > Please remember the main Mergin Maps stack needs to be running already.
 > Otherwise, run it:
-> `docker compose --env-file .prod.env -f docker-compose.yaml up -d`
+> `docker compose --env-file .prod.env -f docker-compose.yml up -d`
 
 ```
- sudo docker compose -f docker-compose.maps.yaml up -d
+ sudo docker compose -f docker-compose.maps.yml up -d
 ```
 
 ## Install and configure nginx for TLS termination
