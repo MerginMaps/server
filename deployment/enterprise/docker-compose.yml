@@ -6,7 +6,7 @@ networks:
 services:
   server:
     image: 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-back:2025.3.0
-    container_name: mergin-server-enterprise
+    container_name: merginmaps-server
     restart: always
     user: 901:999
     command: ["gunicorn -w 4 --config config.py application:application"]
@@ -22,7 +22,7 @@ services:
 
   web:
     image: 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-front:2025.3.0
-    container_name: mergin-web-enterprise
+    container_name: merginmaps-web
     restart: always
     depends_on:
       - server
@@ -33,7 +33,7 @@ services:
 
   proxy:
     image: nginxinc/nginx-unprivileged:1.27
-    container_name: mergin-proxy-enterprise
+    container_name: merginmaps-proxy
     restart: always
     # run nginx as built-in user but with group mergin-family for files permissions
     user: 101:999
@@ -50,7 +50,7 @@ services:
 
   celery-beat:
     image: 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-back:2025.3.0
-    container_name: mergin-celery-beat-enterprise
+    container_name: merginmaps-celery-beat
     restart: always
     user: 901:999
     command: ["celery -A application.celery beat --loglevel=info"]
@@ -66,7 +66,7 @@ services:
 
   celery-worker:
     image: 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-back:2025.3.0
-    container_name: mergin-celery-worker-enterprise
+    container_name: merginmaps-celery-worker
     restart: always
     user: 901:999
     command: ["celery -A application.celery worker --pool prefork --loglevel=info"]
@@ -83,7 +83,7 @@ services:
 
   db:
     image: postgres:14
-    container_name: mergin-db-enterprise
+    container_name: merginmaps-db
     restart: always
     volumes:
       - ./mergin-db-enterprise:/var/lib/postgresql/data
@@ -98,7 +98,7 @@ services:
 
   redis:
     image: redis
-    container_name: mergin-redis-enterprise
+    container_name: merginmaps-redis
     restart: always
     networks:
       - mergin
