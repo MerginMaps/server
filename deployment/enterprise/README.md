@@ -50,8 +50,8 @@ Example, if you using the default `enterprise` deployment folder:
 
 ```shell
 
-sh deployment/community/check_permission.sh deployment/community/data
-sh deployment/community/check_permission.sh deployment/community/overviews
+sh set_permissions.sh data
+sh set_permissions.sh overviews
 
 ```
 
