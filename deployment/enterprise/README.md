@@ -62,7 +62,7 @@ Once configured, mergin maps can be started (accessible on http://localhost:8080
 ### After version 2025.2.0:
 ```
 sudo docker compose --env-file .prod.env -f docker-compose.yml up -d
-sudo docker exec mergin-server-enterprise flask init --email myuser@mycompany.com
+sudo docker exec merginmaps-server flask init --email myuser@mycompany.com
 ```
 Check command output info for database setup and provision, set initial superuser, celery settings and email test.
 For more info check [documentation](https://merginmaps.com/docs/server/install/#initialise-database)
@@ -72,9 +72,9 @@ Alternatively, you can run the following provisioning commands with some extra s
 ### Prior to version 2025.2.0:
 ```
 sudo docker compose --env-file .prod.env -f docker-compose.yml up
-sudo docker exec mergin-server-enterprise flask init-db
+sudo docker exec merginmaps-server flask init-db
 # now create super user account
-sudo docker exec mergin-server-enterprise flask user create <username> <password> --is-admin --email <email>
+sudo docker exec merginmaps-server flask user create <username> <password> --is-admin --email <email>
 ```  
 
 ## WebMaps
