@@ -74,7 +74,7 @@ Admin users can enter the admin interface available at `/admin` URL which provid
 
 ### Contributing
 
-Contributions are welcomed! You can set up development environment by following a guide in [development.md](./development.md). Before you create your first pull request, we kindly ask you to sign the CLA with your GitHub user name and date [here](LICENSES/CLA-signed-list.md).
+Contributions are welcomed! You can set up development environment by following a guide in [development.md](./deployment/community/development.md). Before you create your first pull request, we kindly ask you to sign the CLA with your GitHub user name and date [here](LICENSES/CLA-signed-list.md).
 
 ## Documentation
 
@@ -86,14 +86,14 @@ If you'd like to contribute and improve the documentation, visit https://github.
 If you need support, a custom deployment, extending the service capabilities and new features do not hesitate to contact us on info@lutraconsulting.co.uk
 <br><br>
 
-<div><a href="https://merginmaps.com/community/join"><img align="left" width="45" height="45" src="https://raw.githubusercontent.com/MerginMaps/docs/main/src/.vuepress/public/slack.svg">Join our community chat</a><br/>and ask questions!</div>
+<div><img align="left" width="45" height="45" src="https://raw.githubusercontent.com/MerginMaps/docs/main/src/public/slack.svg"><a href="https://merginmaps.com/community/join">Join our community chat</a><br/>and ask questions!</div>
 <br>
 
 ## Developers
 
 Contributions are welcome!
 
-More information for developers can be found in the dedicated [development](development.md) page.
+More information for developers can be found in the dedicated [development](./deployment/community/development.md) page.
 
 Client side modules:
 - [Python](https://github.com/MerginMaps/python-api-client) client library + CLI
