@@ -1,8 +1,8 @@
 
 
 services:
-  server-gunicorn:
-    image: server-gunicorn
+  server:
+    image: server
     build:
       context: ../../server
       dockerfile: Dockerfile

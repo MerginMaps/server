@@ -17,7 +17,7 @@ services:
       - QGIS_SERVER_WMS_MAX_WIDTH=1536
       - QGIS_SERVER_LOG_LEVEL=2
     volumes:
-      - ./overviews/projects:/overviews/projects
+      - ./map_data:/overviews
   qgis_nginx:
     container_name: mergin-qgis-nginx
     image: nginxinc/nginx-unprivileged:1.27
@@ -39,4 +39,4 @@ services:
       - MM_WMS_TILE_BUFFER=100
       - MM_WMS_AVOID_ARTIFACTS=1
     volumes:
-      - ./overviews/projects:/data
+      - ./map_data:/data

@@ -72,6 +72,7 @@ services:
     command: ["celery -A application.celery worker --pool prefork --loglevel=info"]
     volumes:
       - ./data:/data  # map data dir to host
+      - ./map_data:/overviews
       - ../common/entrypoint.sh:/app/entrypoint.sh
     env_file:
       - .prod.env
