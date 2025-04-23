@@ -14,14 +14,3 @@ cp .env.template .prod.env
 Next step is to create data directory for mergin maps `projects` with proper permissions. Should you prefer a different location, please do search and replace it in config files (`.prod.env`, `docker-compose.yml`). Make sure your volume is large enough since mergin maps keeps all projects files, their history and also needs some space for temporary processing.
 
 For more details about deployment please check [docs](https://merginmaps.com/docs/server/install/#deployment).
-
-## Provision Database and init application
-
-```
-sudo docker compose -f docker-compose.yml up -d
-sudo docker exec merginmaps-server flask init --email myuser@mycompany.com
-```
-Check command output info for database setup and provision, set initial superuser, celery settings and email test.
-For more info check [documentation](https://merginmaps.com/docs/server/install/#initialise-database)
-
-Alternatively, you can run the following provisioning commands with some extra steps.

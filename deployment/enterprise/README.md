@@ -12,9 +12,9 @@ aws ecr --region eu-west-1 get-login-password | docker login --username AWS --pa
 ```
 
 ## Load docker images, configure and run mergin maps stack
-For running mergin maps you need to load local docker images (if any). Make sure you have access to Lutra's ECR repository. You can check it by running
+For running Mergin Maps you need to load local docker images (if any). Make sure you have access to Lutra's ECR repository. You can check it by running
 ```
-sudo docker pull 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-back:2025.3.0
+docker pull 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-back:2025.3.0
 ```
 
 Then modify [docker-compose file](docker-compose.yml) and create environment file `.prod.env` from `.env.template`. Details about configuration can be find in [docs](https://merginmaps.com/docs/server/install/).
@@ -23,13 +23,13 @@ Then modify [docker-compose file](docker-compose.yml) and create environment fil
 cp .env.template .prod.env
 ```
 
-Next step is to create data directory for mergin maps `data` with proper permissions. Should you prefer a different location, please do search and replace it in config files (`.prod.env`, `docker-compose.yml`). Make sure your volume is large enough since mergin maps keeps all projects files, their history and also needs some space for temporary processing.
+Next step is to create data directory for Mergin Maps `data` with proper permissions. Should you prefer a different location, please do search and replace it in config files (`.prod.env`, `docker-compose.yml`). Make sure your volume is large enough since Mergin Maps keeps all projects files, their history and also needs some space for temporary processing.
 
 For more details about deployment please check [docs](https://merginmaps.com/docs/server/install/#deployment).
 
 ## WebMaps
 
-If you want to deploy MerginMaps Webmaps infrastructure, please adjust `.prod.env` related environment:
+If you want to deploy Mergin Maps Webmaps infrastructure, please adjust `.prod.env` related environment:
 
 ```
 MAPS_ENABLED=true
@@ -47,5 +47,5 @@ sh ../common/set_permissions.sh map_data
 > `docker compose -f docker-compose.yml up -d`
 
 ```shell
- sudo docker compose -f docker-compose.maps.yml up -d
+ docker compose -f docker-compose.maps.yml up -d
 ```
