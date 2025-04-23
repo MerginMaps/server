@@ -1,6 +1,7 @@
-version: "3.7"
+
 networks:
   merginmaps:
+    name: mergin
 
 services:
   db:
@@ -10,8 +11,9 @@ services:
     networks:
       - merginmaps
     environment:
+      - POSTGRES_DB=mergin
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=postgres # !TODO Change this and also change .prod.env $DB_PASSWORD accordingly
     volumes:
       - ./mergin_db:/var/lib/postgresql/data
   redis:
@@ -20,14 +22,14 @@ services:
     restart: always
     networks:
       - merginmaps
-  server-gunicorn:
+  server:
     image: lutraconsulting/merginmaps-backend:2025.2.2
     container_name: merginmaps-server
     restart: always
     user: 901:999
     volumes:
       - ./projects:/data
-      - ./server/entrypoint.sh:/app/entrypoint.sh
+      - ../common/entrypoint.sh:/app/entrypoint.sh
     env_file:
       - .prod.env
     depends_on:
@@ -46,10 +48,10 @@ services:
       - GEVENT_WORKER=0
       - NO_MONKEY_PATCH=1
     volumes:
-      - ./server/entrypoint.sh:/app/entrypoint.sh
+      - ../common/entrypoint.sh:/app/entrypoint.sh
     depends_on:
       - redis
-      - server-gunicorn
+      - server
     command: [ "celery -A application.celery beat --loglevel=info" ]
     networks:
       - merginmaps
@@ -65,10 +67,10 @@ services:
       - NO_MONKEY_PATCH=1
     volumes:
       - ./projects:/data
-      - ./server/entrypoint.sh:/app/entrypoint.sh
+      - ../common/entrypoint.sh:/app/entrypoint.sh
     depends_on:
       - redis
-      - server-gunicorn
+      - server
       - celery-beat
     command: [ "celery -A application.celery worker --loglevel=info" ]
     networks:
@@ -78,7 +80,7 @@ services:
     container_name: merginmaps-web
     restart: always
     depends_on:
-      - server-gunicorn
+      - server
     user: 101:999
     links:
       - db
@@ -93,8 +95,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./projects:/data  # map data dir to host
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./logs:/var/log/nginx/
+      - ./projects:/data  # mergin maps projects data dir to host
+      - ../common/nginx.conf:/etc/nginx/conf.d/default.conf
     networks:
       - merginmaps
