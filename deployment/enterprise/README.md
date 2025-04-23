@@ -26,26 +26,3 @@ cp .env.template .prod.env
 Next step is to create data directory for Mergin Maps `data` with proper permissions. Should you prefer a different location, please do search and replace it in config files (`.prod.env`, `docker-compose.yml`). Make sure your volume is large enough since Mergin Maps keeps all projects files, their history and also needs some space for temporary processing.
 
 For more details about deployment please check [docs](https://merginmaps.com/docs/server/install/#deployment).
-
-## WebMaps
-
-If you want to deploy Mergin Maps Webmaps infrastructure, please adjust `.prod.env` related environment:
-
-```
-MAPS_ENABLED=true
-```
-
-and run the following command for creating data directory for webmaps:
-
-```
-sh ../common/set_permissions.sh map_data
-```
-
-> [!NOTE]
-> Please remember the main Mergin Maps stack needs to be running already.
-> Otherwise, run it:
-> `docker compose -f docker-compose.yml up -d`
-
-```shell
- docker compose -f docker-compose.maps.yml up -d
-```
