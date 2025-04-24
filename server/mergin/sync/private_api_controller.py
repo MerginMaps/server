@@ -358,7 +358,7 @@ def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W06
             resp = send_file(project_version.zip_path, mimetype="application/zip")
 
         resp.headers["Content-Disposition"] = (
-            f"attachment; filename={project.id}-{lookup_version}.zip"
+            f"attachment; filename={project.name}-v{lookup_version}.zip"
         )
         return resp
 

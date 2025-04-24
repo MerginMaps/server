@@ -13,7 +13,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     volumes:
-      - ./mergin_db_ce_compose:/var/lib/postgresql/data
+      - ./mergin_db:/var/lib/postgresql/data
   redis:
     image: redis:6.2.17
     container_name: merginmaps-redis
@@ -26,7 +26,7 @@ services:
     restart: always
     user: 901:999
     volumes:
-      - ./projects_compose:/data
+      - ./projects:/data
       - ./server/entrypoint.sh:/app/entrypoint.sh
     env_file:
       - .prod.env
@@ -64,7 +64,7 @@ services:
       - GEVENT_WORKER=0
       - NO_MONKEY_PATCH=1
     volumes:
-      - ./projects_compose:/data
+      - ./projects:/data
       - ./server/entrypoint.sh:/app/entrypoint.sh
     depends_on:
       - redis

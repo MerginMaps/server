@@ -715,7 +715,6 @@ export const useProjectStore = defineStore('projectModule', {
         try {
           const head = await ProjectApi.getHeadDownloadFile(payload.url)
           const polling = head.status == 202
-
           if (polling) {
             const delay = delays[Math.min(retryCount, delays.length - 1)] // Select delay based on retry count
             retryCount++ // Increment retry count
@@ -724,8 +723,9 @@ export const useProjectStore = defineStore('projectModule', {
             }, delay)
             return
           }
+
           // Use browser download instead of playing around with the blob
-          FileSaver.saveAs(payload.url, payload.fileName)
+          FileSaver.saveAs(payload.url)
           notificationStore.closeNotification()
           clearTimeout(downloadArchiveTimeout)
           downloadArchiveTimeout = null
