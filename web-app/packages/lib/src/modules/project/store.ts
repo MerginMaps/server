@@ -713,6 +713,14 @@ export const useProjectStore = defineStore('projectModule', {
       let retryCount = 0
       const pollDownloadArchive = async () => {
         try {
+          if (retryCount > 100) {
+            notificationStore.error({
+              text: 'Failed to download project. Please try again.'
+            })
+            this.cancelDownloadArchive()
+            return
+          }
+
           const head = await ProjectApi.getHeadDownloadFile(payload.url)
           const polling = head.status == 202
           if (polling) {
@@ -724,20 +732,10 @@ export const useProjectStore = defineStore('projectModule', {
             return
           }
 
-          if (retryCount > 100) {
-            notificationStore.error({
-              text: 'Failed to download project. Please try again.'
-            })
-            this.cancelDownloadArchive()
-            return
-          }
-
           // Use browser download instead of playing around with the blob
           FileSaver.saveAs(payload.url)
           notificationStore.closeNotification()
-          clearTimeout(downloadArchiveTimeout)
-          downloadArchiveTimeout = null
-          this.projectDownloading = false
+          this.cancelDownloadArchive()
         } catch {
           notificationStore.error({ text: 'Failed to download project' })
           this.cancelDownloadArchive()
