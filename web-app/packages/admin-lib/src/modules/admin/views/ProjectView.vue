@@ -199,7 +199,7 @@ function tabClick(index: number) {
 
 function downloadArchive() {
   const url = ProjectApi.constructDownloadProjectUrl(project.value?.id)
-  projectStore.downloadArchive({ url, fileName: routeProjectName.value })
+  projectStore.downloadArchive({ url })
 }
 
 function openDashboard() {

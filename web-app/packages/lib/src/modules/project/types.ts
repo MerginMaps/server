@@ -308,7 +308,6 @@ export interface UpdatePublicFlagParams {
 
 export interface DownloadPayload {
   url: string
-  fileName: string
 }
 
 export interface FetchProjectVersionsPayload {

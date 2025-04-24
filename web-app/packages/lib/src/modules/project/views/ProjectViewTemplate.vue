@@ -14,9 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div class="relative z-1">
           <PButton
             severity="secondary"
-            @click="
-              downloadArchive({ url: downloadUrl, fileName: project.name })
-            "
+            @click="downloadArchive({ url: downloadUrl })"
             data-cy="project-download-btn"
             icon="ti ti-download"
             class="mr-2"

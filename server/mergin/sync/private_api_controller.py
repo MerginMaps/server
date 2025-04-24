@@ -42,6 +42,7 @@ from .permissions import (
 from ..utils import parse_order_params, split_order_param, get_order_param
 from .tasks import create_project_version_zip
 from .storages.disk import move_to_tmp
+from .utils import get_x_accel_uri
 
 project_access_granted = signal("project_access_granted")
 PARTIAL_ZIP_EXPIRATION = 5  # minutes
@@ -350,7 +351,7 @@ def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W06
     if os.path.exists(project_version.zip_path):
         if current_app.config["USE_X_ACCEL"]:
             resp = make_response()
-            resp.headers["X-Accel-Redirect"] = f"/download/{project_version.zip_path}"
+            resp.headers["X-Accel-Redirect"] = get_x_accel_uri(project_version.zip_path)
             resp.headers["X-Accel-Buffering"] = True
             resp.headers["X-Accel-Expires"] = "off"
             resp.headers["Content-Type"] = "application/zip"

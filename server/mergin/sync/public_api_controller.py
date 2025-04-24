@@ -77,6 +77,7 @@ from .permissions import (
 from .utils import (
     generate_checksum,
     Toucher,
+    get_x_accel_uri,
     is_file_name_blacklisted,
     get_ip,
     get_user_agent,
@@ -355,8 +356,8 @@ def download_project_file(
         # encoding for nginx to be able to download file with non-ascii chars
         encoded_file_path = quote(file_path.encode("utf-8"))
         resp = make_response()
-        resp.headers["X-Accel-Redirect"] = (
-            f"/download/{project.storage_params['location']}/{encoded_file_path}"
+        resp.headers["X-Accel-Redirect"] = get_x_accel_uri(
+            project.storage_params["location"], encoded_file_path
         )
         resp.headers["X-Accel-Buffering"] = True
         resp.headers["X-Accel-Expires"] = "off"

@@ -22,6 +22,7 @@ from pathvalidate import (
     is_valid_filename,
 )
 import magic
+from flask import current_app
 
 
 def generate_checksum(file, chunk_size=4096):
@@ -546,3 +547,21 @@ def is_supported_type(filepath) -> bool:
 def get_mimetype(filepath: str) -> str:
     """Identifies file types by checking their headers"""
     return magic.from_file(filepath, mime=True)
+
+
+def get_x_accel_uri(*url_parts):
+    """
+    Get the accell uri for the given url parts
+    """
+    download_accell_uri = "/download"
+    if not url_parts:
+        return download_accell_uri
+
+    local_projects = current_app.config.get("LOCAL_PROJECTS")
+    print(local_projects)
+    url = os.path.join(*url_parts)
+    # if the path parts_join starts with local_projects, remove it
+    if url.startswith(local_projects):
+        url = os.path.relpath(url, local_projects)
+    result = os.path.join(download_accell_uri, url)
+    return result
