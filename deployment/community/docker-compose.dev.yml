@@ -1,10 +1,10 @@
-version: "3.7"
+
 
 services:
-  server-gunicorn:
-    image: server-gunicorn
+  server:
+    image: server
     build:
-      context: ./server
+      context: ../../server
       dockerfile: Dockerfile
     env_file:
       - .prod.env
@@ -12,7 +12,7 @@ services:
   celery-beat:
     image: celery-beat
     build:
-      context: ./server
+      context: ../../server
       dockerfile: Dockerfile
     env_file:
       - .prod.env
@@ -20,7 +20,7 @@ services:
   celery-worker:
     image: celery-worker
     build:
-      context: ./server
+      context: ../../server
       dockerfile: Dockerfile
     env_file:
       - .prod.env
@@ -28,7 +28,7 @@ services:
   web:
     image: merginmaps-frontend
     build:
-      context: ./web-app
+      context: ../../web-app
       dockerfile: Dockerfile
   maildev:
     image: maildev/maildev
