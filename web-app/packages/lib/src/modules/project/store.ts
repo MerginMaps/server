@@ -724,6 +724,14 @@ export const useProjectStore = defineStore('projectModule', {
             return
           }
 
+          if (retryCount > 100) {
+            notificationStore.error({
+              text: 'Failed to download project. Please try again.'
+            })
+            this.cancelDownloadArchive()
+            return
+          }
+
           // Use browser download instead of playing around with the blob
           FileSaver.saveAs(payload.url)
           notificationStore.closeNotification()
