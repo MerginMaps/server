@@ -350,7 +350,7 @@ def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W06
         if current_app.config["USE_X_ACCEL"]:
             resp = make_response()
             resp.headers["X-Accel-Redirect"] = get_x_accel_uri(project_version.zip_path)
-            resp.headers["X-Accel-Buffering"] = True
+            resp.headers["X-Accel-Buffering"] = "no"
             resp.headers["X-Accel-Expires"] = "off"
             resp.headers["Content-Type"] = "application/zip"
         else:
