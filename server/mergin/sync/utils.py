@@ -551,7 +551,20 @@ def get_mimetype(filepath: str) -> str:
 
 def get_x_accel_uri(*url_parts):
     """
-    Get the accell uri for the given url parts
+    Constructs a URI for X-Accel redirection based on the provided URL parts. We are using /download in our nginx config for this purpose.
+    Therefore, we need to adjust the path to start with "/download".
+
+    If url_parts starts with LOCAL_PROJECTS path, adjust the path to start with "/download" and remove it from the beginning of the path.
+    Args:
+        *url_parts: parts of the path of the file to be served.
+    Returns:
+        str: A URI string starting with "/download", followed by the joined
+             and adjusted path based on the provided URL parts.
+    Example:
+        Assuming `current_app.config["LOCAL_PROJECTS"]` is set to
+        "/home":
+        >>> get_x_accel_uri("/home", "example", "file.txt")
+        '/download/example/file.txt'
     """
     download_accell_uri = "/download"
     if not url_parts:
