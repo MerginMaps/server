@@ -14,7 +14,7 @@ from ..app import db
 from ..sync.models import AccessRequest, Project, ProjectRole, RequestStatus
 from ..auth.models import User
 from ..config import Configuration
-from . import json_headers, test_project, test_workspace_name
+from . import json_headers
 from .utils import (
     add_user,
     login,
@@ -426,12 +426,16 @@ test_download_proj_data = [
     (None, 202),
     ("v1", 202),
     ("v100", 404),
+    (None, 200),
 ]
 
 
 @pytest.mark.parametrize("version,expected", test_download_proj_data)
 @patch("mergin.sync.tasks.create_project_version_zip.delay")
 def test_download_project(mock_create_zip, client, version, expected, diff_project):
+    if expected == 200:
+        project_version = diff_project.get_latest_version()
+        os.mknod(project_version.zip_path)
     resp = client.get(
         url_for(
             "/app.mergin_sync_private_api_controller_download_project",
@@ -439,9 +443,11 @@ def test_download_project(mock_create_zip, client, version, expected, diff_proje
             version=version if version else "",
         )
     )
+    if expected == 200:
+        os.remove(project_version.zip_path)
     assert resp.status_code == expected
     assert mock_create_zip.called if expected == 202 else not mock_create_zip.called
-    if not version:
+    if not version and expected != 200:
         call_args, _ = mock_create_zip.call_args
         args = call_args[0]
         assert args == diff_project.latest_version

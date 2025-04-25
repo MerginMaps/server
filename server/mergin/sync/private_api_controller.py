@@ -45,7 +45,7 @@ from .storages.disk import move_to_tmp
 from .utils import get_x_accel_uri
 
 project_access_granted = signal("project_access_granted")
-PARTIAL_ZIP_EXPIRATION = 5  # minutes
+PARTIAL_ZIP_EXPIRATION = 300  # seconds
 
 
 @auth_required
@@ -329,9 +329,7 @@ def get_project_access(id: str):
 @auth_required
 def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W0622
     """Download whole project folder as zip file in any version
-
-    :rtype: file - zip archive or multipart stream with project files
-    """
+    Return zip file if it exists, otherwise trigger background job to create it"""
     project = require_project_by_uuid(id, ProjectPermissions.Read)
     lookup_version = (
         ProjectVersion.from_v_name(version) if version else project.latest_version
@@ -368,7 +366,7 @@ def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W06
     if os.path.exists(temp_zip_path) and datetime.fromtimestamp(
         os.path.getmtime(temp_zip_path)
     ) < datetime.now(datetime.timezone.utc) - timedelta(
-        minutes=current_app.config["PARTIAL_ZIP_EXPIRATION"]
+        seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"]
     ):
         move_to_tmp(temp_zip_path)
 

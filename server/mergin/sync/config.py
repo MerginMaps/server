@@ -40,8 +40,8 @@ class Configuration(object):
     )
     # max total files size for archive download
     MAX_DOWNLOAD_ARCHIVE_SIZE = config(
-        "MAX_DOWNLOAD_ARCHIVE_SIZE", default=1024 * 1024 * 1024, cast=int
-    )
+        "MAX_DOWNLOAD_ARCHIVE_SIZE", default=1024 * 1024 * 1024 * 20, cast=int
+    )  # 20 GB
     PROJECT_ACCESS_REQUEST = config(
         "PROJECT_ACCESS_REQUEST", default=7 * 24 * 3600, cast=int
     )
