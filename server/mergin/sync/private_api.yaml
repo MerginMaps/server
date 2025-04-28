@@ -399,6 +399,13 @@ paths:
           schema:
             $ref: "#/components/schemas/VersionName"
       responses:
+        "200":
+          description: Zip file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
         "202":
           description: Accepted
         "400":
