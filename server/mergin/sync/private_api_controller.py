@@ -326,7 +326,6 @@ def get_project_access(id: str):
     return data, 200
 
 
-@auth_required
 def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W0622
     """Download whole project folder as zip file in any version
     Return zip file if it exists, otherwise trigger background job to create it"""
