@@ -13,6 +13,7 @@
             icon="ti ti-download"
             class="mr-2"
             label="Download"
+            :disabled="projectStore.projectDownloading"
           />
           <PButton
             severity="secondary"
@@ -99,6 +100,7 @@
       </PTabView>
       <router-view />
     </app-container>
+    <download-progress />
   </admin-layout>
 </template>
 
@@ -107,7 +109,8 @@ import {
   AppSection,
   AppContainer,
   useProjectStore,
-  ProjectApi
+  ProjectApi,
+  DownloadProgress,
 } from '@mergin/lib'
 import { computed, watch, defineProps } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -195,10 +198,7 @@ function tabClick(index: number) {
 }
 
 function downloadArchive() {
-  const url = ProjectApi.constructDownloadProjectUrl(
-    routeWorkspaceName.value,
-    routeProjectName.value
-  )
+  const url = ProjectApi.constructDownloadProjectUrl(project.value?.id)
   projectStore.downloadArchive({ url })
 }
 

@@ -35,11 +35,6 @@ import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
   name: 'upload-progress',
-  data() {
-    return {
-      visible: false
-    }
-  },
   computed: {
     ...mapState(useProjectStore, ['uploads']),
     list() {
@@ -57,7 +52,7 @@ export default defineComponent({
       this.$toast.add({
         group: 'upload-progress',
         severity: 'info',
-        summary: 'Uploading data to projects'
+        summary: 'Uploading data to project.'
       })
     },
     close() {

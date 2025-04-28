@@ -12,10 +12,15 @@ from ..app import db
 from ..config import Configuration
 from ..sync.models import Project, AccessRequest, ProjectRole, ProjectVersion
 from ..celery import send_email_async
-from ..sync.tasks import remove_temp_files, remove_projects_backups
+from ..sync.tasks import (
+    remove_temp_files,
+    remove_projects_backups,
+    create_project_version_zip,
+    remove_projects_archives,
+)
 from ..sync.storages.disk import move_to_tmp
 from . import test_project, test_workspace_name, test_workspace_id
-from .utils import add_user, create_workspace, create_project, login
+from .utils import add_user, create_workspace, create_project, login, modify_file_times
 from ..auth.models import User
 from . import json_headers
 
@@ -136,3 +141,19 @@ def test_remove_deleted_project_backups(client):
     )
     assert ProjectVersion.query.filter_by(project_id=rm_project.id).count() != 0
     assert str(rm_project.id) in rm_project.name
+
+
+def test_create_project_version_zip(diff_project):
+    latest_version = diff_project.get_latest_version()
+    assert not os.path.exists(latest_version.zip_path)
+    create_project_version_zip(diff_project.latest_version)
+    assert os.path.exists(latest_version.zip_path)
+    assert not os.path.exists(latest_version.zip_path + ".partial")
+    remove_projects_archives()
+    assert os.path.exists(latest_version.zip_path)
+    new_time = datetime.now() - timedelta(
+        days=current_app.config["PROJECTS_ARCHIVES_EXPIRATION"] + 1
+    )
+    modify_file_times(latest_version.zip_path, new_time)
+    remove_projects_archives()
+    assert not os.path.exists(latest_version.zip_path)

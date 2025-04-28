@@ -383,6 +383,38 @@ paths:
         "404":
           $ref: "#/components/responses/NotFoundResp"
       x-openapi-router-controller: mergin.sync.private_api_controller
+  /projects/{id}/download:
+    get:
+      tags:
+        - project
+      summary: Download full project
+      description: Download whole project folder as zip file
+      operationId: download_project
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - name: version
+          in: query
+          description: Particular version to download
+          required: false
+          schema:
+            $ref: "#/components/schemas/VersionName"
+      responses:
+        "200":
+          description: Zip file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "202":
+          description: Accepted
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+      x-openapi-router-controller: mergin.sync.private_api_controller
 components:
   responses:
     UnauthorizedError:
@@ -436,6 +468,13 @@ components:
       schema:
         type: string
         example: project_1
+    ProjectId:
+      name: id
+      in: path
+      description: Project uuid
+      required: true
+      schema:
+        type: string
   schemas:
     CustomError:
       type: object

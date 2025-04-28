@@ -80,7 +80,11 @@ import {
   DataViewWrapperColumnItem,
   DataViewWrapperOptions
 } from '@/common/components/data-view/types'
-import { FetchProjectVersionsParams, ProjectVersionsTableItem } from '@/modules'
+import {
+  FetchProjectVersionsParams,
+  ProjectApi,
+  ProjectVersionsTableItem
+} from '@/modules'
 import { useProjectStore } from '@/modules/project/store'
 
 const props = withDefaults(
@@ -100,7 +104,8 @@ const emit = defineEmits<{
 }>()
 
 const projectStore = useProjectStore()
-const { versions, versionsLoading, versionsCount } = storeToRefs(projectStore)
+const { versions, versionsLoading, versionsCount, project } =
+  storeToRefs(projectStore)
 
 const columns = ref<DataViewWrapperColumnItem[]>([
   {
@@ -151,7 +156,10 @@ const updateOptions = (newOptions: DataViewWrapperOptions) => {
 
 const downloadClick = (item: ProjectVersionsTableItem) => {
   projectStore.downloadArchive({
-    url: `/v1/project/download/${props.namespace}/${props.projectName}?version=${item.name}&format=zip`
+    url: ProjectApi.constructDownloadProjectVersionUrl(
+      project.value.id,
+      item.name
+    )
   })
 }
 

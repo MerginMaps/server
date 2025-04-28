@@ -14,6 +14,13 @@ class Configuration(object):
         "LOCAL_PROJECTS",
         default=os.path.join(config_dir, os.pardir, os.pardir, os.pardir, "projects"),
     )
+    PROJECTS_ARCHIVES_DIR = config(
+        "PROJECTS_ARCHIVES_DIR",
+        default=os.path.join(LOCAL_PROJECTS, "projects_archives"),
+    )
+    PROJECTS_ARCHIVES_EXPIRATION = config(
+        "PROJECTS_ARCHIVES_EXPIRATION", cast=int, default=7
+    )
     # locking file when backups are created
     MAINTENANCE_FILE = config(
         "MAINTENANCE_FILE", default=os.path.join(LOCAL_PROJECTS, "MAINTENANCE")
@@ -26,6 +33,9 @@ class Configuration(object):
     )  # in bytes
     # use nginx (in front of gunicorn) to serve files (https://www.nginx.com/resources/wiki/start/topics/examples/x-accel/)
     USE_X_ACCEL = config("USE_X_ACCEL", default=False, cast=bool)
+    PROJECTS_ARCHIVES_X_ACCEL_BUFFERING = config(
+        "PROJECTS_ARCHIVES_X_ACCEL_BUFFERING", default="no"
+    )  # no buffering for large files
     # for clean up of old files where diffs were applied, in seconds
     FILE_EXPIRATION = config("FILE_EXPIRATION", default=48 * 3600, cast=int)
     BLACKLIST = config(
@@ -33,8 +43,8 @@ class Configuration(object):
     )
     # max total files size for archive download
     MAX_DOWNLOAD_ARCHIVE_SIZE = config(
-        "MAX_DOWNLOAD_ARCHIVE_SIZE", default=1024 * 1024 * 1024, cast=int
-    )
+        "MAX_DOWNLOAD_ARCHIVE_SIZE", default=1024 * 1024 * 1024 * 20, cast=int
+    )  # 20 GB
     PROJECT_ACCESS_REQUEST = config(
         "PROJECT_ACCESS_REQUEST", default=7 * 24 * 3600, cast=int
     )
