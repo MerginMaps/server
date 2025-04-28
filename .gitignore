@@ -1,5 +1,6 @@
 # demo data
-projects/
+projects*/
+data/
 mergin_db
 
 logs
@@ -15,6 +16,8 @@ deps/
 venv/
 .vscode
 
+# production env
+.prod.env
 
 # generated documentation
 gen

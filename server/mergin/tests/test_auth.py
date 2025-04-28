@@ -879,6 +879,10 @@ def test_username_generation(client):
     user = add_user("testuser1")
     assert User.generate_username("Testuser@example.com") == "testuser2"
 
+    # test username with crazy long int suffix
+    user = add_user("testuser13120931904")
+    assert User.generate_username("Testuser@example.com") == "testuser13120931905"
+
 
 def test_server_usage(client):
     """Test server usage endpoint"""

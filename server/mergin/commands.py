@@ -2,6 +2,7 @@ import click
 from flask import Flask
 import random
 import string
+import os
 from datetime import datetime, timezone
 
 
@@ -82,6 +83,16 @@ def add_commands(app: Flask):
                 f"Error sending email: {e}",
             )
 
+    def _check_permissions(path):
+        """Check for write permission on working folders"""
+
+        if not os.access(path, os.W_OK):
+            _echo_error(
+                f"Permissions for {path} folder not set correctly. Please review these settings.",
+            )
+        else:
+            click.secho(f"Permissions granted for {path} folder", fg="green")
+
     def _check_server():  # pylint: disable=W0612
         """Check server configuration."""
         from .stats.models import MerginInfo
@@ -125,6 +136,8 @@ def add_commands(app: Flask):
             _echo_error("Database not initialized. Run flask init-db command")
         else:
             click.secho("Database initialized properly", fg="green")
+
+        _check_permissions(app.config.get("LOCAL_PROJECTS"))
 
         _check_celery()
 
@@ -218,3 +231,9 @@ def add_commands(app: Flask):
     def check():
         """Check server configuration."""
         _check_server()
+
+    @server.command()
+    @click.option("--path", required=False, default=app.config.get("LOCAL_PROJECTS"))
+    def permissions(path: str):
+        """Check for specific path write permission"""
+        _check_permissions(path)
