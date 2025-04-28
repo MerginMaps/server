@@ -33,6 +33,9 @@ class Configuration(object):
     )  # in bytes
     # use nginx (in front of gunicorn) to serve files (https://www.nginx.com/resources/wiki/start/topics/examples/x-accel/)
     USE_X_ACCEL = config("USE_X_ACCEL", default=False, cast=bool)
+    PROJECTS_ARCHIVES_X_ACCEL_BUFFERING = config(
+        "PROJECTS_ARCHIVES_X_ACCEL_BUFFERING", default="no"
+    )  # no buffering for large files
     # for clean up of old files where diffs were applied, in seconds
     FILE_EXPIRATION = config("FILE_EXPIRATION", default=48 * 3600, cast=int)
     BLACKLIST = config(
