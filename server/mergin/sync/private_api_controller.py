@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from blinker import signal
 from connexion import NoContent
 from flask import (
@@ -366,7 +366,7 @@ def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W06
     # to be safe we are not in vicious circle remove inactive partial zip
     if os.path.exists(temp_zip_path) and datetime.fromtimestamp(
         os.path.getmtime(temp_zip_path)
-    ) < datetime.now(datetime.timezone.utc) - timedelta(
+    ) < datetime.now(timezone.utc) - timedelta(
         seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"]
     ):
         move_to_tmp(temp_zip_path)
