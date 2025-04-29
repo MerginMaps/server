@@ -1,0 +1,51 @@
+
+
+services:
+  server:
+    image: server
+    build:
+      context: ../../server
+      dockerfile: Dockerfile
+    env_file:
+      - .prod.env
+      - .dev.env
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - GEVENT_SUPPORT=1
+    command: ["pip install debugpy -t /tmp && python3 /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 -m flask run -h 0.0.0.0 -p 5000"]
+    ports:
+      - 5000:5000
+      - 5678:5678
+    volumes:
+      - ../../server/:/app
+  celery-beat:
+    image: celery-beat
+    build:
+      context: ../../server
+      dockerfile: Dockerfile
+    env_file:
+      - .prod.env
+      - .dev.env
+  celery-worker:
+    image: celery-worker
+    build:
+      context: ../../server
+      dockerfile: Dockerfile
+    env_file:
+      - .prod.env
+      - .dev.env
+  web:
+    image: merginmaps-frontend
+    build:
+      context: ../../web-app
+      dockerfile: Dockerfile
+  maildev:
+    image: maildev/maildev
+    container_name: merginmaps-maildev
+    restart: always
+    ports:
+      - 1080:1080
+      - 1025:1025
+    networks:
+      - merginmaps
