@@ -39,6 +39,7 @@ def get_callhome_data(info: MerginInfo | None = None) -> ServerCallhomeData:
         server_version=current_app.config["VERSION"],
         monthly_contributors=current_app.ws_handler.monthly_contributors_count(),
         editors=current_app.ws_handler.server_editors_count(),
+        sso_connections=current_app.ws_handler.sso_connections_count(),
     )
     return data
 
