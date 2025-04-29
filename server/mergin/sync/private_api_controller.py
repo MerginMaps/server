@@ -45,7 +45,6 @@ from .storages.disk import move_to_tmp
 from .utils import get_x_accel_uri
 
 project_access_granted = signal("project_access_granted")
-PARTIAL_ZIP_EXPIRATION = 300  # seconds
 
 
 @auth_required
@@ -365,7 +364,7 @@ def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W06
     temp_zip_path = project_version.zip_path + ".partial"
     # to be safe we are not in vicious circle remove inactive partial zip
     if os.path.exists(temp_zip_path) and datetime.fromtimestamp(
-        os.path.getmtime(temp_zip_path)
+        os.path.getmtime(temp_zip_path), tz=timezone.utc
     ) < datetime.now(timezone.utc) - timedelta(
         seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"]
     ):

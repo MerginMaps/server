@@ -62,3 +62,5 @@ class Configuration(object):
         "GEODIFF_WORKING_DIR",
         default=os.path.join(LOCAL_PROJECTS, "geodiff_tmp"),
     )
+    # in seconds, older unfinished zips are moved to temp
+    PARTIAL_ZIP_EXPIRATION = config("PARTIAL_ZIP_EXPIRATION", default=300, cast=int)
