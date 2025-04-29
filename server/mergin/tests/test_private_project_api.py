@@ -473,3 +473,26 @@ def test_large_project_download_fail(client, diff_project):
     )
     assert resp.status_code == 400
     assert "The total size of requested files is too large" in resp.json["detail"]
+
+
+@patch("mergin.sync.tasks.create_project_version_zip.delay")
+def test_remove_abandoned_zip(mock_prepare_zip, client, diff_project):
+    """Test project download removes partial zip which is inactive for some time"""
+    latest_version = diff_project.get_latest_version()
+    # pretend an incomplete zip remained
+    partial_zip_path = latest_version.zip_path + ".partial"
+    os.makedirs(os.path.dirname(partial_zip_path), exist_ok=True)
+    os.mknod(partial_zip_path)
+    assert os.path.exists(partial_zip_path)
+    # pretend abandoned partial zip by lowering the expiration limit
+    client.application.config["PARTIAL_ZIP_EXPIRATION"] = 0
+    # download should remove it (move to temp folder) and call a celery task which will try to create a correct zip
+    resp = client.get(
+        url_for(
+            "/app.mergin_sync_private_api_controller_download_project",
+            id=diff_project.id,
+        )
+    )
+    assert mock_prepare_zip.called
+    assert resp.status_code == 202
+    assert not os.path.exists(partial_zip_path)
