@@ -8,7 +8,7 @@ import keyBy from 'lodash/keyBy'
 import omit from 'lodash/omit'
 import { defineStore, getActivePinia } from 'pinia'
 
-import { DropdownOption, permissionUtils } from '@/common'
+import { DropdownOption, errorUtils, permissionUtils } from '@/common'
 import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
 import { filesDiff } from '@/common/mergin_utils'
@@ -708,14 +708,21 @@ export const useProjectStore = defineStore('projectModule', {
       const notificationStore = useNotificationStore()
       this.cancelDownloadArchive()
       this.projectDownloading = true
+      const errorMessage =
+        'Failed to download project archive. Please try again later.'
+      const exceedMessage =
+        'It seems like preparing your ZIP file is taking longer than expected. Please try again in a little while to download your file.'
+      const fileTooLargeMessage =
+        'The requested archive is too large to download. Please use direct download with python client or plugin instead.'
 
       const delays = [...Array(3).fill(1000), ...Array(3).fill(3000), 5000]
       let retryCount = 0
       const pollDownloadArchive = async () => {
         try {
-          if (retryCount > 100) {
-            notificationStore.error({
-              text: 'Failed to download project. Please try again.'
+          if (retryCount > 125) {
+            notificationStore.warn({
+              text: exceedMessage,
+              life: 6000
             })
             this.cancelDownloadArchive()
             return
@@ -736,8 +743,17 @@ export const useProjectStore = defineStore('projectModule', {
           FileSaver.saveAs(payload.url)
           notificationStore.closeNotification()
           this.cancelDownloadArchive()
-        } catch {
-          notificationStore.error({ text: 'Failed to download project' })
+        } catch (e) {
+          if (axios.isAxiosError(e) && e.response?.status === 413) {
+            notificationStore.error({
+              text: fileTooLargeMessage,
+              life: 6000
+            })
+          } else {
+            notificationStore.error({
+              text: errorMessage
+            })
+          }
           this.cancelDownloadArchive()
         }
       }
