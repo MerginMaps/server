@@ -30,8 +30,8 @@ export default defineComponent({
       this.$toast.add({
         group: 'download-progress',
         severity: 'info',
-        summary: `Downloading ${this.project?.name}`,
-        detail: 'Please wait while your project is being downloaded.',
+        summary: `Preparing archive`,
+        detail: `Your project ${this.project?.name} is being prepared for download.`,
         life: undefined
       })
     },

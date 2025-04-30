@@ -472,7 +472,6 @@ def test_large_project_download_fail(client, diff_project):
         )
     )
     assert resp.status_code == 400
-    assert "The total size of requested files is too large" in resp.json["detail"]
 
 
 @patch("mergin.sync.tasks.create_project_version_zip.delay")

@@ -43,8 +43,8 @@ class Configuration(object):
     )
     # max total files size for archive download
     MAX_DOWNLOAD_ARCHIVE_SIZE = config(
-        "MAX_DOWNLOAD_ARCHIVE_SIZE", default=1024 * 1024 * 1024 * 20, cast=int
-    )  # 20 GB
+        "MAX_DOWNLOAD_ARCHIVE_SIZE", default=1024 * 1024 * 1024 * 10, cast=int
+    )  # 10 GB
     PROJECT_ACCESS_REQUEST = config(
         "PROJECT_ACCESS_REQUEST", default=7 * 24 * 3600, cast=int
     )
@@ -63,4 +63,4 @@ class Configuration(object):
         default=os.path.join(LOCAL_PROJECTS, "geodiff_tmp"),
     )
     # in seconds, older unfinished zips are moved to temp
-    PARTIAL_ZIP_EXPIRATION = config("PARTIAL_ZIP_EXPIRATION", default=300, cast=int)
+    PARTIAL_ZIP_EXPIRATION = config("PARTIAL_ZIP_EXPIRATION", default=600, cast=int)

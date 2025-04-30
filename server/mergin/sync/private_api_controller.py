@@ -337,11 +337,7 @@ def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W06
     ).first_or_404("Project version does not exist")
 
     if project_version.project_size > current_app.config["MAX_DOWNLOAD_ARCHIVE_SIZE"]:
-        abort(
-            400,
-            "The total size of requested files is too large to download as a single zip, "
-            "please use different method/client for download",
-        )
+        abort(400)
 
     # check zip is already created
     if os.path.exists(project_version.zip_path):

@@ -101,6 +101,7 @@
       <router-view />
     </app-container>
     <download-progress />
+    <download-file-large />
   </admin-layout>
 </template>
 
@@ -111,6 +112,7 @@ import {
   useProjectStore,
   ProjectApi,
   DownloadProgress,
+  DownloadFileLarge
 } from '@mergin/lib'
 import { computed, watch, defineProps } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
