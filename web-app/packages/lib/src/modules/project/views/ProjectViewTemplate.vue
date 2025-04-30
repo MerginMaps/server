@@ -113,6 +113,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <upload-dialog v-if="upload" :namespace="namespace" />
     </slot>
     <DownloadProgress />
+    <DownloadFileLarge />
   </div>
 </template>
 
@@ -120,6 +121,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { defineComponent, PropType } from 'vue'
 
+import DownloadFileLarge from '../components/DownloadFileLarge.vue'
 import DownloadProgress from '../components/DownloadProgress.vue'
 
 import { AppContainer, AppSection } from '@/common'
@@ -149,7 +151,8 @@ export default defineComponent({
     UploadDialog,
     AppContainer,
     AppSection,
-    DownloadProgress
+    DownloadProgress,
+    DownloadFileLarge
   },
   props: {
     namespace: String,

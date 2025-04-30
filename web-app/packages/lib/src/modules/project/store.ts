@@ -744,9 +744,10 @@ export const useProjectStore = defineStore('projectModule', {
           notificationStore.closeNotification()
           this.cancelDownloadArchive()
         } catch (e) {
-          if (axios.isAxiosError(e) && e.response?.status === 413) {
+          if (axios.isAxiosError(e) && e.response?.status === 400) {
             notificationStore.error({
-              text: fileTooLargeMessage,
+              group: 'download-large-error',
+              text: '',
               life: 6000
             })
           } else {
