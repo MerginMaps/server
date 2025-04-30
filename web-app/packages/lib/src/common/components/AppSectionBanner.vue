@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 -->
 
 <template>
-  <section>
+  <section class="app-section-banner">
     <PPanel
       v-bind="$props"
       :collapsed="$props.collapsed || !$slots.default"
@@ -13,7 +13,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         header(options) {
           return {
             class: [
-              'surface-section border-none p-4',
+              severity === 'primary'
+                ? 'app-section-banner-primary'
+                : 'surface-section text-color',
+              'border-none p-4',
               // Toggle border radius by open / closed panel
               options.state.d_collapsed
                 ? 'border-round-xl'
@@ -43,7 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <slot name="header-image"></slot>
             </div>
             <div :class="['flex flex-column gap-2 lg:gap-0']">
-              <h3 class="text-color title-t3">
+              <h3 class="title-t3">
                 <slot name="title"></slot>
               </h3>
               <p v-if="$slots.description" class="paragraph-p6 opacity-80">
@@ -79,17 +82,26 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts" setup>
 import { PanelProps } from 'primevue/panel'
 
-defineProps<PanelProps>()
+type Severity = 'info' | 'primary'
+
+defineProps<PanelProps & { severity: Severity }>()
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .app-section-banner {
-  &-primary {
-    background: linear-gradient(
-      266deg,
-      #6e9991 33.35%,
-      var(--forest-color) 68.86%
-    );
+  h3 {
+    color: var(--text-color);
+  }
+}
+.app-section-banner-primary {
+  color: #ffffff;
+  background: linear-gradient(
+    266deg,
+    #6e9991 33.35%,
+    var(--forest-color) 68.86%
+  );
+  & h3 {
+    color: #ffffff;
   }
 }
 </style>
