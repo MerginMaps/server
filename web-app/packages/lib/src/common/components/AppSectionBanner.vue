@@ -81,3 +81,15 @@ import { PanelProps } from 'primevue/panel'
 
 defineProps<PanelProps>()
 </script>
+
+<style lang="scss" scoped>
+.app-section-banner {
+  &-primary {
+    background: linear-gradient(
+      266deg,
+      #6e9991 33.35%,
+      var(--forest-color) 68.86%
+    );
+  }
+}
+</style>
