@@ -16,7 +16,6 @@ from ..auth import auth_required
 from ..auth.models import User
 from .models import Project, ProjectRole, ProjectMember
 from .permissions import ProjectPermissions, require_project_by_uuid
-from .private_api_controller import project_access_granted
 
 
 @auth_required
@@ -101,7 +100,6 @@ def add_project_collaborator(id):
 
     project.set_role(user.id, ProjectRole(request.json["role"]))
     db.session.commit()
-    project_access_granted.send(project, user_id=user.id)
     data = ProjectMemberSchema().dump(project.get_member(user.id))
     return data, 201
 
