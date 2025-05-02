@@ -35,6 +35,7 @@ from .utils import is_versioned_file, is_qgis
 
 Storages = {"local": DiskStorage}
 project_deleted = signal("project_deleted")
+project_access_granted = signal("project_access_granted")
 
 
 class PushChangeType(Enum):
@@ -272,6 +273,7 @@ class Project(db.Model):
         if member:
             member.role = role.value
         else:
+            project_access_granted.send(self, user_id=user_id)
             self.project_users.append(ProjectUser(user_id=user_id, role=role.value))
 
     def unset_role(self, user_id: int) -> None:

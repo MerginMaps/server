@@ -44,8 +44,6 @@ from .tasks import create_project_version_zip
 from .storages.disk import move_to_tmp
 from .utils import get_x_accel_uri
 
-project_access_granted = signal("project_access_granted")
-
 
 @auth_required
 def create_project_access_request(namespace, project_name):  # noqa: E501
@@ -136,9 +134,6 @@ def accept_project_access_request(request_id):
     project_role = ProjectPermissions.get_user_project_role(project, current_user)
     if project_role == ProjectRole.OWNER:
         access_request.accept(permission)
-        project_access_granted.send(
-            access_request.project, user_id=access_request.requested_by
-        )
         return "", 200
     abort(403, "You don't have permissions to accept project access request")
 
