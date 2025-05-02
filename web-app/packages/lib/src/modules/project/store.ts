@@ -8,7 +8,7 @@ import keyBy from 'lodash/keyBy'
 import omit from 'lodash/omit'
 import { defineStore, getActivePinia } from 'pinia'
 
-import { DropdownOption, errorUtils, permissionUtils } from '@/common'
+import { DropdownOption, permissionUtils } from '@/common'
 import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
 import { filesDiff } from '@/common/mergin_utils'
@@ -80,6 +80,7 @@ export interface ProjectState {
   versionsChangesetLoading: boolean
   collaborators: ProjectCollaborator[]
   projectDownloading: boolean
+  projectDownloadingVersion: string
 }
 
 export const useProjectStore = defineStore('projectModule', {
@@ -106,7 +107,8 @@ export const useProjectStore = defineStore('projectModule', {
     availableRoles: permissionUtils.getProjectRoleNameValues(),
     versionsChangesetLoading: false,
     collaborators: [],
-    projectDownloading: false
+    projectDownloading: false,
+    projectDownloadingVersion: null
   }),
 
   getters: {
@@ -708,12 +710,14 @@ export const useProjectStore = defineStore('projectModule', {
       const notificationStore = useNotificationStore()
       this.cancelDownloadArchive()
       this.projectDownloading = true
+      if (payload.versionId) {
+        this.projectDownloadingVersion = payload.versionId
+      }
+
       const errorMessage =
         'Failed to download project archive. Please try again later.'
       const exceedMessage =
         'It seems like preparing your ZIP file is taking longer than expected. Please try again in a little while to download your file.'
-      const fileTooLargeMessage =
-        'The requested archive is too large to download. Please use direct download with python client or plugin instead.'
 
       const delays = [...Array(3).fill(1000), ...Array(3).fill(3000), 5000]
       let retryCount = 0
@@ -767,6 +771,7 @@ export const useProjectStore = defineStore('projectModule', {
         downloadArchiveTimeout = null
       }
       this.projectDownloading = false
+      this.projectDownloadingVersion = null
     },
 
     constructDownloadProjectUrl(payload: { projectId: string }) {
