@@ -159,7 +159,8 @@ const downloadClick = (item: ProjectVersionsTableItem) => {
     url: ProjectApi.constructDownloadProjectVersionUrl(
       project.value.id,
       item.name
-    )
+    ),
+    versionId: item.name
   })
 }
 

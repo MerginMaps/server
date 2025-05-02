@@ -137,6 +137,6 @@ function download() {
     project.value?.id,
     versionId.value
   )
-  window.location.href = url
+  projectStore.downloadArchive({ url, versionId: versionId.value })
 }
 </script>
