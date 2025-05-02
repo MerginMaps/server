@@ -36,7 +36,7 @@ export default defineComponent({
         severity: 'info',
         summary: `Preparing to download your project ${
           this.projectDownloadingVersion
-            ? `(version ${this.projectDownloadingVersion}`
+            ? `(version ${this.projectDownloadingVersion})`
             : ''
         }`,
         detail: `Your download will begin automatically once it's ready. Please keep this window open.`,
