@@ -99,7 +99,7 @@ In docker-compose.dev.yml is started maildev/maildev image that can be used to t
 
 ### Running with remote debugger
 If you want to run the application with remote debugger, you can use debug compose file with attatched source code and reload.
-It starts a debugpy session on port 5678 you cat attach to.
+It starts a debugpy session on port 5678 you can attach to.
 
 ```shell
 docker compose -f docker-compose.yml -f docker-compose.debug.yml up
