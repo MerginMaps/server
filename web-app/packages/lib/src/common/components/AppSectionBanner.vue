@@ -84,7 +84,7 @@ import { PanelProps } from 'primevue/panel'
 
 type Severity = 'info' | 'primary'
 
-defineProps<PanelProps & { severity: Severity }>()
+defineProps<PanelProps & { severity?: Severity }>()
 </script>
 
 <style lang="scss">
