@@ -66,6 +66,7 @@ export interface UserDetailResponse extends UserProfileResponse {
   receive_notifications: boolean
   registration_date: string
   workspaces: UserWorkspace[]
+  can_edit_profile: boolean
 }
 
 export interface WorkspaceResponse extends UserWorkspace {

@@ -19,6 +19,7 @@ from ..sync.utils import (
     has_valid_first_character,
     check_filename,
     is_valid_path,
+    get_x_accel_uri,
 )
 from ..auth.models import LoginHistory, User
 from . import json_headers
@@ -253,3 +254,19 @@ filepaths = [
 @pytest.mark.parametrize("filepath,allow", filepaths)
 def test_is_valid_path(client, filepath, allow):
     assert is_valid_path(filepath) == allow
+
+
+def test_get_x_accell_uri(client):
+    """Test get_x_accell_uri"""
+    client.application.config["LOCAL_PROJECTS"] = "/data/"
+    # Input URL parts
+    url_parts = ("/data", "archive", "project1", "file.txt")
+    # Expected result
+    expected = "/download/archive/project1/file.txt"
+    assert get_x_accel_uri(*url_parts) == expected
+
+    url_parts = ("archive", "project1", "file.txt")
+    assert get_x_accel_uri(*url_parts) == expected
+
+    url_parts = ()
+    assert get_x_accel_uri(*url_parts) == "/download"

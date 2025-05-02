@@ -35,7 +35,6 @@ import base64
 from werkzeug.exceptions import HTTPException
 
 from mergin.sync.forms import project_name_validation
-
 from .interfaces import WorkspaceRole
 from ..app import db
 from ..auth import auth_required
@@ -66,7 +65,7 @@ from .schemas import (
     FileHistorySchema,
     ProjectVersionListSchema,
 )
-from .storages.storage import FileNotFound, DataSyncError, InitializationError
+from .storages.storage import DataSyncError, InitializationError
 from .storages.disk import save_to_file, move_to_tmp
 from .permissions import (
     require_project,
@@ -78,6 +77,7 @@ from .permissions import (
 from .utils import (
     generate_checksum,
     Toucher,
+    get_x_accel_uri,
     is_file_name_blacklisted,
     get_ip,
     get_user_agent,
@@ -92,8 +92,9 @@ from .utils import (
     is_supported_extension,
     get_mimetype,
 )
-from .errors import StorageLimitHit
+from .errors import StorageLimitHit, ProjectLocked
 from ..utils import format_time_delta
+
 
 push_finished = signal("push_finished")
 # TODO: Move to database events to handle all commits to project versions
@@ -290,48 +291,6 @@ def delete_project(namespace, project_name):  # noqa: E501
     return NoContent, 200
 
 
-def download_project(
-    namespace, project_name, format=None, version=None
-):  # noqa: E501 # pylint: disable=W0622
-    """Download full project
-
-    Download whole project folder as zip file or multipart stream # noqa: E501
-
-    :param project_name: Name of project to download.
-    :type project_name: str
-    :param namespace: Workspace for project to look into.
-    :type namespace: str
-    :param format: Output format (only zip available).
-    :type format: str
-    :param version: Particular version to download
-    :type version: str
-
-    :rtype: file - zip archive or multipart stream with project files
-    """
-    project = require_project(namespace, project_name, ProjectPermissions.Read)
-    lookup_version = (
-        ProjectVersion.from_v_name(version) if version else project.latest_version
-    )
-    project_version = ProjectVersion.query.filter_by(
-        project_id=project.id, name=lookup_version
-    ).first_or_404("Project version does not exist")
-
-    if project_version.project_size > current_app.config["MAX_DOWNLOAD_ARCHIVE_SIZE"]:
-        abort(
-            400,
-            "The total size of requested files is too large to download as a single zip, "
-            "please use different method/client for download",
-        )
-    try:
-        return project.storage.download_files(
-            project_version.files,
-            format,
-            version=ProjectVersion.from_v_name(version) if version else None,
-        )
-    except FileNotFound as e:
-        abort(404, str(e))
-
-
 def download_project_file(
     project_name, namespace, file, version=None, diff=None
 ):  # noqa: E501
@@ -397,8 +356,8 @@ def download_project_file(
         # encoding for nginx to be able to download file with non-ascii chars
         encoded_file_path = quote(file_path.encode("utf-8"))
         resp = make_response()
-        resp.headers["X-Accel-Redirect"] = (
-            f"/download/{project.storage_params['location']}/{encoded_file_path}"
+        resp.headers["X-Accel-Redirect"] = get_x_accel_uri(
+            project.storage_params["location"], encoded_file_path
         )
         resp.headers["X-Accel-Buffering"] = True
         resp.headers["X-Accel-Expires"] = "off"
@@ -785,6 +744,8 @@ def project_push(namespace, project_name):
     changes = request.json["changes"]
     project_permission = current_app.project_handler.get_push_permission(changes)
     project = require_project(namespace, project_name, project_permission)
+    if project.locked_until:
+        abort(make_response(jsonify(ProjectLocked().to_dict()), 422))
     # pass full project object to request for later use
     request.view_args["project"] = project
     ws = project.workspace
@@ -1027,6 +988,8 @@ def push_finish(transaction_id):
         upload.changes
     )
     project = upload.project
+    if project.locked_until:
+        abort(make_response(jsonify(ProjectLocked().to_dict()), 422))
     project_path = get_project_path(project)
     corrupted_files = []
 

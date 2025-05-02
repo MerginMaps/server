@@ -101,6 +101,7 @@ class UserInfoSchema(ma.SQLAlchemyAutoSchema):
     receive_notifications = fields.Boolean(attribute="profile.receive_notifications")
     registration_date = DateTimeWithZ(attribute="registration_date")
     name = fields.Function(lambda obj: obj.profile.name())
+    can_edit_profile = fields.Boolean(attribute="can_edit_profile")
 
     class Meta:
         model = User

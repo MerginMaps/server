@@ -5,7 +5,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Tuple, Optional, Set, List
 from flask_login import current_user
-from sqlalchemy import Column, literal, extract
+from sqlalchemy import Column, literal, extract, and_
 from sqlalchemy.sql.operators import is_
 
 from .errors import UpdateProjectAccessError
@@ -66,7 +66,7 @@ class GlobalWorkspace(AbstractWorkspace):
 
         projects_usage_list = (
             db.session.query(Project.disk_usage)
-            .filter(Project.removed_at.is_(None))
+            .filter(Project.removed_at.is_(None), Project.locked_until.is_(None))
             .all()
         )
         return sum(p.disk_usage for p in projects_usage_list)
@@ -107,8 +107,11 @@ class GlobalWorkspace(AbstractWorkspace):
 
         return (
             db.session.query(Project.disk_usage)
-            .filter(Project.workspace_id == self.id)
-            .filter(Project.removed_at.is_(None))
+            .filter(
+                Project.workspace_id == self.id,
+                Project.removed_at.is_(None),
+                Project.locked_until.is_(None),
+            )
             .count()
         )
 
@@ -373,3 +376,8 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
             .group_by(ProjectUser.user_id)
             .count()
         )
+
+    @staticmethod
+    def sso_connections_count() -> int:
+        """Number of SSO connections for the server"""
+        return 0

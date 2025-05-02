@@ -16,7 +16,6 @@ from flask_login import current_user
 from pygeodiff import GeoDiff
 from sqlalchemy import text, null, desc, nullslast
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM
-from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.types import String
 from sqlalchemy.ext.hybrid import hybrid_property
 from pygeodiff.geodifflib import GeoDiffLibError
@@ -36,6 +35,7 @@ from .utils import is_versioned_file, is_qgis
 
 Storages = {"local": DiskStorage}
 project_deleted = signal("project_deleted")
+project_access_granted = signal("project_access_granted")
 
 
 class PushChangeType(Enum):
@@ -68,6 +68,7 @@ class Project(db.Model):
         db.Integer, db.ForeignKey("user.id"), nullable=True, index=True
     )
     public = db.Column(db.Boolean, default=False, index=True, nullable=False)
+    locked_until = db.Column(db.DateTime, index=True)
 
     creator = db.relationship(
         "User", uselist=False, backref=db.backref("projects"), foreign_keys=[creator_id]
@@ -272,6 +273,7 @@ class Project(db.Model):
         if member:
             member.role = role.value
         else:
+            project_access_granted.send(self, user_id=user_id)
             self.project_users.append(ProjectUser(user_id=user_id, role=role.value))
 
     def unset_role(self, user_id: int) -> None:
@@ -987,6 +989,13 @@ class ProjectVersion(db.Model):
         params = {"version_id": self.id}
         result = db.session.execute(query, params).fetchall()
         return {row[0]: row[1] for row in result}
+
+    @property
+    def zip_path(self):
+        return os.path.join(
+            current_app.config["PROJECTS_ARCHIVES_DIR"],
+            f"{self.project_id}-{self.to_v_name(self.name)}.zip",
+        )
 
 
 class Upload(db.Model):

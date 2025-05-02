@@ -24,6 +24,7 @@ class ServerCallhomeData:
     server_version: Optional[str]
     monthly_contributors: Optional[int]
     editors: Optional[int]
+    sso_connections: Optional[int]
 
 
 class MerginInfo(db.Model):

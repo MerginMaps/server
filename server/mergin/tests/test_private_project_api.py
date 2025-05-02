@@ -5,7 +5,9 @@
 import datetime
 import json
 import os
+from unittest.mock import patch
 
+import pytest
 from flask import url_for
 
 from ..app import db
@@ -418,3 +420,78 @@ def test_admin_project_list(client):
     p.delete()
     resp = client.get("/app/admin/projects?page=1&per_page=15&like=mergin")
     assert len(resp.json["items"]) == 14
+
+
+test_download_proj_data = [
+    (None, 202),
+    ("v1", 202),
+    ("v100", 404),
+    (None, 200),
+]
+
+
+@pytest.mark.parametrize("version,expected", test_download_proj_data)
+@patch("mergin.sync.tasks.create_project_version_zip.delay")
+def test_download_project(mock_create_zip, client, version, expected, diff_project):
+    if expected == 200:
+        project_version = diff_project.get_latest_version()
+        os.mknod(project_version.zip_path)
+    resp = client.get(
+        url_for(
+            "/app.mergin_sync_private_api_controller_download_project",
+            id=diff_project.id,
+            version=version if version else "",
+        )
+    )
+    if expected == 200:
+        os.remove(project_version.zip_path)
+    assert resp.status_code == expected
+    assert mock_create_zip.called if expected == 202 else not mock_create_zip.called
+    if not version and expected != 200:
+        call_args, _ = mock_create_zip.call_args
+        args = call_args[0]
+        assert args == diff_project.latest_version
+
+
+def test_large_project_download_fail(client, diff_project):
+    resp = client.get(
+        url_for(
+            "/app.mergin_sync_private_api_controller_download_project",
+            id=diff_project.id,
+            version="v1",
+        )
+    )
+    assert resp.status_code == 202
+    # pretend testing project to be too large by lowering limit
+    client.application.config["MAX_DOWNLOAD_ARCHIVE_SIZE"] = 10
+    resp = client.get(
+        url_for(
+            "/app.mergin_sync_private_api_controller_download_project",
+            id=diff_project.id,
+            version="v1",
+        )
+    )
+    assert resp.status_code == 400
+
+
+@patch("mergin.sync.tasks.create_project_version_zip.delay")
+def test_remove_abandoned_zip(mock_prepare_zip, client, diff_project):
+    """Test project download removes partial zip which is inactive for some time"""
+    latest_version = diff_project.get_latest_version()
+    # pretend an incomplete zip remained
+    partial_zip_path = latest_version.zip_path + ".partial"
+    os.makedirs(os.path.dirname(partial_zip_path), exist_ok=True)
+    os.mknod(partial_zip_path)
+    assert os.path.exists(partial_zip_path)
+    # pretend abandoned partial zip by lowering the expiration limit
+    client.application.config["PARTIAL_ZIP_EXPIRATION"] = 0
+    # download should remove it (move to temp folder) and call a celery task which will try to create a correct zip
+    resp = client.get(
+        url_for(
+            "/app.mergin_sync_private_api_controller_download_project",
+            id=diff_project.id,
+        )
+    )
+    assert mock_prepare_zip.called
+    assert resp.status_code == 202
+    assert not os.path.exists(partial_zip_path)

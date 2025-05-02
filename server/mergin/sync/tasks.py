@@ -6,7 +6,8 @@ import logging
 import shutil
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from zipfile import ZIP_DEFLATED, ZipFile
 from flask import current_app
 
 from .models import Project, ProjectVersion, FileHistory
@@ -102,3 +103,55 @@ def optimize_storage(project_id):
             age = time.time() - os.path.getmtime(item.abs_path)
             if age > Configuration.FILE_EXPIRATION:
                 move_to_tmp(item.abs_path)
+
+
+@celery.task
+def create_project_version_zip(version_id: int):
+    """Create zip file for project version."""
+    db.session.info = {"msg": "create_project_version_zip"}
+    project_version = ProjectVersion.query.get(version_id)
+    if not project_version:
+        return
+
+    zip_path = project_version.zip_path + ".partial"
+    # already running job
+    if os.path.exists(zip_path):
+        return
+
+    os.makedirs(os.path.dirname(zip_path), exist_ok=True)
+    try:
+        with ZipFile(
+            zip_path,
+            "w",
+            compression=ZIP_DEFLATED,
+            compresslevel=1,
+        ) as archive:
+            for f in project_version.files:
+                project_version.project.storage.restore_versioned_file(
+                    f.path, project_version.name
+                )
+                archive.write(
+                    project_version.project.storage.file_path(f.location), f.path
+                )
+        # move zip file to final location
+        os.rename(zip_path, project_version.zip_path)
+    finally:
+        # remove partial zip file if exists
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+
+
+@celery.task
+def remove_projects_archives():
+    """Remove created zip files for project versions if they were not accessed for certain time"""
+    for file in os.listdir(current_app.config["PROJECTS_ARCHIVES_DIR"]):
+        path = os.path.join(current_app.config["PROJECTS_ARCHIVES_DIR"], file)
+        if datetime.fromtimestamp(
+            os.path.getatime(path), tz=timezone.utc
+        ) < datetime.now(timezone.utc) - timedelta(
+            days=current_app.config["PROJECTS_ARCHIVES_EXPIRATION"]
+        ):
+            try:
+                os.remove(path)
+            except OSError as e:
+                logging.error(f"Unable to remove {path}: {str(e)}")

@@ -33,7 +33,8 @@ export const useNotificationStore = defineStore('notificationModule', {
         severity: payload.severity ?? 'success',
         summary: payload.text,
         detail: payload.detail,
-        life: payload.life ?? 3000
+        life: payload.sticky ? undefined : payload.life ?? 3000,
+        group: payload.group
       })
     },
     warn(payload: NotificationPayload) {

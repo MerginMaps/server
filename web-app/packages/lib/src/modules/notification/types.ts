@@ -13,6 +13,8 @@ export interface NotificationPayload {
   text: string
   detail?: string
   life?: number
+  sticky?: boolean
+  group?: string | undefined
 }
 
 export type NotificationShowPayload = NotificationPayload & {

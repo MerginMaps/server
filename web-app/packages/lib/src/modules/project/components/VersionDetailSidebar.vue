@@ -83,13 +83,6 @@ export default defineComponent({
   },
   computed: {
     ...mapState(useProjectStore, ['project', 'versions']),
-    downloadUrl() {
-      return ProjectApi.constructDownloadProjectVersionUrl(
-        this.project.namespace,
-        this.project.name,
-        this.queryId
-      )
-    },
     queryId(): string {
       return this.$route.query.version_id as string
     },
@@ -120,6 +113,7 @@ export default defineComponent({
   },
   methods: {
     ...mapActions(useNotificationStore, ['error']),
+    ...mapActions(useProjectStore, ['downloadArchive']),
     async getVersion() {
       try {
         const response = await ProjectApi.getProjectVersion(
@@ -134,7 +128,11 @@ export default defineComponent({
       }
     },
     downloadVersion() {
-      window.location.href = this.downloadUrl
+      const url = ProjectApi.constructDownloadProjectVersionUrl(
+        this.project.id,
+        this.queryId
+      )
+      this.downloadArchive({ url, versionId: this.queryId })
     }
   }
 })

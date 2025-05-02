@@ -23,7 +23,11 @@ from random import randint
 from celery.schedules import crontab
 from mergin.app import create_app
 from mergin.auth.tasks import anonymize_removed_users
-from mergin.sync.tasks import remove_temp_files, remove_projects_backups
+from mergin.sync.tasks import (
+    remove_projects_archives,
+    remove_temp_files,
+    remove_projects_backups,
+)
 from mergin.celery import celery, configure_celery
 from mergin.stats.config import Configuration
 from mergin.stats.tasks import save_statistics, send_statistics
@@ -76,3 +80,8 @@ def setup_periodic_tasks(sender, **kwargs):
             send_statistics,
             name="send usage statistics",
         )
+    sender.add_periodic_task(
+        crontab(hour=3, minute=0),
+        remove_projects_archives,
+        name="remove old project archives",
+    )

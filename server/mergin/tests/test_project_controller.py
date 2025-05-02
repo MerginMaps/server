@@ -738,68 +738,6 @@ def test_update_project(client):
     assert resp.json["role"] == "owner"
 
 
-test_download_proj_data = [
-    (test_project, None, 200, None),
-    (test_project, "zip", 200, None),
-    (test_project, "foo", 400, None),
-    ("bar", None, 404, None),
-    (test_project, None, 200, "v1"),
-    (test_project, "zip", 200, "v1"),
-    (test_project, "foo", 400, "v1"),
-    ("bar", None, 404, "v99"),
-    (test_project, None, 404, "v100"),
-    (test_project, "zip", 404, "v100"),
-    (test_project, "foo", 400, "v100"),
-    ("bar", None, 404, "v100"),
-]
-
-
-@pytest.mark.parametrize(
-    "proj_name,out_format,expected,version", test_download_proj_data
-)
-def test_download_project(client, proj_name, out_format, expected, version):
-    if out_format:
-        resp = client.get(
-            "/v1/project/download/{}/{}?{}format={}".format(
-                test_workspace_name,
-                proj_name,
-                "version={}&".format(version) if version else "",
-                out_format,
-            )
-        )
-        if expected == 200:
-            header = "attachment; filename={}{}.zip".format(
-                proj_name, "-" + version if version is not None else ""
-            )
-            assert header in resp.headers[1][1]
-    else:
-        resp = client.get(
-            "/v1/project/download/{}/{}{}".format(
-                test_workspace_name,
-                proj_name,
-                "?version={}".format(version) if version else "",
-            )
-        )
-        if expected == 200:
-            assert "multipart/form-data" in resp.headers[0][1]
-
-    assert resp.status_code == expected
-
-
-def test_large_project_download_fail(client, diff_project):
-    resp = client.get(
-        f"/v1/project/download/{test_workspace_name}/{diff_project.name}?v1format=zip"
-    )
-    assert resp.status_code == 200
-    # pretend testing project to be too large by lowering limit
-    client.application.config["MAX_DOWNLOAD_ARCHIVE_SIZE"] = 10
-    resp = client.get(
-        f"/v1/project/download/{test_workspace_name}/{diff_project.name}?v1format=zip"
-    )
-    assert resp.status_code == 400
-    assert "The total size of requested files is too large" in resp.json["detail"]
-
-
 test_download_file_data = [
     (test_project, "test.txt", "text/plain", 200),
     (test_project, "logo.pdf", "application/pdf", 200),
@@ -2621,3 +2559,37 @@ def test_supported_file_upload(client):
         resp.json["detail"]
         == f"Unsupported file type detected: {spoof_name}. Please remove the file or try compressing it into a ZIP file before uploading."
     )
+
+
+def test_locked_project(client, diff_project):
+    """Users cannot push to the locked project. Moreover, it does not count to the storage and project count"""
+    # before project is locked
+    orig_p_count = diff_project.workspace.project_count()
+    orig_storage = diff_project.workspace.disk_usage()
+    # after locking the project
+    diff_project.locked_until = datetime.datetime.utcnow() + datetime.timedelta(
+        weeks=26
+    )
+    db.session.commit()
+    assert diff_project.workspace.project_count() == orig_p_count - 1
+    assert diff_project.workspace.disk_usage() == orig_storage - diff_project.disk_usage
+    # push is not possible to the locked project
+    changes = _get_changes_without_added(test_project_dir)
+    project_path = get_project_path(diff_project)
+    data = {"version": "v1", "changes": changes}
+    resp = client.post(
+        f"/v1/project/push/{project_path}",
+        data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
+        headers=json_headers,
+    )
+    assert resp.status_code == 422
+    assert resp.headers["Content-Type"] == "application/problem+json"
+    assert resp.json["code"] == "ProjectLocked"
+    # to play safe push finish is also blocked
+    upload, upload_dir = create_transaction("mergin", changes)
+    url = "/v1/project/push/finish/{}".format(upload.id)
+
+    resp = client.post(url, headers=json_headers)
+    assert resp.status_code == 422
+    assert resp.headers["Content-Type"] == "application/problem+json"
+    assert resp.json["code"] == "ProjectLocked"

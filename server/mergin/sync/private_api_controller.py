@@ -1,28 +1,37 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+import os
+from datetime import datetime, timedelta, timezone
 from blinker import signal
 from connexion import NoContent
-from flask import render_template, request, current_app, jsonify, abort
+from flask import (
+    render_template,
+    request,
+    current_app,
+    jsonify,
+    abort,
+    make_response,
+    send_file,
+)
 from flask_login import current_user
 from sqlalchemy.orm import defer
-from sqlalchemy import text, and_, desc, asc
+from sqlalchemy import text
 
 from ..app import db
 from ..auth import auth_required
-from ..auth.models import User, UserProfile
 from .forms import AccessPermissionForm
 from .models import (
     Project,
     AccessRequest,
     ProjectRole,
     RequestStatus,
+    ProjectVersion,
 )
 from .schemas import (
     ProjectListSchema,
     ProjectAccessRequestSchema,
     AdminProjectSchema,
-    ProjectAccessSchema,
     ProjectAccessDetailSchema,
 )
 from .permissions import (
@@ -31,8 +40,9 @@ from .permissions import (
     check_workspace_permissions,
 )
 from ..utils import parse_order_params, split_order_param, get_order_param
-
-project_access_granted = signal("project_access_granted")
+from .tasks import create_project_version_zip
+from .storages.disk import move_to_tmp
+from .utils import get_x_accel_uri
 
 
 @auth_required
@@ -69,7 +79,7 @@ def create_project_access_request(namespace, project_name):  # noqa: E501
             "html": render_template(
                 "email/project_access_request.html",
                 expire=access_request.expire,
-                link=f"{request.url_root.rstrip('/')}/projects/{namespace}/{project.name}/collaborators",
+                link=f"{current_app.config['MERGIN_BASE_URL'].rstrip('/')}/projects/{namespace}/{project.name}/collaborators",
                 user=current_user.username,
                 username=owner.username,
                 project_name=f"{namespace}/{project.name}",
@@ -124,9 +134,6 @@ def accept_project_access_request(request_id):
     project_role = ProjectPermissions.get_user_project_role(project, current_user)
     if project_role == ProjectRole.OWNER:
         access_request.accept(permission)
-        project_access_granted.send(
-            access_request.project, user_id=access_request.requested_by
-        )
         return "", 200
     abort(403, "You don't have permissions to accept project access request")
 
@@ -311,3 +318,50 @@ def get_project_access(id: str):
     result = current_app.ws_handler.project_access(project)
     data = ProjectAccessDetailSchema(many=True).dump(result)
     return data, 200
+
+
+def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W0622
+    """Download whole project folder as zip file in any version
+    Return zip file if it exists, otherwise trigger background job to create it"""
+    project = require_project_by_uuid(id, ProjectPermissions.Read)
+    lookup_version = (
+        ProjectVersion.from_v_name(version) if version else project.latest_version
+    )
+    project_version = ProjectVersion.query.filter_by(
+        project_id=project.id, name=lookup_version
+    ).first_or_404("Project version does not exist")
+
+    if project_version.project_size > current_app.config["MAX_DOWNLOAD_ARCHIVE_SIZE"]:
+        abort(400)
+
+    # check zip is already created
+    if os.path.exists(project_version.zip_path):
+        if current_app.config["USE_X_ACCEL"]:
+            resp = make_response()
+            resp.headers["X-Accel-Redirect"] = get_x_accel_uri(project_version.zip_path)
+            resp.headers["X-Accel-Buffering"] = current_app.config.get(
+                "PROJECTS_ARCHIVES_X_ACCEL_BUFFERING"
+            )
+            resp.headers["X-Accel-Expires"] = "off"
+            resp.headers["Content-Type"] = "application/zip"
+        else:
+            resp = send_file(project_version.zip_path, mimetype="application/zip")
+
+        resp.headers["Content-Disposition"] = (
+            f"attachment; filename={project.name}-v{lookup_version}.zip"
+        )
+        return resp
+
+    temp_zip_path = project_version.zip_path + ".partial"
+    # to be safe we are not in vicious circle remove inactive partial zip
+    if os.path.exists(temp_zip_path) and datetime.fromtimestamp(
+        os.path.getmtime(temp_zip_path), tz=timezone.utc
+    ) < datetime.now(timezone.utc) - timedelta(
+        seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"]
+    ):
+        move_to_tmp(temp_zip_path)
+
+    if not os.path.exists(temp_zip_path):
+        create_project_version_zip.delay(project_version.id)
+
+    return "Project zip being prepared, please try again later", 202

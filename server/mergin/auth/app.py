@@ -11,11 +11,13 @@ from sqlalchemy import func
 
 from .commands import add_commands
 from .config import Configuration
-from .models import User, UserProfile
+from .models import User
 
 # signal for other versions to listen to
 user_account_closed = signal("user_account_closed")
 user_created = signal("user_created")
+
+CANNOT_EDIT_PROFILE_MSG = "You cannot edit profile of this user"
 
 
 def register(app):
@@ -65,6 +67,20 @@ def auth_required(f=None, permissions=None):
             for check_permission in permissions:
                 if not check_permission(current_user):
                     return "Permission denied.", 403
+        return f(*args, **kwargs)
+
+    return wrapped_func
+
+
+def edit_profile_enabled(f):
+    """Decorator to check if user can edit their profile (it is not allowed for SSO users)"""
+
+    @functools.wraps(f)
+    def wrapped_func(*args, **kwargs):
+        if not current_user or not current_user.is_authenticated:
+            return "Authentication information is missing or invalid.", 401
+        if not current_user.can_edit_profile:
+            return CANNOT_EDIT_PROFILE_MSG, 403
         return f(*args, **kwargs)
 
     return wrapped_func
