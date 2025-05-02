@@ -85,8 +85,7 @@ export default defineComponent({
     ...mapState(useProjectStore, ['project', 'versions']),
     downloadUrl() {
       return ProjectApi.constructDownloadProjectVersionUrl(
-        this.project.namespace,
-        this.project.name,
+        this.project.id,
         this.queryId
       )
     },

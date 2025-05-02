@@ -134,8 +134,7 @@ watch(
 
 function download() {
   const url = ProjectApi.constructDownloadProjectVersionUrl(
-    project.value?.namespace,
-    project.value?.name,
+    project.value?.id,
     versionId.value
   )
   window.location.href = url
