@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import os
 from datetime import datetime, timedelta, timezone
+from urllib.parse import quote
 from blinker import signal
 from connexion import NoContent
 from flask import (
@@ -347,8 +348,9 @@ def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W06
         else:
             resp = send_file(project_version.zip_path, mimetype="application/zip")
 
+        file_name = quote(f"{project.name}-v{lookup_version}.zip".encode("utf-8"))
         resp.headers["Content-Disposition"] = (
-            f"attachment; filename={project.name}-v{lookup_version}.zip"
+            f"attachment; filename*=UTF-8''{file_name}"
         )
         return resp
 
