@@ -708,11 +708,9 @@ export const useProjectStore = defineStore('projectModule', {
 
     async downloadArchive(payload: DownloadPayload) {
       const notificationStore = useNotificationStore()
-      this.cancelDownloadArchive()
+      await this.cancelDownloadArchive()
+      this.projectDownloadingVersion = payload.versionId
       this.projectDownloading = true
-      if (payload.versionId) {
-        this.projectDownloadingVersion = payload.versionId
-      }
 
       const errorMessage =
         'Failed to download project archive. Please try again later.'
@@ -728,7 +726,7 @@ export const useProjectStore = defineStore('projectModule', {
               text: exceedMessage,
               life: 6000
             })
-            this.cancelDownloadArchive()
+            await this.cancelDownloadArchive()
             return
           }
 
@@ -765,7 +763,7 @@ export const useProjectStore = defineStore('projectModule', {
       pollDownloadArchive()
     },
 
-    cancelDownloadArchive() {
+    async cancelDownloadArchive() {
       if (downloadArchiveTimeout) {
         clearTimeout(downloadArchiveTimeout)
         downloadArchiveTimeout = null
