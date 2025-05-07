@@ -410,8 +410,6 @@ paths:
           description: Accepted
         "400":
           $ref: "#/components/responses/BadStatusResp"
-        "413":
-          $ref: "#/components/responses/FileTooLargeResp"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -425,8 +423,6 @@ components:
       description: Project not found.
     BadStatusResp:
       description: Invalid request.
-    FileTooLargeResp:
-      description: File is too large.
     InvalidDataResp:
       description: Invalid/unprocessable data.
     Success:
