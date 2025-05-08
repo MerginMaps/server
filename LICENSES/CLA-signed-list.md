@@ -4,6 +4,7 @@ A/ You have read and agree to the individual CLA: https://merginmaps.com/license
 
 * `alhirzel`, 20th December 2023
 * `uprel`, 18th March 2024
+* `enockseth`, 5th May 2025
 
 B/ I have read and agree with entity CLA for my company: https://merginmaps.com/licenses/entity-cla
 
