@@ -72,6 +72,7 @@ cd deployment/community/
 cp .env.template .prod.env
 
 # Run the docker composition with the current Dockerfiles
+cp .env.template .prod.env
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 # Give ownership of the ./projects folder to user that is running the gunicorn container
@@ -95,6 +96,14 @@ docker exec -it merginmaps-server flask server send-check-email --email  admin@e
 ```
 
 In docker-compose.dev.yml is started maildev/maildev image that can be used to test emails (see [https://github.com/maildev/maildev/](https://github.com/maildev/maildev/)). In localhost:1080 you can see the emails sent by the application in web interface.
+
+### Running with remote debugger
+If you want to run the application with remote debugger, you can use debug compose file with attatched source code and reload.
+It starts a debugpy session on port 5678 you can attach to.
+
+```shell
+docker compose -f docker-compose.yml -f docker-compose.debug.yml up
+```
 
 ## Running tests
 To launch the unit tests run:
