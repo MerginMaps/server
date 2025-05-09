@@ -94,7 +94,7 @@ def download_report(date_from: str, date_to: str):
 def save_diagnostic_log(app: str, username: str):
     """Save diagnostic logs"""
     # if server is using external storage, we don't want to save logs
-    if app.config.get("DIAGNOSTIC_LOGS_URL"):
+    if current_app.config.get("DIAGNOSTIC_LOGS_URL"):
         abort(404)
 
     # check if plain text body is not larger than 1MB
@@ -111,7 +111,7 @@ def save_diagnostic_log(app: str, username: str):
     # save diagnostic log file
     folder = current_app.config.get("DIAGNOSTIC_LOGS_DIR")
     save_diagnostic_log_file(
-        app, username, body, current_app.config["DIAGNOSTIC_LOGS_DIR"]
+        app, username, body, current_app.config.get("DIAGNOSTIC_LOGS_DIR")
     )
 
     return "Log saved successfully", 200
