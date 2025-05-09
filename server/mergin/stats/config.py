@@ -2,7 +2,11 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import os
 from decouple import config
+
+
+config_dir = os.path.abspath(os.path.dirname(__file__))
 
 
 class Configuration(object):
@@ -16,3 +20,9 @@ class Configuration(object):
     STATISTICS_URL = config(
         "STATISTICS_URL", default="https://api.merginmaps.com/monitoring/v1"
     ).rstrip("/")
+    DIAGNOSTIC_LOGS_DIR = config(
+        "DIAGNOSTIC_LOGS_DIR",
+        default=os.path.join(
+            config_dir, os.pardir, os.pardir, os.pardir, "diagnostic_logs"
+        ),
+    )

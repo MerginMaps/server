@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import csv
 from dataclasses import asdict
-from datetime import timedelta, timezone, datetime
+from datetime import timezone, datetime
 import json
+import os
 from unittest.mock import patch
+from flask import url_for
 import requests
 from sqlalchemy.sql.operators import is_
 
@@ -220,3 +221,39 @@ def test_download_report(app, client):
     empty_file = f"{','.join(keys)}\r\n"
     assert resp.data.decode("UTF-8") == empty_file
     assert len(lines) == 1
+
+
+def test_save_diagnostic_log(client, app):
+    """Test save diagnostic log endpoint"""
+    url = url_for("/.mergin_stats_controller_save_diagnostic_log")
+    resp = client.post(url)
+    assert resp.status_code == 400
+
+    # bad request
+    resp = client.post(url, data="test")
+    assert resp.status_code == 400
+
+    url = url_for(
+        "/.mergin_stats_controller_save_diagnostic_log",
+        app="test_app",
+        username="test_user",
+    )
+
+    # too large request
+    resp = client.post(url, data="x" * (1024 * 1024 + 1))
+    assert resp.status_code == 413
+
+    # valid request
+    resp = client.post(url, data="test")
+    assert resp.status_code == 200
+
+    # check if file was created
+    log_dir = app.config["DIAGNOSTIC_LOGS_DIR"]
+    assert os.path.exists(log_dir)
+    files = os.listdir(log_dir)
+    assert len(files) == 1
+    assert files[0].startswith("test_user_test_app_")
+    assert files[0].endswith(".log")
+    with open(os.path.join(log_dir, files[0]), "r") as f:
+        content = f.read()
+        assert content == "test"
