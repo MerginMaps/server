@@ -387,7 +387,7 @@ paths:
     get:
       tags:
         - project
-      summary: Download full project
+      summary: Download full project as zip file
       description: Download whole project folder as zip file
       operationId: download_project
       parameters:
