@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <!-- Title with buttons -->
         <h1 class="headline-h3 text-color font-semibold">Account details</h1>
         <div
-          v-if="loggedUser.can_edit_profile"
+          v-if="loggedUser?.can_edit_profile"
           class="flex flex-grow-1 align-items-center lg:justify-content-end"
         >
           <PButton
@@ -113,6 +113,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <template #title>Advanced</template>
         <div class="flex flex-column row-gap-3 paragraph-p5 px-4 pb-4">
           <div
+            v-if="loggedUser?.can_edit_profile"
             :class="[
               'flex flex-column align-items-start',
               'row-gap-2',
