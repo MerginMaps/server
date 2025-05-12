@@ -110,8 +110,6 @@ def save_diagnostic_log(app: str, username: str):
 
     # save diagnostic log file
     folder = current_app.config.get("DIAGNOSTIC_LOGS_DIR")
-    save_diagnostic_log_file(
-        app, username, body, current_app.config.get("DIAGNOSTIC_LOGS_DIR")
-    )
+    save_diagnostic_log_file(app, username, body, folder)
 
     return "Log saved successfully", 200
