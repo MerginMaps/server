@@ -412,15 +412,11 @@ paths:
           $ref: "#/components/responses/BadStatusResp"
         "403":
           $ref: "#/components/responses/Forbidden"
-        "413":
-          $ref: "#/components/responses/FileTooLargeResp"
         "404":
           $ref: "#/components/responses/NotFoundResp"
       x-openapi-router-controller: mergin.sync.private_api_controller
 components:
   responses:
-    FileTooLargeResp:
-      description: File is too large.
     UnauthorizedError:
       description: Authentication information is missing or invalid.
     NotFoundResp:
