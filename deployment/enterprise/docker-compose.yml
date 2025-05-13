@@ -12,6 +12,7 @@ services:
     command: ["gunicorn -w 4 --config config.py application:application"]
     volumes:
       - ./data:/data  # map data dir to host
+      - ./diagnostic_logs:/diagnostic_logs # diagnostic logs dir
       - ../common/entrypoint.sh:/app/entrypoint.sh
     env_file:
       - .prod.env
