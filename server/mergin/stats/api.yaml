@@ -6,22 +6,6 @@ info:
 servers:
   - url: /
 paths:
-  /v1/latest-version:
-    get:
-      summary: Fetch latest available server version
-      operationId: get_latest_version
-      responses:
-        "200":
-          description: Latest version info
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ServerVersion"
-        "400":
-          $ref: "#/components/responses/BadRequestResp"
-        "404":
-          $ref: "#/components/responses/NotFoundResp"
-      x-openapi-router-controller: mergin.stats.controller
   /app/admin/report:
     get:
       summary: Download statistics for server
@@ -53,38 +37,6 @@ paths:
           $ref: "#/components/responses/BadRequestResp"
         "404":
           $ref: "#/components/responses/NotFoundResp"
-  /v2/diagnostic-logs:
-    post:
-      summary: Save diagnostic logs
-      operationId: save_diagnostic_log
-      x-openapi-router-controller: mergin.stats.controller
-      parameters:
-        - name: app
-          in: query
-          description: Application name (e.g., "input-android-0.9.0")
-          required: true
-          schema:
-            type: string
-        - name: username
-          in: query
-          description: Username
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          text/plain:
-            schema:
-              type: string
-              description: Log content in plain text
-      responses:
-        "200":
-          description: Log saved successfully
-        "400":
-          $ref: "#/components/responses/BadRequestResp"
-        "413":
-          $ref: "#/components/responses/RequestTooLarge"
 components:
   responses:
     UnauthorizedError:
@@ -93,26 +45,3 @@ components:
       description: Project not found.
     BadRequestResp:
       description: Invalid request.
-    RequestTooLarge:
-      description: Request Entity Too Large.
-  schemas:
-    ServerVersion:
-      type: object
-      properties:
-        version:
-          type: string
-          example: 2023.1.1
-        major:
-          type: integer
-          example: 2023
-        minor:
-          type: integer
-          example: 1
-        fix:
-          nullable: true
-          type: integer
-          example: 1
-        info_url:
-          nullable: true
-          type: string
-          example: "https://github.com/MerginMaps/mergin/releases/tag/2023.1"

@@ -7,6 +7,8 @@ from decouple import config, Csv
 
 from .version import get_version
 
+config_dir = os.path.abspath(os.path.dirname(__file__))
+
 
 class Configuration(object):
     # flask/connexion variables
@@ -110,4 +112,13 @@ class Configuration(object):
     DIAGNOSTIC_LOGS_URL = config(
         "DIAGNOSTIC_LOGS_URL",
         default="",
+    )
+    DIAGNOSTIC_LOGS_DIR = config(
+        "DIAGNOSTIC_LOGS_DIR",
+        default=os.path.join(
+            config_dir, os.pardir, os.pardir, os.pardir, "diagnostic_logs"
+        ),
+    )
+    DIAGNOSTIC_LOGS_MAX_SIZE = config(
+        "DIAGNOSTIC_LOGS_MAX_SIZE", default=1024 * 1024, cast=int
     )

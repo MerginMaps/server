@@ -5,14 +5,12 @@
 from dataclasses import asdict
 from datetime import timezone, datetime
 import json
-import os
 from unittest.mock import patch
-from flask import url_for
 import requests
 from sqlalchemy.sql.operators import is_
 
 from mergin.auth.models import User
-from mergin.sync.models import Project, ProjectRole
+from mergin.sync.models import ProjectRole
 
 from ..app import db
 from ..stats.tasks import get_callhome_data, save_statistics, send_statistics
@@ -123,43 +121,6 @@ def test_send_statistics(app, caplog):
         assert info.last_reported
 
 
-def test_server_updates(client):
-    """Test proxy endpoint to fetch server updates information"""
-    assert client.application.config["SERVER_TYPE"] == "ce"
-    url = "/v1/latest-version"
-
-    with patch("requests.get") as mock:
-        api_data = {
-            "ee": {"version": "2023.1.2", "info_url": "https://release-info.com"},
-            "ce": {"version": "2023.1.2", "info_url": "https://release-info.com"},
-        }
-        mock.return_value = Response(True, api_data)
-        resp = client.get(url)
-        assert resp.status_code == 200
-        assert resp.json["version"] == api_data["ce"]["version"]
-        assert resp.json["major"] == 2023
-        assert resp.json["minor"] == 1
-        assert resp.json["fix"] == 2
-
-        # remove fix version
-        api_data["ce"]["version"] = "2023.2"
-        resp = client.get(url)
-        assert resp.status_code == 200
-        assert resp.json["major"] == 2023
-        assert resp.json["minor"] == 2
-        assert resp.json["fix"] is None
-
-        # invalid response
-        del api_data["ce"]["version"]
-        resp = client.get(url)
-        assert resp.status_code == 400
-
-        # 3rd party api failure
-        mock.side_effect = requests.exceptions.RequestException("Some failure")
-        resp = client.get(url)
-        assert resp.status_code == 400
-
-
 def test_save_statistics(app, client):
     """Test save statistics celery job"""
     info = MerginInfo.query.first()
@@ -221,39 +182,3 @@ def test_download_report(app, client):
     empty_file = f"{','.join(keys)}\r\n"
     assert resp.data.decode("UTF-8") == empty_file
     assert len(lines) == 1
-
-
-def test_save_diagnostic_log(client, app):
-    """Test save diagnostic log endpoint"""
-    url = url_for("/.mergin_stats_controller_save_diagnostic_log")
-    resp = client.post(url)
-    assert resp.status_code == 400
-
-    # bad request
-    resp = client.post(url, data="test")
-    assert resp.status_code == 400
-
-    url = url_for(
-        "/.mergin_stats_controller_save_diagnostic_log",
-        app="test_app",
-        username="test_user",
-    )
-
-    # too large request
-    resp = client.post(url, data="x" * (1024 * 1024 + 1))
-    assert resp.status_code == 413
-
-    # valid request
-    resp = client.post(url, data="test")
-    assert resp.status_code == 200
-
-    # check if file was created
-    log_dir = app.config["DIAGNOSTIC_LOGS_DIR"]
-    assert os.path.exists(log_dir)
-    files = os.listdir(log_dir)
-    assert len(files) == 1
-    assert files[0].startswith("test_user_test_app_")
-    assert files[0].endswith(".log")
-    with open(os.path.join(log_dir, files[0]), "r") as f:
-        content = f.read()
-        assert content == "test"
