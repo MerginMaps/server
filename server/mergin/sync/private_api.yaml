@@ -410,6 +410,8 @@ paths:
           description: Accepted
         "400":
           $ref: "#/components/responses/BadStatusResp"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -423,6 +425,8 @@ components:
       description: Project not found.
     BadStatusResp:
       description: Invalid request.
+    UnprocessableEntity:
+      description: UnprocessableEntity
     InvalidDataResp:
       description: Invalid/unprocessable data.
     Success:
