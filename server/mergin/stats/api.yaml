@@ -6,22 +6,6 @@ info:
 servers:
   - url: /
 paths:
-  /v1/latest-version:
-    get:
-      summary: Fetch latest available server version
-      operationId: get_latest_version
-      responses:
-        "200":
-          description: Latest version info
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ServerVersion"
-        "400":
-          $ref: "#/components/responses/BadStatusResp"
-        "404":
-          $ref: "#/components/responses/NotFoundResp"
-      x-openapi-router-controller: mergin.stats.controller
   /app/admin/report:
     get:
       summary: Download statistics for server
@@ -50,7 +34,7 @@ paths:
               schema:
                 type: string
         "400":
-          $ref: "#/components/responses/BadStatusResp"
+          $ref: "#/components/responses/BadRequestResp"
         "404":
           $ref: "#/components/responses/NotFoundResp"
 components:
@@ -59,26 +43,5 @@ components:
       description: Authentication information is missing or invalid.
     NotFoundResp:
       description: Project not found.
-    BadStatusResp:
+    BadRequestResp:
       description: Invalid request.
-  schemas:
-    ServerVersion:
-      type: object
-      properties:
-        version:
-          type: string
-          example: 2023.1.1
-        major:
-          type: integer
-          example: 2023
-        minor:
-          type: integer
-          example: 1
-        fix:
-          nullable: true
-          type: integer
-          example: 1
-        info_url:
-          nullable: true
-          type: string
-          example: "https://github.com/MerginMaps/mergin/releases/tag/2023.1"

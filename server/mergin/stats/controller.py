@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-from dataclasses import asdict
 import requests
 from flask import abort, current_app, make_response
 from datetime import datetime, time
@@ -12,7 +11,7 @@ from mergin.auth.app import auth_required
 from mergin.stats.models import MerginStatistics, ServerCallhomeData
 
 from .config import Configuration
-from ..app import parse_version_string, db
+from ..app import db
 
 
 class CsvTextBuilder(object):
@@ -25,28 +24,6 @@ class CsvTextBuilder(object):
 
     def write(self, row):
         self.data.append(row)
-
-
-def get_latest_version():
-    """Parse information about available server updates from 3rd party service"""
-    try:
-        req = requests.get(Configuration.STATISTICS_URL + "/latest-versions")
-    except requests.exceptions.RequestException:
-        abort(400, "Updates information not available")
-
-    if not req.ok:
-        abort(400, "Updates information not available")
-
-    data = req.json().get(current_app.config["SERVER_TYPE"].lower(), None)
-    if not data:
-        abort(400, "Updates information not available")
-
-    parsed_version = parse_version_string(data.get("version", ""))
-    if not parsed_version:
-        abort(400, "Updates information not available")
-
-    data = {**data, **parsed_version}
-    return data, 200
 
 
 @auth_required(permissions=["admin"])

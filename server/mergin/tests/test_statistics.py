@@ -2,16 +2,15 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import csv
 from dataclasses import asdict
-from datetime import timedelta, timezone, datetime
+from datetime import timezone, datetime
 import json
 from unittest.mock import patch
 import requests
 from sqlalchemy.sql.operators import is_
 
 from mergin.auth.models import User
-from mergin.sync.models import Project, ProjectRole
+from mergin.sync.models import ProjectRole
 
 from ..app import db
 from ..stats.tasks import get_callhome_data, save_statistics, send_statistics
@@ -120,43 +119,6 @@ def test_send_statistics(app, caplog):
         info = MerginInfo.query.first()
         assert info.service_id != app.config["SERVICE_ID"]
         assert info.last_reported
-
-
-def test_server_updates(client):
-    """Test proxy endpoint to fetch server updates information"""
-    assert client.application.config["SERVER_TYPE"] == "ce"
-    url = "/v1/latest-version"
-
-    with patch("requests.get") as mock:
-        api_data = {
-            "ee": {"version": "2023.1.2", "info_url": "https://release-info.com"},
-            "ce": {"version": "2023.1.2", "info_url": "https://release-info.com"},
-        }
-        mock.return_value = Response(True, api_data)
-        resp = client.get(url)
-        assert resp.status_code == 200
-        assert resp.json["version"] == api_data["ce"]["version"]
-        assert resp.json["major"] == 2023
-        assert resp.json["minor"] == 1
-        assert resp.json["fix"] == 2
-
-        # remove fix version
-        api_data["ce"]["version"] = "2023.2"
-        resp = client.get(url)
-        assert resp.status_code == 200
-        assert resp.json["major"] == 2023
-        assert resp.json["minor"] == 2
-        assert resp.json["fix"] is None
-
-        # invalid response
-        del api_data["ce"]["version"]
-        resp = client.get(url)
-        assert resp.status_code == 400
-
-        # 3rd party api failure
-        mock.side_effect = requests.exceptions.RequestException("Some failure")
-        resp = client.get(url)
-        assert resp.status_code == 400
 
 
 def test_save_statistics(app, client):
