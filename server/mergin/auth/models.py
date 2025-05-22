@@ -7,7 +7,7 @@ import datetime
 from typing import List, Optional
 import bcrypt
 import re
-from flask import current_app, request
+from flask import current_app, request, abort
 from sqlalchemy import or_, func, text
 
 from ..app import db
@@ -51,6 +51,8 @@ class User(db.Model):
         return "<User %r>" % self.username
 
     def check_password(self, password):
+        if self.passwd is None:
+            abort(401, "Login with password is not possible")
         if isinstance(password, str):
             password = password.encode("utf-8")
         return bcrypt.checkpw(password, self.passwd.encode("utf-8"))
