@@ -1,0 +1,19 @@
+networks:
+  mergin:
+    name: mergin-ee
+
+services:
+  jackson:
+    image: boxyhq/jackson:1.45.3
+    container_name: merginmaps-sso
+    restart: always
+    volumes:
+      - ./sso/sso-connections:/sso-connections
+    env_file:
+      - .sso.env
+    networks:
+      - mergin
+    depends_on:
+      - db
+    ports:
+      - 5225:5225
