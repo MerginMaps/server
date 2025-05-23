@@ -19,7 +19,6 @@ services:
       - db
     networks:
       - mergin
-
   web:
     image: 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-front:2025.3.0
     container_name: merginmaps-web
@@ -30,7 +29,6 @@ services:
       - .prod.env
     networks:
       - mergin
-
   proxy:
     image: nginxinc/nginx-unprivileged:1.27
     container_name: merginmaps-proxy
@@ -81,7 +79,6 @@ services:
       - redis
     networks:
       - mergin
-
   db:
     image: postgres:14
     container_name: merginmaps-db
@@ -96,7 +93,6 @@ services:
       - 5432:5432
     networks:
       - mergin
-
   redis:
     image: redis
     container_name: merginmaps-redis
