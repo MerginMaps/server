@@ -52,7 +52,7 @@ class User(db.Model):
 
     def check_password(self, password):
         # users created through SSO
-        if not self.passwd:
+        if self.passwd is None:
             return
         if isinstance(password, str):
             password = password.encode("utf-8")

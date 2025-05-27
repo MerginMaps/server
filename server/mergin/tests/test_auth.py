@@ -950,9 +950,7 @@ def test_login_without_password(client):
     login_as_admin(client)
     username = "sso_user"
     user = add_user(username=username, password="")
-    user.passwd = None
-    db.session.commit()
-    assert user.username == username
+    assert user.passwd is None
     for pwd in ["Il0vemergin", ""]:
         resp = client.post(
             url_for("/.mergin_auth_controller_login"),
