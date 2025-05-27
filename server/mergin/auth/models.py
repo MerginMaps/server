@@ -51,6 +51,9 @@ class User(db.Model):
         return "<User %r>" % self.username
 
     def check_password(self, password):
+        # users created through SSO
+        if self.passwd is None:
+            return
         if isinstance(password, str):
             password = password.encode("utf-8")
         return bcrypt.checkpw(password, self.passwd.encode("utf-8"))
