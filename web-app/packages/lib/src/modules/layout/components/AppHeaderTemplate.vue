@@ -38,6 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <template #end>
         <div class="flex align-items-center flex-shrink-0">
           <PButton
+            v-if="loggedUser"
             text
             plain
             aria-haspopup="true"
@@ -187,7 +188,7 @@ export default defineComponent({
         {
           label: 'Documentation',
           url: this.configData?.docs_url,
-          target: '_blank',
+          target: '_blank'
         },
         {
           label: 'Community chat',
