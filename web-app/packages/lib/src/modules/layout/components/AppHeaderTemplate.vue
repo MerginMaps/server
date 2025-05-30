@@ -61,6 +61,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             </div>
             <i class="ti ti-chevron-down"></i
           ></PButton>
+          <PButton
+            v-else
+            text
+            plain
+            aria-haspopup="true"
+            aria-controls="app-header-profile"
+            data-cy="app-header-profile-btn"
+            @click="login"
+            class="p-2 shadow-none"
+            label="Sign in"
+          />
           <POverlayPanel
             id="app-header-profile"
             data-cy="app-header-profile"
@@ -228,6 +239,10 @@ export default defineComponent({
       } catch (e) {
         console.error(e)
       }
+    },
+
+    login() {
+      this.$router.push({ name: UserRouteName.Login })
     }
   }
 })
