@@ -73,6 +73,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             label="Sign in"
           />
           <POverlayPanel
+            v-if="loggedUser"
             id="app-header-profile"
             data-cy="app-header-profile"
             ref="menu"
