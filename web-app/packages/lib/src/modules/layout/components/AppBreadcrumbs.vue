@@ -49,44 +49,51 @@ import { MenuItem } from 'primevue/menuitem'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { useLayoutStore } from '../store'
-
 type EnhancedMenuItem = MenuItem & { path: string; active?: boolean }
 
-const layoutStore = useLayoutStore()
 const route = useRoute()
+
+function parseBreadcrump(item: {
+  title: string
+  path: string
+}): EnhancedMenuItem {
+  return {
+    label: item.title,
+    path: item.path
+  }
+}
+
+const matchedBreacrumps = computed(() => {
+  return route.matched.reduce<EnhancedMenuItem[]>((acc, curr) => {
+    if (curr.name === route.name) return acc
+    const breadcrumps =
+      typeof curr.meta?.breadcrump === 'function'
+        ? curr.meta?.breadcrump(route)
+        : curr.meta?.breadcrump
+    return [...acc, ...(breadcrumps ?? []).map(parseBreadcrump)]
+  }, [])
+})
+
+const currentRouteBreacrumps = computed(() => {
+  const breadcrumps =
+    typeof route.meta?.breadcrump === 'function'
+      ? route.meta?.breadcrump(route)
+      : route.meta?.breadcrump
+  return (breadcrumps ?? []).map(parseBreadcrump)
+})
+
 // Merge all matched meta.breadcrumps with current route breadcrumps
-
 const items = computed(() =>
-  layoutStore.breadcrumps?.length
-    ? layoutStore.breadcrumps?.map((item, index, items) => ({
-        label: item.title,
-        path: item.path,
-        active: index === items.length - 1
-      }))
-    : [
-        ...route.matched.reduce<EnhancedMenuItem[]>((acc, curr) => {
-          if (curr.name === route.name) return acc
-
-          return [
-            ...acc,
-            ...(curr.meta?.breadcrump ?? []).map((item) => ({
-              label: item.title,
-              path: item.path
-            }))
-          ]
-        }, []),
-        // adding current route wich is not in matched meta
-        ...(route.meta.breadcrump ?? []).map((item) => ({
-          label: item.title,
-          path: item.path
-        }))
-      ]
-        // last will be active
-        .map((item, index, items) => ({
-          ...item,
-          active: index === items.length - 1
-        }))
+  [
+    ...matchedBreacrumps.value,
+    // adding current route wich is not in matched meta
+    ...currentRouteBreacrumps.value
+  ]
+    // last will be active
+    .map((item, index, items) => ({
+      ...item,
+      active: index === items.length - 1
+    }))
 )
 </script>
 

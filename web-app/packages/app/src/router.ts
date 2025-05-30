@@ -194,75 +194,82 @@ export const createRouter = (pinia: Pinia) => {
             name: ProjectRouteName.ProjectTree,
             component: FileBrowserView,
             props: true,
-            meta: { public: true }
+            meta: {
+              public: true,
+              breadcrump: (route) => [
+                {
+                  title: route.params?.projectName,
+                  path: `/projects/${route.params.namespace}/${route.params.projectName}/tree`
+                }
+              ]
+            }
           },
           {
             path: 'settings',
             name: 'project-settings',
             component: ProjectSettingsView,
-            props: true
+            props: true,
+            meta: {
+              breadcrump: (route) => [
+                {
+                  title: route.params?.projectName,
+                  path: `/projects/${route.params.namespace}/${route.params.projectName}/tree`
+                }
+              ]
+            }
           },
           {
             path: 'history',
             name: 'project-versions',
             component: ProjectVersionsView,
-            props: true
+            props: true,
+            meta: {
+              breadcrump: (route) => [
+                {
+                  title: route.params?.projectName,
+                  path: `/projects/${route.params.namespace}/${route.params.projectName}/tree`
+                }
+              ]
+            }
           },
           {
             path: 'collaborators',
             name: ProjectRouteName.ProjectCollaborators,
             component: ProjectCollaboratorsView,
-            props: true
+            props: true,
+            meta: {
+              breadcrump: (route) => [
+                {
+                  title: route.params?.projectName,
+                  path: `/projects/${route.params.namespace}/${route.params.projectName}/tree`
+                }
+              ]
+            }
           },
           {
             path: 'history/:version_id/:path',
             name: 'file-version-detail',
             component: FileVersionDetailView,
             props: true,
-            meta: { public: true },
-            // TODO: refactor to function in utils
-            beforeEnter(to, from, next) {
-              to.meta = {
-                ...to.meta,
-                breadcrump: [
-                  {
-                    title: String(to.params.projectName),
-                    path: `/projects/${to.params.namespace}/${to.params.projectName}/history`
-                  },
-                  {
-                    title: String(to.params.version_id),
-                    path: `/projects/${to.params.namespace}/${to.params.projectName}/history/${to.params.version_id}`
-                  },
-                  {
-                    title: String(to.params.path),
-                    path: to.fullPath
-                  }
-                ]
-              }
-              next()
+            meta: {
+              public: true,
+              breadcrump: (route) => [
+                {
+                  title: route.params?.projectName,
+                  path: `/projects/${route.params.namespace}/${route.params.projectName}/tree`
+                },
+                {
+                  title: route.params?.version_id,
+                  path: `/projects/${route.params.namespace}/${route.params.projectName}/history/${route.params.version_id}`
+                },
+                {
+                  title: route.params?.path,
+                  path: route.fullPath
+                }
+              ]
             }
           }
         ]
-          // Not apply for project version detail , which have own breadcrump
-          .map((child) =>
-            child.name === 'file-version-detail'
-              ? child
-              : {
-                  ...child,
-                  beforeEnter: (to, from, next) => {
-                    to.meta = {
-                      ...to.meta,
-                      breadcrump: [
-                        {
-                          title: String(to.params.projectName),
-                          path: to.fullPath
-                        }
-                      ]
-                    }
-                    next()
-                  }
-                }
-          )
       },
       {
         path: '/:pathMatch(.*)*',
