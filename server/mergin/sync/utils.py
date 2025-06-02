@@ -575,5 +575,6 @@ def get_x_accel_uri(*url_parts):
     # if the path parts_join starts with local_projects, remove it
     if url.startswith(local_projects):
         url = os.path.relpath(url, local_projects)
+    url = url.lstrip(os.path.sep)
     result = os.path.join(download_accell_uri, url)
     return result

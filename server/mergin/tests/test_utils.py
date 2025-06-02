@@ -245,6 +245,12 @@ def test_get_x_accell_uri(client):
     url_parts = ()
     assert get_x_accel_uri(*url_parts) == "/download"
 
+    url_parts = ("/archive", "cc900b78-a8b2-4e80-b546-74c96584bd10-v4.zip")
+    assert (
+        get_x_accel_uri(*url_parts)
+        == "/download/archive/cc900b78-a8b2-4e80-b546-74c96584bd10-v4.zip"
+    )
+
 
 def test_save_diagnostic_log_file(client, app):
     """Test save diagnostic log file"""
