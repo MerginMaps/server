@@ -30,3 +30,7 @@ web-app/.node-version
 mergin-db-ce
 
 docker-compose.local.yml
+
+# SSO
+*.pem
+*.crt
