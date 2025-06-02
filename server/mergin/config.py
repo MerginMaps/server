@@ -7,6 +7,8 @@ from decouple import config, Csv
 
 from .version import get_version
 
+config_dir = os.path.abspath(os.path.dirname(__file__))
+
 
 class Configuration(object):
     # flask/connexion variables
@@ -107,3 +109,16 @@ class Configuration(object):
     # using gevent type of worker impose some requirements on code, e.g. to be greenlet safe, custom timeouts
     GEVENT_WORKER = config("GEVENT_WORKER", default=False, cast=bool)
     GEVENT_REQUEST_TIMEOUT = config("GEVENT_REQUEST_TIMEOUT", default=30, cast=int)
+    DIAGNOSTIC_LOGS_URL = config(
+        "DIAGNOSTIC_LOGS_URL",
+        default="",
+    )
+    DIAGNOSTIC_LOGS_DIR = config(
+        "DIAGNOSTIC_LOGS_DIR",
+        default=os.path.join(
+            config_dir, os.pardir, os.pardir, os.pardir, "diagnostic_logs"
+        ),
+    )
+    DIAGNOSTIC_LOGS_MAX_SIZE = config(
+        "DIAGNOSTIC_LOGS_MAX_SIZE", default=1024 * 1024, cast=int
+    )

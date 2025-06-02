@@ -3,9 +3,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import math
 from collections import namedtuple
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
+import os
+from flask import current_app
 from flask_sqlalchemy import Model
+from pathvalidate import sanitize_filename
 from sqlalchemy import Column, JSON
 from sqlalchemy.sql.elements import UnaryExpression
 from typing import Optional
@@ -116,3 +119,19 @@ def format_time_delta(delta: timedelta) -> str:
         else:
             difference = "N/A"
     return difference
+
+
+def save_diagnostic_log_file(app: str, username: str, body: bytes) -> str:
+    """Save diagnostic log file to DIAGNOSTIC_LOGS_DIR"""
+
+    content = body.decode("utf-8")
+    datetime_iso_str = datetime.now(tz=timezone.utc).isoformat()
+    file_name = sanitize_filename(
+        username + "_" + app + "_" + datetime_iso_str + ".log"
+    )
+    to_folder = current_app.config.get("DIAGNOSTIC_LOGS_DIR")
+    os.makedirs(to_folder, exist_ok=True)
+    with open(os.path.join(to_folder, file_name), "w") as f:
+        f.write(content)
+
+    return file_name

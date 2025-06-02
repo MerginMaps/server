@@ -29,6 +29,7 @@ services:
     user: 901:999
     volumes:
       - ./projects:/data
+      - ./diagnostic_logs:/diagnostic_logs
       - ../common/entrypoint.sh:/app/entrypoint.sh
     env_file:
       - .prod.env

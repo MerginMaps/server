@@ -943,3 +943,18 @@ def test_email_format_validation(app, username, is_valid):
             data={"email": email}
         )  # ResetPasswordForm has only email field
         assert form.validate() == is_valid
+
+
+def test_login_without_password(client):
+    """Test password check as SSO user which does not have password"""
+    login_as_admin(client)
+    username = "sso_user"
+    user = add_user(username=username, password="")
+    assert user.passwd is None
+    for pwd in ["Il0vemergin", ""]:
+        resp = client.post(
+            url_for("/.mergin_auth_controller_login"),
+            data=json.dumps({"login": username, "password": pwd}),
+            headers=json_headers,
+        )
+        assert resp.status_code == 401
