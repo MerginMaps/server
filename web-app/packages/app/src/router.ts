@@ -12,7 +12,12 @@ import {
   routeUtils,
   useUserStore,
   SideBarTemplate as SideBar,
-  ProjectRouteName
+  ProjectRouteName,
+  UserRouteName,
+  DashboardRouteName,
+  getDashboardTitle,
+  getUserTitle,
+  getProjectTitle
 } from '@mergin/lib'
 import { Pinia } from 'pinia'
 import {
@@ -57,28 +62,28 @@ export const createRouter = (pinia: Pinia) => {
           }
         },
         path: '/login/:reset?',
-        name: 'login',
+        name: UserRouteName.Login,
         component: LoginView,
         props: true,
         meta: { public: true }
       },
       {
         path: '/confirm-email/:token',
-        name: 'confirm_email',
+        name: UserRouteName.ConfirmEmail,
         component: VerifyEmailView,
         props: true,
         meta: { public: true }
       },
       {
         path: '/change-password/:token',
-        name: 'change_password',
+        name: UserRouteName.ChangePassword,
         component: ChangePasswordView,
         props: true,
         meta: { public: true }
       },
       {
         path: '/dashboard',
-        name: 'dashboard',
+        name: DashboardRouteName.Dashboard,
         components: {
           default: DashboardView,
           header: AppHeader,
@@ -93,7 +98,7 @@ export const createRouter = (pinia: Pinia) => {
       },
       {
         path: '/profile',
-        name: 'user_profile',
+        name: UserRouteName.UserProfile,
         meta: {
           allowedForNoWorkspace: true,
           breadcrump: [{ title: 'Profile', path: '/profile' }]
@@ -107,7 +112,7 @@ export const createRouter = (pinia: Pinia) => {
       },
       {
         path: '/projects',
-        name: 'projects',
+        name: ProjectRouteName.Projects,
         components: {
           default: ProjectsListView,
           header: AppHeader,
@@ -118,13 +123,12 @@ export const createRouter = (pinia: Pinia) => {
         },
         meta: {
           public: true,
-          title: 'Projects',
           breadcrump: [{ title: 'Projects', path: '/projects' }]
         },
         children: [
           {
             path: 'explore',
-            name: 'explore',
+            name: ProjectRouteName.ProjectsExplore,
             component: ProjectsListView,
             props: true,
             meta: {
@@ -248,7 +252,7 @@ export const createRouter = (pinia: Pinia) => {
           },
           {
             path: 'history/:version_id/:path',
-            name: 'file-version-detail',
+            name: ProjectRouteName.FileVersionDetail,
             component: FileVersionDetailView,
             props: true,
             meta: {
@@ -283,6 +287,17 @@ export const createRouter = (pinia: Pinia) => {
   router.beforeEach((to, from, next) => {
     const userStore = useUserStore(pinia)
     routeUtils.isAuthenticatedGuard(to, from, next, userStore)
+  })
+
+  router.beforeEach(async (to, from, next) => {
+    const titleResolvers = [getProjectTitle, getUserTitle, getDashboardTitle]
+
+    // Use `find` to get the first resolved title
+    to.meta.title = titleResolvers
+      .map((resolver) => resolver(to))
+      .find((title) => !!title)
+
+    next()
   })
   return router
 }

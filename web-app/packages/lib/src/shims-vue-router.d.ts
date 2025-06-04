@@ -7,5 +7,6 @@ declare module 'vue-router' {
     breadcrump?:
       | { title: string; path: string }[]
       | ((route) => { title: string; path: string }[])
+    title?: string | string[] | ((route) => string | string[])
   }
 }

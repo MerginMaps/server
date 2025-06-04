@@ -55,11 +55,12 @@ import {
   useNotificationStore,
   useUserStore,
   useLayoutStore,
-  useProjectStore
+  useProjectStore,
+  useRouterTitle
 } from '@mergin/lib'
 import { mapActions, mapState } from 'pinia'
 import { useToast } from 'primevue/usetoast'
-import { defineComponent } from 'vue'
+import { defineComponent, watchEffect } from 'vue'
 import { useMeta } from 'vue-meta'
 
 export default defineComponent({
@@ -120,8 +121,11 @@ export default defineComponent({
     }
   },
   setup() {
+    const { title } = useRouterTitle({
+      defaultTitle: 'Mergin Maps Admin Panel'
+    })
     useMeta({
-      title: 'Mergin Maps',
+      title: 'Mergin Maps Admin Panel',
       meta: [
         {
           name: 'description',
@@ -144,6 +148,9 @@ export default defineComponent({
     notificationStore.init(toast)
     layoutStore.init()
     projectStore.filterPermissions(['editor'], ['edit'])
+    watchEffect(() => {
+      document.title = title.value
+    })
   },
   async created() {
     await this.fetchConfig()
