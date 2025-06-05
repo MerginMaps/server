@@ -18,6 +18,7 @@ venv/
 
 # production env
 .prod.env
+.sso.env
 
 # generated documentation
 gen

@@ -26,3 +26,36 @@ cp .env.template .prod.env
 Next step is to create data directory for Mergin Maps `data` with proper permissions. Should you prefer a different location, please do search and replace it in config files (`.prod.env`, `docker-compose.yml`). Make sure your volume is large enough since Mergin Maps keeps all projects files, their history and also needs some space for temporary processing.
 
 For more details about deployment please check [docs](https://merginmaps.com/docs/server/install/#deployment).
+
+Finally initialize your Mergin Maps stack with:
+
+```shell
+docker compose up -d
+```
+
+# WebMaps
+
+Webmaps support is activate with environment variable `MAPS_ENABLED=True` on the main `.prod.env` configuration file.
+Also check other important webmaps related environment variables configurations on Mergin Maps [docs](https://merginmaps.com/docs/server/environment/#webmaps)
+
+
+If you have it enabled, after the normal Mergin Maps stack is initialized simply run:
+
+```shell
+docker compose -f docker-compose.maps.yml up -d
+```
+
+# SSO
+
+For SSO deployment, first you need to change some relevant content on the provide `.sso.env.template` file, namely the default values on the following environment variable: (`NEXTAUTH_ADMIN_CREDENTIALS, RETRACED_ADMIN_ROOT_TOKEN, NEXTAUTH_ACL`).
+
+Next, under folder `sso-connections` run the initialization script `sso-init.sh`. This will generate a ready to use file with some pregenerated secrets needed for the sso backend. If you want, and it's actually advised, you can create/generate your own secrets.
+
+Before the deployment, check that SSO related environment variables, namely `SSO_ENABLE=True`, are set.
+Please follow Mergin Maps [documentation](https://merginmaps.com/docs/server/environment/#sso) on this topic.
+
+Finally simply run the SSO stack with:
+
+```shell
+docker compose -f docker-compose.sso.yml up -d
+```

@@ -88,12 +88,11 @@ services:
     restart: always
     volumes:
       - ./mergin-db-enterprise:/var/lib/postgresql/data
+      - ./sso/boxy.sql:/docker-entrypoint-initdb.d/boxy.sql
     environment:
       - POSTGRES_DB=mergin
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres # !TODO Change this and also change .prod.env $DB_PASSWORD accordingly
-    ports:
-      - 5432:5432
     networks:
       - mergin
   redis:

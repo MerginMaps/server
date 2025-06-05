@@ -13,7 +13,5 @@ services:
       - .sso.env
     networks:
       - mergin
-    depends_on:
-      - db
     ports:
       - 5225:5225
