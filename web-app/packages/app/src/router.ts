@@ -293,9 +293,11 @@ export const createRouter = (pinia: Pinia) => {
     const titleResolvers = [getProjectTitle, getUserTitle, getDashboardTitle]
 
     // Use `find` to get the first resolved title
-    to.meta.title = titleResolvers
-      .map((resolver) => resolver(to))
-      .find((title) => !!title)
+    to.meta.title = (route) => {
+      return titleResolvers
+        .map((resolver) => resolver(route))
+        .find((title) => title)
+    }
 
     next()
   })

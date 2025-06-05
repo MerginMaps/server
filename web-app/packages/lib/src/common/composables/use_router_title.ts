@@ -1,4 +1,8 @@
-import { computed } from 'vue'
+// Copyright (C) Lutra Consulting Limited
+//
+// SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+
+import { computed, toValue } from 'vue'
 import { useRoute } from 'vue-router'
 
 interface RouterTitleConfig {
@@ -7,7 +11,7 @@ interface RouterTitleConfig {
 
 const SEPARATOR = ' \u2022 ' // Unicode for bullet character
 
-const useRouterTitle = (config: RouterTitleConfig = {}) => {
+const useRouterTitle = (config: RouterTitleConfig = {}, extended = {}) => {
   const route = useRoute()
 
   const metaTitle = computed<string | string[]>(() => {
@@ -17,7 +21,7 @@ const useRouterTitle = (config: RouterTitleConfig = {}) => {
       return defaultTitle
     }
     if (typeof metaTitle === 'function') {
-      return metaTitle(route) || defaultTitle
+      return metaTitle(route, toValue(extended)) || defaultTitle
     }
     return metaTitle
   })

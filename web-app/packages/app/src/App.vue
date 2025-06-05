@@ -160,7 +160,7 @@ export default defineComponent({
   },
   methods: {
     ...mapActions(useAppStore, ['setServerError']),
-    ...mapActions(useInstanceStore, ['fetchPing', 'fetchConfig', 'initApp']),
+    ...mapActions(useInstanceStore, ['fetchPing', 'fetchConfig']),
     ...mapActions(useNotificationStore, {
       notificationError: 'error'
     }),

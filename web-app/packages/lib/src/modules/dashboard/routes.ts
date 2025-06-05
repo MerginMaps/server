@@ -13,10 +13,16 @@ export enum DashboardRouteName {
   Dashboard = 'dashboard'
 }
 
-export const getDashboardTitle = (route: RouteLocationNormalizedLoaded) => {
+export const getDashboardTitle = (
+  route: RouteLocationNormalizedLoaded,
+  extended?: { workspaceName: string }
+) => {
   const name = route.name as DashboardRouteName
   const titles: Record<DashboardRouteName, string | string[]> = {
-    [DashboardRouteName.Dashboard]: 'Dashboard'
+    [DashboardRouteName.Dashboard]: [
+      'Dashboard',
+      extended?.workspaceName
+    ].filter(Boolean)
   }
   return titles[name]
 }
