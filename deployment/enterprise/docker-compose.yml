@@ -43,6 +43,7 @@ services:
     volumes:
       - ./data:/data  # map data dir to host
       - ../common/nginx.conf:/etc/nginx/templates/default.conf.template
+      - ./sso/sso-nginx.conf:/etc/nginx/templates/sso.conf.template # Comment out if not using SSO
     networks:
       - mergin
     depends_on:

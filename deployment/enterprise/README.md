@@ -47,11 +47,13 @@ docker compose -f docker-compose.maps.yml up -d
 
 # SSO
 
-For SSO deployment, first you need to change some relevant content on the provide `.sso.env.template` file, namely the default values on the following environment variable: (`NEXTAUTH_ADMIN_CREDENTIALS, RETRACED_ADMIN_ROOT_TOKEN, NEXTAUTH_ACL`).
+For SSO deployment, you need create a `.sso.env` configuration file. 
+We provide you a convenience script under folder `sso-connections` for this. Run the initialization script `sso-init.sh`. This will generate a ready to use file with some pregenerated secrets needed for the sso backend.
+Another option, the most advised, you manually create `.sso.env` from the provided `.sso.env.template` and generate your own secrets keys as well other relevant configurations.
 
-Next, under folder `sso-connections` run the initialization script `sso-init.sh`. This will generate a ready to use file with some pregenerated secrets needed for the sso backend. If you want, and it's actually advised, you can create/generate your own secrets.
+Take a closer look to these environment variables, namely change their default values: (`NEXTAUTH_ADMIN_CREDENTIALS, RETRACED_ADMIN_ROOT_TOKEN, NEXTAUTH_ACL`).
 
-Before the deployment, check that SSO related environment variables, namely `SSO_ENABLE=True`, are set.
+Before the deployment, check that SSO related environment variables on the main `.prod.env` file, namely `SSO_ENABLE=True`, are set.
 Please follow Mergin Maps [documentation](https://merginmaps.com/docs/server/environment/#sso) on this topic.
 
 Finally simply run the SSO stack with:

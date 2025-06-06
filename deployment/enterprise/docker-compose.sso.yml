@@ -12,6 +12,6 @@ services:
     env_file:
       - .sso.env
     networks:
-      - mergin
+      - mergin # If you plan to deploy SSO stack on an isolated machine, just comment out this
     ports:
       - 5225:5225

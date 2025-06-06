@@ -17,7 +17,3 @@ echo DB_ENCRYPTION_KEY=$(openssl rand -base64 32) >> ../.sso.env
 echo NEXTAUTH_SECRET=$(openssl rand -base64 32) >> ../.sso.env
 echo PUBLIC_KEY=$(cat public.crt | base64 | tr -d '\n')  >> ../.sso.env
 echo PRIVATE_KEY=$(cat key.pem | base64 | tr -d '\n')  >> ../.sso.env
-
-
-# make jackson secret key available to mergin-server
-export $(grep JACKSON_API_KEYS ../.sso.env | xargs)
