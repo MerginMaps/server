@@ -147,4 +147,8 @@ export interface LastSeenWorkspace {
   lastSeen: number
 }
 
+export interface UserRouteParams {
+  reset?: string
+}
+
 /* eslint-enable camelcase */

@@ -62,6 +62,8 @@
         <project-version-changes v-if="data" :version="data" />
       </app-section>
     </app-container>
+    <download-progress />
+    <download-file-large />
   </admin-layout>
 </template>
 
@@ -74,7 +76,9 @@ import {
   useNotificationStore,
   ProjectVersion,
   errorUtils,
-  ProjectVersionChanges
+  ProjectVersionChanges,
+  DownloadProgress,
+  DownloadFileLarge
 } from '@mergin/lib'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'

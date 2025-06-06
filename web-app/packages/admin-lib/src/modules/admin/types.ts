@@ -84,4 +84,12 @@ export interface DownloadReportParams {
   date_to: string
 }
 
+export interface AdminRouteParams {
+  namespace?: string
+  projectName?: string
+  version_id?: string
+  path?: string
+  username?: string
+}
+
 /* eslint-enable camelcase */

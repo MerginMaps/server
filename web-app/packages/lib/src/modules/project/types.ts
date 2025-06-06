@@ -376,3 +376,17 @@ export interface ProjectCollaborator {
   project_role: ProjectRoleName | null
   role: ProjectRoleName
 }
+
+
+// router related types
+export interface ProjectRouteParams {
+  namespace?: string
+  projectName?: string
+  version_id?: string
+  path?: string
+}
+
+export interface ProjectRouteQuery {
+  version_id?: string
+  file_path?: string
+}
