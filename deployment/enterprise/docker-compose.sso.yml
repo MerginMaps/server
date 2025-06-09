@@ -3,15 +3,11 @@ networks:
     name: mergin-ee
 
 services:
-  jackson:
+  sso-server:
     image: boxyhq/jackson:1.45.3
-    container_name: merginmaps-sso
+    container_name: merginmaps-sso-server
     restart: always
-    volumes:
-      - ./sso/sso-connections:/sso-connections
     env_file:
       - .sso.env
     networks:
       - mergin # If you plan to deploy SSO stack on an isolated machine, just comment out this
-    ports:
-      - 5225:5225

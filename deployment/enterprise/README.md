@@ -1,63 +1,86 @@
 # Mergin Maps Enterprise Edition Deployment
-Suitable for Ubuntu servers, one node deployment using docker compose and system nginx as a reverse proxy.
 
-> [!IMPORTANT] 
-> Docker images for Mergin Maps Enterprise edition are stored on a private AWS ECR repository.
+Suitable for Ubuntu servers, single-node deployment using Docker Compose and system NGINX as a reverse proxy.
+
+> [!IMPORTANT]
+> Docker images for Mergin Maps Enterprise Edition are stored in a private AWS ECR repository.
 > To access them, you need a Mergin Maps Enterprise [subscription](https://merginmaps.com/pricing).
-> Please contact Mergin Maps [sales team](https://merginmaps.com/contact-sales)!
+> Please contact the Mergin Maps [sales team](https://merginmaps.com/contact-sales)!
 
-## Login to Mergin Maps AWS ECR repository
+## Login to Mergin Maps AWS ECR Repository
+
 ```shell
 aws ecr --region eu-west-1 get-login-password | docker login --username AWS --password-stdin 433835555346.dkr.ecr.eu-west-1.amazonaws.com
 ```
 
-## Load docker images, configure and run mergin maps stack
-For running Mergin Maps you need to load local docker images (if any). Make sure you have access to Lutra's ECR repository. You can check it by running
-```
+## Load Docker Images, Configure, and Run Mergin Maps Stack
+
+To run Mergin Maps, you need to load local Docker images (if any). Make sure you have access to Lutra's ECR repository. You can check this by running:
+
+```shell
 docker pull 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-back:2025.3.0
 ```
 
-Then modify [docker-compose file](docker-compose.yml) and create environment file `.prod.env` from `.env.template`. Details about configuration can be find in [docs](https://merginmaps.com/docs/server/install/).
+Then modify the [docker-compose file](docker-compose.yml) and create the environment file `.prod.env` from `.env.template`. Details about configuration can be found in the [docs](https://merginmaps.com/docs/server/install/).
 
 ```shell
 cp .env.template .prod.env
 ```
 
-Next step is to create data directory for Mergin Maps `data` with proper permissions. Should you prefer a different location, please do search and replace it in config files (`.prod.env`, `docker-compose.yml`). Make sure your volume is large enough since Mergin Maps keeps all projects files, their history and also needs some space for temporary processing.
+The next step is to create a data directory for Mergin Maps (`data`) with proper permissions. If you prefer a different location, please search and replace it in the configuration files (`.prod.env`, `docker-compose.yml`). Ensure your volume is large enough since Mergin Maps stores all project files, their history, and requires space for temporary processing.
 
-For more details about deployment please check [docs](https://merginmaps.com/docs/server/install/#deployment).
+For more details about deployment, please check the [docs](https://merginmaps.com/docs/server/install/#deployment).
 
-Finally initialize your Mergin Maps stack with:
+### Configure SSO (Optional)
+
+For SSO deployment, you need to run the initialization script:
+
+```shell
+cd sso
+bash ./sso/sso-init.sh`. 
+```
+
+This will generate a ready-to-use file with some pre-generated secrets needed for the SSO backend.  
+Alternatively, and most recommended, you can manually create `.sso.env` from the provided `.sso.env.template` and generate your own secret keys as well as other relevant configurations.
+
+Pay close attention to these environment variables and change their default values: (`NEXTAUTH_ADMIN_CREDENTIALS`, `RETRACED_ADMIN_ROOT_TOKEN`, `NEXTAUTH_ACL`). To set up your connection with a SAML application, fill in `SAML_AUDIENCE` with a domain. [More details here](https://www.ory.sh/docs/polis/deploy/env-variables#saml_audience).
+
+Before deployment, ensure that the SSO-related environment variables in the main `.prod.env` file, namely `SSO_ENABLED=True`, are set.  
+Please follow the Mergin Maps [documentation](https://merginmaps.com/docs/server/environment/#sso) on this topic.
+
+Also, check if the proxy has mounted the [./sso/sso-nginx.conf](./sso/sso-nginx.conf) file in the main [docker-compose.yml](./docker-compose.yml) file.
+
+If you want to configure the Polis server to run on different domain in production (for example, `sso.example.com`), you need to add this domain to the following variables:
+
+* `EXTERNAL_URL=https://sso.example.com`
+* `NEXTAUTH_URL=https://sso.example.com`
+* `SSO_SERVER_URL=https://sso.example.com`
+
+### Configure WebMaps (Optional)
+
+WebMaps support is activated with the environment variable `MAPS_ENABLED=True` in the main `.prod.env` configuration file.  
+Also, check other important WebMaps-related environment variable configurations in the Mergin Maps [docs](https://merginmaps.com/docs/server/environment/#webmaps).
+
+## Run Mergin Maps Stack
+
+Finally, initialize your Mergin Maps stack with:
 
 ```shell
 docker compose up -d
 ```
 
-# WebMaps
+If you have WebMaps enabled, after the main Mergin Maps stack is initialized, simply run:
 
-Webmaps support is activate with environment variable `MAPS_ENABLED=True` on the main `.prod.env` configuration file.
-Also check other important webmaps related environment variables configurations on Mergin Maps [docs](https://merginmaps.com/docs/server/environment/#webmaps)
+```shell
+docker compose -f docker-compose.sso.yml up -d
+# restart merginmaps-proxy nginx in case of any errors with connections
+```
 
+The Polis server admin panel will then be available at http://localhost:8081.
 
-If you have it enabled, after the normal Mergin Maps stack is initialized simply run:
+If you have WebMaps enabled, after the main Mergin Maps stack is initialized, simply run:
 
 ```shell
 docker compose -f docker-compose.maps.yml up -d
 ```
 
-# SSO
-
-For SSO deployment, you need create a `.sso.env` configuration file. 
-We provide you a convenience script under folder `sso-connections` for this. Run the initialization script `sso-init.sh`. This will generate a ready to use file with some pregenerated secrets needed for the sso backend.
-Another option, the most advised, you manually create `.sso.env` from the provided `.sso.env.template` and generate your own secrets keys as well other relevant configurations.
-
-Take a closer look to these environment variables, namely change their default values: (`NEXTAUTH_ADMIN_CREDENTIALS, RETRACED_ADMIN_ROOT_TOKEN, NEXTAUTH_ACL`).
-
-Before the deployment, check that SSO related environment variables on the main `.prod.env` file, namely `SSO_ENABLE=True`, are set.
-Please follow Mergin Maps [documentation](https://merginmaps.com/docs/server/environment/#sso) on this topic.
-
-Finally simply run the SSO stack with:
-
-```shell
-docker compose -f docker-compose.sso.yml up -d
-```
