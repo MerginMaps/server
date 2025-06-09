@@ -45,7 +45,7 @@ Alternatively, and most recommended, you can manually create `.sso.env` from the
 
 Pay close attention to these environment variables and change their default values: (`NEXTAUTH_ADMIN_CREDENTIALS`, `RETRACED_ADMIN_ROOT_TOKEN`, `NEXTAUTH_ACL`). To set up your connection with a SAML application, fill in `SAML_AUDIENCE` with a domain. [More details here](https://www.ory.sh/docs/polis/deploy/env-variables#saml_audience).
 
-Before deployment, ensure that the SSO-related environment variables in the main `.prod.env` file, namely `SSO_ENABLED=True`, are set.  
+Before deployment, ensure that the SSO-related environment variables in the main `.prod.env` file (`SSO_ENABLED=True`) are set. If you used `sso-init.sh`, variable `SSO_SERVER_API_KEY` is set properly. On the other hand, if you created `.sso.env` manually, you need to set it manually to be the same as one of `JACKSON_API_KEYS`.
 Please follow the Mergin Maps [documentation](https://merginmaps.com/docs/server/environment/#sso) on this topic.
 
 Also, check if the proxy has mounted the [./sso/sso-nginx.conf](./sso/sso-nginx.conf) file in the main [docker-compose.yml](./docker-compose.yml) file.
