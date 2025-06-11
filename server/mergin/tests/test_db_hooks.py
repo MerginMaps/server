@@ -117,7 +117,7 @@ def test_remove_project(client, diff_project):
     mergin_user = User.query.filter_by(username=DEFAULT_USER[0]).first()
     project_dir = Path(diff_project.storage.project_dir)
     changes = UploadChanges(added=[], removed=[], updated=[])
-    upload = Upload(diff_project, 10, changes, mergin_user.id)
+    upload = Upload(diff_project, changes, mergin_user.id)
     db.session.add(upload)
     project_id = diff_project.id
     user = add_user("user", "user")

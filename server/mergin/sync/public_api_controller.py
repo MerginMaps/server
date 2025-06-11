@@ -752,31 +752,36 @@ def project_push(namespace, project_name):
     if not ws:
         abort(404)
 
-    # fixme use get_latest
-    pv = ProjectVersion.query.filter_by(
-        project_id=project.id, name=project.latest_version
-    ).first()
-    if pv and pv.name != version:
-        abort(400, "Version mismatch")
+    pv = project.get_latest_version()
+    if pv and pv.name < version:
+        abort(400, "Version mismatch, client cannot be ahead of server")
     if not pv and version != 0:
         abort(400, "First push should be with v0")
 
     if all(len(changes[key]) == 0 for key in changes.keys()):
         abort(400, "No changes")
 
-    # reject upload early if there is another one already running
-    pending_upload = Upload.query.filter_by(
-        project_id=project.id, version=version
-    ).first()
-    if pending_upload and pending_upload.is_active():
-        abort(400, "Another process is running. Please try later.")
+    upload_changes = ChangesSchema(context={"version": pv.name + 1}).load(changes)
 
-    upload_changes = ChangesSchema(context={"version": version + 1}).load(changes)
+    # reject upload early if there is another blocking upload already running
+    if Upload.is_blocking(upload_changes):
+        pending_upload = Upload.query.filter_by(
+            project_id=project.id, blocking=True
+        ).first()
+        if pending_upload and pending_upload.is_active():
+            abort(400, "Another process is running. Please try later.")
 
     for item in upload_changes.added:
-        # check if same file is not already uploaded
+        # check if same file is not already uploaded or in pending upload
         if not all(ele.path != item.path for ele in project.files):
             abort(400, f"File {item.path} has been already uploaded")
+
+        for upload in project.uploads.all():
+            if not upload.is_active():
+                continue
+            if upload.file_already_in_upload(item.path):
+                abort(400, f"File {item.path} is already in other upload")
+
         if not is_valid_path(item.path):
             abort(
                 400,
@@ -842,18 +847,18 @@ def project_push(namespace, project_name):
             )
         )
 
-    upload = Upload(project, version, upload_changes, current_user.id)
+    upload = Upload(project, upload_changes, current_user.id)
     db.session.add(upload)
     try:
-        # Creating upload transaction with different project's version is possible.
+        # Creating blocking upload transaction can fail, e.g. in case of racing condition
         db.session.commit()
         logging.info(
-            f"Upload transaction {upload.id} created for project: {project.id}, version: {version}"
+            f"Upload transaction {upload.id} created for project: {project.id}, version: {version}, blocking: {upload.blocking}"
         )
     except IntegrityError:
         db.session.rollback()
-        # check and clean dangling uploads or abort
-        for current_upload in project.uploads.all():
+        # check and clean dangling blocking uploads or abort
+        for current_upload in project.uploads.filter(Upload.blocking == True).all():
             if current_upload.is_active():
                 abort(400, "Another process is running. Please try later.")
             db.session.delete(current_upload)
@@ -871,7 +876,7 @@ def project_push(namespace, project_name):
         try:
             db.session.commit()
             logging.info(
-                f"Upload transaction {upload.id} created for project: {project.id}, version: {version}"
+                f"Upload transaction {upload.id} created for project: {project.id}, version: {version}, blocking: {upload.blocking}"
             )
             move_to_tmp(upload.upload_dir)
         except IntegrityError as err:
@@ -919,7 +924,7 @@ def project_push(namespace, project_name):
         finally:
             upload.clear()
 
-    return {"transaction": upload.id}
+    return {"transaction": upload.id, "blocking": upload.blocking}
 
 
 @auth_required
@@ -938,9 +943,9 @@ def chunk_upload(transaction_id, chunk_id):
     """
     upload, upload_dir = get_upload(transaction_id)
     request.view_args["project"] = upload.project
-    upload_changes = ChangesSchema(context={"version": upload.version + 1}).load(
-        upload.changes
-    )
+    upload_changes = ChangesSchema(
+        context={"version": upload.project.latest_version + 1}
+    ).load(upload.changes)
     for f in upload_changes.added + upload_changes.updated:
         if chunk_id in f.chunks:
             dest = os.path.join(upload_dir, "chunks", chunk_id)
@@ -984,13 +989,15 @@ def push_finish(transaction_id):
 
     upload, upload_dir = get_upload(transaction_id)
     request.view_args["project"] = upload.project
-    changes = ChangesSchema(context={"version": upload.version + 1}).load(
-        upload.changes
-    )
     project = upload.project
     if project.locked_until:
         abort(make_response(jsonify(ProjectLocked().to_dict()), 422))
+
     project_path = get_project_path(project)
+    next_version = project.latest_version + 1
+    v_next_version = ProjectVersion.to_v_name(next_version)
+    changes = ChangesSchema(context={"version": next_version}).load(upload.changes)
+
     corrupted_files = []
 
     for f in changes.added + changes.updated:
@@ -1045,24 +1052,17 @@ def push_finish(transaction_id):
         move_to_tmp(upload_dir)
         abort(422, {"corrupted_files": corrupted_files})
 
-    next_version = upload.version + 1
-    v_next_version = ProjectVersion.to_v_name(next_version)
     files_dir = os.path.join(upload_dir, "files", v_next_version)
     target_dir = os.path.join(project.storage.project_dir, v_next_version)
-    if os.path.exists(target_dir):
-        pv = ProjectVersion.query.filter_by(
-            project_id=project.id, name=project.latest_version
-        ).first()
-        if pv and pv.name == upload.version + 1:
-            abort(
-                409,
-                f"There is already version with this name {v_next_version}",
-            )
-        logging.info(
-            "Upload transaction: Target directory already exists. Overwriting %s"
-            % target_dir
+
+    # double check someone else has not created the same version meanwhile
+    if ProjectVersion.query.filter_by(
+        project_id=project.id, name=next_version
+    ).count() or os.path.exists(target_dir):
+        abort(
+            409,
+            f"There is already version with this name {v_next_version}",
         )
-        move_to_tmp(target_dir)
 
     try:
         # let's move uploaded files where they are expected to be
@@ -1135,10 +1135,14 @@ def push_finish(transaction_id):
             f"Failed to finish push for project: {project.id}, project version: {v_next_version}, "
             f"transaction id: {transaction_id}.: {str(err)}"
         )
+        if os.path.exists(target_dir):
+            move_to_tmp(target_dir)
         abort(422, "Failed to create new version: {}".format(str(err)))
     # catch exception during pg transaction so we can rollback and prevent PendingRollbackError during upload clean up
     except gevent.timeout.Timeout:
         db.session.rollback()
+        if os.path.exists(target_dir):
+            move_to_tmp(target_dir)
         raise
     finally:
         # remove artifacts
