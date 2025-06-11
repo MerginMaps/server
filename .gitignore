@@ -18,6 +18,7 @@ venv/
 
 # production env
 .prod.env
+.sso.env
 
 # generated documentation
 gen
@@ -30,3 +31,7 @@ web-app/.node-version
 mergin-db-ce
 
 docker-compose.local.yml
+
+# SSO
+*.pem
+*.crt

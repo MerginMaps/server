@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         class="flex flex-column lg:flex-row lg:align-items-center row-gap-3"
       >
         <!-- Title with buttons -->
-        <h1 class="headline-h3 text-color font-semibold">Account details</h1>
+        <h1 class="headline-h3 text-color font-semibold">Profile</h1>
         <div
           v-if="loggedUser?.can_edit_profile"
           class="flex flex-grow-1 align-items-center lg:justify-content-end"
@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <PButton
             @click="editProfileDialog"
             icon="ti ti-pencil"
-            label="Edit account"
+            label="Edit profile"
             class="w-auto mr-1"
             data-cy="profile-edit-btn"
           />
@@ -81,7 +81,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <i
               v-if="!loggedUser?.verified_email"
               v-tooltip.top="{
-                value: 'Email verification status'
+                value: 'Your email is not verified.'
               }"
               class="ti ti-alert-circle-filled"
               data-cy="project-form-missing-project"
@@ -239,7 +239,7 @@ export default defineComponent({
     },
     editProfileDialog() {
       const props = { profile: this.loggedUser }
-      const dialog = { header: 'Edit account' }
+      const dialog = { header: 'Edit profile' }
       this.show({
         component: EditProfileForm,
         params: {

@@ -12,7 +12,12 @@ import {
   routeUtils,
   useUserStore,
   SideBarTemplate as SideBar,
-  ProjectRouteName
+  ProjectRouteName,
+  UserRouteName,
+  DashboardRouteName,
+  getDashboardTitle,
+  getUserTitle,
+  getProjectTitle
 } from '@mergin/lib'
 import { Pinia } from 'pinia'
 import {
@@ -57,28 +62,28 @@ export const createRouter = (pinia: Pinia) => {
           }
         },
         path: '/login/:reset?',
-        name: 'login',
+        name: UserRouteName.Login,
         component: LoginView,
         props: true,
         meta: { public: true }
       },
       {
         path: '/confirm-email/:token',
-        name: 'confirm_email',
+        name: UserRouteName.ConfirmEmail,
         component: VerifyEmailView,
         props: true,
         meta: { public: true }
       },
       {
         path: '/change-password/:token',
-        name: 'change_password',
+        name: UserRouteName.ChangePassword,
         component: ChangePasswordView,
         props: true,
         meta: { public: true }
       },
       {
         path: '/dashboard',
-        name: 'dashboard',
+        name: DashboardRouteName.Dashboard,
         components: {
           default: DashboardView,
           header: AppHeader,
@@ -93,7 +98,7 @@ export const createRouter = (pinia: Pinia) => {
       },
       {
         path: '/profile',
-        name: 'user_profile',
+        name: UserRouteName.UserProfile,
         meta: {
           allowedForNoWorkspace: true,
           breadcrump: [{ title: 'Profile', path: '/profile' }]
@@ -107,7 +112,7 @@ export const createRouter = (pinia: Pinia) => {
       },
       {
         path: '/projects',
-        name: 'projects',
+        name: ProjectRouteName.Projects,
         components: {
           default: ProjectsListView,
           header: AppHeader,
@@ -118,13 +123,12 @@ export const createRouter = (pinia: Pinia) => {
         },
         meta: {
           public: true,
-          title: 'Projects',
           breadcrump: [{ title: 'Projects', path: '/projects' }]
         },
         children: [
           {
             path: 'explore',
-            name: 'explore',
+            name: ProjectRouteName.ProjectsExplore,
             component: ProjectsListView,
             props: true,
             meta: {
@@ -194,75 +198,82 @@ export const createRouter = (pinia: Pinia) => {
             name: ProjectRouteName.ProjectTree,
             component: FileBrowserView,
             props: true,
-            meta: { public: true }
+            meta: {
+              public: true,
+              breadcrump: (route) => [
+                {
+                  title: route.params?.projectName,
+                  path: `/projects/${route.params.namespace}/${route.params.projectName}/tree`
+                }
+              ]
+            }
           },
           {
             path: 'settings',
             name: 'project-settings',
             component: ProjectSettingsView,
-            props: true
+            props: true,
+            meta: {
+              breadcrump: (route) => [
+                {
+                  title: route.params?.projectName,
+                  path: `/projects/${route.params.namespace}/${route.params.projectName}/tree`
+                }
+              ]
+            }
           },
           {
             path: 'history',
             name: 'project-versions',
             component: ProjectVersionsView,
-            props: true
+            props: true,
+            meta: {
+              breadcrump: (route) => [
+                {
+                  title: route.params?.projectName,
+                  path: `/projects/${route.params.namespace}/${route.params.projectName}/tree`
+                }
+              ]
+            }
           },
           {
             path: 'collaborators',
             name: ProjectRouteName.ProjectCollaborators,
             component: ProjectCollaboratorsView,
-            props: true
+            props: true,
+            meta: {
+              breadcrump: (route) => [
+                {
+                  title: route.params?.projectName,
+                  path: `/projects/${route.params.namespace}/${route.params.projectName}/tree`
+                }
+              ]
+            }
           },
           {
             path: 'history/:version_id/:path',
-            name: 'file-version-detail',
+            name: ProjectRouteName.FileVersionDetail,
             component: FileVersionDetailView,
             props: true,
-            meta: { public: true },
-            // TODO: refactor to function in utils
-            beforeEnter(to, from, next) {
-              to.meta = {
-                ...to.meta,
-                breadcrump: [
-                  {
-                    title: String(to.params.projectName),
-                    path: `/projects/${to.params.namespace}/${to.params.projectName}/history`
-                  },
-                  {
-                    title: String(to.params.version_id),
-                    path: `/projects/${to.params.namespace}/${to.params.projectName}/history/${to.params.version_id}`
-                  },
-                  {
-                    title: String(to.params.path),
-                    path: to.fullPath
-                  }
-                ]
-              }
-              next()
+            meta: {
+              public: true,
+              breadcrump: (route) => [
+                {
+                  title: route.params?.projectName,
+                  path: `/projects/${route.params.namespace}/${route.params.projectName}/tree`
+                },
+                {
+                  title: route.params?.version_id,
+                  path: `/projects/${route.params.namespace}/${route.params.projectName}/history/${route.params.version_id}`
+                },
+                {
+                  title: route.params?.path,
+                  path: route.fullPath
+                }
+              ]
             }
           }
         ]
-          // Not apply for project version detail , which have own breadcrump
-          .map((child) =>
-            child.name === 'file-version-detail'
-              ? child
-              : {
-                  ...child,
-                  beforeEnter: (to, from, next) => {
-                    to.meta = {
-                      ...to.meta,
-                      breadcrump: [
-                        {
-                          title: String(to.params.projectName),
-                          path: to.fullPath
-                        }
-                      ]
-                    }
-                    next()
-                  }
-                }
-          )
       },
       {
         path: '/:pathMatch(.*)*',
@@ -276,6 +287,19 @@ export const createRouter = (pinia: Pinia) => {
   router.beforeEach((to, from, next) => {
     const userStore = useUserStore(pinia)
     routeUtils.isAuthenticatedGuard(to, from, next, userStore)
+  })
+
+  router.beforeEach(async (to, from, next) => {
+    const titleResolvers = [getProjectTitle, getUserTitle, getDashboardTitle]
+
+    // Use `find` to get the first resolved title
+    to.meta.title = (route) => {
+      return titleResolvers
+        .map((resolver) => resolver(route))
+        .find((title) => title)
+    }
+
+    next()
   })
   return router
 }
