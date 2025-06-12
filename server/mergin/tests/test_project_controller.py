@@ -5,6 +5,7 @@
 import datetime
 import os
 from dataclasses import asdict
+from unittest import mock
 from unittest.mock import patch
 from urllib.parse import quote
 import pysqlite3
@@ -16,16 +17,16 @@ import time
 import hashlib
 import shutil
 import re
-
 from flask_login import current_user
 from pygeodiff import GeoDiff
 from flask import url_for, current_app
 import tempfile
-
 from sqlalchemy import desc
 from sqlalchemy.exc import IntegrityError
 
 from ..app import db
+from ..config import Configuration
+from ..sync.config import Configuration as SyncConfiguration
 from ..sync.models import (
     Project,
     Upload,
@@ -39,7 +40,7 @@ from ..sync.models import (
 )
 from ..sync.files import ChangesSchema, UploadChanges
 from ..sync.schemas import ProjectListSchema
-from ..sync.utils import generate_checksum, is_versioned_file
+from ..sync.utils import generate_checksum, is_versioned_file, get_project_path
 from ..auth.models import User, UserProfile
 
 from . import (
@@ -61,9 +62,6 @@ from .utils import (
     login_as_admin,
     upload_file_to_project,
 )
-from ..config import Configuration
-from ..sync.config import Configuration as SyncConfiguration
-from ..sync.utils import get_project_path
 
 CHUNK_SIZE = 1024
 
@@ -1021,12 +1019,6 @@ def _get_changes_with_diff_0_size(project_dir):
     return changes
 
 
-def _get_non_blocking_changes(project_dir):
-    changes = _get_changes(project_dir)
-    changes["updated"] = changes["removed"] = []
-    return changes
-
-
 test_push_data = [
     (
         {"version": "v1", "changes": _get_changes_without_added(test_project_dir)},
@@ -1105,6 +1097,7 @@ def test_concurrent_uploads(client):
     assert resp.status_code == 200
     upload = Upload.query.get(resp.json["transaction"])
     assert upload.blocking is True
+    assert upload.is_active()
 
     uploaded_file = file_info(
         test_project_dir, "test_dir/test4.txt", chunk_size=CHUNK_SIZE
@@ -1147,6 +1140,21 @@ def test_concurrent_uploads(client):
     )
     assert resp.status_code == 400
     assert resp.json["detail"] == "Another process is running. Please try later."
+
+    upload = Upload.query.filter_by(blocking=True).first()
+    trasaction_id = str(upload.id)
+    # pretent blocking upload is stale
+    with patch("mergin.sync.models.Upload.is_active") as mock_is_active:
+        mock_is_active.return_value = False
+        resp = client.post(
+            url,
+            data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
+            headers=json_headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json["transaction"]
+        # previous stale upload was removed
+        assert not Upload.query.get(trasaction_id)
 
 
 def test_push_to_new_project(client):
@@ -2573,6 +2581,12 @@ def test_signals(client):
     ) as push_finished_mock:
         upload_file_to_project(project, "test.txt", client)
         push_finished_mock.assert_called_once()
+
+    with patch(
+        "mergin.sync.tasks.remove_stale_project_uploads.delay"
+    ) as upload_cleanup_mock:
+        upload_file_to_project(project, "test.qgs", client)
+        upload_cleanup_mock.assert_called_once()
 
 
 def test_filepath_manipulation(client):
