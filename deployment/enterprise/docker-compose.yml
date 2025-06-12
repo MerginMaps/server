@@ -42,7 +42,7 @@ services:
       - ./data:/data  # map data dir to host
       - ../common/nginx.conf:/etc/nginx/templates/default.conf.template
       # If using sso, uncomment the next line
-      - ./sso/sso-nginx.conf:/etc/nginx/templates/sso.conf.template
+      # - ./sso/sso-nginx.conf:/etc/nginx/templates/sso.conf.template
     networks:
       - mergin
     depends_on:

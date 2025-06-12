@@ -21,3 +21,5 @@ echo PRIVATE_KEY=$(cat key.pem | base64 | tr -d '\n')  >> ../.sso.env
 
 # mergin maps related env variables
 echo SSO_SERVER_API_KEY=$API_KEY >> ../.prod.env
+echo SSO_SERVER_INTERNAL_URL=http://merginmaps-proxy:8081 >> ../.prod.env
+echo SSO_SERVER_API_URL=http://merginmaps-proxy:8081 >> ../.prod.env
