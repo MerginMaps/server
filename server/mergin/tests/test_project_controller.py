@@ -1019,6 +1019,17 @@ def _get_changes_with_diff_0_size(project_dir):
     return changes
 
 
+def _get_random_file_metadata():
+    """Return fake metadata for non-existing random file"""
+    return {
+        "path": f"{uuid.uuid4().hex}.txt",
+        "checksum": hashlib.sha1().hexdigest(),
+        "size": 0,
+        "mtime": datetime.datetime.now().timestamp(),
+        "chunks": [],
+    }
+
+
 test_push_data = [
     (
         {"version": "v1", "changes": _get_changes_without_added(test_project_dir)},
@@ -1049,9 +1060,35 @@ test_push_data = [
         {
             "version": "v1",
             "changes": {
-                "added": [{"path": "test.txt"}],
+                "added": [],
+                "removed": [_get_random_file_metadata()],
+                "updated": [],
+            },
+        },
+        400,
+    ),  # delete not-existing file
+    (
+        {
+            "version": "v1",
+            "changes": {
+                "added": [],
                 "removed": [],
-                "updated": [{"path": "test.txt"}],
+                "updated": [_get_random_file_metadata()],
+            },
+        },
+        400,
+    ),  # update not-existing file
+    (
+        {
+            "version": "v1",
+            "changes": {
+                "added": [
+                    file_info(test_project_dir, "test.txt", chunk_size=CHUNK_SIZE)
+                ],
+                "removed": [],
+                "updated": [
+                    file_info(test_project_dir, "test.txt", chunk_size=CHUNK_SIZE)
+                ],
             },
         },
         400,
@@ -1182,7 +1219,9 @@ def test_push_to_new_project(client):
 
     current_app.config["BLACKLIST"] = ["test4"]
     url = "/v1/project/push/{}/{}".format(test_workspace_name, "blank")
-    data = {"version": "v0", "changes": _get_changes(test_project_dir)}
+    changes = _get_changes(test_project_dir)
+    changes["updated"] = changes["removed"] = []
+    data = {"version": "v0", "changes": changes}
     resp = client.post(
         url,
         data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
@@ -2416,6 +2455,7 @@ def test_project_version_integrity(client):
     changes = _get_changes_with_diff(test_project_dir)
     upload, upload_dir = create_transaction("mergin", changes)
     upload_chunks(upload_dir, upload.changes)
+    a = upload.project.files
 
     # try to finish the transaction which would fail on version created integrity error, e.g. race conditions
     with patch.object(
@@ -2447,7 +2487,7 @@ def test_project_version_integrity(client):
         # to insert an identical project version when no upload (only one endpoint used),
         # we need to pretend side effect of a function called just before project version insertion
         def _get_user_agent():
-            add_project_version(project, changes)
+            add_project_version(project, {})
             # bypass endpoint checks
             upload.project.latest_version = ProjectVersion.from_v_name(data["version"])
             return "Input"

@@ -771,9 +771,10 @@ def project_push(namespace, project_name):
         if pending_upload and pending_upload.is_active():
             abort(400, "Another process is running. Please try later.")
 
+    current_files = set(file.path for file in project.files)
     for item in upload_changes.added:
         # check if same file is not already uploaded or in pending upload
-        if not all(ele.path != item.path for ele in project.files):
+        if item.path in current_files:
             abort(400, f"File {item.path} has been already uploaded")
 
         for upload in project.uploads.all():
@@ -793,6 +794,12 @@ def project_push(namespace, project_name):
                 f"Unsupported file type detected: {item.path}. "
                 f"Please remove the file or try compressing it into a ZIP file before uploading.",
             )
+
+    # check consistency of changes
+    if not set(
+        file.path for file in upload_changes.updated + upload_changes.removed
+    ).issubset(current_files):
+        abort(400, "Update or remove changes contain files that are not in project")
 
     # changes' files must be unique
     changes_files = [
