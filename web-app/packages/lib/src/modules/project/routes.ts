@@ -41,14 +41,19 @@ export enum ProjectRouteName {
   FileVersionDetail = 'file-version-detail'
 }
 
-export const getProjectTitle = (route: RouteLocationNormalizedLoaded) => {
+export const getProjectTitle = (
+  route: RouteLocationNormalizedLoaded,
+  extended?: { workspaceName: string }
+) => {
   const name = route.name as ProjectRouteName
   const params = route.params as ProjectRouteParams
   const query = route.query as ProjectRouteQuery
   const { projectName, path, version_id } = params as ProjectRouteParams
   const titles: Record<ProjectRouteName, string | string[]> = {
-    [ProjectRouteName.Projects]: ['Projects'],
-    [ProjectRouteName.ProjectsExplore]: ['Public projects'],
+    [ProjectRouteName.Projects]: ['Projects', extended?.workspaceName].filter(
+      Boolean
+    ),
+    [ProjectRouteName.ProjectsExplore]: ['Public projects', DEFAULT_PAGE_TITLE],
     [ProjectRouteName.Project]: ['Project details'],
     [ProjectRouteName.ProjectTree]: [
       query.file_path || 'Files',
