@@ -4,7 +4,7 @@ networks:
 
 services:
   sso-server:
-    image: boxyhq/jackson:1.45.3
+    image: boxyhq/jackson:1.48.2
     container_name: merginmaps-sso-server
     restart: always
     env_file:
