@@ -38,6 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <template #end>
         <div class="flex align-items-center flex-shrink-0">
           <PButton
+            v-if="loggedUser"
             text
             plain
             aria-haspopup="true"
@@ -60,7 +61,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             </div>
             <i class="ti ti-chevron-down"></i
           ></PButton>
+          <PButton
+            v-else
+            text
+            plain
+            aria-haspopup="true"
+            aria-controls="app-header-profile"
+            data-cy="app-header-profile-btn"
+            @click="login"
+            class="p-2 shadow-none"
+            label="Sign in"
+          />
           <POverlayPanel
+            v-if="loggedUser"
             id="app-header-profile"
             data-cy="app-header-profile"
             ref="menu"
@@ -187,7 +200,7 @@ export default defineComponent({
         {
           label: 'Documentation',
           url: this.configData?.docs_url,
-          target: '_blank',
+          target: '_blank'
         },
         {
           label: 'Community chat',
@@ -227,6 +240,10 @@ export default defineComponent({
       } catch (e) {
         console.error(e)
       }
+    },
+
+    login() {
+      this.$router.push({ name: UserRouteName.Login })
     }
   }
 })

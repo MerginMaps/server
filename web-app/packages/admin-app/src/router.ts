@@ -13,7 +13,8 @@ import {
   ProjectSettingsView,
   ProjectVersionView,
   ProjectVersionsView,
-  OverviewView
+  OverviewView,
+  getAdminTitle
 } from '@mergin/admin-lib'
 import {
   NotFoundView,
@@ -165,5 +166,10 @@ export const createRouter = (pinia: Pinia) => {
     routeUtils.isSuperUser(to, from, next, userStore)
   })
 
+  router.beforeEach((to, from, next) => {
+    // Set the page title based on the route's meta title
+    to.meta.title = getAdminTitle
+    next()
+  })
   return router
 }

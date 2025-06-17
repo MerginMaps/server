@@ -6,6 +6,8 @@ import isEqual from 'lodash/isEqual'
 import pick from 'lodash/pick'
 import { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 
+export const DEFAULT_PAGE_TITLE = 'Mergin Maps'
+
 export type IsAuthenticatedGuardOptions = {
   notAuthenticatedRedirectPath?: string
 }
