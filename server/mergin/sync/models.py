@@ -1003,13 +1003,12 @@ class Upload(db.Model):
     project_id = db.Column(
         UUID(as_uuid=True), db.ForeignKey("project.id", ondelete="CASCADE"), index=True
     )
-    # project version where upload is initiated from
-    version = db.Column(db.Integer, index=True)
     changes = db.Column(db.JSON)
     user_id = db.Column(
         db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), nullable=True
     )
     created = db.Column(db.DateTime, default=datetime.utcnow)
+    blocking = db.Column(db.Boolean, default=True)
 
     user = db.relationship("User")
     project = db.relationship(
@@ -1019,16 +1018,23 @@ class Upload(db.Model):
             "uploads", single_parent=True, lazy="dynamic", cascade="all,delete"
         ),
     )
-    __table_args__ = (db.UniqueConstraint("project_id", "version"),)
 
-    def __init__(
-        self, project: Project, version: int, changes: UploadChanges, user_id: int
-    ):
+    __table_args__ = (
+        db.Index(
+            "ix_upload_blocking_partial",
+            project_id,
+            blocking,
+            unique=True,
+            postgresql_where=(blocking),
+        ),
+    )
+
+    def __init__(self, project: Project, changes: UploadChanges, user_id: int):
         self.id = str(uuid.uuid4())
         self.project_id = project.id
-        self.version = version
         self.changes = ChangesSchema().dump(changes)
         self.user_id = user_id
+        self.blocking = self.is_blocking(changes)
 
     @property
     def upload_dir(self):
@@ -1052,6 +1058,20 @@ class Upload(db.Model):
         move_to_tmp(self.upload_dir, self.id)
         db.session.delete(self)
         db.session.commit()
+
+    @staticmethod
+    def is_blocking(changes: UploadChanges) -> bool:
+        """Check if changes would be blocking."""
+        # let's mark upload as non-blocking only if there are new non-spatial data added (e.g. photos)
+        return bool(
+            len(changes.updated)
+            or len(changes.removed)
+            or any(is_qgis(f.path) or is_versioned_file(f.path) for f in changes.added)
+        )
+
+    def file_already_in_upload(self, path) -> bool:
+        """Check if file is not already as new added file"""
+        return any(f["path"] == path for f in self.changes["added"])
 
 
 class RequestStatus(Enum):
