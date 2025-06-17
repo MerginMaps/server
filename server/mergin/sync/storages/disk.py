@@ -21,7 +21,7 @@ from ..utils import (
     generate_checksum,
     is_versioned_file,
 )
-from ..files import mergin_secure_filename, ProjectFile, UploadFile, File
+from ..files import ProjectDiffFile, mergin_secure_filename, ProjectFile
 
 
 def save_to_file(stream, path, max_size=None):
@@ -245,7 +245,7 @@ class DiskStorage(ProjectStorage):
         return _generator()
 
     def apply_diff(
-        self, current_file: ProjectFile, upload_file: UploadFile, version: int
+        self, current_file: ProjectFile, upload_file: ProjectFile, version: int
     ) -> Result:
         """Apply geodiff diff file on current gpkg basefile. Creates GeodiffActionHistory record of the action.
         Returns checksum and size of generated file. If action fails it returns geodiff error message.
@@ -313,7 +313,7 @@ class DiskStorage(ProjectStorage):
                 return Err(self.gediff_log.getvalue())
 
     def construct_diff(
-        self, current_file: ProjectFile, upload_file: UploadFile, version: int
+        self, current_file: ProjectFile, upload_file: ProjectFile, version: int
     ) -> Result:
         """Construct geodiff diff file from uploaded gpkg and current basefile. Returns diff metadata as a result.
         If action fails it returns geodiff error message.
@@ -345,7 +345,7 @@ class DiskStorage(ProjectStorage):
                     basefile_tmp, uploaded_file_tmp, changeset_tmp
                 )
                 # create diff metadata as it would be created by other clients
-                diff_file = File(
+                diff_file = ProjectDiffFile(
                     path=diff_name,
                     checksum=generate_checksum(changeset_tmp),
                     size=os.path.getsize(changeset_tmp),

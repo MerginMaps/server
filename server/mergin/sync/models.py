@@ -23,9 +23,11 @@ from flask import current_app
 
 from .files import (
     File,
-    UploadChanges,
+    ProjectDiffFile,
+    ProjectFileChange,
     ChangesSchema,
     ProjectFile,
+    PushChangeType,
 )
 from .interfaces import WorkspaceRole
 from .storages.disk import move_to_tmp
@@ -36,17 +38,6 @@ from .utils import is_versioned_file, is_qgis
 Storages = {"local": DiskStorage}
 project_deleted = signal("project_deleted")
 project_access_granted = signal("project_access_granted")
-
-
-class PushChangeType(Enum):
-    CREATE = "create"
-    UPDATE = "update"
-    DELETE = "delete"
-    UPDATE_DIFF = "update_diff"
-
-    @classmethod
-    def values(cls):
-        return [member.value for member in cls.__members__.values()]
 
 
 class Project(db.Model):
@@ -181,7 +172,7 @@ class Project(db.Model):
                 checksum=row.checksum,
                 location=row.location,
                 mtime=row.mtime,
-                diff=File(**row.diff) if row.diff else None,
+                diff=ProjectDiffFile(**row.diff) if row.diff else None,
             )
             for row in db.session.execute(query, params).fetchall()
         ]
@@ -504,9 +495,9 @@ class FileHistory(db.Model):
         return self.file.path
 
     @property
-    def diff_file(self) -> Optional[File]:
+    def diff_file(self) -> Optional[ProjectDiffFile]:
         if self.diff:
-            return File(**self.diff)
+            return ProjectDiffFile(**self.diff)
 
     @property
     def mtime(self) -> datetime:
@@ -705,7 +696,7 @@ class ProjectVersion(db.Model):
         project: Project,
         name: int,
         author_id: int,
-        changes: UploadChanges,
+        changes: List[ProjectFileChange],
         ip: str,
         user_agent: str = None,
         device_id: str = None,
@@ -725,9 +716,7 @@ class ProjectVersion(db.Model):
             ).all()
         }
 
-        changed_files_paths = [
-            f.path for f in changes.updated + changes.removed + changes.added
-        ]
+        changed_files_paths = set(change.path for change in changes)
         existing_files_map = {
             f.path: f
             for f in ProjectFilePath.query.filter_by(project_id=self.project_id)
@@ -735,46 +724,32 @@ class ProjectVersion(db.Model):
             .all()
         }
 
-        for key in (
-            ("added", PushChangeType.CREATE),
-            ("updated", PushChangeType.UPDATE),
-            ("removed", PushChangeType.DELETE),
-        ):
-            change_attr = key[0]
-            change_type = key[1]
+        for item in changes:
+            # get existing DB file reference or create a new one (for added files)
+            db_file = existing_files_map.get(
+                item.path, ProjectFilePath(self.project_id, item.path)
+            )
+            fh = FileHistory(
+                file=db_file,
+                size=item.size,
+                checksum=item.checksum,
+                location=item.location,
+                diff=(
+                    asdict(item.diff)
+                    if (item.change is PushChangeType.UPDATE_DIFF and item.diff)
+                    else null()
+                ),
+                change=item.change,
+            )
+            fh.version = self
+            fh.project_version_name = self.name
+            db.session.add(fh)
+            db.session.flush()
 
-            for upload_file in getattr(changes, change_attr):
-                is_diff_change = (
-                    change_type is PushChangeType.UPDATE
-                    and upload_file.diff is not None
-                )
-
-                file = existing_files_map.get(
-                    upload_file.path, ProjectFilePath(self.project_id, upload_file.path)
-                )
-                fh = FileHistory(
-                    file=file,
-                    size=upload_file.size,
-                    checksum=upload_file.checksum,
-                    location=upload_file.location,
-                    diff=(
-                        asdict(upload_file.diff)
-                        if (is_diff_change and upload_file.diff)
-                        else null()
-                    ),
-                    change=(
-                        PushChangeType.UPDATE_DIFF if is_diff_change else change_type
-                    ),
-                )
-                fh.version = self
-                fh.project_version_name = self.name
-                db.session.add(fh)
-                db.session.flush()
-
-                if change_type is PushChangeType.DELETE:
-                    latest_files_map.pop(fh.path, None)
-                else:
-                    latest_files_map[fh.path] = fh.id
+            if item.change is PushChangeType.DELETE:
+                latest_files_map.pop(fh.path, None)
+            else:
+                latest_files_map[fh.path] = fh.id
 
         # update cached values in project and push to transaction buffer so that self.files is up-to-date
         self.project.latest_project_files.file_history_ids = latest_files_map.values()
@@ -909,7 +884,7 @@ class ProjectVersion(db.Model):
                 checksum=row.checksum,
                 location=row.location,
                 mtime=row.mtime,
-                diff=File(**row.diff) if row.diff else None,
+                diff=ProjectDiffFile(**row.diff) if row.diff else None,
             )
             for row in result
         ]
@@ -1029,12 +1004,13 @@ class Upload(db.Model):
         ),
     )
 
-    def __init__(self, project: Project, changes: UploadChanges, user_id: int):
+    def __init__(self, project: Project, changes: dict, user_id: int):
+        upload_changes = ChangesSchema().dump(changes)
         self.id = str(uuid.uuid4())
         self.project_id = project.id
-        self.changes = ChangesSchema().dump(changes)
         self.user_id = user_id
-        self.blocking = self.is_blocking(changes)
+        self.blocking = upload_changes.pop("is_blocking")
+        self.changes = upload_changes
 
     @property
     def upload_dir(self):
@@ -1058,16 +1034,6 @@ class Upload(db.Model):
         move_to_tmp(self.upload_dir, self.id)
         db.session.delete(self)
         db.session.commit()
-
-    @staticmethod
-    def is_blocking(changes: UploadChanges) -> bool:
-        """Check if changes would be blocking."""
-        # let's mark upload as non-blocking only if there are new non-spatial data added (e.g. photos)
-        return bool(
-            len(changes.updated)
-            or len(changes.removed)
-            or any(is_qgis(f.path) or is_versioned_file(f.path) for f in changes.added)
-        )
 
     def file_already_in_upload(self, path) -> bool:
         """Check if file is not already as new added file"""
