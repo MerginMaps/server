@@ -45,9 +45,7 @@ Alternatively, and most recommended, you can manually create `.sso.env` from the
 
 Make sure if the proxy has mounted the [./sso/sso-nginx.conf](./sso/sso-nginx.conf) file in the main [docker-compose.yml](./docker-compose.yml) file.
 
-Please follow the Mergin Maps [documentation](http://localhost:5173/docs/server/install/#deployment-of-single-sign-on-sso) on this topic.
-
-
+Please follow the Mergin Maps [documentation](https://merginmaps.com/docs/server/sso-deployment/) on this topic.
 
 ### Configure WebMaps (Optional)
 
