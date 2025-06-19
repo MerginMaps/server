@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import os
+import shutil
 import sys
 import uuid
 from copy import deepcopy
@@ -80,6 +81,9 @@ def app(flask_app, request):
                 if p.storage is not None
             ]
             cleanup(flask_app.test_client(), dirs)
+            diagnostic_logs_dir = flask_app.config.get("DIAGNOSTIC_LOGS_DIR")
+            if os.path.exists(diagnostic_logs_dir):
+                shutil.rmtree(diagnostic_logs_dir)
 
     request.addfinalizer(teardown)
     return flask_app

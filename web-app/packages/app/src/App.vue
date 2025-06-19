@@ -53,11 +53,13 @@ import {
   useNotificationStore,
   useUserStore,
   InstanceMaintenanceMessage,
-  useProjectStore
+  useProjectStore,
+  useRouterTitle,
+  routeUtils
 } from '@mergin/lib'
 import { mapActions, mapState } from 'pinia'
 import { useToast } from 'primevue/usetoast'
-import { defineComponent } from 'vue'
+import { defineComponent, watchEffect } from 'vue'
 import { useMeta } from 'vue-meta'
 
 export default defineComponent({
@@ -101,8 +103,11 @@ export default defineComponent({
     }
   },
   setup() {
+    const { title } = useRouterTitle({
+      defaultTitle: routeUtils.DEFAULT_PAGE_TITLE
+    })
     useMeta({
-      title: 'Mergin Maps',
+      title: routeUtils.DEFAULT_PAGE_TITLE,
       meta: [
         {
           name: 'description',
@@ -125,6 +130,9 @@ export default defineComponent({
     notificationStore.init(toast)
     layoutStore.init()
     projectStore.filterPermissions(['editor'], ['edit'])
+    watchEffect(() => {
+      document.title = title.value
+    })
   },
   async created() {
     await this.fetchConfig()
@@ -152,7 +160,7 @@ export default defineComponent({
   },
   methods: {
     ...mapActions(useAppStore, ['setServerError']),
-    ...mapActions(useInstanceStore, ['fetchPing', 'fetchConfig', 'initApp']),
+    ...mapActions(useInstanceStore, ['fetchPing', 'fetchConfig']),
     ...mapActions(useNotificationStore, {
       notificationError: 'error'
     }),

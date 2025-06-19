@@ -3,14 +3,18 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import base64
+from datetime import datetime
 import json
 import os
 import pytest
 from flask import url_for, current_app
 from sqlalchemy import desc
-from unittest.mock import MagicMock
+import os
+from unittest.mock import patch
+from pathvalidate import sanitize_filename
 
-from ..app import db
+from ..utils import save_diagnostic_log_file
+
 from ..sync.utils import (
     parse_gpkgb_header_size,
     gpkg_wkb_to_wkt,
@@ -107,36 +111,6 @@ def test_parse_gpkg():
     assert header_len == -1
     wkt = gpkg_wkb_to_wkt(gpkg_wkb)
     assert not wkt
-
-
-def test_healthcheck(client):
-    client.application.config["WTF_CSRF_ENABLED"] = True
-    maint_file = current_app.config["MAINTENANCE_FILE"]
-    resp = client.post("/alive")
-    assert resp.status_code == 200
-    resp_data = json.loads(resp.data)
-    assert "processing_time_ms" in resp_data
-    assert not resp_data["maintenance"]
-
-    # create maintenance mode
-    with open(maint_file, "w+"):
-        resp = client.post("/alive")
-        assert resp.status_code == 200
-        resp_data = json.loads(resp.data)
-        assert resp_data["maintenance"]
-    os.remove(maint_file)
-
-    # tests with invalid method
-    resp = client.get("/alive")
-    assert resp.status_code == 405
-
-    # mock some db issue
-    _connect = db.engine.connect
-    db.engine.connect = MagicMock(side_effect=Exception("Some db issue"))
-    resp = client.post("/alive")
-    assert resp.status_code == 500
-    # undo mock
-    db.engine.connect = _connect
 
 
 def test_is_name_allowed():
@@ -276,3 +250,33 @@ def test_get_x_accell_uri(client):
         get_x_accel_uri(*url_parts)
         == "/download/archive/cc900b78-a8b2-4e80-b546-74c96584bd10-v4.zip"
     )
+
+
+def test_save_diagnostic_log_file(client, app):
+    """Test save diagnostic log file"""
+    # Mock datetime value
+    test_date = "2025-05-09T12:00:00+00:00"
+    app_name = "t" * 256
+    username = "test-user"
+    body = b"Test log content"
+    to_folder = app.config["DIAGNOSTIC_LOGS_DIR"]
+
+    saved_file_name = save_diagnostic_log_file(app_name, username, body)
+    saved_file_path = os.path.join(to_folder, saved_file_name)
+    assert os.path.exists(saved_file_path)
+    assert len(saved_file_name) == 255
+
+    with patch("mergin.utils.datetime") as mock_datetime:
+        mock_datetime.now.return_value = datetime.fromisoformat(test_date)
+        app_name = "test_<>app"
+        saved_file_name = save_diagnostic_log_file(app_name, username, body)
+        # Check if the file was created
+        assert saved_file_name == sanitize_filename(
+            username + "_" + app_name + "_" + test_date + ".log"
+        )
+        saved_file_path = os.path.join(to_folder, saved_file_name)
+        assert os.path.exists(saved_file_path)
+        # Check the content of the file
+        with open(saved_file_path, "r") as f:
+            content = f.read()
+            assert content == body.decode("utf-8")

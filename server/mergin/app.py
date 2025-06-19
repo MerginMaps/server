@@ -177,6 +177,12 @@ def create_app(public_keys: List[str] = None) -> Flask:
         options={"swagger_ui": False, "serve_spec": False},
         validate_responses=True,
     )
+    app.add_api(
+        "api.yaml",
+        arguments={"title": "Mergin"},
+        options={"swagger_ui": False, "serve_spec": False},
+        validate_responses=True,
+    )
 
     app.app.config.from_object(SyncConfig)
     app.app.connexion_app = app
