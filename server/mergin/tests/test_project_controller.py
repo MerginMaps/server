@@ -38,7 +38,7 @@ from ..sync.models import (
     PushChangeType,
     ProjectFilePath,
 )
-from ..sync.files import ChangesSchema, UploadChanges
+from ..sync.files import ChangesSchema, files_changes_from_upload
 from ..sync.schemas import ProjectListSchema
 from ..sync.utils import generate_checksum, is_versioned_file, get_project_path
 from ..auth.models import User, UserProfile
@@ -1205,13 +1205,7 @@ def test_push_to_new_project(client):
         project,
         0,
         p.creator.id,
-        ChangesSchema(context={"version": 0}).load(
-            {
-                "added": [],
-                "updated": [],
-                "removed": [],
-            }
-        ),
+        [],
         ip="127.0.0.1",
     )
     db.session.add(pv)
@@ -1411,8 +1405,7 @@ def create_transaction(username, changes, version=1):
     project = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
     ).first()
-    upload_changes = ChangesSchema(context={"version": version}).load(changes)
-    upload = Upload(project, upload_changes, user.id)
+    upload = Upload(project, changes, user.id)
     db.session.add(upload)
     db.session.commit()
     upload_dir = os.path.join(upload.project.storage.project_dir, "tmp", upload.id)
@@ -1525,7 +1518,7 @@ def test_push_finish(client):
         upload.project,
         upload.project.latest_version,
         upload.project.creator.id,
-        UploadChanges(added=[], updated=[], removed=[]),
+        [],
         "127.0.0.1",
     )
     pv.project = upload.project
@@ -2436,12 +2429,12 @@ def add_project_version(project, changes, version=None):
         else User.query.filter_by(username=DEFAULT_USER[0]).first()
     )
     next_version = version or project.next_version()
-    upload_changes = ChangesSchema(context={"version": next_version}).load(changes)
+    file_changes = files_changes_from_upload(changes, version=next_version)
     pv = ProjectVersion(
         project,
         next_version,
         author.id,
-        upload_changes,
+        file_changes,
         ip="127.0.0.1",
     )
     db.session.add(pv)

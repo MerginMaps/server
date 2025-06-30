@@ -20,7 +20,7 @@ from pygeodiff import GeoDiff
 from ..auth.models import User, UserProfile
 from ..sync.utils import generate_location, generate_checksum
 from ..sync.models import Project, ProjectVersion, FileHistory, ProjectRole
-from ..sync.files import UploadChanges, ChangesSchema
+from ..sync.files import ProjectFileChange, PushChangeType, files_changes_from_upload
 from ..sync.workspace import GlobalWorkspace
 from ..app import db
 from . import json_headers, DEFAULT_USER, test_project, test_project_dir, TMP_DIR
@@ -82,8 +82,7 @@ def create_project(name, workspace, user, **kwargs):
     p.updated = datetime.utcnow()
     db.session.add(p)
     db.session.flush()
-    changes = UploadChanges(added=[], updated=[], removed=[])
-    pv = ProjectVersion(p, 0, user.id, changes, "127.0.0.1")
+    pv = ProjectVersion(p, 0, user.id, [], "127.0.0.1")
     db.session.add(pv)
     db.session.commit()
 
@@ -156,15 +155,17 @@ def initialize():
         for f in files:
             abs_path = os.path.join(root, f)
             project_files.append(
-                {
-                    "path": abs_path.replace(test_project_dir, "").lstrip("/"),
-                    "location": os.path.join(
+                ProjectFileChange(
+                    path=abs_path.replace(test_project_dir, "").lstrip("/"),
+                    checksum=generate_checksum(abs_path),
+                    size=os.path.getsize(abs_path),
+                    mtime=str(datetime.fromtimestamp(os.path.getmtime(abs_path))),
+                    change=PushChangeType.CREATE,
+                    location=os.path.join(
                         "v1", abs_path.replace(test_project_dir, "").lstrip("/")
                     ),
-                    "size": os.path.getsize(abs_path),
-                    "checksum": generate_checksum(abs_path),
-                    "mtime": str(datetime.fromtimestamp(os.path.getmtime(abs_path))),
-                }
+                    diff=None,
+                )
             )
     p.latest_version = 1
     p.public = True
@@ -173,14 +174,7 @@ def initialize():
     db.session.add(p)
     db.session.commit()
 
-    upload_changes = ChangesSchema(context={"version": 1}).load(
-        {
-            "added": project_files,
-            "updated": [],
-            "removed": [],
-        }
-    )
-    pv = ProjectVersion(p, 1, user.id, upload_changes, "127.0.0.1")
+    pv = ProjectVersion(p, 1, user.id, project_files, "127.0.0.1")
     db.session.add(pv)
     db.session.commit()
 
@@ -285,7 +279,7 @@ def create_blank_version(project):
         project,
         project.next_version(),
         project.creator.id,
-        UploadChanges(added=[], updated=[], removed=[]),
+        [],
         "127.0.0.1",
     )
     db.session.add(pv)
@@ -355,14 +349,12 @@ def push_change(project, action, path, src_dir):
     else:
         return
 
-    upload_changes = ChangesSchema(context={"version": project.next_version()}).load(
-        changes
-    )
+    file_changes = files_changes_from_upload(changes, version=project.next_version())
     pv = ProjectVersion(
         project,
         project.next_version(),
         project.creator.id,
-        upload_changes,
+        file_changes,
         "127.0.0.1",
     )
     db.session.add(pv)
