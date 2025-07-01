@@ -120,5 +120,5 @@ class Configuration(object):
         ),
     )
     DIAGNOSTIC_LOGS_MAX_SIZE = config(
-        "DIAGNOSTIC_LOGS_MAX_SIZE", default=1024 * 1024, cast=int
+        "DIAGNOSTIC_LOGS_MAX_SIZE", default=10 * 1024 * 1024, cast=int
     )
