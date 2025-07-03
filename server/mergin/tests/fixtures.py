@@ -238,3 +238,8 @@ def diff_project(app):
     finally:
         os.remove(test_gpkg_file)
     return project
+
+
+@pytest.fixture()
+def runner(app):
+    return app.test_cli_runner()
