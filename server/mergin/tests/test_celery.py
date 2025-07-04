@@ -10,19 +10,20 @@ from unittest.mock import patch
 
 from ..app import db
 from ..config import Configuration
-from ..sync.models import Project, AccessRequest, ProjectRole, ProjectVersion
+from ..sync.models import Project, AccessRequest, ProjectRole, ProjectVersion, Upload
 from ..celery import send_email_async
 from ..sync.tasks import (
+    remove_stale_project_uploads,
     remove_temp_files,
     remove_projects_backups,
     create_project_version_zip,
     remove_projects_archives,
 )
 from ..sync.storages.disk import move_to_tmp
-from . import test_project, test_workspace_name, test_workspace_id
+from . import test_project, test_workspace_name, test_workspace_id, json_headers
+from .test_project_controller import create_transaction
 from .utils import add_user, create_workspace, create_project, login, modify_file_times
 from ..auth.models import User
-from . import json_headers
 
 
 def test_send_email(app):
@@ -157,3 +158,18 @@ def test_create_project_version_zip(diff_project):
     modify_file_times(latest_version.zip_path, new_time)
     remove_projects_archives()
     assert not os.path.exists(latest_version.zip_path)
+
+
+@patch.object(Upload, "is_active")
+def test_after_push_upload_cleanup(mock_is_active, client):
+    """Test stale uploads are removed"""
+    upload, _ = create_transaction("mergin", {})
+    transaction_id = upload.id
+
+    mock_is_active.return_value = True
+    remove_stale_project_uploads(upload.project_id)
+    assert Upload.query.get(transaction_id)
+
+    mock_is_active.return_value = False
+    remove_stale_project_uploads(upload.project_id)
+    assert not Upload.query.get(transaction_id)
