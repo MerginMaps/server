@@ -209,7 +209,6 @@ def create_app(public_keys: List[str] = None) -> Flask:
                     app.app.config["SECRET_KEY"],
                     app.app.config["SECURITY_BEARER_SALT"],
                     header_val,
-                    app.app.config["BEARER_TOKEN_EXPIRATION"],
                 )
                 user = User.query.filter_by(
                     id=data["user_id"], username=data["username"], email=data["email"]
