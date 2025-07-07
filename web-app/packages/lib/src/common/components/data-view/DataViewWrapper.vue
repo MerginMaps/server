@@ -13,15 +13,18 @@
           <div
             v-for="col in columns.filter((item) => !item.fixed)"
             :class="[
-              'paragraph-p6 hidden lg:flex',
-              `col-${col.cols ?? defaultCols}`
+              'paragraph-p6',
+              `col-${col.cols ?? defaultCols}`,
+              responsive ? 'hidden lg:flex' : 'flex'
             ]"
             :key="col.text"
           >
             {{ col.text }}
           </div>
           <!-- else -->
-          <div class="col-12 flex lg:hidden"><slot name="header-title" /></div>
+          <div v-if="responsive" class="col-12 flex lg:hidden">
+            <slot name="header-title" />
+          </div>
         </div>
       </template>
 
@@ -50,12 +53,17 @@
               v-for="column in computedColumns.filter((item) => !item.fixed)"
               :key="column.value"
               :class="[
-                'flex flex-column justify-content-center col-12 gap-1',
-                `lg:col-${column.cols ?? defaultCols}`,
+                'flex flex-column justify-content-center gap-1',
+                responsive
+                  ? `col-12 lg:col-${column.cols ?? defaultCols}`
+                  : `col-${column.cols ?? defaultCols}`,
                 'py-2 lg:py-0'
               ]"
             >
-              <p class="paragraph-p6 opacity-80 font-semibold lg:hidden">
+              <p
+                v-if="responsive"
+                class="paragraph-p6 opacity-80 font-semibold lg:hidden"
+              >
                 {{ column.text }}
               </p>
               <slot :name="`col-${column.value}`" :column="column" :item="item">
@@ -86,8 +94,10 @@
                   v-for="col in columns.filter((item) => !item.fixed)"
                   :key="col.value"
                   :class="[
-                    'flex flex-column justify-content-center col-12',
-                    `lg:col-${col.cols ?? 2}`,
+                    'flex flex-column justify-content-center',
+                    responsive
+                      ? `col-12 lg:col-${col.cols ?? defaultCols}`
+                      : `col-${col.cols ?? defaultCols}`,
                     'py-2 pr-2'
                   ]"
                 >
@@ -129,20 +139,6 @@ defineOptions({
  * @property {boolean} [rowCursorPointer] - Indicates whether the cursor should be a pointer when hovering over a row.
  * @property {DataViewWrapperOptions} [options] - The options for the data view.
  * @property {object[]} [value] - The data to be displayed in the data view.
- */
-/**
- * Defines the props for the `DataViewWrapper` component.
- *
- * @interface Props
- * @property {string} dataKey - The key to use for identifying each item in the data.
- * @property {boolean} [loading] - Indicates whether the data is currently being loaded.
- * @property {number} [loadingRows] - The number of loading rows to display when the data is being loaded.
- * @property {string} [emptyMessage] - The message to display when there is no data available.
- * @property {DataViewWrapperColumnItem[]} columns - An array of column definitions for the data view.
- * @property {(item: any) => StyleValue} [rowStyle] - A function that returns the style for each row in the data view.
- * @property {boolean} [rowCursorPointer] - Indicates whether the cursor should be a pointer when hovering over a row.
- * @property {DataViewWrapperOptions} [options] - The options for the data view.
- * @property {object[]} [value] - The data to be displayed in the data view.
  * @property {number} [defaultCols] - The default number of columns to display.
  */
 interface Props {
@@ -156,6 +152,7 @@ interface Props {
   options?: DataViewWrapperOptions
   value?: object[]
   defaultCols?: number
+  responsive?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -163,7 +160,8 @@ const props = withDefaults(defineProps<Props>(), {
   loadingRows: 3,
   emptyMessage: 'No data available',
   rowCursorPointer: true,
-  defaultCols: 2
+  defaultCols: 2,
+  responsive: true
 })
 
 type EmitItem = Record<string, unknown>
