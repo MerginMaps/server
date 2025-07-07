@@ -26,11 +26,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div class="flex flex-column h-full">
           <!-- Header -->
           <div
-            class="flex align-items-center justify-content-between py-2 px-3"
+            class="flex align-items-center justify-content-between px-4 py-3"
           >
-            <h4>
-              <slot v-if="isScrollingContent" name="title"></slot>
-            </h4>
+            <slot name="headerTitle">
+              <h4>
+                <slot v-if="isScrollingContent" name="title"></slot>
+              </h4>
+            </slot>
             <div class="flex-shrink-0">
               <slot name="headerButtons"></slot>
               <PButton
@@ -47,7 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </div>
 
           <!-- content -->
-          <div class="overflow-y-auto p-4 pt-6" @scroll="scrollContent">
+          <div class="overflow-y-auto p-4 pt-5" @scroll="scrollContent">
             <slot></slot>
           </div>
 
