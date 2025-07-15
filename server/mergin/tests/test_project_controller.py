@@ -25,6 +25,7 @@ import tempfile
 from sqlalchemy import desc
 from ..app import db
 from ..sync.models import (
+    FileDiff,
     Project,
     Upload,
     ProjectVersion,
@@ -443,7 +444,7 @@ def test_add_project(client, app, data, expected):
         assert not any(file.diff for file in proj_files)
         assert not any(file.diff for file in pv.files)
         assert all(
-            item.change == PushChangeType.CREATE.value and not item.diff
+            item.change == PushChangeType.CREATE.value and not item.diff_file
             for item in pv.changes.all()
         )
         # cleanup
@@ -1597,7 +1598,7 @@ def test_push_no_diff_finish(client):
     file_meta = latest_version.changes.filter(
         FileHistory.change == PushChangeType.UPDATE_DIFF.value
     ).first()
-    assert file_meta.diff is not None
+    assert file_meta.diff_file is not None
     assert os.path.exists(
         os.path.join(upload.project.storage.project_dir, file_meta.diff_file.location)
     )
@@ -2370,7 +2371,8 @@ def test_version_files(client, diff_project):
             x.checksum == y.checksum
             and x.path == y.path
             and x.location == y.location
-            and x.diff == y.diff
+            and x.diff_path == y.diff_path
+            and x.diff_checksum == y.diff_checksum
             for x, y in zip(
                 sorted(forward_search, key=lambda f: f.path),
                 sorted(backward_search, key=lambda f: f.path),
@@ -2397,7 +2399,7 @@ def test_delete_diff_file(client):
         project_version_name=upload.project.latest_version,
         change=PushChangeType.UPDATE_DIFF.value,
     ).first()
-    assert fh.diff is not None
+    assert fh.diff_file is not None
 
     # delete file
     diff_change = next(
@@ -2424,7 +2426,7 @@ def test_delete_diff_file(client):
         project_version_name=upload.project.latest_version,
         change=PushChangeType.DELETE.value,
     ).first()
-    assert fh.path == "base.gpkg" and fh.diff is None
+    assert fh.path == "base.gpkg" and fh.diff_file is None
 
 
 def test_cache_files_ids(client):

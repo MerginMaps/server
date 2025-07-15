@@ -116,7 +116,9 @@ class ChangesSchema(ma.Schema):
 
 class ProjectFileSchema(FileSchema):
     mtime = DateTimeWithZ()
-    diff = fields.Nested(FileSchema())
+    diff = fields.Nested(
+        FileSchema(),
+    )
 
     @post_dump
     def patch_field(self, data, **kwargs):
