@@ -11,6 +11,7 @@ from dataclasses import asdict
 from typing import Dict
 from urllib.parse import quote
 from datetime import datetime
+import uuid
 from marshmallow import ValidationError
 
 import gevent
@@ -996,8 +997,11 @@ def push_finish(transaction_id):
     }
 
     corrupted_files = []
+    sync_errors = {}
+    to_remove = [i.path for i in file_changes if i.change == PushChangeType.DELETE]
+    current_files = [f for f in project.files if f.path not in to_remove]
 
-    # Concatenate chunks into single file
+    # Concatenate chunks into single file and apply gpkg updates if needed
     for f in file_changes:
         if f.change == PushChangeType.DELETE:
             continue
@@ -1048,6 +1052,61 @@ def push_finish(transaction_id):
             )
             corrupted_files.append(f.path)
 
+        # for updates try to apply diff to create a full updated gpkg file or from full .gpkg try to create corresponding diff
+        if f.change in (
+            PushChangeType.UPDATE,
+            PushChangeType.UPDATE_DIFF,
+        ) and is_versioned_file(f.path):
+            current_file = next((i for i in current_files if i.path == f.path), None)
+            if not current_file:
+                sync_errors[f.path] = "file not found on server "
+                continue
+            # yield to gevent hub since geodiff action can take some time to prevent worker timeout
+            sleep(0)
+
+            if f.diff:
+                changeset = temporary_location
+                patched_file = os.path.join(upload_dir, "files", f.location)
+
+                result = project.storage.apply_diff(
+                    current_file, changeset, patched_file, next_version
+                )
+                if result.ok():
+                    checksum, size = result.value
+                    f.checksum = checksum
+                    f.size = size
+                else:
+                    sync_errors[f.path] = (
+                        f"project: {project.workspace.name}/{project.name}, {result.value}"
+                    )
+            else:
+                diff_name = mergin_secure_filename(
+                    f.path + "-diff-" + str(uuid.uuid4())
+                )
+                changeset = os.path.join(upload_dir, "files", v_next_version, diff_name)
+                patched_file = temporary_location
+                result = project.storage.construct_diff(
+                    current_file, changeset, patched_file, next_version
+                )
+                if result.ok():
+                    f.diff = result.value
+                    f.change = PushChangeType.UPDATE_DIFF
+                else:
+                    # if diff cannot be constructed it would be force update
+                    logging.warning(f"Geodiff: create changeset error {result.value}")
+
+    # geodiff related issues, project push would never succeed, whole upload is aborted
+    if sync_errors:
+        msg = ""
+        for key, value in sync_errors.items():
+            msg += key + " error=" + value + "\n"
+        logging.error(
+            f"Failed to finish push for project: {project.id}, project version: {v_next_version}, "
+            f"transaction id: {transaction_id}.: {msg}"
+        )
+        upload.clear()
+        abort(422, f"Failed to create new version: {msg}")
+
     if corrupted_files:
         move_to_tmp(upload_dir)
         abort(422, {"corrupted_files": corrupted_files})
@@ -1055,101 +1114,71 @@ def push_finish(transaction_id):
     files_dir = os.path.join(upload_dir, "files", v_next_version)
     target_dir = os.path.join(project.storage.project_dir, v_next_version)
 
-    # double check someone else has not created the same version meanwhile
-    if ProjectVersion.query.filter_by(
-        project_id=project.id, name=next_version
-    ).count() or os.path.exists(target_dir):
-        abort(
-            409,
-            f"There is already version with this name {v_next_version}",
-        )
+    # double check someone else has not created the same version meanwhile, we need to adjust
+    if project.version_exists(next_version):
+        previous_target_version_path = v_next_version + os.path.sep
+        project = Project.query.get(project.id)
+        next_version = project.next_version()
+        v_next_version = ProjectVersion.to_v_name(next_version)
+        target_dir = os.path.join(project.storage.project_dir, v_next_version)
+        # update files metadata to correspond to the new version
+        for f in file_changes:
+            if not f.location:
+                continue
+            f.location = os.path.join(
+                v_next_version, f.location.removeprefix(previous_target_version_path)
+            )
+
+            if f.diff:
+                f.diff.location = os.path.join(
+                    v_next_version,
+                    f.diff.location.removeprefix(previous_target_version_path),
+                )
 
     try:
-        # let's move uploaded files where they are expected to be
-        os.renames(files_dir, target_dir)
-        # apply gpkg updates
-        sync_errors = {}
-        to_remove = [i.path for i in file_changes if i.change == PushChangeType.DELETE]
-        current_files = [f for f in project.files if f.path not in to_remove]
-        for file in file_changes:
-            # for updates try to apply diff to create a full updated gpkg file or from full .gpkg try to create corresponding diff
-            if file.change in (
-                PushChangeType.UPDATE,
-                PushChangeType.UPDATE_DIFF,
-            ) and is_versioned_file(file.path):
-                current_file = next(
-                    (i for i in current_files if i.path == file.path), None
-                )
-                if not current_file:
-                    sync_errors[file.path] = "file not found on server "
-                    continue
-
-                # yield to gevent hub since geodiff action can take some time to prevent worker timeout
-                sleep(0)
-
-                if file.diff:
-                    result = project.storage.apply_diff(
-                        current_file, file, next_version
-                    )
-                    if result.ok():
-                        checksum, size = result.value
-                        file.checksum = checksum
-                        file.size = size
-                    else:
-                        sync_errors[file.path] = (
-                            f"project: {project.workspace.name}/{project.name}, {result.value}"
-                        )
-                else:
-                    result = project.storage.construct_diff(
-                        current_file, file, next_version
-                    )
-                    if result.ok():
-                        file.diff = result.value
-                        file.change = PushChangeType.UPDATE_DIFF
-                    else:
-                        # if diff cannot be constructed it would be force update
-                        logging.warning(
-                            f"Geodiff: create changeset error {result.value}"
-                        )
-
-        if sync_errors:
-            msg = ""
-            for key, value in sync_errors.items():
-                msg += key + " error=" + value + "\n"
-            raise DataSyncError(msg)
-
-        user_agent = get_user_agent(request)
-        device_id = get_device_id(request)
         pv = ProjectVersion(
             project,
             next_version,
             current_user.id,
             file_changes,
             get_ip(request),
-            user_agent,
-            device_id,
+            get_user_agent(request),
+            get_device_id(request),
         )
         db.session.add(pv)
         db.session.add(project)
         db.session.commit()
+        # let's move uploaded files where they are expected to be
+        os.renames(files_dir, target_dir)
+
         logging.info(
             f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
         )
         project_version_created.send(pv)
         push_finished.send(pv)
-    except (psycopg2.Error, FileNotFoundError, DataSyncError, IntegrityError) as err:
+    except (psycopg2.Error, FileNotFoundError, IntegrityError) as err:
         db.session.rollback()
         logging.exception(
             f"Failed to finish push for project: {project.id}, project version: {v_next_version}, "
             f"transaction id: {transaction_id}.: {str(err)}"
         )
-        if os.path.exists(target_dir):
+        if (
+            os.path.exists(target_dir)
+            and not ProjectVersion.query.filter_by(
+                project_id=project.id, name=next_version
+            ).count()
+        ):
             move_to_tmp(target_dir)
         abort(422, "Failed to create new version: {}".format(str(err)))
     # catch exception during pg transaction so we can rollback and prevent PendingRollbackError during upload clean up
     except gevent.timeout.Timeout:
         db.session.rollback()
-        if os.path.exists(target_dir):
+        if (
+            os.path.exists(target_dir)
+            and not ProjectVersion.query.filter_by(
+                project_id=project.id, name=next_version
+            ).count()
+        ):
             move_to_tmp(target_dir)
         raise
     finally:

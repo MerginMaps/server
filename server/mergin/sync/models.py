@@ -315,6 +315,13 @@ class Project(db.Model):
 
         return set(id_diffs)
 
+    def version_exists(self, version: int) -> bool:
+        """Check if particular project version exists"""
+        return bool(
+            os.path.exists(os.path.join(self.storage.project_dir, f"v{version}"))
+            or ProjectVersion.query.filter_by(project_id=self.id, name=version).count()
+        )
+
 
 class ProjectRole(Enum):
     """Project roles ordered by rank (do not change)"""
