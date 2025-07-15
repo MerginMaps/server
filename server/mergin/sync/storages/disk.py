@@ -245,14 +245,14 @@ class DiskStorage(ProjectStorage):
         return _generator()
 
     def apply_diff(
-        self, current_file: ProjectFile, changeset: str, patchedfile: str, version: int
+        self, current_file: ProjectFile, changeset: str, patchedfile: str
     ) -> Result:
         """Apply geodiff diff file on current gpkg basefile. Creates GeodiffActionHistory record of the action.
         Returns checksum and size of generated file. If action fails it returns geodiff error message.
         """
         from ..models import GeodiffActionHistory, ProjectVersion
 
-        v_name = ProjectVersion.to_v_name(version)
+        v_name = ProjectVersion.to_v_name(self.project.next_version())
         basefile = os.path.join(self.project_dir, current_file.location)
         # create local copy of basefile which will be updated in next version and changeset needed
         # TODO this can potentially fail for large files
@@ -315,14 +315,10 @@ class DiskStorage(ProjectStorage):
         current_file: ProjectFile,
         changeset: str,
         uploaded_file: str,
-        version: int,
     ) -> Result:
         """Construct geodiff diff file from uploaded gpkg and current basefile. Returns diff metadata as a result.
         If action fails it returns geodiff error message.
         """
-        from ..models import ProjectVersion
-
-        v_name = ProjectVersion.to_v_name(version)
         basefile = os.path.join(self.project_dir, current_file.location)
         diff_name = os.path.basename(changeset)
         with self.geodiff_copy(basefile) as basefile_tmp, self.geodiff_copy(
@@ -341,15 +337,13 @@ class DiskStorage(ProjectStorage):
                 self.geodiff.create_changeset(
                     basefile_tmp, uploaded_file_tmp, changeset_tmp
                 )
-                # create diff metadata as it would be created by other clients
-                diff_file = ProjectDiffFile(
-                    path=diff_name,
-                    checksum=generate_checksum(changeset_tmp),
-                    size=os.path.getsize(changeset_tmp),
-                    location=os.path.join(v_name, diff_name),
-                )
                 copy_file(changeset_tmp, changeset)
-                return Ok(diff_file)
+                return Ok(
+                    (
+                        generate_checksum(changeset_tmp),
+                        os.path.getsize(changeset_tmp),
+                    )
+                )
             except (GeoDiffLibError, GeoDiffLibConflictError) as e:
                 # diff is not possible to create - file will be overwritten
                 move_to_tmp(changeset)

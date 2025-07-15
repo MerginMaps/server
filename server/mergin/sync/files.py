@@ -80,17 +80,18 @@ class ProjectFileChange(ProjectFile):
     change: PushChangeType
 
 
-def files_changes_from_upload(changes: dict, version: int) -> List["ProjectFileChange"]:
+def files_changes_from_upload(
+    changes: dict, location_dir: str
+) -> List["ProjectFileChange"]:
     """Create a list of version file changes from upload changes dictionary used by public API.
 
     It flattens changes dict and adds change type to each item. Also generates location for each file.
     """
     secure_filenames = []
     version_changes = []
-    version = "v" + str(version)
     for key in ("added", "updated", "removed"):
         for item in changes.get(key, []):
-            location = os.path.join(version, mergin_secure_filename(item["path"]))
+            location = os.path.join(location_dir, mergin_secure_filename(item["path"]))
             diff = None
 
             # make sure we have unique location for each file
@@ -110,7 +111,7 @@ def files_changes_from_upload(changes: dict, version: int) -> List["ProjectFileC
                 if item.get("diff"):
                     change = PushChangeType.UPDATE_DIFF
                     diff_location = os.path.join(
-                        version, mergin_secure_filename(item["diff"]["path"])
+                        location_dir, mergin_secure_filename(item["diff"]["path"])
                     )
                     if diff_location in secure_filenames:
                         filename, file_extension = os.path.splitext(diff_location)

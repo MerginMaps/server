@@ -349,7 +349,9 @@ def push_change(project, action, path, src_dir):
     else:
         return
 
-    file_changes = files_changes_from_upload(changes, version=project.next_version())
+    file_changes = files_changes_from_upload(
+        changes, location_dir=f"v{project.next_version()}"
+    )
     pv = ProjectVersion(
         project,
         project.next_version(),

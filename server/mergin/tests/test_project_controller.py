@@ -38,7 +38,7 @@ from ..sync.models import (
     PushChangeType,
     ProjectFilePath,
 )
-from ..sync.files import ChangesSchema, files_changes_from_upload
+from ..sync.files import files_changes_from_upload
 from ..sync.schemas import ProjectListSchema
 from ..sync.utils import generate_checksum, is_versioned_file, get_project_path
 from ..auth.models import User, UserProfile
@@ -1501,12 +1501,7 @@ def test_push_finish(client):
 
     # test finish upload when another upload was already processed
     original_version = upload.project.latest_version
-    with patch(
-        "mergin.sync.models.Project.version_exists"
-    ) as mock_version_exists, patch(
-        "mergin.sync.models.Project.next_version"
-    ) as mock_next_version:
-        mock_version_exists.return_value = True
+    with patch("mergin.sync.models.Project.next_version") as mock_next_version:
         mock_next_version.return_value = original_version + 2
 
         resp = client.post(
@@ -2422,7 +2417,7 @@ def add_project_version(project, changes, version=None):
         else User.query.filter_by(username=DEFAULT_USER[0]).first()
     )
     next_version = version or project.next_version()
-    file_changes = files_changes_from_upload(changes, version=next_version)
+    file_changes = files_changes_from_upload(changes, location_dir="v{next_version}")
     pv = ProjectVersion(
         project,
         next_version,

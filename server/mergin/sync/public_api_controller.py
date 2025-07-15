@@ -53,7 +53,6 @@ from .models import (
 from .files import (
     ChangesSchema,
     ProjectDiffFile,
-    ProjectFile,
     ProjectFileChange,
     ProjectFileSchema,
     files_changes_from_upload,
@@ -68,7 +67,7 @@ from .schemas import (
     FileHistorySchema,
     ProjectVersionListSchema,
 )
-from .storages.storage import DataSyncError, InitializationError
+from .storages.storage import InitializationError
 from .storages.disk import save_to_file, move_to_tmp
 from .permissions import (
     require_project,
@@ -881,7 +880,9 @@ def project_push(namespace, project_name):
         next_version = version + 1
         user_agent = get_user_agent(request)
         device_id = get_device_id(request)
-        file_changes = files_changes_from_upload(upload.changes, version=next_version)
+        file_changes = files_changes_from_upload(
+            upload.changes, ProjectVersion.to_v_name(next_version)
+        )
         try:
             pv = ProjectVersion(
                 project,
@@ -982,15 +983,14 @@ def push_finish(transaction_id):
         abort(make_response(jsonify(ProjectLocked().to_dict()), 422))
 
     project_path = get_project_path(project)
-    next_version = project.latest_version + 1
-    v_next_version = ProjectVersion.to_v_name(next_version)
+    tmp_location_dir = "tmp"
     try:
         upload_changes = ChangesSchema().load(upload.changes)
     except ValidationError as err:
         msg = err.messages[0] if type(err.messages) == list else "Invalid input data"
         abort(422, msg)
 
-    file_changes = files_changes_from_upload(upload_changes, next_version)
+    file_changes = files_changes_from_upload(upload_changes, tmp_location_dir)
     chunks_map = {
         f["path"]: f["chunks"]
         for f in upload_changes["added"] + upload_changes["updated"]
@@ -1069,7 +1069,7 @@ def push_finish(transaction_id):
                 patched_file = os.path.join(upload_dir, "files", f.location)
 
                 result = project.storage.apply_diff(
-                    current_file, changeset, patched_file, next_version
+                    current_file, changeset, patched_file
                 )
                 if result.ok():
                     checksum, size = result.value
@@ -1083,13 +1083,21 @@ def push_finish(transaction_id):
                 diff_name = mergin_secure_filename(
                     f.path + "-diff-" + str(uuid.uuid4())
                 )
-                changeset = os.path.join(upload_dir, "files", v_next_version, diff_name)
+                changeset = os.path.join(
+                    upload_dir, "files", tmp_location_dir, diff_name
+                )
                 patched_file = temporary_location
                 result = project.storage.construct_diff(
-                    current_file, changeset, patched_file, next_version
+                    current_file, changeset, patched_file
                 )
                 if result.ok():
-                    f.diff = result.value
+                    checksum, size = result.value
+                    f.diff = ProjectDiffFile(
+                        checksum=checksum,
+                        size=size,
+                        path=diff_name,
+                        location=os.path.join(tmp_location_dir, diff_name),
+                    )
                     f.change = PushChangeType.UPDATE_DIFF
                 else:
                     # if diff cannot be constructed it would be force update
@@ -1101,7 +1109,7 @@ def push_finish(transaction_id):
         for key, value in sync_errors.items():
             msg += key + " error=" + value + "\n"
         logging.error(
-            f"Failed to finish push for project: {project.id}, project version: {v_next_version}, "
+            f"Failed to finish push for project: {project.id}, project version: {project.next_version()}, {msg}"
             f"transaction id: {transaction_id}.: {msg}"
         )
         upload.clear()
@@ -1111,29 +1119,25 @@ def push_finish(transaction_id):
         move_to_tmp(upload_dir)
         abort(422, {"corrupted_files": corrupted_files})
 
-    files_dir = os.path.join(upload_dir, "files", v_next_version)
-    target_dir = os.path.join(project.storage.project_dir, v_next_version)
+    # let's move files to the target directory, we need to determine what will be the next version (head could have changed meanwhile)
+    temp_files_dir = os.path.join(upload_dir, "files", tmp_location_dir)
+    project = Project.query.get(project.id)
+    next_version = project.next_version()
+    v_next_version = ProjectVersion.to_v_name(next_version)
+    version_dir = os.path.join(project.storage.project_dir, v_next_version)
+    # update files metadata to correspond to the new version
+    for f in file_changes:
+        if not f.location:
+            continue
+        f.location = os.path.join(
+            v_next_version, f.location.removeprefix(tmp_location_dir + os.path.sep)
+        )
 
-    # double check someone else has not created the same version meanwhile, we need to adjust
-    if project.version_exists(next_version):
-        previous_target_version_path = v_next_version + os.path.sep
-        project = Project.query.get(project.id)
-        next_version = project.next_version()
-        v_next_version = ProjectVersion.to_v_name(next_version)
-        target_dir = os.path.join(project.storage.project_dir, v_next_version)
-        # update files metadata to correspond to the new version
-        for f in file_changes:
-            if not f.location:
-                continue
-            f.location = os.path.join(
-                v_next_version, f.location.removeprefix(previous_target_version_path)
+        if f.diff:
+            f.diff.location = os.path.join(
+                v_next_version,
+                f.diff.location.removeprefix(tmp_location_dir + os.path.sep),
             )
-
-            if f.diff:
-                f.diff.location = os.path.join(
-                    v_next_version,
-                    f.diff.location.removeprefix(previous_target_version_path),
-                )
 
     try:
         pv = ProjectVersion(
@@ -1149,7 +1153,7 @@ def push_finish(transaction_id):
         db.session.add(project)
         db.session.commit()
         # let's move uploaded files where they are expected to be
-        os.renames(files_dir, target_dir)
+        os.renames(temp_files_dir, version_dir)
 
         logging.info(
             f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
@@ -1163,23 +1167,23 @@ def push_finish(transaction_id):
             f"transaction id: {transaction_id}.: {str(err)}"
         )
         if (
-            os.path.exists(target_dir)
+            os.path.exists(version_dir)
             and not ProjectVersion.query.filter_by(
                 project_id=project.id, name=next_version
             ).count()
         ):
-            move_to_tmp(target_dir)
+            move_to_tmp(version_dir)
         abort(422, "Failed to create new version: {}".format(str(err)))
     # catch exception during pg transaction so we can rollback and prevent PendingRollbackError during upload clean up
     except gevent.timeout.Timeout:
         db.session.rollback()
         if (
-            os.path.exists(target_dir)
+            os.path.exists(version_dir)
             and not ProjectVersion.query.filter_by(
                 project_id=project.id, name=next_version
             ).count()
         ):
-            move_to_tmp(target_dir)
+            move_to_tmp(version_dir)
         raise
     finally:
         # remove artifacts
