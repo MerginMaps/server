@@ -75,7 +75,7 @@ def project_user_permissions(project):
 
 class FileHistorySchema(ma.SQLAlchemyAutoSchema):
     mtime = DateTimeWithZ()
-    diff = fields.Nested(FileSchema(), attribute="diff_file")
+    diff = fields.Nested(FileSchema(), attribute="diff_file", exclude=("location",))
     expiration = DateTimeWithZ(attribute="expiration", dump_only=True)
 
     class Meta:

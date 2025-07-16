@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 from zipfile import ZIP_DEFLATED, ZipFile
 from flask import current_app
 
-from .models import Project, ProjectVersion, FileHistory, Upload
+from .models import Project, ProjectVersion, FileHistory
 from .storages.disk import move_to_tmp
 from .config import Configuration
 from ..celery import celery
@@ -155,12 +155,3 @@ def remove_projects_archives():
                 os.remove(path)
             except OSError as e:
                 logging.error(f"Unable to remove {path}: {str(e)}")
-
-
-@celery.task
-def remove_stale_project_uploads(project_id: str):
-    """Remove project stale uploads"""
-    db.session.info = {"msg": "remove_stale_project_uploads"}
-    for upload in Upload.query.filter_by(project_id=project_id).all():
-        if not upload.is_active():
-            upload.clear()

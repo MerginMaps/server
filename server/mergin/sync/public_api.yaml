@@ -596,10 +596,6 @@ paths:
                         description: upload transaction uuid
                         type: string
                         example: 970181b5-7143-491b-91a6-36533021c9a2
-                      blocking:
-                        description: if upload blocks other uploads
-                        type: boolean
-                        example: false
         "400":
           $ref: "#/components/responses/BadStatusResp"
         "401":
