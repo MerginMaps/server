@@ -38,7 +38,7 @@ from ..sync.models import (
     PushChangeType,
     ProjectFilePath,
 )
-from ..sync.files import ChangesSchema, files_changes_from_upload
+from ..sync.files import files_changes_from_upload
 from ..sync.schemas import ProjectListSchema
 from ..sync.utils import generate_checksum, is_versioned_file, get_project_path
 from ..auth.models import User, UserProfile
@@ -1499,38 +1499,26 @@ def test_push_finish(client):
                 with open(os.path.join(upload_dir, "chunks", chunk), "wb") as out_file:
                     out_file.write(in_file.read(CHUNK_SIZE))
 
-    # test finish upload, pretend another upload is already being processed
-    os.makedirs(
-        os.path.join(
-            upload.project.storage.project_dir, f"v{upload.project.latest_version + 1}"
-        ),
-        exist_ok=True,
-    )
-    resp = client.post(
-        url,
-        headers=json_headers,
-    )
-    assert resp.status_code == 409
-    # bump to fake version to make upload finish pass
-    upload.project.latest_version += 1
-    db.session.add(upload.project)
-    pv = ProjectVersion(
-        upload.project,
-        upload.project.latest_version,
-        upload.project.creator.id,
-        [],
-        "127.0.0.1",
-    )
-    pv.project = upload.project
-    db.session.add(pv)
-    db.session.commit()
+    # test finish upload when another upload was already processed
+    original_version = upload.project.latest_version
+    with patch("mergin.sync.models.Project.next_version") as mock_next_version:
+        mock_next_version.return_value = original_version + 2
 
-    resp2 = client.post(url, headers={**json_headers, "User-Agent": "Werkzeug"})
-    assert resp2.status_code == 200
-    assert not os.path.exists(upload_dir)
-    version = upload.project.get_latest_version()
-    assert version.user_agent
-    assert version.device_id == json_headers["X-Device-Id"]
+        resp = client.post(
+            url,
+            headers=json_headers,
+        )
+
+        assert resp.status_code == 200
+        project = Project.query.get(upload.project.id)
+        version = project.get_latest_version()
+        # finish created higher version than origially expected
+        assert version.name == mock_next_version.return_value
+        assert os.path.exists(
+            os.path.join(upload.project.storage.project_dir, f"v{version.name}")
+        )
+        assert version.user_agent
+        assert version.device_id == json_headers["X-Device-Id"]
 
     # tests basic failures
     resp3 = client.post("/v1/project/push/finish/not-existing")
@@ -1557,7 +1545,7 @@ def test_push_finish(client):
     assert resp4.status_code == 403
 
     # other failures with error code 403, 404 does to count to failures history
-    assert SyncFailuresHistory.query.count() == 2
+    assert SyncFailuresHistory.query.count() == 1
 
 
 def test_push_close(client):
@@ -2429,7 +2417,7 @@ def add_project_version(project, changes, version=None):
         else User.query.filter_by(username=DEFAULT_USER[0]).first()
     )
     next_version = version or project.next_version()
-    file_changes = files_changes_from_upload(changes, version=next_version)
+    file_changes = files_changes_from_upload(changes, location_dir="v{next_version}")
     pv = ProjectVersion(
         project,
         next_version,

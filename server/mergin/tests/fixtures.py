@@ -214,7 +214,7 @@ def diff_project(app):
                 # no files uploaded, hence no action needed
                 pass
 
-            file_changes = files_changes_from_upload(change, version=i + 2)
+            file_changes = files_changes_from_upload(change, location_dir=f"v{i + 2}")
             pv = ProjectVersion(
                 project,
                 i + 2,
