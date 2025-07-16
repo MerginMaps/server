@@ -5,7 +5,6 @@
 import datetime
 import os
 from dataclasses import asdict
-from unittest import mock
 from unittest.mock import patch
 from urllib.parse import quote
 import pysqlite3
@@ -17,16 +16,14 @@ import time
 import hashlib
 import shutil
 import re
+
 from flask_login import current_user
 from pygeodiff import GeoDiff
 from flask import url_for, current_app
 import tempfile
-from sqlalchemy import desc
-from sqlalchemy.exc import IntegrityError
 
+from sqlalchemy import desc
 from ..app import db
-from ..config import Configuration
-from ..sync.config import Configuration as SyncConfiguration
 from ..sync.models import (
     Project,
     Upload,
@@ -38,9 +35,9 @@ from ..sync.models import (
     PushChangeType,
     ProjectFilePath,
 )
-from ..sync.files import ChangesSchema, files_changes_from_upload
+from ..sync.files import ChangesSchema
 from ..sync.schemas import ProjectListSchema
-from ..sync.utils import generate_checksum, is_versioned_file, get_project_path
+from ..sync.utils import generate_checksum, is_versioned_file
 from ..auth.models import User, UserProfile
 
 from . import (
@@ -62,6 +59,9 @@ from .utils import (
     login_as_admin,
     upload_file_to_project,
 )
+from ..config import Configuration
+from ..sync.config import Configuration as SyncConfiguration
+from ..sync.utils import get_project_path
 
 CHUNK_SIZE = 1024
 
@@ -497,6 +497,7 @@ def test_delete_project(client):
     # mimic update of project with chunk upload
     changes = _get_changes(test_project_dir)
     upload, upload_dir = create_transaction("mergin", changes)
+    os.mkdir(os.path.join(upload.project.storage.project_dir, "v2"))
     os.makedirs(os.path.join(upload_dir, "chunks"))
     for f in upload.changes["added"] + upload.changes["updated"]:
         with open(os.path.join(test_project_dir, f["path"]), "rb") as in_file:
@@ -1019,17 +1020,6 @@ def _get_changes_with_diff_0_size(project_dir):
     return changes
 
 
-def _get_random_file_metadata():
-    """Return fake metadata for non-existing random file"""
-    return {
-        "path": f"{uuid.uuid4().hex}.txt",
-        "checksum": hashlib.sha1().hexdigest(),
-        "size": 0,
-        "mtime": datetime.datetime.now().timestamp(),
-        "chunks": [],
-    }
-
-
 test_push_data = [
     (
         {"version": "v1", "changes": _get_changes_without_added(test_project_dir)},
@@ -1048,7 +1038,7 @@ test_push_data = [
         400,
     ),  # contains already uploaded file
     (
-        {"version": "v2", "changes": _get_changes_without_added(test_project_dir)},
+        {"version": "v0", "changes": _get_changes_without_added(test_project_dir)},
         400,
     ),  # version mismatch
     ({"version": "v1", "changes": {}}, 400),  # wrong changes format
@@ -1060,35 +1050,9 @@ test_push_data = [
         {
             "version": "v1",
             "changes": {
-                "added": [],
-                "removed": [_get_random_file_metadata()],
-                "updated": [],
-            },
-        },
-        400,
-    ),  # delete not-existing file
-    (
-        {
-            "version": "v1",
-            "changes": {
-                "added": [],
+                "added": [{"path": "test.txt"}],
                 "removed": [],
-                "updated": [_get_random_file_metadata()],
-            },
-        },
-        400,
-    ),  # update not-existing file
-    (
-        {
-            "version": "v1",
-            "changes": {
-                "added": [
-                    file_info(test_project_dir, "test.txt", chunk_size=CHUNK_SIZE)
-                ],
-                "removed": [],
-                "updated": [
-                    file_info(test_project_dir, "test.txt", chunk_size=CHUNK_SIZE)
-                ],
+                "updated": [{"path": "test.txt"}],
             },
         },
         400,
@@ -1122,100 +1086,20 @@ def test_push_project_start(client, data, expected):
             assert failure.error_type == "push_start"
 
 
-def test_concurrent_uploads(client):
-    """Test concurrent uploads into same project"""
-    url = f"/v1/project/push/{test_workspace_name}/{test_project}"
-    data = {"version": "v0", "changes": _get_changes_with_diff(test_project_dir)}
-    resp = client.post(
-        url,
-        data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
-        headers=json_headers,
-    )
-    assert resp.status_code == 200
-    upload = Upload.query.get(resp.json["transaction"])
-    assert upload.blocking is True
-    assert upload.is_active()
-
-    uploaded_file = file_info(
-        test_project_dir, "test_dir/test4.txt", chunk_size=CHUNK_SIZE
-    )
-    # modify name to bypass name check
-    uploaded_file["path"] = "test123.txt"
-    data["changes"] = {
-        "added": [uploaded_file],
-        "updated": [],
-        "removed": [],
-    }
-
-    resp = client.post(
-        url,
-        data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
-        headers=json_headers,
-    )
-    assert resp.status_code == 200
-    upload = Upload.query.get(resp.json["transaction"])
-    assert upload.blocking is False
-
-    # we cannot have multiple pending uploads with the same new added files
-    resp = client.post(
-        url,
-        data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
-        headers=json_headers,
-    )
-    assert resp.status_code == 400
-    assert (
-        resp.json["detail"]
-        == f"File {uploaded_file['path']} is already in other upload"
-    )
-
-    # second blocking upload is forbidden
-    data["changes"] = _get_changes_without_added(test_project_dir)
-    resp = client.post(
-        url,
-        data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
-        headers=json_headers,
-    )
-    assert resp.status_code == 400
-    assert resp.json["detail"] == "Another process is running. Please try later."
-
-    upload = Upload.query.filter_by(blocking=True).first()
-    trasaction_id = str(upload.id)
-    # pretent blocking upload is stale
-    with patch("mergin.sync.models.Upload.is_active") as mock_is_active:
-        mock_is_active.return_value = False
-        resp = client.post(
-            url,
-            data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
-            headers=json_headers,
-        )
-        assert resp.status_code == 200
-        assert resp.json["transaction"]
-        # previous stale upload was removed
-        assert not Upload.query.get(trasaction_id)
-
-
 def test_push_to_new_project(client):
     # create blank project
     p = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
     ).first()
-    project = Project("blank", p.storage_params, p.creator, p.workspace, public=True)
-    db.session.add(project)
-    pv = ProjectVersion(
-        project,
-        0,
-        p.creator.id,
-        [],
-        ip="127.0.0.1",
+    project = Project(
+        "blank", p.storage_params, p.creator, p.workspace, files=[], public=True
     )
-    db.session.add(pv)
+    db.session.add(project)
     db.session.commit()
 
     current_app.config["BLACKLIST"] = ["test4"]
     url = "/v1/project/push/{}/{}".format(test_workspace_name, "blank")
-    changes = _get_changes(test_project_dir)
-    changes["updated"] = changes["removed"] = []
-    data = {"version": "v0", "changes": changes}
+    data = {"version": "v0", "changes": _get_changes(test_project_dir)}
     resp = client.post(
         url,
         data=json.dumps(data, cls=DateTimeEncoder).encode("utf-8"),
@@ -1237,15 +1121,7 @@ def test_push_to_new_project(client):
         headers=json_headers,
     )
     assert resp.status_code == 400
-    assert resp.json["detail"] == "Version mismatch, client cannot be ahead of server"
-    failure = SyncFailuresHistory.query.filter_by(project_id=project.id).first()
-    assert failure.last_version == "v0"
-    assert failure.error_type == "push_start"
-    assert failure.error_details == "Version mismatch, client cannot be ahead of server"
 
-    # test legacy situation when project does not have any project version associated yet
-    db.session.delete(pv)
-    db.session.commit()
     data = {"version": "v100", "changes": _get_changes(test_project_dir)}
     resp = client.post(
         url,
@@ -1254,11 +1130,7 @@ def test_push_to_new_project(client):
     )
     assert resp.status_code == 400
     assert resp.json["detail"] == "First push should be with v0"
-    failure = (
-        SyncFailuresHistory.query.filter_by(project_id=project.id)
-        .order_by(SyncFailuresHistory.timestamp.desc())
-        .first()
-    )
+    failure = SyncFailuresHistory.query.filter_by(project_id=project.id).first()
     assert failure.last_version == "v0"
     assert failure.error_type == "push_start"
     assert failure.error_details == "First push should be with v0"
@@ -1405,7 +1277,8 @@ def create_transaction(username, changes, version=1):
     project = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
     ).first()
-    upload = Upload(project, changes, user.id)
+    upload_changes = ChangesSchema(context={"version": version}).load(changes)
+    upload = Upload(project, version, upload_changes, user.id)
     db.session.add(upload)
     db.session.commit()
     upload_dir = os.path.join(upload.project.storage.project_dir, "tmp", upload.id)
@@ -1491,6 +1364,7 @@ def test_push_finish(client):
     assert failure.error_type == "push_finish"
     assert "corrupted_files" in failure.error_details
 
+    os.mkdir(os.path.join(upload.project.storage.project_dir, "v2"))
     # mimic chunks were uploaded
     os.makedirs(os.path.join(upload_dir, "chunks"))
     for f in upload.changes["added"] + upload.changes["updated"]:
@@ -1498,32 +1372,6 @@ def test_push_finish(client):
             for chunk in f["chunks"]:
                 with open(os.path.join(upload_dir, "chunks", chunk), "wb") as out_file:
                     out_file.write(in_file.read(CHUNK_SIZE))
-
-    # test finish upload, pretend another upload is already being processed
-    os.makedirs(
-        os.path.join(
-            upload.project.storage.project_dir, f"v{upload.project.latest_version + 1}"
-        ),
-        exist_ok=True,
-    )
-    resp = client.post(
-        url,
-        headers=json_headers,
-    )
-    assert resp.status_code == 409
-    # bump to fake version to make upload finish pass
-    upload.project.latest_version += 1
-    db.session.add(upload.project)
-    pv = ProjectVersion(
-        upload.project,
-        upload.project.latest_version,
-        upload.project.creator.id,
-        [],
-        "127.0.0.1",
-    )
-    pv.project = upload.project
-    db.session.add(pv)
-    db.session.commit()
 
     resp2 = client.post(url, headers={**json_headers, "User-Agent": "Werkzeug"})
     assert resp2.status_code == 200
@@ -1557,7 +1405,7 @@ def test_push_finish(client):
     assert resp4.status_code == 403
 
     # other failures with error code 403, 404 does to count to failures history
-    assert SyncFailuresHistory.query.count() == 2
+    assert SyncFailuresHistory.query.count() == 1
 
 
 def test_push_close(client):
@@ -1926,9 +1774,6 @@ def test_optimize_storage(app, client, diff_project):
     diff_project.latest_version = 8
     ProjectVersion.query.filter_by(project_id=diff_project.id, name=9).delete()
     ProjectVersion.query.filter_by(project_id=diff_project.id, name=10).delete()
-    for _dir in ("v9", "v10"):
-        if os.path.exists(os.path.join(diff_project.storage.project_dir, _dir)):
-            shutil.rmtree(os.path.join(diff_project.storage.project_dir, _dir))
     db.session.commit()
     diff_project.cache_latest_files()
     assert diff_project.latest_version == 8
@@ -2429,12 +2274,12 @@ def add_project_version(project, changes, version=None):
         else User.query.filter_by(username=DEFAULT_USER[0]).first()
     )
     next_version = version or project.next_version()
-    file_changes = files_changes_from_upload(changes, version=next_version)
+    upload_changes = ChangesSchema(context={"version": next_version}).load(changes)
     pv = ProjectVersion(
         project,
         next_version,
         author.id,
-        file_changes,
+        upload_changes,
         ip="127.0.0.1",
     )
     db.session.add(pv)
@@ -2448,24 +2293,19 @@ def test_project_version_integrity(client):
     changes = _get_changes_with_diff(test_project_dir)
     upload, upload_dir = create_transaction("mergin", changes)
     upload_chunks(upload_dir, upload.changes)
-    a = upload.project.files
-
-    # try to finish the transaction which would fail on version created integrity error, e.g. race conditions
-    with patch.object(
-        ProjectVersion,
-        "__init__",
-        side_effect=IntegrityError("Project version already exists", None, None),
-    ):
-        resp = client.post("/v1/project/push/finish/{}".format(upload.id))
-        assert resp.status_code == 422
-        assert "Failed to create new version" in resp.json["detail"]
-        failure = SyncFailuresHistory.query.filter_by(
-            project_id=upload.project.id
-        ).first()
-        assert failure.error_type == "push_finish"
-        assert "Failed to create new version" in failure.error_details
-        db.session.delete(failure)
-        db.session.commit()
+    # manually create an identical project version in db
+    pv = add_project_version(upload.project, changes)
+    # try to finish the transaction
+    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    assert resp.status_code == 422
+    assert "Failed to create new version" in resp.json["detail"]
+    failure = SyncFailuresHistory.query.filter_by(project_id=upload.project.id).first()
+    assert failure.error_type == "push_finish"
+    assert "Failed to create new version" in failure.error_details
+    upload.project.latest_version = pv.name - 1
+    db.session.delete(pv)
+    db.session.delete(failure)
+    db.session.commit()
 
     # changes without an upload
     with patch("mergin.sync.public_api_controller.get_user_agent") as mock:
@@ -2480,7 +2320,7 @@ def test_project_version_integrity(client):
         # to insert an identical project version when no upload (only one endpoint used),
         # we need to pretend side effect of a function called just before project version insertion
         def _get_user_agent():
-            add_project_version(project, {})
+            add_project_version(project, changes)
             # bypass endpoint checks
             upload.project.latest_version = ProjectVersion.from_v_name(data["version"])
             return "Input"
@@ -2614,12 +2454,6 @@ def test_signals(client):
     ) as push_finished_mock:
         upload_file_to_project(project, "test.txt", client)
         push_finished_mock.assert_called_once()
-
-    with patch(
-        "mergin.sync.tasks.remove_stale_project_uploads.delay"
-    ) as upload_cleanup_mock:
-        upload_file_to_project(project, "test.qgs", client)
-        upload_cleanup_mock.assert_called_once()
 
 
 def test_filepath_manipulation(client):
