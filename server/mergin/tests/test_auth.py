@@ -503,11 +503,8 @@ def test_update_user_profile(client):
     assert user.email == "changed_email@mergin.co.uk"
 
     #  do not allow to update sso user
-    sso_user = add_user("sso_user", "sso")
+    sso_user = add_user("sso_user", "")
     login(client, sso_user.username, "sso")
-    sso_user.passwd = None
-    db.session.add(sso_user)
-    db.session.commit()
     resp = client.post(
         url_for("/.mergin_auth_controller_update_user_profile"),
         data=json.dumps({"email": "changed_email@sso.co.uk"}),
