@@ -45,7 +45,7 @@
           @click.prevent="!item.disabled && $emit('rowClick', item)"
         >
           <div class="flex-grow-1 grid grid-nogutter w-11">
-            <!-- Columns, we are using data view instead table, it is better handling of respnsive state -->
+            <!-- Columns, we are using data view instead table, it is better handling of responsive state -->
             <div
               v-for="column in computedColumns.filter((item) => !item.fixed)"
               :key="column.value"
