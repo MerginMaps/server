@@ -164,14 +164,18 @@ class Project(db.Model):
             SELECT
                 fp.path,
                 fh.size,
-                fh.diff,
                 fh.location,
                 fh.checksum,
-                pv.created AS mtime
+                pv.created AS mtime,
+                fd.path as diff_path,
+                fd.size as diff_size,
+                fd.checksum as diff_checksum,
+                fd.location as diff_location
             FROM files_ids
             LEFT OUTER JOIN file_history fh ON fh.id = files_ids.fh_id
             LEFT OUTER JOIN project_file_path fp ON fp.id = fh.file_path_id
-            LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id;
+            LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
+            LEFT OUTER JOIN file_diff fd ON fd.file_path_id = fh.file_path_id AND fd.version = fh.project_version_name and fd.rank = 0;
         """
         params = {"project_id": self.id}
         files = [
@@ -181,7 +185,16 @@ class Project(db.Model):
                 checksum=row.checksum,
                 location=row.location,
                 mtime=row.mtime,
-                diff=File(**row.diff) if row.diff else None,
+                diff=(
+                    File(
+                        path=row.diff_path,
+                        size=row.diff_size,
+                        checksum=row.diff_checksum,
+                        location=row.diff_location,
+                    )
+                    if row.diff_path
+                    else None
+                ),
             )
             for row in db.session.execute(query, params).fetchall()
         ]
@@ -436,7 +449,6 @@ class FileHistory(db.Model):
     location = db.Column(db.String)
     size = db.Column(db.BigInteger, nullable=False)
     checksum = db.Column(db.String, nullable=False)
-    diff = db.Column(JSONB)
     change = db.Column(
         ENUM(
             *PushChangeType.values(),
@@ -470,17 +482,6 @@ class FileHistory(db.Model):
             file_path_id,
             project_version_name.desc(),
         ),
-        db.CheckConstraint(
-            text(
-                """
-                CASE
-                    WHEN (change = 'update_diff') THEN diff IS NOT NULL
-                    ELSE diff IS NULL
-                END
-                """
-            ),
-            name="changes_with_diff",
-        ),
     )
 
     def __init__(
@@ -491,22 +492,55 @@ class FileHistory(db.Model):
         location: str,
         change: PushChangeType,
         diff: dict = None,
+        version_name: int = None,
     ):
         self.file = file
         self.size = size
         self.checksum = checksum
         self.location = location
-        self.diff = diff if diff is not None else null()
         self.change = change.value
+        self.project_version_name = version_name
+
+        if diff is not None:
+            basefile = FileHistory.get_basefile(file.id, version_name)
+            diff_file = FileDiff(
+                basefile,
+                diff.get("path"),
+                diff.get("size"),
+                diff.get("checksum"),
+                rank=0,
+                version=version_name,
+            )
+            db.session.add(diff_file)
 
     @property
     def path(self) -> str:
         return self.file.path
 
     @property
+    def diff(self) -> Optional[FileDiff]:
+        """Diff file pushed with UPDATE_DIFF change type.
+
+        In FileDiff table it is defined as diff related to file, saved for the same project version with rank 0 (elementar diff)
+        """
+        if self.change != PushChangeType.UPDATE_DIFF.value:
+            return
+
+        return FileDiff.query.filter_by(
+            file_path_id=self.file_path_id, version=self.project_version_name, rank=0
+        ).first()
+
+    @property
     def diff_file(self) -> Optional[File]:
-        if self.diff:
-            return File(**self.diff)
+        if not self.diff:
+            return
+
+        return File(
+            path=self.diff.path,
+            size=self.diff.size,
+            checksum=self.diff.checksum,
+            location=self.diff.location,
+        )
 
     @property
     def mtime(self) -> datetime:
@@ -518,7 +552,7 @@ class FileHistory(db.Model):
 
     @property
     def expiration(self) -> Optional[datetime]:
-        if not self.diff:
+        if not self.diff_file:
             return
 
         if os.path.exists(self.abs_path):
@@ -564,11 +598,7 @@ class FileHistory(db.Model):
                 break
 
             # if we are interested only in 'diffable' history (not broken with forced update)
-            if (
-                diffable
-                and item.change == PushChangeType.UPDATE.value
-                and not item.diff
-            ):
+            if diffable and item.change == PushChangeType.UPDATE.value:
                 break
 
         return history
@@ -615,7 +645,7 @@ class FileHistory(db.Model):
             if history:
                 first_change = history[-1]
                 # we have either full history of changes or v_x = v_x+n => no basefile in way, it is 'diffable' from the end
-                if first_change.diff:
+                if first_change.change == PushChangeType.UPDATE_DIFF.value:
                     # omit diff for target version as it would lead to previous version if reconstructed backward
                     diffs = [
                         value.diff_file
@@ -664,6 +694,75 @@ class FileHistory(db.Model):
                     pass
 
         return basefile, diffs
+
+    @classmethod
+    def get_basefile(cls, file_path_id: int, version: int) -> Optional[FileHistory]:
+        """Get basefile (start of file diffable history) for diff file change at some version"""
+        return (
+            FileHistory.query.filter_by(file_path_id=file_path_id)
+            .filter(
+                FileHistory.project_version_name < version,
+                FileHistory.change.in_(
+                    [PushChangeType.CREATE.value, PushChangeType.UPDATE.value]
+                ),
+            )
+            .order_by(desc(FileHistory.project_version_name))
+            .first()
+        )
+
+
+class FileDiff(db.Model):
+    """File diffs related to versioned files, also contain higher order (rank) merged diffs"""
+
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    file_path_id = db.Column(
+        db.BigInteger,
+        db.ForeignKey("project_file_path.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    # reference to actual full gpkg file
+    basefile_id = db.Column(
+        db.BigInteger,
+        db.ForeignKey("file_history.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    path = db.Column(db.String, nullable=False, index=True)
+    # exponential order of merged diff, 0 is a source diff file uploaded by user, > 0 is merged diff
+    rank = db.Column(db.Integer, nullable=False, index=True)
+    # to which project version is this linked
+    version = db.Column(db.Integer, nullable=False, index=True)
+    # path on FS relative to project directory
+    location = db.Column(db.String)
+    size = db.Column(db.BigInteger, nullable=False)
+    checksum = db.Column(db.String, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint("file_path_id", "rank", "version", name="unique_diff"),
+        db.Index("ix_file_diff_file_path_id_version_rank", file_path_id, version, rank),
+    )
+
+    def __init__(
+        self,
+        basefile: FileHistory,
+        path: str,
+        size: int,
+        checksum: str,
+        rank: int,
+        version: int,
+    ):
+        self.basefile_id = basefile.id
+        self.file_path_id = basefile.file_path_id
+        self.path = path
+        self.size = size
+        self.checksum = checksum
+        self.rank = rank
+        self.version = version
+
+        if rank > 0:
+            self.location = f"diffs/{path}"
+        else:
+            self.location = f"v{version}/{path}"
 
 
 class ProjectVersion(db.Model):
@@ -760,11 +859,12 @@ class ProjectVersion(db.Model):
                     diff=(
                         asdict(upload_file.diff)
                         if (is_diff_change and upload_file.diff)
-                        else null()
+                        else None
                     ),
                     change=(
                         PushChangeType.UPDATE_DIFF if is_diff_change else change_type
                     ),
+                    version_name=self.name,
                 )
                 fh.version = self
                 fh.project_version_name = self.name
@@ -822,14 +922,18 @@ class ProjectVersion(db.Model):
             SELECT
                 fp.path,
                 fh.size,
-                fh.diff,
                 fh.location,
                 fh.checksum,
-                pv.created AS mtime
+                pv.created AS mtime,
+                fd.path as diff_path,
+                fd.size as diff_size,
+                fd.checksum as diff_checksum,
+                fd.location as diff_location
             FROM latest_changes ch
             LEFT OUTER JOIN file_history fh ON (fh.file_path_id = ch.id AND fh.project_version_name = ch.version)
             LEFT OUTER JOIN project_file_path fp ON fp.id = fh.file_path_id
             LEFT OUTER JOIN project_version pv ON pv.id = fh.version_id
+            LEFT OUTER JOIN file_diff fd ON fd.file_path_id = fh.file_path_id AND fd.version = fh.project_version_name and fd.rank = 0
             WHERE fh.change != 'delete';
         """
         params = {"project_id": self.project_id, "version": self.name}
@@ -878,14 +982,18 @@ class ProjectVersion(db.Model):
             SELECT
                 fp.path,
                 fh.size,
-                fh.diff,
                 fh.location,
                 fh.checksum,
-                pv.created AS mtime
+                pv.created AS mtime,
+                fd.path as diff_path,
+                fd.size as diff_size,
+                fd.checksum as diff_checksum,
+                fd.location as diff_location
             FROM files_changes_before_version ch
             INNER JOIN file_history fh ON (fh.file_path_id = ch.file_id AND fh.project_version_name = ch.version)
             INNER JOIN project_file_path fp ON fp.id = fh.file_path_id
             INNER JOIN project_version pv ON pv.id = fh.version_id
+            LEFT OUTER JOIN file_diff fd ON fd.file_path_id = fh.file_path_id AND fd.version = fh.project_version_name and fd.rank = 0
             WHERE fh.change != 'delete'
             ORDER BY fp.path;
         """
@@ -909,7 +1017,16 @@ class ProjectVersion(db.Model):
                 checksum=row.checksum,
                 location=row.location,
                 mtime=row.mtime,
-                diff=File(**row.diff) if row.diff else None,
+                diff=(
+                    File(
+                        path=row.diff_path,
+                        checksum=row.diff_checksum,
+                        size=row.diff_size,
+                        location=row.diff_location,
+                    )
+                    if row.diff_path
+                    else None
+                ),
             )
             for row in result
         ]

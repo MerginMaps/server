@@ -19,7 +19,13 @@ from pygeodiff import GeoDiff
 
 from ..auth.models import User, UserProfile
 from ..sync.utils import generate_location, generate_checksum
-from ..sync.models import Project, ProjectVersion, FileHistory, ProjectRole
+from ..sync.models import (
+    Project,
+    ProjectVersion,
+    FileHistory,
+    ProjectRole,
+    PushChangeType,
+)
 from ..sync.files import UploadChanges, ChangesSchema
 from ..sync.workspace import GlobalWorkspace
 from ..app import db
@@ -186,7 +192,7 @@ def initialize():
 
     # make sure for history without diff there is a proper Null in database jsonb column
     assert FileHistory.query.filter_by(version_id=pv.id).filter(
-        FileHistory.diff.is_(None)
+        FileHistory.changes != PushChangeType.UPDATE_DIFF.value
     ).count() == len(project_files)
 
     # mimic files were uploaded
