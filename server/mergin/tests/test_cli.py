@@ -23,7 +23,7 @@ test_create_project_data = [
             test_workspace_name,
             DEFAULT_USER[0],
         ),
-        0,
+        1,
         "ERROR: Project name already exists",
     ),
     # not existing creator user
@@ -33,7 +33,7 @@ test_create_project_data = [
             test_workspace_name,
             "not_existing",
         ),
-        0,
+        1,
         "ERROR: User not found",
     ),
     # not existing workspace
@@ -43,7 +43,7 @@ test_create_project_data = [
             "not_existing",
             DEFAULT_USER[0],
         ),
-        0,
+        1,
         "ERROR: Workspace not found",
     ),
     # success
@@ -66,7 +66,7 @@ def test_create_project(runner, args, code, output):
     assert result.exit_code == code
     assert output in result.output
 
-    if output == "Project created":
+    if code == 0:
         assert Project.query.filter_by(
             name="my_project", workspace_id=test_workspace_id
         ).count()

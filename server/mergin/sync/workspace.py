@@ -138,7 +138,7 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
             return self.factory_method()
 
     def get_by_name(self, name):
-        if name != Configuration.GLOBAL_WORKSPACE:
+        if name.lower() != Configuration.GLOBAL_WORKSPACE.lower():
             return
         return self.factory_method()
 

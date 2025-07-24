@@ -3,17 +3,20 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import shutil
+import sys
 import click
 import os
 import secrets
 from datetime import datetime
 from flask import Flask, current_app
+from sqlalchemy import func
 
 from .files import UploadChanges
 from ..app import db
 from .models import Project, ProjectVersion
 from .utils import split_project_path
 from ..auth.models import User
+from ..utils import normalize_input
 
 
 def add_commands(app: Flask):
@@ -23,23 +26,23 @@ def add_commands(app: Flask):
         pass
 
     @project.command()
-    @click.argument("name")
-    @click.argument("namespace")
-    @click.argument("username")
+    @click.argument("name", callback=normalize_input(lowercase=False))
+    @click.argument("namespace", callback=normalize_input())
+    @click.argument("username", callback=normalize_input())
     def create(name, namespace, username):  # pylint: disable=W0612
         """Create blank project"""
         workspace = current_app.ws_handler.get_by_name(namespace)
         if not workspace:
-            print("ERROR: Workspace not found")
-            return
-        user = User.query.filter_by(username=username).first()
+            click.secho("ERROR: Workspace not found", fg="red", err=True)
+            sys.exit(1)
+        user = User.query.filter(func.lower(User.username) == username).first()
         if not user:
-            print("ERROR: User not found")
-            return
+            click.secho("ERROR: User not found", fg="red", err=True)
+            sys.exit(1)
         p = Project.query.filter_by(name=name, workspace_id=workspace.id).first()
         if p:
-            print("ERROR: Project name already exists")
-            return
+            click.secho("ERROR: Project name already exists", fg="red", err=True)
+            sys.exit(1)
         project_params = dict(
             creator=user,
             name=name,
@@ -57,7 +60,7 @@ def add_commands(app: Flask):
         pv.project = p
         db.session.commit()
         os.makedirs(p.storage.project_dir, exist_ok=True)
-        print("Project created")
+        click.secho("Project created", fg="green")
 
     @project.command()
     @click.argument("project-name")
