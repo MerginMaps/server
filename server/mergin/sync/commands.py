@@ -109,23 +109,23 @@ def add_commands(app: Flask):
         click.secho("Project downloaded", fg="green")
 
     @project.command()
-    @click.argument("project-name")
+    @click.argument("project-name", callback=normalize_input(lowercase=False))
     def remove(project_name):
         """Delete a project"""
         ws, name = split_project_path(project_name)
         workspace = current_app.ws_handler.get_by_name(ws)
         if not workspace:
-            print("ERROR: Workspace does not exist")
-            return
+            click.secho("ERROR: Workspace does not exist", fg="red", err=True)
+            sys.exit(1)
         project = (
             Project.query.filter_by(workspace_id=workspace.id, name=name)
             .filter(Project.storage_params.isnot(None))
             .first()
         )
         if not project:
-            print("ERROR: Project does not exist")
-            return
+            click.secho("ERROR: Project does not exist", fg="red", err=True)
+            sys.exit(1)
         project.removed_at = datetime.utcnow()
-        project.removed_by = "cli_command"
+        project.removed_by = None
         db.session.commit()
-        print("Project removed successfully")
+        click.secho("Project removed", fg="green")

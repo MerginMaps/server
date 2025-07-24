@@ -64,7 +64,7 @@ test_create_project_data = [
 
 
 @pytest.mark.parametrize("args,code,output", test_create_project_data)
-def test_manipulate_project(runner, args, code, output):
+def test_create_project(runner, args, code, output):
     """Test create project command"""
     # create project
     create = runner.invoke(args=["project", "create", *args])
@@ -180,3 +180,31 @@ def test_download_project(runner, args, code, output):
         assert os.path.exists(sync_config.TEMP_DIR) and os.path.isdir(
             sync_config.TEMP_DIR
         )
+
+
+remove_project_data = [
+    (
+        f" {test_workspace_name}/{test_project}  ",
+        0,
+        "Project removed",
+    ),
+    (
+        f" {test_workspace_name}/non-existing  ",
+        1,
+        "ERROR: Project does not exist",
+    ),
+]
+
+
+@pytest.mark.parametrize("project_name,code,output", remove_project_data)
+def test_remove_project(runner, project_name, code, output):
+    """Test remove project command"""
+    remove = runner.invoke(args=["project", "remove", project_name])
+    assert remove.exit_code == code
+    assert output in remove.output
+    if code == 0:
+        project = Project.query.filter_by(
+            name=test_project, workspace_id=test_workspace_id
+        ).first()
+        assert project.removed_at
+        assert not project.removed_by
