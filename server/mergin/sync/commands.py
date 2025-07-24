@@ -57,15 +57,20 @@ def add_commands(app: Flask):
         db.session.add(p)
         changes = UploadChanges(added=[], updated=[], removed=[])
         pv = ProjectVersion(p, 0, user.id, changes, "127.0.0.1")
-        pv.project = p
+        db.session.add(pv)
         db.session.commit()
         os.makedirs(p.storage.project_dir, exist_ok=True)
         click.secho("Project created", fg="green")
 
     @project.command()
-    @click.argument("project-name")
+    @click.argument("project-name", callback=normalize_input(lowercase=False))
     @click.option("--version", type=int, required=True)
-    @click.option("--directory", type=click.Path(), required=True)
+    @click.option(
+        "--directory",
+        type=click.Path(),
+        required=True,
+        callback=normalize_input(lowercase=False),
+    )
     def download(project_name, version, directory):  # pylint: disable=W0612
         """Download files for project at particular version"""
         ws, name = split_project_path(project_name)
@@ -76,15 +81,19 @@ def add_commands(app: Flask):
             .first()
         )
         if not project:
-            print("ERROR: Project does not exist")
-            return
+            click.secho("ERROR: Project does not exist", fg="red", err=True)
+            sys.exit(1)
         pv = ProjectVersion.query.filter_by(project_id=project.id, name=version).first()
         if not pv:
-            print("ERROR:Project version does not exist")
-            return
+            click.secho("ERROR: Project version does not exist", fg="red", err=True)
+            sys.exit(1)
         if os.path.exists(directory):
-            print(f"ERROR: Destination directory {directory} already exist")
-            return
+            click.secho(
+                f"ERROR: Destination directory '{directory}' already exist",
+                fg="red",
+                err=True,
+            )
+            sys.exit(1)
 
         os.mkdir(directory)
         files = pv.files
@@ -97,7 +106,7 @@ def add_commands(app: Flask):
                 os.path.join(project.storage.project_dir, f.location),
                 os.path.join(directory, f.path),
             )
-        print("Project downloaded successfully")
+        click.secho("Project downloaded", fg="green")
 
     @project.command()
     @click.argument("project-name")
@@ -117,6 +126,6 @@ def add_commands(app: Flask):
             print("ERROR: Project does not exist")
             return
         project.removed_at = datetime.utcnow()
-        project.removed_by = None
+        project.removed_by = "cli_command"
         db.session.commit()
         print("Project removed successfully")
