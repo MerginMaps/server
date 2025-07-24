@@ -6,7 +6,6 @@ import os
 import shutil
 import sys
 import uuid
-from copy import deepcopy
 from shutil import copy, move
 from flask import current_app
 from sqlalchemy import desc
