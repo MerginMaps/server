@@ -135,3 +135,16 @@ def save_diagnostic_log_file(app: str, username: str, body: bytes) -> str:
         f.write(content)
 
     return file_name
+
+
+def normalize_input(lowercase=True, strip=True):
+    def _normalize(ctx, param, value):
+        if value is None:
+            return value
+        if strip:
+            value = value.strip()
+        if lowercase:
+            value = value.lower()
+        return value
+
+    return _normalize
