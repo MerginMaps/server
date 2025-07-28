@@ -5,7 +5,6 @@ import shutil
 
 import pytest
 import os
-from pathlib import Path
 
 from mergin.auth.models import User
 from mergin.sync.models import Project, ProjectVersion
@@ -14,42 +13,43 @@ from mergin.tests import (
     test_workspace_id,
     test_workspace_name,
     DEFAULT_USER,
+    test_project_dir,
 )
 from mergin.sync.config import Configuration as sync_config
 
 test_create_project_data = [
     # missing arguments
-    # (("my_project",), 2, "Missing argument"),
-    # # existing project
-    # (
-    #     (
-    #         test_project,
-    #         test_workspace_name,
-    #         DEFAULT_USER[0],
-    #     ),
-    #     1,
-    #     "ERROR: Project name already exists",
-    # ),
-    # # not existing creator user
-    # (
-    #     (
-    #         "my_project",
-    #         test_workspace_name,
-    #         "not_existing",
-    #     ),
-    #     1,
-    #     "ERROR: User not found",
-    # ),
-    # # not existing workspace
-    # (
-    #     (
-    #         "my_project",
-    #         "not_existing",
-    #         DEFAULT_USER[0],
-    #     ),
-    #     1,
-    #     "ERROR: Workspace not found",
-    # ),
+    (("my_project",), 2, "Missing argument"),
+    # existing project
+    (
+        (
+            test_project,
+            test_workspace_name,
+            DEFAULT_USER[0],
+        ),
+        1,
+        "ERROR: Project name already exists",
+    ),
+    # not existing creator user
+    (
+        (
+            "my_project",
+            test_workspace_name,
+            "not_existing",
+        ),
+        1,
+        "ERROR: User not found",
+    ),
+    # not existing workspace
+    (
+        (
+            "my_project",
+            "not_existing",
+            DEFAULT_USER[0],
+        ),
+        1,
+        "ERROR: Workspace not found",
+    ),
     # success
     (
         (
@@ -121,6 +121,7 @@ def test_create_user(runner, args, output, code):
 
 
 download_project_data = [
+    # success
     (
         (
             f" {test_workspace_name}/{test_project}  ",
@@ -132,6 +133,7 @@ download_project_data = [
         0,
         "Project downloaded",
     ),
+    # project does not exist in the workspace
     (
         (
             f"{test_workspace_name}/non-existing",
@@ -143,6 +145,7 @@ download_project_data = [
         1,
         "ERROR: Project does not exist",
     ),
+    # request project version does not exist
     (
         (
             f"{test_workspace_name}/{test_project}",
@@ -154,16 +157,17 @@ download_project_data = [
         1,
         "ERROR: Project version does not exist",
     ),
+    # destination dir already exists
     (
         (
             f"{test_workspace_name}/{test_project}",
             "--version",
             1,
             "--directory",
-            "/tmp",
+            test_project_dir,
         ),
         1,
-        "ERROR: Destination directory '/tmp' already exist",
+        f"ERROR: Destination directory '{test_project_dir}' already exists",
     ),
 ]
 

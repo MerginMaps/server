@@ -237,3 +237,16 @@ def add_commands(app: Flask):
     def permissions(path: str):
         """Check for specific path write permission"""
         _check_permissions(path)
+
+
+def normalize_input(lowercase=True, strip=True):
+    def _normalize(ctx, param, value):
+        if value is None:
+            return value
+        if strip:
+            value = value.strip()
+        if lowercase:
+            value = value.lower()
+        return value
+
+    return _normalize

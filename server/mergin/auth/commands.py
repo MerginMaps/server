@@ -9,7 +9,7 @@ from sqlalchemy import or_, func
 
 from ..app import db
 from .models import User, UserProfile
-from ..utils import normalize_input
+from ..commands import normalize_input
 
 
 def add_commands(app: Flask):

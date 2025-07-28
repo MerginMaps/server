@@ -16,7 +16,7 @@ from ..app import db
 from .models import Project, ProjectVersion
 from .utils import split_project_path
 from ..auth.models import User
-from ..utils import normalize_input
+from ..commands import normalize_input
 
 
 def add_commands(app: Flask):
@@ -69,7 +69,6 @@ def add_commands(app: Flask):
         "--directory",
         type=click.Path(),
         required=True,
-        callback=normalize_input(lowercase=False),
     )
     def download(project_name, version, directory):  # pylint: disable=W0612
         """Download files for project at particular version"""
