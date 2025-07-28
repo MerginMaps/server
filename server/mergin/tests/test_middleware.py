@@ -28,10 +28,8 @@ def test_use_middleware(use_middleware):
 
     assert isinstance(application.wsgi_app, GeventTimeoutMiddleware) == use_middleware
     # in case of gevent, dummy endpoint it set to time out
-    assert (
-        application.test_client().get("/test").status_code == 504
-        if use_middleware
-        else 200
+    assert application.test_client().get("/test").status_code == (
+        504 if use_middleware else 200
     )
 
 
