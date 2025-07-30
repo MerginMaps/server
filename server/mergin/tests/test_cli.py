@@ -325,7 +325,7 @@ def test_check_permission(writable, error, expected, capsys):
 test_check_server_data = [
     (
         "ce",
-        "https://app.dev.merginmaps.com/",
+        "server-base-url",
         "contact@mergin.com",
         "service_id_config",
         1,
@@ -347,7 +347,7 @@ test_check_server_data = [
     ),  # no base URL set.
     (
         "",
-        "https://app.dev.merginmaps.com/",
+        "server-base-url",
         "",
         "service_id_config",
         1,
@@ -358,7 +358,7 @@ test_check_server_data = [
     ),  # no contact email set.
     (
         "ce",
-        "https://app.dev.merginmaps.com/",
+        "server-base-url",
         "contact@mergin.com",
         "service_id_db",
         1,
@@ -369,7 +369,7 @@ test_check_server_data = [
     ),  # success
     (
         "ce",
-        "https://app.dev.merginmaps.com/",
+        "server-base-url",
         "contact@mergin.com",
         None,
         1,
@@ -380,7 +380,7 @@ test_check_server_data = [
     ),  # no service ID set.
     (
         "ee",
-        "https://app.dev.merginmaps.com/",
+        "server-base-url",
         "contact@mergin.com",
         "service_id_config",
         0,
@@ -391,7 +391,7 @@ test_check_server_data = [
     ),  # database not initialized.
     (
         "",
-        "https://app.dev.merginmaps.com/",
+        "server-base-url",
         "contact@mergin.com",
         "service_id_config",
         1,
@@ -402,7 +402,7 @@ test_check_server_data = [
     ),  # bad permissions
     (
         "",
-        "https://app.dev.merginmaps.com/",
+        "server-base-url",
         "contact@mergin.com",
         "service_id_config",
         1,
@@ -483,3 +483,12 @@ def test_check_server(
         assert "Mergin Maps edition: Enterprise Edition" in result.output
     else:
         assert "Mergin Maps edition" not in result.output
+
+
+def test_init_db(runner):
+    """Test initializing database"""
+    db.drop_all(bind=None)
+    assert not db.engine.table_names()
+    result = runner.invoke(args=["init-db"])
+    assert db.engine.table_names()
+    assert "Tables created." in result.output

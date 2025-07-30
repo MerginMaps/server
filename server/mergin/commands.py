@@ -248,11 +248,6 @@ def add_commands(app: Flask):
         """Check for specific path write permission"""
         _check_permissions(path)
 
-    @server.command()
-    def send_statistics():
-        """Send usage statistics"""
-        _send_statistics(app)
-
 
 def normalize_input(lowercase=True, strip=True):
     def _normalize(ctx, param, value):
