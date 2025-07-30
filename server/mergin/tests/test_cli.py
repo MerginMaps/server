@@ -3,14 +3,17 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import shutil
+from pathlib import Path
 
+import click
 import pytest
 import os
 from unittest.mock import patch
 
-# from flask import current_app
-
+from mergin.app import db
 from mergin.auth.models import User
+from mergin.commands import _check_permissions
+from mergin.stats.models import MerginInfo
 from mergin.sync.models import Project, ProjectVersion
 from mergin.tests import (
     test_project,
@@ -70,7 +73,7 @@ test_create_project_data = [
 
 @pytest.mark.parametrize("args,code,output", test_create_project_data)
 def test_create_project(runner, args, code, output):
-    """Test create project command"""
+    """Test 'project create' command"""
     # create project
     create = runner.invoke(args=["project", "create", *args])
     assert create.exit_code == code
@@ -115,7 +118,7 @@ test_create_user_data = [
 
 @pytest.mark.parametrize("args,output,code", test_create_user_data)
 def test_create_user(runner, args, output, code):
-    """Test create user command"""
+    """Test 'user create' command"""
     result = runner.invoke(args=["user", "create", *args])
     assert result.exit_code == code
     assert output in result.output
@@ -179,7 +182,7 @@ download_project_data = [
 
 @pytest.mark.parametrize("args,code,output", download_project_data)
 def test_download_project(runner, args, code, output):
-    """Test download project command"""
+    """Test 'project download' command"""
     if os.path.exists(sync_config.TEMP_DIR):
         shutil.rmtree(sync_config.TEMP_DIR)
     result = runner.invoke(args=["project", "download", *args])
@@ -207,7 +210,7 @@ remove_project_data = [
 
 @pytest.mark.parametrize("project_name,code,output", remove_project_data)
 def test_remove_project(runner, project_name, code, output):
-    """Test remove project command"""
+    """Test 'project remove' command"""
     remove = runner.invoke(args=["project", "remove", project_name])
     assert remove.exit_code == code
     assert output in remove.output
@@ -232,7 +235,7 @@ def test_send_statistics(
     collect_stats,
     app,
 ):
-    """Test send statistics helper"""
+    """Test '_send_statistics' helper"""
     from mergin.commands import _send_statistics
 
     mock_echo_title.return_value = ""
@@ -277,7 +280,7 @@ def test_check_email(
     runner,
     app,
 ):
-    """Test check_email command"""
+    """Test 'send-check-email' command"""
     mock_send_email.return_value = None
     mock_check_celery.return_value = celery_check
     app.config["MAIL_SUPPRESS_SEND"] = suppressed
@@ -294,3 +297,190 @@ def test_check_email(
     assert output in result.output
     sent = 1 if output == "Email sent." else 0
     assert mock_send_email.call_count == sent
+
+
+test_check_permission_data = [(1, 0, "permissions granted"), (0, 1, "access denied")]
+
+
+@pytest.mark.parametrize("writable,error,expected", test_check_permission_data)
+def test_check_permission(writable, error, expected, capsys):
+    """Test check 'permission' command"""
+    projects_dir = Path(sync_config.TEMP_DIR)
+    if not os.path.exists(projects_dir):
+        projects_dir.mkdir()
+    if not writable:
+        projects_dir.chmod(0o555)
+    else:
+        projects_dir.chmod(0o200)
+    if expected == "permissions granted":
+        expected = f"Permissions granted for {projects_dir} folder."
+    elif expected == "access denied":
+        expected = f"Permissions for {projects_dir} folder not set correctly. Please review these settings."
+
+    _check_permissions(projects_dir)
+    out, err = capsys.readouterr()  # capture what was printed to stdout
+    assert ("Error: " in out) == error
+    assert expected in out
+
+
+test_check_server_data = [
+    (
+        "ce",
+        "https://app.dev.merginmaps.com/",
+        "contact@mergin.com",
+        "service_id_config",
+        1,
+        1,
+        1,
+        0,
+        "",
+    ),  # success
+    (
+        "ee",
+        "",
+        "contact@mergin.com",
+        "service_id_config",
+        1,
+        1,
+        1,
+        1,
+        "No base URL set.",
+    ),  # no base URL set.
+    (
+        "",
+        "https://app.dev.merginmaps.com/",
+        "",
+        "service_id_config",
+        1,
+        1,
+        1,
+        1,
+        "No contact email set.",
+    ),  # no contact email set.
+    (
+        "ce",
+        "https://app.dev.merginmaps.com/",
+        "contact@mergin.com",
+        "service_id_db",
+        1,
+        1,
+        1,
+        0,
+        "",
+    ),  # success
+    (
+        "ce",
+        "https://app.dev.merginmaps.com/",
+        "contact@mergin.com",
+        None,
+        1,
+        1,
+        1,
+        1,
+        "No service ID set.",
+    ),  # no service ID set.
+    (
+        "ee",
+        "https://app.dev.merginmaps.com/",
+        "contact@mergin.com",
+        "service_id_config",
+        0,
+        1,
+        1,
+        1,
+        "Database not initialized.",
+    ),  # database not initialized.
+    (
+        "",
+        "https://app.dev.merginmaps.com/",
+        "contact@mergin.com",
+        "service_id_config",
+        1,
+        0,
+        1,
+        1,
+        "bad_permissions",
+    ),  # bad permissions
+    (
+        "",
+        "https://app.dev.merginmaps.com/",
+        "contact@mergin.com",
+        "service_id_config",
+        1,
+        1,
+        0,
+        1,
+        "Celery process not running properly.",
+    ),  # celery not running
+]
+
+
+@patch("mergin.commands._check_celery")
+@patch("mergin.commands._check_permissions")
+@patch("mergin.app.db.engine.table_names")
+@pytest.mark.parametrize(
+    "edition,base_url,contact_email,service_id,tables,permission_check,celery_check,error,output",
+    test_check_server_data,
+)
+def test_check_server(
+    table_names_mock,
+    permission_mock,
+    celery_mock,
+    edition,
+    base_url,
+    contact_email,
+    service_id,
+    tables,
+    permission_check,
+    celery_check,
+    error,
+    output,
+    app,
+    runner,
+):
+    """Test 'check' server command"""
+    app.config["SERVER_TYPE"] = edition
+    app.config["MERGIN_BASE_URL"] = base_url
+    app.config["CONTACT_EMAIL"] = contact_email
+
+    if service_id is None:
+        app.config["SERVICE_ID"] = ""
+        MerginInfo.query.delete()
+        db.session.commit()
+
+    if service_id == "service_id_config":
+        app.config["SERVICE_ID"] = "service-id-config"
+
+    if not tables:
+        table_names_mock.return_value = ""
+    projects_dir = app.config["LOCAL_PROJECTS"]
+    # workaround to get the correct output as `app` fixture is not initialized yet when parametrize is evaluated
+    if output == "bad_permissions":
+        output = f"Permissions for {projects_dir} folder not set correctly."
+    permission_mock.return_value = None
+    celery_mock.return_value = None
+    # mock message echoed to cli, use lambda to deffer execution so that the message gets to `result.output`
+    permission_mock.side_effect = lambda *args, **kwargs: click.echo(
+        f"Permissions granted for {projects_dir} folder"
+        if permission_check
+        else f"Error: Permissions for {projects_dir} folder not set correctly."
+    )
+    celery_mock.side_effect = lambda *args, **kwargs: click.echo(
+        "Celery is running properly"
+        if celery_check
+        else "Error: Celery process not running properly."
+    )
+
+    result = runner.invoke(args=["server", "check"])
+    assert permission_mock.called
+    assert celery_mock.called
+    assert ("Error:" in result.output) == error
+    assert base_url in result.output
+    assert contact_email in result.output
+    assert output in result.output
+    if edition == "ce":
+        assert "Mergin Maps edition: Community Edition" in result.output
+    elif edition == "ee":
+        assert "Mergin Maps edition: Enterprise Edition" in result.output
+    else:
+        assert "Mergin Maps edition" not in result.output

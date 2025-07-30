@@ -16,7 +16,7 @@ def _echo_title(title):
 
 
 def _echo_error(msg):
-    click.secho("Error: ", fg="red", nl=False, bold=True, err=True)
+    click.secho("Error: ", fg="red", nl=False, bold=True)
     click.secho(msg, fg="bright_red")
 
 
@@ -94,7 +94,7 @@ def _check_permissions(path):
             f"Permissions for {path} folder not set correctly. Please review these settings.",
         )
     else:
-        click.secho(f"Permissions granted for {path} folder", fg="green")
+        click.secho(f"Permissions granted for {path} folder.", fg="green")
 
 
 def _check_server(app: Flask):  # pylint: disable=W0612

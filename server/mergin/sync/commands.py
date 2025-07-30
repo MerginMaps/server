@@ -88,7 +88,7 @@ def add_commands(app: Flask):
             sys.exit(1)
         if os.path.exists(directory):
             click.secho(
-                f"ERROR: Destination directory '{directory}' already exist",
+                f"ERROR: Destination directory '{directory}' already exists",
                 fg="red",
                 err=True,
             )
