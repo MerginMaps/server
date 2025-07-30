@@ -322,6 +322,9 @@ def test_check_permission(writable, error, expected, capsys):
     out, err = capsys.readouterr()  # capture what was printed to stdout
     assert ("Error: " in out) == error
     assert expected in out
+    if projects_dir.exists():
+        projects_dir.chmod(0o700)
+        shutil.rmtree(projects_dir)
 
 
 test_check_server_data = [
