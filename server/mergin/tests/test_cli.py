@@ -11,7 +11,7 @@ from pathlib import Path
 
 from mergin.app import db
 from mergin.auth.models import User
-from mergin.commands import _check_permissions
+from mergin.commands import _check_permissions, _check_celery
 from mergin.stats.models import MerginInfo
 from mergin.sync.models import Project, ProjectVersion
 from mergin.tests import (
@@ -524,3 +524,24 @@ def test_init_server(
     else:
         assert email not in result.output
         assert User.query.filter_by(username=DEFAULT_USER[0]).count()
+
+
+test_check_celery_data = [
+    (1, 1, "Celery is running properly"),
+    (
+        0,
+        0,
+        "Celery process not running properly. Configure celery worker and celery beat.",
+    ),
+]
+
+
+@patch("celery.app.control.Inspect.ping")
+@pytest.mark.parametrize("ping,result,output", test_check_celery_data)
+def test_check_celery(mock_ping, ping, result, output, capsys):
+    """Test `_check_celery` function`"""
+    mock_ping.return_value = ping
+    assert _check_celery() == result
+    out, err = capsys.readouterr()  # capture what was echoed to stdout
+    assert ("Error: " not in out) == result
+    assert output in out
