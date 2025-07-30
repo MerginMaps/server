@@ -304,13 +304,15 @@ test_check_permission_data = [(1, 0, "permissions granted"), (0, 1, "access deni
 @pytest.mark.parametrize("writable,error,expected", test_check_permission_data)
 def test_check_permission(writable, error, expected, capsys):
     """Test check 'permission' command"""
-    projects_dir = Path(sync_config.TEMP_DIR)
-    if not os.path.exists(projects_dir):
-        projects_dir.mkdir()
+    projects_dir = Path(sync_config.TEMP_DIR) / "projects"
+    if projects_dir.exists():
+        projects_dir.chmod(0o700)
+        shutil.rmtree(projects_dir)
+    projects_dir.mkdir(parents=True)
     if not writable:
         projects_dir.chmod(0o555)
     else:
-        projects_dir.chmod(0o200)
+        projects_dir.chmod(0o700)
     if expected == "permissions granted":
         expected = f"Permissions granted for {projects_dir} folder."
     elif expected == "access denied":
@@ -492,3 +494,30 @@ def test_init_db(runner):
     result = runner.invoke(args=["init-db"])
     assert db.engine.table_names()
     assert "Tables created." in result.output
+
+
+@patch("mergin.commands._check_server")
+@patch("mergin.commands._send_email")
+@patch("mergin.commands._send_statistics")
+@pytest.mark.parametrize("tables", [True, False])
+def test_init_server(
+    send_statistics_mock, send_email_mock, check_server_mock, tables, runner
+):
+    """Test initializing DB with admin and checks"""
+    if not tables:
+        db.drop_all(bind=None)
+    send_statistics_mock.return_value = None
+    send_email_mock.return_value = None
+    check_server_mock.return_value = None
+    email = "init@command.cli"
+    result = runner.invoke(args=["init", "--email", email])
+    assert send_statistics_mock.called
+    assert send_email_mock.called
+    assert check_server_mock.called
+    if not tables:
+        assert "Admin user created. Please save generated password." in result.output
+        assert email in result.output
+        assert not User.query.filter_by(username=DEFAULT_USER[0]).count()
+    else:
+        assert email not in result.output
+        assert User.query.filter_by(username=DEFAULT_USER[0]).count()
