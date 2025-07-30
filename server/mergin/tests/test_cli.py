@@ -3,12 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import shutil
-from pathlib import Path
-
 import click
 import pytest
 import os
 from unittest.mock import patch
+from pathlib import Path
 
 from mergin.app import db
 from mergin.auth.models import User

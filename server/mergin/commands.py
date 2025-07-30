@@ -194,8 +194,7 @@ def add_commands(app: Flask):
     )
     def init(email: str, recreate: bool):
         """Initialize database if does not exist or -r is provided. Perform check of server configuration. Send statistics, respecting your setup."""
-        from mergin.auth.models import UserProfile
-        from .auth.models import User
+        from .auth.models import User, UserProfile
 
         tables = db.engine.table_names()
         if recreate and tables:
