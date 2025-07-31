@@ -184,7 +184,13 @@ def add_commands(app: Flask):
         _init_db(app)
 
     @app.cli.command()
-    @click.option("--email", "-e", required=True, envvar="CONTACT_EMAIL")
+    @click.option(
+        "--email",
+        "-e",
+        required=True,
+        envvar="CONTACT_EMAIL",
+        callback=normalize_input(),
+    )
     @click.option(
         "--recreate",
         "-r",
