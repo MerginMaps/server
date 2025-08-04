@@ -1,6 +1,7 @@
 .p-avatar {
     background-color: $avatarBg;
     border-radius: $borderRadius;
+    font-size: $avatarFontSize !important;
 
     &.p-avatar-lg {
         width: 3rem;
