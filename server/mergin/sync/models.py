@@ -1076,10 +1076,7 @@ class Upload(db.Model):
                         for chunk_id in chunks_map.get(f.path, []):
                             # based on API version location for uploaded chunks differs
                             if use_shared_chunk_dir:
-                                chunk_file = os.path.join(
-                                    current_app.config["UPLOAD_CHUNKS_DIR"],
-                                    *get_chunk_location(chunk_id),
-                                )
+                                chunk_file = get_chunk_location(chunk_id)
                             else:
                                 chunk_file = os.path.join(
                                     self.upload_dir, "chunks", chunk_id

@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import uuid
 import gevent
 import logging
 import os
 import psycopg2
 from connexion import NoContent, request
-from datetime import datetime
-from flask import abort, current_app, jsonify
+from datetime import datetime, timedelta, timezone
+from flask import abort, jsonify, current_app, make_response
 from flask_login import current_user
 from marshmallow import ValidationError
 from psycopg2 import IntegrityError
@@ -36,9 +37,9 @@ from .models import (
 )
 from .permissions import ProjectPermissions, require_project_by_uuid
 from .public_api_controller import catch_sync_failure
-from .schemas import ProjectMemberSchema, ProjectVersionSchema
-from .storages.disk import move_to_tmp
-from .utils import get_device_id, get_ip, get_user_agent
+from .schemas import ProjectMemberSchema, ProjectVersionSchema, UploadChunkSchema
+from .storages.disk import move_to_tmp, save_to_file
+from .utils import get_device_id, get_ip, get_user_agent, get_chunk_location
 from .workspace import WorkspaceRole
 
 
@@ -331,4 +332,35 @@ def create_project_version(id):
             )
         ).dump(pv),
         201,
+    )
+
+
+@auth_required
+def upload_chunk(id: str):
+    """
+    Push chunk to chunks location.
+    """
+    project = require_project_by_uuid(id, ProjectPermissions.Edit)
+    if project.locked_until:
+        abort(make_response(jsonify(ProjectLocked().to_dict()), 422))
+    # generate uuid for chunk
+    chunk_id = str(uuid.uuid4())
+    dest_file = get_chunk_location(chunk_id)
+    try:
+        # we could have used request.data here, but it could eventually cause OOM issue
+        save_to_file(request.stream, dest_file, current_app.config["MAX_CHUNK_SIZE"])
+    except IOError:
+        move_to_tmp(dest_file, chunk_id)
+        abort(413, "Chunk size exceeds maximum allowed size")
+    except Exception as e:
+        abort(400, "Error saving chunk")
+
+    # Add valid_until timestamp to the response, remove tzinfo for compatibility with DateTimeWithZ
+    valid_until = (
+        datetime.now(timezone.utc)
+        + timedelta(seconds=current_app.config["UPLOAD_CHUNKS_EXPIRATION"])
+    ).replace(tzinfo=None)
+    return (
+        UploadChunkSchema().dump({"id": chunk_id, "valid_until": valid_until}),
+        200,
     )

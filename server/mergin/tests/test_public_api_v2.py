@@ -268,10 +268,7 @@ def test_create_version(client, data, expected, err_code):
             )
             with open(src_file, "rb") as in_file:
                 for chunk in f["chunks"]:
-                    chunk_location = os.path.join(
-                        current_app.config["UPLOAD_CHUNKS_DIR"],
-                        *get_chunk_location(chunk),
-                    )
+                    chunk_location = get_chunk_location(chunk)
                     os.makedirs(os.path.dirname(chunk_location), exist_ok=True)
                     with open(chunk_location, "wb") as out_file:
                         out_file.write(in_file.read(CHUNK_SIZE))
@@ -342,3 +339,66 @@ def test_create_version_failures(client):
         response = client.post(f"v2/projects/{project.id}/versions", json=data)
         assert response.status_code == 422
         assert response.json["code"] == UploadError.code
+
+
+def test_upload_chunk(client, app):
+    """Test pushing a chunk to a project"""
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+    url = f"/v2/projects/{project.id}/chunks"
+    app.config["MAX_CHUNK_SIZE"] = 1024  # Set a small max chunk size for testing
+    max_chunk_size = app.config["MAX_CHUNK_SIZE"]
+
+    response = client.post(
+        url,
+        data=b"a" * (max_chunk_size + 1),  # Exceeding max chunk size
+        headers={"Content-Type": "application/octet-stream"},
+    )
+    assert response.status_code == 413
+
+    # Project is locked, cannot push chunks
+    project.locked_until = datetime.now(timezone.utc) + timedelta(weeks=26)
+    db.session.commit()
+    response = client.post(
+        url,
+        data=b"a",
+        headers={"Content-Type": "application/octet-stream"},
+    )
+    assert response.status_code == 422
+    assert response.json["code"] == "ProjectLocked"
+
+    project.locked_until = None  # Unlock the project
+    project.removed_at = datetime.now(timezone.utc) - timedelta(
+        days=(client.application.config["DELETED_PROJECT_EXPIRATION"] + 1)
+    )  # Ensure project is removed
+    db.session.commit()
+    response = client.post(
+        url,
+        data=b"a",
+        headers={"Content-Type": "application/octet-stream"},
+    )
+    assert response.status_code == 404
+
+    # Push a chunk successfully
+    project.removed_at = None  # Ensure project is not removed
+    db.session.commit()
+    response = client.post(
+        url,
+        data=b"a" * max_chunk_size,
+        headers={"Content-Type": "application/octet-stream"},
+    )
+    assert response.status_code == 200
+    chunk_id = response.json["id"]
+    assert chunk_id
+    valid_until = response.json["valid_until"]
+    valid_until_dt = datetime.strptime(valid_until, "%Y-%m-%dT%H:%M:%S%z")
+    assert valid_until_dt > datetime.now(timezone.utc)
+    assert valid_until_dt < datetime.now(timezone.utc) + timedelta(
+        seconds=app.config["UPLOAD_CHUNKS_EXPIRATION"]
+    )
+    # Check if the chunk is stored correctly
+    stored_chunk = get_chunk_location(chunk_id)
+    assert os.path.exists(stored_chunk)
+    with open(stored_chunk, "rb") as f:
+        assert f.read() == b"a" * max_chunk_size

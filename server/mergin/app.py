@@ -360,6 +360,16 @@ def create_app(public_keys: List[str] = None) -> Flask:
     # reading raw input stream not supported in connexion so far
     # https://github.com/zalando/connexion/issues/592
     # and as workaround we use custom Flask endpoint in create_app function
+    @app.route("/v2/projects/<id>/chunks", methods=["POST"])
+    @auth_required
+    def upload_chunk_v2(id: str):
+        from .sync import public_api_v2_controller
+
+        return public_api_v2_controller.upload_chunk(id)
+
+    # reading raw input stream not supported in connexion so far
+    # https://github.com/zalando/connexion/issues/592
+    # and as workaround we use custom Flask endpoint in create_app function
     @app.route("/v1/project/push/chunk/<transaction_id>/<chunk_id>", methods=["POST"])
     @auth_required
     def chunk_upload(transaction_id, chunk_id):

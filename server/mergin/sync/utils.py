@@ -582,13 +582,14 @@ def get_x_accel_uri(*url_parts):
     return result
 
 
-def get_chunk_location(id: str) -> Tuple[str, str]:
+def get_chunk_location(id: str):
     """
-    Splits the given identifier into two parts.
+    Get file location for chunk on FS
 
-    Returns a tuple where the first element is the first two characters
-                         of the identifier, and the second element is the remaining
-                         characters.
+    Splits the given identifier into two parts where the first two characters of the identifier are the small hash,
+    and the remaining characters is a file identifier.
     """
-
-    return id[0:2], id[2:]
+    chunk_dir = current_app.config.get("UPLOAD_CHUNKS_DIR")
+    small_hash = id[:2]
+    file_name = id[2:]
+    return os.path.join(chunk_dir, small_hash, file_name)

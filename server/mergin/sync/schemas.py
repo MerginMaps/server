@@ -405,3 +405,10 @@ class ProjectMemberSchema(Schema):
     project_role = fields.Enum(enum=ProjectRole, by_value=True)
     workspace_role = fields.Enum(enum=WorkspaceRole, by_value=True)
     role = fields.Enum(enum=ProjectRole, by_value=True)
+
+
+class UploadChunkSchema(Schema):
+    """Schema for chunk upload response"""
+
+    id = fields.UUID()
+    valid_until = DateTimeWithZ()
