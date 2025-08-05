@@ -139,7 +139,7 @@ def remove_project_collaborator(id, user_id):
 @auth_required
 def upload_chunk(id: str):
     """
-    Push chunk to files lake.
+    Push chunk to chunks location.
     """
     project = require_project_by_uuid(id, ProjectPermissions.Edit)
     if project.locked_until:
@@ -149,7 +149,6 @@ def upload_chunk(id: str):
     dest_file = get_chunk_location(chunk_id)
     try:
         # we could have used request.data here, but it could eventually cause OOM issue
-        print(request.stream)
         save_to_file(request.stream, dest_file, current_app.config["MAX_CHUNK_SIZE"])
     except IOError:
         move_to_tmp(dest_file, chunk_id)
