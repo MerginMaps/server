@@ -96,6 +96,39 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
+  # /projects/{id}/chunks:
+  #   post:
+  #     tags:
+  #       - project
+  #     summary: Upload file chunk.
+  #     operationId: upload_chunk
+  #     parameters:
+  #       - $ref: "#/components/parameters/ProjectId"
+  #     requestBody:
+  #       x-stream-upload: true
+  #       content:
+  #         application/octet-stream:
+  #           schema:
+  #             type: string
+  #             format: binary
+  #     responses:
+  #       "200":
+  #         description: Chunk upload response
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: "#/components/schemas/UploadChunk"
+  #       "400":
+  #         $ref: "#/components/responses/BadRequest"
+  #       "401":
+  #         $ref: "#/components/responses/Unauthorized"
+  #       "403":
+  #         $ref: "#/components/responses/Forbidden"
+  #       "404":
+  #         $ref: "#/components/responses/NotFound"
+  #       "413":
+  #         $ref: "#/components/responses/RequestTooBig"
+  #     x-openapi-router-controller: mergin.sync.public_api_v2_controller
   /projects/{id}/collaborators:
     parameters:
       - $ref: "#/components/parameters/ProjectId"
@@ -233,6 +266,8 @@ components:
       description: Not found
     Conflict:
       description: Conflict
+    RequestTooBig:
+      description: Request Entity Too Large
   parameters:
     ProjectId:
       name: id
@@ -268,6 +303,17 @@ components:
         - $ref: "#/components/schemas/ProjectRole"
           nullable: false
           description: combination of workspace role and project role
+    UploadChunk:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        valid_until:
+          type: string
+          format: date-time
+          example: "2023-10-01T12:00:00Z"
     ProjectMember:
       type: object
       properties:
