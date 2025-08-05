@@ -47,6 +47,7 @@ application = create_app(
         "GLOBAL_WRITE",
         "ENABLE_SUPERADMIN_ASSIGNMENT",
         "DIAGNOSTIC_LOGS_URL",
+        "V2_PUSH_ENABLED",
     ]
 )
 register_stats(application)

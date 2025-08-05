@@ -31,6 +31,9 @@ class Configuration(object):
     MAX_CHUNK_SIZE = config(
         "MAX_CHUNK_SIZE", default=10 * 1024 * 1024, cast=int
     )  # in bytes
+    UPLOAD_CHUNKS_DIR = config(
+        "UPLOAD_CHUNKS_DIR", default=os.path.join(LOCAL_PROJECTS, "chunks")
+    )
     # use nginx (in front of gunicorn) to serve files (https://www.nginx.com/resources/wiki/start/topics/examples/x-accel/)
     USE_X_ACCEL = config("USE_X_ACCEL", default=False, cast=bool)
     PROJECTS_ARCHIVES_X_ACCEL_BUFFERING = config(
@@ -64,3 +67,5 @@ class Configuration(object):
     )
     # in seconds, older unfinished zips are moved to temp
     PARTIAL_ZIP_EXPIRATION = config("PARTIAL_ZIP_EXPIRATION", default=600, cast=int)
+    # whether new push is allowed
+    V2_PUSH_ENABLED = config("V2_PUSH_ENABLED", default=True, cast=bool)

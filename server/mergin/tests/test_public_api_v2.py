@@ -1,13 +1,38 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
-from .utils import add_user
-from ..app import db
-from mergin.sync.models import Project
-from tests import test_project, test_workspace_id
+import os
+from unittest.mock import patch
+from flask import current_app
+from psycopg2 import IntegrityError
+import pytest
+from datetime import datetime, timedelta, timezone
 
-from ..config import Configuration
-from ..sync.models import ProjectRole
+from mergin.app import db
+from mergin.config import Configuration
+from mergin.sync.errors import (
+    ProjectLocked,
+    ProjectVersionMismatch,
+    StorageLimitHit,
+    UploadError,
+)
+from mergin.sync.models import (
+    Project,
+    ProjectRole,
+    ProjectVersion,
+    SyncFailuresHistory,
+    Upload,
+)
+from mergin.sync.utils import get_chunk_location
+from . import TMP_DIR, test_project, test_workspace_id, test_project_dir
+from .test_project_controller import (
+    CHUNK_SIZE,
+    _get_changes,
+    _get_changes_with_diff,
+    _get_changes_with_diff_0_size,
+    _get_changes_without_added,
+)
+from .utils import add_user
 
 
 def test_schedule_delete_project(client):
@@ -126,3 +151,194 @@ def test_project_members(client):
     # access provided by workspace role cannot be removed directly
     response = client.delete(url + f"/{user.id}")
     assert response.status_code == 404
+
+
+push_data = [
+    # success
+    (
+        {"version": "v1", "changes": _get_changes_without_added(test_project_dir)},
+        201,
+        None,
+    ),
+    # with diff, success
+    ({"version": "v1", "changes": _get_changes_with_diff(test_project_dir)}, 201, None),
+    # just a dry-run
+    (
+        {
+            "version": "v1",
+            "changes": _get_changes_with_diff(test_project_dir),
+            "check_only": True,
+        },
+        204,
+        None,
+    ),
+    # broken .gpkg file
+    (
+        {"version": "v1", "changes": _get_changes_with_diff_0_size(test_project_dir)},
+        422,
+        UploadError.code,
+    ),
+    # contains already uploaded file
+    (
+        {"version": "v1", "changes": _get_changes(test_project_dir)},
+        422,
+        UploadError.code,
+    ),
+    # version mismatch
+    (
+        {"version": "v0", "changes": _get_changes_without_added(test_project_dir)},
+        409,
+        ProjectVersionMismatch.code,
+    ),
+    # no changes requested
+    (
+        {"version": "v1", "changes": {"added": [], "removed": [], "updated": []}},
+        422,
+        UploadError.code,
+    ),
+    # inconsistent changes, a file cannot be added and updated at the same time
+    (
+        {
+            "version": "v1",
+            "changes": {
+                "added": [
+                    {
+                        "path": "test.txt",
+                        "size": 1234,
+                        "checksum": "9adb76bf81a34880209040ffe5ee262a090b62ab",
+                        "chunks": [],
+                    }
+                ],
+                "removed": [],
+                "updated": [
+                    {
+                        "path": "test.txt",
+                        "size": 1234,
+                        "checksum": "9adb76bf81a34880209040ffe5ee262a090b62ab",
+                        "chunks": [],
+                    }
+                ],
+            },
+        },
+        422,
+        UploadError.code,
+    ),
+    # inconsistent changes, a file which does not exist cannot be deleted
+    (
+        {
+            "version": "v1",
+            "changes": {
+                "added": [],
+                "removed": [
+                    {
+                        "path": "not-existing.txt",
+                        "size": 1234,
+                        "checksum": "9adb76bf81a34880209040ffe5ee262a090b62ab",
+                    }
+                ],
+                "updated": [],
+            },
+        },
+        422,
+        UploadError.code,
+    ),
+    # missing version (required parameter)
+    ({"changes": _get_changes_without_added(test_project_dir)}, 400, None),
+    # incorrect changes format
+    ({"version": "v1", "changes": {}}, 400, None),
+]
+
+
+@pytest.mark.parametrize("data,expected,err_code", push_data)
+def test_create_version(client, data, expected, err_code):
+    """Test project push endpoint with different payloads."""
+
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+    assert project.latest_version == 1
+
+    if expected == 201:
+        # mimic chunks were uploaded
+        for f in data["changes"]["added"] + data["changes"]["updated"]:
+            src_file = (
+                os.path.join(TMP_DIR, f["diff"]["path"])
+                if f.get("diff")
+                else os.path.join(test_project_dir, f["path"])
+            )
+            with open(src_file, "rb") as in_file:
+                for chunk in f["chunks"]:
+                    chunk_location = os.path.join(
+                        current_app.config["UPLOAD_CHUNKS_DIR"],
+                        *get_chunk_location(chunk),
+                    )
+                    os.makedirs(os.path.dirname(chunk_location), exist_ok=True)
+                    with open(chunk_location, "wb") as out_file:
+                        out_file.write(in_file.read(CHUNK_SIZE))
+
+    response = client.post(f"v2/projects/{project.id}/versions", json=data)
+    assert response.status_code == expected
+    if expected == 201:
+        assert response.json["name"] == "v2"
+        assert project.latest_version == 2
+    else:
+        assert project.latest_version == 1
+        if err_code:
+            assert response.json["code"] == err_code
+            failure = SyncFailuresHistory.query.filter_by(project_id=project.id).first()
+            # failures are not created when POST request body is invalid (caught by connexion validators)
+            if failure:
+                assert failure.last_version == "v1"
+                assert failure.error_type == "project_push"
+
+
+def test_create_version_failures(client):
+    """Test various project push failures beyond invalid payload"""
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+
+    data = {"version": "v1", "changes": _get_changes_without_added(test_project_dir)}
+
+    # somebody else is syncing
+    upload = Upload(project, 1, _get_changes(test_project_dir), 1)
+    db.session.add(upload)
+    db.session.commit()
+    os.makedirs(upload.upload_dir)
+    open(upload.lockfile, "w").close()
+
+    response = client.post(f"v2/projects/{project.id}/versions", json=data)
+    assert response.status_code == 409
+    assert response.json["code"] == ProjectVersionMismatch.code
+    upload.clear()
+
+    # project is locked
+    project.locked_until = datetime.now(timezone.utc) + timedelta(days=1)
+    db.session.commit()
+    response = client.post(f"v2/projects/{project.id}/versions", json=data)
+    assert response.status_code == 422
+    assert response.json["code"] == ProjectLocked.code
+    project.locked_until = None
+    db.session.commit()
+
+    # try to finish the transaction which would fail on version created integrity error, e.g. race conditions
+    with patch.object(
+        Configuration,
+        "GLOBAL_STORAGE",
+        0,
+    ):
+        response = client.post(f"v2/projects/{project.id}/versions", json=data)
+        assert response.status_code == 422
+        assert response.json["code"] == StorageLimitHit.code
+
+    # try to finish the transaction which would fail on version created integrity error, e.g. race conditions
+    with patch.object(
+        ProjectVersion,
+        "__init__",
+        side_effect=IntegrityError("Cannot insert new version", None, None),
+    ):
+        # keep just deleted data to avoid messing with chunks
+        data["changes"]["added"] = data["changes"]["updated"] = []
+        response = client.post(f"v2/projects/{project.id}/versions", json=data)
+        assert response.status_code == 422
+        assert response.json["code"] == UploadError.code

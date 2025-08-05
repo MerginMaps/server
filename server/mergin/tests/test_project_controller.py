@@ -7,6 +7,7 @@ import os
 from dataclasses import asdict
 from unittest.mock import patch
 from urllib.parse import quote
+from psycopg2 import IntegrityError
 import pysqlite3
 import pytest
 import json
@@ -35,7 +36,7 @@ from ..sync.models import (
     PushChangeType,
     ProjectFilePath,
 )
-from ..sync.files import ChangesSchema
+from ..sync.files import files_changes_from_upload
 from ..sync.schemas import ProjectListSchema
 from ..sync.utils import generate_checksum, is_versioned_file
 from ..auth.models import User, UserProfile
@@ -1277,8 +1278,7 @@ def create_transaction(username, changes, version=1):
     project = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
     ).first()
-    upload_changes = ChangesSchema(context={"version": version}).load(changes)
-    upload = Upload(project, version, upload_changes, user.id)
+    upload = Upload(project, version, changes, user.id)
     db.session.add(upload)
     db.session.commit()
     upload_dir = os.path.join(upload.project.storage.project_dir, "tmp", upload.id)
@@ -1354,9 +1354,8 @@ def upload_chunks(upload_dir, changes, src_dir=test_project_dir):
 def test_push_finish(client):
     changes = _get_changes(test_project_dir)
     upload, upload_dir = create_transaction("mergin", changes)
-    url = "/v1/project/push/finish/{}".format(upload.id)
 
-    resp = client.post(url, headers=json_headers)
+    resp = client.post(f"/v1/project/push/finish/{upload.id}", headers=json_headers)
     assert resp.status_code == 422
     assert "corrupted_files" in resp.json["detail"].keys()
     assert not os.path.exists(os.path.join(upload_dir, "files", "test.txt"))
@@ -1364,6 +1363,7 @@ def test_push_finish(client):
     assert failure.error_type == "push_finish"
     assert "corrupted_files" in failure.error_details
 
+    upload, upload_dir = create_transaction("mergin", changes)
     os.mkdir(os.path.join(upload.project.storage.project_dir, "v2"))
     # mimic chunks were uploaded
     os.makedirs(os.path.join(upload_dir, "chunks"))
@@ -1373,7 +1373,10 @@ def test_push_finish(client):
                 with open(os.path.join(upload_dir, "chunks", chunk), "wb") as out_file:
                     out_file.write(in_file.read(CHUNK_SIZE))
 
-    resp2 = client.post(url, headers={**json_headers, "User-Agent": "Werkzeug"})
+    resp2 = client.post(
+        f"/v1/project/push/finish/{upload.id}",
+        headers={**json_headers, "User-Agent": "Werkzeug"},
+    )
     assert resp2.status_code == 200
     assert not os.path.exists(upload_dir)
     version = upload.project.get_latest_version()
@@ -2274,12 +2277,12 @@ def add_project_version(project, changes, version=None):
         else User.query.filter_by(username=DEFAULT_USER[0]).first()
     )
     next_version = version or project.next_version()
-    upload_changes = ChangesSchema(context={"version": next_version}).load(changes)
+    file_changes = files_changes_from_upload(changes, location_dir=f"v{next_version}")
     pv = ProjectVersion(
         project,
         next_version,
         author.id,
-        upload_changes,
+        file_changes,
         ip="127.0.0.1",
     )
     db.session.add(pv)
@@ -2293,19 +2296,23 @@ def test_project_version_integrity(client):
     changes = _get_changes_with_diff(test_project_dir)
     upload, upload_dir = create_transaction("mergin", changes)
     upload_chunks(upload_dir, upload.changes)
-    # manually create an identical project version in db
-    pv = add_project_version(upload.project, changes)
-    # try to finish the transaction
-    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
-    assert resp.status_code == 422
-    assert "Failed to create new version" in resp.json["detail"]
-    failure = SyncFailuresHistory.query.filter_by(project_id=upload.project.id).first()
-    assert failure.error_type == "push_finish"
-    assert "Failed to create new version" in failure.error_details
-    upload.project.latest_version = pv.name - 1
-    db.session.delete(pv)
-    db.session.delete(failure)
-    db.session.commit()
+
+    # try to finish the transaction which would fail on version created integrity error, e.g. race conditions
+    with patch.object(
+        ProjectVersion,
+        "__init__",
+        side_effect=IntegrityError("Project version already exists", None, None),
+    ):
+        resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+        assert resp.status_code == 422
+        assert "Failed to create new version" in resp.json["detail"]
+        failure = SyncFailuresHistory.query.filter_by(
+            project_id=upload.project.id
+        ).first()
+        assert failure.error_type == "push_finish"
+        assert "Failed to create new version" in failure.error_details
+        db.session.delete(failure)
+        db.session.commit()
 
     # changes without an upload
     with patch("mergin.sync.public_api_controller.get_user_agent") as mock:
@@ -2320,7 +2327,7 @@ def test_project_version_integrity(client):
         # to insert an identical project version when no upload (only one endpoint used),
         # we need to pretend side effect of a function called just before project version insertion
         def _get_user_agent():
-            add_project_version(project, changes)
+            add_project_version(project, {})
             # bypass endpoint checks
             upload.project.latest_version = ProjectVersion.from_v_name(data["version"])
             return "Input"

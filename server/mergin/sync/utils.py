@@ -13,7 +13,7 @@ from shapely import wkb
 from shapely.errors import ShapelyError
 from gevent import sleep
 from flask import Request
-from typing import Optional
+from typing import Optional, Tuple
 from sqlalchemy import text
 from pathvalidate import (
     validate_filename,
@@ -83,6 +83,8 @@ class Toucher:
         os.access(self.lockfile, os.W_OK)
         with open(self.lockfile, "a"):
             os.utime(self.lockfile, None)
+
+        sleep(0)  # to unblock greenlet
         if self.running:
             self.timer = Timer(self.interval, self.touch_lockfile)
             self.timer.start()
@@ -578,3 +580,15 @@ def get_x_accel_uri(*url_parts):
     url = url.lstrip(os.path.sep)
     result = os.path.join(download_accell_uri, url)
     return result
+
+
+def get_chunk_location(id: str) -> Tuple[str, str]:
+    """
+    Splits the given identifier into two parts.
+
+    Returns a tuple where the first element is the first two characters
+                         of the identifier, and the second element is the remaining
+                         characters.
+    """
+
+    return id[0:2], id[2:]
