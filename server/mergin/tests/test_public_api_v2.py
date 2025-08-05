@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import os
+import shutil
 from unittest.mock import patch
 from flask import current_app
 from psycopg2 import IntegrityError
@@ -33,7 +34,7 @@ from .test_project_controller import (
     _get_changes_with_diff_0_size,
     _get_changes_without_added,
 )
-from .utils import add_user
+from .utils import add_user, file_info
 
 
 def test_schedule_delete_project(client):
@@ -406,3 +407,53 @@ def test_upload_chunk(client):
     assert os.path.exists(stored_chunk)
     with open(stored_chunk, "rb") as f:
         assert f.read() == b"a" * max_chunk_size
+
+
+def test_full_push(client):
+    """Test full project push with upload of chunks and project version creation"""
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+
+    # prepare data to push
+    project_dir = os.path.join(TMP_DIR, test_project)
+    if os.path.exists(project_dir):
+        shutil.rmtree(project_dir)
+    shutil.copytree(test_project_dir, project_dir)
+    os.rename(
+        os.path.join(project_dir, "base.gpkg"),
+        os.path.join(project_dir, "new_base.gpkg"),
+    )
+
+    test_file = file_info(project_dir, "new_base.gpkg", chunk_size=CHUNK_SIZE)
+    uploaded_chunks = []
+
+    with open(os.path.join(project_dir, test_file["path"]), "rb") as in_file:
+        for _ in test_file["chunks"]:
+            data = in_file.read(CHUNK_SIZE)
+            response = client.post(
+                f"/v2/projects/{project.id}/chunks",
+                data=data,
+                headers={"Content-Type": "application/octet-stream"},
+            )
+            assert response.status_code == 200
+            uploaded_chunks.append(response.json["id"])
+            chunk_location = get_chunk_location(response.json["id"])
+            assert os.path.exists(chunk_location)
+
+    test_file["chunks"] = uploaded_chunks
+
+    response = client.post(
+        f"v2/projects/{project.id}/versions",
+        json={
+            "version": "v1",
+            "changes": {"added": [test_file], "updated": [], "removed": []},
+        },
+    )
+    assert response.status_code == 201
+    assert response.json["name"] == "v2"
+    assert project.latest_version == 2
+    assert os.path.exists(
+        os.path.join(project.storage.project_dir, "v2", test_file["path"])
+    )
+    assert not Upload.query.filter_by(project_id=project.id).first()

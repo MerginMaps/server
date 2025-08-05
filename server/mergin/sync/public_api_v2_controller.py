@@ -287,7 +287,7 @@ def create_project_version(id):
         db.session.add(project)
         db.session.commit()
         # let's move uploaded files where they are expected to be
-        temp_files_dir = os.path.join(upload.upload_dir, "files")
+        temp_files_dir = os.path.join(upload.upload_dir, "files", v_next_version)
         os.renames(temp_files_dir, version_dir)
 
         logging.info(
