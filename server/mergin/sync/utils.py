@@ -578,3 +578,17 @@ def get_x_accel_uri(*url_parts):
     url = url.lstrip(os.path.sep)
     result = os.path.join(download_accell_uri, url)
     return result
+
+
+def get_chunk_location(id: str):
+    """
+    Get file name for chunk
+
+    Splits the given identifier into two parts.
+
+    Returns a tuple where the first element is the first two characters of the identifier, and the second element is the remaining characters.
+    """
+    chunk_dir = current_app.config.get("UPLOAD_CHUNKS_DIR")
+    small_hash = id[:2]
+    file_name = id[2:]
+    return os.path.join(chunk_dir, small_hash, file_name)

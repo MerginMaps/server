@@ -64,3 +64,10 @@ class Configuration(object):
     )
     # in seconds, older unfinished zips are moved to temp
     PARTIAL_ZIP_EXPIRATION = config("PARTIAL_ZIP_EXPIRATION", default=600, cast=int)
+    UPLOAD_CHUNKS_DIR = config(
+        "UPLOAD_CHUNKS_DIR",
+        default=os.path.join(LOCAL_PROJECTS, "chunks"),
+    )  # directory for file chunks
+    UPLOAD_CHUNKS_EXPIRATION = config(
+        "UPLOAD_CHUNKS_EXPIRATION", default=86400, cast=int
+    )  # time in seconds after chunks are permanently deleted (1 day)

@@ -3,19 +3,25 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 from datetime import datetime
+import os
+import uuid
+from datetime import datetime, timedelta, timezone
 from connexion import NoContent, request
-from flask import abort, jsonify
+from flask import abort, jsonify, current_app, make_response
 from flask_login import current_user
 
 from mergin.sync.forms import project_name_validation
 
-from .schemas import ProjectMemberSchema
+from .schemas import ProjectMemberSchema, UploadChunkSchema
 from .workspace import WorkspaceRole
 from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
 from .models import Project, ProjectRole, ProjectMember
 from .permissions import ProjectPermissions, require_project_by_uuid
+from .errors import ProjectLocked
+from .utils import get_chunk_location
+from .storages.disk import move_to_tmp, save_to_file
 
 
 @auth_required
@@ -128,3 +134,35 @@ def remove_project_collaborator(id, user_id):
     project.unset_role(user_id)
     db.session.commit()
     return NoContent, 204
+
+
+@auth_required
+def upload_chunk(id: str):
+    """
+    Push chunk to files lake.
+    """
+    project = require_project_by_uuid(id, ProjectPermissions.Edit)
+    if project.locked_until:
+        abort(make_response(jsonify(ProjectLocked().to_dict()), 422))
+    # generate uuid for chunk
+    chunk_id = str(uuid.uuid4())
+    dest_file = get_chunk_location(chunk_id)
+    try:
+        # we could have used request.data here, but it could eventually cause OOM issue
+        print(request.stream)
+        save_to_file(request.stream, dest_file, current_app.config["MAX_CHUNK_SIZE"])
+    except IOError:
+        move_to_tmp(dest_file, chunk_id)
+        abort(413, "Chunk size exceeds maximum allowed size")
+    except Exception as e:
+        abort(400, "Error saving chunk")
+
+    # Add valid_until timestamp to the response, remove tzinfo for compatibility with DateTimeWithZ
+    valid_until = (
+        datetime.now(timezone.utc)
+        + timedelta(seconds=current_app.config["UPLOAD_CHUNKS_EXPIRATION"])
+    ).replace(tzinfo=None)
+    return (
+        UploadChunkSchema().dump({"id": chunk_id, "valid_until": valid_until}),
+        200,
+    )
