@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from mergin.app import db
 from mergin.config import Configuration
 from mergin.sync.errors import (
+    BigChunkError,
     ProjectLocked,
     ProjectVersionMismatch,
     StorageLimitHit,
@@ -341,14 +342,16 @@ def test_create_version_failures(client):
         assert response.json["code"] == UploadError.code
 
 
-def test_upload_chunk(client, app):
+def test_upload_chunk(client):
     """Test pushing a chunk to a project"""
     project = Project.query.filter_by(
         workspace_id=test_workspace_id, name=test_project
     ).first()
     url = f"/v2/projects/{project.id}/chunks"
-    app.config["MAX_CHUNK_SIZE"] = 1024  # Set a small max chunk size for testing
-    max_chunk_size = app.config["MAX_CHUNK_SIZE"]
+    client.application.config["MAX_CHUNK_SIZE"] = (
+        1024  # Set a small max chunk size for testing
+    )
+    max_chunk_size = client.application.config["MAX_CHUNK_SIZE"]
 
     response = client.post(
         url,
@@ -356,6 +359,7 @@ def test_upload_chunk(client, app):
         headers={"Content-Type": "application/octet-stream"},
     )
     assert response.status_code == 413
+    assert response.json["code"] == BigChunkError.code
 
     # Project is locked, cannot push chunks
     project.locked_until = datetime.now(timezone.utc) + timedelta(weeks=26)
@@ -366,7 +370,7 @@ def test_upload_chunk(client, app):
         headers={"Content-Type": "application/octet-stream"},
     )
     assert response.status_code == 422
-    assert response.json["code"] == "ProjectLocked"
+    assert response.json["code"] == ProjectLocked.code
 
     project.locked_until = None  # Unlock the project
     project.removed_at = datetime.now(timezone.utc) - timedelta(
@@ -395,7 +399,7 @@ def test_upload_chunk(client, app):
     valid_until_dt = datetime.strptime(valid_until, "%Y-%m-%dT%H:%M:%S%z")
     assert valid_until_dt > datetime.now(timezone.utc)
     assert valid_until_dt < datetime.now(timezone.utc) + timedelta(
-        seconds=app.config["UPLOAD_CHUNKS_EXPIRATION"]
+        seconds=client.application.config["UPLOAD_CHUNKS_EXPIRATION"]
     )
     # Check if the chunk is stored correctly
     stored_chunk = get_chunk_location(chunk_id)

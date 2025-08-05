@@ -3,7 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 from typing import List, Dict
+
+from .config import Configuration
 from ..app import ResponseError
+
+MAX_CHUNK_SIZE = Configuration.MAX_CHUNK_SIZE / 1024 / 1024
 
 
 class UpdateProjectAccessError(ResponseError):
@@ -81,3 +85,8 @@ class UploadError(ResponseError):
         if self.error is not None:
             data["detail"] = self.error + f" ({self.code})"
         return data
+
+
+class BigChunkError(ResponseError):
+    code = "BigChunkError"
+    detail = f"Chunk size exceeds maximum allowed size {MAX_CHUNK_SIZE} MB"

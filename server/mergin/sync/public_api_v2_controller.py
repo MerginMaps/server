@@ -18,6 +18,7 @@ from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
 from .errors import (
+    BigChunkError,
     DataSyncError,
     ProjectLocked,
     ProjectVersionMismatch,
@@ -342,7 +343,7 @@ def upload_chunk(id: str):
     """
     project = require_project_by_uuid(id, ProjectPermissions.Edit)
     if project.locked_until:
-        abort(make_response(jsonify(ProjectLocked().to_dict()), 422))
+        return ProjectLocked().response(422)
     # generate uuid for chunk
     chunk_id = str(uuid.uuid4())
     dest_file = get_chunk_location(chunk_id)
@@ -351,9 +352,9 @@ def upload_chunk(id: str):
         save_to_file(request.stream, dest_file, current_app.config["MAX_CHUNK_SIZE"])
     except IOError:
         move_to_tmp(dest_file, chunk_id)
-        abort(413, "Chunk size exceeds maximum allowed size")
+        return BigChunkError().response(413)
     except Exception as e:
-        abort(400, "Error saving chunk")
+        return UploadError(error="Error saving chunk").response(400)
 
     # Add valid_until timestamp to the response, remove tzinfo for compatibility with DateTimeWithZ
     valid_until = (
