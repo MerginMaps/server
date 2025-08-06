@@ -4,7 +4,6 @@
 import os
 import shutil
 from unittest.mock import patch
-from flask import current_app
 from psycopg2 import IntegrityError
 import pytest
 from datetime import datetime, timedelta, timezone
@@ -14,7 +13,8 @@ from mergin.config import Configuration
 from mergin.sync.errors import (
     BigChunkError,
     ProjectLocked,
-    ProjectVersionMismatch,
+    ProjectVersionExists,
+    AnotherUploadRunning,
     StorageLimitHit,
     UploadError,
 )
@@ -190,7 +190,7 @@ push_data = [
     (
         {"version": "v0", "changes": _get_changes_without_added(test_project_dir)},
         409,
-        ProjectVersionMismatch.code,
+        ProjectVersionExists.code,
     ),
     # no changes requested
     (
@@ -308,14 +308,14 @@ def test_create_version_failures(client):
 
     response = client.post(f"v2/projects/{project.id}/versions", json=data)
     assert response.status_code == 409
-    assert response.json["code"] == ProjectVersionMismatch.code
+    assert response.json["code"] == AnotherUploadRunning.code
     upload.clear()
 
     # project is locked
     project.locked_until = datetime.now(timezone.utc) + timedelta(days=1)
     db.session.commit()
     response = client.post(f"v2/projects/{project.id}/versions", json=data)
-    assert response.status_code == 422
+    assert response.status_code == 423
     assert response.json["code"] == ProjectLocked.code
     project.locked_until = None
     db.session.commit()
@@ -370,7 +370,7 @@ def test_upload_chunk(client):
         data=b"a",
         headers={"Content-Type": "application/octet-stream"},
     )
-    assert response.status_code == 422
+    assert response.status_code == 423
     assert response.json["code"] == ProjectLocked.code
 
     project.locked_until = None  # Unlock the project

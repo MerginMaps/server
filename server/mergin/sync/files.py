@@ -204,7 +204,7 @@ class ChangesSchema(ma.Schema):
         if len(set(changes_files)) != len(changes_files):
             raise ValidationError("Not unique changes")
 
-        # check if all .gpkg file are valid
+        # check if all files are valid
         for file in data["added"] + data["updated"]:
             file_path = file["path"]
             if is_versioned_file(file_path) and file["size"] == 0:

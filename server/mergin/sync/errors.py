@@ -58,8 +58,8 @@ class DataSyncError(ResponseError):
         return data
 
 
-class ProjectVersionMismatch(ResponseError):
-    code = "ProjectVersionMismatch"
+class ProjectVersionExists(ResponseError):
+    code = "ProjectVersionExists"
     detail = "Project version mismatch"
 
     def __init__(self, client_version: int, server_version: int):
@@ -71,6 +71,11 @@ class ProjectVersionMismatch(ResponseError):
         data["client_version"] = f"v{self.client_version}"
         data["server_version"] = f"v{self.server_version}"
         return data
+
+
+class AnotherUploadRunning(ResponseError):
+    code = "AnotherUploadRunning"
+    detail = "Another process is running"
 
 
 class UploadError(ResponseError):

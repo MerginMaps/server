@@ -320,7 +320,9 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ProjectVersionMismatch"
+                anyOf:
+                  - $ref: "#/components/schemas/ProjectVersionExists"
+                  - $ref: "#/components/schemas/AnotherUploadRunning"
         "422":
           description: Request could not be processed by server
           content:
@@ -330,8 +332,14 @@ paths:
                   - $ref: "#/components/schemas/UploadError"
                   - $ref: "#/components/schemas/TrialExpired"
                   - $ref: "#/components/schemas/StorageLimitHit"
-                  - $ref: "#/components/schemas/ProjectLocked"
                   - $ref: "#/components/schemas/DataSyncError"
+        "423":
+          description: Project is locked for any upload       
+          content:
+              application/problem+json:
+                schema:
+                  $ref: "#/components/schemas/ProjectLocked"
+
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
 components:
   responses:
@@ -397,7 +405,7 @@ components:
       example:
         code: ProjectLocked
         detail: The project is currently locked and you cannot make changes to it (ProjectLocked)
-    ProjectVersionMismatch:
+    ProjectVersionExists:
       allOf:
         - $ref: '#/components/schemas/CustomError'
       type: object
@@ -407,8 +415,20 @@ components:
         server_version:
           type: string
       example:
-        code: ProjectVersionMismatch
-        detail: Project version mismatch (ProjectVersionMismatch)
+        code: ProjectVersionExists
+        detail: Project version mismatch (ProjectVersionExists)
+    AnotherUploadRunning:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      type: object
+      properties:
+        client_version:
+          type: string
+        server_version:
+          type: string
+      example:
+        code: AnotherUploadRunning
+        detail: Another process is running (AnotherUploadRunning)
     DataSyncError:
       allOf:
         - $ref: '#/components/schemas/CustomError'

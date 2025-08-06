@@ -9,7 +9,7 @@ import os
 import psycopg2
 from connexion import NoContent, request
 from datetime import datetime, timedelta, timezone
-from flask import abort, jsonify, current_app, make_response
+from flask import abort, jsonify, current_app
 from flask_login import current_user
 from marshmallow import ValidationError
 from psycopg2 import IntegrityError
@@ -18,10 +18,11 @@ from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
 from .errors import (
+    AnotherUploadRunning,
     BigChunkError,
     DataSyncError,
     ProjectLocked,
-    ProjectVersionMismatch,
+    ProjectVersionExists,
     StorageLimitHit,
     UploadError,
 )
@@ -170,7 +171,7 @@ def create_project_version(id):
     request.view_args["project"] = project
 
     if project.locked_until:
-        return ProjectLocked().response(422)
+        return ProjectLocked().response(423)
 
     next_version = project.next_version()
     v_next_version = ProjectVersion.to_v_name(next_version)
@@ -178,12 +179,12 @@ def create_project_version(id):
 
     pv = project.get_latest_version()
     if pv and pv.name != version:
-        return ProjectVersionMismatch(version, pv.name).response(409)
+        return ProjectVersionExists(version, pv.name).response(409)
 
     # reject push if there is another one already running
     pending_upload = Upload.query.filter_by(project_id=project.id).first()
     if pending_upload and pending_upload.is_active():
-        return ProjectVersionMismatch(version, next_version).response(409)
+        return AnotherUploadRunning().response(409)
 
     try:
         ChangesSchema().validate(changes)
@@ -192,16 +193,20 @@ def create_project_version(id):
         msg = err.messages[0] if type(err.messages) == list else "Invalid input data"
         return UploadError(error=msg).response(422)
 
+    to_be_added_files = upload_changes["added"]
+    to_be_updated_files = upload_changes["updated"]
+    to_be_removed_files = upload_changes["removed"]
+
     # check consistency of changes
     current_files = set(file.path for file in project.files)
-    added_files = set(file["path"] for file in upload_changes["added"])
+    added_files = set(file["path"] for file in to_be_added_files)
     if added_files and added_files.issubset(current_files):
         return UploadError(
             error=f"Add changes contain files which already exist"
         ).response(422)
 
     modified_files = set(
-        file["path"] for file in upload_changes["updated"] + upload_changes["removed"]
+        file["path"] for file in to_be_updated_files + to_be_removed_files
     )
     if modified_files and not modified_files.issubset(current_files):
         return UploadError(
@@ -211,16 +216,14 @@ def create_project_version(id):
     # Check user data limit
     updated_files = list(
         filter(
-            lambda i: i.path in [f["path"] for f in upload_changes["updated"]],
+            lambda i: i.path in [f["path"] for f in to_be_updated_files],
             project.files,
         )
     )
     additional_disk_usage = (
-        sum(
-            file["size"] for file in upload_changes["added"] + upload_changes["updated"]
-        )
+        sum(file["size"] for file in to_be_added_files + to_be_updated_files)
         - sum(file.size for file in updated_files)
-        - sum(file["size"] for file in upload_changes["removed"])
+        - sum(file["size"] for file in to_be_removed_files)
     )
 
     current_usage = project.workspace.disk_usage()
@@ -243,7 +246,7 @@ def create_project_version(id):
         # check and clean dangling blocking uploads or abort
         for current_upload in project.uploads.all():
             if current_upload.is_active():
-                return ProjectVersionMismatch(version, next_version).response(409)
+                return AnotherUploadRunning().response(409)
             db.session.delete(current_upload)
             db.session.commit()
             # previous push attempt is definitely lost
@@ -261,7 +264,7 @@ def create_project_version(id):
             move_to_tmp(upload.upload_dir)
         except IntegrityError as err:
             logging.error(f"Failed to create upload session: {str(err)}")
-            return ProjectVersionMismatch(version, next_version).response(409)
+            return AnotherUploadRunning().response(409)
 
     # Create transaction folder and lockfile
     os.makedirs(upload.upload_dir)
@@ -343,7 +346,7 @@ def upload_chunk(id: str):
     """
     project = require_project_by_uuid(id, ProjectPermissions.Edit)
     if project.locked_until:
-        return ProjectLocked().response(422)
+        return ProjectLocked().response(423)
     # generate uuid for chunk
     chunk_id = str(uuid.uuid4())
     dest_file = get_chunk_location(chunk_id)
