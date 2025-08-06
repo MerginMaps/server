@@ -88,7 +88,7 @@ def setup_periodic_tasks(sender, **kwargs):
         name="remove old project archives",
     ),
     sender.add_periodic_task(
-        crontab(hour="*/12", minute=0),
+        crontab(hour="*/4", minute=0),
         remove_unused_chunks,
         name="clean up of outdated chunks",
     )
