@@ -2,11 +2,13 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import logging
 import math
 import os
 import hashlib
 import re
 import secrets
+from datetime import datetime, timedelta, timezone
 from threading import Timer
 from uuid import UUID
 from shapely import wkb
@@ -592,3 +594,20 @@ def get_chunk_location(id: str):
     small_hash = id[:2]
     file_name = id[2:]
     return os.path.join(chunk_dir, small_hash, file_name)
+
+
+def remove_outdated_files(dir: str, time_delta: timedelta):
+    """Remove all files within directory where last access time passed expiration date"""
+    for file in os.listdir(dir):
+        path = os.path.join(dir, file)
+        if not os.path.isfile(path):
+            continue
+
+        if (
+            datetime.fromtimestamp(os.path.getatime(path), tz=timezone.utc)
+            < datetime.now(timezone.utc) - time_delta
+        ):
+            try:
+                os.remove(path)
+            except OSError as e:
+                logging.error(f"Unable to remove {path}: {str(e)}")
