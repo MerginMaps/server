@@ -252,6 +252,95 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
+  /projects/{id}/versions:
+    post:
+      tags:
+        - project
+      summary: Create a new project version from pushed data
+      operationId: create_project_version
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        description: Project files changes and current version head.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - version
+                - changes
+              properties:
+                check_only:
+                  type: boolean
+                  default: false
+                  example: true
+                version:
+                  type: string
+                  pattern: '^$|^v\d+$'
+                  example: v2
+                changes:
+                  type: object
+                  required:
+                    - added
+                    - updated
+                    - removed
+                  properties:
+                    added:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/UploadFile"
+                    updated:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/UpdateFile"
+                    removed:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/File"
+      responses:
+        "201":
+          description: New project version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectVersion"
+        "204":
+          $ref: "#/components/responses/NoContent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Version already exists or another process is already running
+          content:
+            application/problem+json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/ProjectVersionExists"
+                  - $ref: "#/components/schemas/AnotherUploadRunning"
+        "422":
+          description: Request could not be processed by server
+          content:
+            application/problem+json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/UploadError"
+                  - $ref: "#/components/schemas/TrialExpired"
+                  - $ref: "#/components/schemas/StorageLimitHit"
+                  - $ref: "#/components/schemas/DataSyncError"
+        "423":
+          description: Project is locked for any upload       
+          content:
+              application/problem+json:
+                schema:
+                  $ref: "#/components/schemas/ProjectLocked"
+
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
 components:
   responses:
     NoContent:
@@ -279,6 +368,86 @@ components:
         format: uuid
         pattern: \b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b
   schemas:
+    # Errors
+    CustomError:
+      type: object
+      properties:
+        code:
+          type: string
+        detail:
+          type: string
+      required:
+        - code
+        - detail
+    TrialExpired:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      example:
+        code: TrialExpired
+        detail: Failed to push changes. Ask the workspace owner to log in to their Mergin Maps dashboard
+    StorageLimitHit:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      type: object
+      properties:
+        current_usage:
+          type: integer
+        storage_limit:
+          type: integer
+      example:
+        code: StorageLimitHit
+        detail: You have reached a data limit (StorageLimitHit)
+        current_usage: 24865
+        storage_limit: 24865
+    ProjectLocked:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      example:
+        code: ProjectLocked
+        detail: The project is currently locked and you cannot make changes to it (ProjectLocked)
+    ProjectVersionExists:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      type: object
+      properties:
+        client_version:
+          type: string
+        server_version:
+          type: string
+      example:
+        code: ProjectVersionExists
+        detail: Project version mismatch (ProjectVersionExists)
+    AnotherUploadRunning:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      type: object
+      properties:
+        client_version:
+          type: string
+        server_version:
+          type: string
+      example:
+        code: AnotherUploadRunning
+        detail: Another process is running (AnotherUploadRunning)
+    DataSyncError:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      type: object
+      properties:
+        failed_files:
+          type: object
+      example:
+        code: DataSyncError
+        detail: "There are either corrupted files or it is not possible to create version with provided geopackage data (DataSyncError)"
+        failed_files:
+          "survey.gpkg": "Corrupted file"
+    UploadError:
+      allOf:
+        - $ref: '#/components/schemas/CustomError'
+      example:
+        code: UploadError
+        detail: "Project version could not be created (UploadError)"
+    # Data
     ProjectRole:
       type: string
       nullable: true
@@ -333,3 +502,62 @@ components:
           $ref: "#/components/schemas/ProjectRole"
         role:
           $ref: "#/components/schemas/Role"
+    File:
+      type: object
+      description: Project file metadata
+      required:
+        - path
+        - size
+      properties:
+        path:
+          type: string
+          example: media/favicon.ico
+        size:
+          type: integer
+          format: int64
+          example: 1024
+        checksum:
+          description: sha1 hash of file
+          type: string
+          example: 9adb76bf81a34880209040ffe5ee262a090b62ab
+    UploadFile:
+      description: Metadata of uploaded file with chunks it is composed of
+      allOf:
+        - $ref: "#/components/schemas/File"
+        - type: object
+          properties:
+            chunks:
+              type: array
+              items:
+                type: string
+                example: d17a60eb-6581-431c-adfc-3451231455bb
+    UpdateFile:
+      description: Metadata of updated file with optional metadata about uploaded file diff
+      allOf:
+        - $ref: "#/components/schemas/UploadFile"
+        - type: object
+          properties:
+            diff:
+              nullable: true
+              allOf:
+                - $ref: "#/components/schemas/File"
+    ProjectVersion:
+      type: object
+      properties:
+        name:
+          type: string
+          example: v1
+        author:
+          type: string
+          example: john.doe
+        created:
+          type: string
+          format: date-time
+          example: 2018-11-30T08:47:58.636074Z
+        project_name:
+          type: string
+          example: survey
+        namespace:
+          type: string
+          example: john.doe
+        

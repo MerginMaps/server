@@ -2,26 +2,47 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-from datetime import datetime
-import os
 import uuid
-from datetime import datetime, timedelta, timezone
+import gevent
+import logging
+import os
+import psycopg2
 from connexion import NoContent, request
-from flask import abort, jsonify, current_app, make_response
+from datetime import datetime, timedelta, timezone
+from flask import abort, jsonify, current_app
 from flask_login import current_user
+from marshmallow import ValidationError
+from psycopg2 import IntegrityError
 
-from mergin.sync.forms import project_name_validation
-
-from .schemas import ProjectMemberSchema, UploadChunkSchema
-from .workspace import WorkspaceRole
 from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
-from .models import Project, ProjectRole, ProjectMember
+from .errors import (
+    AnotherUploadRunning,
+    BigChunkError,
+    DataSyncError,
+    ProjectLocked,
+    ProjectVersionExists,
+    StorageLimitHit,
+    UploadError,
+)
+from .files import ChangesSchema
+from .forms import project_name_validation
+from .models import (
+    Project,
+    ProjectRole,
+    ProjectMember,
+    ProjectVersion,
+    Upload,
+    project_version_created,
+    push_finished,
+)
 from .permissions import ProjectPermissions, require_project_by_uuid
-from .errors import ProjectLocked
-from .utils import get_chunk_location
+from .public_api_controller import catch_sync_failure
+from .schemas import ProjectMemberSchema, ProjectVersionSchema, UploadChunkSchema
 from .storages.disk import move_to_tmp, save_to_file
+from .utils import get_device_id, get_ip, get_user_agent, get_chunk_location
+from .workspace import WorkspaceRole
 
 
 @auth_required
@@ -137,13 +158,195 @@ def remove_project_collaborator(id, user_id):
 
 
 @auth_required
+@catch_sync_failure
+def create_project_version(id):
+    """Create a new project version from pushed data"""
+    version: int = ProjectVersion.from_v_name(request.json["version"])
+    changes = request.json["changes"]
+    project_permission: ProjectPermissions = (
+        current_app.project_handler.get_push_permission(changes)
+    )
+    project = require_project_by_uuid(id, project_permission)
+    # pass full project object to request for later use
+    request.view_args["project"] = project
+
+    if project.locked_until:
+        return ProjectLocked().response(423)
+
+    next_version = project.next_version()
+    v_next_version = ProjectVersion.to_v_name(next_version)
+    version_dir = os.path.join(project.storage.project_dir, v_next_version)
+
+    pv = project.get_latest_version()
+    if pv and pv.name != version:
+        return ProjectVersionExists(version, pv.name).response(409)
+
+    # reject push if there is another one already running
+    pending_upload = Upload.query.filter_by(project_id=project.id).first()
+    if pending_upload and pending_upload.is_active():
+        return AnotherUploadRunning().response(409)
+
+    try:
+        ChangesSchema().validate(changes)
+        upload_changes = ChangesSchema().dump(changes)
+    except ValidationError as err:
+        msg = err.messages[0] if type(err.messages) == list else "Invalid input data"
+        return UploadError(error=msg).response(422)
+
+    to_be_added_files = upload_changes["added"]
+    to_be_updated_files = upload_changes["updated"]
+    to_be_removed_files = upload_changes["removed"]
+
+    # check consistency of changes
+    current_files = set(file.path for file in project.files)
+    added_files = set(file["path"] for file in to_be_added_files)
+    if added_files and added_files.issubset(current_files):
+        return UploadError(
+            error=f"Add changes contain files which already exist"
+        ).response(422)
+
+    modified_files = set(
+        file["path"] for file in to_be_updated_files + to_be_removed_files
+    )
+    if modified_files and not modified_files.issubset(current_files):
+        return UploadError(
+            error="Update or remove changes contain files that are not in project"
+        ).response(422)
+
+    # Check user data limit
+    updated_files = list(
+        filter(
+            lambda i: i.path in [f["path"] for f in to_be_updated_files],
+            project.files,
+        )
+    )
+    additional_disk_usage = (
+        sum(file["size"] for file in to_be_added_files + to_be_updated_files)
+        - sum(file.size for file in updated_files)
+        - sum(file["size"] for file in to_be_removed_files)
+    )
+
+    current_usage = project.workspace.disk_usage()
+    requested_storage = current_usage + additional_disk_usage
+    if requested_storage > project.workspace.storage:
+        return StorageLimitHit(current_usage, project.workspace.storage).response(422)
+
+    # we have done all checks but this request is just a dry-run
+    if request.json.get("check_only", False):
+        return NoContent, 204
+
+    # while processing data, block other uploads
+    upload = Upload(project, version, upload_changes, current_user.id)
+    db.session.add(upload)
+    try:
+        # Creating blocking upload can fail, e.g. in case of racing condition
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        # check and clean dangling blocking uploads or abort
+        for current_upload in project.uploads.all():
+            if current_upload.is_active():
+                return AnotherUploadRunning().response(409)
+            db.session.delete(current_upload)
+            db.session.commit()
+            # previous push attempt is definitely lost
+            project.sync_failed(
+                "",
+                "push_lost",
+                "Push artefact removed by subsequent push",
+                current_user.id,
+            )
+
+        # Try again after cleanup
+        db.session.add(upload)
+        try:
+            db.session.commit()
+            move_to_tmp(upload.upload_dir)
+        except IntegrityError as err:
+            logging.error(f"Failed to create upload session: {str(err)}")
+            return AnotherUploadRunning().response(409)
+
+    # Create transaction folder and lockfile
+    os.makedirs(upload.upload_dir)
+    open(upload.lockfile, "w").close()
+
+    file_changes, errors = upload.process_chunks(use_shared_chunk_dir=True)
+    # files consistency or geodiff related issues, project push would never succeed, whole upload is aborted
+    if errors:
+        upload.clear()
+        return DataSyncError(failed_files=errors).response(422)
+
+    try:
+        pv = ProjectVersion(
+            project,
+            next_version,
+            current_user.id,
+            file_changes,
+            get_ip(request),
+            get_user_agent(request),
+            get_device_id(request),
+        )
+        db.session.add(pv)
+        db.session.add(project)
+        db.session.commit()
+        # let's move uploaded files where they are expected to be
+        temp_files_dir = os.path.join(upload.upload_dir, "files", v_next_version)
+        os.renames(temp_files_dir, version_dir)
+
+        logging.info(
+            f"Push finished for project: {project.id}, project version: {v_next_version}, upload id: {upload.id}."
+        )
+        project_version_created.send(pv)
+        push_finished.send(pv)
+    except (psycopg2.Error, FileNotFoundError, IntegrityError) as err:
+        db.session.rollback()
+        logging.exception(
+            f"Failed to finish push for project: {project.id}, project version: {v_next_version}, "
+            f"upload id: {upload.id}.: {str(err)}"
+        )
+        if (
+            os.path.exists(version_dir)
+            and not ProjectVersion.query.filter_by(
+                project_id=project.id, name=next_version
+            ).count()
+        ):
+            move_to_tmp(version_dir)
+        return UploadError().response(422)
+    # catch exception during pg transaction so we can rollback and prevent PendingRollbackError during upload clean up
+    except gevent.timeout.Timeout:
+        db.session.rollback()
+        if (
+            os.path.exists(version_dir)
+            and not ProjectVersion.query.filter_by(
+                project_id=project.id, name=next_version
+            ).count()
+        ):
+            move_to_tmp(version_dir)
+        raise
+    finally:
+        # remove artifacts
+        upload.clear()
+
+    return (
+        ProjectVersionSchema(
+            exclude=(
+                "files",
+                "changes",
+                "changesets",
+            )
+        ).dump(pv),
+        201,
+    )
+
+
+@auth_required
 def upload_chunk(id: str):
     """
     Push chunk to chunks location.
     """
     project = require_project_by_uuid(id, ProjectPermissions.Edit)
     if project.locked_until:
-        abort(make_response(jsonify(ProjectLocked().to_dict()), 422))
+        return ProjectLocked().response(423)
     # generate uuid for chunk
     chunk_id = str(uuid.uuid4())
     dest_file = get_chunk_location(chunk_id)
@@ -152,9 +355,9 @@ def upload_chunk(id: str):
         save_to_file(request.stream, dest_file, current_app.config["MAX_CHUNK_SIZE"])
     except IOError:
         move_to_tmp(dest_file, chunk_id)
-        abort(413, "Chunk size exceeds maximum allowed size")
+        return BigChunkError().response(413)
     except Exception as e:
-        abort(400, "Error saving chunk")
+        return UploadError(error="Error saving chunk").response(400)
 
     # Add valid_until timestamp to the response, remove tzinfo for compatibility with DateTimeWithZ
     valid_until = (
