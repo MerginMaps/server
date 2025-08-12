@@ -82,11 +82,6 @@ $progressSpinnerColorFour:$warningMessageTextColor !default;
 /// @group misc
 $avatarBg: map-get($map: $colors, $key: medium-green);
 
-/// Avatar font size
-/// @group misc
-$avatarFontSize: 0.857rem;
-
-
 /// Text color of an avatar
 /// @group misc
 $avatarTextColor:$textColor;
