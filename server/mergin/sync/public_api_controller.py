@@ -728,12 +728,19 @@ def catch_sync_failure(f):
                 == "/v2.mergin_sync_public_api_v2_controller_create_project_version"
             ):
                 error_type = "project_push"
+            description = ""
+            if isinstance(e, IntegrityError):
+                description = "Database integrity error"
+            else:
+                description = (
+                    e.description
+                    if e.description
+                    else e.response.json.get("detail", "")
+                )
 
-            if not e.description:  # custom error cases (e.g. StorageLimitHit)
-                e.description = e.response.json["detail"]
             if project:
                 project.sync_failed(
-                    user_agent, error_type, str(e.description), current_user.id
+                    user_agent, error_type, str(description), current_user.id
                 )
             else:
                 logging.warning("Missing project info in sync failure")
