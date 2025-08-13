@@ -14,14 +14,11 @@
           <PAvatar
             v-if="user"
             :label="$filters.getAvatar(user?.email, user?.username)"
+            size="xlarge"
             shape="circle"
             :pt="{
               root: {
-                class: 'text-5xl font-semibold text-color-forest',
-                style: {
-                  width: '120px',
-                  height: '120px'
-                }
+                class: 'font-semibold text-color-forest'
               }
             }"
           />

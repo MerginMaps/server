@@ -119,3 +119,8 @@ img {
   color: map-get($map: $colors, $key: grape);
   font-weight: 600;
 }
+
+// Font size in avatar
+.p-avatar:not(.p-avatar-lg):not(.p-avatar-xl) {
+  font-size: 0.857rem;
+}
