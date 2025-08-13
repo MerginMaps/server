@@ -174,6 +174,21 @@ push_data = [
         204,
         None,
     ),
+    # only delete files
+    (
+        {
+            "version": "v1",
+            "changes": {
+                "added": [],
+                "removed": [
+                    file_info(test_project_dir, "base.gpkg"),
+                ],
+                "updated": [],
+            },
+        },
+        201,
+        None,
+    ),
     # broken .gpkg file
     (
         {"version": "v1", "changes": _get_changes_with_diff_0_size(test_project_dir)},
