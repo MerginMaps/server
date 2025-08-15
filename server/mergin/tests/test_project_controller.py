@@ -1366,12 +1366,14 @@ def test_push_finish(client):
     upload, upload_dir = create_transaction("mergin", changes)
     os.mkdir(os.path.join(upload.project.storage.project_dir, "v2"))
     # mimic chunks were uploaded
+    chunks = []
     os.makedirs(os.path.join(upload_dir, "chunks"))
     for f in upload.changes["added"] + upload.changes["updated"]:
         with open(os.path.join(test_project_dir, f["path"]), "rb") as in_file:
             for chunk in f["chunks"]:
                 with open(os.path.join(upload_dir, "chunks", chunk), "wb") as out_file:
                     out_file.write(in_file.read(CHUNK_SIZE))
+                    chunks.append(chunk)
 
     resp2 = client.post(
         f"/v1/project/push/finish/{upload.id}",
@@ -1382,6 +1384,7 @@ def test_push_finish(client):
     version = upload.project.get_latest_version()
     assert version.user_agent
     assert version.device_id == json_headers["X-Device-Id"]
+    assert all(not os.path.exists(chunk) for chunk in chunks)
 
     # tests basic failures
     resp3 = client.post("/v1/project/push/finish/not-existing")

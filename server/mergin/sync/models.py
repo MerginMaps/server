@@ -1092,7 +1092,6 @@ class Upload(db.Model):
                                     dest.write(data)
                                     data = src.read(8192)
 
-                            move_to_tmp(chunk_file)
                     except IOError:
                         logging.exception(
                             f"Failed to process chunk: {chunk_id} in project {project_path}"
