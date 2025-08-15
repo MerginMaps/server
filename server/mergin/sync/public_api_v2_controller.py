@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from flask import abort, jsonify, current_app
 from flask_login import current_user
 from marshmallow import ValidationError
-from psycopg2 import IntegrityError
+from sqlalchemy.exc import IntegrityError
 
 from ..app import db
 from ..auth import auth_required
@@ -235,10 +235,10 @@ def create_project_version(id):
     if request.json.get("check_only", False):
         return NoContent, 204
 
-    # while processing data, block other uploads
-    upload = Upload(project, version, upload_changes, current_user.id)
-    db.session.add(upload)
     try:
+        # while processing data, block other uploads
+        upload = Upload(project, version, upload_changes, current_user.id)
+        db.session.add(upload)
         # Creating blocking upload can fail, e.g. in case of racing condition
         db.session.commit()
     except IntegrityError:
@@ -257,9 +257,10 @@ def create_project_version(id):
                 current_user.id,
             )
 
-        # Try again after cleanup
-        db.session.add(upload)
         try:
+            # Try again after cleanup
+            upload = Upload(project, version, upload_changes, current_user.id)
+            db.session.add(upload)
             db.session.commit()
             move_to_tmp(upload.upload_dir)
         except IntegrityError as err:

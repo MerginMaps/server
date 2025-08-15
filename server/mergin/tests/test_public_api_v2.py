@@ -4,7 +4,7 @@
 import os
 import shutil
 from unittest.mock import patch
-from psycopg2 import IntegrityError
+from sqlalchemy.exc import IntegrityError
 import pytest
 from datetime import datetime, timedelta, timezone
 
@@ -18,6 +18,7 @@ from mergin.sync.errors import (
     StorageLimitHit,
     UploadError,
 )
+from mergin.sync.files import ChangesSchema
 from mergin.sync.models import (
     Project,
     ProjectRole,
@@ -335,7 +336,7 @@ def test_create_version_failures(client):
     project.locked_until = None
     db.session.commit()
 
-    # try to finish the transaction which would fail on version created integrity error, e.g. race conditions
+    # try to finish the transaction which would fail on storage limit
     with patch.object(
         Configuration,
         "GLOBAL_STORAGE",
@@ -356,6 +357,26 @@ def test_create_version_failures(client):
         response = client.post(f"v2/projects/{project.id}/versions", json=data)
         assert response.status_code == 422
         assert response.json["code"] == UploadError.code
+
+    # try to finish the transaction which would fail on existing Upload integrity error, e.g. race conditions
+    with patch.object(
+        Upload,
+        "__init__",
+        side_effect=IntegrityError("Cannot insert upload", None, None),
+    ):
+        response = client.post(f"v2/projects/{project.id}/versions", json=data)
+        assert response.status_code == 409
+        assert response.json["code"] == AnotherUploadRunning.code
+
+    # try to finish the transaction which would fail on unexpected integrity error
+    # patch of ChangesSchema is just a workaround to trigger and error
+    with patch.object(
+        ChangesSchema,
+        "validate",
+        side_effect=IntegrityError("Cannot insert upload", None, None),
+    ):
+        response = client.post(f"v2/projects/{project.id}/versions", json=data)
+        assert response.status_code == 409
 
 
 def test_upload_chunk(client):
