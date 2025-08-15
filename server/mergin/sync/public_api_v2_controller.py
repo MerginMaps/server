@@ -295,6 +295,14 @@ def create_project_version(id):
             temp_files_dir = os.path.join(upload.upload_dir, "files", v_next_version)
             os.renames(temp_files_dir, version_dir)
 
+            # remove used chunks
+            for file in to_be_added_files + to_be_updated_files:
+                file_chunks = file.get("chunks", [])
+                for chunk_id in file_chunks:
+                    chunk_file = get_chunk_location(chunk_id)
+                    if os.path.exists(chunk_file):
+                        move_to_tmp(chunk_file)
+
         logging.info(
             f"Push finished for project: {project.id}, project version: {v_next_version}, upload id: {upload.id}."
         )

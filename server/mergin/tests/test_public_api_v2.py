@@ -275,6 +275,7 @@ def test_create_version(client, data, expected, err_code):
     ).first()
     assert project.latest_version == 1
 
+    chunks = []
     if expected == 201:
         # mimic chunks were uploaded
         for f in data["changes"]["added"] + data["changes"]["updated"]:
@@ -290,11 +291,14 @@ def test_create_version(client, data, expected, err_code):
                     with open(chunk_location, "wb") as out_file:
                         out_file.write(in_file.read(CHUNK_SIZE))
 
+                    chunks.append(chunk_location)
+
     response = client.post(f"v2/projects/{project.id}/versions", json=data)
     assert response.status_code == expected
     if expected == 201:
         assert response.json["name"] == "v2"
         assert project.latest_version == 2
+        assert all(not os.path.exists(chunk) for chunk in chunks)
     else:
         assert project.latest_version == 1
         if err_code:
