@@ -176,7 +176,7 @@ def test_project_access_request(client):
 
     # try with inactive project
     rp = create_project("removed_project", test_workspace, user)
-    rp.removed_at = datetime.datetime.utcnow()
+    rp.removed_at = datetime.utcnow()
     db.session.commit()
 
     resp = client.post(
@@ -195,7 +195,7 @@ def test_project_access_request(client):
     assert resp.status_code == 200
     resp = client.get("/app/project/access-requests?page=1&per_page=10")
     assert resp.json.get("count") == 1
-    rp.removed_at = datetime.datetime.utcnow()
+    rp.removed_at = datetime.utcnow()
     db.session.commit()
     access_request = AccessRequest.query.filter(
         AccessRequest.project_id == rp.id
@@ -377,7 +377,7 @@ def test_admin_project_list(client):
     assert resp.json.get("count") == 1
     # mark as inactive
     p = Project.query.get(resp.json["items"][0]["id"])
-    p.removed_at = datetime.datetime.utcnow()
+    p.removed_at = datetime.utcnow()
     p.removed_by = user.id
     db.session.commit()
 
