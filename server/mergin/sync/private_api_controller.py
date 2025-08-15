@@ -4,7 +4,6 @@
 import os
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
-from blinker import signal
 from connexion import NoContent
 from flask import (
     render_template,
@@ -353,17 +352,17 @@ def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W06
             f"attachment; filename*=UTF-8''{file_name}"
         )
         return resp
-
-    temp_zip_path = project_version.zip_path + ".partial"
-    # to be safe we are not in vicious circle remove inactive partial zip
-    if os.path.exists(temp_zip_path) and datetime.fromtimestamp(
-        os.path.getmtime(temp_zip_path), tz=timezone.utc
-    ) < datetime.now(timezone.utc) - timedelta(
-        seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"]
-    ):
-        move_to_tmp(temp_zip_path)
-
-    if not os.path.exists(temp_zip_path):
-        create_project_version_zip.delay(project_version.id)
+    # GET request triggers background job if no partial zip or expired one
+    if request.method == "GET":
+        temp_zip_path = project_version.zip_path + ".partial"
+        # create zip if it does not exist yet or has expired
+        partial_exists = os.path.exists(temp_zip_path)
+        is_expired = partial_exists and datetime.fromtimestamp(
+            os.path.getmtime(temp_zip_path), tz=timezone.utc
+        ) < datetime.now(timezone.utc) - timedelta(
+            seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"]
+        )
+        if not partial_exists or is_expired:
+            create_project_version_zip.delay(project_version.id)
 
     return "Project zip being prepared, please try again later", 202

@@ -2,15 +2,16 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import datetime
 import json
 import os
-from unittest.mock import patch
-
+import shutil
 import pytest
+from unittest.mock import patch
+from pathlib import Path
+from datetime import datetime, timedelta
 from flask import url_for
 
-from ..app import db
+from ..app import db, current_app
 from ..sync.models import AccessRequest, Project, ProjectRole, RequestStatus
 from ..auth.models import User
 from ..config import Configuration
@@ -20,6 +21,7 @@ from .utils import (
     login,
     create_project,
     create_workspace,
+    modify_file_times,
 )
 
 
@@ -423,37 +425,76 @@ def test_admin_project_list(client):
 
 
 test_download_proj_data = [
-    (None, 202),
-    ("v1", 202),
-    ("v100", 404),
-    (None, 200),
+    # zips do not exist, version not specified -> call celery task to create zip with latest version
+    (0, 0, 0, None, 202, 1),
+    # expired partial zip exists -> call celery task
+    (0, 1, 1, None, 202, 1),
+    # valid partial zip exists -> return, do not call celery
+    (0, 1, 0, None, 202, 0),
+    # zips do not exist, version specified -> call celery task with specified version
+    (0, 0, 0, "v1", 202, 1),
+    # specified version does not exist -> 404
+    (0, 0, 0, "v100", 404, 0),
+    # zip is ready to download
+    (1, 0, 0, None, 200, 0),
 ]
 
 
-@pytest.mark.parametrize("version,expected", test_download_proj_data)
+@pytest.mark.parametrize(
+    "zipfile,partial,expired,version,exp_resp,exp_call", test_download_proj_data
+)
 @patch("mergin.sync.tasks.create_project_version_zip.delay")
-def test_download_project(mock_create_zip, client, version, expected, diff_project):
-    if expected == 200:
-        project_version = diff_project.get_latest_version()
-        os.mknod(project_version.zip_path)
-    resp = client.get(
-        url_for(
-            "/app.mergin_sync_private_api_controller_download_project",
-            id=diff_project.id,
-            version=version if version else "",
+def test_download_project(
+    mock_create_zip,
+    client,
+    zipfile,
+    partial,
+    expired,
+    version,
+    exp_resp,
+    exp_call,
+    diff_project,
+):
+    """Test download endpoint responses and celery task calling"""
+    # prepare initial state according to testcase
+    project_version = diff_project.get_latest_version()
+    if zipfile:
+        zip_path = Path(project_version.zip_path)
+        zip_path.parent.mkdir(parents=True, exist_ok=True)
+        zip_path.touch()
+    if partial:
+        temp_zip_path = Path(project_version.zip_path + ".partial")
+        temp_zip_path.parent.mkdir(parents=True, exist_ok=True)
+        temp_zip_path.touch()
+        if expired:
+            new_time = datetime.now() - timedelta(
+                seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"] + 1
+            )
+            modify_file_times(temp_zip_path, new_time)
+    try:
+        resp = client.get(
+            url_for(
+                "/app.mergin_sync_private_api_controller_download_project",
+                id=diff_project.id,
+                version=version if version else "",
+            )
         )
-    )
-    if expected == 200:
-        os.remove(project_version.zip_path)
-    assert resp.status_code == expected
-    assert mock_create_zip.called if expected == 202 else not mock_create_zip.called
-    if not version and expected != 200:
+    finally:
+        # cleanup
+        if zipfile:
+            shutil.rmtree(zip_path.parent, ignore_errors=True)
+        if partial:
+            shutil.rmtree(temp_zip_path.parent, ignore_errors=True)
+    assert resp.status_code == exp_resp
+    assert mock_create_zip.called == exp_call
+    if not version and exp_call:
         call_args, _ = mock_create_zip.call_args
         args = call_args[0]
         assert args == diff_project.latest_version
 
 
 def test_large_project_download_fail(client, diff_project):
+    """Test downloading too large project is refused"""
     resp = client.get(
         url_for(
             "/app.mergin_sync_private_api_controller_download_project",
@@ -472,6 +513,11 @@ def test_large_project_download_fail(client, diff_project):
         )
     )
     assert resp.status_code == 400
+
+
+# exists, valid -> return
+# exists, expired -> remove, create
+# not exists -> create
 
 
 @patch("mergin.sync.tasks.create_project_version_zip.delay")
@@ -494,4 +540,24 @@ def test_remove_abandoned_zip(mock_prepare_zip, client, diff_project):
     )
     assert mock_prepare_zip.called
     assert resp.status_code == 202
-    assert not os.path.exists(partial_zip_path)
+
+
+@patch("mergin.sync.tasks.create_project_version_zip.delay")
+def test_download_project_request_method(mock_prepare_zip, client, diff_project):
+    """Test head request does not create a celery job"""
+    resp = client.head(
+        url_for(
+            "/app.mergin_sync_private_api_controller_download_project",
+            id=diff_project.id,
+        )
+    )
+    assert not mock_prepare_zip.called
+    assert resp.status_code == 202
+    resp = client.get(
+        url_for(
+            "/app.mergin_sync_private_api_controller_download_project",
+            id=diff_project.id,
+        )
+    )
+    assert mock_prepare_zip.called
+    assert resp.status_code == 202

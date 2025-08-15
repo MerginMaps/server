@@ -114,9 +114,17 @@ def create_project_version_zip(version_id: int):
         return
 
     zip_path = project_version.zip_path + ".partial"
-    # already running job
     if os.path.exists(zip_path):
-        return
+        mtime = datetime.fromtimestamp(os.path.getmtime(zip_path), tz=timezone.utc)
+        expiration_time = datetime.now(timezone.utc) - timedelta(
+            seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"]
+        )
+        if mtime > expiration_time:
+            # partial zip is recent -> another job is likely running
+            return
+        else:
+            # partial zip is too old -> remove and creating new one
+            os.remove(zip_path)
 
     os.makedirs(os.path.dirname(zip_path), exist_ok=True)
     try:
