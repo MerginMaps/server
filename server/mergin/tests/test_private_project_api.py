@@ -515,11 +515,6 @@ def test_large_project_download_fail(client, diff_project):
     assert resp.status_code == 400
 
 
-# exists, valid -> return
-# exists, expired -> remove, create
-# not exists -> create
-
-
 @patch("mergin.sync.tasks.create_project_version_zip.delay")
 def test_remove_abandoned_zip(mock_prepare_zip, client, diff_project):
     """Test project download removes partial zip which is inactive for some time"""
