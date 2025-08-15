@@ -168,8 +168,8 @@ def test_create_project_version_zip(diff_project):
     )  # after creating zip archive, celery remove partial zip
     after_mtime = zip_path.stat().st_mtime
     assert before_mtime < after_mtime
-    before_mtime = after_mtime
     # mock valid partial zip -> celery skips creating new zip and returns
+    before_mtime = zip_path.stat().st_mtime
     partial_zip_path.parent.mkdir(parents=True, exist_ok=True)
     partial_zip_path.touch()
     create_project_version_zip(diff_project.latest_version)

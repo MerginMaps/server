@@ -460,10 +460,13 @@ def test_download_project(
     project_version = diff_project.get_latest_version()
     if zipfile:
         zip_path = Path(project_version.zip_path)
+        if zip_path.parent.exists():
+            shutil.rmtree(zip_path.parent, ignore_errors=True)
         zip_path.parent.mkdir(parents=True, exist_ok=True)
         zip_path.touch()
     if partial:
         temp_zip_path = Path(project_version.zip_path + ".partial")
+        shutil.rmtree(temp_zip_path.parent, ignore_errors=True)
         temp_zip_path.parent.mkdir(parents=True, exist_ok=True)
         temp_zip_path.touch()
         if expired:
@@ -471,20 +474,13 @@ def test_download_project(
                 seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"] + 1
             )
             modify_file_times(temp_zip_path, new_time)
-    try:
-        resp = client.get(
-            url_for(
-                "/app.mergin_sync_private_api_controller_download_project",
-                id=diff_project.id,
-                version=version if version else "",
-            )
+    resp = client.get(
+        url_for(
+            "/app.mergin_sync_private_api_controller_download_project",
+            id=diff_project.id,
+            version=version if version else "",
         )
-    finally:
-        # cleanup
-        if zipfile:
-            shutil.rmtree(zip_path.parent, ignore_errors=True)
-        if partial:
-            shutil.rmtree(temp_zip_path.parent, ignore_errors=True)
+    )
     assert resp.status_code == exp_resp
     assert mock_create_zip.called == exp_call
     if not version and exp_call:
