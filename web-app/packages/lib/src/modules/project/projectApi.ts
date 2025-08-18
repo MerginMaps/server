@@ -311,6 +311,10 @@ export const ProjectApi = {
     return ProjectModule.httpService.get(url, { responseType: 'blob' })
   },
 
+  async prepareArchive(url: string): Promise<AxiosResponse<void>> {
+    return ProjectModule.httpService.post(url)
+  },
+
   /** Request head of file download */
   async getHeadDownloadFile(url: string): Promise<AxiosResponse<void>> {
     return ProjectModule.httpService.head(url)
