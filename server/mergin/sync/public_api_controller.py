@@ -32,7 +32,7 @@ from binaryornot.check import is_binary
 from gevent import sleep
 import base64
 
-from werkzeug.exceptions import HTTPException
+from werkzeug.exceptions import HTTPException, Conflict
 
 from mergin.sync.forms import project_name_validation
 from .interfaces import WorkspaceRole
@@ -707,7 +707,9 @@ def catch_sync_failure(f):
             if status_code >= 400:
                 raise HTTPException(response=response)
             return response, status_code
-        except (HTTPException, IntegrityError) as e:
+        except IntegrityError:
+            raise Conflict("Database integrity error")
+        except HTTPException as e:
             if e.code in [401, 403, 404]:
                 raise  # nothing to do, just propagate downstream
 
@@ -729,15 +731,16 @@ def catch_sync_failure(f):
             ):
                 error_type = "project_push"
 
-            if not e.description:  # custom error cases (e.g. StorageLimitHit)
-                e.description = e.response.json["detail"]
+            description = (
+                e.description if e.description else e.response.json.get("detail", "")
+            )
+
             if project:
                 project.sync_failed(
-                    user_agent, error_type, str(e.description), current_user.id
+                    user_agent, error_type, str(description), current_user.id
                 )
             else:
                 logging.warning("Missing project info in sync failure")
-
             raise
 
     return wrapper
