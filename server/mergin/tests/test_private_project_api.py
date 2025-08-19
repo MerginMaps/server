@@ -424,32 +424,11 @@ def test_admin_project_list(client):
     assert len(resp.json["items"]) == 14
 
 
-# test_download_proj_data = [
-#     # project archive does not exist yet -> 202
-#     (0, None, 202),
-#     # specified version does not exist -> 404
-#     (0, "v100", 404),
-#     # zip is ready to download
-#     (1, None, 200),
-# ]
-#
-#
-# @pytest.mark.parametrize(
-#     "zipfile,version,exp_resp", test_download_proj_data
-# )
-# @patch("mergin.sync.tasks.create_project_version_zip.delay")
 def test_download_project(
-    # mock_create_zip,
     client,
-    # zipfile,
-    # partial,
-    # expired,
-    # version,
-    # exp_resp,
-    # exp_call,
     diff_project,
 ):
-    """Test download endpoint responses and celery task calling"""
+    """Test download endpoint responses"""
     resp = client.head(
         url_for(
             "/app.mergin_sync_private_api_controller_download_project",
@@ -530,7 +509,7 @@ def test_prepare_archive(
     exp_call,
     diff_project,
 ):
-    """Test download endpoint responses and celery task calling"""
+    """Test prepare archive endpoint responses and celery task calling"""
     # prepare initial state according to testcase
     project_version = diff_project.get_latest_version()
     if zipfile:
