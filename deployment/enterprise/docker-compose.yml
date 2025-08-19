@@ -13,9 +13,10 @@ services:
     volumes:
       - ./data:/data  # map data dir to host
       - ./diagnostic_logs:/diagnostic_logs # diagnostic logs dir
-      - ../common/entrypoint.sh:/app/entrypoint.sh
     env_file:
       - .prod.env
+    environment:
+      - GUNICORN_CMD_ARGS="--limit-request-line 8190"
     depends_on:
       - db
     networks:
@@ -56,8 +57,6 @@ services:
     restart: always
     user: 901:999
     command: ["celery -A application.celery beat --loglevel=info"]
-    volumes:
-      - ../common/entrypoint.sh:/app/entrypoint.sh
     env_file:
       - .prod.env
     depends_on:
@@ -75,7 +74,6 @@ services:
     volumes:
       - ./data:/data  # map data dir to host
       - ./map_data:/overviews
-      - ../common/entrypoint.sh:/app/entrypoint.sh
     env_file:
       - .prod.env
     depends_on:
