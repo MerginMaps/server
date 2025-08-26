@@ -456,21 +456,21 @@ def test_download_project(
     assert resp.status_code == 200
 
 
-def test_large_project_download_fail(client, diff_project):
-    """Test downloading too large project is refused"""
-    resp = client.get(
+def test_prepare_large_project_fail(client, diff_project):
+    """Test asking for too large project is refused"""
+    resp = client.post(
         url_for(
-            "/app.mergin_sync_private_api_controller_download_project",
+            "/app.mergin_sync_private_api_controller_prepare_archive",
             id=diff_project.id,
             version="v1",
         )
     )
-    assert resp.status_code == 202
+    assert resp.status_code == 201
     # pretend testing project to be too large by lowering limit
     client.application.config["MAX_DOWNLOAD_ARCHIVE_SIZE"] = 10
-    resp = client.get(
+    resp = client.post(
         url_for(
-            "/app.mergin_sync_private_api_controller_download_project",
+            "/app.mergin_sync_private_api_controller_prepare_archive",
             id=diff_project.id,
             version="v1",
         )
@@ -480,17 +480,17 @@ def test_large_project_download_fail(client, diff_project):
 
 test_prepare_proj_data = [
     # zips do not exist, version not specified -> trigger celery to create zip with latest version
-    (0, 0, 0, None, 202, 1),
+    (0, 0, 0, None, 201, 1),
     # expired partial zip exists -> call celery task
-    (0, 1, 1, None, 202, 1),
+    (0, 1, 1, None, 201, 1),
     # valid partial zip exists -> do not call celery
-    (0, 1, 0, None, 202, 0),
+    (0, 1, 0, None, 204, 0),
     # zips do not exist, version specified -> call celery task with specified version
-    (0, 0, 0, "v1", 202, 1),
+    (0, 0, 0, "v1", 201, 1),
     # specified version does not exist -> 404
     (0, 0, 0, "v100", 404, 0),
     # zip is already prepared to download -> do not call celery
-    (1, 0, 0, None, 200, 0),
+    (1, 0, 0, None, 204, 0),
 ]
 
 

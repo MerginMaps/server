@@ -707,7 +707,6 @@ export const useProjectStore = defineStore('projectModule', {
     },
 
     async downloadArchive(payload: DownloadPayload) {
-      console.log("You are here")
       const notificationStore = useNotificationStore()
       await this.cancelDownloadArchive()
       this.projectDownloadingVersion = payload.versionId

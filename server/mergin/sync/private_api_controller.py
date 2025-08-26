@@ -331,9 +331,6 @@ def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W06
         project_id=project.id, name=lookup_version
     ).first_or_404("Project version does not exist")
 
-    if project_version.project_size > current_app.config["MAX_DOWNLOAD_ARCHIVE_SIZE"]:
-        abort(400)
-
     # check zip is already created
     if os.path.exists(project_version.zip_path):
         if current_app.config["USE_X_ACCEL"]:
@@ -370,7 +367,7 @@ def prepare_archive(id: str, version=None):
         abort(400)
 
     if os.path.exists(pv.zip_path):
-        return "Project archive already ready", 200
+        return NoContent, 204
 
     # trigger job if no recent partial
     temp_zip_path = pv.zip_path + ".partial"
@@ -380,7 +377,8 @@ def prepare_archive(id: str, version=None):
     ) < datetime.now(timezone.utc) - timedelta(
         seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"]
     )
-    if not partial_exists or is_expired:
-        create_project_version_zip.delay(pv.id)
+    if partial_exists and not is_expired:
+        return NoContent, 204
 
-    return "Project zip being prepared", 202
+    create_project_version_zip.delay(pv.id)
+    return "Project zip creation started", 201

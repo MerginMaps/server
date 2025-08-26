@@ -424,10 +424,10 @@ paths:
       description: Prepare project zip archive to download
       operationId: prepare_archive
       responses:
-        "200":
-          description: Archive is already prepared
-        "202":
-          description: Accepted
+        "201":
+          description: Project archive creation started
+        "204":
+          $ref: "#/components/responses/NoContent"
         "400":
           $ref: "#/components/responses/BadStatusResp"
         "422":
@@ -456,7 +456,9 @@ components:
     UnsupportedMediaType:
       description: Payload format is in an unsupported format.
     ConflictResp:
-      description: Request could not be processed becuase of conflict in resources
+      description: Request could not be processed because of conflict in resources
+    NoContent:
+      description: Success. No content returned.
   parameters:
     Page:
       name: page
