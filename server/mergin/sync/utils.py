@@ -345,9 +345,8 @@ def files_size():
             WHERE change = 'create'::push_change_type OR change = 'update'::push_change_type
             UNION
             SELECT
-                SUM(COALESCE((diff ->> 'size')::bigint, 0))
-            FROM file_history
-            WHERE change = 'update_diff'::push_change_type
+                SUM(size)
+            FROM file_diff
             UNION
             SELECT
                 SUM(size)

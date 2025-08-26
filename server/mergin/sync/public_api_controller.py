@@ -40,6 +40,7 @@ from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
 from .models import (
+    FileDiff,
     Project,
     ProjectVersion,
     Upload,
