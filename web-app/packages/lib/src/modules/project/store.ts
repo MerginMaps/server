@@ -719,8 +719,12 @@ export const useProjectStore = defineStore('projectModule', {
 
       const delays = [...Array(3).fill(1000), ...Array(3).fill(3000), 5000]
       let retryCount = 0
-      const pollDownloadArchive = async () => {
-        try {
+      try {
+        // STEP 1: request archive creation
+        await ProjectApi.prepareArchive(payload.url)
+
+        // STEP 2: start polling HEAD for readiness
+        const pollDownloadArchive = async () => {
           if (retryCount > 125) {
             notificationStore.warn({
               text: exceedMessage,
@@ -729,38 +733,42 @@ export const useProjectStore = defineStore('projectModule', {
             await this.cancelDownloadArchive()
             return
           }
+          try {
+            const head = await ProjectApi.getHeadDownloadFile(payload.url)
+            const polling = head.status === 202
+            if (polling) {
+              const delay = delays[Math.min(retryCount, delays.length - 1)] // Select delay based on retry count
+              retryCount++ // Increment retry count
+              downloadArchiveTimeout = setTimeout(async () => {
+                await pollDownloadArchive()
+              }, delay)
+              return
+            }
 
-          const head = await ProjectApi.getHeadDownloadFile(payload.url)
-          const polling = head.status == 202
-          if (polling) {
-            const delay = delays[Math.min(retryCount, delays.length - 1)] // Select delay based on retry count
-            retryCount++ // Increment retry count
-            downloadArchiveTimeout = setTimeout(async () => {
-              await pollDownloadArchive()
-            }, delay)
-            return
+            // Use browser download instead of playing around with the blob
+            FileSaver.saveAs(payload.url)
+            notificationStore.closeNotification()
+            this.cancelDownloadArchive()
+          } catch (e) {
+            if (axios.isAxiosError(e) && e.response?.status === 400) {
+              notificationStore.error({
+                group: 'download-large-error',
+                text: '',
+                life: 6000
+              })
+            } else {
+              notificationStore.error({
+                text: errorMessage
+              })
+            }
+            this.cancelDownloadArchive()
           }
-
-          // Use browser download instead of playing around with the blob
-          FileSaver.saveAs(payload.url)
-          notificationStore.closeNotification()
-          this.cancelDownloadArchive()
-        } catch (e) {
-          if (axios.isAxiosError(e) && e.response?.status === 400) {
-            notificationStore.error({
-              group: 'download-large-error',
-              text: '',
-              life: 6000
-            })
-          } else {
-            notificationStore.error({
-              text: errorMessage
-            })
-          }
-          this.cancelDownloadArchive()
         }
+        pollDownloadArchive()
+      } catch (e) {
+        notificationStore.error({ text: errorMessage })
+        this.cancelDownloadArchive()
       }
-      pollDownloadArchive()
     },
 
     async cancelDownloadArchive() {

@@ -123,7 +123,7 @@ def create_project_version_zip(version_id: int):
             # partial zip is recent -> another job is likely running
             return
         else:
-            # partial zip is too old -> remove and creating new one
+            # partial zip is too old -> remove and create new one
             os.remove(zip_path)
 
     os.makedirs(os.path.dirname(zip_path), exist_ok=True)
