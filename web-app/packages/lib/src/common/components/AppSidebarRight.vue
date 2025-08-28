@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       block-scroll
       :modal="true"
       position="right"
-      class="w-11 lg:w-5 xl:w-3"
+      class="w-11 lg:w-30rem"
       :pt="{
         mask: {
           style: {
