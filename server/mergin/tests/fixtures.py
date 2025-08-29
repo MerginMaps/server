@@ -6,7 +6,6 @@ import os
 import shutil
 import sys
 import uuid
-from copy import deepcopy
 from shutil import copy, move
 from flask import current_app
 from sqlalchemy import desc
@@ -238,3 +237,8 @@ def diff_project(app):
     finally:
         os.remove(test_gpkg_file)
     return project
+
+
+@pytest.fixture()
+def runner(app):
+    return app.test_cli_runner()
