@@ -16,6 +16,8 @@ from pathvalidate import sanitize_filename
 from ..utils import save_diagnostic_log_file
 
 from ..sync.utils import (
+    get_cached_levels,
+    get_merged_versions,
     parse_gpkgb_header_size,
     gpkg_wkb_to_wkt,
     is_reserved_word,
@@ -280,3 +282,51 @@ def test_save_diagnostic_log_file(client, app):
         with open(saved_file_path, "r") as f:
             content = f.read()
             assert content == body.decode("utf-8")
+
+
+def test_checkpoint_utils():
+    """Test util functions to construct merged versions of higher ranks (checkpoints)"""
+
+    # all cached versions ending with 64 would be v61-v64 (4) v49-v64 (16) and v1-v64 (64)
+    cached_levels = get_cached_levels(64)
+    assert len(cached_levels) == 3
+    assert cached_levels[0].rank == 1
+    assert cached_levels[0].index == 16
+    assert cached_levels[1].rank == 2
+    assert cached_levels[1].index == 4
+    assert cached_levels[2].rank == 3
+    assert cached_levels[2].index == 1
+
+    # there would not be any cached versions ending with 65
+    cached_levels = get_cached_levels(65)
+    assert len(cached_levels) == 0
+
+    # exact match to single rank
+    versions = get_merged_versions(1, 64)
+    assert len(versions) == 1
+    assert versions[0].rank == 3
+    assert versions[0].index == 1
+
+    # v21 would be created from v1-16, v17-20 and v21
+    versions = get_merged_versions(1, 21)
+    assert len(versions) == 3
+    assert versions[0].rank == 2
+    assert versions[0].index == 1
+    assert versions[1].rank == 1
+    assert versions[1].index == 5
+    assert versions[2].rank == 0
+    assert versions[2].index == 21
+
+    # no cached versions at all, only basic levels v1-v3
+    versions = get_merged_versions(1, 3)
+    assert len(versions) == 3
+    assert versions[0].rank == 0
+    assert versions[0].index == 1
+    assert versions[1].rank == 0
+    assert versions[1].index == 2
+    assert versions[2].rank == 0
+    assert versions[2].index == 3
+
+    # dummy request
+    versions = get_merged_versions(2, 1)
+    assert len(versions) == 0

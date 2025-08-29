@@ -7,13 +7,14 @@ import os
 import hashlib
 import re
 import secrets
+from dataclasses import dataclass
 from threading import Timer
 from uuid import UUID
 from shapely import wkb
 from shapely.errors import ShapelyError
 from gevent import sleep
 from flask import Request
-from typing import Optional
+from typing import List, Optional
 from sqlalchemy import text
 from pathvalidate import (
     validate_filename,
@@ -577,3 +578,78 @@ def get_x_accel_uri(*url_parts):
     url = url.lstrip(os.path.sep)
     result = os.path.join(download_accell_uri, url)
     return result
+
+
+LOG_BASE = 4
+
+
+@dataclass
+class CachedLevel:
+    """
+    Cached level of version tree.
+    Used as a checkpoint to merge individual versions / diff files into bigger chunks
+    """
+
+    rank: int  # power of base
+    index: int  # index of level - multiplyer of rank
+
+    def __post_init__(self):
+        if type(self.rank) is not int or type(self.index) is not int:
+            raise ValueError("rank and index must be integers")
+
+        if self.rank < 0 or self.index < 1:
+            raise ValueError("rank must be positive and index starts from 1")
+
+    @property
+    def start(self) -> int:
+        """Start of the range covered by this level"""
+        return 1 + (LOG_BASE**self.rank * (self.index - 1))
+
+    @property
+    def end(self) -> int:
+        """End of the range covered by this level"""
+        return LOG_BASE**self.rank * self.index
+
+    def __str__(self) -> str:
+        return f"CachedLevel(rank={self.rank}, index={self.index}, versions=v{self.start}-v{self.end})"
+
+
+def get_cached_levels(version: int) -> List[CachedLevel]:
+    """
+    Return the most right part of version tree as other nodes are already cached.
+    Version must divisible by BASE, and then we calculate all cached levels related to it.
+    """
+    levels = []
+    rank_max = math.floor((math.log(version) / math.log(LOG_BASE)))
+
+    for rank in range(1, rank_max + 1):
+        if version % LOG_BASE**rank:
+            continue
+
+        index = version // LOG_BASE**rank
+        levels.append(CachedLevel(rank=rank, index=index))
+
+    return levels
+
+
+def get_merged_versions(start: int, end: int) -> List[CachedLevel]:
+    """
+    Get all (merged) versions between start version and end version while respecting cached levels.
+    This basically provide the list of smaller versions (checkpoints) to be merged in order to get the final version.
+    """
+    levels = []
+    while start <= end:
+        if start == end:
+            rank_max = 0
+        else:
+            rank_max = math.floor((math.log(end - start + 1) / math.log(LOG_BASE)))
+        for rank in reversed(range(0, rank_max + 1)):
+            if (start - 1) % LOG_BASE**rank:
+                continue
+
+            index = (start - 1) // LOG_BASE**rank + 1
+            levels.append(CachedLevel(rank=rank, index=index))
+            start = start + LOG_BASE**rank
+            break
+
+    return levels
