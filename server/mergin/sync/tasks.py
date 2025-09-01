@@ -163,3 +163,13 @@ def remove_projects_archives():
                 os.remove(path)
             except OSError as e:
                 logging.error(f"Unable to remove {path}: {str(e)}")
+
+
+@celery.task
+def create_diff_checkpoint(file_id: int, start: int, end: int):
+    """Create a diff file checkpoint (aka. merged diff).
+    Find all smaller diffs which are needed to create the final diff file and merge them.
+    In case of missing some lower rank checkpoint, use individual diffs instead.
+    """
+    db.session.info = {"msg": "create_diff_checkpoint"}
+    pass

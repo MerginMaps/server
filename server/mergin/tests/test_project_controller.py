@@ -1087,7 +1087,8 @@ def test_push_project_start(client, data, expected):
             assert failure.error_type == "push_start"
 
 
-def test_push_to_new_project(client):
+@patch("mergin.sync.tasks.create_diff_checkpoint.delay")
+def test_push_to_new_project(checkpoint_mock, client):
     # create blank project
     p = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
@@ -1107,6 +1108,8 @@ def test_push_to_new_project(client):
         headers=json_headers,
     )
     assert resp.status_code == 200
+    # nothing to cache in new project
+    assert not checkpoint_mock.called
 
     upload_id = resp.json["transaction"]
     upload = Upload.query.filter_by(id=upload_id).first()
