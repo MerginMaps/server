@@ -750,23 +750,23 @@ export const useProjectStore = defineStore('projectModule', {
             notificationStore.closeNotification()
             this.cancelDownloadArchive()
           } catch (e) {
-            if (axios.isAxiosError(e) && e.response?.status === 400) {
-              notificationStore.error({
-                group: 'download-large-error',
-                text: '',
-                life: 6000
-              })
-            } else {
-              notificationStore.error({
-                text: errorMessage
-              })
-            }
+            notificationStore.error({ text: errorMessage })
             this.cancelDownloadArchive()
           }
         }
         pollDownloadArchive()
       } catch (e) {
-        notificationStore.error({ text: errorMessage })
+        if (axios.isAxiosError(e) && e.response?.status === 400) {
+          notificationStore.error({
+            group: 'download-large-error',
+            text: '',
+            life: 6000
+          })
+        } else {
+          notificationStore.error({
+            text: errorMessage
+          })
+        }
         this.cancelDownloadArchive()
       }
     },
