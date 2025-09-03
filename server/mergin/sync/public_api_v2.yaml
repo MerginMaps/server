@@ -304,7 +304,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProjectVersion"
+                $ref: "#/components/schemas/Project"
         "204":
           $ref: "#/components/responses/NoContent"
         "400":
@@ -334,11 +334,11 @@ paths:
                   - $ref: "#/components/schemas/StorageLimitHit"
                   - $ref: "#/components/schemas/DataSyncError"
         "423":
-          description: Project is locked for any upload       
+          description: Project is locked for any upload
           content:
-              application/problem+json:
-                schema:
-                  $ref: "#/components/schemas/ProjectLocked"
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProjectLocked"
 
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
 components:
@@ -381,13 +381,13 @@ components:
         - detail
     TrialExpired:
       allOf:
-        - $ref: '#/components/schemas/CustomError'
+        - $ref: "#/components/schemas/CustomError"
       example:
         code: TrialExpired
         detail: Failed to push changes. Ask the workspace owner to log in to their Mergin Maps dashboard
     StorageLimitHit:
       allOf:
-        - $ref: '#/components/schemas/CustomError'
+        - $ref: "#/components/schemas/CustomError"
       type: object
       properties:
         current_usage:
@@ -401,13 +401,13 @@ components:
         storage_limit: 24865
     ProjectLocked:
       allOf:
-        - $ref: '#/components/schemas/CustomError'
+        - $ref: "#/components/schemas/CustomError"
       example:
         code: ProjectLocked
         detail: The project is currently locked and you cannot make changes to it (ProjectLocked)
     ProjectVersionExists:
       allOf:
-        - $ref: '#/components/schemas/CustomError'
+        - $ref: "#/components/schemas/CustomError"
       type: object
       properties:
         client_version:
@@ -419,7 +419,7 @@ components:
         detail: Project version mismatch (ProjectVersionExists)
     AnotherUploadRunning:
       allOf:
-        - $ref: '#/components/schemas/CustomError'
+        - $ref: "#/components/schemas/CustomError"
       type: object
       properties:
         client_version:
@@ -431,7 +431,7 @@ components:
         detail: Another process is running (AnotherUploadRunning)
     DataSyncError:
       allOf:
-        - $ref: '#/components/schemas/CustomError'
+        - $ref: "#/components/schemas/CustomError"
       type: object
       properties:
         failed_files:
@@ -443,7 +443,7 @@ components:
           "survey.gpkg": "Corrupted file"
     UploadError:
       allOf:
-        - $ref: '#/components/schemas/CustomError'
+        - $ref: "#/components/schemas/CustomError"
       example:
         code: UploadError
         detail: "Project version could not be created (UploadError)"
@@ -541,23 +541,216 @@ components:
               nullable: true
               allOf:
                 - $ref: "#/components/schemas/File"
-    ProjectVersion:
+    MerginTag:
+      type: string
+      enum:
+        - valid_qgis
+        - mappin_use
+        - input_use
+      example: valid_qgis
+    Access:
       type: object
       properties:
+        ownersnames:
+          type: array
+          nullable: false
+          items:
+            type: string
+          example: [john.doe]
+        writersnames:
+          type: array
+          nullable: false
+          items:
+            type: string
+          example: [john.doe]
+        editorsnames:
+          type: array
+          nullable: false
+          items:
+            type: string
+          example: [john.doe]
+        readersnames:
+          type: array
+          nullable: false
+          items:
+            type: string
+          example: [john.doe]
+        public:
+          type: boolean
+          example: true
+        owners:
+          type: array
+          nullable: false
+          items:
+            type: integer
+          example: [1]
+        writers:
+          type: array
+          nullable: false
+          items:
+            type: integer
+          example: [1]
+        editors:
+          type: array
+          nullable: false
+          items:
+            type: integer
+          example: [1]
+        readers:
+          type: array
+          nullable: false
+          items:
+            type: integer
+          example: [1]
+    FileInfo:
+      type: object
+      required:
+        - path
+        - size
+        - checksum
+      properties:
+        path:
+          type: string
+          example: media/favicon.ico
+        checksum:
+          description: sha1 hash
+          type: string
+          example: 9adb76bf81a34880209040ffe5ee262a090b62ab
+        size:
+          type: integer
+          format: int64
+          example: 1024
+        mtime:
+          deprecated: true
+          type: string
+          format: date-time
+          example: 2018-11-30T08:47:58.636074Z
+        diff:
+          type: object
+          nullable: true
+          required:
+            - path
+            - checksum
+          properties:
+            path:
+              type: string
+              description: unique diff filename
+              example: survey.gpkg-diff-15eqn2q
+            checksum:
+              type: string
+              example: 45dfdfbf81a34asdf209040ffe5fasdf2a090bfa
+            size:
+              type: integer
+              example: 512
+        history:
+          type: object
+          description: map with version names as keys and file info as values
+          additionalProperties:
+            type: object
+            required:
+              - path
+              - size
+              - checksum
+              - change
+            properties:
+              path:
+                type: string
+                example: media/favicon.ico
+              checksum:
+                description: sha1 hash
+                type: string
+                example: 9adb76bf81a34880209040ffe5ee262a090b62ab
+              size:
+                type: integer
+                format: int64
+                example: 1024
+              change:
+                type: string
+                example: added
+                enum:
+                  - added
+                  - updated
+                  - removed
+              expiration:
+                nullable: true
+                type: string
+                format: date-time
+                example: 2019-02-26T08:47:58.636074Z
+    Project:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: string
+          example: f9ef87ac-1dae-48ab-85cb-062a4784fb83
+          description: Project UUID
         name:
           type: string
-          example: v1
-        author:
+          example: mergin
+        namespace:
           type: string
-          example: john.doe
+          example: mergin
+        creator:
+          nullable: true
+          type: integer
+          example: 1
+          description: Project creator ID
         created:
           type: string
           format: date-time
           example: 2018-11-30T08:47:58.636074Z
-        project_name:
+        updated:
           type: string
-          example: survey
-        namespace:
+          nullable: true
+          format: date-time
+          example: 2018-11-30T08:47:58.636074Z
+          description: Last modified
+        version:
           type: string
-          example: john.doe
-        
+          nullable: true
+          example: v2
+          description: Last project version
+        disk_usage:
+          type: integer
+          example: 25324373
+          description: Project size in bytes
+        permissions:
+          type: object
+          properties:
+            delete:
+              type: boolean
+              example: false
+            update:
+              type: boolean
+              example: false
+            upload:
+              type: boolean
+              example: true
+        tags:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/MerginTag"
+        uploads:
+          type: array
+          nullable: true
+          items:
+            type: string
+            example: 669b838e-a30b-4338-b2b6-3da144742a82
+            description: UUID for ongoing upload
+        access:
+          $ref: "#/components/schemas/Access"
+        files:
+          type: array
+          items:
+            allOf:
+              - $ref: "#/components/schemas/FileInfo"
+        role:
+          nullable: true
+          type: string
+          enum:
+            - reader
+            - editor
+            - writer
+            - owner
