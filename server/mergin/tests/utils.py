@@ -393,3 +393,14 @@ def modify_file_times(path, time: datetime, accessed=True, modified=True):
     mtime = epoch_time if modified else file_stat.st_mtime
 
     os.utime(path, (atime, mtime))
+
+
+def diffs_are_equal(diff1, diff2):
+    """Compare changes of two geodiff files"""
+    changes1 = os.path.join(TMP_DIR, "changeset" + str(uuid.uuid4()))
+    changes2 = os.path.join(TMP_DIR, "changeset" + str(uuid.uuid4()))
+    geodiff = GeoDiff()
+    geodiff.list_changes_summary(diff1, changes1)
+    geodiff.list_changes_summary(diff2, changes2)
+    with open(changes1) as f, open(changes2) as f2:
+        return json.load(f) == json.load(f2)

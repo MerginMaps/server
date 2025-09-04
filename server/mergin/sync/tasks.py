@@ -3,16 +3,21 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import logging
+import math
 import shutil
 import os
 import time
 from datetime import datetime, timedelta, timezone
+import uuid
 from zipfile import ZIP_DEFLATED, ZipFile
 from flask import current_app
+from pygeodiff import GeoDiffLibError
+from pygeodiff.geodifflib import GeoDiffLibConflictError
 
-from .models import Project, ProjectVersion, FileHistory
+from .models import FileDiff, Project, ProjectVersion, FileHistory
 from .storages.disk import move_to_tmp
 from .config import Configuration
+from .utils import LOG_BASE, generate_checksum, get_merged_versions
 from ..celery import celery
 from ..app import db
 
@@ -172,4 +177,104 @@ def create_diff_checkpoint(file_id: int, start: int, end: int):
     In case of missing some lower rank checkpoint, use individual diffs instead.
     """
     db.session.info = {"msg": "create_diff_checkpoint"}
-    pass
+    diff_range = end - start + 1
+
+    # invalid request as there would not be a checkpoint with this range
+    if end % LOG_BASE or diff_range % LOG_BASE:
+        return
+
+    rank = math.log(diff_range) / math.log(LOG_BASE)
+    if not rank.is_integer():
+        return
+
+    # checkpoint already exists
+    file_diff = FileDiff.query.filter_by(
+        file_path_id=file_id, version=end, rank=rank
+    ).first()
+    if file_diff and os.path.exists(file_diff.abs_path):
+        return
+
+    basefile = FileHistory.get_basefile(file_id, end)
+    if not basefile:
+        logging.error(f"Unable to find basefile for file {file_id}")
+        return
+
+    if basefile.project_version_name > start:
+        logging.error(
+            f"Basefile version {basefile.project_version_name} is higher than start version {start} - broken history"
+        )
+        return
+
+    diffs_paths = []
+    file_diffs = (
+        FileDiff.query.filter(
+            FileDiff.basefile_id == basefile.id,
+            FileDiff.version >= start,
+            FileDiff.version <= end,
+        )
+        .order_by(FileDiff.rank, FileDiff.version)
+        .all()
+    )
+
+    # we apply latest change (if any) on previous version
+    end_diff = next((d for d in file_diffs if d.version == end and d.rank == 0), None)
+    # let's confirm we have all intermediate diffs needed, if not, we need to use individual diffs instead
+    for merged_diff in get_merged_versions(start, end - 1):
+        # basefile is a start of the diff chain
+        if merged_diff.start <= basefile.project_version_name:
+            continue
+
+        # find diff in table and on disk
+        diff = next(
+            (
+                d
+                for d in file_diffs
+                if d.version == merged_diff.end and d.rank == merged_diff.rank
+            ),
+            None,
+        )
+        if diff and os.path.exists(diff.abs_path):
+            diffs_paths.append(diff.abs_path)
+        else:
+            individual_diffs = [
+                d.abs_path
+                for d in file_diffs
+                if d.rank == 0
+                and d.version >= merged_diff.start
+                and d.version <= merged_diff.end
+            ]
+            if individual_diffs:
+                diffs_paths.extend(individual_diffs)
+            else:
+                logging.error(
+                    f"Unable to find diffs for {merged_diff} for file {file_id}"
+                )
+                return
+
+    if end_diff:
+        diffs_paths.append(end_diff.abs_path)
+
+    if not diffs_paths:
+        logging.warning(f"No diffs for next checkpoint for file {file_id}")
+        return
+
+    project: Project = basefile.file.project
+    checkpoint_path = f"diff-{uuid.uuid4()}"
+    os.makedirs(project.storage.diffs_dir, exist_ok=True)
+    checkpoint_file = os.path.join(project.storage.diffs_dir, checkpoint_path)
+    try:
+        project.storage.geodiff.concat_changes(diffs_paths, checkpoint_file)
+    except (GeoDiffLibError, GeoDiffLibConflictError):
+        logging.error(f"Geodiff: Failed to merge diffs for file {file_id}")
+        return
+
+    checkpoint = FileDiff(
+        basefile=basefile,
+        path=checkpoint_path,
+        size=os.path.getsize(checkpoint_file),
+        checksum=generate_checksum(checkpoint_file),
+        rank=rank,
+        version=end,
+    )
+    db.session.add(checkpoint)
+    db.session.commit()

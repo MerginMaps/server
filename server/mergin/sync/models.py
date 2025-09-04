@@ -402,6 +402,11 @@ class ProjectFilePath(db.Model):
         ),
     )
 
+    project = db.relationship(
+        "Project",
+        uselist=False,
+    )
+
     def __init__(self, project_id, path):
         self.project_id = project_id
         self.path = path
@@ -699,14 +704,14 @@ class FileHistory(db.Model):
     def get_basefile(cls, file_path_id: int, version: int) -> Optional[FileHistory]:
         """Get basefile (start of file diffable history) for diff file change at some version"""
         return (
-            FileHistory.query.filter_by(file_path_id=file_path_id)
+            cls.query.filter_by(file_path_id=file_path_id)
             .filter(
-                FileHistory.project_version_name < version,
-                FileHistory.change.in_(
+                cls.project_version_name < version,
+                cls.change.in_(
                     [PushChangeType.CREATE.value, PushChangeType.UPDATE.value]
                 ),
             )
-            .order_by(desc(FileHistory.project_version_name))
+            .order_by(desc(cls.project_version_name))
             .first()
         )
 
@@ -742,6 +747,8 @@ class FileDiff(db.Model):
         db.Index("ix_file_diff_file_path_id_version_rank", file_path_id, version, rank),
     )
 
+    file = db.relationship("ProjectFilePath", uselist=False)
+
     def __init__(
         self,
         basefile: FileHistory,
@@ -758,11 +765,18 @@ class FileDiff(db.Model):
         self.checksum = checksum
         self.rank = rank
         self.version = version
+        self.location = (
+            os.path.join("diffs", path)
+            if rank > 0
+            else os.path.join(f"v{version}", path)
+        )
 
-        if rank > 0:
-            self.location = f"diffs/{path}"
-        else:
-            self.location = f"v{version}/{path}"
+    @property
+    def abs_path(self) -> str:
+        """
+        Return absolute path of the diff file on the file system.
+        """
+        return os.path.join(self.file.project.storage.project_dir, self.location)
 
 
 class ProjectVersion(db.Model):

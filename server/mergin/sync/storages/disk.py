@@ -134,6 +134,7 @@ class DiskStorage(ProjectStorage):
                 str(uuid.uuid4()),
             )
         )
+        self.diffs_dir = os.path.join(self.project_dir, "diffs")
 
         def _logger_callback(level, text_bytes):
             text = text_bytes.decode()

@@ -613,6 +613,9 @@ class CachedLevel:
     def __str__(self) -> str:
         return f"CachedLevel(rank={self.rank}, index={self.index}, versions=v{self.start}-v{self.end})"
 
+    def __repr__(self) -> str:
+        return str(self)
+
 
 def get_cached_levels(version: int) -> List[CachedLevel]:
     """
