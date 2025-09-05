@@ -14,7 +14,7 @@ from dataclasses import dataclass, asdict
 from blinker import signal
 from flask_login import current_user
 from pygeodiff import GeoDiff
-from sqlalchemy import text, null, desc, nullslast
+from sqlalchemy import text, null, desc, nullslast, tuple_
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM
 from sqlalchemy.types import String
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -31,7 +31,7 @@ from .interfaces import WorkspaceRole
 from .storages.disk import move_to_tmp
 from ..app import db
 from .storages import DiskStorage
-from .utils import is_versioned_file, is_qgis
+from .utils import get_merged_versions, is_versioned_file, is_qgis
 
 Storages = {"local": DiskStorage}
 project_deleted = signal("project_deleted")
@@ -610,93 +610,81 @@ class FileHistory(db.Model):
 
     @classmethod
     def diffs_chain(
-        cls, project: Project, file: str, version: int
-    ) -> Tuple[Optional[FileHistory], List[Optional[File]]]:
-        """Find chain of diffs from the closest basefile that leads to a given file at certain project version.
+        cls, file_id: int, version: int
+    ) -> Tuple[Optional[FileHistory], List[Optional[FileDiff]]]:
+        """Find chain of diffs from the basefile that leads to a given file at certain project version.
 
         Returns basefile and list of diffs for gpkg that needs to be applied to reconstruct file.
         List of diffs can be empty if basefile was eventually asked. Basefile can be empty if file cannot be
         reconstructed (removed/renamed).
         """
+        latest_change = (
+            cls.query.filter_by(file_path_id=file_id)
+            .filter(cls.project_version_name <= version)
+            .order_by(desc(cls.project_version_name))
+            .first()
+        )
+        # file never existed prior that version
+        if not latest_change:
+            return None, []
+
+        # the last update to file was a delete
+        if latest_change.change == PushChangeType.DELETE.value:
+            return None, []
+
+        # the last update to file was a create / force update
+        if latest_change.change in (
+            PushChangeType.CREATE.value,
+            PushChangeType.UPDATE.value,
+        ):
+            return latest_change, []
+
+        basefile = cls.get_basefile(file_id, version)
+        if not basefile:
+            return None, []
+
         diffs = []
-        basefile = None
-        v_x = version  # the version of interest
-        v_last = project.latest_version
-
-        # we ask for the latest version which is always a basefile if the file has not been removed
-        if v_x == v_last:
-            latest_change = (
-                FileHistory.query.join(ProjectFilePath)
-                .join(FileHistory.version)
-                .filter(
-                    ProjectFilePath.path == file,
-                    ProjectVersion.project_id == project.id,
-                )
-                .order_by(desc(ProjectVersion.created))
-                .first()
+        cached_items = get_merged_versions(basefile.project_version_name, version)
+        expected_diffs = (
+            FileDiff.query.filter_by(
+                basefile_id=basefile.id,
             )
-            if latest_change.change != PushChangeType.DELETE.value:
-                return latest_change, []
+            .filter(
+                tuple_(FileDiff.rank, FileDiff.version).in_(
+                    [(item.rank, item.end) for item in cached_items]
+                )
+            )
+            .all()
+        )
+
+        for item in cached_items:
+            diff = next(
+                (
+                    d
+                    for d in expected_diffs
+                    if d.rank == item.rank and d.version == item.end
+                ),
+                None,
+            )
+            if diff:
+                diffs.append(diff)
+            elif item.rank > 0:
+                # fallback if checkpoint does not exist: replace merged diff with individual diffs
+                individual_diffs = (
+                    FileDiff.query.filter_by(
+                        basefile_id=basefile.id,
+                        rank=0,
+                    )
+                    .filter(
+                        FileDiff.version >= item.start, FileDiff.version <= item.end
+                    )
+                    .order_by(FileDiff.version)
+                    .all()
+                )
+                diffs.extend(individual_diffs)
             else:
-                # file is actually not in the latest project version
-                return None, []
-
-        # check if it would not be faster to look up from the latest version
-        backward = (v_last - v_x) < v_x
-
-        if backward:
-            # get list of file history changes starting with the latest version (v_last, ..., v_x+n, (..., v_x))
-            history = FileHistory.changes(project.id, file, v_x, v_last, diffable=True)
-            if history:
-                first_change = history[-1]
-                # we have either full history of changes or v_x = v_x+n => no basefile in way, it is 'diffable' from the end
-                if first_change.change == PushChangeType.UPDATE_DIFF.value:
-                    # omit diff for target version as it would lead to previous version if reconstructed backward
-                    diffs = [
-                        value.diff_file
-                        for value in reversed(history)
-                        if value.version.name != v_x
-                    ]
-                    basefile = history[0]
-                    return basefile, diffs
-                # there was either breaking change or v_x is a basefile itself
-                else:
-                    # we asked for basefile
-                    if v_x == first_change.version.name and first_change.change in [
-                        PushChangeType.CREATE.value,
-                        PushChangeType.UPDATE.value,
-                    ]:
-                        return first_change, []
-                    # file was removed (or renamed for backward compatibility)
-                    elif v_x == first_change.version.name:
-                        return basefile, diffs
-                    # there was a breaking change in v_x+n, and we need to search from start
-                    else:
-                        pass
-
-        # we haven't found anything so far, search from v1
-        if not (basefile and diffs):
-            # get ordered dict of file history starting with version of interest (v_x, ..., v_x-n, (..., v_1))
-            history = FileHistory.changes(project.id, file, 1, v_x, diffable=True)
-            if history:
-                first_change = history[-1]
-                # we found basefile
-                if first_change.change in [
-                    PushChangeType.CREATE.value,
-                    PushChangeType.UPDATE.value,
-                ]:
-                    basefile = first_change
-                    if v_x == first_change.version.name:
-                        # we asked for basefile
-                        diffs = []
-                    else:
-                        # basefile has no diff
-                        diffs = [
-                            value.diff_file for value in list(reversed(history))[1:]
-                        ]
-                # file was removed (or renamed for backward compatibility)
-                else:
-                    pass
+                # we asked for individual diff but there is no such diff as there was not change at that version
+                continue
 
         return basefile, diffs
 

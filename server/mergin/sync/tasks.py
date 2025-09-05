@@ -13,6 +13,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from flask import current_app
 from pygeodiff import GeoDiffLibError
 from pygeodiff.geodifflib import GeoDiffLibConflictError
+from sqlalchemy import tuple_
 
 from .models import FileDiff, Project, ProjectVersion, FileHistory
 from .storages.disk import move_to_tmp
@@ -206,50 +207,59 @@ def create_diff_checkpoint(file_id: int, start: int, end: int):
         return
 
     diffs_paths = []
-    file_diffs = (
-        FileDiff.query.filter(
-            FileDiff.basefile_id == basefile.id,
-            FileDiff.version >= start,
-            FileDiff.version <= end,
+
+    # let's confirm we have all intermediate diffs needed, if not, we need to use individual diffs instead
+    cached_items = get_merged_versions(start, end - 1)
+    expected_diffs = (
+        FileDiff.query.filter_by(
+            basefile_id=basefile.id,
         )
-        .order_by(FileDiff.rank, FileDiff.version)
+        .filter(
+            tuple_(FileDiff.rank, FileDiff.version).in_(
+                [(item.rank, item.end) for item in cached_items]
+            )
+        )
         .all()
     )
 
-    # we apply latest change (if any) on previous version
-    end_diff = next((d for d in file_diffs if d.version == end and d.rank == 0), None)
-    # let's confirm we have all intermediate diffs needed, if not, we need to use individual diffs instead
-    for merged_diff in get_merged_versions(start, end - 1):
+    for item in cached_items:
         # basefile is a start of the diff chain
-        if merged_diff.start <= basefile.project_version_name:
+        if item.start <= basefile.project_version_name:
             continue
 
         # find diff in table and on disk
         diff = next(
             (
                 d
-                for d in file_diffs
-                if d.version == merged_diff.end and d.rank == merged_diff.rank
+                for d in expected_diffs
+                if d.rank == item.rank and d.version == item.end
             ),
             None,
         )
         if diff and os.path.exists(diff.abs_path):
             diffs_paths.append(diff.abs_path)
         else:
-            individual_diffs = [
-                d.abs_path
-                for d in file_diffs
-                if d.rank == 0
-                and d.version >= merged_diff.start
-                and d.version <= merged_diff.end
-            ]
-            if individual_diffs:
-                diffs_paths.extend(individual_diffs)
-            else:
-                logging.error(
-                    f"Unable to find diffs for {merged_diff} for file {file_id}"
+            individual_diffs = (
+                FileDiff.query.filter_by(
+                    basefile_id=basefile.id,
+                    rank=0,
                 )
+                .filter(FileDiff.version >= item.start, FileDiff.version <= item.end)
+                .order_by(FileDiff.version)
+                .all()
+            )
+            if individual_diffs:
+                diffs_paths.extend([i.abs_path for i in individual_diffs])
+            else:
+                logging.error(f"Unable to find diffs for {item} for file {file_id}")
                 return
+
+    # we apply latest change (if any) on previous version
+    end_diff = FileDiff.query.filter_by(
+        basefile_id=basefile.id,
+        rank=0,
+        version=end,
+    ).first()
 
     if end_diff:
         diffs_paths.append(end_diff.abs_path)

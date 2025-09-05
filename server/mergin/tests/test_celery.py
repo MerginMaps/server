@@ -15,6 +15,7 @@ from ..app import db
 from ..config import Configuration
 from ..sync.models import (
     FileDiff,
+    FileHistory,
     Project,
     AccessRequest,
     ProjectFilePath,
@@ -216,13 +217,13 @@ def test_create_diff_checkpoint(diff_project):
         .id
     )
 
-    basefile = os.path.join(diff_project.storage.project_dir, "test.gpkg")
+    base_gpkg = os.path.join(diff_project.storage.project_dir, "test.gpkg")
     shutil.copy(
-        os.path.join(diff_project.storage.project_dir, "v9", "test.gpkg"), basefile
+        os.path.join(diff_project.storage.project_dir, "v9", "test.gpkg"), base_gpkg
     )
     for i in range(22):
         sql = f"UPDATE simple SET rating={i}"
-        execute_query(basefile, sql)
+        execute_query(base_gpkg, sql)
         pv = push_change(
             diff_project, "updated", "test.gpkg", diff_project.storage.project_dir
         )
@@ -232,12 +233,23 @@ def test_create_diff_checkpoint(diff_project):
         ).first()
         assert file_diff and os.path.exists(file_diff.abs_path)
 
+    basefile, diffs = FileHistory.diffs_chain(file_path_id, 32)
+    assert basefile.project_version_name == 9
+    # so far we only have individual diffs
+    assert len(diffs) == 22
+
     # diff for v17-v20 from individual diffs
     create_diff_checkpoint(file_path_id, 17, 20)
     diff = FileDiff.query.filter_by(
         file_path_id=file_path_id, version=20, rank=1
     ).first()
     assert os.path.exists(diff.abs_path)
+
+    basefile, diffs = FileHistory.diffs_chain(file_path_id, 20)
+    assert basefile.project_version_name == 9
+    # 6 individual diffs (v11-v16) + merged diff (v17-v20) as the last one
+    assert len(diffs) == 7
+    assert diffs[-1] == diff
 
     # repeat - nothing to do
     mtime = os.path.getmtime(diff.abs_path)
