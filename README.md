@@ -18,7 +18,7 @@ $ cp mergin.env.template mergin.env
 
 Run with docker compose:
 ```shell
-$ export TAG=2021.6  # specify version
+$ export TAG=2021.6.x  # specify version
 $ docker-compose up
 $ docker exec -it mergin-server flask init-db
 $ docker exec -it mergin-server flask add-user admin topsecret --is-admin --email admin@example.com
