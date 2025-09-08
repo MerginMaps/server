@@ -297,7 +297,7 @@ def test_create_version(client, data, expected, err_code):
     response = client.post(f"v2/projects/{project.id}/versions", json=data)
     assert response.status_code == expected
     if expected == 201:
-        assert response.json["name"] == "v2"
+        assert response.json["version"] == "v2"
         assert project.latest_version == 2
         assert all(not os.path.exists(chunk) for chunk in chunks)
     else:
@@ -491,7 +491,7 @@ def test_full_push(client):
         },
     )
     assert response.status_code == 201
-    assert response.json["name"] == "v2"
+    assert response.json["version"] == "v2"
     assert project.latest_version == 2
     assert os.path.exists(
         os.path.join(project.storage.project_dir, "v2", test_file["path"])

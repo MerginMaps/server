@@ -39,7 +39,12 @@ from .models import (
 )
 from .permissions import ProjectPermissions, require_project_by_uuid
 from .public_api_controller import catch_sync_failure
-from .schemas import ProjectMemberSchema, ProjectVersionSchema, UploadChunkSchema
+from .schemas import (
+    ProjectMemberSchema,
+    ProjectVersionSchema,
+    UploadChunkSchema,
+    ProjectSchema,
+)
 from .storages.disk import move_to_tmp, save_to_file
 from .utils import get_device_id, get_ip, get_user_agent, get_chunk_location
 from .workspace import WorkspaceRole
@@ -337,17 +342,7 @@ def create_project_version(id):
     finally:
         # remove artifacts
         upload.clear()
-
-    return (
-        ProjectVersionSchema(
-            exclude=(
-                "files",
-                "changes",
-                "changesets",
-            )
-        ).dump(pv),
-        201,
-    )
+    return ProjectSchema().dump(project), 201
 
 
 @auth_required
