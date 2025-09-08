@@ -22,6 +22,9 @@ $ export TAG=2021.6  # specify version
 $ docker-compose up
 $ docker exec -it mergin-server flask init-db
 $ docker exec -it mergin-server flask add-user admin topsecret --is-admin --email admin@example.com
+```
+Grant rights (optional):
+```
 $ sudo chown -R  901:999 ./projects/
 $ sudo chmod g+s ./projects/
 ```
