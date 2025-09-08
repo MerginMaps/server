@@ -11,7 +11,7 @@ services:
       - POSTGRES_PASSWORD=postgres
 
   server:
-    image: mergin:${TAG}
+    image: lutraconsulting/mergin:${TAG}
     build:
       context: .
       dockerfile: Dockerfile
@@ -23,7 +23,7 @@ services:
     environment:
       - VERSION=${TAG}
     ports:
-      - 5000:5000
+      - 5001:5000
     depends_on:
       - db
     links:

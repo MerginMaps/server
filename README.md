@@ -6,6 +6,11 @@ https://public.cloudmergin.com/
 Store and track changes to your geo-data
 
 ## Running with Docker
+Checkout branch
+```
+$ git checkout testing-branch-v2021.6.1
+```
+
 Adjust configuration, e.g. replace 'fixme' entries:
 ```shell
 $ cp mergin.env.template mergin.env
@@ -20,7 +25,7 @@ $ docker exec -it mergin-server flask add-user admin topsecret --is-admin --emai
 $ sudo chown -R  901:999 ./projects/
 $ sudo chmod g+s ./projects/
 ```
-Projects are saved locally in `./projects` folder.
+Projects are saved in container "lutraconsulting/mergin:2021.6.1:" `Files/app/data` folder.
 
 ## Running locally (for dev)
 Install dependencies and run services:
