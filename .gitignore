@@ -8,3 +8,5 @@ projects/
 
 .mergin.env
 mergin.env
+deployment/community/.prod.env
+deployment/enterprise/.prod.env
