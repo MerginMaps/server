@@ -536,6 +536,7 @@ FORBIDDEN_MIME_TYPES = {
     "application/x-ms-wim",
     "text/x-shellscript",
     "text/x-script.python",
+    "text/x-perl",
 }
 
 
