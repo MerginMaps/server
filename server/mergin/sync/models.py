@@ -1099,7 +1099,10 @@ class Upload(db.Model):
                         errors[f.path] = FileSyncErrorType.CORRUPTED.value
                         continue
 
-                if not is_supported_type(temporary_location):
+                if (
+                    not f.change == PushChangeType.UPDATE_DIFF
+                    and not is_supported_type(temporary_location)
+                ):
                     logging.info(f"Rejecting blacklisted file: {temporary_location}")
                     errors[f.path] = FileSyncErrorType.UNSUPPORTED.value
                     continue
