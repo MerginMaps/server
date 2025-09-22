@@ -1021,7 +1021,7 @@ def push_finish(transaction_id):
                 )
                 corrupted_files.append(f.path)
                 continue
-        if not is_supported_type(dest_file):
+        if not f.diff and not is_supported_type(dest_file):
             logging.info(f"Rejecting blacklisted file: {dest_file}")
             abort(
                 400,
