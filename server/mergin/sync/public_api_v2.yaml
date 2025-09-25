@@ -219,6 +219,38 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
+  /projects/{id}/raw/diff/{file}:
+    get:
+      tags:
+        - project
+      summary: Download project geopackage diff file
+      operationId: download_diff_file
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - name: file
+          required: true
+          in: path
+          description: File path
+          schema:
+            type: string
+            example: survey.gpkg-diff-1b9fe848-d2e4-4c53-958d-3dd97e5486f6
+      responses:
+        "200":
+          description: File content (or its part)
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller    
 components:
   responses:
     NoContent:

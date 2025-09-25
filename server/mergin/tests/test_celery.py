@@ -5,14 +5,18 @@
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
-
 from flask import current_app
 from flask_mail import Mail
 from unittest.mock import patch
 
 from ..app import db
 from ..config import Configuration
-from ..sync.models import Project, AccessRequest, ProjectRole, ProjectVersion
+from ..sync.models import (
+    Project,
+    AccessRequest,
+    ProjectRole,
+    ProjectVersion,
+)
 from ..celery import send_email_async
 from ..sync.tasks import (
     remove_temp_files,
@@ -22,7 +26,13 @@ from ..sync.tasks import (
 )
 from ..sync.storages.disk import move_to_tmp
 from . import test_project, test_workspace_name, test_workspace_id
-from .utils import add_user, create_workspace, create_project, login, modify_file_times
+from .utils import (
+    add_user,
+    create_workspace,
+    create_project,
+    login,
+    modify_file_times,
+)
 from ..auth.models import User
 from . import json_headers
 
