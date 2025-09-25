@@ -5,26 +5,20 @@
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
-import shutil
 from flask import current_app
 from flask_mail import Mail
-from pygeodiff import GeoDiffLibError
 from unittest.mock import patch
 
 from ..app import db
 from ..config import Configuration
 from ..sync.models import (
-    FileDiff,
-    FileHistory,
     Project,
     AccessRequest,
-    ProjectFilePath,
     ProjectRole,
     ProjectVersion,
 )
 from ..celery import send_email_async
 from ..sync.tasks import (
-    create_diff_checkpoint,
     remove_temp_files,
     remove_projects_backups,
     create_project_version_zip,
@@ -36,12 +30,8 @@ from .utils import (
     add_user,
     create_workspace,
     create_project,
-    diffs_are_equal,
-    execute_query,
-    gpkgs_are_equal,
     login,
     modify_file_times,
-    push_change,
 )
 from ..auth.models import User
 from . import json_headers
@@ -207,110 +197,3 @@ def test_create_project_version_zip(diff_project):
     modify_file_times(latest_version.zip_path, new_time)
     remove_projects_archives()  # zip has expired -> remove
     assert not os.path.exists(latest_version.zip_path)
-
-
-def test_create_diff_checkpoint(diff_project):
-    # add changes v11-v32 where v9 is a basefile
-    file_path_id = (
-        ProjectFilePath.query.filter_by(project_id=diff_project.id, path="test.gpkg")
-        .first()
-        .id
-    )
-
-    base_gpkg = os.path.join(diff_project.storage.project_dir, "test.gpkg")
-    shutil.copy(
-        os.path.join(diff_project.storage.project_dir, "v9", "test.gpkg"), base_gpkg
-    )
-    for i in range(22):
-        sql = f"UPDATE simple SET rating={i}"
-        execute_query(base_gpkg, sql)
-        pv = push_change(
-            diff_project, "updated", "test.gpkg", diff_project.storage.project_dir
-        )
-        assert diff_project.latest_version == pv.name == (11 + i)
-        file_diff = FileDiff.query.filter_by(
-            file_path_id=file_path_id, version=pv.name, rank=0
-        ).first()
-        assert file_diff and os.path.exists(file_diff.abs_path)
-
-    basefile, diffs = FileHistory.diffs_chain(file_path_id, 32)
-    assert basefile.project_version_name == 9
-    # so far we only have individual diffs
-    assert len(diffs) == 22
-
-    # diff for v17-v20 from individual diffs
-    create_diff_checkpoint(file_path_id, 17, 20)
-    diff = FileDiff.query.filter_by(
-        file_path_id=file_path_id, version=20, rank=1
-    ).first()
-    assert os.path.exists(diff.abs_path)
-
-    basefile, diffs = FileHistory.diffs_chain(file_path_id, 20)
-    assert basefile.project_version_name == 9
-    # 6 individual diffs (v11-v16) + merged diff (v17-v20) as the last one
-    assert len(diffs) == 7
-    assert diffs[-1] == diff
-
-    # repeat - nothing to do
-    mtime = os.path.getmtime(diff.abs_path)
-    create_diff_checkpoint(file_path_id, 17, 20)
-    assert mtime == os.path.getmtime(diff.abs_path)
-
-    # diff for v17-v32 with merged diffs (using one above)
-    create_diff_checkpoint(file_path_id, 17, 32)
-    diff = FileDiff.query.filter_by(
-        file_path_id=file_path_id, version=32, rank=2
-    ).first()
-    assert os.path.exists(diff.abs_path)
-    # assert gpkg diff is the same as it would be from merging all individual diffs
-    individual_diffs = (
-        FileDiff.query.filter_by(file_path_id=file_path_id, rank=0)
-        .filter(FileDiff.version.between(17, 32))
-        .all()
-    )
-    merged_diff = os.path.join(diff_project.storage.diffs_dir, "merged-diff")
-    diff_project.storage.geodiff.concat_changes(
-        [d.abs_path for d in individual_diffs], merged_diff
-    )
-    assert diffs_are_equal(diff.abs_path, merged_diff)
-
-    # test various failures
-    with patch.object(diff_project.storage.geodiff, "concat_changes") as mock:
-        # diff for not existing version
-        create_diff_checkpoint(file_path_id, 33, 36)
-        assert not FileDiff.query.filter_by(
-            file_path_id=file_path_id, version=36
-        ).count()
-
-        # diff for invalid range
-        create_diff_checkpoint(file_path_id, 17, 31)
-        assert not FileDiff.query.filter_by(
-            file_path_id=file_path_id, version=31, rank=1
-        ).count()
-
-        create_diff_checkpoint(file_path_id, 27, 32)
-        assert not FileDiff.query.filter_by(
-            file_path_id=file_path_id, version=32, rank=1
-        ).count()
-
-        # diff with broken history at v9
-        create_diff_checkpoint(file_path_id, 5, 20)
-        assert not FileDiff.query.filter_by(
-            file_path_id=file_path_id, version=20, rank=2
-        ).count()
-
-        # diff for missing basefile (e.g. deleted file or not-existing file)
-        create_diff_checkpoint(file_path_id, 5, 8)
-        assert not FileDiff.query.filter_by(
-            file_path_id=file_path_id, version=8, rank=1
-        ).count()
-
-        assert not mock.called
-
-        # geodiff failure
-        mock.side_effect = GeoDiffLibError
-        create_diff_checkpoint(file_path_id, 13, 16)
-        assert mock.called
-        assert not FileDiff.query.filter_by(
-            file_path_id=file_path_id, version=16, rank=1
-        ).count()

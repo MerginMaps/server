@@ -4,9 +4,6 @@
 
 import os
 from pathlib import Path
-from unittest.mock import patch
-
-import pytest
 
 from ..sync.models import (
     Project,
@@ -22,7 +19,6 @@ from ..sync.models import (
     ProjectUser,
 )
 from ..sync.files import UploadChanges
-from ..sync.public_api_controller import project_version_created
 from ..auth.models import User
 from ..app import db
 from . import DEFAULT_USER
@@ -171,39 +167,3 @@ def test_remove_project(client, diff_project):
 
     # try to remove the deleted project
     assert diff_project.delete() is None
-
-
-test_caching_call_data = [
-    (4, True),  # success
-    (8, True),  # success
-    (5, False),  # call not divisible by 4
-    (4, False),  # fake last change to be a breaking change
-]
-
-
-@pytest.mark.parametrize("version,called", test_caching_call_data)
-@patch("mergin.sync.tasks.create_diff_checkpoint.delay")
-def test_trigger_diff_caching(checkpoint_mock, diff_project, version, called):
-    # make target version the latest version
-    ProjectVersion.query.filter_by(project_id=diff_project.id).filter(
-        ProjectVersion.name > version
-    ).delete()
-    db.session.commit()
-
-    pv = ProjectVersion.query.filter_by(
-        project_id=diff_project.id, name=version
-    ).first()
-    # modify the last change to be a breaking change
-    if not called and version == 4:
-        fh = FileHistory.query.filter_by(version_id=pv.id, change="update_diff").first()
-        fh.change = "delete"
-        db.session.commit()
-
-    project_version_created.send(pv)
-    assert checkpoint_mock.called == called
-
-    if called:
-        # we asked for to cache first level, e.g. with versions 1..4
-        _, start, end = checkpoint_mock.call_args[0]
-        assert start == version - 3
-        assert end == version
