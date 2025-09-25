@@ -38,7 +38,7 @@ services:
       - OVERVIEWS_DATA_DIR=/data
       - MM_WMS_TILE_BUFFER=100
       - MM_WMS_AVOID_ARTIFACTS=1
-      - BROKER_URL=redis://mergin-redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://mergin-redis:6379/0
+      - BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     volumes:
       - ./map_data:/data
