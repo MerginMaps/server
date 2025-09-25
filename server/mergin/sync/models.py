@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 from __future__ import annotations
 import json
+import logging
 import os
 import time
 import uuid
@@ -18,7 +19,7 @@ from sqlalchemy import text, null, desc, nullslast, tuple_
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM
 from sqlalchemy.types import String
 from sqlalchemy.ext.hybrid import hybrid_property
-from pygeodiff.geodifflib import GeoDiffLibError
+from pygeodiff.geodifflib import GeoDiffLibError, GeoDiffLibConflictError
 from flask import current_app
 
 from .files import (
@@ -31,7 +32,14 @@ from .interfaces import WorkspaceRole
 from .storages.disk import move_to_tmp
 from ..app import db
 from .storages import DiskStorage
-from .utils import get_merged_versions, is_versioned_file, is_qgis
+from .utils import (
+    LOG_BASE,
+    CachedLevel,
+    generate_checksum,
+    get_merged_versions,
+    is_versioned_file,
+    is_qgis,
+)
 
 Storages = {"local": DiskStorage}
 project_deleted = signal("project_deleted")
@@ -509,12 +517,12 @@ class FileHistory(db.Model):
         if diff is not None:
             basefile = FileHistory.get_basefile(file.id, version_name)
             diff_file = FileDiff(
-                basefile,
-                diff.get("path"),
-                diff.get("size"),
-                diff.get("checksum"),
+                basefile=basefile,
+                path=diff.get("path"),
                 rank=0,
                 version=version_name,
+                size=diff.get("size"),
+                checksum=diff.get("checksum"),
             )
             db.session.add(diff_file)
 
@@ -727,8 +735,8 @@ class FileDiff(db.Model):
     version = db.Column(db.Integer, nullable=False, index=True)
     # path on FS relative to project directory
     location = db.Column(db.String)
-    size = db.Column(db.BigInteger, nullable=False)
-    checksum = db.Column(db.String, nullable=False)
+    size = db.Column(db.BigInteger, nullable=True)
+    checksum = db.Column(db.String, nullable=True)
 
     __table_args__ = (
         db.UniqueConstraint("file_path_id", "rank", "version", name="unique_diff"),
@@ -741,10 +749,10 @@ class FileDiff(db.Model):
         self,
         basefile: FileHistory,
         path: str,
-        size: int,
-        checksum: str,
         rank: int,
         version: int,
+        size: int = None,
+        checksum: str = None,
     ):
         self.basefile_id = basefile.id
         self.file_path_id = basefile.file_path_id
@@ -765,6 +773,128 @@ class FileDiff(db.Model):
         Return absolute path of the diff file on the file system.
         """
         return os.path.join(self.file.project.storage.project_dir, self.location)
+
+    @property
+    def cache_level(self) -> Optional[CachedLevel]:
+        """
+        Return cache level representation for diff file
+        """
+        # individual diff for any version
+        if self.rank == 0:
+            return CachedLevel(rank=self.rank, index=self.version)
+
+        # merged diffs can only be created for certain versions
+        if self.version % LOG_BASE:
+            return
+
+        index = self.version // LOG_BASE**self.rank
+        # some invalid record
+        if index < 1 or self.rank < 0:
+            return
+
+        return CachedLevel(rank=self.rank, index=index)
+
+    def construct_checkpoint(self) -> None:
+        """Create a diff file checkpoint (aka. merged diff).
+        Find all smaller diffs which are needed to create the final diff file and merge them.
+        In case of missing some lower rank checkpoint, use individual diffs instead.
+        """
+        if os.path.exists(self.abs_path):
+            return
+
+        basefile = FileHistory.get_basefile(self.file_path_id, self.cache_level.end)
+        if not basefile:
+            logging.error(f"Unable to find basefile for file {self.file_path_id}")
+            return
+
+        if basefile.project_version_name > self.cache_level.start:
+            logging.error(
+                f"Basefile version {basefile.project_version_name} is higher than start version {self.cache_level.start} - broken history"
+            )
+            return
+
+        diffs_paths = []
+        # let's confirm we have all intermediate diffs needed, if not, we need to use individual diffs instead
+        cached_items = get_merged_versions(
+            self.cache_level.start, self.cache_level.end - 1
+        )
+        expected_diffs = (
+            FileDiff.query.filter_by(
+                basefile_id=basefile.id,
+            )
+            .filter(
+                tuple_(FileDiff.rank, FileDiff.version).in_(
+                    [(item.rank, item.end) for item in cached_items]
+                )
+            )
+            .all()
+        )
+
+        for item in cached_items:
+            # basefile is a start of the diff chain
+            if item.start <= basefile.project_version_name:
+                continue
+
+            # find diff in table and on disk
+            diff = next(
+                (
+                    d
+                    for d in expected_diffs
+                    if d.rank == item.rank and d.version == item.end
+                ),
+                None,
+            )
+            if diff and os.path.exists(diff.abs_path):
+                diffs_paths.append(diff.abs_path)
+            else:
+                individual_diffs = (
+                    FileDiff.query.filter_by(
+                        basefile_id=basefile.id,
+                        rank=0,
+                    )
+                    .filter(
+                        FileDiff.version >= item.start, FileDiff.version <= item.end
+                    )
+                    .order_by(FileDiff.version)
+                    .all()
+                )
+                if individual_diffs:
+                    diffs_paths.extend([i.abs_path for i in individual_diffs])
+                else:
+                    logging.error(
+                        f"Unable to find diffs for {item} for file {self.file_path_id}"
+                    )
+                    return
+
+        # we apply latest change (if any) on previous version
+        end_diff = FileDiff.query.filter_by(
+            basefile_id=basefile.id,
+            rank=0,
+            version=self.cache_level.end,
+        ).first()
+
+        if end_diff:
+            diffs_paths.append(end_diff.abs_path)
+
+        if not diffs_paths:
+            logging.warning(
+                f"No diffs for next checkpoint for file {self.file_path_id}"
+            )
+            return
+
+        project: Project = basefile.file.project
+        os.makedirs(project.storage.diffs_dir, exist_ok=True)
+        try:
+            project.storage.geodiff.concat_changes(diffs_paths, self.abs_path)
+        except (GeoDiffLibError, GeoDiffLibConflictError):
+            logging.error(
+                f"Geodiff: Failed to merge diffs for file {self.file_path_id}"
+            )
+            return
+
+        self.size = os.path.getsize(self.abs_path)
+        self.checksum = generate_checksum(self.abs_path)
+        db.session.commit()
 
 
 class ProjectVersion(db.Model):

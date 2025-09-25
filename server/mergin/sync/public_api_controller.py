@@ -9,7 +9,6 @@ import os
 import logging
 from dataclasses import asdict
 from typing import Dict
-from urllib.parse import quote
 import uuid
 from datetime import datetime
 
@@ -20,7 +19,6 @@ from connexion import NoContent, request
 from flask import (
     abort,
     current_app,
-    send_from_directory,
     jsonify,
     make_response,
 )
@@ -28,10 +26,8 @@ from pygeodiff import GeoDiffLibError
 from flask_login import current_user
 from sqlalchemy import and_, desc, asc
 from sqlalchemy.exc import IntegrityError
-from binaryornot.check import is_binary
 from gevent import sleep
 import base64
-
 from werkzeug.exceptions import HTTPException
 
 from mergin.sync.forms import project_name_validation
@@ -40,7 +36,6 @@ from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
 from .models import (
-    FileDiff,
     Project,
     ProjectVersion,
     Upload,
@@ -78,7 +73,6 @@ from .permissions import (
 from .utils import (
     generate_checksum,
     Toucher,
-    get_x_accel_uri,
     is_file_name_blacklisted,
     get_ip,
     get_user_agent,
@@ -91,7 +85,7 @@ from .utils import (
     is_valid_path,
     is_supported_type,
     is_supported_extension,
-    get_mimetype,
+    prepare_download_response,
 )
 from .errors import StorageLimitHit, ProjectLocked
 from ..utils import format_time_delta
@@ -353,30 +347,8 @@ def download_project_file(
         logging.error(f"Missing file {namespace}/{project_name}/{file_path}")
         abort(404)
 
-    if current_app.config["USE_X_ACCEL"]:
-        # encoding for nginx to be able to download file with non-ascii chars
-        encoded_file_path = quote(file_path.encode("utf-8"))
-        resp = make_response()
-        resp.headers["X-Accel-Redirect"] = get_x_accel_uri(
-            project.storage_params["location"], encoded_file_path
-        )
-        resp.headers["X-Accel-Buffering"] = True
-        resp.headers["X-Accel-Expires"] = "off"
-    else:
-        resp = send_from_directory(
-            os.path.dirname(abs_path), os.path.basename(abs_path)
-        )
-
-    if not is_binary(abs_path):
-        mime_type = "text/plain"
-    else:
-        mime_type = get_mimetype(abs_path)
-    resp.headers["Content-Type"] = mime_type
-    resp.headers["Content-Disposition"] = "attachment; filename={}".format(
-        quote(os.path.basename(file).encode("utf-8"))
-    )
-    resp.direct_passthrough = False
-    return resp
+    response = prepare_download_response(project.storage.project_dir, file_path)
+    return response
 
 
 def get_project(project_name, namespace, since="", version=None):  # noqa: E501

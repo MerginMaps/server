@@ -2,20 +2,21 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import os
 from datetime import datetime
 from connexion import NoContent, request
 from flask import abort, jsonify
 from flask_login import current_user
 
-from mergin.sync.forms import project_name_validation
-
+from .forms import project_name_validation
 from .schemas import ProjectMemberSchema
 from .workspace import WorkspaceRole
 from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
-from .models import Project, ProjectRole, ProjectMember
+from .models import FileDiff, Project, ProjectRole, ProjectMember
 from .permissions import ProjectPermissions, require_project_by_uuid
+from .utils import prepare_download_response
 
 
 @auth_required
@@ -128,3 +129,20 @@ def remove_project_collaborator(id, user_id):
     project.unset_role(user_id)
     db.session.commit()
     return NoContent, 204
+
+
+def download_diff_file(id: str, file: str):
+    """Download project geopackage diff file"""
+    project = require_project_by_uuid(id, ProjectPermissions.Read)
+    diff_file = FileDiff.query.filter_by(path=file).first_or_404()
+
+    # create merged diff if it does not exist
+    if not os.path.exists(diff_file.abs_path):
+        diff_file.construct_checkpoint()
+        if not os.path.exists(diff_file.abs_path):
+            abort(404)
+
+    response = prepare_download_response(
+        project.storage.project_dir, diff_file.location
+    )
+    return response
