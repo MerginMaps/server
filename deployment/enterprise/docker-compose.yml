@@ -5,7 +5,7 @@ networks:
 
 services:
   server:
-    image: 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-back:2025.5.1
+    image: 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-back:2025.7.2
     container_name: merginmaps-server
     restart: always
     user: 901:999
@@ -22,7 +22,7 @@ services:
     networks:
       - mergin
   web:
-    image: 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-front:2025.5.1
+    image: 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-front:2025.7.2
     container_name: merginmaps-web
     restart: always
     depends_on:
@@ -52,7 +52,7 @@ services:
       - server
 
   celery-beat:
-    image: 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-back:2025.5.1
+    image: 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-back:2025.7.2
     container_name: merginmaps-celery-beat
     restart: always
     user: 901:999
@@ -66,7 +66,7 @@ services:
       - mergin
 
   celery-worker:
-    image: 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-back:2025.5.1
+    image: 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-back:2025.7.2
     container_name: merginmaps-celery-worker
     restart: always
     user: 901:999
