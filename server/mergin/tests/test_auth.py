@@ -77,6 +77,15 @@ def test_login(client, data, headers, expected):
         )
         assert login_history
         assert login_history.device_id == str(headers.get("X-Device-Id"))
+        assert user.last_signed_in == login_history.timestamp
+        users_last_signed_in = LoginHistory.get_users_last_signed_in([user.id])
+        assert users_last_signed_in[user.id] == login_history.timestamp
+
+        # verify missing value is cached on first LoginHistory access
+        user.last_signed_in = None
+        db.session.commit()
+        users_last_signed_in = LoginHistory.get_users_last_signed_in([user.id])
+        assert user.last_signed_in == users_last_signed_in[user.id]
 
 
 def test_logout(client):
@@ -376,6 +385,7 @@ def test_api_login(client, data, headers, expected):
             .first()
         )
         assert login_history
+        assert user.last_signed_in == login_history.timestamp
 
 
 def test_api_login_from_urllib(client):
@@ -394,6 +404,8 @@ def test_api_login_from_urllib(client):
             .first()
         )
         assert not login_history
+        # we do not have recored last login yet
+        assert user.last_signed_in is None
 
 
 def test_api_user_profile(client):

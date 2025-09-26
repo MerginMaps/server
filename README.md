@@ -47,7 +47,7 @@ You are currently browsing repository for Mergin Maps web server and web client.
 - 🌱 **Sharing with collaborators** - Projects can be shared with other team members
 - 🏰 **Permission system** - Decide who can read, write or manage projects
 - 🌈 **Web interface** - Simple user interface to view and manage projects
-- ⚡️ **Fast** - Efficient sync protocol transfering data between clients and server
+- ⚡️ **Fast** - Efficient sync protocol transferring data between clients and server
 - 🧑‍💻 **Developer friendly** - Mergin Maps is open platform. CLI tools and client libraries are available for [Python](https://github.com/MerginMaps/python-api-client) and [C++](https://github.com/MerginMaps/cpp-api-client)
 - :camera: **Sync images** - Supporting sync of photos with common cloud storage using [mergin-media-sync](https://github.com/MerginMaps/media-sync) tool
 - 💽 **Sync with database** - Supporting two-way sync of data with PostGIS using [mergin-db-sync](https://github.com/MerginMaps/db-sync) tool
@@ -74,7 +74,7 @@ Admin users can enter the admin interface available at `/admin` URL which provid
 
 ### Contributing
 
-Contributions are welcomed! You can set up development environment by following a guide in [development.md](./deployment/community/development.md). Before you create your first pull request, we kindly ask you to sign the CLA with your GitHub user name and date [here](LICENSES/CLA-signed-list.md).
+Contributions are welcomed! You can set up development environment by following a guide in [development.md](./development.md). Before you create your first pull request, we kindly ask you to sign the CLA with your GitHub user name and date [here](LICENSES/CLA-signed-list.md).
 
 ## Documentation
 
@@ -93,7 +93,7 @@ If you need support, a custom deployment, extending the service capabilities and
 
 Contributions are welcome!
 
-More information for developers can be found in the dedicated [development](./deployment/community/development.md) page.
+More information for developers can be found in the dedicated [development](./development.md) page.
 
 Client side modules:
 - [Python](https://github.com/MerginMaps/python-api-client) client library + CLI
