@@ -44,6 +44,7 @@ from .utils import (
 Storages = {"local": DiskStorage}
 project_deleted = signal("project_deleted")
 project_access_granted = signal("project_access_granted")
+project_version_created = signal("project_version_created")
 
 
 class PushChangeType(Enum):
@@ -895,6 +896,30 @@ class FileDiff(db.Model):
         self.size = os.path.getsize(self.abs_path)
         self.checksum = generate_checksum(self.abs_path)
         db.session.commit()
+
+
+class ProjectVersionChanges(db.Model):
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    # exponential order of changes json
+    rank = db.Column(db.Integer, nullable=False, index=True)
+    # to which project version is this linked
+    version_id = db.Column(
+        db.Integer,
+        db.ForeignKey("project_version.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    # cached changes for versions from start to end (inclusive)
+    changes = db.Column(JSONB, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint("version_id", "rank", name="unique_changes"),
+        db.Index(
+            "ix_project_version_change_version_id_rank",
+            version_id,
+            rank,
+        ),
+    )
 
 
 class ProjectVersion(db.Model):
