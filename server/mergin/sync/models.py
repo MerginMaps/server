@@ -898,7 +898,7 @@ class FileDiff(db.Model):
         db.session.commit()
 
 
-class ProjectVersionChanges(db.Model):
+class ProjectVersionChange(db.Model):
     id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
     # exponential order of changes json
     rank = db.Column(db.Integer, nullable=False, index=True)
@@ -919,6 +919,10 @@ class ProjectVersionChanges(db.Model):
             version_id,
             rank,
         ),
+    )
+    project = db.relationship(
+        "ProjectVersion",
+        uselist=False,
     )
 
 
