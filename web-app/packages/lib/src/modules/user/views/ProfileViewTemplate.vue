@@ -61,13 +61,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <PAvatar
             :label="$filters.getAvatar(loggedUser.email, loggedUser.name)"
             shape="circle"
+            size="xlarge"
             :pt="{
               root: {
-                class: 'text-5xl font-semibold text-color-forest',
-                style: {
-                  width: '120px',
-                  height: '120px'
-                }
+                class: 'font-semibold text-color-forest'
               }
             }"
           />

@@ -3,16 +3,19 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import shutil
+import sys
 import click
 import os
 import secrets
 from datetime import datetime
 from flask import Flask, current_app
+from sqlalchemy import func
 
 from ..app import db
 from .models import Project, ProjectVersion
 from .utils import split_project_path
 from ..auth.models import User
+from ..commands import normalize_input
 
 
 def add_commands(app: Flask):
@@ -22,23 +25,23 @@ def add_commands(app: Flask):
         pass
 
     @project.command()
-    @click.argument("name")
-    @click.argument("namespace")
-    @click.argument("username")
+    @click.argument("name", callback=normalize_input(lowercase=False))
+    @click.argument("namespace", callback=normalize_input())
+    @click.argument("username", callback=normalize_input())
     def create(name, namespace, username):  # pylint: disable=W0612
         """Create blank project"""
         workspace = current_app.ws_handler.get_by_name(namespace)
         if not workspace:
-            print("ERROR: Workspace not found")
-            return
-        user = User.query.filter_by(username=username).first()
+            click.secho("ERROR: Workspace not found", fg="red", err=True)
+            sys.exit(1)
+        user = User.query.filter(func.lower(User.username) == username).first()
         if not user:
-            print("ERROR: User not found")
-            return
+            click.secho("ERROR: User not found", fg="red", err=True)
+            sys.exit(1)
         p = Project.query.filter_by(name=name, workspace_id=workspace.id).first()
         if p:
-            print("ERROR: Project name already exists")
-            return
+            click.secho("ERROR: Project name already exists", fg="red", err=True)
+            sys.exit(1)
         project_params = dict(
             creator=user,
             name=name,
@@ -53,14 +56,19 @@ def add_commands(app: Flask):
         db.session.add(p)
         pv = ProjectVersion(p, 0, user.id, [], "127.0.0.1")
         pv.project = p
+        db.session.add(pv)
         db.session.commit()
         os.makedirs(p.storage.project_dir, exist_ok=True)
-        print("Project created")
+        click.secho("Project created", fg="green")
 
     @project.command()
-    @click.argument("project-name")
+    @click.argument("project-name", callback=normalize_input(lowercase=False))
     @click.option("--version", type=int, required=True)
-    @click.option("--directory", type=click.Path(), required=True)
+    @click.option(
+        "--directory",
+        type=click.Path(),
+        required=True,
+    )
     def download(project_name, version, directory):  # pylint: disable=W0612
         """Download files for project at particular version"""
         ws, name = split_project_path(project_name)
@@ -71,15 +79,19 @@ def add_commands(app: Flask):
             .first()
         )
         if not project:
-            print("ERROR: Project does not exist")
-            return
+            click.secho("ERROR: Project does not exist", fg="red", err=True)
+            sys.exit(1)
         pv = ProjectVersion.query.filter_by(project_id=project.id, name=version).first()
         if not pv:
-            print("ERROR:Project version does not exist")
-            return
+            click.secho("ERROR: Project version does not exist", fg="red", err=True)
+            sys.exit(1)
         if os.path.exists(directory):
-            print(f"ERROR: Destination directory {directory} already exist")
-            return
+            click.secho(
+                f"ERROR: Destination directory '{directory}' already exists",
+                fg="red",
+                err=True,
+            )
+            sys.exit(1)
 
         os.mkdir(directory)
         files = pv.files
@@ -92,26 +104,26 @@ def add_commands(app: Flask):
                 os.path.join(project.storage.project_dir, f.location),
                 os.path.join(directory, f.path),
             )
-        print("Project downloaded successfully")
+        click.secho("Project downloaded", fg="green")
 
     @project.command()
-    @click.argument("project-name")
+    @click.argument("project-name", callback=normalize_input(lowercase=False))
     def remove(project_name):
         """Delete a project"""
         ws, name = split_project_path(project_name)
         workspace = current_app.ws_handler.get_by_name(ws)
         if not workspace:
-            print("ERROR: Workspace does not exist")
-            return
+            click.secho("ERROR: Workspace does not exist", fg="red", err=True)
+            sys.exit(1)
         project = (
             Project.query.filter_by(workspace_id=workspace.id, name=name)
             .filter(Project.storage_params.isnot(None))
             .first()
         )
         if not project:
-            print("ERROR: Project does not exist")
-            return
+            click.secho("ERROR: Project does not exist", fg="red", err=True)
+            sys.exit(1)
         project.removed_at = datetime.utcnow()
         project.removed_by = None
         db.session.commit()
-        print("Project removed successfully")
+        click.secho("Project removed", fg="green")

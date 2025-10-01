@@ -30,7 +30,6 @@ services:
     volumes:
       - ./projects:/data
       - ./diagnostic_logs:/diagnostic_logs
-      - ../common/entrypoint.sh:/app/entrypoint.sh
     env_file:
       - .prod.env
     depends_on:
@@ -48,8 +47,6 @@ services:
     environment:
       - GEVENT_WORKER=0
       - NO_MONKEY_PATCH=1
-    volumes:
-      - ../common/entrypoint.sh:/app/entrypoint.sh
     depends_on:
       - redis
       - server
@@ -68,7 +65,6 @@ services:
       - NO_MONKEY_PATCH=1
     volumes:
       - ./projects:/data
-      - ../common/entrypoint.sh:/app/entrypoint.sh
     depends_on:
       - redis
       - server

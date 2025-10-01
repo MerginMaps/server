@@ -6,6 +6,8 @@ import math
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
 from flask import current_app
 from flask_mail import Mail
 from unittest.mock import patch
@@ -161,18 +163,46 @@ def test_remove_deleted_project_backups(client):
 
 
 def test_create_project_version_zip(diff_project):
+    """Test celery tasks for creating project zip and cleaning them up"""
     latest_version = diff_project.get_latest_version()
-    assert not os.path.exists(latest_version.zip_path)
+    zip_path = Path(latest_version.zip_path)
+    partial_zip_path = Path(latest_version.zip_path + ".partial")
+    assert not zip_path.exists()
     create_project_version_zip(diff_project.latest_version)
-    assert os.path.exists(latest_version.zip_path)
-    assert not os.path.exists(latest_version.zip_path + ".partial")
-    remove_projects_archives()
-    assert os.path.exists(latest_version.zip_path)
+    assert zip_path.exists()
+    assert not partial_zip_path.exists()
+    before_mtime = zip_path.stat().st_mtime
+    # mock expired partial zip -> celery removes it and creates new zip
+    partial_zip_path.parent.mkdir(parents=True, exist_ok=True)
+    partial_zip_path.touch()
+    new_time = datetime.now() - timedelta(
+        seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"] + 1
+    )
+    modify_file_times(partial_zip_path, new_time)
+    create_project_version_zip(diff_project.latest_version)
+    assert (
+        not partial_zip_path.exists()
+    )  # after creating zip archive, celery remove partial zip
+    after_mtime = zip_path.stat().st_mtime
+    assert before_mtime < after_mtime
+    # mock valid partial zip -> celery skips creating new zip and returns
+    before_mtime = zip_path.stat().st_mtime
+    partial_zip_path.parent.mkdir(parents=True, exist_ok=True)
+    partial_zip_path.touch()
+    create_project_version_zip(diff_project.latest_version)
+    assert (
+        partial_zip_path.exists()
+    )  # celery does not create zip archive and does not clean partial zip
+    after_mtime = zip_path.stat().st_mtime
+    assert before_mtime == after_mtime
+    os.remove(partial_zip_path)
+    remove_projects_archives()  # zip is valid -> keep
+    assert zip_path.exists()
     new_time = datetime.now() - timedelta(
         days=current_app.config["PROJECTS_ARCHIVES_EXPIRATION"] + 1
     )
     modify_file_times(latest_version.zip_path, new_time)
-    remove_projects_archives()
+    remove_projects_archives()  # zip has expired -> remove
     assert not os.path.exists(latest_version.zip_path)
 
 
