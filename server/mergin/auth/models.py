@@ -36,6 +36,8 @@ class User(db.Model):
         default=datetime.datetime.utcnow,
     )
 
+    last_signed_in = db.Column(db.DateTime(), nullable=True)
+
     __table_args__ = (
         db.Index("ix_user_username", func.lower(username), unique=True),
         db.Index("ix_user_email", func.lower(email), unique=True),
@@ -289,6 +291,7 @@ class LoginHistory(db.Model):
         self.user_agent = ua
         self.ip_address = ip
         self.device_id = device_id
+        self.timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
 
     @staticmethod
     def add_record(user_id: int, req: request) -> None:
@@ -300,4 +303,37 @@ class LoginHistory(db.Model):
             return
         lh = LoginHistory(user_id, ua, ip, device_id)
         db.session.add(lh)
+
+        # cache user last login
+        User.query.filter_by(id=user_id).update({"last_signed_in": lh.timestamp})
         db.session.commit()
+
+    @staticmethod
+    def get_users_last_signed_in(user_ids: list) -> dict:
+        """Get users last signed in dates.
+        Result is also cached in User table for future use.
+        """
+        result = (
+            db.session.query(
+                LoginHistory.user_id,
+                func.max(LoginHistory.timestamp).label("last_signed_in"),
+            )
+            .filter(LoginHistory.user_id.in_(user_ids))
+            .group_by(LoginHistory.user_id)
+            .all()
+        )
+
+        user_mapping = [
+            {
+                "id": row.user_id,  # user_id as PK in User table
+                "last_signed_in": row.last_signed_in,
+            }
+            for row in result
+        ]
+        if not user_mapping:
+            return {}
+
+        # cache users last signed in
+        db.session.bulk_update_mappings(User, user_mapping)
+        db.session.commit()
+        return {item["id"]: item["last_signed_in"] for item in user_mapping}

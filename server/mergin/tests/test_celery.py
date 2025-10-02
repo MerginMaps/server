@@ -2,8 +2,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import math
 import os
-from datetime import datetime, timedelta
+import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from flask import current_app
@@ -14,17 +16,32 @@ from ..app import db
 from ..config import Configuration
 from ..sync.models import Project, AccessRequest, ProjectRole, ProjectVersion
 from ..celery import send_email_async
+from ..sync.config import Configuration as SyncConfiguration
 from ..sync.tasks import (
     remove_temp_files,
     remove_projects_backups,
     create_project_version_zip,
     remove_projects_archives,
+    remove_unused_chunks,
 )
 from ..sync.storages.disk import move_to_tmp
-from . import test_project, test_workspace_name, test_workspace_id
-from .utils import add_user, create_workspace, create_project, login, modify_file_times
+from ..sync.utils import get_chunk_location
+from . import (
+    test_project,
+    test_workspace_name,
+    test_workspace_id,
+    test_project_dir,
+    json_headers,
+)
+from .utils import (
+    CHUNK_SIZE,
+    add_user,
+    create_workspace,
+    create_project,
+    login,
+    modify_file_times,
+)
 from ..auth.models import User
-from . import json_headers
 
 
 def test_send_email(app):
@@ -158,7 +175,7 @@ def test_create_project_version_zip(diff_project):
     # mock expired partial zip -> celery removes it and creates new zip
     partial_zip_path.parent.mkdir(parents=True, exist_ok=True)
     partial_zip_path.touch()
-    new_time = datetime.now() - timedelta(
+    new_time = datetime.now(timezone.utc) - timedelta(
         seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"] + 1
     )
     modify_file_times(partial_zip_path, new_time)
@@ -181,9 +198,39 @@ def test_create_project_version_zip(diff_project):
     os.remove(partial_zip_path)
     remove_projects_archives()  # zip is valid -> keep
     assert zip_path.exists()
-    new_time = datetime.now() - timedelta(
+    new_time = datetime.now(timezone.utc) - timedelta(
         days=current_app.config["PROJECTS_ARCHIVES_EXPIRATION"] + 1
     )
     modify_file_times(latest_version.zip_path, new_time)
     remove_projects_archives()  # zip has expired -> remove
     assert not os.path.exists(latest_version.zip_path)
+
+
+def test_remove_chunks(app):
+    """Test cleanup of outdated chunks"""
+    # pretend chunks were uploaded
+    chunks = []
+    src_file = os.path.join(test_project_dir, "base.gpkg")
+    with open(src_file, "rb") as in_file:
+        f_size = os.path.getsize(src_file)
+        for i in range(math.ceil(f_size / CHUNK_SIZE)):
+            chunk_id = str(uuid.uuid4())
+            chunk_location = get_chunk_location(chunk_id)
+            os.makedirs(os.path.dirname(chunk_location), exist_ok=True)
+            with open(chunk_location, "wb") as out_file:
+                out_file.write(in_file.read(CHUNK_SIZE))
+            chunks.append(chunk_location)
+
+    remove_unused_chunks()
+    assert all(os.path.exists(chunk) for chunk in chunks)
+
+    def _atime_mock(path: str) -> float:
+        """Mock file stats to be already expired"""
+        return (
+            datetime.now(timezone.utc)
+            - timedelta(seconds=SyncConfiguration.UPLOAD_CHUNKS_EXPIRATION)
+        ).timestamp() - 1
+
+    with patch("os.path.getatime", _atime_mock):
+        remove_unused_chunks()
+        assert not any(os.path.exists(chunk) for chunk in chunks)

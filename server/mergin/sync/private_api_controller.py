@@ -322,7 +322,7 @@ def get_project_access(id: str):
 
 def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W0622
     """Download whole project folder as zip file in any version
-    Return zip file if it exists, otherwise trigger background job to create it"""
+    Return zip file if it exists, otherwise return 202"""
     project = require_project_by_uuid(id, ProjectPermissions.Read)
     lookup_version = (
         ProjectVersion.from_v_name(version) if version else project.latest_version
@@ -330,9 +330,6 @@ def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W06
     project_version = ProjectVersion.query.filter_by(
         project_id=project.id, name=lookup_version
     ).first_or_404("Project version does not exist")
-
-    if project_version.project_size > current_app.config["MAX_DOWNLOAD_ARCHIVE_SIZE"]:
-        abort(400)
 
     # check zip is already created
     if os.path.exists(project_version.zip_path):
@@ -352,17 +349,36 @@ def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W06
             f"attachment; filename*=UTF-8''{file_name}"
         )
         return resp
-    # GET request triggers background job if no partial zip or expired one
-    if request.method == "GET":
-        temp_zip_path = project_version.zip_path + ".partial"
-        # create zip if it does not exist yet or has expired
-        partial_exists = os.path.exists(temp_zip_path)
-        is_expired = partial_exists and datetime.fromtimestamp(
-            os.path.getmtime(temp_zip_path), tz=timezone.utc
-        ) < datetime.now(timezone.utc) - timedelta(
-            seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"]
-        )
-        if not partial_exists or is_expired:
-            create_project_version_zip.delay(project_version.id)
 
-    return "Project zip being prepared, please try again later", 202
+    return "Project zip being prepared", 202
+
+
+def prepare_archive(id: str, version=None):
+    """Triggers background job to create project archive"""
+    project = require_project_by_uuid(id, ProjectPermissions.Read)
+    lookup_version = (
+        ProjectVersion.from_v_name(version) if version else project.latest_version
+    )
+    pv = ProjectVersion.query.filter_by(
+        project_id=project.id, name=lookup_version
+    ).first_or_404()
+
+    if pv.project_size > current_app.config["MAX_DOWNLOAD_ARCHIVE_SIZE"]:
+        abort(400)
+
+    if os.path.exists(pv.zip_path):
+        return NoContent, 204
+
+    # trigger job if no recent partial
+    temp_zip_path = pv.zip_path + ".partial"
+    partial_exists = os.path.exists(temp_zip_path)
+    is_expired = partial_exists and datetime.fromtimestamp(
+        os.path.getmtime(temp_zip_path), tz=timezone.utc
+    ) < datetime.now(timezone.utc) - timedelta(
+        seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"]
+    )
+    if partial_exists and not is_expired:
+        return NoContent, 204
+
+    create_project_version_zip.delay(pv.id)
+    return "Project zip creation started", 201

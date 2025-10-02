@@ -11,10 +11,6 @@ class FileNotFound(Exception):
     pass
 
 
-class DataSyncError(Exception):
-    pass
-
-
 class InitializationError(Exception):
     pass
 

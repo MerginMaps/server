@@ -1,7 +1,7 @@
 """create file diff table
 
 Revision ID: bd1ec73db389
-Revises: 6cb54659c1de
+Revises: b9ec9ab6694f
 Create Date: 2025-07-17 14:17:02.373645
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "bd1ec73db389"
-down_revision = "6cb54659c1de"
+down_revision = "b9ec9ab6694f"
 branch_labels = None
 depends_on = None
 
