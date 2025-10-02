@@ -3,22 +3,16 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import logging
-import math
 import shutil
 import os
 import time
 from datetime import datetime, timedelta, timezone
-import uuid
 from zipfile import ZIP_DEFLATED, ZipFile
 from flask import current_app
-from pygeodiff import GeoDiffLibError
-from pygeodiff.geodifflib import GeoDiffLibConflictError
-from sqlalchemy import tuple_
 
-from .models import FileDiff, Project, ProjectVersion, FileHistory
+from .models import Project, ProjectVersion, FileHistory
 from .storages.disk import move_to_tmp
 from .config import Configuration
-from .utils import LOG_BASE, generate_checksum, get_merged_versions
 from ..celery import celery
 from ..app import db
 

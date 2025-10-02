@@ -27,6 +27,9 @@ from pathvalidate import (
 import magic
 from flask import current_app
 
+# log base for caching strategy, diff checkpoints, etc.
+LOG_BASE = 4
+
 
 def generate_checksum(file, chunk_size=4096):
     """
@@ -606,9 +609,6 @@ def prepare_download_response(project_dir: str, path: str) -> Response:
     return resp
 
 
-LOG_BASE = 4
-
-
 @dataclass
 class CachedLevel:
     """
@@ -649,7 +649,7 @@ def get_cached_levels(version: int) -> List[CachedLevel]:
     Version must divisible by BASE, and then we calculate all cached levels related to it.
     """
     levels = []
-    rank_max = math.floor((math.log(version) / math.log(LOG_BASE)))
+    rank_max = math.floor(math.log(version, LOG_BASE))
 
     for rank in range(1, rank_max + 1):
         if version % LOG_BASE**rank:
@@ -671,7 +671,7 @@ def get_merged_versions(start: int, end: int) -> List[CachedLevel]:
         if start == end:
             rank_max = 0
         else:
-            rank_max = math.floor((math.log(end - start + 1) / math.log(LOG_BASE)))
+            rank_max = math.floor(math.log(end - start + 1, LOG_BASE))
         for rank in reversed(range(0, rank_max + 1)):
             if (start - 1) % LOG_BASE**rank:
                 continue

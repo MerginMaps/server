@@ -735,6 +735,7 @@ class FileDiff(db.Model):
     version = db.Column(db.Integer, nullable=False, index=True)
     # path on FS relative to project directory
     location = db.Column(db.String)
+    # size and checksum are nullable as for merged diffs (higher orders) they might not exist on disk yet
     size = db.Column(db.BigInteger, nullable=True)
     checksum = db.Column(db.String, nullable=True)
 
@@ -774,26 +775,6 @@ class FileDiff(db.Model):
         """
         return os.path.join(self.file.project.storage.project_dir, self.location)
 
-    @property
-    def cache_level(self) -> Optional[CachedLevel]:
-        """
-        Return cache level representation for diff file
-        """
-        # individual diff for any version
-        if self.rank == 0:
-            return CachedLevel(rank=self.rank, index=self.version)
-
-        # merged diffs can only be created for certain versions
-        if self.version % LOG_BASE:
-            return
-
-        index = self.version // LOG_BASE**self.rank
-        # some invalid record
-        if index < 1 or self.rank < 0:
-            return
-
-        return CachedLevel(rank=self.rank, index=index)
-
     def construct_checkpoint(self) -> None:
         """Create a diff file checkpoint (aka. merged diff).
         Find all smaller diffs which are needed to create the final diff file and merge them.
@@ -802,22 +783,33 @@ class FileDiff(db.Model):
         if os.path.exists(self.abs_path):
             return
 
-        basefile = FileHistory.get_basefile(self.file_path_id, self.cache_level.end)
+        # merged diffs can only be created for certain versions
+        if self.version % LOG_BASE:
+            return
+
+        cache_level_index = self.version // LOG_BASE**self.rank
+        try:
+            cache_level = CachedLevel(rank=self.rank, index=cache_level_index)
+        except ValueError:
+            logging.error(
+                f"Invalid record for cached level of rank {self.rank} and index {cache_level_index} for file {self.file_path_id}"
+            )
+            return
+
+        basefile = FileHistory.get_basefile(self.file_path_id, cache_level.end)
         if not basefile:
             logging.error(f"Unable to find basefile for file {self.file_path_id}")
             return
 
-        if basefile.project_version_name > self.cache_level.start:
+        if basefile.project_version_name > cache_level.start:
             logging.error(
-                f"Basefile version {basefile.project_version_name} is higher than start version {self.cache_level.start} - broken history"
+                f"Basefile version {basefile.project_version_name} is higher than start version {cache_level.start} - broken history"
             )
             return
 
         diffs_paths = []
         # let's confirm we have all intermediate diffs needed, if not, we need to use individual diffs instead
-        cached_items = get_merged_versions(
-            self.cache_level.start, self.cache_level.end - 1
-        )
+        cached_items = get_merged_versions(cache_level.start, cache_level.end - 1)
         expected_diffs = (
             FileDiff.query.filter_by(
                 basefile_id=basefile.id,
@@ -870,7 +862,7 @@ class FileDiff(db.Model):
         end_diff = FileDiff.query.filter_by(
             basefile_id=basefile.id,
             rank=0,
-            version=self.cache_level.end,
+            version=cache_level.end,
         ).first()
 
         if end_diff:
