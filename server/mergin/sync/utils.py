@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import logging
 import math
 import os
 import hashlib
@@ -9,6 +10,7 @@ import re
 import secrets
 from binaryornot.check import is_binary
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from threading import Timer
 from urllib.parse import quote
 from uuid import UUID
@@ -17,6 +19,8 @@ from shapely.errors import ShapelyError
 from gevent import sleep
 from flask import Request, Response, make_response, send_from_directory
 from typing import List, Optional
+from flask import Request
+from typing import Optional, Tuple
 from sqlalchemy import text
 from pathvalidate import (
     validate_filename,
@@ -89,6 +93,8 @@ class Toucher:
         os.access(self.lockfile, os.W_OK)
         with open(self.lockfile, "a"):
             os.utime(self.lockfile, None)
+
+        sleep(0)  # to unblock greenlet
         if self.running:
             self.timer = Timer(self.interval, self.touch_lockfile)
             self.timer.start()
@@ -682,3 +688,33 @@ def get_merged_versions(start: int, end: int) -> List[CachedLevel]:
             break
 
     return levels
+
+
+def get_chunk_location(id: str):
+    """
+    Get file location for chunk on FS
+
+    Splits the given identifier into two parts where the first two characters of the identifier are the small hash,
+    and the remaining characters is a file identifier.
+    """
+    chunk_dir = current_app.config.get("UPLOAD_CHUNKS_DIR")
+    small_hash = id[:2]
+    file_name = id[2:]
+    return os.path.join(chunk_dir, small_hash, file_name)
+
+
+def remove_outdated_files(dir: str, time_delta: timedelta):
+    """Remove all files within directory where last access time passed expiration date"""
+    for file in os.listdir(dir):
+        path = os.path.join(dir, file)
+        if not os.path.isfile(path):
+            continue
+
+        if (
+            datetime.fromtimestamp(os.path.getatime(path), tz=timezone.utc)
+            < datetime.now(timezone.utc) - time_delta
+        ):
+            try:
+                os.remove(path)
+            except OSError as e:
+                logging.error(f"Unable to remove {path}: {str(e)}")

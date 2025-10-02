@@ -21,6 +21,7 @@ def test_config(client):
         "minor",
         "user_self_registration",
         "build_hash",
+        "v2_push_enabled",
     }
     resp = client.get("/config")
     assert resp.status_code == 200

@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, List, Dict, Set, Tuple
 from dataclasses import dataclass, asdict
+import logging
 
 from blinker import signal
 from flask_login import current_user
@@ -24,9 +25,13 @@ from flask import current_app
 
 from .files import (
     File,
-    UploadChanges,
+    ProjectDiffFile,
+    ProjectFileChange,
     ChangesSchema,
     ProjectFile,
+    files_changes_from_upload,
+    mergin_secure_filename,
+    PushChangeType,
 )
 from .interfaces import WorkspaceRole
 from .storages.disk import move_to_tmp
@@ -37,6 +42,10 @@ from .utils import (
     CachedLevel,
     generate_checksum,
     get_merged_versions,
+    Toucher,
+    get_chunk_location,
+    get_project_path,
+    is_supported_type,
     is_versioned_file,
     is_qgis,
 )
@@ -44,17 +53,14 @@ from .utils import (
 Storages = {"local": DiskStorage}
 project_deleted = signal("project_deleted")
 project_access_granted = signal("project_access_granted")
+push_finished = signal("push_finished")
+project_version_created = signal("project_version_created")
 
 
-class PushChangeType(Enum):
-    CREATE = "create"
-    UPDATE = "update"
-    DELETE = "delete"
-    UPDATE_DIFF = "update_diff"
-
-    @classmethod
-    def values(cls):
-        return [member.value for member in cls.__members__.values()]
+class FileSyncErrorType(Enum):
+    CORRUPTED = "corrupted"
+    UNSUPPORTED = "unsupported"
+    SYNC_ERROR = "sync error"
 
 
 class Project(db.Model):
@@ -194,7 +200,7 @@ class Project(db.Model):
                 location=row.location,
                 mtime=row.mtime,
                 diff=(
-                    File(
+                    ProjectDiffFile(
                         path=row.diff_path,
                         size=row.diff_size,
                         checksum=row.diff_checksum,
@@ -544,16 +550,14 @@ class FileHistory(db.Model):
         ).first()
 
     @property
-    def diff_file(self) -> Optional[File]:
-        if not self.diff:
-            return
-
-        return File(
-            path=self.diff.path,
-            size=self.diff.size,
-            checksum=self.diff.checksum,
-            location=self.diff.location,
-        )
+    def diff_file(self) -> Optional[ProjectDiffFile]:
+        if self.diff:
+            return ProjectDiffFile(
+                path=self.diff.path,
+                size=self.diff.size,
+                checksum=self.diff.checksum,
+                location=self.diff.location,
+            )
 
     @property
     def mtime(self) -> datetime:
@@ -928,7 +932,7 @@ class ProjectVersion(db.Model):
         project: Project,
         name: int,
         author_id: int,
-        changes: UploadChanges,
+        changes: List[ProjectFileChange],
         ip: str,
         user_agent: str = None,
         device_id: str = None,
@@ -948,9 +952,7 @@ class ProjectVersion(db.Model):
             ).all()
         }
 
-        changed_files_paths = [
-            f.path for f in changes.updated + changes.removed + changes.added
-        ]
+        changed_files_paths = set(change.path for change in changes)
         existing_files_map = {
             f.path: f
             for f in ProjectFilePath.query.filter_by(project_id=self.project_id)
@@ -958,47 +960,33 @@ class ProjectVersion(db.Model):
             .all()
         }
 
-        for key in (
-            ("added", PushChangeType.CREATE),
-            ("updated", PushChangeType.UPDATE),
-            ("removed", PushChangeType.DELETE),
-        ):
-            change_attr = key[0]
-            change_type = key[1]
+        for item in changes:
+            # get existing DB file reference or create a new one (for added files)
+            db_file = existing_files_map.get(
+                item.path, ProjectFilePath(self.project_id, item.path)
+            )
+            fh = FileHistory(
+                file=db_file,
+                size=item.size,
+                checksum=item.checksum,
+                location=item.location,
+                diff=(
+                    asdict(item.diff)
+                    if (item.change is PushChangeType.UPDATE_DIFF and item.diff)
+                    else None
+                ),
+                change=item.change,
+                version_name=self.name,
+            )
+            fh.version = self
+            fh.project_version_name = self.name
+            db.session.add(fh)
+            db.session.flush()
 
-            for upload_file in getattr(changes, change_attr):
-                is_diff_change = (
-                    change_type is PushChangeType.UPDATE
-                    and upload_file.diff is not None
-                )
-
-                file = existing_files_map.get(
-                    upload_file.path, ProjectFilePath(self.project_id, upload_file.path)
-                )
-                fh = FileHistory(
-                    file=file,
-                    size=upload_file.size,
-                    checksum=upload_file.checksum,
-                    location=upload_file.location,
-                    diff=(
-                        asdict(upload_file.diff)
-                        if (is_diff_change and upload_file.diff)
-                        else None
-                    ),
-                    change=(
-                        PushChangeType.UPDATE_DIFF if is_diff_change else change_type
-                    ),
-                    version_name=self.name,
-                )
-                fh.version = self
-                fh.project_version_name = self.name
-                db.session.add(fh)
-                db.session.flush()
-
-                if change_type is PushChangeType.DELETE:
-                    latest_files_map.pop(fh.path, None)
-                else:
-                    latest_files_map[fh.path] = fh.id
+            if item.change is PushChangeType.DELETE:
+                latest_files_map.pop(fh.path, None)
+            else:
+                latest_files_map[fh.path] = fh.id
 
         # update cached values in project and push to transaction buffer so that self.files is up-to-date
         self.project.latest_project_files.file_history_ids = latest_files_map.values()
@@ -1142,7 +1130,7 @@ class ProjectVersion(db.Model):
                 location=row.location,
                 mtime=row.mtime,
                 diff=(
-                    File(
+                    ProjectDiffFile(
                         path=row.diff_path,
                         checksum=row.diff_checksum,
                         size=row.diff_size,
@@ -1262,9 +1250,7 @@ class Upload(db.Model):
     )
     __table_args__ = (db.UniqueConstraint("project_id", "version"),)
 
-    def __init__(
-        self, project: Project, version: int, changes: UploadChanges, user_id: int
-    ):
+    def __init__(self, project: Project, version: int, changes: dict, user_id: int):
         self.id = str(uuid.uuid4())
         self.project_id = project.id
         self.version = version
@@ -1293,6 +1279,143 @@ class Upload(db.Model):
         move_to_tmp(self.upload_dir, self.id)
         db.session.delete(self)
         db.session.commit()
+
+    def process_chunks(
+        self, use_shared_chunk_dir: bool
+    ) -> Tuple[List[ProjectFileChange], Dict]:
+        """Concatenate chunks into single file and apply gpkg updates if needed"""
+        errors = {}
+        project_path = get_project_path(self.project)
+        v_next_version = ProjectVersion.to_v_name(self.project.next_version())
+        chunks_map = {
+            f["path"]: f["chunks"]
+            for f in self.changes["added"] + self.changes["updated"]
+        }
+        file_changes = files_changes_from_upload(self.changes, v_next_version)
+        to_remove = [i.path for i in file_changes if i.change == PushChangeType.DELETE]
+        current_files = [f for f in self.project.files if f.path not in to_remove]
+
+        with Toucher(self.lockfile, 5):
+            for f in file_changes:
+                if f.change == PushChangeType.DELETE:
+                    continue
+
+                f_location = (
+                    f.diff.location
+                    if f.change == PushChangeType.UPDATE_DIFF
+                    else f.location
+                )
+                temporary_location = os.path.join(self.upload_dir, "files", f_location)
+                os.makedirs(os.path.dirname(temporary_location), exist_ok=True)
+                with open(temporary_location, "wb") as dest:
+                    try:
+                        for chunk_id in chunks_map.get(f.path, []):
+                            # based on API version location for uploaded chunks differs
+                            if use_shared_chunk_dir:
+                                chunk_file = get_chunk_location(chunk_id)
+                            else:
+                                chunk_file = os.path.join(
+                                    self.upload_dir, "chunks", chunk_id
+                                )
+
+                            if not os.path.exists(chunk_file):
+                                errors[f.path] = FileSyncErrorType.CORRUPTED.value
+                                continue
+
+                            with open(chunk_file, "rb") as src:
+                                data = src.read(8192)
+                                while data:
+                                    dest.write(data)
+                                    data = src.read(8192)
+
+                    except IOError:
+                        logging.exception(
+                            f"Failed to process chunk: {chunk_id} in project {project_path}"
+                        )
+                        errors[f.path] = FileSyncErrorType.CORRUPTED.value
+                        continue
+
+                if (
+                    not f.change == PushChangeType.UPDATE_DIFF
+                    and not is_supported_type(temporary_location)
+                ):
+                    logging.info(f"Rejecting blacklisted file: {temporary_location}")
+                    errors[f.path] = FileSyncErrorType.UNSUPPORTED.value
+                    continue
+
+                # check if .gpkg file is valid
+                if is_versioned_file(temporary_location) and not f.is_valid_gpkg():
+                    errors[f.path] = FileSyncErrorType.CORRUPTED.value
+                    continue
+
+                expected_size = (
+                    f.diff.size if f.change == PushChangeType.UPDATE_DIFF else f.size
+                )
+                if expected_size != os.path.getsize(temporary_location):
+                    logging.error(
+                        f"Data integrity check has failed on file {f.path} in project {project_path}",
+                        exc_info=True,
+                    )
+                    errors[f.path] = FileSyncErrorType.CORRUPTED.value
+                    continue
+
+                # for updates try to apply diff to create a full updated gpkg file or from full .gpkg try to create corresponding diff
+                if f.change in (
+                    PushChangeType.UPDATE,
+                    PushChangeType.UPDATE_DIFF,
+                ) and is_versioned_file(f.path):
+                    current_file = next(
+                        (i for i in current_files if i.path == f.path), None
+                    )
+                    if not current_file:
+                        errors[f.path] = (
+                            f"{FileSyncErrorType.SYNC_ERROR.value}: file not found on server"
+                        )
+                        continue
+
+                    if f.diff:
+                        changeset = temporary_location
+                        patched_file = os.path.join(
+                            self.upload_dir, "files", f.location
+                        )
+
+                        result = self.project.storage.apply_diff(
+                            current_file, changeset, patched_file
+                        )
+                        if result.ok():
+                            checksum, size = result.value
+                            f.checksum = checksum
+                            f.size = size
+                        else:
+                            errors[f.path] = (
+                                f"{FileSyncErrorType.SYNC_ERROR.value}: project {self.project.workspace.name}/{self.project.name}, {result.value}"
+                            )
+                    else:
+                        diff_name = mergin_secure_filename(
+                            f.path + "-diff-" + str(uuid.uuid4())
+                        )
+                        changeset = os.path.join(
+                            self.upload_dir, "files", v_next_version, diff_name
+                        )
+                        patched_file = temporary_location
+                        result = self.project.storage.construct_diff(
+                            current_file, changeset, patched_file
+                        )
+                        if result.ok():
+                            checksum, size = result.value
+                            f.diff = ProjectDiffFile(
+                                checksum=checksum,
+                                size=size,
+                                path=diff_name,
+                                location=os.path.join(v_next_version, diff_name),
+                            )
+                            f.change = PushChangeType.UPDATE_DIFF
+                        else:
+                            # if diff cannot be constructed it would be a force update
+                            logging.warning(
+                                f"Geodiff: create changeset error {result.value}"
+                            )
+        return file_changes, errors
 
 
 class RequestStatus(Enum):

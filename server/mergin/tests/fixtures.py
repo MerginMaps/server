@@ -18,7 +18,7 @@ from ..stats.app import register
 from ..stats.models import MerginInfo
 from . import test_project, test_workspace_id, test_project_dir, TMP_DIR
 from .utils import login_as_admin, initialize, cleanup, file_info
-from ..sync.files import ChangesSchema
+from ..sync.files import files_changes_from_upload
 
 thisdir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(thisdir, os.pardir))
@@ -35,6 +35,7 @@ def flask_app(request):
             "DOCS_URL",
             "COLLECT_STATISTICS",
             "USER_SELF_REGISTRATION",
+            "V2_PUSH_ENABLED",
         ]
     )
     register(application)
@@ -212,12 +213,13 @@ def diff_project(app):
             else:
                 # no files uploaded, hence no action needed
                 pass
-            upload_changes = ChangesSchema(context={"version": i + 2}).load(change)
+
+            file_changes = files_changes_from_upload(change, location_dir=f"v{i + 2}")
             pv = ProjectVersion(
                 project,
                 i + 2,
                 project.creator.id,
-                upload_changes,
+                file_changes,
                 "127.0.0.1",
             )
             assert pv.project_size == sum(file.size for file in pv.files)

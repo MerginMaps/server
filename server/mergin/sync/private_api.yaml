@@ -384,20 +384,20 @@ paths:
           $ref: "#/components/responses/NotFoundResp"
       x-openapi-router-controller: mergin.sync.private_api_controller
   /projects/{id}/download:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - name: version
+        in: query
+        description: Particular version to download
+        required: false
+        schema:
+          $ref: "#/components/schemas/VersionName"
     get:
       tags:
         - project
       summary: Download full project
       description: Download whole project folder as zip file
       operationId: download_project
-      parameters:
-        - $ref: "#/components/parameters/ProjectId"
-        - name: version
-          in: query
-          description: Particular version to download
-          required: false
-          schema:
-            $ref: "#/components/schemas/VersionName"
       responses:
         "200":
           description: Zip file
@@ -408,6 +408,26 @@ paths:
                 format: binary
         "202":
           description: Accepted
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
+      x-openapi-router-controller: mergin.sync.private_api_controller
+    post:
+      tags:
+        - project
+      summary: Prepare project archive
+      description: Prepare project zip archive to download
+      operationId: prepare_archive
+      responses:
+        "201":
+          description: Project archive creation started
+        "204":
+          $ref: "#/components/responses/NoContent"
         "400":
           $ref: "#/components/responses/BadStatusResp"
         "422":
@@ -436,7 +456,9 @@ components:
     UnsupportedMediaType:
       description: Payload format is in an unsupported format.
     ConflictResp:
-      description: Request could not be processed becuase of conflict in resources
+      description: Request could not be processed because of conflict in resources
+    NoContent:
+      description: Success. No content returned.
   parameters:
     Page:
       name: page
