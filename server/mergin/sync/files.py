@@ -4,11 +4,18 @@
 import datetime
 from enum import Enum
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, List
 import uuid
 from flask import current_app
-from marshmallow import ValidationError, fields, EXCLUDE, post_dump, validates_schema
+from marshmallow import (
+    ValidationError,
+    fields,
+    EXCLUDE,
+    post_dump,
+    validates_schema,
+    post_load,
+)
 from pathvalidate import sanitize_filename
 
 from .utils import (
@@ -237,10 +244,7 @@ class ProjectFileSchema(FileSchema):
 
 
 @dataclass
-class ProjectVersionChangeData:
-    path: str
-    size: int
-    checksum: str
+class ProjectVersionChangeData(File):
     change: PushChangeType
     version: str
     diffs: Optional[List[str]] = None

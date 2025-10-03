@@ -24,7 +24,6 @@ from pygeodiff.geodifflib import GeoDiffLibError, GeoDiffLibConflictError
 from flask import current_app
 
 from .files import (
-    File,
     ProjectVersionChangeData,
     ProjectVersionChangeDataSchema,
     ProjectDiffFile,
@@ -988,8 +987,7 @@ class ProjectVersionChange(db.Model):
             )
             return
 
-        # TODO: rename get_merged_versions to get_merged_checkpoints and move it ProjectVersion class
-        expected_checkpoints = get_merged_versions(start_version, version_name)
+        expected_checkpoints = Checkpoint.get_checkpoints(start_version, version_name)
         expected_changes: List[ProjectVersionChange] = (
             ProjectVersionChange.query.join(
                 ProjectVersion, ProjectVersionChange.version_id == ProjectVersion.id
