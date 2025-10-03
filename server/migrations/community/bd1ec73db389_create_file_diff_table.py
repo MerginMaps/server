@@ -27,8 +27,8 @@ def upgrade():
         sa.Column("rank", sa.Integer(), nullable=False),
         sa.Column("version", sa.Integer(), nullable=False),
         sa.Column("location", sa.String(), nullable=True),
-        sa.Column("size", sa.BigInteger(), nullable=False),
-        sa.Column("checksum", sa.String(), nullable=False),
+        sa.Column("size", sa.BigInteger(), nullable=True),
+        sa.Column("checksum", sa.String(), nullable=True),
         sa.ForeignKeyConstraint(
             ["basefile_id"],
             ["file_history.id"],

@@ -134,6 +134,7 @@ class DiskStorage(ProjectStorage):
                 str(uuid.uuid4()),
             )
         )
+        self.diffs_dir = os.path.join(self.project_dir, "diffs")
 
         def _logger_callback(level, text_bytes):
             text = text_bytes.decode()
@@ -362,7 +363,12 @@ class DiskStorage(ProjectStorage):
         :param file: path of file in project to recover
         :param version: project version (e.g. 2)
         """
-        from ..models import GeodiffActionHistory, ProjectVersion, FileHistory
+        from ..models import (
+            GeodiffActionHistory,
+            ProjectVersion,
+            FileHistory,
+            ProjectFilePath,
+        )
 
         if not is_versioned_file(file):
             return
@@ -383,7 +389,13 @@ class DiskStorage(ProjectStorage):
         ):
             return
 
-        base_meta, diffs = FileHistory.diffs_chain(self.project, file, version)
+        file_id = (
+            ProjectFilePath.query.filter_by(path=file, project_id=self.project.id)
+            .first()
+            .id
+        )
+
+        base_meta, diffs = FileHistory.diffs_chain(file_id, version)
         if not (base_meta and diffs):
             return
 
@@ -402,31 +414,17 @@ class DiskStorage(ProjectStorage):
                 )
                 if len(diffs) > 1:
                     # concatenate multiple diffs into single one
-                    partials = [
-                        os.path.join(self.project_dir, d.location) for d in diffs
-                    ]
+                    partials = [d.abs_path for d in diffs]
                     self.geodiff.concat_changes(partials, changeset)
                 else:
-                    copy_file(
-                        os.path.join(self.project_dir, diffs[0].location), changeset
-                    )
+                    copy_file(diffs[0].abs_path, changeset)
 
                 logging.info(
                     f"Geodiff: apply changeset {changeset} of size {os.path.getsize(changeset)}"
                 )
-                # if we are going backwards we need to reverse changeset!
-                if base_meta.version.name > version:
-                    logging.info(f"Geodiff: inverting changeset")
-                    changes = os.path.join(
-                        self.geodiff_working_dir,
-                        os.path.basename(base_meta.abs_path) + "-diff-inv",
-                    )
-                    self.geodiff.invert_changeset(changeset, changes)
-                else:
-                    changes = changeset
 
                 start = time.time()
-                self.geodiff.apply_changeset(restored_file, changes)
+                self.geodiff.apply_changeset(restored_file, changeset)
                 # track geodiff event for performance analysis
                 gh = GeodiffActionHistory(
                     self.project.id,
@@ -435,7 +433,7 @@ class DiskStorage(ProjectStorage):
                     base_meta.size,
                     ProjectVersion.to_v_name(project_version.name),
                     "restore_file",
-                    changes,
+                    changeset,
                 )
                 apply_time = time.time() - start
                 gh.geodiff_time = apply_time
@@ -447,7 +445,6 @@ class DiskStorage(ProjectStorage):
                 )
                 return
             finally:
-                move_to_tmp(changes)
                 move_to_tmp(changeset)
             # move final restored file to place where it is expected (only after it is successfully created)
             logging.info(

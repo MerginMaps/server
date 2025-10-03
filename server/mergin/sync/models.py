@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 from __future__ import annotations
 import json
+import logging
 import os
 import time
 import uuid
@@ -15,11 +16,11 @@ import logging
 from blinker import signal
 from flask_login import current_user
 from pygeodiff import GeoDiff
-from sqlalchemy import text, null, desc, nullslast
+from sqlalchemy import text, null, desc, nullslast, tuple_
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM
 from sqlalchemy.types import String
 from sqlalchemy.ext.hybrid import hybrid_property
-from pygeodiff.geodifflib import GeoDiffLibError
+from pygeodiff.geodifflib import GeoDiffLibError, GeoDiffLibConflictError
 from flask import current_app
 
 from .files import (
@@ -37,6 +38,9 @@ from .storages.disk import move_to_tmp
 from ..app import db
 from .storages import DiskStorage
 from .utils import (
+    LOG_BASE,
+    Checkpoint,
+    generate_checksum,
     Toucher,
     get_chunk_location,
     get_project_path,
@@ -411,6 +415,11 @@ class ProjectFilePath(db.Model):
         ),
     )
 
+    project = db.relationship(
+        "Project",
+        uselist=False,
+    )
+
     def __init__(self, project_id, path):
         self.project_id = project_id
         self.path = path
@@ -513,12 +522,12 @@ class FileHistory(db.Model):
         if diff is not None:
             basefile = FileHistory.get_basefile(file.id, version_name)
             diff_file = FileDiff(
-                basefile,
-                diff.get("path"),
-                diff.get("size"),
-                diff.get("checksum"),
+                basefile=basefile,
+                path=diff.get("path"),
                 rank=0,
                 version=version_name,
+                size=diff.get("size"),
+                checksum=diff.get("checksum"),
             )
             db.session.add(diff_file)
 
@@ -612,93 +621,83 @@ class FileHistory(db.Model):
 
     @classmethod
     def diffs_chain(
-        cls, project: Project, file: str, version: int
-    ) -> Tuple[Optional[FileHistory], List[Optional[File]]]:
-        """Find chain of diffs from the closest basefile that leads to a given file at certain project version.
+        cls, file_id: int, version: int
+    ) -> Tuple[Optional[FileHistory], List[Optional[FileDiff]]]:
+        """Find chain of diffs from the basefile that leads to a given file at certain project version.
 
         Returns basefile and list of diffs for gpkg that needs to be applied to reconstruct file.
         List of diffs can be empty if basefile was eventually asked. Basefile can be empty if file cannot be
         reconstructed (removed/renamed).
         """
+        latest_change = (
+            cls.query.filter_by(file_path_id=file_id)
+            .filter(cls.project_version_name <= version)
+            .order_by(desc(cls.project_version_name))
+            .first()
+        )
+        # file never existed prior that version
+        if not latest_change:
+            return None, []
+
+        # the last update to file was a delete
+        if latest_change.change == PushChangeType.DELETE.value:
+            return None, []
+
+        # the last update to file was a create / force update
+        if latest_change.change in (
+            PushChangeType.CREATE.value,
+            PushChangeType.UPDATE.value,
+        ):
+            return latest_change, []
+
+        basefile = cls.get_basefile(file_id, version)
+        if not basefile:
+            return None, []
+
         diffs = []
-        basefile = None
-        v_x = version  # the version of interest
-        v_last = project.latest_version
-
-        # we ask for the latest version which is always a basefile if the file has not been removed
-        if v_x == v_last:
-            latest_change = (
-                FileHistory.query.join(ProjectFilePath)
-                .join(FileHistory.version)
-                .filter(
-                    ProjectFilePath.path == file,
-                    ProjectVersion.project_id == project.id,
-                )
-                .order_by(desc(ProjectVersion.created))
-                .first()
+        cached_items = Checkpoint.get_checkpoints(
+            basefile.project_version_name, version
+        )
+        expected_diffs = (
+            FileDiff.query.filter_by(
+                basefile_id=basefile.id,
             )
-            if latest_change.change != PushChangeType.DELETE.value:
-                return latest_change, []
+            .filter(
+                tuple_(FileDiff.rank, FileDiff.version).in_(
+                    [(item.rank, item.end) for item in cached_items]
+                )
+            )
+            .all()
+        )
+
+        for item in cached_items:
+            diff = next(
+                (
+                    d
+                    for d in expected_diffs
+                    if d.rank == item.rank and d.version == item.end
+                ),
+                None,
+            )
+            if diff:
+                diffs.append(diff)
+            elif item.rank > 0:
+                # fallback if checkpoint does not exist: replace merged diff with individual diffs
+                individual_diffs = (
+                    FileDiff.query.filter_by(
+                        basefile_id=basefile.id,
+                        rank=0,
+                    )
+                    .filter(
+                        FileDiff.version >= item.start, FileDiff.version <= item.end
+                    )
+                    .order_by(FileDiff.version)
+                    .all()
+                )
+                diffs.extend(individual_diffs)
             else:
-                # file is actually not in the latest project version
-                return None, []
-
-        # check if it would not be faster to look up from the latest version
-        backward = (v_last - v_x) < v_x
-
-        if backward:
-            # get list of file history changes starting with the latest version (v_last, ..., v_x+n, (..., v_x))
-            history = FileHistory.changes(project.id, file, v_x, v_last, diffable=True)
-            if history:
-                first_change = history[-1]
-                # we have either full history of changes or v_x = v_x+n => no basefile in way, it is 'diffable' from the end
-                if first_change.change == PushChangeType.UPDATE_DIFF.value:
-                    # omit diff for target version as it would lead to previous version if reconstructed backward
-                    diffs = [
-                        value.diff_file
-                        for value in reversed(history)
-                        if value.version.name != v_x
-                    ]
-                    basefile = history[0]
-                    return basefile, diffs
-                # there was either breaking change or v_x is a basefile itself
-                else:
-                    # we asked for basefile
-                    if v_x == first_change.version.name and first_change.change in [
-                        PushChangeType.CREATE.value,
-                        PushChangeType.UPDATE.value,
-                    ]:
-                        return first_change, []
-                    # file was removed (or renamed for backward compatibility)
-                    elif v_x == first_change.version.name:
-                        return basefile, diffs
-                    # there was a breaking change in v_x+n, and we need to search from start
-                    else:
-                        pass
-
-        # we haven't found anything so far, search from v1
-        if not (basefile and diffs):
-            # get ordered dict of file history starting with version of interest (v_x, ..., v_x-n, (..., v_1))
-            history = FileHistory.changes(project.id, file, 1, v_x, diffable=True)
-            if history:
-                first_change = history[-1]
-                # we found basefile
-                if first_change.change in [
-                    PushChangeType.CREATE.value,
-                    PushChangeType.UPDATE.value,
-                ]:
-                    basefile = first_change
-                    if v_x == first_change.version.name:
-                        # we asked for basefile
-                        diffs = []
-                    else:
-                        # basefile has no diff
-                        diffs = [
-                            value.diff_file for value in list(reversed(history))[1:]
-                        ]
-                # file was removed (or renamed for backward compatibility)
-                else:
-                    pass
+                # we asked for individual diff but there is no such diff as there was not change at that version
+                continue
 
         return basefile, diffs
 
@@ -706,14 +705,14 @@ class FileHistory(db.Model):
     def get_basefile(cls, file_path_id: int, version: int) -> Optional[FileHistory]:
         """Get basefile (start of file diffable history) for diff file change at some version"""
         return (
-            FileHistory.query.filter_by(file_path_id=file_path_id)
+            cls.query.filter_by(file_path_id=file_path_id)
             .filter(
-                FileHistory.project_version_name < version,
-                FileHistory.change.in_(
+                cls.project_version_name < version,
+                cls.change.in_(
                     [PushChangeType.CREATE.value, PushChangeType.UPDATE.value]
                 ),
             )
-            .order_by(desc(FileHistory.project_version_name))
+            .order_by(desc(cls.project_version_name))
             .first()
         )
 
@@ -741,22 +740,25 @@ class FileDiff(db.Model):
     version = db.Column(db.Integer, nullable=False, index=True)
     # path on FS relative to project directory
     location = db.Column(db.String)
-    size = db.Column(db.BigInteger, nullable=False)
-    checksum = db.Column(db.String, nullable=False)
+    # size and checksum are nullable as for merged diffs (higher orders) they might not exist on disk yet
+    size = db.Column(db.BigInteger, nullable=True)
+    checksum = db.Column(db.String, nullable=True)
 
     __table_args__ = (
         db.UniqueConstraint("file_path_id", "rank", "version", name="unique_diff"),
         db.Index("ix_file_diff_file_path_id_version_rank", file_path_id, version, rank),
     )
 
+    file = db.relationship("ProjectFilePath", uselist=False)
+
     def __init__(
         self,
         basefile: FileHistory,
         path: str,
-        size: int,
-        checksum: str,
         rank: int,
         version: int,
+        size: int = None,
+        checksum: str = None,
     ):
         self.basefile_id = basefile.id
         self.file_path_id = basefile.file_path_id
@@ -765,11 +767,139 @@ class FileDiff(db.Model):
         self.checksum = checksum
         self.rank = rank
         self.version = version
+        self.location = (
+            os.path.join("diffs", path)
+            if rank > 0
+            else os.path.join(f"v{version}", path)
+        )
 
-        if rank > 0:
-            self.location = f"diffs/{path}"
-        else:
-            self.location = f"v{version}/{path}"
+    @property
+    def abs_path(self) -> str:
+        """
+        Return absolute path of the diff file on the file system.
+        """
+        return os.path.join(self.file.project.storage.project_dir, self.location)
+
+    def construct_checkpoint(self) -> bool:
+        """Create a diff file checkpoint (aka. merged diff).
+        Find all smaller diffs which are needed to create the final diff file and merge them.
+        In case of missing some lower rank checkpoint, use individual diffs instead.
+
+        Once checkpoint is created, size and checksum are updated in the database.
+
+        Returns:
+            bool: True if checkpoint was successfully created or already present
+        """
+        if os.path.exists(self.abs_path):
+            return True
+
+        # merged diffs can only be created for certain versions
+        if self.version % LOG_BASE:
+            return False
+
+        cache_level_index = self.version // LOG_BASE**self.rank
+        try:
+            cache_level = Checkpoint(rank=self.rank, index=cache_level_index)
+        except ValueError:
+            logging.error(
+                f"Invalid record for cached level of rank {self.rank} and index {cache_level_index} for file {self.file_path_id}"
+            )
+            return False
+
+        basefile = FileHistory.get_basefile(self.file_path_id, cache_level.end)
+        if not basefile:
+            logging.error(f"Unable to find basefile for file {self.file_path_id}")
+            return False
+
+        if basefile.project_version_name > cache_level.start:
+            logging.error(
+                f"Basefile version {basefile.project_version_name} is higher than start version {cache_level.start} - broken history"
+            )
+            return False
+
+        diffs_paths = []
+        # let's confirm we have all intermediate diffs needed, if not, we need to use individual diffs instead
+        cached_items = Checkpoint.get_checkpoints(
+            cache_level.start, cache_level.end - 1
+        )
+        expected_diffs = (
+            FileDiff.query.filter_by(
+                basefile_id=basefile.id,
+            )
+            .filter(
+                tuple_(FileDiff.rank, FileDiff.version).in_(
+                    [(item.rank, item.end) for item in cached_items]
+                )
+            )
+            .all()
+        )
+
+        for item in cached_items:
+            # basefile is a start of the diff chain
+            if item.start <= basefile.project_version_name:
+                continue
+
+            # find diff in table and on disk
+            diff = next(
+                (
+                    d
+                    for d in expected_diffs
+                    if d.rank == item.rank and d.version == item.end
+                ),
+                None,
+            )
+            if diff and os.path.exists(diff.abs_path):
+                diffs_paths.append(diff.abs_path)
+            else:
+                individual_diffs = (
+                    FileDiff.query.filter_by(
+                        basefile_id=basefile.id,
+                        rank=0,
+                    )
+                    .filter(
+                        FileDiff.version >= item.start, FileDiff.version <= item.end
+                    )
+                    .order_by(FileDiff.version)
+                    .all()
+                )
+                if individual_diffs:
+                    diffs_paths.extend([i.abs_path for i in individual_diffs])
+                else:
+                    logging.error(
+                        f"Unable to find diffs for {item} for file {self.file_path_id}"
+                    )
+                    return False
+
+        # we apply latest change (if any) on previous version
+        end_diff = FileDiff.query.filter_by(
+            basefile_id=basefile.id,
+            rank=0,
+            version=cache_level.end,
+        ).first()
+
+        if end_diff:
+            diffs_paths.append(end_diff.abs_path)
+
+        if not diffs_paths:
+            logging.warning(
+                f"No diffs for next checkpoint for file {self.file_path_id}"
+            )
+            return False
+
+        project: Project = basefile.file.project
+        os.makedirs(project.storage.diffs_dir, exist_ok=True)
+        try:
+            project.storage.geodiff.concat_changes(diffs_paths, self.abs_path)
+        except (GeoDiffLibError, GeoDiffLibConflictError):
+            logging.error(
+                f"Geodiff: Failed to merge diffs for file {self.file_path_id}"
+            )
+            return False
+
+        self.size = os.path.getsize(self.abs_path)
+        self.checksum = generate_checksum(self.abs_path)
+        db.session.commit()
+        return True
 
 
 class ProjectVersion(db.Model):

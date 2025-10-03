@@ -95,3 +95,10 @@ class UploadError(ResponseError):
 class BigChunkError(ResponseError):
     code = "BigChunkError"
     detail = f"Chunk size exceeds maximum allowed size {MAX_CHUNK_SIZE} MB"
+
+
+class DiffDownloadError(ResponseError):
+    code = "DiffDownloadError"
+    detail = (
+        "Required diff file could not be downloaded as it could not be reconstructed"
+    )

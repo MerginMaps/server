@@ -18,7 +18,7 @@ from ..stats.app import register
 from ..stats.models import MerginInfo
 from . import test_project, test_workspace_id, test_project_dir, TMP_DIR
 from .utils import login_as_admin, initialize, cleanup, file_info
-from ..sync.files import ChangesSchema, files_changes_from_upload
+from ..sync.files import files_changes_from_upload
 
 thisdir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(thisdir, os.pardir))
@@ -105,9 +105,9 @@ def diff_project(app):
 
     Following changes are applied to base.gpkg in tests project (v1):
     v2: removed file -> previous version is lost (unless requested explicitly)
-    v3: uploaded again
+    v3: uploaded again -> new basefile
     v4: patched with changes from inserted_1_A.gpkg (1 inserted feature)
-    v5: replaced with original file base.gpkg (mimic of force update)
+    v5: replaced with original file base.gpkg (mimic of force update) -> new basefile again
     v6: patched with changes from modified_1_geom.gpkg (translated feature)
     v7: patched with changes from inserted_1_B.gpkg (1 inserted feature), final state is modified_1_geom.gpkg + inserted_1_B.gpkg
     v8: nothing happened, just to ensure last diff is not last version of project file

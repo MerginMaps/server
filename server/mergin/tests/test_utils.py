@@ -24,6 +24,7 @@ from ..sync.utils import (
     check_filename,
     is_valid_path,
     get_x_accel_uri,
+    Checkpoint,
 )
 from ..auth.models import LoginHistory, User
 from . import json_headers
@@ -280,3 +281,36 @@ def test_save_diagnostic_log_file(client, app):
         with open(saved_file_path, "r") as f:
             content = f.read()
             assert content == body.decode("utf-8")
+
+
+def test_checkpoint_utils():
+    """Test util functions to construct merged versions of higher ranks (checkpoints)"""
+    # exact match to single rank
+    versions = Checkpoint.get_checkpoints(1, 64)
+    assert len(versions) == 1
+    assert versions[0].rank == 3
+    assert versions[0].index == 1
+
+    # v21 would be created from v1-16, v17-20 and v21
+    versions = Checkpoint.get_checkpoints(1, 21)
+    assert len(versions) == 3
+    assert versions[0].rank == 2
+    assert versions[0].index == 1
+    assert versions[1].rank == 1
+    assert versions[1].index == 5
+    assert versions[2].rank == 0
+    assert versions[2].index == 21
+
+    # no cached versions at all, only basic levels v1-v3
+    versions = Checkpoint.get_checkpoints(1, 3)
+    assert len(versions) == 3
+    assert versions[0].rank == 0
+    assert versions[0].index == 1
+    assert versions[1].rank == 0
+    assert versions[1].index == 2
+    assert versions[2].rank == 0
+    assert versions[2].index == 3
+
+    # dummy request
+    versions = Checkpoint.get_checkpoints(2, 1)
+    assert len(versions) == 0

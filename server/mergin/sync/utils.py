@@ -2,20 +2,26 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+from __future__ import annotations
 import logging
 import math
 import os
 import hashlib
 import re
 import secrets
+from binaryornot.check import is_binary
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from threading import Timer
+from urllib.parse import quote
 from uuid import UUID
 from shapely import wkb
 from shapely.errors import ShapelyError
 from gevent import sleep
+from flask import Request, Response, make_response, send_from_directory
+from typing import List, Optional
 from flask import Request
-from typing import Optional, Tuple
+from typing import Optional
 from sqlalchemy import text
 from pathvalidate import (
     validate_filename,
@@ -25,6 +31,9 @@ from pathvalidate import (
 )
 import magic
 from flask import current_app
+
+# log base for caching strategy, diff checkpoints, etc.
+LOG_BASE = 4
 
 
 def generate_checksum(file, chunk_size=4096):
@@ -581,6 +590,87 @@ def get_x_accel_uri(*url_parts):
     url = url.lstrip(os.path.sep)
     result = os.path.join(download_accell_uri, url)
     return result
+
+
+def prepare_download_response(project_dir: str, path: str) -> Response:
+    """Prepare flask response for file download with custom headers"""
+    abs_path = os.path.join(project_dir, path)
+    if current_app.config["USE_X_ACCEL"]:
+        # encoding for nginx to be able to download file with non-ascii chars
+        resp = make_response()
+        resp.headers["X-Accel-Redirect"] = get_x_accel_uri(
+            project_dir, quote(path.encode("utf-8"))
+        )
+        resp.headers["X-Accel-Buffering"] = True
+        resp.headers["X-Accel-Expires"] = "off"
+    else:
+        resp = send_from_directory(
+            os.path.dirname(abs_path), os.path.basename(abs_path)
+        )
+
+    mime_type = "text/plain" if not is_binary(abs_path) else get_mimetype(abs_path)
+    resp.headers["Content-Type"] = mime_type
+    file_name = quote(os.path.basename(path).encode("utf-8"))
+    resp.headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{file_name}"
+    resp.direct_passthrough = False
+    return resp
+
+
+@dataclass
+class Checkpoint:
+    """
+    Cached level of version tree.
+    Used as a checkpoint to merge individual versions / diff files into bigger chunks.
+    """
+
+    rank: int  # power of base
+    index: int  # index of level - multiplyer of rank
+
+    def __post_init__(self):
+        if type(self.rank) is not int or type(self.index) is not int:
+            raise ValueError("rank and index must be integers")
+
+        if self.rank < 0 or self.index < 1:
+            raise ValueError("rank must be positive and index starts from 1")
+
+    @property
+    def start(self) -> int:
+        """Start of the range covered by this level"""
+        return 1 + (LOG_BASE**self.rank * (self.index - 1))
+
+    @property
+    def end(self) -> int:
+        """End of the range covered by this level"""
+        return LOG_BASE**self.rank * self.index
+
+    def __str__(self) -> str:
+        return f"Checkpoint(rank={self.rank}, index={self.index}, versions=v{self.start}-v{self.end})"
+
+    def __repr__(self) -> str:
+        return str(self)
+
+    @classmethod
+    def get_checkpoints(cls, start: int, end: int) -> List[Checkpoint]:
+        """
+        Get all checkpoints in a range.
+        This basically provide a list of smaller versions (checkpoints) to be merged in order to get the final version.
+        """
+        levels = []
+        while start <= end:
+            if start == end:
+                rank_max = 0
+            else:
+                rank_max = math.floor(math.log(end - start + 1, LOG_BASE))
+            for rank in reversed(range(0, rank_max + 1)):
+                if (start - 1) % LOG_BASE**rank:
+                    continue
+
+                index = (start - 1) // LOG_BASE**rank + 1
+                levels.append(cls(rank=rank, index=index))
+                start = start + LOG_BASE**rank
+                break
+
+        return levels
 
 
 def get_chunk_location(id: str):

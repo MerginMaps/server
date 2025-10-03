@@ -7,14 +7,18 @@ import os
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-
 from flask import current_app
 from flask_mail import Mail
 from unittest.mock import patch
 
 from ..app import db
 from ..config import Configuration
-from ..sync.models import Project, AccessRequest, ProjectRole, ProjectVersion
+from ..sync.models import (
+    Project,
+    AccessRequest,
+    ProjectRole,
+    ProjectVersion,
+)
 from ..celery import send_email_async
 from ..sync.config import Configuration as SyncConfiguration
 from ..sync.tasks import (
@@ -25,6 +29,7 @@ from ..sync.tasks import (
     remove_unused_chunks,
 )
 from ..sync.storages.disk import move_to_tmp
+from . import test_project, test_workspace_name, test_workspace_id
 from ..sync.utils import get_chunk_location
 from . import (
     test_project,

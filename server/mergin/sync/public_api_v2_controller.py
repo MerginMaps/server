@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import os
+from datetime import datetime
 import uuid
 import gevent
 import logging
@@ -14,6 +16,15 @@ from flask_login import current_user
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
 
+from .forms import project_name_validation
+from .schemas import ProjectMemberSchema
+from .workspace import WorkspaceRole
+from ..app import db
+from ..auth import auth_required
+from ..auth.models import User
+from .models import FileDiff, Project, ProjectRole, ProjectMember
+from .permissions import ProjectPermissions, require_project_by_uuid
+from .utils import prepare_download_response
 from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
@@ -21,6 +32,7 @@ from .errors import (
     AnotherUploadRunning,
     BigChunkError,
     DataSyncError,
+    DiffDownloadError,
     ProjectLocked,
     ProjectVersionExists,
     StorageLimitHit,
@@ -41,7 +53,6 @@ from .permissions import ProjectPermissions, require_project_by_uuid
 from .public_api_controller import catch_sync_failure
 from .schemas import (
     ProjectMemberSchema,
-    ProjectVersionSchema,
     UploadChunkSchema,
     ProjectSchema,
 )
@@ -160,6 +171,23 @@ def remove_project_collaborator(id, user_id):
     project.unset_role(user_id)
     db.session.commit()
     return NoContent, 204
+
+
+def download_diff_file(id: str, file: str):
+    """Download project geopackage diff file"""
+    project = require_project_by_uuid(id, ProjectPermissions.Read)
+    diff_file = FileDiff.query.filter_by(path=file).first_or_404()
+
+    # create merged diff if it does not exist
+    if not os.path.exists(diff_file.abs_path):
+        diff_created = diff_file.construct_checkpoint()
+        if not diff_created:
+            return DiffDownloadError().response(422)
+
+    response = prepare_download_response(
+        project.storage.project_dir, diff_file.location
+    )
+    return response
 
 
 @auth_required
