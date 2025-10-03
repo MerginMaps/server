@@ -283,6 +283,14 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "422":
+          description: Requested diff file could not be downloaded as it was not created
+          # mixing content types would trigger 500 on response validation
+          # might be related to issue https://github.com/spec-first/connexion/issues/2054
+          # content:
+          #   application/json+problem:
+          #     schema:
+          #       $ref: "#/components/schemas/DiffDownloadError"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
   /projects/{id}/versions:
     post:
@@ -479,6 +487,12 @@ components:
       example:
         code: UploadError
         detail: "Project version could not be created (UploadError)"
+    DiffDownloadError:
+      allOf:
+        - $ref: "#/components/schemas/CustomError"
+      example:
+        code: DiffDownloadError
+        detail: Required diff file could not be created (DiffDownloadError)
     # Data
     ProjectRole:
       type: string

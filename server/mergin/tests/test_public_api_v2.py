@@ -20,6 +20,7 @@ from mergin.app import db
 from mergin.config import Configuration
 from mergin.sync.errors import (
     BigChunkError,
+    DiffDownloadError,
     ProjectLocked,
     ProjectVersionExists,
     AnotherUploadRunning,
@@ -197,6 +198,14 @@ def test_file_diff_download(client, diff_project):
     assert response.status_code == 200
     assert response.content_type == "application/octet-stream"
     assert os.path.exists(diff.abs_path)
+
+    # try with reconstruction failure
+    with patch.object(FileDiff, "construct_checkpoint") as construct_checkpoint_mock:
+        os.remove(diff.abs_path)
+        construct_checkpoint_mock.return_value = False
+        response = client.get(f"v2/projects/{diff_project.id}/raw/diff/{diff.path}")
+        assert response.status_code == 422
+        assert response.json["code"] == DiffDownloadError.code
 
     response = client.get(f"v2/projects/{diff_project.id}/raw/diff/{diff.path}+1")
     assert response.status_code == 404

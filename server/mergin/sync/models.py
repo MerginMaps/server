@@ -39,9 +39,8 @@ from ..app import db
 from .storages import DiskStorage
 from .utils import (
     LOG_BASE,
-    CachedLevel,
+    Checkpoint,
     generate_checksum,
-    get_merged_versions,
     Toucher,
     get_chunk_location,
     get_project_path,
@@ -656,7 +655,9 @@ class FileHistory(db.Model):
             return None, []
 
         diffs = []
-        cached_items = get_merged_versions(basefile.project_version_name, version)
+        cached_items = Checkpoint.get_checkpoints(
+            basefile.project_version_name, version
+        )
         expected_diffs = (
             FileDiff.query.filter_by(
                 basefile_id=basefile.id,
@@ -779,41 +780,48 @@ class FileDiff(db.Model):
         """
         return os.path.join(self.file.project.storage.project_dir, self.location)
 
-    def construct_checkpoint(self) -> None:
+    def construct_checkpoint(self) -> bool:
         """Create a diff file checkpoint (aka. merged diff).
         Find all smaller diffs which are needed to create the final diff file and merge them.
         In case of missing some lower rank checkpoint, use individual diffs instead.
+
+        Once checkpoint is created, size and checksum are updated in the database.
+
+        Returns:
+            bool: True if checkpoint was successfully created or already present
         """
         if os.path.exists(self.abs_path):
-            return
+            return True
 
         # merged diffs can only be created for certain versions
         if self.version % LOG_BASE:
-            return
+            return False
 
         cache_level_index = self.version // LOG_BASE**self.rank
         try:
-            cache_level = CachedLevel(rank=self.rank, index=cache_level_index)
+            cache_level = Checkpoint(rank=self.rank, index=cache_level_index)
         except ValueError:
             logging.error(
                 f"Invalid record for cached level of rank {self.rank} and index {cache_level_index} for file {self.file_path_id}"
             )
-            return
+            return False
 
         basefile = FileHistory.get_basefile(self.file_path_id, cache_level.end)
         if not basefile:
             logging.error(f"Unable to find basefile for file {self.file_path_id}")
-            return
+            return False
 
         if basefile.project_version_name > cache_level.start:
             logging.error(
                 f"Basefile version {basefile.project_version_name} is higher than start version {cache_level.start} - broken history"
             )
-            return
+            return False
 
         diffs_paths = []
         # let's confirm we have all intermediate diffs needed, if not, we need to use individual diffs instead
-        cached_items = get_merged_versions(cache_level.start, cache_level.end - 1)
+        cached_items = Checkpoint.get_checkpoints(
+            cache_level.start, cache_level.end - 1
+        )
         expected_diffs = (
             FileDiff.query.filter_by(
                 basefile_id=basefile.id,
@@ -860,7 +868,7 @@ class FileDiff(db.Model):
                     logging.error(
                         f"Unable to find diffs for {item} for file {self.file_path_id}"
                     )
-                    return
+                    return False
 
         # we apply latest change (if any) on previous version
         end_diff = FileDiff.query.filter_by(
@@ -876,7 +884,7 @@ class FileDiff(db.Model):
             logging.warning(
                 f"No diffs for next checkpoint for file {self.file_path_id}"
             )
-            return
+            return False
 
         project: Project = basefile.file.project
         os.makedirs(project.storage.diffs_dir, exist_ok=True)
@@ -886,11 +894,12 @@ class FileDiff(db.Model):
             logging.error(
                 f"Geodiff: Failed to merge diffs for file {self.file_path_id}"
             )
-            return
+            return False
 
         self.size = os.path.getsize(self.abs_path)
         self.checksum = generate_checksum(self.abs_path)
         db.session.commit()
+        return True
 
 
 class ProjectVersion(db.Model):

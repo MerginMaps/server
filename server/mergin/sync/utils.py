@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+from __future__ import annotations
 import logging
 import math
 import os
@@ -20,7 +21,7 @@ from gevent import sleep
 from flask import Request, Response, make_response, send_from_directory
 from typing import List, Optional
 from flask import Request
-from typing import Optional, Tuple
+from typing import Optional
 from sqlalchemy import text
 from pathvalidate import (
     validate_filename,
@@ -616,10 +617,10 @@ def prepare_download_response(project_dir: str, path: str) -> Response:
 
 
 @dataclass
-class CachedLevel:
+class Checkpoint:
     """
     Cached level of version tree.
-    Used as a checkpoint to merge individual versions / diff files into bigger chunks
+    Used as a checkpoint to merge individual versions / diff files into bigger chunks.
     """
 
     rank: int  # power of base
@@ -643,51 +644,33 @@ class CachedLevel:
         return LOG_BASE**self.rank * self.index
 
     def __str__(self) -> str:
-        return f"CachedLevel(rank={self.rank}, index={self.index}, versions=v{self.start}-v{self.end})"
+        return f"Checkpoint(rank={self.rank}, index={self.index}, versions=v{self.start}-v{self.end})"
 
     def __repr__(self) -> str:
         return str(self)
 
+    @classmethod
+    def get_checkpoints(cls, start: int, end: int) -> List[Checkpoint]:
+        """
+        Get all checkpoints in a range.
+        This basically provide a list of smaller versions (checkpoints) to be merged in order to get the final version.
+        """
+        levels = []
+        while start <= end:
+            if start == end:
+                rank_max = 0
+            else:
+                rank_max = math.floor(math.log(end - start + 1, LOG_BASE))
+            for rank in reversed(range(0, rank_max + 1)):
+                if (start - 1) % LOG_BASE**rank:
+                    continue
 
-def get_cached_levels(version: int) -> List[CachedLevel]:
-    """
-    Return the most right part of version tree as other nodes are already cached.
-    Version must divisible by BASE, and then we calculate all cached levels related to it.
-    """
-    levels = []
-    rank_max = math.floor(math.log(version, LOG_BASE))
+                index = (start - 1) // LOG_BASE**rank + 1
+                levels.append(cls(rank=rank, index=index))
+                start = start + LOG_BASE**rank
+                break
 
-    for rank in range(1, rank_max + 1):
-        if version % LOG_BASE**rank:
-            continue
-
-        index = version // LOG_BASE**rank
-        levels.append(CachedLevel(rank=rank, index=index))
-
-    return levels
-
-
-def get_merged_versions(start: int, end: int) -> List[CachedLevel]:
-    """
-    Get all (merged) versions between start version and end version while respecting cached levels.
-    This basically provide the list of smaller versions (checkpoints) to be merged in order to get the final version.
-    """
-    levels = []
-    while start <= end:
-        if start == end:
-            rank_max = 0
-        else:
-            rank_max = math.floor(math.log(end - start + 1, LOG_BASE))
-        for rank in reversed(range(0, rank_max + 1)):
-            if (start - 1) % LOG_BASE**rank:
-                continue
-
-            index = (start - 1) // LOG_BASE**rank + 1
-            levels.append(CachedLevel(rank=rank, index=index))
-            start = start + LOG_BASE**rank
-            break
-
-    return levels
+        return levels
 
 
 def get_chunk_location(id: str):

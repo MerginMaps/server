@@ -32,6 +32,7 @@ from .errors import (
     AnotherUploadRunning,
     BigChunkError,
     DataSyncError,
+    DiffDownloadError,
     ProjectLocked,
     ProjectVersionExists,
     StorageLimitHit,
@@ -179,9 +180,9 @@ def download_diff_file(id: str, file: str):
 
     # create merged diff if it does not exist
     if not os.path.exists(diff_file.abs_path):
-        diff_file.construct_checkpoint()
-        if not os.path.exists(diff_file.abs_path):
-            abort(404)
+        diff_created = diff_file.construct_checkpoint()
+        if not diff_created:
+            return DiffDownloadError().response(422)
 
     response = prepare_download_response(
         project.storage.project_dir, diff_file.location
