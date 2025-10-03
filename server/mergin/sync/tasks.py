@@ -3,22 +3,17 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import logging
-import math
 import shutil
 import os
 import time
 from datetime import datetime, timedelta, timezone
-import uuid
 from zipfile import ZIP_DEFLATED, ZipFile
 from flask import current_app
-from pygeodiff import GeoDiffLibError
-from pygeodiff.geodifflib import GeoDiffLibConflictError
-from sqlalchemy import tuple_
 
-from .models import FileDiff, Project, ProjectVersion, FileHistory
+from .models import Project, ProjectVersion, FileHistory
 from .storages.disk import move_to_tmp
 from .config import Configuration
-from .utils import LOG_BASE, generate_checksum, get_merged_versions
+from .utils import remove_outdated_files
 from ..celery import celery
 from ..app import db
 
@@ -129,7 +124,7 @@ def create_project_version_zip(version_id: int):
             # partial zip is recent -> another job is likely running
             return
         else:
-            # partial zip is too old -> remove and creating new one
+            # partial zip is too old -> remove and create new one
             os.remove(zip_path)
 
     os.makedirs(os.path.dirname(zip_path), exist_ok=True)
@@ -158,14 +153,19 @@ def create_project_version_zip(version_id: int):
 @celery.task
 def remove_projects_archives():
     """Remove created zip files for project versions if they were not accessed for certain time"""
-    for file in os.listdir(current_app.config["PROJECTS_ARCHIVES_DIR"]):
-        path = os.path.join(current_app.config["PROJECTS_ARCHIVES_DIR"], file)
-        if datetime.fromtimestamp(
-            os.path.getatime(path), tz=timezone.utc
-        ) < datetime.now(timezone.utc) - timedelta(
-            days=current_app.config["PROJECTS_ARCHIVES_EXPIRATION"]
-        ):
-            try:
-                os.remove(path)
-            except OSError as e:
-                logging.error(f"Unable to remove {path}: {str(e)}")
+    remove_outdated_files(
+        Configuration.PROJECTS_ARCHIVES_DIR,
+        timedelta(days=Configuration.PROJECTS_ARCHIVES_EXPIRATION),
+    )
+
+
+@celery.task
+def remove_unused_chunks():
+    """Remove old chunks in shared directory. These are basically just residual from failed uploads."""
+    small_hash_dirs = os.listdir(Configuration.UPLOAD_CHUNKS_DIR)
+    time_delta = timedelta(seconds=Configuration.UPLOAD_CHUNKS_EXPIRATION)
+    for _dir in small_hash_dirs:
+        dir = os.path.join(Configuration.UPLOAD_CHUNKS_DIR, _dir)
+        if not os.path.isdir(dir):
+            continue
+        remove_outdated_files(dir, time_delta)

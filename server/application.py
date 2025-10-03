@@ -27,6 +27,7 @@ from mergin.sync.tasks import (
     remove_projects_archives,
     remove_temp_files,
     remove_projects_backups,
+    remove_unused_chunks,
 )
 from mergin.celery import celery, configure_celery
 from mergin.stats.config import Configuration
@@ -47,6 +48,7 @@ application = create_app(
         "GLOBAL_WRITE",
         "ENABLE_SUPERADMIN_ASSIGNMENT",
         "DIAGNOSTIC_LOGS_URL",
+        "V2_PUSH_ENABLED",
     ]
 )
 register_stats(application)
@@ -85,4 +87,9 @@ def setup_periodic_tasks(sender, **kwargs):
         crontab(hour=3, minute=0),
         remove_projects_archives,
         name="remove old project archives",
+    ),
+    sender.add_periodic_task(
+        crontab(hour="*/4", minute=0),
+        remove_unused_chunks,
+        name="clean up of outdated chunks",
     )

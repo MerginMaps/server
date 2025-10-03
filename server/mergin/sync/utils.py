@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+from __future__ import annotations
+import logging
 import math
 import os
 import hashlib
@@ -9,6 +11,7 @@ import re
 import secrets
 from binaryornot.check import is_binary
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from threading import Timer
 from urllib.parse import quote
 from uuid import UUID
@@ -17,6 +20,8 @@ from shapely.errors import ShapelyError
 from gevent import sleep
 from flask import Request, Response, make_response, send_from_directory
 from typing import List, Optional
+from flask import Request
+from typing import Optional
 from sqlalchemy import text
 from pathvalidate import (
     validate_filename,
@@ -26,6 +31,9 @@ from pathvalidate import (
 )
 import magic
 from flask import current_app
+
+# log base for caching strategy, diff checkpoints, etc.
+LOG_BASE = 4
 
 
 def generate_checksum(file, chunk_size=4096):
@@ -86,6 +94,8 @@ class Toucher:
         os.access(self.lockfile, os.W_OK)
         with open(self.lockfile, "a"):
             os.utime(self.lockfile, None)
+
+        sleep(0)  # to unblock greenlet
         if self.running:
             self.timer = Timer(self.interval, self.touch_lockfile)
             self.timer.start()
@@ -606,14 +616,11 @@ def prepare_download_response(project_dir: str, path: str) -> Response:
     return resp
 
 
-LOG_BASE = 4
-
-
 @dataclass
-class CachedLevel:
+class Checkpoint:
     """
     Cached level of version tree.
-    Used as a checkpoint to merge individual versions / diff files into bigger chunks
+    Used as a checkpoint to merge individual versions / diff files into bigger chunks.
     """
 
     rank: int  # power of base
@@ -637,75 +644,60 @@ class CachedLevel:
         return LOG_BASE**self.rank * self.index
 
     def __str__(self) -> str:
-        return f"CachedLevel(rank={self.rank}, index={self.index}, versions=v{self.start}-v{self.end})"
+        return f"Checkpoint(rank={self.rank}, index={self.index}, versions=v{self.start}-v{self.end})"
 
     def __repr__(self) -> str:
         return str(self)
 
+    @classmethod
+    def get_checkpoints(cls, start: int, end: int) -> List[Checkpoint]:
+        """
+        Get all checkpoints in a range.
+        This basically provide a list of smaller versions (checkpoints) to be merged in order to get the final version.
+        """
+        levels = []
+        while start <= end:
+            if start == end:
+                rank_max = 0
+            else:
+                rank_max = math.floor(math.log(end - start + 1, LOG_BASE))
+            for rank in reversed(range(0, rank_max + 1)):
+                if (start - 1) % LOG_BASE**rank:
+                    continue
 
-def get_cached_levels(version: int) -> List[CachedLevel]:
-    """
-    Return the most right part of version tree as other nodes are already cached.
-    Version must divisible by BASE, and then we calculate all cached levels related to it.
-    """
-    levels = []
-    rank_max = math.floor((math.log(version) / math.log(LOG_BASE)))
+                index = (start - 1) // LOG_BASE**rank + 1
+                levels.append(cls(rank=rank, index=index))
+                start = start + LOG_BASE**rank
+                break
 
-    for rank in range(1, rank_max + 1):
-        if version % LOG_BASE**rank:
+        return levels
+
+
+def get_chunk_location(id: str):
+    """
+    Get file location for chunk on FS
+
+    Splits the given identifier into two parts where the first two characters of the identifier are the small hash,
+    and the remaining characters is a file identifier.
+    """
+    chunk_dir = current_app.config.get("UPLOAD_CHUNKS_DIR")
+    small_hash = id[:2]
+    file_name = id[2:]
+    return os.path.join(chunk_dir, small_hash, file_name)
+
+
+def remove_outdated_files(dir: str, time_delta: timedelta):
+    """Remove all files within directory where last access time passed expiration date"""
+    for file in os.listdir(dir):
+        path = os.path.join(dir, file)
+        if not os.path.isfile(path):
             continue
 
-        index = version // LOG_BASE**rank
-        levels.append(CachedLevel(rank=rank, index=index))
-
-    return levels
-
-
-def get_all_cached_levels(start: int, end: int) -> List[CachedLevel]:
-    """
-    Get all cached levels between start version and end version.
-    This basically provide the list of cached levels which are fully contained in the range.
-    """
-    levels = []
-    rank_max = math.floor(math.log(end, LOG_BASE))
-
-    for rank in range(1, rank_max + 1):
-        index_start = (start - 1) // LOG_BASE**rank + 1
-        index_end = end // LOG_BASE**rank
-        for index in range(index_start, index_end + 1):
-            level = CachedLevel(rank=rank, index=index)
-            if level.start >= start and level.end <= end:
-                levels.append(level)
-
-    return levels
-
-
-def get_merged_versions(start: int, end: int) -> List[CachedLevel]:
-    """
-    Get all (merged) versions between start version and end version while respecting cached levels.
-    This basically provide the list of smaller versions (checkpoints) to be merged in order to get the final version.
-    """
-    levels = []
-    while start <= end:
-        if start == end:
-            rank_max = 0
-        else:
-            rank_max = math.floor((math.log(end - start + 1) / math.log(LOG_BASE)))
-        for rank in reversed(range(0, rank_max + 1)):
-            if (start - 1) % LOG_BASE**rank:
-                continue
-
-            index = (start - 1) // LOG_BASE**rank + 1
-            levels.append(CachedLevel(rank=rank, index=index))
-            start = start + LOG_BASE**rank
-            break
-
-    return levels
-
-
-def merge_dict_lists(base=[], new=[], key="path"):
-    """Merge two lists of dictionaries based on 'path' key, updating existing entries and adding new ones."""
-    merged = {item[key]: item for item in base}
-    for item in new:
-        merged[item[key]] = item
-    return list(merged.values())
+        if (
+            datetime.fromtimestamp(os.path.getatime(path), tz=timezone.utc)
+            < datetime.now(timezone.utc) - time_delta
+        ):
+            try:
+                os.remove(path)
+            except OSError as e:
+                logging.error(f"Unable to remove {path}: {str(e)}")
