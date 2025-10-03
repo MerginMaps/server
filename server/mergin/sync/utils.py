@@ -661,6 +661,25 @@ def get_cached_levels(version: int) -> List[CachedLevel]:
     return levels
 
 
+def get_all_cached_levels(start: int, end: int) -> List[CachedLevel]:
+    """
+    Get all cached levels between start version and end version.
+    This basically provide the list of cached levels which are fully contained in the range.
+    """
+    levels = []
+    rank_max = math.floor(math.log(end, LOG_BASE))
+
+    for rank in range(1, rank_max + 1):
+        index_start = (start - 1) // LOG_BASE**rank + 1
+        index_end = end // LOG_BASE**rank
+        for index in range(index_start, index_end + 1):
+            level = CachedLevel(rank=rank, index=index)
+            if level.start >= start and level.end <= end:
+                levels.append(level)
+
+    return levels
+
+
 def get_merged_versions(start: int, end: int) -> List[CachedLevel]:
     """
     Get all (merged) versions between start version and end version while respecting cached levels.
@@ -682,3 +701,11 @@ def get_merged_versions(start: int, end: int) -> List[CachedLevel]:
             break
 
     return levels
+
+
+def merge_dict_lists(base=[], new=[], key="path"):
+    """Merge two lists of dictionaries based on 'path' key, updating existing entries and adding new ones."""
+    merged = {item[key]: item for item in base}
+    for item in new:
+        merged[item[key]] = item
+    return list(merged.values())

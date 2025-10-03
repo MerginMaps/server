@@ -2,13 +2,25 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import datetime
+from enum import Enum
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, List
 from marshmallow import fields, EXCLUDE, pre_load, post_load, post_dump
 from pathvalidate import sanitize_filename
 
 from ..app import DateTimeWithZ, ma
+
+
+class PushChangeType(Enum):
+    CREATE = "create"
+    UPDATE = "update"
+    DELETE = "delete"
+    UPDATE_DIFF = "update_diff"
+
+    @classmethod
+    def values(cls):
+        return [member.value for member in cls.__members__.values()]
 
 
 def mergin_secure_filename(filename: str) -> str:
@@ -126,3 +138,27 @@ class ProjectFileSchema(FileSchema):
         if not data.get("diff"):
             data.pop("diff")
         return data
+
+
+@dataclass
+class ProjectVersionChangeData:
+    path: str
+    size: int
+    checksum: str
+    change: PushChangeType
+    version: str
+    diffs: Optional[List[str]] = None
+
+
+class ProjectVersionChangeDataSchema(ma.Schema):
+    """Schema for changes data in ProjectVersionChange changes column"""
+
+    path = fields.String(required=True)
+    size = fields.Integer(required=True)
+    checksum = fields.String(required=True)
+    diffs = fields.List(fields.String(), required=False)
+    change = fields.Enum(PushChangeType, by_value=True, required=True)
+
+    @post_load
+    def make_object(self, data, **kwargs):
+        return ProjectVersionChangeData(**data)
