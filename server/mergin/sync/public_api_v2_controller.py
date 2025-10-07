@@ -22,7 +22,7 @@ from .workspace import WorkspaceRole
 from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
-from .models import FileDiff, Project, ProjectRole, ProjectMember
+from .models import FileDiff, Project, ProjectRole, ProjectMember, ProjectVersionChange
 from .permissions import ProjectPermissions, require_project_by_uuid
 from .utils import prepare_download_response
 from ..app import db
@@ -38,7 +38,7 @@ from .errors import (
     StorageLimitHit,
     UploadError,
 )
-from .files import ChangesSchema
+from .files import ChangesSchema, ProjectVersionChangeDeltaSchema
 from .forms import project_name_validation
 from .models import (
     Project,
@@ -402,3 +402,31 @@ def upload_chunk(id: str):
         UploadChunkSchema().dump({"id": chunk_id, "valid_until": valid_until}),
         200,
     )
+
+
+@auth_required
+def get_project_delta(id: str):
+    """Get project changes (delta) between two versions"""
+    since = request.args.get("since")
+    to = request.args.get("to")
+    if not since or not to:
+        abort(400, "Missing 'since' or 'to' query parameter")
+
+    project = require_project_by_uuid(id, ProjectPermissions.Read)
+    since_version = ProjectVersion.from_v_name(since)
+    to_version = ProjectVersion.from_v_name(to)
+
+    if since_version > to_version:
+        abort(400, "'since' version must be less than 'to' version")
+
+    to_change = (
+        ProjectVersionChange.query.join(ProjectVersion)
+        .filter(
+            ProjectVersion.project_id == project.id,
+            ProjectVersion.name == to_version,
+        )
+        .first_or_404()
+    )
+    changes = to_change.get_delta(since_version)
+
+    return ProjectVersionChangeDeltaSchema(many=True).dump(changes), 200

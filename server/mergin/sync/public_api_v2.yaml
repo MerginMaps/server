@@ -381,6 +381,40 @@ paths:
                 $ref: "#/components/schemas/ProjectLocked"
 
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
+  /projects/{id}/delta:
+    get:
+      tags:
+        - project
+      summary: Get project changes (delta) between two versions
+      operationId: get_project_delta
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - name: since
+          in: query
+          required: true
+          schema:
+            type: string
+            example: v1
+          description: Start version (exclusive)
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            example: v2
+          description: End version (inclusive)
+      responses:
+        "200":
+          description: Project changes between two versions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDelta"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
 components:
   responses:
     NoContent:
@@ -800,3 +834,39 @@ components:
             - editor
             - writer
             - owner
+    ProjectDelta:
+      type: object
+      required:
+        - path
+        - size
+        - checksum
+        - version
+        - change
+      properties:
+        path:
+          type: string
+          example: survey.gpkg
+        size:
+          type: integer
+          example: 1024
+        checksum:
+          type: string
+          example: 9adb76bf81a34880209040ffe5ee262a090b62ab
+        version:
+          type: string
+          example: v2
+        change:
+          type: string
+          enum: [create, update, delete, update_diff]
+          example: update
+        diffs:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                example: survey.gpkg-diff-1
+              size:
+                type: integer
+                example: 512

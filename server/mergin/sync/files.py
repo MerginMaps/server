@@ -244,21 +244,40 @@ class ProjectFileSchema(FileSchema):
 
 
 @dataclass
-class ProjectVersionChangeData(File):
+class ChangeDiffFile:
+    path: str
+    size: Optional[int] = None
+
+
+class ChangeDiffFileSchema(ma.Schema):
+    path = fields.String(required=True)
+    size = fields.Integer(required=False)
+
+
+@dataclass
+class ProjectVersionChangeDelta(File):
     change: PushChangeType
     version: str
-    diffs: Optional[List[str]] = None
+    diffs: Optional[List[ChangeDiffFile]] = None
 
 
-class ProjectVersionChangeDataSchema(ma.Schema):
+class ProjectVersionChangeDeltaSchema(ma.Schema):
     """Schema for changes data in ProjectVersionChange changes column"""
 
     path = fields.String(required=True)
     size = fields.Integer(required=True)
     checksum = fields.String(required=True)
-    diffs = fields.List(fields.String(), required=False)
+    version = fields.String(required=True)
+    diffs = fields.List(fields.Nested(ChangeDiffFileSchema()))
     change = fields.Enum(PushChangeType, by_value=True, required=True)
 
     @post_load
     def make_object(self, data, **kwargs):
-        return ProjectVersionChangeData(**data)
+        return ProjectVersionChangeDelta(**data)
+
+    @post_dump
+    def patch_field(self, data, **kwargs):
+        # drop 'diffs' key entirely if empty or None as clients would expect
+        if not data.get("diffs"):
+            data.pop("diffs", None)
+        return data

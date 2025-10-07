@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import os
 import shutil
+from typing import List
 from unittest.mock import patch
 import uuid
 from pygeodiff import GeoDiffLibError
@@ -11,7 +12,15 @@ from .utils import add_user, diffs_are_equal, execute_query, push_change
 from ..app import db
 from tests import test_project, test_workspace_id
 from ..config import Configuration
-from ..sync.models import FileDiff, FileHistory, Project, ProjectFilePath, ProjectRole
+from ..sync.models import (
+    FileDiff,
+    FileHistory,
+    Project,
+    ProjectFilePath,
+    ProjectRole,
+    ProjectVersionChange,
+)
+from ..sync.files import PushChangeType
 from sqlalchemy.exc import IntegrityError
 import pytest
 from datetime import datetime, timedelta, timezone
@@ -304,6 +313,82 @@ def test_create_diff_checkpoint(diff_project):
         diff.construct_checkpoint()
         assert mock.called
         assert not os.path.exists(diff.abs_path)
+
+
+def test_project_version_change_delta(diff_project):
+    """Test that ProjectVersionChangeData and its schema work as expected"""
+    version = diff_project.get_latest_version()
+    assert version.name == 10
+    pvcs: List[ProjectVersionChange] = (
+        ProjectVersionChange.query.join(ProjectVersion)
+        .filter(ProjectVersion.project_id == diff_project.id)
+        .all()
+    )
+    assert len(pvcs) == 10
+    initial_pvc = pvcs[0]
+    assert initial_pvc.get_delta(3) is None
+    initial_version = initial_pvc.version
+    assert initial_pvc.rank == 0
+    assert initial_pvc.version.id == initial_version.id
+    assert len(initial_pvc.get_delta()) == len(initial_version.files)
+    # no ranks created as we get here just first version with get_delta
+    assert ProjectVersionChange.query.filter_by(rank=1).count() == 0
+    second_pvc = pvcs[1]
+    second_data = second_pvc.get_delta()
+    assert len(second_data) == 1
+    assert second_data[0].change == PushChangeType.DELETE
+    # no ranks created as we get here just first version with get_delta
+    assert ProjectVersionChange.query.filter_by(rank=1).count() == 0
+
+    # delete + create version
+    create_pvc = pvcs[2]
+    create_data = create_pvc.get_delta()
+    assert len(create_data) == 1
+    assert create_data[0].change == PushChangeType.CREATE
+
+    # get_delta with rank creation
+    checkpoint_pvc = pvcs[3]
+    checkpoint_data = checkpoint_pvc.get_delta()
+    assert len(checkpoint_data) == 1
+    assert checkpoint_data[0].change == PushChangeType.UPDATE_DIFF
+
+    checkpoint_changes = ProjectVersionChange.query.filter_by(rank=1)
+    filediff_checkpoints = FileDiff.query.filter_by(rank=1)
+    checkpoint_change = checkpoint_changes.first()
+    filediff_checkpoint = filediff_checkpoints.first()
+
+    assert checkpoint_changes.count() == 1
+    assert checkpoint_change.version_id == checkpoint_pvc.version_id
+    assert filediff_checkpoints.count() == 1
+    assert filediff_checkpoint.version == 4
+    # check if filediff basefile is correctly set
+    assert (
+        filediff_checkpoint.basefile_id
+        == FileHistory.query.filter_by(project_version_name=3).first().id
+    )
+    file_history = FileHistory.query.filter_by(project_version_name=4).first()
+    assert checkpoint_data[0].version == f"v4"
+    assert checkpoint_data[0].path == file_history.path
+    assert checkpoint_data[0].size == file_history.size
+    assert checkpoint_data[0].checksum == file_history.checksum
+    assert len(checkpoint_data[0].diffs) == 1
+    assert checkpoint_data[0].diffs[0]["path"] == filediff_checkpoint.path
+    assert checkpoint_data[0].diffs[0]["size"] == 0
+
+    # get data with multiple ranks = 1 level checkpoints 1-8 + 2 level checkpoint 9-10
+    latest_pvc = pvcs[-1]
+    latest_data = latest_pvc.get_delta()
+    assert len(latest_data) == 2
+    assert latest_data[0].change == PushChangeType.DELETE
+    assert latest_data[1].change == PushChangeType.CREATE
+    pv = push_change(
+        diff_project, "removed", "test.gpkg", diff_project.storage.project_dir
+    )
+    latest_pvc = ProjectVersionChange.query.filter_by(version_id=pv.id).first()
+    latest_data = latest_pvc.get_delta(pv.name - 3)
+    assert len(latest_data) == 1
+    # test.gpkg is transparent as it was created and deleted in this range
+    assert not next((c for c in latest_data if c.path == "test.gpkg"), None)
 
 
 push_data = [
@@ -647,3 +732,44 @@ def test_full_push(client):
         os.path.join(project.storage.project_dir, "v2", test_file["path"])
     )
     assert not Upload.query.filter_by(project_id=project.id).first()
+
+
+def test_project_delta(client, diff_project):
+    """Test project delta endpoint"""
+    response = client.get(f"v2/projects/{diff_project.id}/delta")
+    assert response.status_code == 400
+
+    response = client.get(f"v2/projects/{diff_project.id}/delta?since=v1&to=v10")
+    assert response.status_code == 200
+    assert len(response.json) == 10
+    assert response.json[0]["version"] == "v1"
+    assert response.json[-1]["version"] == "v10"
+
+    response = client.get(f"v2/projects/{project.id}/delta?since=v3&to=v7")
+    assert response.status_code == 200
+    assert len(response.json) == 5
+    assert response.json[0]["version"] == "v4"
+    assert response.json[-1]["version"] == "v8"
+
+    response = client.get(f"v2/projects/{project.id}/delta?since=v10")
+    assert response.status_code == 200
+    assert len(response.json) == 0
+
+    response = client.get(f"v2/projects/{project.id}/delta?to=v1")
+    assert response.status_code == 200
+    assert len(response.json) == 0
+
+    response = client.get(f"v2/projects/{project.id}/delta?since=v8&to=v12")
+    assert response.status_code == 422
+    assert response.json["code"] == "InvalidVersionRange"
+
+    response = client.get(f"v2/projects/{project.id}/delta?since=3&to=7")
+    assert response.status_code == 422
+    assert response.json["code"] == "InvalidVersionFormat"
+
+    response = client.get(f"v2/projects/{project.id}/delta?since=v3&to=7")
+    assert response.status_code == 422
+    assert response.json["code"] == "InvalidVersionFormat"
+
+    response = client.get(f"v2/projects/9999/delta")
+    assert response.status_code == 404

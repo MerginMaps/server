@@ -24,8 +24,9 @@ from pygeodiff.geodifflib import GeoDiffLibError, GeoDiffLibConflictError
 from flask import current_app
 
 from .files import (
-    ProjectVersionChangeData,
-    ProjectVersionChangeDataSchema,
+    ChangeDiffFile,
+    ProjectVersionChangeDelta,
+    ProjectVersionChangeDeltaSchema,
     ProjectDiffFile,
     ProjectFileChange,
     ChangesSchema,
@@ -915,7 +916,7 @@ class ProjectVersionChange(db.Model):
         nullable=False,
     )
     # cached changes for versions from start to end (inclusive)
-    data = db.Column(JSONB, nullable=False)
+    delta = db.Column(JSONB, nullable=False)
 
     __table_args__ = (
         db.UniqueConstraint("version_id", "rank", name="unique_changes"),
@@ -925,30 +926,33 @@ class ProjectVersionChange(db.Model):
             rank,
         ),
     )
-    project = db.relationship(
+    version = db.relationship(
         "ProjectVersion",
         uselist=False,
     )
 
     @staticmethod
-    def merge_data(
+    def merge_changes(
         changes: List[ProjectVersionChange],
-    ) -> List[ProjectVersionChangeData]:
-        """Merge changes from another ProjectVersionChange into this one"""
-        identifier = "path"
-        result: Dict[str, ProjectVersionChangeData] = {}
+    ) -> List[ProjectVersionChangeDelta]:
+        """
+        Merge multiple changes jsons into one list of changes.
+        Changes are merged based on file path and change type.
+        """
+        result: Dict[str, ProjectVersionChangeDelta] = {}
         for change in changes:
-            for item in change.data:
-                current_data: ProjectVersionChangeData = (
-                    ProjectVersionChangeDataSchema().load(item)
+            for item in change.delta:
+                current_data: ProjectVersionChangeDelta = (
+                    ProjectVersionChangeDeltaSchema().load(item)
                 )
                 existing_data = result.get(current_data.path)
+                path = current_data.path
                 if existing_data:
                     # merge changes data jsons
                     if existing_data.change == PushChangeType.CREATE:
                         if current_data.change == PushChangeType.DELETE:
                             # create + delete = nothing
-                            del result[identifier]
+                            del result[path]
                         elif current_data.change in (
                             PushChangeType.UPDATE.value,
                             PushChangeType.UPDATE_DIFF.value,
@@ -956,45 +960,59 @@ class ProjectVersionChange(db.Model):
                             # create + update = create with updated info
                             current_data.change = existing_data.change
                             current_data.diffs = None
-                        result[identifier] = current_data
+                        else:
+                            result[path] = current_data
                     elif existing_data.change == PushChangeType.UPDATE:
                         if current_data.change == PushChangeType.UPDATE_DIFF:
                             # update + update_diff = update_diff with latest info
                             current_data.change = existing_data.change
                             current_data.diffs = None
-                        result[identifier] = current_data
+                        result[path] = current_data
                     elif existing_data.change == PushChangeType.UPDATE_DIFF.value:
                         if current_data.change == PushChangeType.UPDATE_DIFF.value:
                             # update_diff + update_diff = update_diff with latest info
                             current_data.diffs.extend(existing_data.diffs or [])
-                        result[identifier] = current_data
+                        result[path] = current_data
+                    else:
+                        # delete + anything = anything
+                        result[path] = current_data
                 else:
                     result[current_data.path] = current_data
         return list(result.values())
 
-    def get_data(self, start_version=0) -> None:
-        """Create a changes json checkpoint (aka. merged changes).
-        Find all smaller changes which are needed to create the final changes json.
-        In case of missing some lower rank checkpoint, use individual changes instead.
+    def get_delta(self, from_version=1) -> Optional[List[ProjectVersionChangeDelta]]:
         """
-        if self.changes:
-            return
+        Get changes between two versions, merging them if needed.
+        """
         version_name = self.version.name
         project_id = self.version.project_id
-        if start_version > version_name:
+        if from_version > version_name:
             logging.error(
-                f"Start version {start_version} is higher than end version {version_name} - broken history"
+                f"Start version {from_version} is higher than end version {version_name} - broken history"
             )
             return
 
-        expected_checkpoints = Checkpoint.get_checkpoints(start_version, version_name)
-        expected_changes: List[ProjectVersionChange] = (
-            ProjectVersionChange.query.join(
-                ProjectVersion, ProjectVersionChange.version_id == ProjectVersion.id
+        if from_version == version_name:
+            # Return only changes for this version
+            changes = (
+                ProjectVersionChange.query.join(
+                    ProjectVersion, ProjectVersionChange.version_id == ProjectVersion.id
+                )
+                .filter(
+                    ProjectVersion.project_id == project_id,
+                    ProjectVersion.name == version_name,
+                )
+                .order_by(ProjectVersion.name)
+                .all()
             )
+            return self.merge_changes(changes)
+
+        expected_checkpoints = Checkpoint.get_checkpoints(from_version, version_name)
+        expected_changes: List[ProjectVersionChange] = (
+            ProjectVersionChange.query.join(ProjectVersion)
             .filter(
                 ProjectVersion.project_id == project_id,
-                ProjectVersion.name >= start_version,
+                ProjectVersion.name > from_version,
                 ProjectVersion.name <= version_name,
                 tuple_(ProjectVersionChange.rank, ProjectVersion.name).in_(
                     [(item.rank, item.end) for item in expected_checkpoints]
@@ -1003,18 +1021,12 @@ class ProjectVersionChange(db.Model):
             .order_by(ProjectVersion.name)
             .all()
         )
-        expected_diffs = FileHistory.query.join(
-            ProjectVersion, FileHistory.version_id == ProjectVersion.id
-        ).filter(
-            ProjectVersion.project_id == project_id,
-            FileHistory.project_version_name >= start_version,
-            FileHistory.project_version_name <= version_name,
-            FileHistory.change == PushChangeType.UPDATE_DIFF.value,
-        )
+        individual_changes: List[ProjectVersionChange] = []
 
         changes = []
         for checkpoint in expected_checkpoints:
-            cached_change = next(
+            # find checkpoint change in already cached changes or any zero rank change needed
+            expected_change = next(
                 (
                     c
                     for c in expected_changes
@@ -1022,27 +1034,102 @@ class ProjectVersionChange(db.Model):
                 ),
                 None,
             )
-            if not cached_change and checkpoint.rank > 0:
-                # Filter all changes that are in previous checkpoint range
-                individual_changes = expected_changes[: checkpoint.end + 1]
+            if expected_change:
+                changes.append(expected_change)
+                continue
+
+            if checkpoint.rank > 0:
+                # Filter all changes that are 0 rank and are in the range of the checkpoint, cache them to prevent multiple queries
+                individual_changes = (
+                    ProjectVersionChange.query.join(ProjectVersion)
+                    .filter(
+                        ProjectVersion.project_id == project_id,
+                        ProjectVersion.name > from_version,
+                        ProjectVersion.name <= version_name,
+                        ProjectVersionChange.rank == 0,
+                    )
+                    .all()
+                    if not individual_changes
+                    else individual_changes
+                )
                 if not individual_changes:
                     logging.error(
                         f"Unable to find rank 0 changes for {checkpoint.rank} for project {project_id}"
                     )
                     return
-                merged_data = self.merge_data(individual_changes)
-                changes.append(self.merge_data(individual_changes))
-                checkpoint_change = ProjectVersionChange(
-                    version_id=self.version_id,
-                    rank=checkpoint.rank,
-                    changes=[asdict(c) for c in merged_data],
+                merged_history = self.merge_changes(
+                    [
+                        change
+                        for change in individual_changes
+                        if checkpoint.start < change.version.name <= checkpoint.end
+                    ]
                 )
+                for item in merged_history:
+                    path = item.path
+                    if not is_versioned_file(path):
+                        continue
+
+                    file_history = (
+                        FileHistory.query.join(ProjectFilePath)
+                        .filter(
+                            ProjectFilePath.project_id == project_id,
+                            ProjectFilePath.path == path,
+                            FileHistory.project_version_name <= checkpoint.end,
+                        )
+                        .order_by(FileHistory.project_version_name.desc())
+                        .limit(1)
+                        .first()
+                    )
+                    existing_diff_checkpoint = (
+                        FileDiff.query.filter(
+                            FileDiff.file_path_id == file_history.file_path_id,
+                            FileDiff.rank == checkpoint.rank,
+                            tuple_(FileDiff.rank, FileDiff.version).in_(
+                                [(item.rank, item.end) for item in expected_checkpoints]
+                            ),
+                        )
+                        .order_by(FileDiff.version.desc())
+                        .limit(1)
+                        .first()
+                    )
+                    if not existing_diff_checkpoint:
+                        base_file = FileHistory.get_basefile(
+                            file_history.file_path_id, checkpoint.end
+                        )
+                        if not base_file:
+                            continue
+                        diff_path = mergin_secure_filename(
+                            path + "-diff-" + str(uuid.uuid4())
+                        )
+                        checkpoint_diff = FileDiff(
+                            basefile=base_file,
+                            path=diff_path,
+                            rank=checkpoint.rank,
+                            version=checkpoint.end,
+                        )
+                        # patching diff to new rank file name
+                        item.diffs = [ChangeDiffFile(path=diff_path, size=0)]
+                        db.session.add(checkpoint_diff)
+                        db.session.flush()
+                latest_change = next(
+                    (c for c in individual_changes if c.version.name == checkpoint.end),
+                    None,
+                )
+                checkpoint_change = ProjectVersionChange(
+                    version_id=latest_change.version_id,
+                    rank=checkpoint.rank,
+                    delta=[
+                        {**asdict(c), "change": c.change.value} for c in merged_history
+                    ],
+                )
+                changes.append(checkpoint_change)
+
                 db.session.add(checkpoint_change)
                 db.session.flush()
-            else:
-                changes.append(cached_change)
-        changes = self.merge_data(changes)
         db.session.commit()
+
+        history_data = self.merge_changes(changes)
+        return history_data
 
 
 class ProjectVersion(db.Model):
@@ -1111,7 +1198,6 @@ class ProjectVersion(db.Model):
             .filter(ProjectFilePath.path.in_(changed_files_paths))
             .all()
         }
-
         for item in changes:
             # get existing DB file reference or create a new one (for added files)
             db_file = existing_files_map.get(
@@ -1139,6 +1225,32 @@ class ProjectVersion(db.Model):
                 latest_files_map.pop(fh.path, None)
             else:
                 latest_files_map[fh.path] = fh.id
+
+        # cache changes data json for version checkpoints
+        # rank 0 is for all changes from start to current version
+        changes_data = [
+            ProjectVersionChangeDelta(
+                path=c.path,
+                change=c.change,
+                size=c.size,
+                checksum=c.checksum,
+                version=self.to_v_name(name),
+                diffs=(
+                    [ChangeDiffFile(path=c.diff.path, size=c.diff.size)]
+                    if c.diff
+                    else None
+                ),
+            )
+            for c in changes
+        ]
+        pvc = ProjectVersionChange(
+            version=self,
+            rank=0,
+            delta=ProjectVersionChangeDeltaSchema(many=True).dump(changes_data),
+        )
+
+        db.session.add(pvc)
+        db.session.flush()
 
         # update cached values in project and push to transaction buffer so that self.files is up-to-date
         self.project.latest_project_files.file_history_ids = latest_files_map.values()
