@@ -318,7 +318,9 @@ def test_create_diff_checkpoint(diff_project):
 def test_project_version_change_delta(diff_project):
     """Test that ProjectVersionChangeData and its schema work as expected"""
     version = diff_project.get_latest_version()
+    project_id = diff_project.id
     assert version.name == 10
+    assert ProjectVersionChange.get_delta(project_id, 2, 1) is None
     pvcs: List[ProjectVersionChange] = (
         ProjectVersionChange.query.join(ProjectVersion)
         .filter(ProjectVersion.project_id == diff_project.id)
@@ -326,39 +328,41 @@ def test_project_version_change_delta(diff_project):
     )
     assert len(pvcs) == 10
     initial_pvc = pvcs[0]
-    assert initial_pvc.get_delta(3) is None
     initial_version = initial_pvc.version
     assert initial_pvc.rank == 0
     assert initial_pvc.version.id == initial_version.id
-    assert len(initial_pvc.get_delta()) == len(initial_version.files)
+    # if version is the same, return just its delta in v1
+    assert len(ProjectVersionChange.get_delta(project_id, 1, 1)) == len(
+        initial_version.files
+    )
     # no ranks created as we get here just first version with get_delta
     assert ProjectVersionChange.query.filter_by(rank=1).count() == 0
-    second_pvc = pvcs[1]
-    second_data = second_pvc.get_delta()
-    assert len(second_data) == 1
-    assert second_data[0].change == PushChangeType.DELETE
+
+    delta = ProjectVersionChange.get_delta(project_id, 1, 2)
+    assert len(delta) == 1
+    assert delta[0].change == PushChangeType.DELETE
     # no ranks created as we get here just first version with get_delta
     assert ProjectVersionChange.query.filter_by(rank=1).count() == 0
 
     # delete + create version
-    create_pvc = pvcs[2]
-    create_data = create_pvc.get_delta()
-    assert len(create_data) == 1
-    assert create_data[0].change == PushChangeType.CREATE
+    delta = ProjectVersionChange.get_delta(project_id, 1, 3)
+    assert len(delta) == 1
+    assert delta[0].change == PushChangeType.CREATE
 
-    # get_delta with rank creation
-    checkpoint_pvc = pvcs[3]
-    checkpoint_data = checkpoint_pvc.get_delta()
-    assert len(checkpoint_data) == 1
-    assert checkpoint_data[0].change == PushChangeType.UPDATE_DIFF
+    # get_delta with update diff
+    delta = ProjectVersionChange.get_delta(project_id, 1, 4)
+    assert len(delta) == 1
+    assert delta[0].change == PushChangeType.UPDATE_DIFF
+    assert ProjectVersionChange.query.filter_by(rank=1).count() == 0
 
+    # create rank 1 checkpoint for v4
+    delta = ProjectVersionChange.get_delta(project_id, 0, 4)
     checkpoint_changes = ProjectVersionChange.query.filter_by(rank=1)
     filediff_checkpoints = FileDiff.query.filter_by(rank=1)
     checkpoint_change = checkpoint_changes.first()
     filediff_checkpoint = filediff_checkpoints.first()
-
     assert checkpoint_changes.count() == 1
-    assert checkpoint_change.version_id == checkpoint_pvc.version_id
+    assert checkpoint_change.version_id == pvcs[3].version_id
     assert filediff_checkpoints.count() == 1
     assert filediff_checkpoint.version == 4
     # check if filediff basefile is correctly set
@@ -367,28 +371,29 @@ def test_project_version_change_delta(diff_project):
         == FileHistory.query.filter_by(project_version_name=3).first().id
     )
     file_history = FileHistory.query.filter_by(project_version_name=4).first()
-    assert checkpoint_data[0].version == f"v4"
-    assert checkpoint_data[0].path == file_history.path
-    assert checkpoint_data[0].size == file_history.size
-    assert checkpoint_data[0].checksum == file_history.checksum
-    assert len(checkpoint_data[0].diffs) == 1
-    assert checkpoint_data[0].diffs[0]["path"] == filediff_checkpoint.path
-    assert checkpoint_data[0].diffs[0]["size"] == 0
+    assert delta[0].change == PushChangeType.UPDATE_DIFF
+    assert delta[0].version == "v4"
+    assert delta[0].path == file_history.path
+    assert delta[0].size == file_history.size
+    assert delta[0].checksum == file_history.checksum
+    assert len(delta[0].diffs) == 1
+    assert delta[0].diffs[0]["path"] == filediff_checkpoint.path
+    assert delta[0].diffs[0]["size"] == 0
 
-    # get data with multiple ranks = 1 level checkpoints 1-8 + 2 level checkpoint 9-10
-    latest_pvc = pvcs[-1]
-    latest_data = latest_pvc.get_delta()
-    assert len(latest_data) == 2
-    assert latest_data[0].change == PushChangeType.DELETE
-    assert latest_data[1].change == PushChangeType.CREATE
+    # get data with multiple ranks = 1 level checkpoints 1-4, 5-8 + checkpoint 9 and 10
+    delta = ProjectVersionChange.get_delta(project_id, 0, 10)
+    assert len(delta) == 2
+    assert delta[0].change == PushChangeType.DELETE
+    assert delta[1].change == PushChangeType.CREATE
+    assert ProjectVersionChange.query.filter_by(rank=1).count() == 2
+
     pv = push_change(
         diff_project, "removed", "test.gpkg", diff_project.storage.project_dir
     )
-    latest_pvc = ProjectVersionChange.query.filter_by(version_id=pv.id).first()
-    latest_data = latest_pvc.get_delta(pv.name - 3)
-    assert len(latest_data) == 1
+    delta = ProjectVersionChange.get_delta(project_id, pv.name - 3, pv.name)
+    assert len(delta) == 1
     # test.gpkg is transparent as it was created and deleted in this range
-    assert not next((c for c in latest_data if c.path == "test.gpkg"), None)
+    assert not next((c for c in delta if c.path == "test.gpkg"), None)
 
 
 push_data = [
@@ -739,37 +744,35 @@ def test_project_delta(client, diff_project):
     response = client.get(f"v2/projects/{diff_project.id}/delta")
     assert response.status_code == 400
 
+    response = client.get(f"v2/projects/{diff_project.id}/delta?since=v-1&to=v1")
+    assert response.status_code == 400
+
+    response = client.get(f"v2/projects/{diff_project.id}/delta?since=v1000&to=v2000")
+    assert response.status_code == 404
+
     response = client.get(f"v2/projects/{diff_project.id}/delta?since=v1&to=v10")
     assert response.status_code == 200
-    assert len(response.json) == 10
-    assert response.json[0]["version"] == "v1"
-    assert response.json[-1]["version"] == "v10"
+    assert response.json[0]["change"] == PushChangeType.DELETE.value
+    assert response.json[1]["change"] == PushChangeType.CREATE.value
 
-    response = client.get(f"v2/projects/{project.id}/delta?since=v3&to=v7")
+
+# integration test for pull mechanism
+def test_project_pull(client, diff_project):
+    response = client.get(f"v2/projects/{diff_project.id}/delta?since=v4&to=v8")
     assert response.status_code == 200
-    assert len(response.json) == 5
-    assert response.json[0]["version"] == "v4"
-    assert response.json[-1]["version"] == "v8"
+    delta = response.json
+    assert len(delta) == 1
 
-    response = client.get(f"v2/projects/{project.id}/delta?since=v10")
+    # simulate pull of delta[0]
+    assert delta[0]["change"] == PushChangeType.UPDATE_DIFF.value
+    assert delta[0]["version"] == "v7"
+    assert len(delta[0]["diffs"]) == 1
+    diff = delta[0]["diffs"][0]
+    assert diff["path"].startswith("base.gpkg-")
+    assert diff["size"] == 0  # empty diff as in test data
+    response = client.get(f"v2/projects/{diff_project.id}/raw/diff/{diff['path']}")
     assert response.status_code == 200
-    assert len(response.json) == 0
-
-    response = client.get(f"v2/projects/{project.id}/delta?to=v1")
-    assert response.status_code == 200
-    assert len(response.json) == 0
-
-    response = client.get(f"v2/projects/{project.id}/delta?since=v8&to=v12")
-    assert response.status_code == 422
-    assert response.json["code"] == "InvalidVersionRange"
-
-    response = client.get(f"v2/projects/{project.id}/delta?since=3&to=7")
-    assert response.status_code == 422
-    assert response.json["code"] == "InvalidVersionFormat"
-
-    response = client.get(f"v2/projects/{project.id}/delta?since=v3&to=7")
-    assert response.status_code == 422
-    assert response.json["code"] == "InvalidVersionFormat"
-
-    response = client.get(f"v2/projects/9999/delta")
-    assert response.status_code == 404
+    created_diff = FileDiff.query.filter_by(path=diff["path"]).first()
+    assert created_diff and os.path.exists(created_diff.abs_path)
+    assert created_diff.size > 0
+    assert created_diff.checksum

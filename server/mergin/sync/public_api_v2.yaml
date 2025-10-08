@@ -409,7 +409,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProjectDelta"
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectDelta"
         "400":
           $ref: "#/components/responses/BadRequest"
         "404":
@@ -861,6 +863,7 @@ components:
           example: update
         diffs:
           type: array
+          nullable: true
           items:
             type: object
             properties:

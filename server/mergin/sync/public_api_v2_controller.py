@@ -407,26 +407,23 @@ def upload_chunk(id: str):
 @auth_required
 def get_project_delta(id: str):
     """Get project changes (delta) between two versions"""
-    since = request.args.get("since")
-    to = request.args.get("to")
-    if not since or not to:
-        abort(400, "Missing 'since' or 'to' query parameter")
-
+    since = ProjectVersion.from_v_name(request.args.get("since"))
+    to = ProjectVersion.from_v_name(request.args.get("to"))
     project = require_project_by_uuid(id, ProjectPermissions.Read)
-    since_version = ProjectVersion.from_v_name(since)
-    to_version = ProjectVersion.from_v_name(to)
-
-    if since_version > to_version:
+    if since < 0 or to < 0:
+        abort(400, "Invalid 'since' or 'to' version")
+    if since > to:
         abort(400, "'since' version must be less than 'to' version")
 
-    to_change = (
-        ProjectVersionChange.query.join(ProjectVersion)
-        .filter(
-            ProjectVersion.project_id == project.id,
-            ProjectVersion.name == to_version,
-        )
-        .first_or_404()
-    )
-    changes = to_change.get_delta(since_version)
+    ProjectVersion.query.filter(
+        ProjectVersion.project_id == project.id,
+        ProjectVersion.name == since,
+    ).first_or_404()
+    ProjectVersion.query.filter(
+        ProjectVersion.project_id == project.id,
+        ProjectVersion.name == to,
+    ).first_or_404()
 
-    return ProjectVersionChangeDeltaSchema(many=True).dump(changes), 200
+    delta = ProjectVersionChange.get_delta(project.id, since, to)
+
+    return ProjectVersionChangeDeltaSchema(many=True).dump(delta), 200
