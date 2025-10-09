@@ -414,7 +414,7 @@ def test_project_version_change_delta(client, diff_project):
     shutil.copy(
         os.path.join(diff_project.storage.project_dir, "v9", "test.gpkg"), base_gpkg
     )
-    for i in range(7):
+    for i in range(6):
         sql = f"UPDATE simple SET rating={i}"
         execute_query(base_gpkg, sql)
         pv = push_change(
@@ -427,11 +427,20 @@ def test_project_version_change_delta(client, diff_project):
         project_version_name=latest_version.name - 1
     ).first()
     base_gpkg_checkpoint = FileDiff.query.filter_by(basefile_id=fh.id, rank=1).first()
-    assert base_gpkg_checkpoint.basefile_id == fh.id
+    assert base_gpkg_checkpoint
+    assert base_gpkg_checkpoint.version == latest_version.name + 6
 
+    fh = FileHistory.query.filter_by(
+        project_version_name=latest_version.name + 6
+    ).first()
     delta = ProjectVersionChange.get_delta(project_id, 12, latest_version.name + 6)
     assert len(delta) == 1
+    assert len(delta[0].diffs) == 1
     assert delta[0].diffs[0].path == base_gpkg_checkpoint.path
+    assert delta[0].change == PushChangeType.UPDATE_DIFF
+    assert delta[0].checksum == fh.checksum
+    assert delta[0].size == fh.size
+
     # check if checkpoint will be there
     response = client.get(
         f"v2/projects/{diff_project.id}/raw/diff/{delta[0].diffs[0].path}"
