@@ -38,7 +38,7 @@ from .errors import (
     StorageLimitHit,
     UploadError,
 )
-from .files import ChangesSchema, ProjectVersionChangeDeltaSchema
+from .files import ChangesSchema, DeltaRespSchema
 from .forms import project_name_validation
 from .models import (
     Project,
@@ -407,8 +407,8 @@ def upload_chunk(id: str):
 @auth_required
 def get_project_delta(id: str):
     """Get project changes (delta) between two versions"""
-    since = ProjectVersion.from_v_name(request.args.get("since"))
-    to = ProjectVersion.from_v_name(request.args.get("to"))
+    since = int(request.args.get("since"))
+    to = int(request.args.get("to"))
     project = require_project_by_uuid(id, ProjectPermissions.Read)
     if since < 0 or to < 0:
         abort(400, "Invalid 'since' or 'to' version")
@@ -424,6 +424,6 @@ def get_project_delta(id: str):
         ProjectVersion.name == to,
     ).first_or_404()
 
-    delta = ProjectVersionChange.get_delta(project.id, since, to)
+    deltas = ProjectVersionChange.get_delta(project.id, since, to)
 
-    return ProjectVersionChangeDeltaSchema(many=True).dump(delta), 200
+    return DeltaRespSchema(many=True).dump(deltas), 200

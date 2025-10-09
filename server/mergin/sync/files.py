@@ -4,7 +4,7 @@
 import datetime
 from enum import Enum
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, List
 import uuid
 from flask import current_app
@@ -244,36 +244,91 @@ class ProjectFileSchema(FileSchema):
 
 
 @dataclass
-class ChangeDiffFile:
+class DeltaDiffFile:
     path: str
-    size: Optional[int] = None
 
 
-class ChangeDiffFileSchema(ma.Schema):
+class DeltaDiffFileSchema(ma.Schema):
     path = fields.String(required=True)
-    size = fields.Integer(required=False)
 
 
 @dataclass
-class ProjectVersionChangeDelta(File):
+class DeltaBase(File):
     change: PushChangeType
-    version: str
-    diffs: Optional[List[ChangeDiffFile]] = None
+    version: int
 
 
-class ProjectVersionChangeDeltaSchema(ma.Schema):
-    """Schema for changes data in ProjectVersionChange changes column"""
+@dataclass
+class DeltaMerged(DeltaBase):
+    diffs: List[DeltaDiffFile] = field(default_factory=list)
+
+    def to_data_delta(self):
+        """Convert DeltaMerged to DeltaData with single diff"""
+        result = DeltaData(
+            path=self.path,
+            size=self.size,
+            checksum=self.checksum,
+            change=self.change,
+            version=self.version,
+        )
+        if self.diffs:
+            result.diff = self.diffs[0].path
+        return result
+
+
+@dataclass
+class DeltaData(File):
+    """Delta data stored in database"""
+
+    change: PushChangeType
+    version: int
+    diff: Optional[str] = None
+
+    def to_merged_delta(self) -> DeltaMerged:
+        """Convert DeltaData to DeltaMerged with multiple diffs"""
+        result = DeltaMerged(
+            path=self.path,
+            size=self.size,
+            checksum=self.checksum,
+            change=self.change,
+            version=self.version,
+        )
+        if self.diff:
+            result.diffs = [DeltaDiffFile(path=self.diff)]
+        return result
+
+
+class DeltaBaseSchema(ma.Schema):
+    """Base schema for detla json and response from delta endpoint"""
 
     path = fields.String(required=True)
     size = fields.Integer(required=True)
     checksum = fields.String(required=True)
-    version = fields.String(required=True)
-    diffs = fields.List(fields.Nested(ChangeDiffFileSchema()))
+    version = fields.Integer(required=True)
     change = fields.Enum(PushChangeType, by_value=True, required=True)
+
+
+class DeltaDataSchema(DeltaBaseSchema):
+    """Schema for delta data in database"""
+
+    diff = fields.String(required=False)
 
     @post_load
     def make_object(self, data, **kwargs):
-        return ProjectVersionChangeDelta(**data)
+        return DeltaData(**data)
+
+    @post_dump
+    def patch_field(self, data, **kwargs):
+        # drop 'diff' key entirely if empty or None as database would expect
+        if not data.get("diff"):
+            data.pop("diff", None)
+        return data
+
+
+class DeltaRespSchema(DeltaBaseSchema):
+    """Schema for delta data response"""
+
+    diffs = fields.List(fields.Nested(DeltaDiffFileSchema()))
 
     @post_dump
     def patch_field(self, data, **kwargs):

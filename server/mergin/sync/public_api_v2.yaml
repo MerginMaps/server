@@ -393,15 +393,15 @@ paths:
           in: query
           required: true
           schema:
-            type: string
-            example: v1
+            type: integer
+            example: 1
           description: Start version (exclusive)
         - name: to
           in: query
           required: true
           schema:
-            type: string
-            example: v2
+            type: integer
+            example: 2
           description: End version (inclusive)
       responses:
         "200":
@@ -855,8 +855,8 @@ components:
           type: string
           example: 9adb76bf81a34880209040ffe5ee262a090b62ab
         version:
-          type: string
-          example: v2
+          type: integer
+          example: 1
         change:
           type: string
           enum: [create, update, delete, update_diff]
@@ -870,6 +870,3 @@ components:
               path:
                 type: string
                 example: survey.gpkg-diff-1
-              size:
-                type: integer
-                example: 512
