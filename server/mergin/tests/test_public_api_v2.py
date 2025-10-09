@@ -324,7 +324,7 @@ def test_create_diff_checkpoint(diff_project):
         assert not os.path.exists(diff.abs_path)
 
 
-def test_project_version_change_delta(diff_project):
+def test_project_version_change_delta(client, diff_project):
     """Test that ProjectVersionChangeData and its schema work as expected"""
     latest_version = diff_project.get_latest_version()
     project_id = diff_project.id
@@ -432,6 +432,11 @@ def test_project_version_change_delta(diff_project):
     delta = ProjectVersionChange.get_delta(project_id, 12, latest_version.name + 6)
     assert len(delta) == 1
     assert delta[0].diffs[0].path == base_gpkg_checkpoint.path
+    # check if checkpoint will be there
+    response = client.get(
+        f"v2/projects/{diff_project.id}/raw/diff/{delta[0].diffs[0].path}"
+    )
+    assert response.status_code == 200
 
 
 push_data = [
