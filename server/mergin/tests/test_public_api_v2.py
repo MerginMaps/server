@@ -366,20 +366,13 @@ def test_project_version_change_delta(diff_project):
 
     # create rank 1 checkpoint for v4
     delta = ProjectVersionChange.get_delta(project_id, 0, 4)
-    fh = FileHistory.query.filter_by(project_version_name=3).first()
     checkpoint_changes = ProjectVersionChange.query.filter_by(rank=1)
     filediff_checkpoints = FileDiff.query.filter_by(rank=1)
     checkpoint_change = checkpoint_changes.first()
-    # find checkpoint for base gpkg
-    base_gpkg_checkpoint = FileDiff.query.filter_by(basefile_id=fh.id, rank=1).first()
     assert checkpoint_changes.count() == 1
     assert checkpoint_change.version_id == pvcs[3].version_id
-    assert filediff_checkpoints.count() == len(
-        [file for file in initial_version.files if is_versioned_file(file.path)]
-    )
-    assert base_gpkg_checkpoint.version == 4
+    assert filediff_checkpoints.count() == 0
     # check if filediff basefile is correctly set
-    assert base_gpkg_checkpoint.basefile_id == fh.id
     file_history = FileHistory.query.filter_by(project_version_name=4).first()
     assert len(delta) == len(initial_version.files)
     delta_base_gpkg = [d for d in delta if d.path == "base.gpkg"]
@@ -390,8 +383,7 @@ def test_project_version_change_delta(diff_project):
     assert delta_base_gpkg[0].path == file_history.path
     assert delta_base_gpkg[0].size == file_history.size
     assert delta_base_gpkg[0].checksum == file_history.checksum
-    assert len(delta_base_gpkg[0].diffs) == 1
-    assert delta_base_gpkg[0].diffs[0].path == base_gpkg_checkpoint.path
+    assert len(delta_base_gpkg[0].diffs) == 0
 
     # get data with multiple ranks = 1 level checkpoints 1-4, 5-8 + checkpoint 9 and 10
     delta = ProjectVersionChange.get_delta(project_id, 0, 10)
@@ -403,13 +395,9 @@ def test_project_version_change_delta(diff_project):
     # base gpgk is transparent
     assert not next((c for c in delta if c.path == "base.gpkg"), None)
 
-    pv = push_change(
-        diff_project, "removed", "test.gpkg", diff_project.storage.project_dir
+    delta = ProjectVersionChange.get_delta(
+        project_id, latest_version.name - 3, latest_version.name
     )
-    delta = ProjectVersionChange.get_delta(project_id, pv.name - 3, pv.name)
-    assert len(delta) == 1
-    # test.gpkg is transparent as it was created and deleted in this range
-    assert not next((c for c in delta if c.path == "test.gpkg"), None)
     delta_base_gpkg = next((c for c in delta if c.path == "base.gpkg"), None)
     assert delta_base_gpkg.change == PushChangeType.DELETE
 
@@ -420,6 +408,30 @@ def test_project_version_change_delta(diff_project):
     assert len(delta[0].diffs) == 2
     # find related diff file in file diffs to check relation
     assert FileDiff.query.filter_by(path=delta[0].diffs[0].path)
+
+    # create just update_diff versions with checkpoint
+    base_gpkg = os.path.join(diff_project.storage.project_dir, "test.gpkg")
+    shutil.copy(
+        os.path.join(diff_project.storage.project_dir, "v9", "test.gpkg"), base_gpkg
+    )
+    for i in range(7):
+        sql = f"UPDATE simple SET rating={i}"
+        execute_query(base_gpkg, sql)
+        pv = push_change(
+            diff_project, "updated", "test.gpkg", diff_project.storage.project_dir
+        )
+    delta = ProjectVersionChange.get_delta(project_id, 8, latest_version.name + 6)
+    assert len(delta) == 2
+    # file history in 9.th version is basefile
+    fh = FileHistory.query.filter_by(
+        project_version_name=latest_version.name - 1
+    ).first()
+    base_gpkg_checkpoint = FileDiff.query.filter_by(basefile_id=fh.id, rank=1).first()
+    assert base_gpkg_checkpoint.basefile_id == fh.id
+
+    delta = ProjectVersionChange.get_delta(project_id, 12, latest_version.name + 6)
+    assert len(delta) == 1
+    assert delta[0].diffs[0].path == base_gpkg_checkpoint.path
 
 
 push_data = [

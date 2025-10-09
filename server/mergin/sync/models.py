@@ -1011,7 +1011,10 @@ class ProjectVersionChange(db.Model):
 
         # Pre-fetch data for all versioned files to create FileDiff checkpoints
         versioned_delta_items = [
-            item for item in merged_delta_items if is_versioned_file(item.path)
+            item
+            for item in merged_delta_items
+            if is_versioned_file(item.path)
+            and item.change == PushChangeType.UPDATE_DIFF
         ]
         versioned_file_paths = [delta.path for delta in versioned_delta_items]
         if versioned_file_paths:
@@ -1048,8 +1051,7 @@ class ProjectVersionChange(db.Model):
                         version=checkpoint.end,
                     )
                     # Patch the delta with the path to the new diff checkpoint
-                    if item.change == PushChangeType.UPDATE_DIFF:
-                        item.diff = diff_path
+                    item.diff = diff_path
                     db.session.add(checkpoint_diff)
 
         checkpoint_change = ProjectVersionChange(
@@ -1133,7 +1135,7 @@ class ProjectVersionChange(db.Model):
 
             if checkpoint.rank > 0:
                 individual_changes = (
-                    cls.query_changes(project_id, checkpoint.start, checkpoint.end, 0)
+                    cls.query_changes(project_id, since, to, 0)
                     if not individual_changes
                     else individual_changes
                 )
