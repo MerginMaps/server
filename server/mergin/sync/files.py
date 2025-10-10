@@ -245,26 +245,34 @@ class ProjectFileSchema(FileSchema):
 
 @dataclass
 class DeltaDiffFile:
+    """Diff file path in diffs list"""
+
     path: str
 
 
-class DeltaDiffFileSchema(ma.Schema):
+class DeltaChangeDiffFileSchema(ma.Schema):
+    """Schema for diff file path in diffs list"""
+
     path = fields.String(required=True)
 
 
 @dataclass
-class DeltaBase(File):
+class DeltaChangeBase(File):
+    """Base class for changes stored in json list or returned from delta endpoint"""
+
     change: PushChangeType
     version: int
 
 
 @dataclass
-class DeltaMerged(DeltaBase):
+class DeltaChangeMerged(DeltaChangeBase):
+    """Delta item with merged diffs to list of multiple diff files"""
+
     diffs: List[DeltaDiffFile] = field(default_factory=list)
 
     def to_data_delta(self):
         """Convert DeltaMerged to DeltaData with single diff"""
-        result = DeltaData(
+        result = DeltaChange(
             path=self.path,
             size=self.size,
             checksum=self.checksum,
@@ -277,16 +285,14 @@ class DeltaMerged(DeltaBase):
 
 
 @dataclass
-class DeltaData(File):
-    """Delta data stored in database"""
+class DeltaChange(DeltaChangeBase):
+    """Delta items stored in database as list of this item with single diff file"""
 
-    change: PushChangeType
-    version: int
     diff: Optional[str] = None
 
-    def to_merged_delta(self) -> DeltaMerged:
+    def to_merged_delta(self) -> DeltaChangeMerged:
         """Convert DeltaData to DeltaMerged with multiple diffs"""
-        result = DeltaMerged(
+        result = DeltaChangeMerged(
             path=self.path,
             size=self.size,
             checksum=self.checksum,
@@ -298,8 +304,8 @@ class DeltaData(File):
         return result
 
 
-class DeltaBaseSchema(ma.Schema):
-    """Base schema for detla json and response from delta endpoint"""
+class DeltaChangeBaseSchema(ma.Schema):
+    """Base schema for delta json and response from delta endpoint"""
 
     path = fields.String(required=True)
     size = fields.Integer(required=True)
@@ -308,14 +314,14 @@ class DeltaBaseSchema(ma.Schema):
     change = fields.Enum(PushChangeType, by_value=True, required=True)
 
 
-class DeltaDataSchema(DeltaBaseSchema):
-    """Schema for delta data in database"""
+class DeltaChangeSchema(DeltaChangeBaseSchema):
+    """Schema for change data in changes column"""
 
     diff = fields.String(required=False)
 
     @post_load
     def make_object(self, data, **kwargs):
-        return DeltaData(**data)
+        return DeltaChange(**data)
 
     @post_dump
     def patch_field(self, data, **kwargs):
@@ -325,10 +331,10 @@ class DeltaDataSchema(DeltaBaseSchema):
         return data
 
 
-class DeltaRespSchema(DeltaBaseSchema):
+class DeltaChangeRespSchema(DeltaChangeBaseSchema):
     """Schema for delta data response"""
 
-    diffs = fields.List(fields.Nested(DeltaDiffFileSchema()))
+    diffs = fields.List(fields.Nested(DeltaChangeDiffFileSchema()))
 
     @post_dump
     def patch_field(self, data, **kwargs):
