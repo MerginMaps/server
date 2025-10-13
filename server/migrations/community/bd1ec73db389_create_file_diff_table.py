@@ -86,19 +86,23 @@ def upgrade():
                 b.basefile_version
             FROM diffs d
             LEFT OUTER JOIN basefiles b ON b.file_path_id = d.file_path_id AND b.basefile_version < d.project_version_name
-        )    
+        ),
+        file_diffs AS (
+            SELECT DISTINCT
+                d.file_path_id,
+                FIRST_VALUE(rb.basefile_id) OVER (PARTITION BY rb.id ORDER BY rb.basefile_version DESC) as basefile_id,
+                0 AS rank,
+                d.project_version_name AS version,
+                (d.diff ->> 'path') AS path,
+                (d.diff ->> 'size')::bigint AS size,
+                d.diff ->> 'checksum' AS checksum,
+                d.diff ->> 'location' AS location
+            FROM diffs d
+            LEFT OUTER JOIN relevant_basefiles rb ON rb.id = d.id
+        )
         INSERT INTO file_diff (file_path_id, basefile_id, rank, version, path, size, checksum, location)
-        SELECT DISTINCT
-            d.file_path_id,
-            FIRST_VALUE(rb.basefile_id) OVER (PARTITION BY rb.id ORDER BY rb.basefile_version DESC) as basefile_id,
-            0 AS rank,
-            d.project_version_name AS version,
-            (d.diff ->> 'path') AS path,
-            (d.diff ->> 'size')::bigint AS size,
-            d.diff ->> 'checksum' AS checksum,
-            d.diff ->> 'location' AS location
-        FROM diffs d
-        LEFT OUTER JOIN relevant_basefiles rb ON rb.id = d.id;
+        -- it seems that some projects / files might be broken so we need to play it safe here
+        SELECT * FROM file_diffs WHERE basefile_id IS NOT NULL;
         """
     )
 
@@ -130,6 +134,35 @@ def downgrade():
         FROM file_diff fd
         WHERE fh.file_path_id = fd.file_path_id AND fh.project_version_name = fd.version AND fd.rank = 0;
         """
+    )
+
+    # if there were any broken gpkg files (ommited in upgrade), let's add there a dummy diff
+    conn.execute(
+        """
+        UPDATE file_history fh
+        SET diff = jsonb_build_object(
+            'path', 'missing-diff',
+            'size', 0,
+            'checksum', '',
+            'location', ''
+        )
+        WHERE fh.change = 'update_diff' AND fh.diff IS NULL;
+        """
+    )
+
+    # add back consistency constraint
+    conn.execute(
+        sa.text(
+            """
+            ALTER TABLE file_history
+            ADD CONSTRAINT ck_file_history_changes_with_diff CHECK (
+                CASE
+                    WHEN (change = 'update_diff') THEN diff IS NOT NULL
+                    ELSE diff IS NULL
+                END
+            );
+            """
+        )
     )
 
     op.drop_index(op.f("ix_file_diff_version"), table_name="file_diff")
