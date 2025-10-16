@@ -394,14 +394,15 @@ paths:
           required: true
           schema:
             type: integer
-            example: 1
+            example:
+            minimum: 0
           description: Start version (exclusive)
         - name: to
           in: query
-          required: true
           schema:
             type: integer
             example: 2
+            minimum: 1
           description: End version (inclusive)
       responses:
         "200":

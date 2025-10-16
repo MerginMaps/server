@@ -1038,6 +1038,8 @@ class ProjectVersionDelta(db.Model):
                         # create + update = create with with the most recent metadata
                         current.change = previous.change
                         current.diffs = []
+                    else:
+                        result[path] = current
                 elif previous.change == PushChangeType.UPDATE:
                     if current.change == PushChangeType.UPDATE_DIFF:
                         # update + update_diff = update with latest info
@@ -1053,6 +1055,12 @@ class ProjectVersionDelta(db.Model):
                     if current.change == PushChangeType.CREATE:
                         # delete + create = create
                         result[path] = current
+                    elif current.change in (
+                        PushChangeType.UPDATE,
+                        PushChangeType.UPDATE_DIFF,
+                    ):
+                        # delete + update = invalid sequence, keep delete
+                        continue
             else:
                 result[current.path] = current
         return list(result.values())

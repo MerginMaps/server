@@ -4,6 +4,7 @@
 
 import os
 from datetime import datetime
+from typing import Optional
 import uuid
 import gevent
 import logging
@@ -404,23 +405,15 @@ def upload_chunk(id: str):
     )
 
 
-def get_project_delta(id: str):
+def get_project_delta(id: str, since: int, to: Optional[int] = None):
     """Get project changes (delta) between two versions"""
-    since = int(request.args.get("since"))
-    to = int(request.args.get("to"))
+
     project: Project = require_project_by_uuid(id, ProjectPermissions.Read)
-    latest_version = project.latest_version
-    if since < 0 or to < 0:
-        abort(400, "Invalid 'since' or 'to' version")
+    if to is None:
+        to = project.latest_version
+
     if since > to:
         abort(400, "'since' version must be less than 'to' version")
-
-    ProjectVersion.query.filter(
-        ProjectVersion.project_id == project.id,
-        ProjectVersion.name == since,
-    ).first_or_404()
-    if to > latest_version:
-        abort(404)
 
     delta_changes = project.get_delta_changes(since, to)
 
