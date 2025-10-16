@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       >
         <!-- Z indexes based on minus margin, its not possible to add additional buttons to tab view -->
         <div class="relative z-1">
-          <slot name="publish.button" />
+          <slot name="action-button" />
           <PButton
             severity="secondary"
             @click="downloadArchive({ url: downloadUrl })"
