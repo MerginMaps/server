@@ -344,5 +344,11 @@ export const ProjectApi = {
     return ProjectModule.httpService.get(
       `/v2/projects/${projectId}/collaborators`
     )
+  },
+
+  async publishMap(projectId: string) {
+    return ProjectModule.httpService.post(
+      `/app/projects/${projectId}/map-links`
+    )
   }
 }

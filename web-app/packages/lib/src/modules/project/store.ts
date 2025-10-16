@@ -980,6 +980,28 @@ export const useProjectStore = defineStore('projectModule', {
       await notificationStore.error({
         text: getErrorMessage(err, 'Failed to push changes')
       })
+    },
+
+    /**
+     * Publishes the map of the latest project version.
+     */
+    async publishMap() {
+      const notificationStore = useNotificationStore()
+
+      try {
+        const response = await ProjectApi.publishMap(this.project.id)
+        const hash = response.data.map_link
+        const url = `${window.location.origin}/${hash}`
+        navigator.clipboard.writeText(url)
+        notificationStore.show({
+          text: 'Link to public map copied to your clipboard.',
+          severity: 'success'
+        })
+      } catch {
+        notificationStore.error({
+          text: `Failed to publish map`
+        })
+      }
     }
   }
 })
