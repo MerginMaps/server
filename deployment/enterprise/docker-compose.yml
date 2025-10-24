@@ -76,6 +76,8 @@ services:
       - ./map_data:/overviews
     env_file:
       - .prod.env
+    environment:
+      - CELERY_ROUTES={ 'qgis-extractor.*':{'queue':'extractor'} }
     depends_on:
       - db
       - redis
