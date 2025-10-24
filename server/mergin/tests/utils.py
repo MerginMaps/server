@@ -303,9 +303,12 @@ def push_change(project, action, path, src_dir):
     current_files = project.files
     new_version = ProjectVersion.to_v_name(project.next_version())
     changes = {"added": [], "updated": [], "removed": []}
-    metadata = {**file_info(src_dir, path), "location": os.path.join(new_version, path)}
 
     if action == "added":
+        metadata = {
+            **file_info(src_dir, path),
+            "location": os.path.join(new_version, path),
+        }
         new_file = os.path.join(project.storage.project_dir, metadata["location"])
         os.makedirs(os.path.dirname(new_file), exist_ok=True)
         shutil.copy(os.path.join(src_dir, metadata["path"]), new_file)
@@ -349,6 +352,7 @@ def push_change(project, action, path, src_dir):
         changes["updated"].append(metadata)
     elif action == "removed":
         f_removed = next(f for f in current_files if f.path == path)
+        os.remove(os.path.join(project.storage.project_dir, f_removed.location))
         changes["removed"].append(asdict(f_removed))
     else:
         return
