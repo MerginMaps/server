@@ -409,12 +409,15 @@ def get_project_delta(id: str, since: int, to: Optional[int] = None):
     """Get project changes (delta) between two versions"""
 
     project: Project = require_project_by_uuid(id, ProjectPermissions.Read)
-    if to is None:
-        to = project.latest_version
+    to = project.latest_version if to is None else to
+    if to > project.latest_version:
+        abort(400, "'to' version exceeds latest project version")
 
-    if since > to:
-        abort(400, "'since' version must be less than 'to' version")
+    if since >= to:
+        abort(400, "'since' version must be less than or equal to 'to' version")
 
     delta_changes = project.get_delta_changes(since, to)
+    if delta_changes is None:
+        abort(404)
 
     return DeltaChangeRespSchema(many=True).dump(delta_changes), 200
