@@ -48,9 +48,12 @@ class ExtendedEmail(Email):
     1. spaces,
     2. special characters ,:;()<>[]\"
     3, multiple @ symbols,
-    4, leading, trailing, or consecutive dots in the local part
-    5, invalid domain part - missing top level domain (user@example), consecutive dots
-    Custom check for additional invalid characters disallows |'— because they make our email sending service to fail
+    4, leading, trailing, or consecutive dots in the local part,
+    5, invalid domain part - missing top level domain (user@example), consecutive dots,
+    Custom check for
+    - additional invalid characters disallows |'—
+    - non-ASCII characters in the domain part
+    because they make our email sending service to fail
     """
 
     def __call__(self, form, field):
@@ -59,6 +62,17 @@ class ExtendedEmail(Email):
         if re.search(r"[|'—]", field.data):
             raise ValidationError(
                 f"Email address '{field.data}' contains an invalid character."
+            )
+
+        try:
+            local_part, domain_part = field.data.rsplit("@", 1)
+        except ValueError:
+            raise ValidationError(f"Invalid email address '{field.data}'.")
+
+        # character is one of the standard ASCII characters (0–127)
+        if not all(ord(c) < 128 for c in domain_part):
+            raise ValidationError(
+                f"Email address '{field.data}' contains non-ASCII characters in the domain part."
             )
 
 
