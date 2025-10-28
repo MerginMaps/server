@@ -2341,6 +2341,10 @@ def test_project_version_integrity(client):
             .order_by(desc(ProjectVersion.created))
             .first()
         )
+        # remove project version delta entries
+        ProjectVersionDelta.query.filter_by(
+            project_id=upload.project_id, version=pv.name
+        ).delete()
         db.session.delete(pv)
         db.session.commit()
         upload.project.cache_latest_files()
