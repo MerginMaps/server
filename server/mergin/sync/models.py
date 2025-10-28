@@ -275,6 +275,11 @@ class Project(db.Model):
         db.session.execute(
             upload_table.delete().where(upload_table.c.project_id == self.id)
         )
+        # remove project version delta related to project
+        delta_table = ProjectVersionDelta.__table__
+        db.session.execute(
+            delta_table.delete().where(delta_table.c.project_id == self.id)
+        )
         self.project_users.clear()
         access_requests = (
             AccessRequest.query.filter_by(project_id=self.id)
@@ -391,7 +396,7 @@ class Project(db.Model):
         for checkpoint in expected_checkpoints:
             existing_delta = existing_delta_map.get((checkpoint.rank, checkpoint.end))
 
-            # we have change in database, just return delta data from it
+            # we have delta in database, just return delta data from it
             if existing_delta:
                 result.extend(DeltaChangeSchema(many=True).load(existing_delta.changes))
                 continue
@@ -1021,6 +1026,7 @@ class ProjectVersionDelta(db.Model):
         Changes are merged based on file path and change type.
         """
         result: Dict[str, DeltaChangeMerged] = {}
+        updating_files: Set[str] = set()
         # sorting changes by version to apply them in correct order
         items.sort(key=lambda x: x.version)
 
@@ -1028,12 +1034,15 @@ class ProjectVersionDelta(db.Model):
             result[path] = current
 
         def handle_delete(result, path, current, previous):
-            del result[path]
+
+            if path in updating_files:
+                result[path] = current
+            else:
+                del result[path]
 
         def handle_update(result, path, current, previous):
             # handle update case, when previous change was create - just revert to create with new metadata
             current.change = previous.change
-            current.version = previous.version
             current.diffs = []
             result[path] = current
 
@@ -1072,12 +1081,17 @@ class ProjectVersionDelta(db.Model):
         }
 
         for item in items:
-            current = item.to_merged_delta()
+            current = item.to_merged()
             path = current.path
+            # path is key for merging changes
             previous = result.get(path)
 
+            # adding new file change if not seen before
             if not previous:
                 result[path] = current
+                # track existing paths to avoid deleting created files later
+                if current.change != PushChangeType.CREATE:
+                    updating_files.add(path)
                 continue
 
             handler = dispatch.get((previous.change, current.change))

@@ -286,12 +286,12 @@ class DeltaChangeMerged(DeltaChangeBase):
 
 @dataclass
 class DeltaChange(DeltaChangeBase):
-    """Delta items stored in database as list of this item with single diff file"""
+    """Change items stored in database as list of this item with single diff file"""
 
     diff: Optional[str] = None
 
-    def to_merged_delta(self) -> DeltaChangeMerged:
-        """Convert DeltaData to DeltaMerged with multiple diffs"""
+    def to_merged(self) -> DeltaChangeMerged:
+        """Convert to DeltaMerged with multiple diffs"""
         result = DeltaChangeMerged(
             path=self.path,
             size=self.size,

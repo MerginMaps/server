@@ -28,6 +28,7 @@ from ..app import db
 from ..sync.models import (
     FileDiff,
     Project,
+    ProjectVersionDelta,
     Upload,
     ProjectVersion,
     SyncFailuresHistory,
@@ -536,6 +537,7 @@ def test_delete_project(client):
     assert not Project.query.filter_by(
         workspace_id=test_workspace_id, name=test_project
     ).count()
+    assert not ProjectVersionDelta.query.filter_by(project_id=project.id).count()
     assert not os.path.exists(project_dir)
     rm_project = Project.query.get(project.id)
     assert rm_project.removed_at and not rm_project.storage_params
@@ -1781,6 +1783,8 @@ def test_optimize_storage(app, client, diff_project):
     diff_project.latest_version = 8
     ProjectVersion.query.filter_by(project_id=diff_project.id, name=9).delete()
     ProjectVersion.query.filter_by(project_id=diff_project.id, name=10).delete()
+    ProjectVersionDelta.query.filter_by(project_id=diff_project.id, version=9).delete()
+    ProjectVersionDelta.query.filter_by(project_id=diff_project.id, version=10).delete()
     db.session.commit()
     diff_project.cache_latest_files()
     assert diff_project.latest_version == 8
