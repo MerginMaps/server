@@ -331,8 +331,8 @@ class DeltaChangeSchema(DeltaChangeBaseSchema):
         return data
 
 
-class DeltaChangeRespSchema(DeltaChangeBaseSchema):
-    """Schema for delta data response"""
+class DeltaChangeItemSchema(DeltaChangeBaseSchema):
+    """Schema for delta changes response"""
 
     diffs = fields.List(fields.Nested(DeltaChangeDiffFileSchema()))
 
@@ -342,3 +342,12 @@ class DeltaChangeRespSchema(DeltaChangeBaseSchema):
         if not data.get("diffs"):
             data.pop("diffs", None)
         return data
+
+
+class DeltaChangeRespSchema(ma.Schema):
+    """Schema for list of delta changes wrapped in items field"""
+
+    items = fields.List(fields.Nested(DeltaChangeItemSchema()))
+
+    class Meta:
+        unknown = EXCLUDE

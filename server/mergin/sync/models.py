@@ -65,6 +65,16 @@ class FileSyncErrorType(Enum):
     SYNC_ERROR = "sync error"
 
 
+class ChangeComparisonAction(Enum):
+    """Actions to take when comparing two changes"""
+
+    REPLACE = "replace"
+    DELETE = "delete"
+    UPDATE = "update"
+    UPDATE_DIFF = "update_diff"
+    EXCLUDE = "exclude"  # Return None to exclude the file
+
+
 class Project(db.Model):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = db.Column(db.String, index=True)
@@ -993,7 +1003,7 @@ class ProjectVersionDelta(db.Model):
     version = db.Column(db.Integer, nullable=False, index=True)
     # exponential order of changes json
     rank = db.Column(db.Integer, nullable=False, index=True)
-    # to which project version is this linked
+    # to which project is this linked
     project_id = db.Column(
         UUID(as_uuid=True),
         db.ForeignKey("project.id", ondelete="CASCADE"),
@@ -1025,94 +1035,167 @@ class ProjectVersionDelta(db.Model):
         Merge changes json array objects into one list of changes.
         Changes are merged based on file path and change type.
         """
-        result: Dict[str, DeltaChangeMerged] = {}
         updating_files: Set[str] = set()
         # sorting changes by version to apply them in correct order
         items.sort(key=lambda x: x.version)
 
-        def handle_replace(result, path, current, previous):
-            result[path] = current
-
-        def handle_delete(result, path, current, previous):
-
-            if path in updating_files:
-                result[path] = current
-            else:
-                del result[path]
-
-        def handle_update(result, path, current, previous):
-            # handle update case, when previous change was create - just revert to create with new metadata
-            current.change = previous.change
-            current.diffs = []
-            result[path] = current
-
-        def handle_update_diff(result, path, current, previous):
-            current.diffs = (previous.diffs or []) + (current.diffs or [])
-            result[path] = current
-
-        dispatch = {
-            # create + delete = file is transparent for current changes -> delete it
-            (PushChangeType.CREATE, PushChangeType.DELETE): handle_delete,
-            # create + update = create with updated info
-            (PushChangeType.CREATE, PushChangeType.UPDATE): handle_update,
-            (PushChangeType.CREATE, PushChangeType.UPDATE_DIFF): handle_update,
-            (PushChangeType.CREATE, PushChangeType.CREATE): None,
-            # update + update_diff = update with latest info
-            (
-                PushChangeType.UPDATE,
-                PushChangeType.UPDATE_DIFF,
-            ): handle_update,
-            (PushChangeType.UPDATE, PushChangeType.UPDATE): handle_replace,
-            (PushChangeType.UPDATE, PushChangeType.DELETE): handle_replace,
-            (PushChangeType.UPDATE, PushChangeType.CREATE): handle_replace,
-            # update_diff + update_diff = update_diff with latest info with proper order of diffs
-            (
-                PushChangeType.UPDATE_DIFF,
-                PushChangeType.UPDATE_DIFF,
-            ): handle_update_diff,
-            (PushChangeType.UPDATE_DIFF, PushChangeType.UPDATE): handle_replace,
-            (PushChangeType.UPDATE_DIFF, PushChangeType.DELETE): handle_replace,
-            (PushChangeType.UPDATE_DIFF, PushChangeType.CREATE): None,
-            (PushChangeType.DELETE, PushChangeType.CREATE): handle_replace,
-            # delete + update = invalid sequence, keep delete
-            (PushChangeType.DELETE, PushChangeType.UPDATE): None,
-            (PushChangeType.DELETE, PushChangeType.UPDATE_DIFF): None,
-            (PushChangeType.DELETE, PushChangeType.DELETE): None,
-        }
-
+        # Merge changes for each file in a single pass
+        result: Dict[str, DeltaChangeMerged] = {}
         for item in items:
+            path = item.path
             current = item.to_merged()
-            path = current.path
-            # path is key for merging changes
-            previous = result.get(path)
 
-            # adding new file change if not seen before
-            if not previous:
+            # First change for this file
+            if path not in result:
                 result[path] = current
-                # track existing paths to avoid deleting created files later
+                # track existing paths to avoid deleting files that are already in history before
                 if current.change != PushChangeType.CREATE:
                     updating_files.add(path)
                 continue
 
-            handler = dispatch.get((previous.change, current.change))
-            if handler:
-                handler(result, path, current, previous)
+            # Compare and merge with previous change for this file
+            can_delete = path in updating_files
+            new_change = ProjectVersionDelta._compare_changes(
+                result[path], current, can_delete
+            )
+
+            # Update result (or remove if no change is detected)
+            if new_change is not None:
+                result[path] = new_change
+            else:
+                del result[path]
 
         return list(result.values())
+
+    @staticmethod
+    def _compare_changes(
+        previous: DeltaChangeMerged,
+        new: DeltaChangeMerged,
+        prevent_delete_change: bool,
+    ) -> Optional[DeltaChangeMerged]:
+        """
+        Compare and merge two changes for the same file.
+
+        Args:
+            previous: Previously accumulated change
+            new: New change to compare
+            prevent_delete_change: Whether the change can be deleted when resolving create+delete sequences
+
+        Returns:
+            Merged change or None if file should be excluded
+        """
+
+        # Map change type pairs to actions
+        action_map = {
+            # create + delete = file is transparent for current changes -> delete it
+            (
+                PushChangeType.CREATE,
+                PushChangeType.DELETE,
+            ): ChangeComparisonAction.DELETE,
+            # create + update = create with updated info
+            (
+                PushChangeType.CREATE,
+                PushChangeType.UPDATE,
+            ): ChangeComparisonAction.UPDATE,
+            (
+                PushChangeType.CREATE,
+                PushChangeType.UPDATE_DIFF,
+            ): ChangeComparisonAction.UPDATE,
+            (
+                PushChangeType.CREATE,
+                PushChangeType.CREATE,
+            ): ChangeComparisonAction.EXCLUDE,
+            # update + update_diff = update with latest info
+            (
+                PushChangeType.UPDATE,
+                PushChangeType.UPDATE_DIFF,
+            ): ChangeComparisonAction.UPDATE,
+            (
+                PushChangeType.UPDATE,
+                PushChangeType.UPDATE,
+            ): ChangeComparisonAction.REPLACE,
+            (
+                PushChangeType.UPDATE,
+                PushChangeType.DELETE,
+            ): ChangeComparisonAction.REPLACE,
+            (
+                PushChangeType.UPDATE,
+                PushChangeType.CREATE,
+            ): ChangeComparisonAction.REPLACE,
+            # update_diff + update_diff = update_diff with latest info with proper order of diffs
+            (
+                PushChangeType.UPDATE_DIFF,
+                PushChangeType.UPDATE_DIFF,
+            ): ChangeComparisonAction.UPDATE_DIFF,
+            (
+                PushChangeType.UPDATE_DIFF,
+                PushChangeType.UPDATE,
+            ): ChangeComparisonAction.REPLACE,
+            (
+                PushChangeType.UPDATE_DIFF,
+                PushChangeType.DELETE,
+            ): ChangeComparisonAction.REPLACE,
+            (
+                PushChangeType.UPDATE_DIFF,
+                PushChangeType.CREATE,
+            ): ChangeComparisonAction.EXCLUDE,
+            (
+                PushChangeType.DELETE,
+                PushChangeType.CREATE,
+            ): ChangeComparisonAction.REPLACE,
+            # delete + update = invalid sequence
+            (
+                PushChangeType.DELETE,
+                PushChangeType.UPDATE,
+            ): ChangeComparisonAction.EXCLUDE,
+            (
+                PushChangeType.DELETE,
+                PushChangeType.UPDATE_DIFF,
+            ): ChangeComparisonAction.EXCLUDE,
+            (
+                PushChangeType.DELETE,
+                PushChangeType.DELETE,
+            ): ChangeComparisonAction.EXCLUDE,
+        }
+
+        action = action_map.get((previous.change, new.change))
+        result = None
+        if action == ChangeComparisonAction.REPLACE:
+            result = new
+
+        elif action == ChangeComparisonAction.DELETE:
+            # if change is create + delete, we can just remove the change from accumulated changes
+            # only if this action is allowed (file existed before)
+            if prevent_delete_change:
+                result = new
+
+        elif action == ChangeComparisonAction.UPDATE:
+            # handle update case, when previous change was create - just revert to create with new metadata
+            new.change = previous.change
+            new.diffs = []
+            result = new
+
+        elif action == ChangeComparisonAction.UPDATE_DIFF:
+            new.diffs = (previous.diffs or []) + (new.diffs or [])
+            result = new
+
+        return result
 
     @classmethod
     def create_checkpoint(
         cls,
         project_id: str,
         checkpoint: Checkpoint,
-        changes: List[ProjectVersionDelta] = [],
+        from_deltas: List[ProjectVersionDelta] = [],
     ) -> Optional[ProjectVersionDelta]:
         """
         Creates and caches new checkpoint and any required FileDiff checkpoints.
+        Use from_deltas to create checkpoint from existing individual deltas.
+        Returns created ProjectVersionDelta object with checkpoint.
         """
         delta_range = [
             change
-            for change in changes
+            for change in from_deltas
             if checkpoint.start <= change.version <= checkpoint.end
         ]
 
@@ -1122,7 +1205,7 @@ class ProjectVersionDelta(db.Model):
             )
             return None
 
-        # dump delta objects from database and flatten list for merging
+        # dump changes lists from database and flatten list for merging
         changes = []
         for delta in delta_range:
             changes.extend(DeltaChangeSchema(many=True).load(delta.changes))

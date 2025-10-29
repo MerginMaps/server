@@ -415,7 +415,7 @@ def test_delta_merge_changes():
         size=0,
         checksum="ghi",
     )
-    created = DeltaChange(
+    create = DeltaChange(
         path="file1.gpkg",
         change=PushChangeType.CREATE,
         version=7,
@@ -449,7 +449,7 @@ def test_project_version_delta_changes(client, diff_project: Project):
         .order_by(ProjectVersionDelta.version)
         .all()
     )
-    # check if deltas are created after pushes
+    # check if deltas are created after pushes within ProjectVersion creation
     assert len(deltas) == 10
     initial_delta = deltas[0]
     initial_version = ProjectVersion.query.filter_by(
@@ -535,9 +535,18 @@ def test_project_version_delta_changes(client, diff_project: Project):
     fh = FileHistory.query.filter_by(
         project_version_name=latest_version.name - 1
     ).first()
-    base_gpkg_checkpoint = FileDiff.query.filter_by(basefile_id=fh.id, rank=1).first()
-    assert base_gpkg_checkpoint
-    assert base_gpkg_checkpoint.version == latest_version.name + 6
+    # testing constistency of db entries FileDiff and ProjectVersionDelta
+    test_gpkg_checkpoint = FileDiff.query.filter_by(basefile_id=fh.id, rank=1).first()
+    assert test_gpkg_checkpoint
+    assert test_gpkg_checkpoint.version == latest_version.name + 6
+    delta_checkpoint = ProjectVersionDelta.query.filter_by(
+        project_id=diff_project.id, version=latest_version.name + 6, rank=1
+    ).first()
+    assert delta_checkpoint
+    assert len(delta_checkpoint.changes) == 1
+    assert delta_checkpoint.changes[0]["version"] == latest_version.name + 6
+    assert delta_checkpoint.changes[0]["change"] == PushChangeType.UPDATE_DIFF.value
+    assert delta_checkpoint.changes[0]["diff"] == test_gpkg_checkpoint.path
 
     fh = FileHistory.query.filter_by(
         project_version_name=latest_version.name + 6
@@ -545,7 +554,7 @@ def test_project_version_delta_changes(client, diff_project: Project):
     delta = diff_project.get_delta_changes(12, latest_version.name + 6)
     assert len(delta) == 1
     assert len(delta[0].diffs) == 1
-    assert delta[0].diffs[0].path == base_gpkg_checkpoint.path
+    assert delta[0].diffs[0].path == test_gpkg_checkpoint.path
     assert delta[0].change == PushChangeType.UPDATE_DIFF
     assert delta[0].checksum == fh.checksum
     assert delta[0].size == fh.size
@@ -916,17 +925,17 @@ def test_project_delta(client, diff_project):
     push_change(initial_project, "added", "base.gpkg", working_dir)
     response = client.get(f"v2/projects/{initial_project.id}/delta?since=0")
     assert response.status_code == 200
-    delta = response.json
-    assert len(delta) == 1
-    assert delta[0]["change"] == PushChangeType.CREATE.value
-    assert delta[0]["version"] == 1
+    changes = response.json["items"]
+    assert len(changes) == 1
+    assert changes[0]["change"] == PushChangeType.CREATE.value
+    assert changes[0]["version"] == 1
 
     # remove the file and get changes from 0 -> 2 where base gpgkg is removed -> transparent
     push_change(initial_project, "removed", "base.gpkg", working_dir)
     response = client.get(f"v2/projects/{initial_project.id}/delta?since=0")
     assert response.status_code == 200
-    delta = response.json
-    assert len(delta) == 0
+    changes = response.json["items"]
+    assert len(changes) == 0
 
     # non valid cases
     response = client.get(f"v2/projects/{diff_project.id}/delta")
@@ -947,32 +956,32 @@ def test_project_delta(client, diff_project):
     # since 1 to latest version
     response = client.get(f"v2/projects/{diff_project.id}/delta?since=1")
     assert response.status_code == 200
+    changes = response.json["items"]
     # create of test.gpkg and delete base.gpkg
-    assert len(response.json) == 2
-    assert response.json[0]["change"] == PushChangeType.DELETE.value
-    assert response.json[0]["version"] == 9
-    assert response.json[0]["path"] == "base.gpkg"
-    assert response.json[0]["size"] == 98304
+    assert len(changes) == 2
+    assert changes[0]["change"] == PushChangeType.DELETE.value
+    assert changes[0]["version"] == 9
+    assert changes[0]["path"] == "base.gpkg"
+    assert changes[0]["size"] == 98304
 
-    assert response.json[1]["change"] == PushChangeType.CREATE.value
-    assert response.json[1]["version"] == 9
-    assert response.json[1]["path"] == "test.gpkg"
-    assert response.json[1]["size"] == 98304
+    assert changes[1]["change"] == PushChangeType.CREATE.value
+    assert changes[1]["version"] == 9
+    assert changes[1]["path"] == "test.gpkg"
+    assert changes[1]["size"] == 98304
 
     # simple update
     response = client.get(f"v2/projects/{diff_project.id}/delta?since=4&to=8")
     assert response.status_code == 200
-    delta = response.json
-    assert len(delta) == 1
-    assert delta[0]["change"] == PushChangeType.UPDATE.value
+    changes = response.json["items"]
+    assert len(changes) == 1
+    assert changes[0]["change"] == PushChangeType.UPDATE.value
     # version is new latest version of the change
-    assert delta[0]["version"] == 7
-    assert not delta[0].get("diffs")
+    assert changes[0]["version"] == 7
+    assert not changes[0].get("diffs")
 
 
-# integration test for pull mechanism
 def test_project_pull_diffs(client, diff_project):
-    """Test project pull mechanisom in v2 with diff files"""
+    """Test project pull mechanisom in v2 with diff files. Integration test for pull mechanism"""
     since = 5
     to = 7
     # check diff files in database where we can get them with right order and metadata
@@ -983,7 +992,7 @@ def test_project_pull_diffs(client, diff_project):
     )
     response = client.get(f"v2/projects/{diff_project.id}/delta?since={since}&to={to}")
     assert response.status_code == 200
-    delta = response.json
+    delta = response.json["items"]
     assert len(delta) == 1
     assert delta[0]["change"] == PushChangeType.UPDATE_DIFF.value
     assert delta[0]["version"] == 7

@@ -410,9 +410,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ProjectDelta"
+                $ref: "#/components/schemas/ProjectDeltaResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "404":
@@ -841,7 +839,7 @@ components:
       type: string
       enum: [create, update, delete, update_diff]
       example: update
-    ProjectDelta:
+    ProjectDeltaChange:
       type: object
       required:
         - path
@@ -873,3 +871,12 @@ components:
               path:
                 type: string
                 example: survey.gpkg-diff-1
+    ProjectDeltaResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectDeltaChange"

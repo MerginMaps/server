@@ -414,10 +414,8 @@ def get_project_delta(id: str, since: int, to: Optional[int] = None):
         abort(400, "'to' version exceeds latest project version")
 
     if since >= to:
-        abort(400, "'since' version must be less than or equal to 'to' version")
+        abort(400, "'since' version must be less than 'to' version")
 
-    delta_changes = project.get_delta_changes(since, to)
-    if delta_changes is None:
-        abort(404)
+    delta_changes = project.get_delta_changes(since, to) or []
 
-    return DeltaChangeRespSchema(many=True).dump(delta_changes), 200
+    return DeltaChangeRespSchema().dump({"items": delta_changes}), 200
