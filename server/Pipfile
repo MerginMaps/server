@@ -40,6 +40,7 @@ psycogreen = "==1.0.2"
 importlib-metadata = "==8.4.0"  # https://github.com/pallets/flask/issues/4502
 typing_extensions = "==4.12.2"
 python-magic = "==0.4.27"
+click = "==8.2.0"
 # requirements for development on windows
 colorama = "==0.4.5"
 
