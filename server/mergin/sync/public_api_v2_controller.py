@@ -8,13 +8,14 @@ from flask import abort, jsonify
 from flask_login import current_user
 
 from mergin.sync.forms import project_name_validation
+from .files import ProjectFileSchema
 
-from .schemas import ProjectMemberSchema
+from .schemas import ProjectMemberSchema, ProjectSchemaV2
 from .workspace import WorkspaceRole
 from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
-from .models import Project, ProjectRole, ProjectMember
+from .models import Project, ProjectRole, ProjectMember, ProjectVersion
 from .permissions import ProjectPermissions, require_project_by_uuid
 
 
@@ -128,3 +129,18 @@ def remove_project_collaborator(id, user_id):
     project.unset_role(user_id)
     db.session.commit()
     return NoContent, 204
+
+
+def get_project(id, files_at_version=None):
+    """Get project info. Include list of files at specific version if requested."""
+    project = require_project_by_uuid(id, ProjectPermissions.Read)
+    data = ProjectSchemaV2().dump(project)
+    if files_at_version:
+        pv = ProjectVersion.query.filter_by(
+            project_id=project.id, name=ProjectVersion.from_v_name(files_at_version)
+        ).first_or_404()
+        data["files"] = ProjectFileSchema(
+            only=("path", "mtime", "size", "checksum"), many=True
+        ).dump(pv.files)
+
+    return data, 200
