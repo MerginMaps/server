@@ -4,6 +4,7 @@
 
 import os
 from datetime import datetime
+from typing import Optional
 import uuid
 import gevent
 import logging
@@ -22,7 +23,7 @@ from .workspace import WorkspaceRole
 from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
-from .models import FileDiff, Project, ProjectRole, ProjectMember
+from .models import FileDiff, Project, ProjectRole, ProjectMember, ProjectVersionDelta
 from .permissions import ProjectPermissions, require_project_by_uuid
 from .utils import prepare_download_response
 from ..app import db
@@ -38,7 +39,7 @@ from .errors import (
     StorageLimitHit,
     UploadError,
 )
-from .files import ChangesSchema
+from .files import ChangesSchema, DeltaChangeRespSchema
 from .forms import project_name_validation
 from .models import (
     Project,
@@ -402,3 +403,19 @@ def upload_chunk(id: str):
         UploadChunkSchema().dump({"id": chunk_id, "valid_until": valid_until}),
         200,
     )
+
+
+def get_project_delta(id: str, since: int, to: Optional[int] = None):
+    """Get project changes (delta) between two versions"""
+
+    project: Project = require_project_by_uuid(id, ProjectPermissions.Read)
+    to = project.latest_version if to is None else to
+    if to > project.latest_version:
+        abort(400, "'to' version exceeds latest project version")
+
+    if since >= to:
+        abort(400, "'since' version must be less than 'to' version")
+
+    delta_changes = project.get_delta_changes(since, to) or []
+
+    return DeltaChangeRespSchema().dump({"items": delta_changes}), 200

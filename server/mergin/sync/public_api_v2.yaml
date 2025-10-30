@@ -381,6 +381,41 @@ paths:
                 $ref: "#/components/schemas/ProjectLocked"
 
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
+  /projects/{id}/delta:
+    get:
+      tags:
+        - project
+      summary: Get project changes (delta) between two versions
+      operationId: get_project_delta
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - name: since
+          in: query
+          required: true
+          schema:
+            type: integer
+            example:
+            minimum: 0
+          description: Start version (exclusive)
+        - name: to
+          in: query
+          schema:
+            type: integer
+            example: 2
+            minimum: 1
+          description: End version (inclusive)
+      responses:
+        "200":
+          description: Project changes between two versions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDeltaResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
 components:
   responses:
     NoContent:
@@ -800,3 +835,48 @@ components:
             - editor
             - writer
             - owner
+    ProjectChangeType:
+      type: string
+      enum: [create, update, delete, update_diff]
+      example: update
+    ProjectDeltaChange:
+      type: object
+      required:
+        - path
+        - size
+        - checksum
+        - version
+        - change
+      properties:
+        path:
+          type: string
+          example: survey.gpkg
+        size:
+          type: integer
+          example: 1024
+        checksum:
+          type: string
+          example: 9adb76bf81a34880209040ffe5ee262a090b62ab
+        version:
+          type: integer
+          example: 1
+        change:
+          $ref: "#/components/schemas/ProjectChangeType"
+        diffs:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                example: survey.gpkg-diff-1
+    ProjectDeltaResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectDeltaChange"

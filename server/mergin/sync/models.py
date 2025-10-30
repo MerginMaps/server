@@ -24,7 +24,10 @@ from pygeodiff.geodifflib import GeoDiffLibError, GeoDiffLibConflictError
 from flask import current_app
 
 from .files import (
-    File,
+    DeltaChangeMerged,
+    DeltaDiffFile,
+    DeltaChange,
+    DeltaChangeSchema,
     ProjectDiffFile,
     ProjectFileChange,
     ChangesSchema,
@@ -60,6 +63,16 @@ class FileSyncErrorType(Enum):
     CORRUPTED = "corrupted"
     UNSUPPORTED = "unsupported"
     SYNC_ERROR = "sync error"
+
+
+class ChangeComparisonAction(Enum):
+    """Actions to take when comparing two changes"""
+
+    REPLACE = "replace"
+    DELETE = "delete"
+    UPDATE = "update"
+    UPDATE_DIFF = "update_diff"
+    EXCLUDE = "exclude"  # Return None to exclude the file
 
 
 class Project(db.Model):
@@ -272,6 +285,11 @@ class Project(db.Model):
         db.session.execute(
             upload_table.delete().where(upload_table.c.project_id == self.id)
         )
+        # remove project version delta related to project
+        delta_table = ProjectVersionDelta.__table__
+        db.session.execute(
+            delta_table.delete().where(delta_table.c.project_id == self.id)
+        )
         self.project_users.clear()
         access_requests = (
             AccessRequest.query.filter_by(project_id=self.id)
@@ -349,6 +367,84 @@ class Project(db.Model):
                     id_diffs.append(user.user_id)
 
         return set(id_diffs)
+
+    def get_delta_changes(
+        self, since: int, to: int
+    ) -> Optional[List[DeltaChangeMerged]]:
+        """
+        Get changes between two versions, merging them if needed.
+        - create FileDiff checkpoints if needed
+        - create ProjectVersionDelta checkpoints if needed with changes json
+        """
+        if since > to:
+            logging.error(
+                f"Start version {since} is higher than end version {to} - broken history"
+            )
+            return
+        if since == to:
+            return None
+        project_id = self.id
+        expected_checkpoints = Checkpoint.get_checkpoints(since + 1, to)
+        expected_deltas: List[ProjectVersionDelta] = (
+            ProjectVersionDelta.query.filter(
+                ProjectVersionDelta.project_id == project_id,
+                ProjectVersionDelta.version > since,
+                ProjectVersionDelta.version <= to,
+                tuple_(ProjectVersionDelta.rank, ProjectVersionDelta.version).in_(
+                    [(item.rank, item.end) for item in expected_checkpoints]
+                ),
+            )
+            .order_by(ProjectVersionDelta.version)
+            .all()
+        )
+        existing_delta_map = {(c.rank, c.version): c for c in expected_deltas}
+
+        # Cache all individual (rank 0) delta rows in the required range.
+        individual_deltas: List[ProjectVersionDelta] = []
+
+        result: List[DeltaChange] = []
+        for checkpoint in expected_checkpoints:
+            existing_delta = existing_delta_map.get((checkpoint.rank, checkpoint.end))
+
+            # we have delta in database, just return delta data from it
+            if existing_delta:
+                result.extend(DeltaChangeSchema(many=True).load(existing_delta.changes))
+                continue
+
+            # If higher rank delta checkopoint does not exists, we are using rank=0 deltas to create checkopoint
+            if checkpoint.rank > 0:
+                individual_deltas = (
+                    ProjectVersionDelta.query.filter(
+                        ProjectVersionDelta.project_id == project_id,
+                        ProjectVersionDelta.version >= since,
+                        ProjectVersionDelta.version <= to,
+                        ProjectVersionDelta.rank == 0,
+                    )
+                    .order_by(ProjectVersionDelta.version)
+                    .all()
+                    if not individual_deltas
+                    else individual_deltas
+                )
+
+                if not individual_deltas:
+                    logging.error(
+                        f"No individual deltas found for project {project_id} in range {since} / {to} to create checkpoint."
+                    )
+                    return
+
+                new_checkpoint = ProjectVersionDelta.create_checkpoint(
+                    project_id, checkpoint, individual_deltas
+                )
+                if new_checkpoint:
+                    result.extend(
+                        DeltaChangeSchema(many=True).load(new_checkpoint.changes)
+                    )
+                else:
+                    logging.error(
+                        f"Not possible to create checkpoint for project {project_id} in range {checkpoint.start}-{checkpoint.end}"
+                    )
+
+        return ProjectVersionDelta.merge_changes(result)
 
 
 class ProjectRole(Enum):
@@ -902,6 +998,278 @@ class FileDiff(db.Model):
         return True
 
 
+class ProjectVersionDelta(db.Model):
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    version = db.Column(db.Integer, nullable=False, index=True)
+    # exponential order of changes json
+    rank = db.Column(db.Integer, nullable=False, index=True)
+    # to which project is this linked
+    project_id = db.Column(
+        UUID(as_uuid=True),
+        db.ForeignKey("project.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    # cached changes for versions from start to end (inclusive)
+    changes = db.Column(JSONB, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint("project_id", "version", "rank", name="unique_deltas"),
+        db.Index(
+            "ix_project_version_delta_project_id_version_rank",
+            project_id,
+            version,
+            rank,
+        ),
+    )
+    project = db.relationship(
+        "Project",
+        uselist=False,
+    )
+
+    @staticmethod
+    def merge_changes(
+        items: List[DeltaChange],
+    ) -> List[DeltaChangeMerged]:
+        """
+        Merge changes json array objects into one list of changes.
+        Changes are merged based on file path and change type.
+        """
+        updating_files: Set[str] = set()
+        # sorting changes by version to apply them in correct order
+        items.sort(key=lambda x: x.version)
+
+        # Merge changes for each file in a single pass
+        result: Dict[str, DeltaChangeMerged] = {}
+        for item in items:
+            path = item.path
+            current = item.to_merged()
+
+            # First change for this file
+            if path not in result:
+                result[path] = current
+                # track existing paths to avoid deleting files that are already in history before
+                if current.change != PushChangeType.CREATE:
+                    updating_files.add(path)
+                continue
+
+            # Compare and merge with previous change for this file
+            can_delete = path in updating_files
+            new_change = ProjectVersionDelta._compare_changes(
+                result[path], current, can_delete
+            )
+
+            # Update result (or remove if no change is detected)
+            if new_change is not None:
+                result[path] = new_change
+            else:
+                del result[path]
+
+        return list(result.values())
+
+    @staticmethod
+    def _compare_changes(
+        previous: DeltaChangeMerged,
+        new: DeltaChangeMerged,
+        prevent_delete_change: bool,
+    ) -> Optional[DeltaChangeMerged]:
+        """
+        Compare and merge two changes for the same file.
+
+        Args:
+            previous: Previously accumulated change
+            new: New change to compare
+            prevent_delete_change: Whether the change can be deleted when resolving create+delete sequences
+
+        Returns:
+            Merged change or None if file should be excluded
+        """
+
+        # Map change type pairs to actions
+        action_map = {
+            # create + delete = file is transparent for current changes -> delete it
+            (
+                PushChangeType.CREATE,
+                PushChangeType.DELETE,
+            ): ChangeComparisonAction.DELETE,
+            # create + update = create with updated info
+            (
+                PushChangeType.CREATE,
+                PushChangeType.UPDATE,
+            ): ChangeComparisonAction.UPDATE,
+            (
+                PushChangeType.CREATE,
+                PushChangeType.UPDATE_DIFF,
+            ): ChangeComparisonAction.UPDATE,
+            (
+                PushChangeType.CREATE,
+                PushChangeType.CREATE,
+            ): ChangeComparisonAction.EXCLUDE,
+            # update + update_diff = update with latest info
+            (
+                PushChangeType.UPDATE,
+                PushChangeType.UPDATE_DIFF,
+            ): ChangeComparisonAction.UPDATE,
+            (
+                PushChangeType.UPDATE,
+                PushChangeType.UPDATE,
+            ): ChangeComparisonAction.REPLACE,
+            (
+                PushChangeType.UPDATE,
+                PushChangeType.DELETE,
+            ): ChangeComparisonAction.REPLACE,
+            (
+                PushChangeType.UPDATE,
+                PushChangeType.CREATE,
+            ): ChangeComparisonAction.REPLACE,
+            # update_diff + update_diff = update_diff with latest info with proper order of diffs
+            (
+                PushChangeType.UPDATE_DIFF,
+                PushChangeType.UPDATE_DIFF,
+            ): ChangeComparisonAction.UPDATE_DIFF,
+            (
+                PushChangeType.UPDATE_DIFF,
+                PushChangeType.UPDATE,
+            ): ChangeComparisonAction.REPLACE,
+            (
+                PushChangeType.UPDATE_DIFF,
+                PushChangeType.DELETE,
+            ): ChangeComparisonAction.REPLACE,
+            (
+                PushChangeType.UPDATE_DIFF,
+                PushChangeType.CREATE,
+            ): ChangeComparisonAction.EXCLUDE,
+            (
+                PushChangeType.DELETE,
+                PushChangeType.CREATE,
+            ): ChangeComparisonAction.REPLACE,
+            # delete + update = invalid sequence
+            (
+                PushChangeType.DELETE,
+                PushChangeType.UPDATE,
+            ): ChangeComparisonAction.EXCLUDE,
+            (
+                PushChangeType.DELETE,
+                PushChangeType.UPDATE_DIFF,
+            ): ChangeComparisonAction.EXCLUDE,
+            (
+                PushChangeType.DELETE,
+                PushChangeType.DELETE,
+            ): ChangeComparisonAction.EXCLUDE,
+        }
+
+        action = action_map.get((previous.change, new.change))
+        result = None
+        if action == ChangeComparisonAction.REPLACE:
+            result = new
+
+        elif action == ChangeComparisonAction.DELETE:
+            # if change is create + delete, we can just remove the change from accumulated changes
+            # only if this action is allowed (file existed before)
+            if prevent_delete_change:
+                result = new
+
+        elif action == ChangeComparisonAction.UPDATE:
+            # handle update case, when previous change was create - just revert to create with new metadata
+            new.change = previous.change
+            new.diffs = []
+            result = new
+
+        elif action == ChangeComparisonAction.UPDATE_DIFF:
+            new.diffs = (previous.diffs or []) + (new.diffs or [])
+            result = new
+
+        return result
+
+    @classmethod
+    def create_checkpoint(
+        cls,
+        project_id: str,
+        checkpoint: Checkpoint,
+        from_deltas: List[ProjectVersionDelta] = [],
+    ) -> Optional[ProjectVersionDelta]:
+        """
+        Creates and caches new checkpoint and any required FileDiff checkpoints.
+        Use from_deltas to create checkpoint from existing individual deltas.
+        Returns created ProjectVersionDelta object with checkpoint.
+        """
+        delta_range = [
+            change
+            for change in from_deltas
+            if checkpoint.start <= change.version <= checkpoint.end
+        ]
+
+        if not delta_range:
+            logging.warning(
+                f"No individual changes found for project {project_id} in range v{checkpoint.start}-v{checkpoint.end} to create checkpoint."
+            )
+            return None
+
+        # dump changes lists from database and flatten list for merging
+        changes = []
+        for delta in delta_range:
+            changes.extend(DeltaChangeSchema(many=True).load(delta.changes))
+        merged_delta_items: List[DeltaChange] = [
+            d.to_data_delta() for d in cls.merge_changes(changes)
+        ]
+
+        # Pre-fetch data for all versioned files to create FileDiff checkpoints
+        versioned_delta_items = [
+            item
+            for item in merged_delta_items
+            if is_versioned_file(item.path)
+            and item.change == PushChangeType.UPDATE_DIFF
+        ]
+        versioned_file_paths = [delta.path for delta in versioned_delta_items]
+        if versioned_file_paths:
+            # get versioned files from DB and lookup their paths to next processing
+            file_paths = ProjectFilePath.query.filter(
+                ProjectFilePath.project_id == project_id,
+                ProjectFilePath.path.in_(versioned_file_paths),
+            ).all()
+            file_path_map = {fp.path: fp.id for fp in file_paths}
+
+            for item in versioned_delta_items:
+                file_path_id = file_path_map.get(item.path)
+                if not file_path_id:
+                    continue
+
+                # Check if a FileDiff checkpoint already exists
+                existing_diff_checkpoint = FileDiff.query.filter_by(
+                    file_path_id=file_path_id,
+                    rank=checkpoint.rank,
+                    version=checkpoint.end,
+                ).first()
+                # If does not exists, let's create diff with higher rank and some generated path (name of diff file)
+                if not existing_diff_checkpoint:
+                    base_file = FileHistory.get_basefile(file_path_id, checkpoint.end)
+                    if not base_file:
+                        continue
+
+                    diff_path = mergin_secure_filename(
+                        f"{item.path}-diff-{uuid.uuid4()}"
+                    )
+                    checkpoint_diff = FileDiff(
+                        basefile=base_file,
+                        path=diff_path,
+                        rank=checkpoint.rank,
+                        version=checkpoint.end,
+                    )
+                    # Patch the delta with the path to the new diff checkpoint
+                    item.diff = diff_path
+                    db.session.add(checkpoint_diff)
+
+        checkpoint_delta = ProjectVersionDelta(
+            project_id=project_id,
+            version=checkpoint.end,
+            rank=checkpoint.rank,
+            changes=DeltaChangeSchema(many=True).dump(merged_delta_items),
+        )
+        db.session.add(checkpoint_delta)
+        db.session.commit()
+        return checkpoint_delta
+
+
 class ProjectVersion(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.Integer, index=True)
@@ -968,7 +1336,6 @@ class ProjectVersion(db.Model):
             .filter(ProjectFilePath.path.in_(changed_files_paths))
             .all()
         }
-
         for item in changes:
             # get existing DB file reference or create a new one (for added files)
             db_file = existing_files_map.get(
@@ -996,6 +1363,29 @@ class ProjectVersion(db.Model):
                 latest_files_map.pop(fh.path, None)
             else:
                 latest_files_map[fh.path] = fh.id
+
+        # cache changes data json for version checkpoints
+        # rank 0 is for all changes from start to current version
+        delta_data = [
+            DeltaChange(
+                path=c.path,
+                change=c.change,
+                size=c.size,
+                checksum=c.checksum,
+                version=name,
+                diff=c.diff.path if c.diff else None,
+            )
+            for c in changes
+        ]
+        pvd = ProjectVersionDelta(
+            project_id=project.id,
+            version=name,
+            rank=0,
+            changes=DeltaChangeSchema(many=True).dump(delta_data),
+        )
+
+        db.session.add(pvd)
+        db.session.flush()
 
         # update cached values in project and push to transaction buffer so that self.files is up-to-date
         self.project.latest_project_files.file_history_ids = latest_files_map.values()
