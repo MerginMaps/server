@@ -11,7 +11,6 @@ from datetime import datetime
 from flask import Flask, current_app
 from sqlalchemy import func
 
-from .files import UploadChanges
 from ..app import db
 from .models import Project, ProjectVersion
 from .utils import split_project_path
@@ -55,8 +54,8 @@ def add_commands(app: Flask):
         p = Project(**project_params)
         p.updated = datetime.utcnow()
         db.session.add(p)
-        changes = UploadChanges(added=[], updated=[], removed=[])
-        pv = ProjectVersion(p, 0, user.id, changes, "127.0.0.1")
+        pv = ProjectVersion(p, 0, user.id, [], "127.0.0.1")
+        pv.project = p
         db.session.add(pv)
         db.session.commit()
         os.makedirs(p.storage.project_dir, exist_ok=True)

@@ -2,6 +2,7 @@
 projects*/
 data/
 mergin_db
+diagnostic_logs
 
 logs
 *.log

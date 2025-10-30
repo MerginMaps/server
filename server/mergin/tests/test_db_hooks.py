@@ -18,7 +18,6 @@ from ..sync.models import (
     ProjectRole,
     ProjectUser,
 )
-from ..sync.files import UploadChanges
 from ..auth.models import User
 from ..app import db
 from . import DEFAULT_USER
@@ -40,8 +39,7 @@ def test_close_user_account(client, diff_project):
     # user has access to mergin user diff_project
     diff_project.set_role(user.id, ProjectRole.WRITER)
     # user contributed to another user project so he is listed in projects history
-    changes = UploadChanges(added=[], updated=[], removed=[])
-    pv = ProjectVersion(diff_project, 11, user.id, changes, "127.0.0.1")
+    pv = ProjectVersion(diff_project, 11, user.id, [], "127.0.0.1")
     diff_project.latest_version = pv.name
     pv.project = diff_project
     db.session.add(pv)
@@ -116,8 +114,7 @@ def test_remove_project(client, diff_project):
     # set up
     mergin_user = User.query.filter_by(username=DEFAULT_USER[0]).first()
     project_dir = Path(diff_project.storage.project_dir)
-    changes = UploadChanges(added=[], removed=[], updated=[])
-    upload = Upload(diff_project, 10, changes, mergin_user.id)
+    upload = Upload(diff_project, 10, [], mergin_user.id)
     db.session.add(upload)
     project_id = diff_project.id
     user = add_user("user", "user")

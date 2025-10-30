@@ -12,7 +12,17 @@ from marshmallow import fields
 from sqlalchemy.schema import MetaData
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
-from flask import json, jsonify, request, abort, current_app, Flask, Request, Response
+from flask import (
+    json,
+    jsonify,
+    make_response,
+    request,
+    abort,
+    current_app,
+    Flask,
+    Request,
+    Response,
+)
 from flask_login import current_user, LoginManager
 from flask_wtf.csrf import generate_csrf, CSRFProtect
 from flask_migrate import Migrate
@@ -25,7 +35,7 @@ import sys
 import time
 import traceback
 from werkzeug.exceptions import HTTPException
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 
 from .sync.utils import get_blacklisted_dirs, get_blacklisted_files
 from .config import Configuration
@@ -350,6 +360,16 @@ def create_app(public_keys: List[str] = None) -> Flask:
     # reading raw input stream not supported in connexion so far
     # https://github.com/zalando/connexion/issues/592
     # and as workaround we use custom Flask endpoint in create_app function
+    @app.route("/v2/projects/<id>/chunks", methods=["POST"])
+    @auth_required
+    def upload_chunk_v2(id: str):
+        from .sync import public_api_v2_controller
+
+        return public_api_v2_controller.upload_chunk(id)
+
+    # reading raw input stream not supported in connexion so far
+    # https://github.com/zalando/connexion/issues/592
+    # and as workaround we use custom Flask endpoint in create_app function
     @app.route("/v1/project/push/chunk/<transaction_id>/<chunk_id>", methods=["POST"])
     @auth_required
     def chunk_upload(transaction_id, chunk_id):
@@ -484,6 +504,12 @@ class ResponseError:
 
     def to_dict(self) -> Dict:
         return dict(code=self.code, detail=self.detail + f" ({self.code})")
+
+    def response(self, status_code: int) -> Tuple[Response, int]:
+        """Returns a custom error response with the given code."""
+        response = make_response(jsonify(self.to_dict()), status_code)
+        response.headers["Content-Type"] = "application/problem+json"
+        return response, status_code
 
 
 def whitespace_filter(obj):
