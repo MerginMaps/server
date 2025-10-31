@@ -128,6 +128,7 @@ test_user_reg_data = [
     ("verylonglonglonglonglonglonglongemail@example.com", "#pwd1234", 201),
     ("us.er@mergin.com", "#pwd1234", 201),  # dot is allowed
     ("us er@mergin.com", "#pwd1234", 400),  # space is disallowed
+    ("test@gmaiñ.com", "#pwd1234", 400),  # non-ASCII character in the domain
 ]
 
 
