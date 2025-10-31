@@ -122,5 +122,5 @@ class ProjectFileSchema(FileSchema):
     def patch_field(self, data, **kwargs):
         # drop 'diff' key entirely if empty or None as clients would expect
         if not data.get("diff"):
-            data.pop("diff")
+            data.pop("diff", None)
         return data
