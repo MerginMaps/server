@@ -17,6 +17,7 @@ from wtforms.validators import (
 
 from .models import MAX_USERNAME_LENGTH, User
 from ..app import UpdateForm, CustomStringField
+from .utils import get_email_domain
 
 
 def username_validation(form, field):
@@ -64,13 +65,8 @@ class ExtendedEmail(Email):
                 f"Email address '{field.data}' contains an invalid character."
             )
 
-        try:
-            local_part, domain_part = field.data.rsplit("@", 1)
-        except ValueError:
-            raise ValidationError(f"Invalid email address '{field.data}'.")
-
-        # character is one of the standard ASCII characters (0–127)
-        if not all(ord(c) < 128 for c in domain_part):
+        domain = get_email_domain(field.data)
+        if not domain.isascii():
             raise ValidationError(
                 f"Email address '{field.data}' contains non-ASCII characters in the domain part."
             )
