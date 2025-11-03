@@ -1,6 +1,7 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+import time
 from datetime import datetime
 
 from . import DEFAULT_USER
@@ -141,11 +142,11 @@ def test_project_members(client):
 
 def test_get_project(client):
     """Test get project info endpoint"""
+    add_user("test_user", "ilovemergin")
+    login(client, "test_user", "ilovemergin")
     admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
     test_workspace = create_workspace()
     project = create_project("new_project", test_workspace, admin)
-    add_user("test_user", "ilovemergin")
-    login(client, "test_user", "ilovemergin")
     # lack of permissions
     response = client.get(f"v2/projects/{project.id}")
     assert response.status_code == 403
