@@ -627,7 +627,7 @@ def get_paginated_projects(
     )  # temporary yield to gevent hub until serialization is fully resolved (#317)
     data = ProjectListSchema(many=True, context=ctx).dump(result)
     data = {"projects": data, "count": total}
-    return data, 200
+    return jsonify(data), 200
 
 
 @auth_required
