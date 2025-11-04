@@ -42,6 +42,7 @@ typing_extensions = "==4.12.2"
 python-magic = "==0.4.27"
 # requirements for development on windows
 colorama = "==0.4.5"
+regex = "2025.11.3"
 
 [dev-packages]
 pytest = "==8.3.2"
