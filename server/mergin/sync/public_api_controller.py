@@ -83,7 +83,6 @@ from .utils import (
     get_user_agent,
     generate_location,
     is_valid_uuid,
-    gpkg_wkb_to_wkt,
     is_versioned_file,
     get_project_path,
     get_device_id,
@@ -91,6 +90,7 @@ from .utils import (
     is_supported_type,
     is_supported_extension,
     get_mimetype,
+    wkb2wkt,
 )
 from .errors import StorageLimitHit, ProjectLocked
 from ..utils import format_time_delta
@@ -1410,7 +1410,10 @@ def get_resource_changeset(project_name, namespace, version_id, path):  # noqa: 
                 if key not in geom_change:
                     continue
                 gpkg_wkb = base64.b64decode(geom_change[key], validate=True)
-                wkt = gpkg_wkb_to_wkt(gpkg_wkb)
+                wkb = version.project.storage.geodiff.create_wkb_from_gpkg_header(
+                    gpkg_wkb
+                )
+                wkt = wkb2wkt(wkb)
                 if wkt:
                     geom_change[key] = wkt
         except (binascii.Error, TypeError, ValueError):

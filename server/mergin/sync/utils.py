@@ -184,38 +184,8 @@ def is_valid_uuid(uuid):
         return False
 
 
-# inspired by C++ implementation https://github.com/lutraconsulting/geodiff/blob/master/geodiff/src/drivers/sqliteutils.cpp
-# in geodiff lib (MIT licence)
-def parse_gpkgb_header_size(gpkg_wkb):
-    """Parse header of geopackage wkb and return its size"""
-    # some constants
-    no_envelope_header_size = 8
-    flag_byte_pos = 3
-    envelope_size_mask = 14
-
-    try:
-        flag_byte = gpkg_wkb[flag_byte_pos]
-    except IndexError:
-        return -1  # probably some invalid input
-    envelope_byte = (flag_byte & envelope_size_mask) >> 1
-    envelope_size = 0
-
-    if envelope_byte == 1:
-        envelope_size = 32
-    elif envelope_byte == 2:
-        envelope_size = 48
-    elif envelope_byte == 3:
-        envelope_size = 48
-    elif envelope_byte == 4:
-        envelope_size = 64
-
-    return no_envelope_header_size + envelope_size
-
-
-def gpkg_wkb_to_wkt(gpkg_wkb):
-    """Convert WKB (with gpkg header) to WKT"""
-    wkb_header_length = parse_gpkgb_header_size(gpkg_wkb)
-    wkb_geom = gpkg_wkb[wkb_header_length:]
+def wkb2wkt(wkb_geom: bytes) -> str | None:
+    """Convert WKB to WKT"""
     try:
         wkt = wkb.loads(wkb_geom).wkt
     except ShapelyError:
