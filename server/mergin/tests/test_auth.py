@@ -937,12 +937,12 @@ user_data = [
     ("日人日本人", True),  # non-ascii character
     ("usér", True),  # non-ascii character
     ("user\\", False),  # disallowed character
-    ("user\260", True),  # non-ascii character (°)
+    ("user\260", False),  # not letter character (°)
     ("user|", False),  # vertical bar
     ("us er", False),  # space in the middle
     ("us,er", False),  # comma
     ("us—er", False),  # dash
-    ("us'er", False),  # apostrophe
+    ("us´er", False),  # acute accent
     (" user", True),  # starting with space (will be stripped)
     ("us.er", True),  # dot in the middle
     (".user", False),  # starting with dot
