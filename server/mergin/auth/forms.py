@@ -1,8 +1,7 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
-
-import regex
+import re
 import safe
 from flask_wtf import FlaskForm
 from sqlalchemy import func
@@ -18,6 +17,7 @@ from wtforms.validators import (
 
 from .models import MAX_USERNAME_LENGTH, User
 from ..app import UpdateForm, CustomStringField
+from .utils import get_email_domain
 
 
 def username_validation(form, field):
@@ -57,20 +57,19 @@ class ExtendedEmail(Email):
     because they make our email sending service to fail
     """
 
-    EMAIL_PATTERN = regex.compile(
-        r"""(?i)^[\x60#&*\/=?^{!}~'_\p{L}0-9\-\+]+
-            (\.[\x60#&*\/=?^{!}~'_\p{L}0-9\-\+]+)*\.?@
-            ([_a-z0-9-]+(\.[_a-z0-9-]+)*\.)
-            [a-z0-9-]*[a-z0-9]{2,}$""",
-        regex.VERBOSE,
-    )
-
     def __call__(self, form, field):
         super().__call__(form, field)
 
-        value = field.data.strip()
-        if not self.EMAIL_PATTERN.match(value):
-            raise ValidationError(f"Email address '{value}' is invalid.")
+        if re.search(r"[|'—]", field.data):
+            raise ValidationError(
+                f"Email address '{field.data}' contains an invalid character."
+            )
+
+        domain = get_email_domain(field.data)
+        if not domain.isascii():
+            raise ValidationError(
+                f"Email address '{field.data}' contains non-ASCII characters in the domain part."
+            )
 
 
 class PasswordValidator:
