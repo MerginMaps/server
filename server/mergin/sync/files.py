@@ -334,6 +334,7 @@ class DeltaChangeSchema(DeltaChangeBaseSchema):
 class DeltaChangeItemSchema(DeltaChangeBaseSchema):
     """Schema for delta changes response"""
 
+    version = fields.Function(lambda obj: f"v{obj.version}")
     diffs = fields.List(fields.Nested(DeltaChangeDiffFileSchema()))
 
     @post_dump
