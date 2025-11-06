@@ -393,16 +393,12 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
-            example:
-            minimum: 0
+            $ref: "#/components/schemas/VersionName"
           description: Start version (exclusive)
         - name: to
           in: query
           schema:
-            type: integer
-            example: 2
-            minimum: 1
+            $ref: "#/components/schemas/VersionName"
           description: End version (inclusive)
       responses:
         "200":
@@ -858,8 +854,7 @@ components:
           type: string
           example: 9adb76bf81a34880209040ffe5ee262a090b62ab
         version:
-          type: integer
-          example: 1
+          $ref: "#/components/schemas/VersionName"
         change:
           $ref: "#/components/schemas/ProjectChangeType"
         diffs:
@@ -880,3 +875,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProjectDeltaChange"
+    VersionName:
+      type: string
+      pattern: '^v\d+$'
+      example: v2

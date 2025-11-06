@@ -405,11 +405,18 @@ def upload_chunk(id: str):
     )
 
 
-def get_project_delta(id: str, since: int, to: Optional[int] = None):
+def get_project_delta(id: str, since: str, to: Optional[str] = None):
     """Get project changes (delta) between two versions"""
 
     project: Project = require_project_by_uuid(id, ProjectPermissions.Read)
-    to = project.latest_version if to is None else to
+    since = ProjectVersion.from_v_name(since)
+    to = project.latest_version if to is None else ProjectVersion.from_v_name(to)
+    if since < 0 or to < 1:
+        abort(
+            400,
+            "Invalid version number, minimum version for 'since' is 0 and minimum version for 'to' is 1",
+        )
+
     if to > project.latest_version:
         abort(400, "'to' version exceeds latest project version")
 

@@ -923,16 +923,16 @@ def test_project_delta(client, diff_project):
         os.path.join(working_dir, "base.gpkg"),
     )
     push_change(initial_project, "added", "base.gpkg", working_dir)
-    response = client.get(f"v2/projects/{initial_project.id}/delta?since=0")
+    response = client.get(f"v2/projects/{initial_project.id}/delta?since=v0")
     assert response.status_code == 200
     changes = response.json["items"]
     assert len(changes) == 1
     assert changes[0]["change"] == PushChangeType.CREATE.value
-    assert changes[0]["version"] == 1
+    assert changes[0]["version"] == "v1"
 
     # remove the file and get changes from 0 -> 2 where base gpgkg is removed -> transparent
     push_change(initial_project, "removed", "base.gpkg", working_dir)
-    response = client.get(f"v2/projects/{initial_project.id}/delta?since=0")
+    response = client.get(f"v2/projects/{initial_project.id}/delta?since=v0")
     assert response.status_code == 200
     changes = response.json["items"]
     assert len(changes) == 0
@@ -940,43 +940,43 @@ def test_project_delta(client, diff_project):
     # non valid cases
     response = client.get(f"v2/projects/{diff_project.id}/delta")
     assert response.status_code == 400
-    response = client.get(f"v2/projects/{diff_project.id}/delta?since=2&to=1")
+    response = client.get(f"v2/projects/{diff_project.id}/delta?since=v2&to=v1")
     assert response.status_code == 400
-    response = client.get(f"v2/projects/{diff_project.id}/delta?since=-2")
+    response = client.get(f"v2/projects/{diff_project.id}/delta?since=v-2")
     assert response.status_code == 400
-    response = client.get(f"v2/projects/{diff_project.id}/delta?since=-2&to=-1")
+    response = client.get(f"v2/projects/{diff_project.id}/delta?since=v-2&to=v-1")
     assert response.status_code == 400
     # exceeding latest version
-    response = client.get(f"v2/projects/{diff_project.id}/delta?since=0&to=2000")
+    response = client.get(f"v2/projects/{diff_project.id}/delta?since=v0&to=v2000")
     assert response.status_code == 400
     # no changes between versions with same number
-    response = client.get(f"v2/projects/{diff_project.id}/delta?since=1&to=1")
+    response = client.get(f"v2/projects/{diff_project.id}/delta?since=v1&to=v1")
     assert response.status_code == 400
 
     # since 1 to latest version
-    response = client.get(f"v2/projects/{diff_project.id}/delta?since=1")
+    response = client.get(f"v2/projects/{diff_project.id}/delta?since=v1")
     assert response.status_code == 200
     changes = response.json["items"]
     # create of test.gpkg and delete base.gpkg
     assert len(changes) == 2
     assert changes[0]["change"] == PushChangeType.DELETE.value
-    assert changes[0]["version"] == 9
+    assert changes[0]["version"] == "v9"
     assert changes[0]["path"] == "base.gpkg"
     assert changes[0]["size"] == 98304
 
     assert changes[1]["change"] == PushChangeType.CREATE.value
-    assert changes[1]["version"] == 9
+    assert changes[1]["version"] == "v9"
     assert changes[1]["path"] == "test.gpkg"
     assert changes[1]["size"] == 98304
 
     # simple update
-    response = client.get(f"v2/projects/{diff_project.id}/delta?since=4&to=8")
+    response = client.get(f"v2/projects/{diff_project.id}/delta?since=v4&to=v8")
     assert response.status_code == 200
     changes = response.json["items"]
     assert len(changes) == 1
     assert changes[0]["change"] == PushChangeType.UPDATE.value
     # version is new latest version of the change
-    assert changes[0]["version"] == 7
+    assert changes[0]["version"] == "v7"
     assert not changes[0].get("diffs")
 
 
@@ -990,12 +990,14 @@ def test_project_pull_diffs(client, diff_project):
         .order_by(FileDiff.version)
         .all()
     )
-    response = client.get(f"v2/projects/{diff_project.id}/delta?since={since}&to={to}")
+    response = client.get(
+        f"v2/projects/{diff_project.id}/delta?since=v{since}&to=v{to}"
+    )
     assert response.status_code == 200
     delta = response.json["items"]
     assert len(delta) == 1
     assert delta[0]["change"] == PushChangeType.UPDATE_DIFF.value
-    assert delta[0]["version"] == 7
+    assert delta[0]["version"] == "v7"
     first_diff = delta[0]["diffs"][0]
     second_diff = delta[0]["diffs"][1]
     assert first_diff["path"] == current_diffs[0].path
