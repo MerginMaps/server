@@ -1,6 +1,7 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+
 import re
 import safe
 from flask_wtf import FlaskForm
@@ -17,7 +18,6 @@ from wtforms.validators import (
 
 from .models import MAX_USERNAME_LENGTH, User
 from ..app import UpdateForm, CustomStringField
-from .utils import get_email_domain
 
 
 def username_validation(form, field):
@@ -51,25 +51,20 @@ class ExtendedEmail(Email):
     3, multiple @ symbols,
     4, leading, trailing, or consecutive dots in the local part,
     5, invalid domain part - missing top level domain (user@example), consecutive dots,
-    Custom check for
-    - additional invalid characters disallows |'—
-    - non-ASCII characters in the domain part
-    because they make our email sending service to fail
+    The extended validation checks email addresses using the regex provided by Brevo,
+    so that we stay consistent with their validation rules and avoid API failures.
     """
 
     def __call__(self, form, field):
         super().__call__(form, field)
 
-        if re.search(r"[|'—]", field.data):
-            raise ValidationError(
-                f"Email address '{field.data}' contains an invalid character."
-            )
+        email = field.data.strip()
 
-        domain = get_email_domain(field.data)
-        if not domain.isascii():
-            raise ValidationError(
-                f"Email address '{field.data}' contains non-ASCII characters in the domain part."
-            )
+        pattern = r"^[\x60#&*\/=?^{!}~'+\w-]+(\.[\x60#&*\/=?^{!}~'+\w-]+)*\.?@([_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*\.)[a-zA-Z0-9-]*[a-zA-Z0-9]{2,}$"
+        email_regexp = re.compile(pattern, re.IGNORECASE)
+
+        if not email_regexp.match(email):
+            raise ValidationError(f"Email address '{email}' is invalid.")
 
 
 class PasswordValidator:
