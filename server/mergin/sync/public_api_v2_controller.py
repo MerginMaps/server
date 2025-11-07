@@ -139,9 +139,10 @@ def get_project(id, files_at_version=None):
     if files_at_version:
         pv = ProjectVersion.query.filter_by(
             project_id=project.id, name=ProjectVersion.from_v_name(files_at_version)
-        ).first_or_404()
-        data["files"] = ProjectFileSchema(
-            only=("path", "mtime", "size", "checksum"), many=True
-        ).dump(pv.files)
+        ).first()
+        if pv:
+            data["files"] = ProjectFileSchema(
+                only=("path", "mtime", "size", "checksum"), many=True
+            ).dump(pv.files)
 
     return data, 200

@@ -30,9 +30,7 @@ class ProjectSchema(ma.SQLAlchemyAutoSchema):
 
     def _role(self, obj):
         role = ProjectPermissions.get_user_project_role(obj, current_user)
-        if not role:
-            return None
-        return role.value
+        return role.value if role else None
 
     class Meta:
         model = Project
