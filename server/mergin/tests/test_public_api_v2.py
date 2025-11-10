@@ -187,7 +187,9 @@ def test_get_project(client):
     response = client.get(
         f"v2/projects/{project.id}?files_at_version=v{project.latest_version+1}"
     )
-    assert response.status_code == 404
+    assert response.status_code == 200
+    assert response.json["id"] == str(project.id)
+    assert "files" not in response.json.keys()
     # files
     response = client.get(
         f"v2/projects/{project.id}?files_at_version=v{project.latest_version-2}"
