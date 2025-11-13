@@ -14,8 +14,8 @@ import uuid
 from datetime import datetime
 
 import gevent
+from marshmallow import ValidationError
 import psycopg2
-from blinker import signal
 from connexion import NoContent, request
 from flask import (
     abort,
@@ -32,7 +32,7 @@ from binaryornot.check import is_binary
 from gevent import sleep
 import base64
 
-from werkzeug.exceptions import HTTPException
+from werkzeug.exceptions import HTTPException, Conflict
 
 from mergin.sync.forms import project_name_validation
 from .interfaces import WorkspaceRole
@@ -40,6 +40,7 @@ from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
 from .models import (
+    FileSyncErrorType,
     Project,
     ProjectVersion,
     Upload,
@@ -48,13 +49,17 @@ from .models import (
     ProjectFilePath,
     ProjectUser,
     ProjectRole,
+    project_version_created,
+    push_finished,
 )
 from .files import (
-    UploadChanges,
+    ProjectFileChange,
     ChangesSchema,
     UploadFileSchema,
     ProjectFileSchema,
     FileSchema,
+    files_changes_from_upload,
+    mergin_secure_filename,
 )
 from .schemas import (
     ProjectSchema,
@@ -65,7 +70,7 @@ from .schemas import (
     FileHistorySchema,
     ProjectVersionListSchema,
 )
-from .storages.storage import DataSyncError, InitializationError
+from .storages.storage import InitializationError
 from .storages.disk import save_to_file, move_to_tmp
 from .permissions import (
     require_project,
@@ -94,11 +99,6 @@ from .utils import (
 )
 from .errors import StorageLimitHit, ProjectLocked
 from ..utils import format_time_delta
-
-
-push_finished = signal("push_finished")
-# TODO: Move to database events to handle all commits to project versions
-project_version_created = signal("project_version_created")
 
 
 def parse_project_access_update_request(access: Dict) -> Dict:
@@ -239,15 +239,24 @@ def add_project(namespace):  # noqa: E501
                 .first_or_404()
             )
             version_name = 1
-            files = UploadFileSchema(context={"version": 1}, many=True).load(
-                FileSchema(exclude=("location",), many=True).dump(template.files)
-            )
-            changes = UploadChanges(added=files, updated=[], removed=[])
+            file_changes = []
+            for file in template.files:
+                file_changes.append(
+                    ProjectFileChange(
+                        file.path,
+                        file.checksum,
+                        file.size,
+                        diff=None,
+                        mtime=None,
+                        location=os.path.join("v1", mergin_secure_filename(file.path)),
+                        change=PushChangeType.CREATE,
+                    )
+                )
 
         else:
             template = None
             version_name = 0
-            changes = UploadChanges(added=[], updated=[], removed=[])
+            file_changes = []
 
         try:
             p.storage.initialize(template_project=template)
@@ -258,7 +267,7 @@ def add_project(namespace):  # noqa: E501
             p,
             version_name,
             current_user.id,
-            changes,
+            file_changes,
             get_ip(request),
             get_user_agent(request),
             get_device_id(request),
@@ -694,8 +703,13 @@ def catch_sync_failure(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         try:
-            return f(*args, **kwargs)
-        except (HTTPException, IntegrityError) as e:
+            response, status_code = f(*args, **kwargs)
+            if status_code >= 400:
+                raise HTTPException(response=response)
+            return response, status_code
+        except IntegrityError:
+            raise Conflict("Database integrity error")
+        except HTTPException as e:
             if e.code in [401, 403, 404]:
                 raise  # nothing to do, just propagate downstream
 
@@ -711,16 +725,22 @@ def catch_sync_failure(f):
                 error_type = "push_finish"
             elif request.endpoint == "chunk_upload":
                 error_type = "chunk_upload"
+            elif (
+                request.endpoint
+                == "/v2.mergin_sync_public_api_v2_controller_create_project_version"
+            ):
+                error_type = "project_push"
 
-            if not e.description:  # custom error cases (e.g. StorageLimitHit)
-                e.description = e.response.json["detail"]
+            description = (
+                e.description if e.description else e.response.json.get("detail", "")
+            )
+
             if project:
                 project.sync_failed(
-                    user_agent, error_type, str(e.description), current_user.id
+                    user_agent, error_type, str(description), current_user.id
                 )
             else:
                 logging.warning("Missing project info in sync failure")
-
             raise
 
     return wrapper
@@ -745,7 +765,7 @@ def project_push(namespace, project_name):
     project_permission = current_app.project_handler.get_push_permission(changes)
     project = require_project(namespace, project_name, project_permission)
     if project.locked_until:
-        abort(make_response(jsonify(ProjectLocked().to_dict()), 422))
+        return ProjectLocked().response(422)
     # pass full project object to request for later use
     request.view_args["project"] = project
     ws = project.workspace
@@ -771,76 +791,36 @@ def project_push(namespace, project_name):
     if pending_upload and pending_upload.is_active():
         abort(400, "Another process is running. Please try later.")
 
-    upload_changes = ChangesSchema(context={"version": version + 1}).load(changes)
+    try:
+        ChangesSchema().validate(changes)
+        upload_changes = ChangesSchema().dump(changes)
+    except ValidationError as err:
+        msg = err.messages[0] if type(err.messages) == list else "Invalid input data"
+        abort(400, msg)
 
-    for item in upload_changes.added:
+    for item in upload_changes["added"]:
         # check if same file is not already uploaded
-        if not all(ele.path != item.path for ele in project.files):
-            abort(400, f"File {item.path} has been already uploaded")
-        if not is_valid_path(item.path):
-            abort(
-                400,
-                f"Unsupported file name detected: {item.path}. Please remove the invalid characters.",
-            )
-        if not is_supported_extension(item.path):
-            abort(
-                400,
-                f"Unsupported file type detected: {item.path}. "
-                f"Please remove the file or try compressing it into a ZIP file before uploading.",
-            )
-
-    # changes' files must be unique
-    changes_files = [
-        f.path
-        for f in upload_changes.added + upload_changes.updated + upload_changes.removed
-    ]
-    if len(set(changes_files)) != len(changes_files):
-        abort(400, "Not unique changes")
-
-    sanitized_files = []
-    blacklisted_files = []
-    for f in upload_changes.added + upload_changes.updated + upload_changes.removed:
-        # check if .gpkg file is valid
-        if is_versioned_file(f.path):
-            if not f.is_valid_gpkg():
-                abort(400, f"File {f.path} is not valid")
-        if is_file_name_blacklisted(f.path, current_app.config["BLACKLIST"]):
-            blacklisted_files.append(f.path)
-        # all file need to be unique after sanitized
-        if f.location in sanitized_files:
-            filename, file_extension = os.path.splitext(f.location)
-            f.location = filename + f".{str(uuid.uuid4())}" + file_extension
-        sanitized_files.append(f.location)
-        if f.diff:
-            if f.diff.location in sanitized_files:
-                filename, file_extension = os.path.splitext(f.diff.location)
-                f.diff.location = filename + f".{str(uuid.uuid4())}" + file_extension
-            sanitized_files.append(f.diff.location)
-
-    # remove blacklisted files from changes
-    for key in upload_changes.__dict__.keys():
-        new_value = [
-            f for f in getattr(upload_changes, key) if f.path not in blacklisted_files
-        ]
-        setattr(upload_changes, key, new_value)
+        if not all(ele.path != item["path"] for ele in project.files):
+            abort(400, f"File {item['path']} has been already uploaded")
 
     # Check user data limit
-    updates = [f.path for f in upload_changes.updated]
-    updated_files = list(filter(lambda i: i.path in updates, project.files))
-    additional_disk_usage = (
-        sum(file.size for file in upload_changes.added + upload_changes.updated)
-        - sum(file.size for file in updated_files)
-        - sum(file.size for file in upload_changes.removed)
+    updated_files = list(
+        filter(
+            lambda i: i.path in [f["path"] for f in upload_changes["updated"]],
+            project.files,
+        )
     )
-
+    additional_disk_usage = (
+        sum(
+            file["size"] for file in upload_changes["added"] + upload_changes["updated"]
+        )
+        - sum(file.size for file in updated_files)
+        - sum(file["size"] for file in upload_changes["removed"])
+    )
     current_usage = ws.disk_usage()
     requested_storage = current_usage + additional_disk_usage
     if requested_storage > ws.storage:
-        abort(
-            make_response(
-                jsonify(StorageLimitHit(current_usage, ws.storage).to_dict()), 422
-            )
-        )
+        return StorageLimitHit(current_usage, ws.storage).response(422)
 
     upload = Upload(project, version, upload_changes, current_user.id)
     db.session.add(upload)
@@ -885,6 +865,9 @@ def project_push(namespace, project_name):
     # Update immediately without uploading of new/modified files and remove transaction/lockfile after successful commit
     if not (changes["added"] or changes["updated"]):
         next_version = version + 1
+        file_changes = files_changes_from_upload(
+            upload.changes, ProjectVersion.to_v_name(next_version)
+        )
         user_agent = get_user_agent(request)
         device_id = get_device_id(request)
         try:
@@ -892,7 +875,7 @@ def project_push(namespace, project_name):
                 project,
                 next_version,
                 current_user.id,
-                upload_changes,
+                file_changes,
                 get_ip(request),
                 user_agent,
                 device_id,
@@ -919,7 +902,7 @@ def project_push(namespace, project_name):
         finally:
             upload.clear()
 
-    return {"transaction": upload.id}
+    return {"transaction": upload.id}, 200
 
 
 @auth_required
@@ -938,29 +921,27 @@ def chunk_upload(transaction_id, chunk_id):
     """
     upload, upload_dir = get_upload(transaction_id)
     request.view_args["project"] = upload.project
-    upload_changes = ChangesSchema(context={"version": upload.version + 1}).load(
-        upload.changes
-    )
-    for f in upload_changes.added + upload_changes.updated:
-        if chunk_id in f.chunks:
-            dest = os.path.join(upload_dir, "chunks", chunk_id)
-            lockfile = os.path.join(upload_dir, "lockfile")
-            with Toucher(lockfile, 30):
-                try:
-                    # we could have used request.data here, but it could eventually cause OOM issue
-                    save_to_file(
-                        request.stream, dest, current_app.config["MAX_CHUNK_SIZE"]
-                    )
-                except IOError:
-                    move_to_tmp(dest, transaction_id)
-                    abort(400, "Too big chunk")
-                if os.path.exists(dest):
-                    checksum = generate_checksum(dest)
-                    size = os.path.getsize(dest)
-                    return jsonify({"checksum": checksum, "size": size}), 200
-                else:
-                    abort(400, "Upload was probably canceled")
-    abort(404)
+    chunks = []
+    for file in upload.changes["added"] + upload.changes["updated"]:
+        chunks += file.get("chunks", [])
+
+    if chunk_id not in chunks:
+        abort(404)
+
+    dest = os.path.join(upload_dir, "chunks", chunk_id)
+    with Toucher(upload.lockfile, 30):
+        try:
+            # we could have used request.data here, but it could eventually cause OOM issue
+            save_to_file(request.stream, dest, current_app.config["MAX_CHUNK_SIZE"])
+        except IOError:
+            move_to_tmp(dest, transaction_id)
+            abort(400, "Too big chunk")
+        if os.path.exists(dest):
+            checksum = generate_checksum(dest)
+            size = os.path.getsize(dest)
+            return jsonify({"checksum": checksum, "size": size}), 200
+        else:
+            abort(400, "Upload was probably canceled")
 
 
 @auth_required
@@ -980,73 +961,45 @@ def push_finish(transaction_id):
 
     :rtype: None
     """
-    from .tasks import optimize_storage
-
     upload, upload_dir = get_upload(transaction_id)
     request.view_args["project"] = upload.project
-    changes = ChangesSchema(context={"version": upload.version + 1}).load(
-        upload.changes
-    )
     project = upload.project
+    next_version = project.next_version()
+    v_next_version = ProjectVersion.to_v_name(next_version)
+    version_dir = os.path.join(project.storage.project_dir, v_next_version)
     if project.locked_until:
-        abort(make_response(jsonify(ProjectLocked().to_dict()), 422))
-    project_path = get_project_path(project)
-    corrupted_files = []
+        return ProjectLocked().response(422)
 
-    for f in changes.added + changes.updated:
-        if f.diff is not None:
-            dest_file = os.path.join(upload_dir, "files", f.diff.location)
-            expected_size = f.diff.size
-        else:
-            dest_file = os.path.join(upload_dir, "files", f.location)
-            expected_size = f.size
+    file_changes, errors = upload.process_chunks(use_shared_chunk_dir=False)
+    if errors:
+        upload.clear()
 
-        # Concatenate chunks into single file
-        # TODO we need to move this elsewhere since it can fail for large files (and slow FS)
-        os.makedirs(os.path.dirname(dest_file), exist_ok=True)
-        with open(dest_file, "wb") as dest:
-            try:
-                for chunk_id in f.chunks:
-                    sleep(0)  # to unblock greenlet
-                    chunk_file = os.path.join(upload_dir, "chunks", chunk_id)
-                    with open(chunk_file, "rb") as src:
-                        data = src.read(8192)
-                        while data:
-                            dest.write(data)
-                            data = src.read(8192)
-            except IOError:
-                logging.exception(
-                    "Failed to process chunk: %s in project %s"
-                    % (chunk_id, project_path)
-                )
-                corrupted_files.append(f.path)
-                continue
-        if not f.diff and not is_supported_type(dest_file):
-            logging.info(f"Rejecting blacklisted file: {dest_file}")
+        unsupported_files = [
+            k for k, v in errors.items() if v == FileSyncErrorType.UNSUPPORTED.value
+        ]
+        if len(unsupported_files):
             abort(
                 400,
-                f"Unsupported file type detected: {f.path}. "
+                f"Unsupported file type detected: {unsupported_files[0]}. "
                 f"Please remove the file or try compressing it into a ZIP file before uploading.",
             )
 
-        if expected_size != os.path.getsize(dest_file):
-            logging.error(
-                "Data integrity check has failed on file %s in project %s"
-                % (f.path, project_path),
-                exc_info=True,
-            )
-            # check if .gpkg file is valid
-            if is_versioned_file(dest_file):
-                if not f.is_valid_gpkg():
-                    corrupted_files.append(f.path)
-            corrupted_files.append(f.path)
+        corrupted_files = [
+            k for k, v in errors.items() if v == FileSyncErrorType.CORRUPTED.value
+        ]
+        if corrupted_files:
+            abort(422, {"corrupted_files": corrupted_files})
 
-    if corrupted_files:
-        move_to_tmp(upload_dir)
-        abort(422, {"corrupted_files": corrupted_files})
+        sync_errors = {
+            k: v for k, v in errors.items() if FileSyncErrorType.SYNC_ERROR.value in v
+        }
+        if sync_errors:
+            msg = ""
+            for key, value in sync_errors.items():
+                msg += key + " error=" + value + "\n"
 
-    next_version = upload.version + 1
-    v_next_version = ProjectVersion.to_v_name(next_version)
+            abort(422, f"Failed to create new version: {msg}")
+
     files_dir = os.path.join(upload_dir, "files", v_next_version)
     target_dir = os.path.join(project.storage.project_dir, v_next_version)
     if os.path.exists(target_dir):
@@ -1065,58 +1018,13 @@ def push_finish(transaction_id):
         move_to_tmp(target_dir)
 
     try:
-        # let's move uploaded files where they are expected to be
-        os.renames(files_dir, target_dir)
-        # apply gpkg updates
-        sync_errors = {}
-        to_remove = [i.path for i in changes.removed]
-        current_files = [f for f in project.files if f.path not in to_remove]
-        for updated_file in changes.updated:
-            # yield to gevent hub since geodiff action can take some time to prevent worker timeout
-            sleep(0)
-            current_file = next(
-                (i for i in current_files if i.path == updated_file.path), None
-            )
-            if not current_file:
-                sync_errors[updated_file.path] = "file not found on server "
-                continue
-
-            if updated_file.diff:
-                result = project.storage.apply_diff(
-                    current_file, updated_file, next_version
-                )
-                if result.ok():
-                    checksum, size = result.value
-                    updated_file.checksum = checksum
-                    updated_file.size = size
-                else:
-                    sync_errors[updated_file.path] = (
-                        f"project: {project.workspace.name}/{project.name}, {result.value}"
-                    )
-
-            elif is_versioned_file(updated_file.path):
-                result = project.storage.construct_diff(
-                    current_file, updated_file, next_version
-                )
-                if result.ok():
-                    updated_file.diff = result.value
-                else:
-                    # if diff cannot be constructed it would be force update
-                    logging.warning(f"Geodiff: create changeset error {result.value}")
-
-        if sync_errors:
-            msg = ""
-            for key, value in sync_errors.items():
-                msg += key + " error=" + value + "\n"
-            raise DataSyncError(msg)
-
         user_agent = get_user_agent(request)
         device_id = get_device_id(request)
         pv = ProjectVersion(
             project,
             next_version,
             current_user.id,
-            changes,
+            file_changes,
             get_ip(request),
             user_agent,
             device_id,
@@ -1124,12 +1032,24 @@ def push_finish(transaction_id):
         db.session.add(pv)
         db.session.add(project)
         db.session.commit()
+
+        # let's move uploaded files where they are expected to be
+        os.renames(files_dir, version_dir)
+
+        # remove used chunks
+        for file in upload.changes["added"] + upload.changes["updated"]:
+            file_chunks = file.get("chunks", [])
+            for chunk_id in file_chunks:
+                chunk_file = os.path.join(upload.upload_dir, "chunks", chunk_id)
+                if os.path.exists(chunk_file):
+                    move_to_tmp(chunk_file)
+
         logging.info(
             f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
         )
         project_version_created.send(pv)
         push_finished.send(pv)
-    except (psycopg2.Error, FileNotFoundError, DataSyncError, IntegrityError) as err:
+    except (psycopg2.Error, FileNotFoundError, IntegrityError) as err:
         db.session.rollback()
         logging.exception(
             f"Failed to finish push for project: {project.id}, project version: {v_next_version}, "
@@ -1144,9 +1064,6 @@ def push_finish(transaction_id):
         # remove artifacts
         upload.clear()
 
-    # do not optimize on every version, every 10th is just fine
-    if not project.latest_version % 10:
-        optimize_storage.delay(project.id)
     return jsonify(ProjectSchema().dump(project)), 200
 
 
@@ -1246,15 +1163,24 @@ def clone_project(namespace, project_name):  # noqa: E501
     user_agent = get_user_agent(request)
     device_id = get_device_id(request)
     # transform source files to new uploaded files
-    files = UploadFileSchema(context={"version": 1}, many=True).load(
-        FileSchema(exclude=("location",), many=True).dump(cloned_project.files)
-    )
-    changes = UploadChanges(added=files, updated=[], removed=[])
+    file_changes = []
+    for file in cloned_project.files:
+        file_changes.append(
+            ProjectFileChange(
+                file.path,
+                file.checksum,
+                file.size,
+                diff=None,
+                mtime=None,
+                location=os.path.join("v1", mergin_secure_filename(file.path)),
+                change=PushChangeType.CREATE,
+            )
+        )
     project_version = ProjectVersion(
         p,
         version,
         current_user.id,
-        changes,
+        file_changes,
         get_ip(request),
         user_agent,
         device_id,
