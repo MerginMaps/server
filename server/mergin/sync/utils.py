@@ -2,18 +2,20 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import logging
 import math
 import os
 import hashlib
 import re
 import secrets
+from datetime import datetime, timedelta, timezone
 from threading import Timer
 from uuid import UUID
 from shapely import wkb
 from shapely.errors import ShapelyError
 from gevent import sleep
 from flask import Request
-from typing import Optional
+from typing import Optional, Tuple
 from sqlalchemy import text
 from pathvalidate import (
     validate_filename,
@@ -83,6 +85,8 @@ class Toucher:
         os.access(self.lockfile, os.W_OK)
         with open(self.lockfile, "a"):
             os.utime(self.lockfile, None)
+
+        sleep(0)  # to unblock greenlet
         if self.running:
             self.timer = Timer(self.interval, self.touch_lockfile)
             self.timer.start()
@@ -184,38 +188,8 @@ def is_valid_uuid(uuid):
         return False
 
 
-# inspired by C++ implementation https://github.com/lutraconsulting/geodiff/blob/master/geodiff/src/drivers/sqliteutils.cpp
-# in geodiff lib (MIT licence)
-def parse_gpkgb_header_size(gpkg_wkb):
-    """Parse header of geopackage wkb and return its size"""
-    # some constants
-    no_envelope_header_size = 8
-    flag_byte_pos = 3
-    envelope_size_mask = 14
-
-    try:
-        flag_byte = gpkg_wkb[flag_byte_pos]
-    except IndexError:
-        return -1  # probably some invalid input
-    envelope_byte = (flag_byte & envelope_size_mask) >> 1
-    envelope_size = 0
-
-    if envelope_byte == 1:
-        envelope_size = 32
-    elif envelope_byte == 2:
-        envelope_size = 48
-    elif envelope_byte == 3:
-        envelope_size = 48
-    elif envelope_byte == 4:
-        envelope_size = 64
-
-    return no_envelope_header_size + envelope_size
-
-
-def gpkg_wkb_to_wkt(gpkg_wkb):
-    """Convert WKB (with gpkg header) to WKT"""
-    wkb_header_length = parse_gpkgb_header_size(gpkg_wkb)
-    wkb_geom = gpkg_wkb[wkb_header_length:]
+def wkb2wkt(wkb_geom: bytes) -> str | None:
+    """Convert WKB to WKT"""
     try:
         wkt = wkb.loads(wkb_geom).wkt
     except ShapelyError:
@@ -578,3 +552,33 @@ def get_x_accel_uri(*url_parts):
     url = url.lstrip(os.path.sep)
     result = os.path.join(download_accell_uri, url)
     return result
+
+
+def get_chunk_location(id: str):
+    """
+    Get file location for chunk on FS
+
+    Splits the given identifier into two parts where the first two characters of the identifier are the small hash,
+    and the remaining characters is a file identifier.
+    """
+    chunk_dir = current_app.config.get("UPLOAD_CHUNKS_DIR")
+    small_hash = id[:2]
+    file_name = id[2:]
+    return os.path.join(chunk_dir, small_hash, file_name)
+
+
+def remove_outdated_files(dir: str, time_delta: timedelta):
+    """Remove all files within directory where last access time passed expiration date"""
+    for file in os.listdir(dir):
+        path = os.path.join(dir, file)
+        if not os.path.isfile(path):
+            continue
+
+        if (
+            datetime.fromtimestamp(os.path.getatime(path), tz=timezone.utc)
+            < datetime.now(timezone.utc) - time_delta
+        ):
+            try:
+                os.remove(path)
+            except OSError as e:
+                logging.error(f"Unable to remove {path}: {str(e)}")
