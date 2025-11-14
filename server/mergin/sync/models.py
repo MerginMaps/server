@@ -775,7 +775,7 @@ class FileHistory(db.Model):
                 ),
                 None,
             )
-            if diff:
+            if diff and os.path.exists(diff.abs_path):
                 diffs.append(diff)
             elif item.rank > 0:
                 # fallback if checkpoint does not exist: replace merged diff with individual diffs
@@ -879,13 +879,17 @@ class FileDiff(db.Model):
     def construct_checkpoint(self) -> bool:
         """Create a diff file checkpoint (aka. merged diff).
         Find all smaller diffs which are needed to create the final diff file and merge them.
-        In case of missing some lower rank checkpoint, use individual diffs instead.
+        In case of missing some lower rank checkpoints, create them recursively.
 
         Once checkpoint is created, size and checksum are updated in the database.
 
         Returns:
             bool: True if checkpoint was successfully created or already present
         """
+        logging.debug(
+            f"Construct checkpoint for file {self.path} v{self.version} of rank {self.rank}"
+        )
+
         if os.path.exists(self.abs_path):
             return True
 
@@ -914,7 +918,7 @@ class FileDiff(db.Model):
             return False
 
         diffs_paths = []
-        # let's confirm we have all intermediate diffs needed, if not, we need to use individual diffs instead
+        # let's confirm we have all intermediate diffs needed, if not, we need to create them (recursively) first
         cached_items = Checkpoint.get_checkpoints(
             cache_level.start, cache_level.end - 1
         )
@@ -944,27 +948,28 @@ class FileDiff(db.Model):
                 ),
                 None,
             )
-            if diff and os.path.exists(diff.abs_path):
+
+            # lower rank diff not even in DB yet - create it and try to construct merged file
+            if not diff:
+                diff = FileDiff(
+                    basefile=basefile,
+                    version=item.end,
+                    rank=item.rank,
+                    path=f"{basefile.file.path}-diff-{uuid.uuid4()}",
+                    size=None,
+                    checksum=None,
+                )
+                db.session.add(diff)
+                db.session.commit()
+
+            diff_exists = diff.construct_checkpoint()
+            if diff_exists:
                 diffs_paths.append(diff.abs_path)
             else:
-                individual_diffs = (
-                    FileDiff.query.filter_by(
-                        basefile_id=basefile.id,
-                        rank=0,
-                    )
-                    .filter(
-                        FileDiff.version >= item.start, FileDiff.version <= item.end
-                    )
-                    .order_by(FileDiff.version)
-                    .all()
+                logging.error(
+                    f"Unable to create checkpoint diff for {item} for file {self.file_path_id}"
                 )
-                if individual_diffs:
-                    diffs_paths.extend([i.abs_path for i in individual_diffs])
-                else:
-                    logging.error(
-                        f"Unable to find diffs for {item} for file {self.file_path_id}"
-                    )
-                    return False
+                return False
 
         # we apply latest change (if any) on previous version
         end_diff = FileDiff.query.filter_by(
