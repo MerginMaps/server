@@ -55,9 +55,7 @@ from .models import (
 from .files import (
     ProjectFileChange,
     ChangesSchema,
-    UploadFileSchema,
     ProjectFileSchema,
-    FileSchema,
     files_changes_from_upload,
     mergin_secure_filename,
 )
@@ -83,17 +81,11 @@ from .utils import (
     generate_checksum,
     Toucher,
     get_x_accel_uri,
-    is_file_name_blacklisted,
     get_ip,
     get_user_agent,
     generate_location,
     is_valid_uuid,
-    is_versioned_file,
-    get_project_path,
     get_device_id,
-    is_valid_path,
-    is_supported_type,
-    is_supported_extension,
     get_mimetype,
     wkb2wkt,
 )
