@@ -14,7 +14,7 @@ from flask_login import current_user
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
 
-from .schemas_v2 import ProjectSchema
+from .schemas_v2 import ProjectSchema as ProjectSchemaV2
 from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
@@ -166,7 +166,7 @@ def remove_project_collaborator(id, user_id):
 def get_project(id, files_at_version=None):
     """Get project info. Include list of files at specific version if requested."""
     project = require_project_by_uuid(id, ProjectPermissions.Read)
-    data = ProjectSchema().dump(project)
+    data = ProjectSchemaV2().dump(project)
     if files_at_version:
         pv = ProjectVersion.query.filter_by(
             project_id=project.id, name=ProjectVersion.from_v_name(files_at_version)

@@ -588,25 +588,15 @@ components:
           type: array
           description: List of files in the project
           items:
-            type: object
-            properties:
-              path:
-                type: string
-                description: File name including path from project root
-                example: data/layer.gpkg
-              mtime:
-                type: string
-                format: date-time
-                description: File modification timestamp
-                example: 2024-11-19T13:50:00Z
-              size:
-                type: integer
-                description: File size in bytes
-                example: 1234
-              checksum:
-                type: string
-                description: File checksum hash
-                example: 9adb76bf81a34880209040ffe5ee262a090b62ab
+            allOf:
+              - $ref: '#/components/schemas/File'
+              - type: object
+                properties:
+                  mtime:
+                    type: string
+                    format: date-time
+                    description: File modification timestamp
+                    example: 2024-11-19T13:50:00Z
     File:
       type: object
       description: Project file metadata
