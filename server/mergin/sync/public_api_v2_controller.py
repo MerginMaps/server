@@ -14,6 +14,7 @@ from flask_login import current_user
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
 
+from .schemas_v2 import ProjectSchema as ProjectSchemaV2
 from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
@@ -26,7 +27,7 @@ from .errors import (
     StorageLimitHit,
     UploadError,
 )
-from .files import ChangesSchema
+from .files import ChangesSchema, ProjectFileSchema
 from .forms import project_name_validation
 from .models import (
     Project,
@@ -160,6 +161,22 @@ def remove_project_collaborator(id, user_id):
     project.unset_role(user_id)
     db.session.commit()
     return NoContent, 204
+
+
+def get_project(id, files_at_version=None):
+    """Get project info. Include list of files at specific version if requested."""
+    project = require_project_by_uuid(id, ProjectPermissions.Read)
+    data = ProjectSchemaV2().dump(project)
+    if files_at_version:
+        pv = ProjectVersion.query.filter_by(
+            project_id=project.id, name=ProjectVersion.from_v_name(files_at_version)
+        ).first()
+        if pv:
+            data["files"] = ProjectFileSchema(
+                only=("path", "mtime", "size", "checksum"), many=True
+            ).dump(pv.files)
+
+    return data, 200
 
 
 @auth_required
