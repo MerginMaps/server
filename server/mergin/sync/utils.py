@@ -347,6 +347,11 @@ def is_valid_path(filepath: str) -> bool:
     )
 
 
+def has_trailing_space(filepath: str) -> bool:
+    """Check filepath for trailing spaces that makes the project impossible to download on Windows"""
+    return all(part == part.rstrip() for part in Path(filepath).parts)
+
+
 def is_supported_extension(filepath) -> bool:
     """Check whether file's extension is supported."""
     ext = os.path.splitext(filepath)[1].lower()

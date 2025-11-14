@@ -13,10 +13,10 @@ from pathvalidate import sanitize_filename
 
 from .utils import (
     is_file_name_blacklisted,
-    is_qgis,
     is_supported_extension,
     is_valid_path,
     is_versioned_file,
+    has_trailing_space,
 )
 from ..app import DateTimeWithZ, ma
 
@@ -219,6 +219,14 @@ class ChangesSchema(ma.Schema):
                 raise ValidationError(
                     f"Unsupported file type detected: {file_path}. "
                     f"Please remove the file or try compressing it into a ZIP file before uploading.",
+                )
+
+        # new checks must restrict only new files not to block existing projects
+        for file in data["added"]:
+            file_path = file["path"]
+            if has_trailing_space(file_path):
+                raise ValidationError(
+                    f"Folder name contains a trailing space. Please remove the space in: {file_path}"
                 )
 
 

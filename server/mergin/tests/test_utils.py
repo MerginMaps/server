@@ -5,7 +5,6 @@
 import base64
 from datetime import datetime
 import json
-import os
 import pytest
 from flask import url_for, current_app
 from sqlalchemy import desc
@@ -24,6 +23,7 @@ from ..sync.utils import (
     is_valid_path,
     get_x_accel_uri,
     wkb2wkt,
+    has_trailing_space,
 )
 from ..auth.models import LoginHistory, User
 from . import json_headers
@@ -226,6 +226,10 @@ filepaths = [
 @pytest.mark.parametrize("filepath,allow", filepaths)
 def test_is_valid_path(client, filepath, allow):
     assert is_valid_path(filepath) == allow
+
+
+def test_has_trailing_space():
+    assert has_trailing_space("photos /lutraHQ.jpg") is False
 
 
 def test_get_x_accell_uri(client):
