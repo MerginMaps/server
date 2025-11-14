@@ -280,7 +280,10 @@ def test_create_diff_checkpoint(diff_project):
     diff.construct_checkpoint()
     assert mtime == os.path.getmtime(diff.abs_path)
 
-    # diff for v17-v32 with merged diffs (using one above)
+    # some lower rank diffs still missing
+    assert not FileDiff.query.filter_by(version=24, rank=1).count()
+
+    # diff for v17-v32 with merged diffs, this will also create lower missing ranks
     diff = FileDiff(
         basefile=basefile, path=f"test.gpkg-diff-{uuid.uuid4()}", version=32, rank=2
     )
@@ -288,6 +291,8 @@ def test_create_diff_checkpoint(diff_project):
     db.session.commit()
     diff.construct_checkpoint()
     assert os.path.exists(diff.abs_path)
+    lower_diff = FileDiff.query.filter_by(version=24, rank=1).first()
+    assert os.path.exists(lower_diff.abs_path)
 
     # assert gpkg diff is the same as it would be from merging all individual diffs
     individual_diffs = (
