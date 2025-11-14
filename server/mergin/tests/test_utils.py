@@ -229,7 +229,7 @@ def test_is_valid_path(client, filepath, allow):
 
 
 def test_has_trailing_space():
-    assert has_trailing_space("photos /lutraHQ.jpg") is False
+    assert has_trailing_space("photos /lutraHQ.jpg") is True
 
 
 def test_get_x_accell_uri(client):

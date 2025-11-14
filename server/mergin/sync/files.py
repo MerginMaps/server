@@ -220,7 +220,6 @@ class ChangesSchema(ma.Schema):
                     f"Unsupported file type detected: {file_path}. "
                     f"Please remove the file or try compressing it into a ZIP file before uploading.",
                 )
-
         # new checks must restrict only new files not to block existing projects
         for file in data["added"]:
             file_path = file["path"]
