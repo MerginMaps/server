@@ -399,9 +399,6 @@ class Project(db.Model):
         )
         existing_delta_map = {(c.rank, c.version): c for c in expected_deltas}
 
-        # Cache all individual (rank 0) delta rows in the required range.
-        individual_deltas: List[ProjectVersionDelta] = []
-
         result: List[DeltaChange] = []
         for checkpoint in expected_checkpoints:
             existing_delta = existing_delta_map.get((checkpoint.rank, checkpoint.end))
@@ -411,29 +408,10 @@ class Project(db.Model):
                 result.extend(DeltaChangeSchema(many=True).load(existing_delta.changes))
                 continue
 
-            # If higher rank delta checkopoint does not exists, we are using rank=0 deltas to create checkopoint
+            # If higher rank delta checkopoint does not exists we need to create it
             if checkpoint.rank > 0:
-                individual_deltas = (
-                    ProjectVersionDelta.query.filter(
-                        ProjectVersionDelta.project_id == project_id,
-                        ProjectVersionDelta.version >= since,
-                        ProjectVersionDelta.version <= to,
-                        ProjectVersionDelta.rank == 0,
-                    )
-                    .order_by(ProjectVersionDelta.version)
-                    .all()
-                    if not individual_deltas
-                    else individual_deltas
-                )
-
-                if not individual_deltas:
-                    logging.error(
-                        f"No individual deltas found for project {project_id} in range {since} / {to} to create checkpoint."
-                    )
-                    return
-
                 new_checkpoint = ProjectVersionDelta.create_checkpoint(
-                    project_id, checkpoint, individual_deltas
+                    project_id, checkpoint
                 )
                 if new_checkpoint:
                     result.extend(
@@ -443,6 +421,7 @@ class Project(db.Model):
                     logging.error(
                         f"Not possible to create checkpoint for project {project_id} in range {checkpoint.start}-{checkpoint.end}"
                     )
+                    return
 
         return ProjectVersionDelta.merge_changes(result)
 
@@ -519,6 +498,10 @@ class ProjectFilePath(db.Model):
     def __init__(self, project_id, path):
         self.project_id = project_id
         self.path = path
+
+    def generate_diff_name(self):
+        """Generate uniqute diff file name for server generated diff"""
+        return mergin_secure_filename(f"{self.path}-diff-{uuid.uuid4()}")
 
 
 class LatestProjectFiles(db.Model):
@@ -876,6 +859,23 @@ class FileDiff(db.Model):
         """
         return os.path.join(self.file.project.storage.project_dir, self.location)
 
+    @staticmethod
+    def can_create_checkpoint(file_path_id: int, checkpoint: Checkpoint) -> bool:
+        """Check if it makes sense to create a diff file for a checkpoint, e.g. there where changes within the range"""
+        if checkpoint.rank == 0:
+            return True
+
+        return (
+            FileDiff.query.filter_by(file_path_id=file_path_id)
+            .filter(
+                FileDiff.version >= checkpoint.start,
+                FileDiff.version <= checkpoint.end,
+                FileDiff.rank == 0,
+            )
+            .count()
+            > 0
+        )
+
     def construct_checkpoint(self) -> bool:
         """Create a diff file checkpoint (aka. merged diff).
         Find all smaller diffs which are needed to create the final diff file and merge them.
@@ -940,6 +940,7 @@ class FileDiff(db.Model):
                 continue
 
             # find diff in table and on disk
+            # diffs might not exist because theye were not created yet or there were no changes (e.g. for zeroth rank diffs)
             diff = next(
                 (
                     d
@@ -949,18 +950,24 @@ class FileDiff(db.Model):
                 None,
             )
 
-            # lower rank diff not even in DB yet - create it and try to construct merged file
             if not diff:
-                diff = FileDiff(
-                    basefile=basefile,
-                    version=item.end,
-                    rank=item.rank,
-                    path=f"{basefile.file.path}-diff-{uuid.uuid4()}",
-                    size=None,
-                    checksum=None,
-                )
-                db.session.add(diff)
-                db.session.commit()
+                # lower rank diff not even in DB yet - create it and try to construct merged file
+                if item.rank > 0 and FileDiff.can_create_checkpoint(
+                    self.file_path_id, item
+                ):
+                    diff = FileDiff(
+                        basefile=basefile,
+                        version=item.end,
+                        rank=item.rank,
+                        path=basefile.file.generate_diff_name(),
+                        size=None,
+                        checksum=None,
+                    )
+                    db.session.add(diff)
+                    db.session.commit()
+                else:
+                    # such diff is not expected to exist
+                    continue
 
             diff_exists = diff.construct_checkpoint()
             if diff_exists:
@@ -1191,26 +1198,51 @@ class ProjectVersionDelta(db.Model):
         cls,
         project_id: str,
         checkpoint: Checkpoint,
-        from_deltas: List[ProjectVersionDelta] = [],
     ) -> Optional[ProjectVersionDelta]:
         """
-        Creates and caches new checkpoint and any required FileDiff checkpoints.
-        Use from_deltas to create checkpoint from existing individual deltas.
-        Returns created ProjectVersionDelta object with checkpoint.
+        Creates and caches new checkpoint and any required FileDiff checkpoints recursively if needed.
         """
-        delta_range = [
-            change
-            for change in from_deltas
-            if checkpoint.start <= change.version <= checkpoint.end
-        ]
+        delta_range = []
+        # our new checkpoint will be created by adding last individual delta to previous checkpoints
+        expected_checkpoints = Checkpoint.get_checkpoints(
+            checkpoint.start, checkpoint.end - 1
+        )
+        expected_checkpoints.append(Checkpoint(rank=0, index=checkpoint.end))
+
+        expected_deltas = (
+            ProjectVersionDelta.query.filter(
+                ProjectVersionDelta.project_id == project_id,
+                tuple_(ProjectVersionDelta.rank, ProjectVersionDelta.version).in_(
+                    [(item.rank, item.end) for item in expected_checkpoints]
+                ),
+            )
+            .order_by(ProjectVersionDelta.version)
+            .all()
+        )
+
+        existing_delta_map = {(c.rank, c.version): c for c in expected_deltas}
+        # make sure we have all components, if not, created them (recursively)
+        for item in expected_checkpoints:
+            existing_delta = existing_delta_map.get((item.rank, item.end))
+            if not existing_delta:
+                existing_delta = cls.create_checkpoint(project_id, item)
+
+            if existing_delta:
+                delta_range.append(existing_delta)
+            else:
+                logging.error(
+                    f"Missing project delta endpoint for {project_id} v{item.end} rank {item.rank} which could not be recreated"
+                )
+                return
 
         if not delta_range:
             logging.warning(
-                f"No individual changes found for project {project_id} in range v{checkpoint.start}-v{checkpoint.end} to create checkpoint."
+                f"No changes found for project {project_id} in range v{checkpoint.start}-v{checkpoint.end} to create checkpoint."
             )
             return None
 
         # dump changes lists from database and flatten list for merging
+        delta_range = sorted(delta_range, key=lambda x: x.version)
         changes = []
         for delta in delta_range:
             changes.extend(DeltaChangeSchema(many=True).load(delta.changes))
@@ -1218,7 +1250,7 @@ class ProjectVersionDelta(db.Model):
             d.to_data_delta() for d in cls.merge_changes(changes)
         ]
 
-        # Pre-fetch data for all versioned files to create FileDiff checkpoints
+        # Pre-fetch data for all versioned files to create FileDiff checkpoints where it makes sense
         versioned_delta_items = [
             item
             for item in merged_delta_items
@@ -1251,17 +1283,17 @@ class ProjectVersionDelta(db.Model):
                     if not base_file:
                         continue
 
-                    diff_path = mergin_secure_filename(
-                        f"{item.path}-diff-{uuid.uuid4()}"
-                    )
+                    if not FileDiff.can_create_checkpoint(file_path_id, checkpoint):
+                        continue
+
                     checkpoint_diff = FileDiff(
                         basefile=base_file,
-                        path=diff_path,
+                        path=base_file.file.generate_diff_name(),
                         rank=checkpoint.rank,
                         version=checkpoint.end,
                     )
                     # Patch the delta with the path to the new diff checkpoint
-                    item.diff = diff_path
+                    item.diff = checkpoint_diff.path
                     db.session.add(checkpoint_diff)
 
         checkpoint_delta = ProjectVersionDelta(
