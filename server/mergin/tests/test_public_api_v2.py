@@ -1,6 +1,18 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+
+from . import DEFAULT_USER
+from .utils import (
+    add_user,
+    logout,
+    login_as_admin,
+    create_workspace,
+    create_project,
+    upload_file_to_project,
+)
+
+from ..auth.models import User
 import os
 import shutil
 from unittest.mock import patch
@@ -154,6 +166,73 @@ def test_project_members(client):
     # access provided by workspace role cannot be removed directly
     response = client.delete(url + f"/{user.id}")
     assert response.status_code == 404
+
+
+def test_get_project(client):
+    """Test get project info endpoint"""
+    admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
+    test_workspace = create_workspace()
+    project = create_project("new_project", test_workspace, admin)
+    logout(client)
+    # lack of permissions
+    response = client.get(f"v2/projects/{project.id}")
+    assert response.status_code == 403
+    # access public project
+    project.public = True
+    db.session.commit()
+    response = client.get(f"v2/projects/{project.id}")
+    assert response.status_code == 200
+    assert response.json["public"] is True
+    # project scheduled for deletion
+    login_as_admin(client)
+    project.public = False
+    project.removed_at = datetime.utcnow()
+    db.session.commit()
+    response = client.get(f"v2/projects/{project.id}")
+    assert response.status_code == 404
+    # success
+    project.removed_at = None
+    db.session.commit()
+    response = client.get(f"v2/projects/{project.id}")
+    assert response.status_code == 200
+    expected_keys = {
+        "id",
+        "name",
+        "workspace",
+        "role",
+        "version",
+        "created_at",
+        "updated_at",
+        "public",
+        "size",
+    }
+    assert expected_keys == response.json.keys()
+    # create new versions
+    files = ["test.txt", "test3.txt", "test.qgs"]
+    for file in files:
+        upload_file_to_project(project, file, client)
+    # project version does not exist
+    response = client.get(
+        f"v2/projects/{project.id}?files_at_version=v{project.latest_version+1}"
+    )
+    assert response.status_code == 200
+    assert response.json["id"] == str(project.id)
+    assert "files" not in response.json.keys()
+    # files
+    response = client.get(
+        f"v2/projects/{project.id}?files_at_version=v{project.latest_version-2}"
+    )
+    assert response.status_code == 200
+    assert len(response.json["files"]) == 1
+    assert any(resp_files["path"] == files[0] for resp_files in response.json["files"])
+    assert not any(
+        resp_files["path"] == files[1] for resp_files in response.json["files"]
+    )
+    response = client.get(
+        f"v2/projects/{project.id}?files_at_version=v{project.latest_version}"
+    )
+    assert len(response.json["files"]) == 3
+    assert {f["path"] for f in response.json["files"]} == set(files)
 
 
 push_data = [
