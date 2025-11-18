@@ -39,9 +39,10 @@ export function formatFileSize(
 export function formatToCurrency(
   value: number,
   currency: string,
-  digits = 2
+  digits = 2,
+  locale = 'en-UK'
 ): string {
-  return value.toLocaleString('en-UK', {
+  return value.toLocaleString(locale, {
     style: 'currency',
     currency,
     currencySign: 'accounting',
