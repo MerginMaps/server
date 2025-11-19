@@ -228,8 +228,15 @@ def test_is_valid_path(client, filepath, allow):
     assert is_valid_path(filepath) == allow
 
 
-def test_has_trailing_space():
-    assert has_trailing_space("photos /lutraHQ.jpg") is True
+test_paths = [
+    ("photos /lutraHQ.jpg", True),
+    ("photo s/ lutraHQ.jpg", False),
+]
+
+
+@pytest.mark.parametrize("path,result", test_paths)
+def test_has_trailing_space(path, result):
+    assert has_trailing_space(path) is result
 
 
 def test_get_x_accell_uri(client):
