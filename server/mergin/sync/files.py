@@ -212,12 +212,12 @@ class ChangesSchema(ma.Schema):
 
             if not is_valid_path(file_path):
                 raise ValidationError(
-                    f"Unsupported file name detected: {file_path}. Please remove the invalid characters."
+                    f"Unsupported file name detected: '{file_path}'. Please remove the invalid characters."
                 )
 
             if not is_supported_extension(file_path):
                 raise ValidationError(
-                    f"Unsupported file type detected: {file_path}. "
+                    f"Unsupported file type detected: '{file_path}'. "
                     f"Please remove the file or try compressing it into a ZIP file before uploading.",
                 )
         # new checks must restrict only new files not to block existing projects
@@ -225,7 +225,7 @@ class ChangesSchema(ma.Schema):
             file_path = file["path"]
             if has_trailing_space(file_path):
                 raise ValidationError(
-                    f"Folder name contains a trailing space. Please remove the space in: {file_path}"
+                    f"Folder name contains a trailing space. Please remove the space in: '{file_path}'."
                 )
 
 
