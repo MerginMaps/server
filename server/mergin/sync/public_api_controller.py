@@ -972,7 +972,7 @@ def push_finish(transaction_id):
         if len(unsupported_files):
             abort(
                 400,
-                f"Unsupported file type detected: {unsupported_files[0]}. "
+                f"Unsupported file type detected: '{unsupported_files[0]}'. "
                 f"Please remove the file or try compressing it into a ZIP file before uploading.",
             )
 
