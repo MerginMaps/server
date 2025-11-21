@@ -25,6 +25,7 @@ from pathvalidate import (
 )
 import magic
 from flask import current_app
+from pathlib import Path
 
 
 def generate_checksum(file, chunk_size=4096):
@@ -98,11 +99,6 @@ def is_qgis(path: str) -> bool:
     """
     _, ext = os.path.splitext(path)
     return ext.lower() in [".qgs", ".qgz"]
-
-
-def int_version(version):
-    """Convert v<n> format of version to integer representation."""
-    return int(version.lstrip("v")) if re.match(r"v\d", version) else None
 
 
 def is_versioned_file(file):
@@ -338,12 +334,17 @@ def files_size():
 def is_valid_path(filepath: str) -> bool:
     """Check filepath and filename for invalid characters, absolute path or path traversal"""
     return (
-        not len(re.split(r"\.[/\\]", filepath)) > 1  # ./ or .\
+        not re.search(r"\.[/\\]", filepath)  # ./ or .\
         and is_valid_filepath(filepath)  # invalid characters in filepath, absolute path
         and is_valid_filename(
             os.path.basename(filepath)
         )  # invalid characters in filename, reserved filenames
     )
+
+
+def has_trailing_space(filepath: str) -> bool:
+    """Check filepath for trailing spaces that makes the project impossible to download on Windows"""
+    return any(part != part.rstrip() for part in Path(filepath).parts)
 
 
 def is_supported_extension(filepath) -> bool:

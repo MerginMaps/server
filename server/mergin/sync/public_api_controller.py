@@ -55,9 +55,7 @@ from .models import (
 from .files import (
     ProjectFileChange,
     ChangesSchema,
-    UploadFileSchema,
     ProjectFileSchema,
-    FileSchema,
     files_changes_from_upload,
     mergin_secure_filename,
 )
@@ -83,17 +81,11 @@ from .utils import (
     generate_checksum,
     Toucher,
     get_x_accel_uri,
-    is_file_name_blacklisted,
     get_ip,
     get_user_agent,
     generate_location,
     is_valid_uuid,
-    is_versioned_file,
-    get_project_path,
     get_device_id,
-    is_valid_path,
-    is_supported_type,
-    is_supported_extension,
     get_mimetype,
     wkb2wkt,
 )
@@ -980,7 +972,7 @@ def push_finish(transaction_id):
         if len(unsupported_files):
             abort(
                 400,
-                f"Unsupported file type detected: {unsupported_files[0]}. "
+                f"Unsupported file type detected: '{unsupported_files[0]}'. "
                 f"Please remove the file or try compressing it into a ZIP file before uploading.",
             )
 
