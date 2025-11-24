@@ -378,7 +378,7 @@ def test_create_version(client, data, expected, err_code):
     if expected == 201:
         assert response.json["version"] == "v2"
         assert project.latest_version == 2
-        assert all(not os.path.exists(chunk) for chunk in chunks)
+        assert all(os.path.exists(chunk) for chunk in chunks)
     else:
         assert project.latest_version == 1
         if err_code:
