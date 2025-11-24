@@ -1028,14 +1028,6 @@ def push_finish(transaction_id):
         # let's move uploaded files where they are expected to be
         os.renames(files_dir, version_dir)
 
-        # remove used chunks
-        for file in upload.changes["added"] + upload.changes["updated"]:
-            file_chunks = file.get("chunks", [])
-            for chunk_id in file_chunks:
-                chunk_file = os.path.join(upload.upload_dir, "chunks", chunk_id)
-                if os.path.exists(chunk_file):
-                    move_to_tmp(chunk_file)
-
         logging.info(
             f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
         )
