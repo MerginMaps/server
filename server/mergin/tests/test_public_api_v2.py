@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-from mergin.sync.tasks import remove_unused_chunks
+from mergin.sync.tasks import remove_transaction_chunks, remove_unused_chunks
 from . import DEFAULT_USER
 from .utils import (
     add_user,
@@ -358,6 +358,7 @@ def test_create_version(client, data, expected, err_code):
     assert project.latest_version == 1
 
     chunks = []
+    chunk_ids = []
     if expected == 201:
         # mimic chunks were uploaded
         for f in data["changes"]["added"] + data["changes"]["updated"]:
@@ -374,17 +375,21 @@ def test_create_version(client, data, expected, err_code):
                         out_file.write(in_file.read(CHUNK_SIZE))
 
                     chunks.append(chunk_location)
+                    chunk_ids.append(chunk)
 
-    response = client.post(f"v2/projects/{project.id}/versions", json=data)
+    with patch(
+        "mergin.sync.public_api_v2_controller.remove_transaction_chunks.delay"
+    ) as mock_remove:
+        response = client.post(f"v2/projects/{project.id}/versions", json=data)
     assert response.status_code == expected
-    # mock chunks expiration to check if removed
     if expected == 201:
         assert response.json["version"] == "v2"
         assert project.latest_version == 2
         # chunks exists after upload, cleanup job did not remove them
         assert all(os.path.exists(chunk) for chunk in chunks)
-        with patch.object(SyncConfiguration, "UPLOAD_CHUNKS_EXPIRATION", 0):
-            remove_unused_chunks()
+        if chunk_ids:
+            assert mock_remove.called_once_with(chunk_ids)
+        remove_transaction_chunks(chunk_ids)
         assert all(not os.path.exists(chunk) for chunk in chunks)
     else:
         assert project.latest_version == 1

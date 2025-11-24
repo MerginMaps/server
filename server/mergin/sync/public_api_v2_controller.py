@@ -14,6 +14,8 @@ from flask_login import current_user
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
 
+from mergin.sync.tasks import remove_transaction_chunks
+
 from .schemas_v2 import ProjectSchema as ProjectSchemaV2
 from ..app import db
 from ..auth import auth_required
@@ -317,6 +319,14 @@ def create_project_version(id):
         if to_be_added_files or to_be_updated_files:
             temp_files_dir = os.path.join(upload.upload_dir, "files", v_next_version)
             os.renames(temp_files_dir, version_dir)
+
+            # remove used chunks
+            # get chunks from added and updated files
+            chunks_ids = []
+            for file in to_be_added_files + to_be_updated_files:
+                file_chunks = file.get("chunks", [])
+                chunks_ids.extend(file_chunks)
+            remove_transaction_chunks.delay(chunks_ids)
 
         logging.info(
             f"Push finished for project: {project.id}, project version: {v_next_version}, upload id: {upload.id}."
