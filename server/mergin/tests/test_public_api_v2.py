@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+from mergin.sync.tasks import remove_unused_chunks
 from . import DEFAULT_USER
 from .utils import (
     add_user,
@@ -22,6 +23,7 @@ from datetime import datetime, timedelta, timezone
 
 from mergin.app import db
 from mergin.config import Configuration
+from mergin.sync.config import Configuration as SyncConfiguration
 from mergin.sync.errors import (
     BigChunkError,
     ProjectLocked,
@@ -375,10 +377,15 @@ def test_create_version(client, data, expected, err_code):
 
     response = client.post(f"v2/projects/{project.id}/versions", json=data)
     assert response.status_code == expected
+    # mock chunks expiration to check if removed
     if expected == 201:
         assert response.json["version"] == "v2"
         assert project.latest_version == 2
+        # chunks exists after upload, cleanup job did not remove them
         assert all(os.path.exists(chunk) for chunk in chunks)
+        with patch.object(SyncConfiguration, "UPLOAD_CHUNKS_EXPIRATION", 0):
+            remove_unused_chunks()
+        assert all(not os.path.exists(chunk) for chunk in chunks)
     else:
         assert project.latest_version == 1
         if err_code:
