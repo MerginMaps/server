@@ -606,12 +606,22 @@ def test_project_version_delta_changes(client, diff_project: Project):
     assert response.status_code == 200
 
     # remove intermediate deltas and assert they would be recreated if needed for higher ranks
-    ProjectVersionDelta.query.filter(ProjectVersionDelta.rank > 0).delete()
+    ProjectVersionDelta.query.filter_by(project_id=diff_project.id).filter(
+        ProjectVersionDelta.rank > 0
+    ).delete()
     db.session.commit()
     # v1-v16 would be created from v1-v4, v5-v8 and v9-v12 and 4 individual deltas
     delta = diff_project.get_delta_changes(0, diff_project.latest_version)
-    assert ProjectVersionDelta.query.filter_by(rank=1).count() == 3
-    assert ProjectVersionDelta.query.filter_by(rank=2, version=16).count() == 1
+    assert (
+        ProjectVersionDelta.query.filter_by(project_id=diff_project.id, rank=1).count()
+        == 3
+    )
+    assert (
+        ProjectVersionDelta.query.filter_by(
+            project_id=diff_project.id, rank=2, version=16
+        ).count()
+        == 1
+    )
 
 
 push_data = [
