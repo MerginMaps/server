@@ -29,7 +29,7 @@ from ..sync.models import (
     ProjectVersionDelta,
 )
 from ..sync.files import DeltaChange, PushChangeType
-from ..sync.utils import is_versioned_file
+from ..sync.utils import Checkpoint, is_versioned_file
 from sqlalchemy.exc import IntegrityError
 import pytest
 from datetime import datetime, timedelta, timezone
@@ -260,6 +260,7 @@ def test_create_diff_checkpoint(diff_project):
     assert len(diffs) == 22
 
     # diff for v17-v20 from individual diffs
+    assert FileDiff.can_create_checkpoint(file_path_id, Checkpoint(1, 5)) is True
     diff = FileDiff(
         basefile=basefile, path=f"test.gpkg-diff-{uuid.uuid4()}", version=20, rank=1
     )
@@ -327,6 +328,38 @@ def test_create_diff_checkpoint(diff_project):
         diff.construct_checkpoint()
         assert mock.called
         assert not os.path.exists(diff.abs_path)
+
+
+def test_can_create_checkpoint(diff_project):
+    """Test if diff file checkpoint can be created"""
+    file_path_id = (
+        ProjectFilePath.query.filter_by(project_id=diff_project.id, path="base.gpkg")
+        .first()
+        .id
+    )
+
+    # we target v1 where file was uploaded => no diff
+    assert FileDiff.can_create_checkpoint(file_path_id, Checkpoint(0, 1)) is False
+
+    # for zero rank diffs we can always create a checkpoint (but that should already exist)
+    assert FileDiff.can_create_checkpoint(file_path_id, Checkpoint(0, 4)) is True
+
+    # there are diffs in both ranges, v1-v4 and v5-v8
+    assert FileDiff.can_create_checkpoint(file_path_id, Checkpoint(1, 1)) is True
+    assert FileDiff.can_create_checkpoint(file_path_id, Checkpoint(1, 2)) is True
+
+    # higher ranks cannot be created as file was removed at v9
+    assert FileDiff.can_create_checkpoint(file_path_id, Checkpoint(2, 1)) is False
+
+    # there is no diff for such file in this range
+    file_path_id = (
+        ProjectFilePath.query.filter_by(
+            project_id=diff_project.id, path="inserted_1_A.gpkg"
+        )
+        .first()
+        .id
+    )
+    assert FileDiff.can_create_checkpoint(file_path_id, Checkpoint(1, 1)) is False
 
 
 def test_delta_merge_changes():

@@ -861,20 +861,41 @@ class FileDiff(db.Model):
 
     @staticmethod
     def can_create_checkpoint(file_path_id: int, checkpoint: Checkpoint) -> bool:
-        """Check if it makes sense to create a diff file for a checkpoint, e.g. there where changes within the range"""
-        if checkpoint.rank == 0:
-            return True
+        """Check if it makes sense to create a diff file for a checkpoint, e.g. there were relevant changes within the range without breaking changes"""
 
-        return (
-            FileDiff.query.filter_by(file_path_id=file_path_id)
+        basefile = FileHistory.get_basefile(file_path_id, checkpoint.end)
+        if not basefile:
+            return False
+
+        file_was_deleted = (
+            FileHistory.query.filter_by(file_path_id=file_path_id)
             .filter(
-                FileDiff.version >= checkpoint.start,
-                FileDiff.version <= checkpoint.end,
-                FileDiff.rank == 0,
+                FileHistory.project_version_name
+                >= max(basefile.project_version_name, checkpoint.start),
+                FileHistory.project_version_name <= checkpoint.end,
+                FileHistory.change == PushChangeType.DELETE.value,
             )
             .count()
             > 0
         )
+        if file_was_deleted:
+            return False
+
+        query = FileDiff.query.filter_by(basefile_id=basefile.id).filter(
+            FileDiff.rank == 0
+        )
+
+        # rank 0 is a special case we only verify it exists
+        if checkpoint.rank == 0:
+            query = query.filter(FileDiff.version == checkpoint.end)
+        # for higher ranks we need to check if there were diff updates in that range
+        else:
+            query = query.filter(
+                FileDiff.version >= checkpoint.start,
+                FileDiff.version <= checkpoint.end,
+            )
+
+        return query.count() > 0
 
     def construct_checkpoint(self) -> bool:
         """Create a diff file checkpoint (aka. merged diff).
