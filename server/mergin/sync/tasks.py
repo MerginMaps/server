@@ -7,6 +7,7 @@ import shutil
 import os
 import time
 from datetime import datetime, timedelta, timezone
+from typing import List, Optional
 from zipfile import ZIP_DEFLATED, ZipFile
 from flask import current_app
 
@@ -172,8 +173,10 @@ def remove_unused_chunks():
 
 
 @celery.task
-def remove_transaction_chunks(chunks=[]):
+def remove_transaction_chunks(chunks: Optional[List[str]] = None):
     """Remove chunks related to a specific sync transaction"""
+    if not chunks:
+        return
     for chunk in chunks:
         chunk_path = get_chunk_location(chunk)
         if os.path.exists(chunk_path):
