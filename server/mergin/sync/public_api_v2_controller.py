@@ -14,6 +14,8 @@ from flask_login import current_user
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
 
+from mergin.sync.tasks import remove_transaction_chunks
+
 from .schemas_v2 import ProjectSchema as ProjectSchemaV2
 from ..app import db
 from ..auth import auth_required
@@ -319,12 +321,12 @@ def create_project_version(id):
             os.renames(temp_files_dir, version_dir)
 
             # remove used chunks
+            # get chunks from added and updated files
+            chunks_ids = []
             for file in to_be_added_files + to_be_updated_files:
                 file_chunks = file.get("chunks", [])
-                for chunk_id in file_chunks:
-                    chunk_file = get_chunk_location(chunk_id)
-                    if os.path.exists(chunk_file):
-                        move_to_tmp(chunk_file)
+                chunks_ids.extend(file_chunks)
+            remove_transaction_chunks.delay(chunks_ids)
 
         logging.info(
             f"Push finished for project: {project.id}, project version: {v_next_version}, upload id: {upload.id}."
@@ -377,7 +379,6 @@ def upload_chunk(id: str):
         # we could have used request.data here, but it could eventually cause OOM issue
         save_to_file(request.stream, dest_file, current_app.config["MAX_CHUNK_SIZE"])
     except IOError:
-        move_to_tmp(dest_file, chunk_id)
         return BigChunkError().response(413)
     except Exception as e:
         return UploadError(error="Error saving chunk").response(400)

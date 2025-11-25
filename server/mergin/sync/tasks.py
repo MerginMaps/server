@@ -7,13 +7,14 @@ import shutil
 import os
 import time
 from datetime import datetime, timedelta, timezone
+from typing import List, Optional
 from zipfile import ZIP_DEFLATED, ZipFile
 from flask import current_app
 
 from .models import Project, ProjectVersion, FileHistory
 from .storages.disk import move_to_tmp
 from .config import Configuration
-from .utils import remove_outdated_files
+from .utils import get_chunk_location, remove_outdated_files
 from ..celery import celery
 from ..app import db
 
@@ -169,3 +170,14 @@ def remove_unused_chunks():
         if not os.path.isdir(dir):
             continue
         remove_outdated_files(dir, time_delta)
+
+
+@celery.task
+def remove_transaction_chunks(chunks: Optional[List[str]] = None):
+    """Remove chunks related to a specific sync transaction"""
+    if not chunks:
+        return
+    for chunk in chunks:
+        chunk_path = get_chunk_location(chunk)
+        if os.path.exists(chunk_path):
+            os.remove(chunk_path)
