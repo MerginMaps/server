@@ -539,6 +539,7 @@ def test_project_version_delta_changes(client, diff_project: Project):
     assert len(delta_base_gpkg.diffs) == 0
 
     # get data with multiple ranks = 1 level checkpoints 1-4, 5-8 + checkpoint 9 and 10
+    assert not ProjectVersionDelta.query.filter_by(rank=1, version=8).first()
     delta = diff_project.get_delta_changes(0, 10)
     assert len(delta) == len(latest_version.files)
     delta_test_gpkg = next((d for d in delta if d.path == "test.gpkg"), None)
@@ -548,6 +549,7 @@ def test_project_version_delta_changes(client, diff_project: Project):
     assert ProjectVersionDelta.query.filter_by(rank=2).count() == 0
     # check if version is having rank 1 checkpoint with proper end version
     assert ProjectVersionDelta.query.filter_by(rank=1, version=4).first()
+    # missing lower checkpoint is recreated
     assert ProjectVersionDelta.query.filter_by(rank=1, version=8).first()
     # base gpgk is transparent, bacause we are requesting from 0
     assert not next((c for c in delta if c.path == "base.gpkg"), None)
@@ -602,6 +604,14 @@ def test_project_version_delta_changes(client, diff_project: Project):
         f"v2/projects/{diff_project.id}/raw/diff/{delta[0].diffs[0].path}"
     )
     assert response.status_code == 200
+
+    # remove intermediate deltas and assert they would be recreated if needed for higher ranks
+    ProjectVersionDelta.query.filter(ProjectVersionDelta.rank > 0).delete()
+    db.session.commit()
+    # v1-v16 would be created from v1-v4, v5-v8 and v9-v12 and 4 individual deltas
+    delta = diff_project.get_delta_changes(0, diff_project.latest_version)
+    assert ProjectVersionDelta.query.filter_by(rank=1).count() == 3
+    assert ProjectVersionDelta.query.filter_by(rank=2, version=16).count() == 1
 
 
 push_data = [
