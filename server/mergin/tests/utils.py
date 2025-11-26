@@ -400,3 +400,9 @@ def diffs_are_equal(diff1, diff2):
     geodiff.list_changes_summary(diff2, changes2)
     with open(changes1) as f, open(changes2) as f2:
         return json.load(f) == json.load(f2)
+
+
+def logout(client):
+    """Test helper to log out the client"""
+    resp = client.get(url_for("/.mergin_auth_controller_logout"))
+    assert resp.status_code == 200

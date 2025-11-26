@@ -5,19 +5,18 @@
 import base64
 from datetime import datetime
 import json
-import os
 import pytest
 from flask import url_for, current_app
 from sqlalchemy import desc
 import os
 from unittest.mock import patch
 from pathvalidate import sanitize_filename
+from pygeodiff import GeoDiff
+from pathlib import PureWindowsPath
 
 from ..utils import save_diagnostic_log_file
 
 from ..sync.utils import (
-    parse_gpkgb_header_size,
-    gpkg_wkb_to_wkt,
     is_reserved_word,
     has_valid_characters,
     has_valid_first_character,
@@ -25,6 +24,8 @@ from ..sync.utils import (
     is_valid_path,
     get_x_accel_uri,
     Checkpoint,
+    wkb2wkt,
+    has_trailing_space,
 )
 from ..auth.models import LoginHistory, User
 from . import json_headers
@@ -87,13 +88,13 @@ def test_maintenance_mode(client):
 
 
 def test_parse_gpkg():
+    geodiff = GeoDiff()
     # Point
     gpkg_wkb = base64.b64decode(
         "R1AAAeYQAAABAQAAAID8bic0LLE/RlTr7Iuo1j8=", validate=True
     )
-    header_len = parse_gpkgb_header_size(gpkg_wkb)
-    assert header_len == 8
-    wkt = gpkg_wkb_to_wkt(gpkg_wkb)
+    wkb = geodiff.create_wkb_from_gpkg_header(gpkg_wkb)
+    wkt = wkb2wkt(wkb)
     assert "POINT" in wkt
 
     # Linestring
@@ -101,16 +102,14 @@ def test_parse_gpkg():
         "R1AAA+YQAABA0VaD5wjkv+R3O6FhidC/hn8DkdjL0z8Iwc3FqhvlPwECAAAABAAAAGhDvPBvINK/CMHNxaob5T9I139WMEjZv+DthIYlQuA/5Hc7oWGJ0L+GfwOR2MvTP0DRVoPnCOS/zB9sPJo/2D8=",
         validate=True,
     )
-    header_len = parse_gpkgb_header_size(gpkg_wkb)
-    assert header_len == 40
-    wkt = gpkg_wkb_to_wkt(gpkg_wkb)
+
+    wkb = geodiff.create_wkb_from_gpkg_header(gpkg_wkb)
+    wkt = wkb2wkt(wkb)
     assert "LINESTRING" in wkt
 
     # Invalid
     gpkg_wkb = base64.b64decode("aaaa", validate=True)
-    header_len = parse_gpkgb_header_size(gpkg_wkb)
-    assert header_len == -1
-    wkt = gpkg_wkb_to_wkt(gpkg_wkb)
+    wkt = wkb2wkt(gpkg_wkb)
     assert not wkt
 
 
@@ -229,6 +228,24 @@ filepaths = [
 @pytest.mark.parametrize("filepath,allow", filepaths)
 def test_is_valid_path(client, filepath, allow):
     assert is_valid_path(filepath) == allow
+
+
+trailing_spaces_paths = [
+    ("photos /lutraHQ.jpg", "posix", True),
+    ("photo s/ lutraHQ.jpg", "posix", False),
+    ("assets\photos \lutraHQ.jpg", "windows", True),
+    ("assets\  photos\lutraHQ.jpg", "windows", False),
+]
+
+
+@pytest.mark.parametrize("path,path_platform,result", trailing_spaces_paths)
+def test_has_trailing_space(path, path_platform, result):
+    if path_platform == "windows":
+        # we must mock Path to instantiate as Windows path
+        with patch("mergin.sync.utils.Path", PureWindowsPath):
+            assert has_trailing_space(path) is result
+    else:
+        assert has_trailing_space(path) is result
 
 
 def test_get_x_accell_uri(client):

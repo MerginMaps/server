@@ -79,9 +79,10 @@ from .utils import (
     get_user_agent,
     generate_location,
     is_valid_uuid,
-    gpkg_wkb_to_wkt,
     get_device_id,
     prepare_download_response,
+    get_device_id,
+    wkb2wkt,
 )
 from .errors import StorageLimitHit, ProjectLocked
 from ..utils import format_time_delta
@@ -944,7 +945,7 @@ def push_finish(transaction_id):
         if len(unsupported_files):
             abort(
                 400,
-                f"Unsupported file type detected: {unsupported_files[0]}. "
+                f"Unsupported file type detected: '{unsupported_files[0]}'. "
                 f"Please remove the file or try compressing it into a ZIP file before uploading.",
             )
 
@@ -999,14 +1000,6 @@ def push_finish(transaction_id):
 
         # let's move uploaded files where they are expected to be
         os.renames(files_dir, version_dir)
-
-        # remove used chunks
-        for file in upload.changes["added"] + upload.changes["updated"]:
-            file_chunks = file.get("chunks", [])
-            for chunk_id in file_chunks:
-                chunk_file = os.path.join(upload.upload_dir, "chunks", chunk_id)
-                if os.path.exists(chunk_file):
-                    move_to_tmp(chunk_file)
 
         logging.info(
             f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
@@ -1300,7 +1293,10 @@ def get_resource_changeset(project_name, namespace, version_id, path):  # noqa: 
                 if key not in geom_change:
                     continue
                 gpkg_wkb = base64.b64decode(geom_change[key], validate=True)
-                wkt = gpkg_wkb_to_wkt(gpkg_wkb)
+                wkb = version.project.storage.geodiff.create_wkb_from_gpkg_header(
+                    gpkg_wkb
+                )
+                wkt = wkb2wkt(wkb)
                 if wkt:
                     geom_change[key] = wkt
         except (binascii.Error, TypeError, ValueError):

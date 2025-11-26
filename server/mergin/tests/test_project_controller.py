@@ -2488,7 +2488,7 @@ def test_filepath_manipulation(client):
     assert resp.status_code == 400
     assert (
         resp.json["detail"]
-        == f"Unsupported file name detected: {manipulated_path}. Please remove the invalid characters."
+        == f"Unsupported file name detected: '{manipulated_path}'. Please remove the invalid characters."
     )
 
 
@@ -2521,7 +2521,7 @@ def test_supported_file_upload(client):
     assert resp.status_code == 400
     assert (
         resp.json["detail"]
-        == f"Unsupported file type detected: {script_filename}. Please remove the file or try compressing it into a ZIP file before uploading."
+        == f"Unsupported file type detected: '{script_filename}'. Please remove the file or try compressing it into a ZIP file before uploading."
     )
     # Extension spoofing to trick the validator
     spoof_name = "script.gpkg"
@@ -2560,7 +2560,7 @@ def test_supported_file_upload(client):
     assert resp.status_code == 400
     assert (
         resp.json["detail"]
-        == f"Unsupported file type detected: {spoof_name}. Please remove the file or try compressing it into a ZIP file before uploading."
+        == f"Unsupported file type detected: '{spoof_name}'. Please remove the file or try compressing it into a ZIP file before uploading."
     )
 
 

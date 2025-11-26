@@ -125,9 +125,14 @@ test_user_reg_data = [
         400,
     ),  # tests with upper case, but email already exists
     (" mergin@mergin.com  ", "#pwd123", 400),  # invalid password
-    ("verylonglonglonglonglonglonglongemail@example.com", "#pwd1234", 201),
+    (
+        "verylonglonglonglonglonglonglongemail@lutra-consulting.co.uk",
+        "#pwd1234",
+        201,
+    ),  # long local part, second-level domain, dash in domain
     ("us.er@mergin.com", "#pwd1234", 201),  # dot is allowed
     ("us er@mergin.com", "#pwd1234", 400),  # space is disallowed
+    ("test@gmaiñ.com", "#pwd1234", 400),  # non-ASCII character in the domain
 ]
 
 
@@ -936,15 +941,16 @@ user_data = [
     ("日人日本人", True),  # non-ascii character
     ("usér", True),  # non-ascii character
     ("user\\", False),  # disallowed character
-    ("user\260", True),  # non-ascii character (°)
+    ("user\260", False),  # not letter character (°)
     ("user|", False),  # vertical bar
     ("us er", False),  # space in the middle
     ("us,er", False),  # comma
     ("us—er", False),  # dash
-    ("us'er", False),  # apostrophe
+    ("us´er", False),  # acute accent
     (" user", True),  # starting with space (will be stripped)
     ("us.er", True),  # dot in the middle
     (".user", False),  # starting with dot
+    ("us-er", True),  # hyphen
 ]
 
 
