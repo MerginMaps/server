@@ -29,7 +29,7 @@ from ..sync.models import (
     ProjectVersionDelta,
 )
 from ..sync.files import DeltaChange, PushChangeType
-from ..sync.utils import is_versioned_file
+from ..sync.utils import Checkpoint, is_versioned_file
 from sqlalchemy.exc import IntegrityError
 import pytest
 from datetime import datetime, timedelta, timezone
@@ -260,6 +260,7 @@ def test_create_diff_checkpoint(diff_project):
     assert len(diffs) == 22
 
     # diff for v17-v20 from individual diffs
+    assert FileDiff.can_create_checkpoint(file_path_id, Checkpoint(1, 5)) is True
     diff = FileDiff(
         basefile=basefile, path=f"test.gpkg-diff-{uuid.uuid4()}", version=20, rank=1
     )
@@ -280,7 +281,10 @@ def test_create_diff_checkpoint(diff_project):
     diff.construct_checkpoint()
     assert mtime == os.path.getmtime(diff.abs_path)
 
-    # diff for v17-v32 with merged diffs (using one above)
+    # some lower rank diffs still missing
+    assert not FileDiff.query.filter_by(version=24, rank=1).count()
+
+    # diff for v17-v32 with merged diffs, this will also create lower missing ranks
     diff = FileDiff(
         basefile=basefile, path=f"test.gpkg-diff-{uuid.uuid4()}", version=32, rank=2
     )
@@ -288,6 +292,8 @@ def test_create_diff_checkpoint(diff_project):
     db.session.commit()
     diff.construct_checkpoint()
     assert os.path.exists(diff.abs_path)
+    lower_diff = FileDiff.query.filter_by(version=24, rank=1).first()
+    assert os.path.exists(lower_diff.abs_path)
 
     # assert gpkg diff is the same as it would be from merging all individual diffs
     individual_diffs = (
@@ -322,6 +328,38 @@ def test_create_diff_checkpoint(diff_project):
         diff.construct_checkpoint()
         assert mock.called
         assert not os.path.exists(diff.abs_path)
+
+
+def test_can_create_checkpoint(diff_project):
+    """Test if diff file checkpoint can be created"""
+    file_path_id = (
+        ProjectFilePath.query.filter_by(project_id=diff_project.id, path="base.gpkg")
+        .first()
+        .id
+    )
+
+    # we target v1 where file was uploaded => no diff
+    assert FileDiff.can_create_checkpoint(file_path_id, Checkpoint(0, 1)) is False
+
+    # for zero rank diffs we can always create a checkpoint (but that should already exist)
+    assert FileDiff.can_create_checkpoint(file_path_id, Checkpoint(0, 4)) is True
+
+    # there are diffs in both ranges, v1-v4 and v5-v8
+    assert FileDiff.can_create_checkpoint(file_path_id, Checkpoint(1, 1)) is True
+    assert FileDiff.can_create_checkpoint(file_path_id, Checkpoint(1, 2)) is True
+
+    # higher ranks cannot be created as file was removed at v9
+    assert FileDiff.can_create_checkpoint(file_path_id, Checkpoint(2, 1)) is False
+
+    # there is no diff for such file in this range
+    file_path_id = (
+        ProjectFilePath.query.filter_by(
+            project_id=diff_project.id, path="inserted_1_A.gpkg"
+        )
+        .first()
+        .id
+    )
+    assert FileDiff.can_create_checkpoint(file_path_id, Checkpoint(1, 1)) is False
 
 
 def test_delta_merge_changes():
@@ -501,6 +539,7 @@ def test_project_version_delta_changes(client, diff_project: Project):
     assert len(delta_base_gpkg.diffs) == 0
 
     # get data with multiple ranks = 1 level checkpoints 1-4, 5-8 + checkpoint 9 and 10
+    assert not ProjectVersionDelta.query.filter_by(rank=1, version=8).first()
     delta = diff_project.get_delta_changes(0, 10)
     assert len(delta) == len(latest_version.files)
     delta_test_gpkg = next((d for d in delta if d.path == "test.gpkg"), None)
@@ -510,6 +549,7 @@ def test_project_version_delta_changes(client, diff_project: Project):
     assert ProjectVersionDelta.query.filter_by(rank=2).count() == 0
     # check if version is having rank 1 checkpoint with proper end version
     assert ProjectVersionDelta.query.filter_by(rank=1, version=4).first()
+    # missing lower checkpoint is recreated
     assert ProjectVersionDelta.query.filter_by(rank=1, version=8).first()
     # base gpgk is transparent, bacause we are requesting from 0
     assert not next((c for c in delta if c.path == "base.gpkg"), None)
@@ -564,6 +604,24 @@ def test_project_version_delta_changes(client, diff_project: Project):
         f"v2/projects/{diff_project.id}/raw/diff/{delta[0].diffs[0].path}"
     )
     assert response.status_code == 200
+
+    # remove intermediate deltas and assert they would be recreated if needed for higher ranks
+    ProjectVersionDelta.query.filter_by(project_id=diff_project.id).filter(
+        ProjectVersionDelta.rank > 0
+    ).delete()
+    db.session.commit()
+    # v1-v16 would be created from v1-v4, v5-v8 and v9-v12 and 4 individual deltas
+    delta = diff_project.get_delta_changes(0, diff_project.latest_version)
+    assert (
+        ProjectVersionDelta.query.filter_by(project_id=diff_project.id, rank=1).count()
+        == 3
+    )
+    assert (
+        ProjectVersionDelta.query.filter_by(
+            project_id=diff_project.id, rank=2, version=16
+        ).count()
+        == 1
+    )
 
 
 push_data = [
