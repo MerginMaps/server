@@ -36,6 +36,7 @@ def flask_app(request):
             "COLLECT_STATISTICS",
             "USER_SELF_REGISTRATION",
             "V2_PUSH_ENABLED",
+            "V2_PULL_ENABLED",
         ]
     )
     register(application)
