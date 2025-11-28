@@ -174,12 +174,12 @@ def test_get_project(client):
     admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
     test_workspace = create_workspace()
     project = create_project("new_project", test_workspace, admin)
-    user = add_user("tests", "tests")
     logout(client)
     # anonymous user cannot access the resource
     response = client.get(f"v2/projects/{project.id}")
     assert response.status_code == 404
     # lack of permissions
+    user = add_user("tests", "tests")
     login(client, user.username, "tests")
     response = client.get(f"v2/projects/{project.id}")
     assert response.status_code == 403
