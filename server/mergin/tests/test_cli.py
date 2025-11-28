@@ -8,6 +8,7 @@ import pytest
 import os
 from unittest.mock import patch
 from pathlib import Path
+from sqlalchemy import inspect
 
 from mergin.app import db
 from mergin.auth.models import User
@@ -421,7 +422,7 @@ test_check_server_data = [
 
 @patch("mergin.commands._check_celery")
 @patch("mergin.commands._check_permissions")
-@patch("mergin.app.db.engine.table_names")
+@patch("sqlalchemy.engine.reflection.Inspector.get_table_names")
 @pytest.mark.parametrize(
     "edition,base_url,contact_email,service_id,tables,permission_check,celery_check,error,output",
     test_check_server_data,
@@ -492,10 +493,10 @@ def test_check_server(
 
 def test_init_db(runner):
     """Test initializing database"""
-    db.drop_all(bind=None)
-    assert not db.engine.table_names()
+    db.drop_all(bind_key=None)
+    assert not inspect(db.engine).get_table_names()
     result = runner.invoke(args=["init-db"])
-    assert db.engine.table_names()
+    assert inspect(db.engine).get_table_names()
     assert "Tables created." in result.output
 
 
@@ -508,7 +509,7 @@ def test_init_server(
 ):
     """Test initializing DB with admin and checks"""
     if not tables:
-        db.drop_all(bind=None)
+        db.drop_all(bind_key=None)
     send_statistics_mock.return_value = None
     send_email_mock.return_value = None
     check_server_mock.return_value = None

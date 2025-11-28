@@ -4,11 +4,12 @@
 
 from dataclasses import asdict
 import requests
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import json
 import logging
 from flask import current_app
 from sqlalchemy.sql.operators import is_
+from sqlalchemy import inspect
 
 from .models import MerginInfo, MerginStatistics, ServerCallhomeData
 from ..celery import celery
@@ -71,7 +72,8 @@ def send_statistics():
     if not current_app.config["COLLECT_STATISTICS"]:
         return
 
-    if not db.engine.has_table("mergin_info"):
+    inspect_engine = inspect(db.engine)
+    if not inspect_engine.has_table("mergin_info"):
         logging.warning("Database not initialized")
         return
 

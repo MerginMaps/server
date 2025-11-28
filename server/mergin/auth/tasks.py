@@ -14,7 +14,7 @@ from .config import Configuration
 @celery.task
 def anonymize_removed_users():
     """Permanently 'delete' users marked for removal by removing personal information"""
-    db.session.info = {"msg": "anonymize_removed_users"}
+    db.session.info["msg"] = "anonymize_removed_users"
     before_expiration = datetime.today() - timedelta(Configuration.ACCOUNT_EXPIRATION)
     users = User.query.filter(
         isnot(User.active, True),
