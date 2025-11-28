@@ -222,6 +222,10 @@ def require_project_by_uuid(uuid: str, permission: ProjectPermissions, scheduled
     # we don't want to tell anonymous user if a private project exists
     if current_user.is_anonymous and not project.public:
         abort(404)
+    if current_user.is_anonymous:
+        print("Permissions info: User is anonymous")
+    else:
+        print(f"Permissions info: Logged in as {current_user.username}")
     workspace = project.workspace
     if not workspace:
         abort(404)

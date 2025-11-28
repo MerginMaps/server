@@ -1,7 +1,6 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
-import time
 
 from . import DEFAULT_USER
 from .utils import (
@@ -181,8 +180,9 @@ def test_get_project(client):
     assert response.status_code == 404
     # lack of permissions
     user = add_user("tests", "tests")
+    print(f"Test info: User '{user.username}' created.")
     login(client, user.username, "tests")
-    time.sleep(1)
+    print(f"Test info: User '{user.username}' logged in.")
     response = client.get(f"v2/projects/{project.id}")
     assert response.status_code == 403
     # access public project
