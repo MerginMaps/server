@@ -63,7 +63,7 @@ test_login_data = [
 @pytest.mark.parametrize("data,headers,expected", test_login_data)
 def test_login(client, data, headers, expected):
     resp = client.post(
-        url_for("/.mergin_auth_controller_login"),
+        "/app/auth/login",
         data=json.dumps(data),
         headers=headers,
     )
@@ -965,15 +965,15 @@ def test_email_format_validation(app, username, is_valid):
         assert form.validate() == is_valid
 
 
-def test_login_without_password(client):
+def test_login_without_password(client2):
     """Test password check as SSO user which does not have password"""
     login_as_admin(client)
     username = "sso_user"
     user = add_user(username=username, password="")
     assert user.passwd is None
     for pwd in ["Il0vemergin", ""]:
-        resp = client.post(
-            url_for("/.mergin_auth_controller_login"),
+        resp = client2.post(
+            "/app/auth/login",
             data=json.dumps({"login": username, "password": pwd}),
             headers=json_headers,
         )

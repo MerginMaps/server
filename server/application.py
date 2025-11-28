@@ -18,7 +18,7 @@ if MainConfig.GEVENT_WORKER:
     gevent.monkey.patch_all()
     psycogreen.gevent.patch_psycopg()
 
-
+from a2wsgi import ASGIMiddleware
 from random import randint
 from celery.schedules import crontab
 from mergin.app import create_app
@@ -92,4 +92,14 @@ def setup_periodic_tasks(sender, **kwargs):
         crontab(hour="*/4", minute=0),
         remove_unused_chunks,
         name="clean up of outdated chunks",
+    )
+
+
+wsgi_app = ASGIMiddleware(application.connexion_app)
+
+if __name__ == "__main__":
+    # run starlette development server
+    application.connexion_app.run(
+        host="0.0.0.0",
+        port=5000,
     )

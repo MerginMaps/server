@@ -241,7 +241,7 @@ def force_project_delete(id):  # noqa: E501
     return "", 204
 
 
-@auth_required
+# @auth_required
 def template_projects():  # pylint: disable=W0612
     projects = Project.query.filter(
         Project.creator.has(username="TEMPLATES"), Project.removed_at.is_(None)

@@ -3,8 +3,8 @@ info:
   description: Private Mergin API for web client
   version: "0.6"
   title: Private Mergin API
-servers:
-  - url: /app
+# servers:
+#   - url: /app
 tags:
   - name: account
     description: Mergin account
@@ -13,7 +13,7 @@ tags:
   - name: project
     description: Related to mergin project
 paths:
-  /project/access-request/{namespace}:
+  /app/project/access-request/{namespace}:
     get:
       tags:
         - project
@@ -265,7 +265,7 @@ paths:
           $ref: "#/components/responses/NotFoundResp"
         "409":
           $ref: "#/components/responses/ConflictResp"
-  /project/templates:
+  /app/project/templates:
     get:
       tags:
         - project

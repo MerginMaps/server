@@ -14,7 +14,6 @@ import pytest
 
 from ..app import db, create_app
 from ..sync.models import Project, ProjectVersion
-from ..stats.app import register
 from ..stats.models import MerginInfo
 from . import test_project, test_workspace_id, test_project_dir, TMP_DIR
 from .utils import login_as_admin, initialize, cleanup, file_info
@@ -28,6 +27,8 @@ sys.path.append(os.path.join(thisdir, os.pardir))
 def flask_app(request):
     """Flask app with fresh db and initialized empty tables"""
     from ..sync.db_events import remove_events
+    from ..app import register as register_bp
+    from ..stats.config import Configuration as StatsConfig
 
     application = create_app(
         [
@@ -38,11 +39,13 @@ def flask_app(request):
             "V2_PUSH_ENABLED",
         ]
     )
-    register(application)
     application.config["TEST_DIR"] = os.path.join(thisdir, "test_projects")
     application.config["SERVER_NAME"] = "localhost.localdomain"
     application.config["SERVER_TYPE"] = "ce"
     application.config["SERVICE_ID"] = str(uuid.uuid4())
+
+    # add stats module
+    register_bp(application, "stats", StatsConfig, "../mergin/stats/api.yaml")
     app_context = application.app_context()
     app_context.push()
 
@@ -92,7 +95,7 @@ def app(flask_app, request):
 @pytest.fixture(scope="function")
 def client(app):
     """Flask app tests client with already logged-in superuser"""
-    client = app.test_client()
+    client = app.connexion_app.test_client()
     login_as_admin(client)
     return client
 
@@ -244,3 +247,37 @@ def diff_project(app):
 @pytest.fixture()
 def runner(app):
     return app.test_cli_runner()
+
+
+def test_migration(client):
+    resp = client.post(
+        "/app/auth/login",
+        json={"login": "mergin", "password": "ilovemergin"},
+    )
+    assert resp.status_code == 200
+
+    p = Project.query.first()
+    resp = client.get(
+        f"/v2/projects/{p.id}",
+    )
+    assert resp.status_code == 200
+
+    resp = client.get("/app/project/templates")
+    assert resp.status_code == 200
+
+    resp = client.get(
+        f"/v1/project/{p.workspace.name}/{p.name}",
+    )
+    assert resp.status_code == 200
+
+    # this is not working as v1 already registered with project api
+    # resp = client.get(
+    #     "/v1/user/profile"
+    # )
+    # assert resp.status_code == 200
+
+    resp = client.get(
+        "/app/auth/logout",
+    )
+
+    assert resp.status_code == 200

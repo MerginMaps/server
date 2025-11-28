@@ -3,8 +3,10 @@ info:
   title: Mergin auth API
   description: Mergin auth API
   version: 0.6.0
-servers:
-  - url: /app/auth
+# servers:
+#   - url: /app/auth
+# servers:
+#   - url: /app/auth
 tags:
   - name: user
     description: Mergin user
@@ -19,12 +21,13 @@ paths:
         - user
       summary: Find users specified by query parameters
       description: "Find active users in namespace by ids, usernames or with ilike pattern using attribute (username/email).
-      Results are returned in order:
-      1.) exact match - ordered by username
-      2.) match is on start of the string - ordered by username
-      3.) match is on start of words - ordered by username
-      4.) match is anywhere - ordered by username"
-      operationId: mergin.auth.controller.search_users
+        Results are returned in order:
+        1.) exact match - ordered by username
+        2.) match is on start of the string - ordered by username
+        3.) match is on start of words - ordered by username
+        4.) match is anywhere - ordered by username"
+      operationId: search_users
+      x-openapi-router-controller: mergin.auth.controller
       parameters:
         - name: id
           in: query
@@ -70,7 +73,8 @@ paths:
         - user
       summary: Update profile of user in session
       description: Update profile of user in session
-      operationId: mergin.auth.controller.update_user_profile
+      operationId: update_user_profile
+      x-openapi-router-controller: mergin.auth.controller
       requestBody:
         description: Updated profile
         required: true
@@ -107,7 +111,8 @@ paths:
     get:
       summary: Get refreshed csrf token
       description: Get refreshed csrf token
-      operationId: mergin.auth.controller.refresh_csrf_token
+      operationId: refresh_csrf_token
+      x-openapi-router-controller: mergin.auth.controller
       responses:
         "200":
           description: csrf token
@@ -128,7 +133,8 @@ paths:
         - admin
       summary: List of paginated users based on filters
       description: List of paginated users with optional filters and sort
-      operationId: mergin.auth.controller.get_paginated_users
+      operationId: get_paginated_users
+      x-openapi-router-controller: mergin.auth.controller
       parameters:
         - name: page
           in: query
@@ -194,7 +200,8 @@ paths:
         - admin
       summary: Create new user
       description: Create new user
-      operationId: mergin.auth.controller.register_user
+      operationId: register_user
+      x-openapi-router-controller: mergin.auth.controller
       requestBody:
         description: New user details
         required: true
@@ -245,7 +252,8 @@ paths:
         - admin
       summary: Get user specified by username
       description: Get user specified by username
-      operationId: mergin.auth.controller.get_user
+      operationId: get_user
+      x-openapi-router-controller: mergin.auth.controller
       responses:
         "200":
           description: Complete user info
@@ -267,7 +275,8 @@ paths:
         - admin
       summary: Update user specified by username
       description: Update user specified by username
-      operationId: mergin.auth.controller.update_user
+      operationId: update_user
+      x-openapi-router-controller: mergin.auth.controller
       requestBody:
         description: Updated user
         required: true
@@ -299,7 +308,8 @@ paths:
         - admin
       summary: Delete user specified by username
       description: User account is immediately and permanently removed
-      operationId: mergin.auth.controller.delete_user
+      operationId: delete_user
+      x-openapi-router-controller: mergin.auth.controller
       responses:
         "204":
           $ref: "#/components/responses/NoContent"
@@ -319,7 +329,8 @@ paths:
         - project
       summary: Get server usage statistics
       description: List server storage, projects, active contributors for admin
-      operationId: mergin.auth.controller.get_server_usage
+      operationId: get_server_usage
+      x-openapi-router-controller: mergin.auth.controller
       responses:
         "200":
           description: Server usage details
@@ -334,10 +345,13 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
   /app/auth/login:
+  # this works with base_path = '/app/auth'
+  # /login:
     post:
       summary: Login
       description: Login
-      operationId: mergin.auth.controller.login
+      operationId: login
+      x-openapi-router-controller: mergin.auth.controller
       requestBody:
         description: Login credentials
         required: true
@@ -364,7 +378,8 @@ paths:
     get:
       summary: Logout
       description: Logout
-      operationId: mergin.auth.controller.logout
+      operationId: logout
+      x-openapi-router-controller: mergin.auth.controller
       responses:
         "200":
           description: OK
@@ -372,7 +387,8 @@ paths:
     post:
       summary: Change password
       description: Change password
-      operationId: mergin.auth.controller.change_password
+      operationId: change_password
+      x-openapi-router-controller: mergin.auth.controller
       requestBody:
         description: Old and new passwords
         required: true
@@ -403,7 +419,8 @@ paths:
     get:
       summary: Resend email reset confirmation email
       description: Resend email reset confirmation email
-      operationId: mergin.auth.controller.resend_confirm_email
+      operationId: resend_confirm_email
+      x-openapi-router-controller: mergin.auth.controller
       responses:
         "200":
           description: OK
@@ -411,7 +428,8 @@ paths:
     post:
       summary: Ask for email reset confirmation email
       description: Ask for email reset confirmation email
-      operationId: mergin.auth.controller.password_reset
+      operationId: password_reset
+      x-openapi-router-controller: mergin.auth.controller
       requestBody:
         description: Email to send password reset link
         required: true
@@ -436,7 +454,8 @@ paths:
     post:
       summary: Confirm reset password
       description: Confirm reset password for user encoded in token
-      operationId: mergin.auth.controller.confirm_new_password
+      operationId: confirm_new_password
+      x-openapi-router-controller: mergin.auth.controller
       parameters:
         - name: token
           in: path
@@ -474,7 +493,8 @@ paths:
     post:
       summary: Email verified
       description: Email verified
-      operationId: mergin.auth.controller.confirm_email
+      operationId: confirm_email
+      x-openapi-router-controller: mergin.auth.controller
       parameters:
         - name: token
           in: path
@@ -621,7 +641,8 @@ paths:
   /app/admin/login:
     post:
       summary: Login to admin interface
-      operationId: mergin.auth.controller.admin_login
+      operationId: admin_login
+      x-openapi-router-controller: mergin.auth.controller
       requestBody:
         description: Login credentials
         required: true

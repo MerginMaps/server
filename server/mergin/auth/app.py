@@ -11,7 +11,6 @@ from sqlalchemy import func
 
 from .commands import add_commands
 from .config import Configuration
-from .models import User
 
 # signal for other versions to listen to
 user_account_closed = signal("user_account_closed")
@@ -28,15 +27,15 @@ def register(app):
     app.config.from_object(Configuration)
     app.connexion_app.add_api(
         "auth/api.yaml",
-        base_path="/",
+        name="auth",
         options={"swagger_ui": False, "serve_spec": False},
         validate_responses=True,
     )
     # this is a hack to modify dict and name of flask blueprint registered with "base_path" name
     # due to lack of connexion flexibility for flask blueprint naming
-    app.blueprints["/"].name = "auth"
-    app.blueprints["auth"] = app.blueprints.pop("/")
-    add_commands(app)
+    # app.blueprints["/"].name = "auth"
+    # app.blueprints["auth"] = app.blueprints.pop("/")
+    # add_commands(app)
 
 
 _permissions = {}
@@ -87,6 +86,8 @@ def edit_profile_enabled(f):
 
 
 def authenticate(login, password):
+    from .models import User
+
     if "@" in login:
         query = func.lower(User.email) == func.lower(login)
     else:

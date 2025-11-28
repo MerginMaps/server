@@ -12,9 +12,9 @@ def register(app: Flask):
     app.config.from_object(Configuration)
     app.connexion_app.add_api(
         "stats/api.yaml",
-        base_path="/",
+        name="stats",
         options={"swagger_ui": False, "serve_spec": False},
         validate_responses=True,
     )
-    app.blueprints["/"].name = "stats"
-    app.blueprints["stats"] = app.blueprints.pop("/")
+    # app.blueprints["/"].name = "stats"
+    # app.blueprints["stats"] = app.blueprints.pop("/")

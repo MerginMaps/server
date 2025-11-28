@@ -4,7 +4,8 @@ info:
   version: "0.1"
   title: Statistics Mergin Maps API
 servers:
-  - url: /
+# FIXME - we need unique base paths per api file
+  - url: /app/admin/stats
 paths:
   /app/admin/report:
     get:

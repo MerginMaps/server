@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 import os
 from flask import current_app
-from flask_sqlalchemy import Model
+from flask_sqlalchemy.model import Model
 from pathvalidate import sanitize_filename
 from sqlalchemy import Column, JSON
 from sqlalchemy.sql.elements import UnaryExpression

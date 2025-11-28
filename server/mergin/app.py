@@ -27,7 +27,8 @@ from flask_login import current_user, LoginManager
 from flask_wtf.csrf import generate_csrf, CSRFProtect
 from flask_migrate import Migrate
 from flask_mail import Mail
-from connexion.apps.flask_app import FlaskJSONEncoder
+
+# from connexion.apps.flask_app import FlaskJSONEncoder
 from flask_wtf import FlaskForm
 from wtforms import StringField
 from pathlib import Path
@@ -139,7 +140,7 @@ def create_simple_app() -> Flask:
     app = connexion.FlaskApp(__name__, specification_dir=os.path.join(this_dir))
     flask_app = app.app
 
-    flask_app.json_encoder = FlaskJSONEncoder
+    # flask_app.json_encoder = FlaskJSONEncoder
     flask_app.config.from_object(Configuration)
     db.init_app(flask_app)
     ma.init_app(flask_app)
@@ -150,6 +151,19 @@ def create_simple_app() -> Flask:
         flask_app.wsgi_app = GeventTimeoutMiddleware(flask_app.wsgi_app)
 
     return flask_app
+
+
+def register(app: Flask, name: str, config: Optional[object], api_spec: str):
+    """Register mergin auth module in Flask app"""
+    if config:
+        app.config.from_object(config)
+
+    app.connexion_app.add_api(
+        api_spec,
+        name=name,
+        options={"swagger_ui": False, "serve_spec": False},
+        validate_responses=True,
+    )
 
 
 def create_app(public_keys: List[str] = None) -> Flask:
@@ -163,47 +177,29 @@ def create_app(public_keys: List[str] = None) -> Flask:
     from .sync.workspace import GlobalWorkspaceHandler
     from .sync.config import Configuration as SyncConfig
     from .sync.commands import add_commands
-    from .auth import register as register_auth
+    from .auth.config import Configuration as AuthConfig
+    from .auth.commands import add_commands as add_auth_commands
     from .sync.project_handler import ProjectHandler
 
     app = create_simple_app().connexion_app
 
-    app.add_api(
-        "sync/public_api.yaml",
-        arguments={"title": "Mergin"},
-        options={"swagger_ui": Configuration.SWAGGER_UI},
-        validate_responses=True,
-    )
-    app.add_api(
-        "sync/public_api_v2.yaml",
-        arguments={"title": "Mergin"},
-        options={"swagger_ui": Configuration.SWAGGER_UI},
-        validate_responses=True,
-    )
-    app.add_api(
-        "sync/private_api.yaml",
-        base_path="/app",
-        arguments={"title": "Mergin"},
-        options={"swagger_ui": False, "serve_spec": False},
-        validate_responses=True,
-    )
-    app.add_api(
-        "api.yaml",
-        arguments={"title": "Mergin"},
-        options={"swagger_ui": False, "serve_spec": False},
-        validate_responses=True,
-    )
-
-    app.app.config.from_object(SyncConfig)
-    app.app.connexion_app = app
-
     mail.init_app(app.app)
-    app.mail = mail
     csrf.init_app(app.app)
     login_manager.init_app(app.app)
-    # register auth blueprint
-    register_auth(app.app)
+
+    register(app.app, "auth", AuthConfig, "auth/api.yaml")
+    register(app.app, "main", None, "api.yaml")
+
+    # FIXME only for CE/EE
+    # from mergin.stats.config import Configuration as StatsConfig
+    # register(app.app, "stats", StatsConfig, "stats/api.yaml")
+
+    register(app.app, "sync-private", SyncConfig, "sync/private_api.yaml")
+    register(app.app, "sync-public-v1", SyncConfig, "sync/public_api.yaml")
+    register(app.app, "sync-public-v2", SyncConfig, "sync/public_api_v2.yaml")
+
     server_commands(app.app)
+    add_auth_commands(app.app)
 
     # adjust login manager
     @login_manager.user_loader
@@ -227,8 +223,6 @@ def create_app(public_keys: List[str] = None) -> Flask:
                     return user
             except (BadSignature, BadTimeSignature, KeyError):
                 pass
-
-    # csrf = app.app.extensions['csrf']
 
     @app.app.before_request
     def check_maintenance():
@@ -469,6 +463,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
 
     # append project commands (from default sync module)
     add_commands(application)
+
     return application
 
 

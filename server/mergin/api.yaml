@@ -3,8 +3,8 @@ info:
   description: Common Mergin Maps API
   version: "0.1"
   title: Common Mergin Maps API
-servers:
-  - url: /
+# servers:
+#   - url: /
 paths:
   /v1/latest-version:
     get:

@@ -2,15 +2,13 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import requests
-from flask import abort, current_app, make_response
+from flask import abort, make_response
 from datetime import datetime, time
 from csv import DictWriter
 
-from mergin.auth.app import auth_required
-from mergin.stats.models import MerginStatistics, ServerCallhomeData
+from ..auth.app import auth_required
+from .models import MerginStatistics, ServerCallhomeData
 
-from .config import Configuration
 from ..app import db
 
 

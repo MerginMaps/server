@@ -5,7 +5,8 @@
 import gevent
 import psycogreen.gevent
 import pytest
-import sqlalchemy
+from sqlalchemy import text
+from sqlalchemy.exc import PendingRollbackError
 from unittest.mock import patch
 
 from ..app import create_simple_app, GeventTimeoutMiddleware, db
@@ -59,19 +60,19 @@ def test_catch_timeout():
 
         def unhandled():
             try:
-                db.session.execute("SELECT pg_sleep(1.1);")
+                db.session.execute(text("SELECT pg_sleep(1.1);"))
             finally:
-                db.session.execute("SELECT 1;")
+                db.session.execute(text("SELECT 1;"))
             return ""
 
         def timeout():
             try:
-                db.session.execute("SELECT pg_sleep(1.1);")
+                db.session.execute(text("SELECT pg_sleep(1.1);"))
             except gevent.timeout.Timeout:
                 db.session.rollback()
                 raise
             finally:
-                db.session.execute("SELECT 1;")
+                db.session.execute(text("SELECT 1;"))
             return ""
 
         application.add_url_rule("/unhandled", "unhandled", unhandled)
@@ -82,7 +83,7 @@ def test_catch_timeout():
         assert application.test_client().get("/timeout").status_code == 504
 
         # in case of missing rollback sqlalchemy would raise error
-        with pytest.raises(sqlalchemy.exc.PendingRollbackError):
+        with pytest.raises(PendingRollbackError):
             application.test_client().get("/unhandled")
 
         db.session.rollback()
