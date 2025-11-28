@@ -21,6 +21,7 @@ from unittest.mock import patch
 from sqlalchemy.exc import IntegrityError
 import pytest
 from datetime import datetime, timedelta, timezone
+import sys
 
 from mergin.app import db
 from mergin.config import Configuration
@@ -180,9 +181,9 @@ def test_get_project(client):
     assert response.status_code == 404
     # lack of permissions
     user = add_user("tests", "tests")
-    print(f"Test info: User '{user.username}' created.")
+    print(f"Test info: User '{user.username}' created.", file=sys.stderr)
     login(client, user.username, "tests")
-    print(f"Test info: User '{user.username}' logged in.")
+    print(f"Test info: User '{user.username}' logged in.", file=sys.stderr)
     response = client.get(f"v2/projects/{project.id}")
     assert response.status_code == 403
     # access public project

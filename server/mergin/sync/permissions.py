@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import sys
 import os
 from functools import wraps
 from typing import Optional
@@ -223,9 +224,11 @@ def require_project_by_uuid(uuid: str, permission: ProjectPermissions, scheduled
     if current_user.is_anonymous and not project.public:
         abort(404)
     if current_user.is_anonymous:
-        print("Permissions info: User is anonymous")
+        print("Permissions info: User is anonymous", file=sys.stderr)
     else:
-        print(f"Permissions info: Logged in as {current_user.username}")
+        print(
+            f"Permissions info: Logged in as {current_user.username}", file=sys.stderr
+        )
     workspace = project.workspace
     if not workspace:
         abort(404)
