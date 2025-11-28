@@ -219,6 +219,9 @@ def require_project_by_uuid(uuid: str, permission: ProjectPermissions, scheduled
     if not scheduled:
         project = project.filter(Project.removed_at.is_(None))
     project = project.first_or_404()
+    # we don't want to tell anonymous user if a private project exists
+    if current_user.is_anonymous and not project.public:
+        abort(404)
     workspace = project.workspace
     if not workspace:
         abort(404)

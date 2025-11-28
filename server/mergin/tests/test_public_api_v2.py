@@ -10,6 +10,8 @@ from .utils import (
     create_workspace,
     create_project,
     upload_file_to_project,
+    login,
+    file_info,
 )
 
 from ..auth.models import User
@@ -47,7 +49,6 @@ from .test_project_controller import (
     _get_changes_with_diff_0_size,
     _get_changes_without_added,
 )
-from .utils import add_user, file_info
 
 
 def test_schedule_delete_project(client):
@@ -173,8 +174,13 @@ def test_get_project(client):
     admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
     test_workspace = create_workspace()
     project = create_project("new_project", test_workspace, admin)
+    user = add_user("tests", "tests")
     logout(client)
+    # anonymous user cannot access the resource
+    response = client.get(f"v2/projects/{project.id}")
+    assert response.status_code == 404
     # lack of permissions
+    login(client, user.username, "tests")
     response = client.get(f"v2/projects/{project.id}")
     assert response.status_code == 403
     # access public project
