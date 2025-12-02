@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import sys
 import os
 from functools import wraps
 from typing import Optional
@@ -241,8 +240,8 @@ def require_project_by_uuid(
     if not is_active_workspace(workspace):
         abort(404, "Workspace doesn't exist")
     if not permission.check(project, current_user):
-        # we don't want to tell anonymous user if a private project exists
         if expose:
+            # we don't want to tell anonymous user if a private project exists
             abort(403, "You do not have permissions for this project")
         else:
             abort(404)

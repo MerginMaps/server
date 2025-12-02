@@ -42,7 +42,6 @@ from .permissions import ProjectPermissions, require_project_by_uuid
 from .public_api_controller import catch_sync_failure
 from .schemas import (
     ProjectMemberSchema,
-    ProjectVersionSchema,
     UploadChunkSchema,
     ProjectSchema,
 )

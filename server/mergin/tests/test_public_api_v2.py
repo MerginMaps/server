@@ -21,7 +21,6 @@ from unittest.mock import patch
 from sqlalchemy.exc import IntegrityError
 import pytest
 from datetime import datetime, timedelta, timezone
-import sys
 
 from mergin.app import db
 from mergin.config import Configuration
