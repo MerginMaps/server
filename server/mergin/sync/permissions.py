@@ -233,6 +233,9 @@ def require_project_by_uuid(
     if not scheduled:
         project = project.filter(Project.removed_at.is_(None))
     project = project.first_or_404()
+    if not expose and current_user.is_anonymous and not project.public:
+        # we don't want to tell anonymous user if a private project exists
+        abort(404)
 
     workspace = project.workspace
     if not workspace:
@@ -240,11 +243,8 @@ def require_project_by_uuid(
     if not is_active_workspace(workspace):
         abort(404, "Workspace doesn't exist")
     if not permission.check(project, current_user):
-        if expose:
-            # we don't want to tell anonymous user if a private project exists
-            abort(403, "You do not have permissions for this project")
-        else:
-            abort(404)
+        abort(403, "You do not have permissions for this project")
+
     return project
 
 
