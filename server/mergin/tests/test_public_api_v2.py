@@ -168,6 +168,7 @@ def test_project_members(client):
     # access provided by workspace role cannot be removed directly
     response = client.delete(url + f"/{user.id}")
     assert response.status_code == 404
+    Configuration.GLOBAL_READ = 0
 
 
 def test_get_project(client):
@@ -180,6 +181,10 @@ def test_get_project(client):
     response = client.get(f"v2/projects/{project.id}")
     assert response.status_code == 404
     # lack of permissions
+    print(
+        f"Global permissions: Global read is {Configuration.GLOBAL_READ}, Global write is {Configuration.GLOBAL_WRITE}, Global admin is {Configuration.GLOBAL_ADMIN}",
+        file=sys.stderr,
+    )
     user = add_user("tests", "tests")
     print(f"Test info: User '{user.username}' created.", file=sys.stderr)
     login(client, user.username, "tests")
