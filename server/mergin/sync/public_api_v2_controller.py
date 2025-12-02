@@ -57,7 +57,7 @@ def schedule_delete_project(id):
     Celery job `mergin.sync.tasks.remove_projects_backups` does the
     rest.
     """
-    project = require_project_by_uuid(id, ProjectPermissions.Delete, expose=False)
+    project = require_project_by_uuid(id, ProjectPermissions.Delete)
     project.removed_at = datetime.utcnow()
     project.removed_by = current_user.id
     db.session.commit()
@@ -68,9 +68,7 @@ def schedule_delete_project(id):
 @auth_required
 def delete_project_now(id):
     """Delete the project immediately"""
-    project = require_project_by_uuid(
-        id, ProjectPermissions.Delete, scheduled=True, expose=False
-    )
+    project = require_project_by_uuid(id, ProjectPermissions.Delete, scheduled=True)
     project.delete()
 
     return NoContent, 204
@@ -79,7 +77,7 @@ def delete_project_now(id):
 @auth_required
 def update_project(id):
     """Rename project"""
-    project = require_project_by_uuid(id, ProjectPermissions.Update, expose=False)
+    project = require_project_by_uuid(id, ProjectPermissions.Update)
     new_name = request.json["name"].strip()
     validation_error = project_name_validation(new_name)
     if validation_error:
@@ -102,7 +100,7 @@ def update_project(id):
 @auth_required
 def get_project_collaborators(id):
     """Get project collaborators, with both direct role and inherited role from workspace"""
-    project = require_project_by_uuid(id, ProjectPermissions.Update, expose=False)
+    project = require_project_by_uuid(id, ProjectPermissions.Update)
     project_members = []
     for user, workspace_role in project.workspace.members():
         project_role = project.get_role(user.id)
@@ -125,7 +123,7 @@ def get_project_collaborators(id):
 @auth_required
 def add_project_collaborator(id):
     """Add project collaborator"""
-    project = require_project_by_uuid(id, ProjectPermissions.Update, expose=False)
+    project = require_project_by_uuid(id, ProjectPermissions.Update)
     user = User.get_by_login(request.json["user"])
     if not user:
         abort(404)
@@ -142,7 +140,7 @@ def add_project_collaborator(id):
 @auth_required
 def update_project_collaborator(id, user_id):
     """Update project collaborator"""
-    project = require_project_by_uuid(id, ProjectPermissions.Update, expose=False)
+    project = require_project_by_uuid(id, ProjectPermissions.Update)
     user = User.query.filter_by(id=user_id, active=True).first_or_404()
     if not project.get_role(user_id):
         abort(404)
@@ -156,7 +154,7 @@ def update_project_collaborator(id, user_id):
 @auth_required
 def remove_project_collaborator(id, user_id):
     """Remove project collaborator"""
-    project = require_project_by_uuid(id, ProjectPermissions.Update, expose=False)
+    project = require_project_by_uuid(id, ProjectPermissions.Update)
     if not project.get_role(user_id):
         abort(404)
 
