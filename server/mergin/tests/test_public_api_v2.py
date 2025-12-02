@@ -247,6 +247,9 @@ def test_get_project(client):
     )
     assert len(response.json["files"]) == 3
     assert {f["path"] for f in response.json["files"]} == set(files)
+    # invalid version format parameter
+    response = client.get(f"v2/projects/{project.id}?files_at_version=3")
+    assert response.status_code == 400
 
 
 push_data = [
