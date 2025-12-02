@@ -181,14 +181,8 @@ def test_get_project(client):
     response = client.get(f"v2/projects/{project.id}")
     assert response.status_code == 404
     # lack of permissions
-    print(
-        f"Global permissions: Global read is {Configuration.GLOBAL_READ}, Global write is {Configuration.GLOBAL_WRITE}, Global admin is {Configuration.GLOBAL_ADMIN}",
-        file=sys.stderr,
-    )
     user = add_user("tests", "tests")
-    print(f"Test info: User '{user.username}' created.", file=sys.stderr)
     login(client, user.username, "tests")
-    print(f"Test info: User '{user.username}' logged in.", file=sys.stderr)
     response = client.get(f"v2/projects/{project.id}")
     assert response.status_code == 403
     # access public project
