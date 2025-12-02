@@ -223,7 +223,7 @@ def require_project_by_uuid(
         expose (bool, optional): Controls security disclosure behavior on permission failure.
             - If `True`: Returns 403 Forbidden (reveals project exists but access is denied).
             - If `False`: Returns 404 Not Found (hides project existence for security).
-            Defaults to `True` for v1 endpoints compatibility.
+            Standard is that reading results in 404, while writing results in 403
     """
     if not is_valid_uuid(uuid):
         abort(404)

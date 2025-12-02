@@ -180,11 +180,11 @@ def test_get_project(client):
     # anonymous user cannot access the private resource
     response = client.get(f"v2/projects/{project.id}")
     assert response.status_code == 404
-    # lack of permissions
+    # lack of permissions also results in 404 for GET project
     user = add_user("tests", "tests")
     login(client, user.username, "tests")
     response = client.get(f"v2/projects/{project.id}")
-    assert response.status_code == 403
+    assert response.status_code == 404
     # access public project
     project.public = True
     db.session.commit()
