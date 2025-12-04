@@ -209,7 +209,21 @@ def require_project(ws, project_name, permission) -> Project:
     return project
 
 
-def require_project_by_uuid(uuid: str, permission: ProjectPermissions, scheduled=False):
+def require_project_by_uuid(
+    uuid: str, permission: ProjectPermissions, scheduled=False, expose=True
+) -> Project:
+    """
+    Retrieves a project by UUID after validating existence, workspace status, and permissions.
+
+    Args:
+        uuid (str): The unique identifier of the project.
+        permission (ProjectPermissions): The permission level required to access the project.
+        scheduled (bool, optional): If ``True``, bypasses the check for projects marked for deletion.
+        expose (bool, optional): Controls security disclosure behavior on permission failure.
+            - If `True`: Returns 403 Forbidden (reveals project exists but access is denied).
+            - If `False`: Returns 404 Not Found (hides project existence for security).
+            Standard is that reading results in 404, while writing results in 403
+    """
     if not is_valid_uuid(uuid):
         abort(404)
 
@@ -219,6 +233,10 @@ def require_project_by_uuid(uuid: str, permission: ProjectPermissions, scheduled
     if not scheduled:
         project = project.filter(Project.removed_at.is_(None))
     project = project.first_or_404()
+    if not expose and current_user.is_anonymous and not project.public:
+        # we don't want to tell anonymous user if a private project exists
+        abort(404)
+
     workspace = project.workspace
     if not workspace:
         abort(404)
@@ -226,6 +244,7 @@ def require_project_by_uuid(uuid: str, permission: ProjectPermissions, scheduled
         abort(404, "Workspace doesn't exist")
     if not permission.check(project, current_user):
         abort(403, "You do not have permissions for this project")
+
     return project
 
 
