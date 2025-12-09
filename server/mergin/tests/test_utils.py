@@ -5,7 +5,6 @@
 import base64
 from datetime import datetime
 import json
-import os
 import pytest
 from flask import url_for, current_app
 from sqlalchemy import desc
@@ -13,6 +12,7 @@ import os
 from unittest.mock import patch
 from pathvalidate import sanitize_filename
 from pygeodiff import GeoDiff
+from pathlib import PureWindowsPath
 
 from ..utils import save_diagnostic_log_file
 
@@ -24,6 +24,7 @@ from ..sync.utils import (
     is_valid_path,
     get_x_accel_uri,
     wkb2wkt,
+    has_trailing_space,
 )
 from ..auth.models import LoginHistory, User
 from . import json_headers
@@ -226,6 +227,24 @@ filepaths = [
 @pytest.mark.parametrize("filepath,allow", filepaths)
 def test_is_valid_path(client, filepath, allow):
     assert is_valid_path(filepath) == allow
+
+
+trailing_spaces_paths = [
+    ("photos /lutraHQ.jpg", "posix", True),
+    ("photo s/ lutraHQ.jpg", "posix", False),
+    ("assets\photos \lutraHQ.jpg", "windows", True),
+    ("assets\  photos\lutraHQ.jpg", "windows", False),
+]
+
+
+@pytest.mark.parametrize("path,path_platform,result", trailing_spaces_paths)
+def test_has_trailing_space(path, path_platform, result):
+    if path_platform == "windows":
+        # we must mock Path to instantiate as Windows path
+        with patch("mergin.sync.utils.Path", PureWindowsPath):
+            assert has_trailing_space(path) is result
+    else:
+        assert has_trailing_space(path) is result
 
 
 def test_get_x_accell_uri(client):

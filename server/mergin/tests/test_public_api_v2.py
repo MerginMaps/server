@@ -1,6 +1,21 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+
+from mergin.sync.tasks import remove_transaction_chunks, remove_unused_chunks
+from . import DEFAULT_USER
+from .utils import (
+    add_user,
+    logout,
+    login_as_admin,
+    create_workspace,
+    create_project,
+    upload_file_to_project,
+    login,
+    file_info,
+)
+
+from ..auth.models import User
 import os
 import shutil
 from unittest.mock import patch
@@ -10,6 +25,7 @@ from datetime import datetime, timedelta, timezone
 
 from mergin.app import db
 from mergin.config import Configuration
+from mergin.sync.config import Configuration as SyncConfiguration
 from mergin.sync.errors import (
     BigChunkError,
     ProjectLocked,
@@ -35,7 +51,6 @@ from .test_project_controller import (
     _get_changes_with_diff_0_size,
     _get_changes_without_added,
 )
-from .utils import add_user, file_info
 
 
 def test_schedule_delete_project(client):
@@ -154,6 +169,82 @@ def test_project_members(client):
     # access provided by workspace role cannot be removed directly
     response = client.delete(url + f"/{user.id}")
     assert response.status_code == 404
+    Configuration.GLOBAL_READ = 0
+
+
+def test_get_project(client):
+    """Test get project info endpoint"""
+    admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
+    test_workspace = create_workspace()
+    project = create_project("new_project", test_workspace, admin)
+    logout(client)
+    # anonymous user cannot access the private resource
+    response = client.get(f"v2/projects/{project.id}")
+    assert response.status_code == 404
+    # lack of permissions
+    user = add_user("tests", "tests")
+    login(client, user.username, "tests")
+    response = client.get(f"v2/projects/{project.id}")
+    assert response.status_code == 403
+    # access public project
+    project.public = True
+    db.session.commit()
+    response = client.get(f"v2/projects/{project.id}")
+    assert response.status_code == 200
+    assert response.json["public"] is True
+    # project scheduled for deletion
+    login_as_admin(client)
+    project.public = False
+    project.removed_at = datetime.utcnow()
+    db.session.commit()
+    response = client.get(f"v2/projects/{project.id}")
+    assert response.status_code == 404
+    # success
+    project.removed_at = None
+    db.session.commit()
+    response = client.get(f"v2/projects/{project.id}")
+    assert response.status_code == 200
+    expected_keys = {
+        "id",
+        "name",
+        "workspace",
+        "role",
+        "version",
+        "created_at",
+        "updated_at",
+        "public",
+        "size",
+    }
+    assert expected_keys == response.json.keys()
+    # create new versions
+    files = ["test.txt", "test3.txt", "test.qgs"]
+    for file in files:
+        upload_file_to_project(project, file, client)
+    # project version does not exist
+    response = client.get(
+        f"v2/projects/{project.id}?files_at_version=v{project.latest_version+1}"
+    )
+    assert response.status_code == 200
+    assert response.json["id"] == str(project.id)
+    assert "files" not in response.json.keys()
+    # files
+    response = client.get(
+        f"v2/projects/{project.id}?files_at_version=v{project.latest_version-2}"
+    )
+    assert response.status_code == 200
+    assert len(response.json["files"]) == 1
+    assert any(resp_files["path"] == files[0] for resp_files in response.json["files"])
+    assert not any(
+        resp_files["path"] == files[1] for resp_files in response.json["files"]
+    )
+    response = client.get(
+        f"v2/projects/{project.id}?files_at_version=v{project.latest_version}"
+    )
+    assert len(response.json["files"]) == 3
+    assert {f["path"] for f in response.json["files"]} == set(files)
+    # invalid version format parameter
+    response = client.get(f"v2/projects/{project.id}?files_at_version=3")
+    assert response.status_code == 400
 
 
 push_data = [
@@ -277,6 +368,7 @@ def test_create_version(client, data, expected, err_code):
     assert project.latest_version == 1
 
     chunks = []
+    chunk_ids = []
     if expected == 201:
         # mimic chunks were uploaded
         for f in data["changes"]["added"] + data["changes"]["updated"]:
@@ -293,12 +385,21 @@ def test_create_version(client, data, expected, err_code):
                         out_file.write(in_file.read(CHUNK_SIZE))
 
                     chunks.append(chunk_location)
+                    chunk_ids.append(chunk)
 
-    response = client.post(f"v2/projects/{project.id}/versions", json=data)
+    with patch(
+        "mergin.sync.public_api_v2_controller.remove_transaction_chunks.delay"
+    ) as mock_remove:
+        response = client.post(f"v2/projects/{project.id}/versions", json=data)
     assert response.status_code == expected
     if expected == 201:
         assert response.json["version"] == "v2"
         assert project.latest_version == 2
+        # chunks exists after upload, cleanup job did not remove them
+        assert all(os.path.exists(chunk) for chunk in chunks)
+        if chunk_ids:
+            assert mock_remove.called_once_with(chunk_ids)
+        remove_transaction_chunks(chunk_ids)
         assert all(not os.path.exists(chunk) for chunk in chunks)
     else:
         assert project.latest_version == 1

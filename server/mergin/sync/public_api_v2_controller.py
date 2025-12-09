@@ -14,6 +14,9 @@ from flask_login import current_user
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
 
+from mergin.sync.tasks import remove_transaction_chunks
+
+from .schemas_v2 import ProjectSchema as ProjectSchemaV2
 from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
@@ -26,7 +29,7 @@ from .errors import (
     StorageLimitHit,
     UploadError,
 )
-from .files import ChangesSchema
+from .files import ChangesSchema, ProjectFileSchema
 from .forms import project_name_validation
 from .models import (
     Project,
@@ -41,7 +44,6 @@ from .permissions import ProjectPermissions, require_project_by_uuid
 from .public_api_controller import catch_sync_failure
 from .schemas import (
     ProjectMemberSchema,
-    ProjectVersionSchema,
     UploadChunkSchema,
     ProjectSchema,
 )
@@ -160,6 +162,22 @@ def remove_project_collaborator(id, user_id):
     project.unset_role(user_id)
     db.session.commit()
     return NoContent, 204
+
+
+def get_project(id, files_at_version=None):
+    """Get project info. Include list of files at specific version if requested."""
+    project = require_project_by_uuid(id, ProjectPermissions.Read, expose=False)
+    data = ProjectSchemaV2().dump(project)
+    if files_at_version:
+        pv = ProjectVersion.query.filter_by(
+            project_id=project.id, name=ProjectVersion.from_v_name(files_at_version)
+        ).first()
+        if pv:
+            data["files"] = ProjectFileSchema(
+                only=("path", "mtime", "size", "checksum"), many=True
+            ).dump(pv.files)
+
+    return data, 200
 
 
 @auth_required
@@ -302,12 +320,12 @@ def create_project_version(id):
             os.renames(temp_files_dir, version_dir)
 
             # remove used chunks
+            # get chunks from added and updated files
+            chunks_ids = []
             for file in to_be_added_files + to_be_updated_files:
                 file_chunks = file.get("chunks", [])
-                for chunk_id in file_chunks:
-                    chunk_file = get_chunk_location(chunk_id)
-                    if os.path.exists(chunk_file):
-                        move_to_tmp(chunk_file)
+                chunks_ids.extend(file_chunks)
+            remove_transaction_chunks.delay(chunks_ids)
 
         logging.info(
             f"Push finished for project: {project.id}, project version: {v_next_version}, upload id: {upload.id}."
@@ -360,7 +378,6 @@ def upload_chunk(id: str):
         # we could have used request.data here, but it could eventually cause OOM issue
         save_to_file(request.stream, dest_file, current_app.config["MAX_CHUNK_SIZE"])
     except IOError:
-        move_to_tmp(dest_file, chunk_id)
         return BigChunkError().response(413)
     except Exception as e:
         return UploadError(error="Error saving chunk").response(400)

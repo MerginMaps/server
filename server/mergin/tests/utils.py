@@ -379,3 +379,9 @@ def modify_file_times(path, time: datetime, accessed=True, modified=True):
     mtime = epoch_time if modified else file_stat.st_mtime
 
     os.utime(path, (atime, mtime))
+
+
+def logout(client):
+    """Test helper to log out the client"""
+    resp = client.get(url_for("/.mergin_auth_controller_logout"))
+    assert resp.status_code == 200

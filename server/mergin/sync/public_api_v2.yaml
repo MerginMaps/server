@@ -76,6 +76,34 @@ paths:
         "409":
           $ref: "#/components/responses/Conflict"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
+    get:
+      tags:
+        - project
+      summary: Get project info
+      operationId: get_project
+      parameters:
+        - name: files_at_version
+          in: query
+          description: Include list of files at specific version
+          required: false
+          schema:
+            $ref: "#/components/schemas/VersionName"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
   /projects/{id}/scheduleDelete:
     post:
       tags:
@@ -276,9 +304,7 @@ paths:
                   default: false
                   example: true
                 version:
-                  type: string
-                  pattern: '^$|^v\d+$'
-                  example: v2
+                  $ref: "#/components/schemas/VersionName"
                 changes:
                   type: object
                   required:
@@ -502,6 +528,72 @@ components:
           $ref: "#/components/schemas/ProjectRole"
         role:
           $ref: "#/components/schemas/Role"
+    ProjectDetail:
+      type: object
+      required:
+        - id
+        - name
+        - workspace
+        - role
+        - version
+        - created_at
+        - updated_at
+        - public
+        - size
+      properties:
+        id:
+          type: string
+          description: project uuid
+          example: c1ae6439-0056-42df-a06d-79cc430dd7df
+        name:
+          type: string
+          example: survey
+        workspace:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 123
+            name:
+              type: string
+              example: mergin
+        role:
+          $ref: "#/components/schemas/ProjectRole"
+        version:
+          type: string
+          description: latest project version
+          example: v2
+        created_at:
+          type: string
+          format: date-time
+          description: project creation timestamp
+          example: 2025-10-24T08:27:56Z
+        updated_at:
+          type: string
+          format: date-time
+          description: last project update timestamp
+          example: 2025-10-24T08:28:00.279699Z
+        public:
+          type: boolean
+          description: whether the project is public
+          example: false
+        size:
+          type: integer
+          description: project size in bytes for this version
+          example: 17092380
+        files:
+          type: array
+          description: List of files in the project
+          items:
+            allOf:
+              - $ref: '#/components/schemas/File'
+              - type: object
+                properties:
+                  mtime:
+                    type: string
+                    format: date-time
+                    description: File modification timestamp
+                    example: 2024-11-19T13:50:00Z
     File:
       type: object
       description: Project file metadata
@@ -754,3 +846,7 @@ components:
             - editor
             - writer
             - owner
+    VersionName:
+      type: string
+      pattern: '^$|^v\d+$'
+      example: v2
