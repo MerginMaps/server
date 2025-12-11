@@ -2011,7 +2011,7 @@ versions_test_data = [
         {"page": 1, "per_page": 5, "desc": False},
         200,
         "v1",
-        {"added": 12, "removed": 0, "updated": 0, "updated_diff": 0},
+        {"added": 13, "removed": 0, "updated": 0, "updated_diff": 0},
     ),
     (
         {"page": 2, "per_page": 3, "desc": True},
