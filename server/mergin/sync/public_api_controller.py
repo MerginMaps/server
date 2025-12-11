@@ -92,6 +92,10 @@ from .utils import (
 from .errors import StorageLimitHit, ProjectLocked
 from ..utils import format_time_delta
 
+EXCLUDED_CLONE_FILENAMES = {
+    "qgis_cfg.xml",
+}
+
 
 def parse_project_access_update_request(access: Dict) -> Dict:
     """Parse raw project access update request and filter out invalid entries.
@@ -1138,7 +1142,9 @@ def clone_project(namespace, project_name):  # noqa: E501
     db.session.add(p)
 
     try:
-        p.storage.initialize(template_project=cloned_project)
+        p.storage.initialize(
+            template_project=cloned_project, excluded_files=EXCLUDED_CLONE_FILENAMES
+        )
     except InitializationError as e:
         abort(400, f"Failed to clone project: {str(e)}")
 
@@ -1149,6 +1155,8 @@ def clone_project(namespace, project_name):  # noqa: E501
     # transform source files to new uploaded files
     file_changes = []
     for file in cloned_project.files:
+        if os.path.basename(file.path) in EXCLUDED_CLONE_FILENAMES:
+            continue
         file_changes.append(
             ProjectFileChange(
                 file.path,
