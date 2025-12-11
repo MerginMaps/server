@@ -194,7 +194,7 @@ class DiskStorage(ProjectStorage):
                 self.delete()
                 raise InitializationError("Disk quota reached")
             if excluded_files is None:
-                excluded_files = set()
+                excluded_files = []
 
             for file in template_project.files:
                 if os.path.basename(file.path) in excluded_files:
