@@ -304,6 +304,7 @@ class Project(db.Model):
                 project_role=ProjectRole(member.role),
                 workspace_role=self.workspace.get_user_role(member.user),
                 role=ProjectPermissions.get_user_project_role(self, member.user),
+                fullname=member.user.profile.name(),
             )
 
     def members_by_role(self, role: ProjectRole) -> List[int]:
@@ -364,6 +365,7 @@ class ProjectMember:
     workspace_role: WorkspaceRole
     project_role: Optional[ProjectRole]
     role: ProjectRole
+    fullname: str
 
 
 @dataclass

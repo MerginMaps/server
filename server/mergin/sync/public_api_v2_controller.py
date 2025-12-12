@@ -115,6 +115,7 @@ def get_project_collaborators(id):
                     project_role=project_role,
                     workspace_role=workspace_role,
                     role=ProjectPermissions.get_user_project_role(project, user),
+                    fullname=user.profile.name(),
                 )
             )
 
