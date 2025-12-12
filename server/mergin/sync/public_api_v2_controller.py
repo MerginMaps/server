@@ -443,7 +443,6 @@ def get_project_delta(id: str, since: str, to: Optional[str] = None):
             400,
             f"""The 'since' parameter must be less than or equal to the {"'to' parameter" if to_provided else 'latest project version'}""",
         )
-    # Still return empty list
     delta_changes = project.get_delta_changes(since_version, to_version) or []
 
     return (

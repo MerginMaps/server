@@ -965,6 +965,7 @@ components:
       type: object
       required:
         - items
+        - to_version
       properties:
         to_version:
           $ref: "#/components/schemas/VersionName"
