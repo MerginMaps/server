@@ -456,7 +456,7 @@ def test_delta_merge_changes():
     assert merged[0].version == update_diff2.version
     assert merged[0].size == update_diff2.size
     assert merged[0].checksum == update_diff2.checksum
-    assert [d.path for d in merged[0].diffs] == ["diff1", "diff2"]
+    assert [d.id for d in merged[0].diffs] == ["diff1", "diff2"]
 
     # case when trying to delete already existing file in history
     # copy create with new version number
@@ -608,14 +608,14 @@ def test_project_version_delta_changes(client, diff_project: Project):
     delta = diff_project.get_delta_changes(12, latest_version.name + 6)
     assert len(delta) == 1
     assert len(delta[0].diffs) == 1
-    assert delta[0].diffs[0].path == test_gpkg_checkpoint.path
+    assert delta[0].diffs[0].id == test_gpkg_checkpoint.path
     assert delta[0].change == PushChangeType.UPDATE_DIFF
     assert delta[0].checksum == fh.checksum
     assert delta[0].size == fh.size
 
     # check if checkpoint will be there
     response = client.get(
-        f"v2/projects/{diff_project.id}/raw/diff/{delta[0].diffs[0].path}"
+        f"v2/projects/{diff_project.id}/raw/diff/{delta[0].diffs[0].id}"
     )
     assert response.status_code == 200
 
@@ -1166,9 +1166,7 @@ def test_project_pull_diffs(client, diff_project):
     assert delta[0]["version"] == "v7"
     first_diff = delta[0]["diffs"][0]
     second_diff = delta[0]["diffs"][1]
-    assert first_diff["path"] == current_diffs[0].path
-    assert second_diff["path"] == current_diffs[1].path
-    response = client.get(
-        f"v2/projects/{diff_project.id}/raw/diff/{first_diff['path']}"
-    )
+    assert first_diff["id"] == current_diffs[0].path
+    assert second_diff["id"] == current_diffs[1].path
+    response = client.get(f"v2/projects/{diff_project.id}/raw/diff/{first_diff['id']}")
     assert response.status_code == 200
