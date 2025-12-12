@@ -38,33 +38,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           />
         </template>
 
-        <template #col-email="{ column, item }">
+        <template #col-member="{ column, item }">
           <div
             :class="[
               column.textClass,
               // Center texts with additional content Avatar - text
-              'flex align-items-center'
+              'flex align-items-center py-2'
             ]"
           >
-            <PAvatar
-              :label="$filters.getAvatar(item.email, item.username)"
-              shape="circle"
-              :pt="{
-                root: {
-                  class: 'mr-2 font-semibold text-color-forest flex-shrink-0',
-                  style: {
-                    borderRadius: '50%'
-                  }
-                }
-              }"
+            <ProjectMemberItem
+              :user="item"
+              :is-me="item.id === loggedUser.id"
             />
-            <span
-              >{{ item[column.value] }}
-              <template
-                v-if="column.value === 'email' && item.id === loggedUser.id"
-                >(me)</template
-              ></span
-            >
           </div>
         </template>
 
@@ -87,6 +72,7 @@ import { computed, ref, onUnmounted } from 'vue'
 
 import { useProjectStore } from '../store'
 import { ProjectCollaborator } from '../types'
+import ProjectMemberItem from './UserSummary.vue'
 
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppDropdown from '@/common/components/AppDropdown.vue'
@@ -109,15 +95,10 @@ const instanceStore = useInstanceStore()
 const itemsPerPage = ref(10)
 const columns = ref<DataViewWrapperColumnItem[]>([
   {
-    text: 'Email address',
-    value: 'email',
+    text: 'Member',
+    value: 'member',
     textClass: 'font-semibold',
-    cols: 5
-  },
-  {
-    text: 'Username',
-    value: 'username',
-    cols: 5
+    cols: 10
   },
   {
     text: 'Project permissions',
