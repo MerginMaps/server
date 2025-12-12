@@ -356,6 +356,7 @@ class DeltaChangeRespSchema(ma.Schema):
     """Schema for list of delta changes wrapped in items field"""
 
     items = fields.List(fields.Nested(DeltaChangeItemSchema()))
+    to_version = fields.String(required=True)
 
     class Meta:
         unknown = EXCLUDE

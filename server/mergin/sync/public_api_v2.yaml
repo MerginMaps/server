@@ -666,7 +666,7 @@ components:
           description: List of files in the project
           items:
             allOf:
-              - $ref: '#/components/schemas/File'
+              - $ref: "#/components/schemas/File"
               - type: object
                 properties:
                   mtime:
@@ -966,6 +966,8 @@ components:
       required:
         - items
       properties:
+        to_version:
+          $ref: "#/components/schemas/VersionName"
         items:
           type: array
           items:

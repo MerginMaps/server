@@ -424,20 +424,31 @@ def get_project_delta(id: str, since: str, to: Optional[str] = None):
     """Get project changes (delta) between two versions"""
 
     project: Project = require_project_by_uuid(id, ProjectPermissions.Read)
-    since = ProjectVersion.from_v_name(since)
-    to = project.latest_version if to is None else ProjectVersion.from_v_name(to)
-    if since < 0 or to < 1:
+    since_version = ProjectVersion.from_v_name(since)
+    to_provided = to is not None
+    to_version = (
+        project.latest_version if not to_provided else ProjectVersion.from_v_name(to)
+    )
+    if since_version < 0 or to_version < 0:
         abort(
             400,
-            "Invalid version number, minimum version for 'since' is 0 and minimum version for 'to' is 1",
+            "Invalid version number, minimum version for 'since' is 0 and minimum version for 'to' is 0",
         )
 
-    if to > project.latest_version:
-        abort(400, "'to' version exceeds latest project version")
+    if to_version > project.latest_version:
+        abort(400, "The 'to' parameter exceeds latest project version")
 
-    if since >= to:
-        abort(400, "'since' version must be less than 'to' version")
+    if since_version > to_version:
+        abort(
+            400,
+            f"""The 'since' parameter must be less than or equal to the {"'to' parameter" if to_provided else 'latest project version'}""",
+        )
+    # Still return empty list
+    delta_changes = project.get_delta_changes(since_version, to_version) or []
 
-    delta_changes = project.get_delta_changes(since, to) or []
-
-    return DeltaChangeRespSchema().dump({"items": delta_changes}), 200
+    return (
+        DeltaChangeRespSchema().dump(
+            {"to_version": f"v{to_version}", "items": delta_changes}
+        ),
+        200,
+    )

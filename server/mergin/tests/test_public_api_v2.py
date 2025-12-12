@@ -1078,6 +1078,7 @@ def test_project_delta(client, diff_project):
     assert len(changes) == 1
     assert changes[0]["change"] == PushChangeType.CREATE.value
     assert changes[0]["version"] == "v1"
+    assert response.json.get("to_version") == "v1"
 
     # remove the file and get changes from 0 -> 2 where base gpgkg is removed -> transparent
     push_change(initial_project, "removed", "base.gpkg", working_dir)
@@ -1085,6 +1086,22 @@ def test_project_delta(client, diff_project):
     assert response.status_code == 200
     changes = response.json["items"]
     assert len(changes) == 0
+
+    # get delta from 0 -> 1 where file was created
+    response = client.get(f"v2/projects/{initial_project.id}/delta?since=v0&to=v1")
+    assert response.status_code == 200
+    changes = response.json["items"]
+    assert len(changes) == 1
+    assert changes[0]["change"] == PushChangeType.CREATE.value
+    assert changes[0]["version"] == "v1"
+    assert response.json.get("to_version") == "v1"
+
+    # get delta from 1 -> 1, no changes detected
+    response = client.get(f"v2/projects/{initial_project.id}/delta?since=v1&to=v1")
+    assert response.status_code == 200
+    changes = response.json["items"]
+    assert len(changes) == 0
+    assert response.json.get("to_version") == "v1"
 
     # non valid cases
     response = client.get(f"v2/projects/{diff_project.id}/delta")
@@ -1097,9 +1114,6 @@ def test_project_delta(client, diff_project):
     assert response.status_code == 400
     # exceeding latest version
     response = client.get(f"v2/projects/{diff_project.id}/delta?since=v0&to=v2000")
-    assert response.status_code == 400
-    # no changes between versions with same number
-    response = client.get(f"v2/projects/{diff_project.id}/delta?since=v1&to=v1")
     assert response.status_code == 400
 
     # since 1 to latest version
@@ -1117,6 +1131,8 @@ def test_project_delta(client, diff_project):
     assert changes[1]["version"] == "v9"
     assert changes[1]["path"] == "test.gpkg"
     assert changes[1]["size"] == 98304
+    # there is version without changes in v10, but exists in server
+    assert response.json.get("to_version") == "v10"
 
     # simple update
     response = client.get(f"v2/projects/{diff_project.id}/delta?since=v4&to=v8")
@@ -1127,6 +1143,7 @@ def test_project_delta(client, diff_project):
     # version is new latest version of the change
     assert changes[0]["version"] == "v7"
     assert not changes[0].get("diffs")
+    assert response.json.get("to_version") == "v8"
 
 
 def test_project_pull_diffs(client, diff_project):
