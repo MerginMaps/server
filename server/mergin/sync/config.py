@@ -75,3 +75,6 @@ class Configuration(object):
     UPLOAD_CHUNKS_EXPIRATION = config(
         "UPLOAD_CHUNKS_EXPIRATION", default=86400, cast=int
     )
+    EXCLUDED_CLONE_FILENAMES = config(
+        "EXCLUDED_CLONE_FILENAMES", default="qgis_cfg.xml", cast=Csv()
+    )
