@@ -292,7 +292,7 @@ paths:
         - name: file
           required: true
           in: path
-          description: File path
+          description: File id of the diff file to download
           schema:
             type: string
             example: survey.gpkg-diff-1b9fe848-d2e4-4c53-958d-3dd97e5486f6
@@ -666,7 +666,7 @@ components:
           description: List of files in the project
           items:
             allOf:
-              - $ref: '#/components/schemas/File'
+              - $ref: "#/components/schemas/File"
               - type: object
                 properties:
                   mtime:
@@ -958,14 +958,17 @@ components:
           items:
             type: object
             properties:
-              path:
+              id:
                 type: string
                 example: survey.gpkg-diff-1
     ProjectDeltaResponse:
       type: object
       required:
         - items
+        - to_version
       properties:
+        to_version:
+          $ref: "#/components/schemas/VersionName"
         items:
           type: array
           items:

@@ -254,13 +254,13 @@ class ProjectFileSchema(FileSchema):
 class DeltaDiffFile:
     """Diff file path in diffs list"""
 
-    path: str
+    id: str
 
 
 class DeltaChangeDiffFileSchema(ma.Schema):
     """Schema for diff file path in diffs list"""
 
-    path = fields.String(required=True)
+    id = fields.String(required=True)
 
 
 @dataclass
@@ -287,7 +287,7 @@ class DeltaChangeMerged(DeltaChangeBase):
             version=self.version,
         )
         if self.diffs:
-            result.diff = self.diffs[0].path
+            result.diff = self.diffs[0].id
         return result
 
 
@@ -307,7 +307,7 @@ class DeltaChange(DeltaChangeBase):
             version=self.version,
         )
         if self.diff:
-            result.diffs = [DeltaDiffFile(path=self.diff)]
+            result.diffs = [DeltaDiffFile(id=self.diff)]
         return result
 
 
@@ -356,6 +356,7 @@ class DeltaChangeRespSchema(ma.Schema):
     """Schema for list of delta changes wrapped in items field"""
 
     items = fields.List(fields.Nested(DeltaChangeItemSchema()))
+    to_version = fields.String(required=True)
 
     class Meta:
         unknown = EXCLUDE
