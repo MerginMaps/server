@@ -46,6 +46,7 @@ export interface UserResponse {
   verified_email: boolean
   scheduled_removal?: null | string
   registration_date: string
+  last_signed_in: string
 }
 
 export interface UserWorkspace {

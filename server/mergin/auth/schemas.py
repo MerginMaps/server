@@ -70,6 +70,7 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
             "profile",
             "scheduled_removal",
             "registration_date",
+            "last_signed_in",
         )
         load_instance = True
 

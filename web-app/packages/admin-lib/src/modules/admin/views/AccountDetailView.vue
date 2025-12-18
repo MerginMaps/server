@@ -22,8 +22,12 @@
               }
             }"
           />
-          <h3 class="headline-h2" data-cy="profile-username">
-            {{ user?.username }}
+          <h3 class="headline-h2" data-cy="profile-name">
+            {{
+              profile?.name
+                ? `${profile.name} (${user.username})`
+                : user.username
+            }}
           </h3>
           <p
             class="m-0 paragraph-p6 overflow-wrap-anywhere"
@@ -43,9 +47,9 @@
             <div
               class="col-6 flex flex-column align-items-start text-left flex-wrap"
             >
-              <dt class="paragraph-p6 opacity-80 mb-2">Full name</dt>
-              <dd class="font-semibold" data-cy="profile-name">
-                {{ profile?.name || '-' }}
+              <dt class="paragraph-p6 opacity-80 mb-2">Last signed in</dt>
+              <dd class="font-semibold" data-cy="profile-last-signed-in">
+                {{ $filters.date(user?.last_signed_in) || '-' }}
               </dd>
             </div>
             <div class="col-6 flex flex-column align-items-end">
