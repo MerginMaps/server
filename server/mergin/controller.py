@@ -1,15 +1,14 @@
-import json
-import logging
-import os
+# Copyright (C) Lutra Consulting Limited
+#
+# SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+
 from flask import abort, current_app, request
 from flask_login import current_user
 from magic import from_buffer
-import time
-
 import requests
 
 from .utils import save_diagnostic_log_file
-from .app import parse_version_string, db
+from .app import parse_version_string
 
 
 def get_latest_version():

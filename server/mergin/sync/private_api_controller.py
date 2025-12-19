@@ -146,8 +146,9 @@ def get_project_access_requests(page, per_page, order_params=None, project_name=
         order_by_params = parse_order_params(AccessRequest, order_params)
         access_requests = access_requests.order_by(*order_by_params)
 
-    result = access_requests.paginate(page, per_page).items
-    total = access_requests.paginate(page, per_page).total
+    paginate = access_requests.paginate(page=page, per_page=per_page)
+    result = paginate.items
+    total = paginate.total
     data = ProjectAccessRequestSchema(many=True).dump(result)
     data = {"items": data, "count": total}
     return data, 200
@@ -174,8 +175,9 @@ def list_namespace_project_access_requests(
         order_by_params = parse_order_params(AccessRequest, order_params)
         access_requests = access_requests.order_by(*order_by_params)
 
-    result = access_requests.paginate(page, per_page).items
-    total = access_requests.paginate(page, per_page).total
+    paginate = access_requests.paginate(page=page, per_page=per_page)
+    result = paginate.items
+    total = paginate.total
     data = ProjectAccessRequestSchema(many=True).dump(result)
     data = {"items": data, "count": total}
     return data, 200
@@ -203,8 +205,9 @@ def list_projects(page, per_page, order_params=None, like=None):  # noqa: E501
                 order_by_params.append(get_order_param(Project, order_param))
         projects = projects.order_by(*order_by_params)
 
-    result = projects.paginate(page, per_page).items
-    total = projects.paginate(page, per_page).total
+    paginate = projects.paginate(page=page, per_page=per_page)
+    result = paginate.items
+    total = paginate.total
     data = AdminProjectSchema(many=True).dump(result)
     data = {"items": data, "count": total}
     return data, 200
