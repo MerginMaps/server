@@ -47,7 +47,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ]"
           >
             <ProjectMemberItem
-              :user="item"
+              :username="item.username"
+              :full-name="item.fullname"
+              :email="item.email"
               :is-me="item.id === loggedUser.id"
             />
           </div>
@@ -70,9 +72,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script setup lang="ts">
 import { computed, ref, onUnmounted } from 'vue'
 
+import ProjectMemberItem from '../../../common/components/UserSummary.vue'
 import { useProjectStore } from '../store'
 import { ProjectCollaborator } from '../types'
-import ProjectMemberItem from './UserSummary.vue'
 
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppDropdown from '@/common/components/AppDropdown.vue'

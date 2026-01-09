@@ -366,6 +366,7 @@ export interface ProjectAccessDetail {
       permissions: ProjectPermissionName
     }
   }
+  last_signed_in: string
 }
 
 export interface ProjectCollaborator {
