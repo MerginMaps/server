@@ -47,7 +47,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ]"
           >
             <PAvatar
-              :label="$filters.getAvatar(item.email, item.username)"
+              :label="$filters.getAvatar(item.email, item.name)"
               shape="circle"
               :pt="{
                 root: {
@@ -115,8 +115,8 @@ const columns = ref<DataViewWrapperColumnItem[]>([
     cols: 5
   },
   {
-    text: 'Username',
-    value: 'username',
+    text: 'Collaborator',
+    value: 'displayName',
     cols: 5
   },
   {
@@ -142,9 +142,15 @@ const roles = computed(() =>
   }))
 )
 const loggedUser = computed(() => userStore.loggedUser)
+const displayName = (item: ProjectCollaborator) =>
+  item.name ? item.name : item.username
 const searchedItems = computed(() =>
-  projectStore.collaborators.filter((item) => {
-    return [item.username, item.email].some(
+  projectStore.collaborators.map((item) => ({
+    ...item,
+    displayName: displayName(item),
+  }))
+    .filter((item) => {
+    return [item.displayName, item.email].some(
       (v) => v && v.toString().toLowerCase().includes(projectStore.accessSearch)
     )
   })

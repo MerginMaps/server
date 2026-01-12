@@ -19,7 +19,7 @@ from mergin.sync.tasks import remove_transaction_chunks
 from .schemas_v2 import ProjectSchema as ProjectSchemaV2
 from ..app import db
 from ..auth import auth_required
-from ..auth.models import User
+from ..auth.models import User, UserProfile
 from .errors import (
     AnotherUploadRunning,
     BigChunkError,
@@ -105,6 +105,7 @@ def get_project_collaborators(id):
     project_members = []
     for user, workspace_role in project.workspace.members():
         project_role = project.get_role(user.id)
+        profile = UserProfile.query.filter_by(user_id=user.id).first()
         if workspace_role != WorkspaceRole.GUEST or project_role is not None:
             project_members.append(
                 ProjectMember(
@@ -114,6 +115,7 @@ def get_project_collaborators(id):
                     project_role=project_role,
                     workspace_role=workspace_role,
                     role=ProjectPermissions.get_user_project_role(project, user),
+                    name=profile.name() if profile else None,
                 )
             )
 

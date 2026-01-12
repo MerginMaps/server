@@ -375,6 +375,7 @@ export interface ProjectCollaborator {
   workspace_role: WorkspaceRoleName
   project_role: ProjectRoleName | null
   role: ProjectRoleName
+  name?: string | null
 }
 
 
