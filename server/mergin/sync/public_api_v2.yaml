@@ -87,8 +87,7 @@ paths:
           description: Include list of files at specific version
           required: false
           schema:
-            type: string
-            example: v3
+            $ref: "#/components/schemas/VersionName"
       responses:
         "200":
           description: Success
@@ -345,9 +344,7 @@ paths:
                   default: false
                   example: true
                 version:
-                  type: string
-                  pattern: '^$|^v\d+$'
-                  example: v2
+                  $ref: "#/components/schemas/VersionName"
                 changes:
                   type: object
                   required:
@@ -975,5 +972,5 @@ components:
             $ref: "#/components/schemas/ProjectDeltaChange"
     VersionName:
       type: string
-      pattern: '^v\d+$'
+      pattern: '^$|^v\d+$'
       example: v2
