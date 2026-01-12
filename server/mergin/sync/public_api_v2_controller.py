@@ -360,7 +360,12 @@ def create_project_version(id):
     finally:
         # remove artifacts
         upload.clear()
-    return ProjectSchema().dump(project), 201
+
+    result = ProjectSchemaV2().dump(project)
+    result["files"] = ProjectFileSchema(
+        only=("path", "mtime", "size", "checksum"), many=True
+    ).dump(project.files)
+    return result, 201
 
 
 @auth_required
