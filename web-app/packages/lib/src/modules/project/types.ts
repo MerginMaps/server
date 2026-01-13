@@ -366,7 +366,7 @@ export interface ProjectAccessDetail {
       permissions: ProjectPermissionName
     }
   }
-  last_signed_in: string
+  last_signed_in?: string
 }
 
 export interface ProjectCollaborator {
@@ -376,7 +376,7 @@ export interface ProjectCollaborator {
   workspace_role: WorkspaceRoleName
   project_role: ProjectRoleName | null
   role: ProjectRoleName
-  fullname: string
+  fullname?: string
 }
 
 // router related types

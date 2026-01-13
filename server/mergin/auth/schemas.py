@@ -11,7 +11,7 @@ from ..app import DateTimeWithZ, ma
 
 class UserProfileSchema(ma.SQLAlchemyAutoSchema):
     name = ma.Function(
-        lambda obj: f'{obj.first_name if obj.first_name else ""} {obj.last_name if obj.last_name else ""}'.strip(),
+        lambda obj: obj.name(),
         dump_only=True,
     )
     storage = fields.Method("get_storage", dump_only=True)

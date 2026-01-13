@@ -529,6 +529,7 @@ components:
         role:
           $ref: "#/components/schemas/Role"
         fullname:
+          nullable: true
           type: string
           example: John Doe
     ProjectDetail:
