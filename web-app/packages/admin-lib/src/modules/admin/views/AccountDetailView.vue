@@ -13,7 +13,7 @@
         <div class="flex flex-column align-items-center row-gap-3 text-center">
           <PAvatar
             v-if="user"
-            :label="$filters.getAvatar(user?.email, user?.username)"
+            :label="$filters.getAvatar(user?.email, profile?.name)"
             size="xlarge"
             shape="circle"
             :pt="{
@@ -25,7 +25,7 @@
           <h3 class="headline-h2" data-cy="profile-name">
             {{
               profile?.name
-                ? `${profile.name} (${user.username})`
+                ? `${profile.name} (${user?.username})`
                 : user.username
             }}
           </h3>
