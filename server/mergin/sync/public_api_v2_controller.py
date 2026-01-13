@@ -44,7 +44,6 @@ from .permissions import ProjectPermissions, require_project_by_uuid
 from .public_api_controller import catch_sync_failure
 from .schemas import (
     ProjectMemberSchema,
-    ProjectVersionSchema,
     UploadChunkSchema,
     ProjectSchema,
 )
@@ -168,7 +167,7 @@ def remove_project_collaborator(id, user_id):
 
 def get_project(id, files_at_version=None):
     """Get project info. Include list of files at specific version if requested."""
-    project = require_project_by_uuid(id, ProjectPermissions.Read)
+    project = require_project_by_uuid(id, ProjectPermissions.Read, expose=False)
     data = ProjectSchemaV2().dump(project)
     if files_at_version:
         pv = ProjectVersion.query.filter_by(
@@ -362,7 +361,12 @@ def create_project_version(id):
     finally:
         # remove artifacts
         upload.clear()
-    return ProjectSchema().dump(project), 201
+
+    result = ProjectSchemaV2().dump(project)
+    result["files"] = ProjectFileSchema(
+        only=("path", "mtime", "size", "checksum"), many=True
+    ).dump(project.files)
+    return result, 201
 
 
 @auth_required

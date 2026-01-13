@@ -87,8 +87,7 @@ paths:
           description: Include list of files at specific version
           required: false
           schema:
-            type: string
-            example: v3
+            $ref: "#/components/schemas/VersionName"
       responses:
         "200":
           description: Success
@@ -305,9 +304,7 @@ paths:
                   default: false
                   example: true
                 version:
-                  type: string
-                  pattern: '^$|^v\d+$'
-                  example: v2
+                  $ref: "#/components/schemas/VersionName"
                 changes:
                   type: object
                   required:
@@ -333,7 +330,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Project"
+                $ref: "#/components/schemas/ProjectDetail"
         "204":
           $ref: "#/components/responses/NoContent"
         "400":
@@ -592,7 +589,7 @@ components:
           description: List of files in the project
           items:
             allOf:
-              - $ref: '#/components/schemas/File'
+              - $ref: "#/components/schemas/File"
               - type: object
                 properties:
                   mtime:
@@ -774,81 +771,7 @@ components:
                 type: string
                 format: date-time
                 example: 2019-02-26T08:47:58.636074Z
-    Project:
-      type: object
-      required:
-        - name
-      properties:
-        id:
-          type: string
-          example: f9ef87ac-1dae-48ab-85cb-062a4784fb83
-          description: Project UUID
-        name:
-          type: string
-          example: mergin
-        namespace:
-          type: string
-          example: mergin
-        creator:
-          nullable: true
-          type: integer
-          example: 1
-          description: Project creator ID
-        created:
-          type: string
-          format: date-time
-          example: 2018-11-30T08:47:58.636074Z
-        updated:
-          type: string
-          nullable: true
-          format: date-time
-          example: 2018-11-30T08:47:58.636074Z
-          description: Last modified
-        version:
-          type: string
-          nullable: true
-          example: v2
-          description: Last project version
-        disk_usage:
-          type: integer
-          example: 25324373
-          description: Project size in bytes
-        permissions:
-          type: object
-          properties:
-            delete:
-              type: boolean
-              example: false
-            update:
-              type: boolean
-              example: false
-            upload:
-              type: boolean
-              example: true
-        tags:
-          type: array
-          nullable: true
-          items:
-            $ref: "#/components/schemas/MerginTag"
-        uploads:
-          type: array
-          nullable: true
-          items:
-            type: string
-            example: 669b838e-a30b-4338-b2b6-3da144742a82
-            description: UUID for ongoing upload
-        access:
-          $ref: "#/components/schemas/Access"
-        files:
-          type: array
-          items:
-            allOf:
-              - $ref: "#/components/schemas/FileInfo"
-        role:
-          nullable: true
-          type: string
-          enum:
-            - reader
-            - editor
-            - writer
-            - owner
+    VersionName:
+      type: string
+      pattern: '^$|^v\d+$'
+      example: v2

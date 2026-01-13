@@ -11,6 +11,8 @@ from .utils import (
     create_workspace,
     create_project,
     upload_file_to_project,
+    login,
+    file_info,
 )
 
 from ..auth.models import User
@@ -49,7 +51,6 @@ from .test_project_controller import (
     _get_changes_with_diff_0_size,
     _get_changes_without_added,
 )
-from .utils import add_user, file_info
 
 
 def test_schedule_delete_project(client):
@@ -168,6 +169,7 @@ def test_project_members(client):
     # access provided by workspace role cannot be removed directly
     response = client.delete(url + f"/{user.id}")
     assert response.status_code == 404
+    Configuration.GLOBAL_READ = 0
 
 
 def test_get_project(client):
@@ -176,7 +178,12 @@ def test_get_project(client):
     test_workspace = create_workspace()
     project = create_project("new_project", test_workspace, admin)
     logout(client)
+    # anonymous user cannot access the private resource
+    response = client.get(f"v2/projects/{project.id}")
+    assert response.status_code == 404
     # lack of permissions
+    user = add_user("tests", "tests")
+    login(client, user.username, "tests")
     response = client.get(f"v2/projects/{project.id}")
     assert response.status_code == 403
     # access public project
@@ -235,6 +242,9 @@ def test_get_project(client):
     )
     assert len(response.json["files"]) == 3
     assert {f["path"] for f in response.json["files"]} == set(files)
+    # invalid version format parameter
+    response = client.get(f"v2/projects/{project.id}?files_at_version=3")
+    assert response.status_code == 400
 
 
 push_data = [
