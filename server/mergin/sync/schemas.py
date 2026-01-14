@@ -364,7 +364,6 @@ class ProjectAccessDetailSchema(Schema):
     workspace_role = fields.Enum(enum=WorkspaceRole, by_value=True)
     type = fields.String()
     invitation = fields.Nested(ProjectInvitationAccessSchema())
-    last_signed_in = DateTimeWithZ()
 
 
 class ProjectVersionListSchema(ma.SQLAlchemyAutoSchema):

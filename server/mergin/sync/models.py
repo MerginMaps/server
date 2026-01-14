@@ -378,7 +378,6 @@ class ProjectAccessDetail:
     workspace_role: str
     project_role: Optional[ProjectRole]
     type: str
-    last_signed_in: Optional[datetime]
 
 
 class ProjectFilePath(db.Model):

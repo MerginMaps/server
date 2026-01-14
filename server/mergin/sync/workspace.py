@@ -341,7 +341,6 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
                 role=project_permission and project_permission.value,
                 project_role=project_role.value if project_role else None,
                 type="member",
-                last_signed_in=dm.last_signed_in,
             )
             result.append(member)
         if global_role:
@@ -356,7 +355,6 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
                     role=global_role,
                     project_role=None,
                     type="member",
-                    last_signed_in=gm.last_signed_in,
                 )
                 result.append(member)
         return result
