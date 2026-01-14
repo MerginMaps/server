@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-from mergin.sync.tasks import remove_transaction_chunks, remove_unused_chunks
+from mergin.sync.tasks import remove_transaction_chunks
 from . import DEFAULT_USER
 from .utils import (
     add_user,
@@ -22,10 +22,10 @@ from unittest.mock import patch
 from sqlalchemy.exc import IntegrityError
 import pytest
 from datetime import datetime, timedelta, timezone
+import json
 
 from mergin.app import db
 from mergin.config import Configuration
-from mergin.sync.config import Configuration as SyncConfiguration
 from mergin.sync.errors import (
     BigChunkError,
     ProjectLocked,
@@ -51,6 +51,7 @@ from .test_project_controller import (
     _get_changes_with_diff_0_size,
     _get_changes_without_added,
 )
+from ..sync.interfaces import WorkspaceRole
 
 
 def test_schedule_delete_project(client):
@@ -598,3 +599,81 @@ def test_full_push(client):
         os.path.join(project.storage.project_dir, "v2", test_file["path"])
     )
     assert not Upload.query.filter_by(project_id=project.id).first()
+
+
+def test_list_workspace_projects(client):
+    admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
+    test_workspace = create_workspace()
+    url = f"v2/workspaces/{test_workspace.id}/projects"
+    for i in range(1, 11):
+        create_project(f"project_{i}", test_workspace, admin)
+
+    # missing required query params
+    assert client.get(url).status_code == 400
+
+    # success
+    page = 1
+    per_page = 10
+    response = client.get(url + f"?page={page}&per_page={per_page}")
+    resp_data = json.loads(response.data)
+    assert response.status_code == 200
+    assert resp_data["count"] == 11
+    assert len(resp_data["projects"]) == per_page
+    # correct number on the last page
+    page = 4
+    per_page = 3
+    response = client.get(url + f"?page={page}&per_page={per_page}")
+    assert response.json["count"] == 11
+    assert len(response.json["projects"]) == 2
+    # name search - more results
+    page = 1
+    per_page = 3
+    response = client.get(url + f"?page={page}&per_page={per_page}&q=1")
+    assert response.json["count"] == 2
+    assert len(response.json["projects"]) == 2
+    assert response.json["projects"][1]["name"] == "project_10"
+    # name search - specific result
+    project_name = "project_4"
+    response = client.get(url + f"?page={page}&per_page={per_page}&q={project_name}")
+    assert response.json["projects"][0]["name"] == project_name
+
+    # no permissions to workspace
+    user2 = add_user("user", "password")
+    login(client, user2.username, "password")
+    Configuration.GLOBAL_READ = 0
+    Configuration.GLOBAL_WRITE = 0
+    Configuration.GLOBAL_ADMIN = 0
+    resp = client.get(url + "?page=1&per_page=10")
+    assert resp.status_code == 200
+    assert resp.json["count"] == 0
+
+    # no existing workspace
+    assert (
+        client.get("/v1/workspace/1234/projects?page=1&per_page=10").status_code == 404
+    )
+
+    # project shared directly
+    p = Project.query.filter_by(workspace_id=test_workspace.id).first()
+    p.set_role(user2.id, ProjectRole.READER)
+    db.session.commit()
+    resp = client.get(url + "?page=1&per_page=10")
+    resp_data = json.loads(resp.data)
+    assert resp_data["count"] == 1
+    assert resp_data["projects"][0]["name"] == p.name
+
+    # deactivate project
+    p.removed_at = datetime.utcnow()
+    db.session.commit()
+    resp = client.get(url + "?page=1&per_page=10")
+    assert resp.json["count"] == 0
+
+    # add user as a reader
+    Configuration.GLOBAL_READ = 1
+    db.session.commit()
+    resp = client.get(url + "?page=1&per_page=10")
+    assert p.name not in [proj["name"] for proj in resp.json["projects"]]
+    assert resp.json["count"] == 10
+
+    # logout
+    logout(client)
+    assert client.get(url + "?page=1&per_page=10").status_code == 401

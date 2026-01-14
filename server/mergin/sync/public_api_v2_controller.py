@@ -40,16 +40,16 @@ from .models import (
     project_version_created,
     push_finished,
 )
-from .permissions import ProjectPermissions, require_project_by_uuid
+from .permissions import ProjectPermissions, require_project_by_uuid, projects_query
 from .public_api_controller import catch_sync_failure
 from .schemas import (
     ProjectMemberSchema,
     UploadChunkSchema,
-    ProjectSchema,
 )
 from .storages.disk import move_to_tmp, save_to_file
 from .utils import get_device_id, get_ip, get_user_agent, get_chunk_location
 from .workspace import WorkspaceRole
+from ..utils import parse_order_params
 
 
 @auth_required
@@ -396,3 +396,49 @@ def upload_chunk(id: str):
         UploadChunkSchema().dump({"id": chunk_id, "valid_until": valid_until}),
         200,
     )
+
+
+@auth_required
+def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=None):
+    """Paginate over workspace projects with optional filtering.
+
+    :param page: page number
+    :type page: int
+    :param per_page: Number of results per page
+    :type per_page: int
+    :param order_params: Sorting fields e.g. "name ASC,updated DESC"
+    :type order_params: str
+    :param q: Filter by name with ilike pattern
+    :type q: str
+
+    :rtype: Dict[str: List[Project], str: Integer]
+    """
+    ws = current_app.ws_handler.get(workspace_id)
+    if not (ws and ws.is_active):
+        abort(404, "Workspace not found")
+
+    if ws.user_has_permissions(current_user, "guest"):
+        # guest can list only explicitly shared projects
+        projects = projects_query(
+            ProjectPermissions.Read, as_admin=False, public=False
+        ).filter(Project.workspace_id == ws.id)
+    elif ws.user_has_permissions(current_user, "read"):
+        # regular members can list all projects
+        projects = Project.query.filter_by(workspace_id=ws.id).filter(
+            Project.removed_at.is_(None)
+        )
+    else:
+        abort(403, "You do not have permissions to workspace")
+
+    if q:
+        projects = projects.filter(Project.name.ilike(f"%{q}%"))
+
+    if order_params:
+        order_by_params = parse_order_params(Project, order_params)
+        projects = projects.order_by(*order_by_params)
+
+    result = projects.paginate(page, per_page).items
+    total = projects.paginate(page, per_page).total
+
+    data = ProjectSchemaV2(many=True).dump(result)
+    return jsonify(projects=data, count=total, page=page, per_page=per_page), 200
