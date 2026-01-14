@@ -365,7 +365,7 @@ class ProjectMember:
     workspace_role: WorkspaceRole
     project_role: Optional[ProjectRole]
     role: ProjectRole
-    fullname: str
+    name: Optional[str]
 
 
 @dataclass
