@@ -7,120 +7,122 @@
         </template>
       </app-section>
     </app-container>
-
-    <app-container>
-      <app-section class="p-4">
-        <div class="flex flex-column align-items-center row-gap-3 text-center">
-          <PAvatar
-            v-if="user"
-            :label="$filters.getAvatar(user?.email, profile?.name)"
-            size="xlarge"
-            shape="circle"
-            :pt="{
-              root: {
-                class: 'font-semibold text-color-forest'
-              }
-            }"
-          />
-          <h3 class="headline-h2" data-cy="profile-name">
-            {{
-              profile?.name
-                ? `${profile.name} (${user?.username})`
-                : user.username
-            }}
-          </h3>
-          <p
-            class="m-0 paragraph-p6 overflow-wrap-anywhere"
-            data-cy="profile-email"
+    <template v-if="user">
+      <app-container>
+        <app-section class="p-4">
+          <div
+            class="flex flex-column align-items-center row-gap-3 text-center"
           >
-            <i
-              v-if="!user?.verified_email"
-              v-tooltip.top="{
-                value: 'Email verification status'
+            <PAvatar
+              :label="$filters.getAvatar(user?.email, profile?.name)"
+              size="xlarge"
+              shape="circle"
+              :pt="{
+                root: {
+                  class: 'font-semibold text-color-forest'
+                }
               }"
-              class="ti ti-alert-circle-filled"
-              style="color: var(--grape-color)"
-            ></i>
-            {{ user?.email }}
-          </p>
-          <dl class="profile-view-detail-list grid grid-nogutter paragraph-p5">
-            <div
-              class="col-6 flex flex-column align-items-start text-left flex-wrap"
+            />
+            <h3 class="headline-h2" data-cy="profile-name">
+              {{
+                profile?.name
+                  ? `${profile.name} (${user?.username})`
+                  : user.username
+              }}
+            </h3>
+            <p
+              class="m-0 paragraph-p6 overflow-wrap-anywhere"
+              data-cy="profile-email"
             >
-              <dt class="paragraph-p6 opacity-80 mb-2">Last signed in</dt>
-              <dd class="font-semibold" data-cy="profile-last-signed-in">
-                {{ $filters.date(user?.last_signed_in) || '-' }}
-              </dd>
-            </div>
-            <div class="col-6 flex flex-column align-items-end">
-              <dt class="paragraph-p6 opacity-80 mb-2">Registered</dt>
-              <dd class="font-semibold" data-cy="profile-registered">
-                {{ $filters.date(user?.registration_date) }}
-              </dd>
-            </div>
-          </dl>
-        </div>
-      </app-section>
-    </app-container>
-    <app-container v-if="userStore.loggedUser?.id !== user?.id">
-      <app-section>
-        <template #title>Advanced</template>
-
-        <app-settings :items="settingsItems">
-          <template #notifications>
-            <div class="flex-shrink-0 paragraph-p1">
-              <PInputSwitch
-                :model-value="profile?.receive_notifications"
-                disabled
-              />
-            </div>
-          </template>
-          <template #adminAccess>
-            <div class="flex-shrink-0 paragraph-p1">
+              <i
+                v-if="!user?.verified_email"
+                v-tooltip.top="{
+                  value: 'Email verification status'
+                }"
+                class="ti ti-alert-circle-filled"
+                style="color: var(--grape-color)"
+              ></i>
+              {{ user?.email }}
+            </p>
+            <dl class="profile-view-detail-list grid grid-nogutter paragraph-p5">
               <div
-                class="flex align-items-center flex-shrink-0"
-                data-cy="profile-notification"
+                class="col-6 flex flex-column align-items-start text-left flex-wrap"
               >
-                <PButton
-                  :severity="user?.is_admin ? 'danger' : 'warning'"
-                  :disabled="
-                    !instanceStore.configData?.enable_superadmin_assignment
-                  "
-                  @click="switchAdminAccess"
-                  :label="
-                    !user?.is_admin
-                      ? 'Grant admin access'
-                      : 'Revoke admin access'
-                  "
+                <dt class="paragraph-p6 opacity-80 mb-2">Last signed in</dt>
+                <dd class="font-semibold" data-cy="profile-last-signed-in">
+                  {{ $filters.date(user.last_signed_in) || '-' }}
+                </dd>
+              </div>
+              <div class="col-6 flex flex-column align-items-end">
+                <dt class="paragraph-p6 opacity-80 mb-2">Registered</dt>
+                <dd class="font-semibold" data-cy="profile-registered">
+                  {{ $filters.date(user?.registration_date) }}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </app-section>
+      </app-container>
+      <app-container v-if="userStore.loggedUser?.id !== user?.id">
+        <app-section>
+          <template #title>Advanced</template>
+
+          <app-settings :items="settingsItems">
+            <template #notifications>
+              <div class="flex-shrink-0 paragraph-p1">
+                <PInputSwitch
+                  :model-value="profile?.receive_notifications"
+                  disabled
                 />
               </div>
-            </div>
-          </template>
-          <template #accountActivation>
-            <div class="flex-shrink-0">
-              <PButton
-                @click="changeStatusDialog"
-                :severity="user?.active ? 'warning' : 'secondary'"
-                :label="
-                  user?.active ? 'Deactivate account' : 'Activate account'
-                "
-                class="w-auto mr-1"
-              />
-            </div>
-          </template>
-          <template #deleteAccount>
-            <div class="flex-shrink-0">
-              <PButton
-                @click="confirmDeleteUser"
-                severity="danger"
-                data-cy="profile-close-account-btn"
-                label="Delete account"
-              />
-            </div>
-          </template>
-        </app-settings>
-      </app-section>
-    </app-container>
+            </template>
+            <template #adminAccess>
+              <div class="flex-shrink-0 paragraph-p1">
+                <div
+                  class="flex align-items-center flex-shrink-0"
+                  data-cy="profile-notification"
+                >
+                  <PButton
+                    :severity="user?.is_admin ? 'danger' : 'warning'"
+                    :disabled="
+                      !instanceStore.configData?.enable_superadmin_assignment
+                    "
+                    @click="switchAdminAccess"
+                    :label="
+                      !user?.is_admin
+                        ? 'Grant admin access'
+                        : 'Revoke admin access'
+                    "
+                  />
+                </div>
+              </div>
+            </template>
+            <template #accountActivation>
+              <div class="flex-shrink-0">
+                <PButton
+                  @click="changeStatusDialog"
+                  :severity="user?.active ? 'warning' : 'secondary'"
+                  :label="
+                    user?.active ? 'Deactivate account' : 'Activate account'
+                  "
+                  class="w-auto mr-1"
+                />
+              </div>
+            </template>
+            <template #deleteAccount>
+              <div class="flex-shrink-0">
+                <PButton
+                  @click="confirmDeleteUser"
+                  severity="danger"
+                  data-cy="profile-close-account-btn"
+                  label="Delete account"
+                />
+              </div>
+            </template>
+          </app-settings>
+        </app-section>
+      </app-container>
+    </template>
   </admin-layout>
 </template>
 
