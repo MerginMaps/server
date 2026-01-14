@@ -1,5 +1,5 @@
 <template>
-  <div class="flex align-items-center w-full">
+  <div class="flex align-items-center w-auto">
     <PAvatar
       :label="$filters.getAvatar(email, name)"
       size="large"
