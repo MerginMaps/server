@@ -376,7 +376,7 @@ export interface ProjectCollaborator {
   workspace_role: WorkspaceRoleName
   project_role: ProjectRoleName | null
   role: ProjectRoleName
-  fullname?: string
+  name?: string
 }
 
 // router related types

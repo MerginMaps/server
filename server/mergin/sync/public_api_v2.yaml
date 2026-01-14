@@ -528,7 +528,7 @@ components:
           $ref: "#/components/schemas/ProjectRole"
         role:
           $ref: "#/components/schemas/Role"
-        fullname:
+        name:
           nullable: true
           type: string
           example: John Doe

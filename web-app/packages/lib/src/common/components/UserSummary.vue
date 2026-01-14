@@ -1,7 +1,7 @@
 <template>
   <div class="flex align-items-center w-full">
     <PAvatar
-      :label="$filters.getAvatar(email, fullName)"
+      :label="$filters.getAvatar(email, name)"
       size="large"
       shape="circle"
       :pt="{
@@ -14,7 +14,7 @@
 
     <div class="flex flex-column justify-content-between">
       <p class="title-t4 overflow-wrap-anywhere">
-        {{ fullName ? `${fullName} (${username})` : username }}
+        {{ name ? `${name} (${username})` : username }}
       </p>
 
       <p class="paragraph-p6 overflow-wrap-anywhere font-normal">
@@ -29,7 +29,7 @@
 interface Props {
   username: string
   email: string
-  fullName?: string
+  name?: string
   isMe?: boolean
 }
 

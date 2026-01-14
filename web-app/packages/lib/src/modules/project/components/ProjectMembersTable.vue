@@ -48,7 +48,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           >
             <ProjectMemberItem
               :username="item.username"
-              :full-name="item.fullname"
+              :name="item.name"
               :email="item.email"
               :is-me="item.id === loggedUser.id"
             />
