@@ -1,12 +1,12 @@
 <template>
-  <div class="flex align-items-center w-auto" style="gap: 12px">
+  <div class="flex align-items-center w-auto gap-2">
     <PAvatar
       :label="$filters.getAvatar(email, name)"
       size="large"
       shape="circle"
       :pt="{
         root: {
-          class: 'text-color-forest font-semibold flex-shrink-0',
+          class: 'mr-1 text-color-forest font-semibold flex-shrink-0',
           style: { borderRadius: '50%' }
         }
       }"
