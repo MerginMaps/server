@@ -528,6 +528,10 @@ components:
           $ref: "#/components/schemas/ProjectRole"
         role:
           $ref: "#/components/schemas/Role"
+        name:
+          nullable: true
+          type: string
+          example: John Doe
     ProjectDetail:
       type: object
       required:
