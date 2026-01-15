@@ -2,8 +2,8 @@
   <div class="flex align-items-center w-auto gap-2">
     <PAvatar
       :label="$filters.getAvatar(email, name)"
-      size="large"
       shape="circle"
+      :size="avatarSize"
       :pt="{
         root: {
           class: 'mr-1 text-color-forest font-semibold flex-shrink-0',
@@ -13,7 +13,7 @@
     />
 
     <div class="flex flex-column justify-content-between">
-      <p class="title-t4 overflow-wrap-anywhere">
+      <p :class="['title-t4 overflow-wrap-anywhere', titleClass || '']">
         {{ name ? `${name} (${username})` : username }}
       </p>
 
@@ -31,6 +31,8 @@ interface Props {
   email: string
   name?: string
   isMe?: boolean
+  avatarSize?: undefined
+  titleClass?: string
 }
 
 defineProps<Props>()
