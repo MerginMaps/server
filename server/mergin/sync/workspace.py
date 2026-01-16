@@ -78,7 +78,7 @@ class GlobalWorkspace(AbstractWorkspace):
             return True
 
         if permissions == "guest":
-            return role >= WorkspaceRole.GUEST
+            return role == WorkspaceRole.GUEST
         elif permissions == "read":
             return role >= WorkspaceRole.READER
         elif permissions == "edit":

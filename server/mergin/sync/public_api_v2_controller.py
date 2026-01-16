@@ -403,6 +403,8 @@ def upload_chunk(id: str):
 def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=None):
     """Paginate over workspace projects with optional filtering.
 
+    :param workspace_id: ID of the workspace to list projects from
+    :param workspace_id: int
     :param page: page number
     :type page: int
     :param per_page: Number of results per page
@@ -412,7 +414,7 @@ def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=N
     :param q: Filter by name with ilike pattern
     :type q: str
 
-    :rtype: Dict[str: List[Project], str: Integer]
+    :rtype: Dict[str: List[Project], str: Integer, str: String, str: String]
     """
     ws = current_app.ws_handler.get(workspace_id)
     if not (ws and ws.is_active):

@@ -628,7 +628,9 @@ def test_list_workspace_projects(client):
     # name search - more results
     page = 1
     per_page = 3
-    response = client.get(url + f"?page={page}&per_page={per_page}&q=1")
+    response = client.get(
+        url + f"?page={page}&per_page={per_page}&q=1&order_params=updated ASC"
+    )
     assert response.json["count"] == 2
     assert len(response.json["projects"]) == 2
     assert response.json["projects"][1]["name"] == "project_10"
@@ -636,16 +638,31 @@ def test_list_workspace_projects(client):
     project_name = "project_4"
     response = client.get(url + f"?page={page}&per_page={per_page}&q={project_name}")
     assert response.json["projects"][0]["name"] == project_name
+    # sorting
+    response = client.get(
+        url + f"?page={page}&per_page={per_page}&q=1&order_params=created DESC"
+    )
+    assert response.json["projects"][0]["name"] == "project_10"
 
     # no permissions to workspace
     user2 = add_user("user", "password")
     login(client, user2.username, "password")
-    Configuration.GLOBAL_READ = 0
-    Configuration.GLOBAL_WRITE = 0
-    Configuration.GLOBAL_ADMIN = 0
-    resp = client.get(url + "?page=1&per_page=10")
-    assert resp.status_code == 200
-    assert resp.json["count"] == 0
+    with patch.object(
+        Configuration,
+        "GLOBAL_READ",
+        0,
+    ), patch.object(
+        Configuration,
+        "GLOBAL_WRITE",
+        0,
+    ), patch.object(
+        Configuration,
+        "GLOBAL_ADMIN",
+        0,
+    ):
+        resp = client.get(url + "?page=1&per_page=10")
+        assert resp.status_code == 200
+        assert resp.json["count"] == 0
 
     # no existing workspace
     assert (
@@ -668,11 +685,10 @@ def test_list_workspace_projects(client):
     assert resp.json["count"] == 0
 
     # add user as a reader
-    Configuration.GLOBAL_READ = 1
-    db.session.commit()
-    resp = client.get(url + "?page=1&per_page=10")
-    assert p.name not in [proj["name"] for proj in resp.json["projects"]]
-    assert resp.json["count"] == 10
+    with patch.object(Configuration, "GLOBAL_READ", 1):
+        resp = client.get(url + "?page=1&per_page=10")
+        assert p.name not in [proj["name"] for proj in resp.json["projects"]]
+        assert resp.json["count"] == 10
 
     # logout
     logout(client)

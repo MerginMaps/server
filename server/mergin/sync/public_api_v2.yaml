@@ -393,11 +393,11 @@ paths:
             example: 50
         - name: order_params
           in: query
-          description: Sorting fields e.g. "name ASC,udpdated DESC"
+          description: Sorting fields
           required: false
           schema:
             type: string
-            example: name_asc,updated_desc
+            example: name ASC, expire DESC
         - name: q
           in: query
           description: Filter by name with ilike pattern
