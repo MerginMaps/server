@@ -414,7 +414,7 @@ def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=N
     :param q: Filter by name with ilike pattern
     :type q: str
 
-    :rtype: Dict[str: List[Project], str: Integer, str: String, str: String]
+    :rtype: Dict[str: List[Project], str: Integer, str: Integer, str: Integer]
     """
     ws = current_app.ws_handler.get(workspace_id)
     if not (ws and ws.is_active):
