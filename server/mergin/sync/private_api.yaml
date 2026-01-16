@@ -657,6 +657,12 @@ components:
               type: string
               format: date-time
               example: 2018-11-30T08:47:58.636074Z
+        last_signed_in:
+          description: Present only for type `member`
+          nullable: true
+          type: string
+          format: date-time
+          example: 2025-12-18T08:47:58Z
     ProjectAccessUpdated:
       type: object
       properties:

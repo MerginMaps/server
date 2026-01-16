@@ -753,6 +753,11 @@ components:
           type: string
           format: date-time
           example: 2023-07-30T08:47:58Z
+        last_signed_in:
+          nullable: true
+          type: string
+          format: date-time
+          example: 2025-12-18T08:47:58Z
         profile:
           $ref: "#/components/schemas/UserProfile"
     PaginatedUsers:

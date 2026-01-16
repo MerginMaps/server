@@ -268,7 +268,7 @@ class UserProfile(db.Model):
         ),
     )
 
-    def name(self):
+    def name(self) -> Optional[str]:
         return f'{self.first_name if self.first_name else ""} {self.last_name if self.last_name else ""}'.strip()
 
 
