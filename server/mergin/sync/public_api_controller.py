@@ -1136,9 +1136,12 @@ def clone_project(namespace, project_name):  # noqa: E501
     )
     p.updated = datetime.utcnow()
     db.session.add(p)
+    files_to_exclude = current_app.config.get("EXCLUDED_CLONE_FILENAMES", [])
 
     try:
-        p.storage.initialize(template_project=cloned_project)
+        p.storage.initialize(
+            template_project=cloned_project, excluded_files=files_to_exclude
+        )
     except InitializationError as e:
         abort(400, f"Failed to clone project: {str(e)}")
 
@@ -1149,6 +1152,8 @@ def clone_project(namespace, project_name):  # noqa: E501
     # transform source files to new uploaded files
     file_changes = []
     for file in cloned_project.files:
+        if os.path.basename(file.path) in files_to_exclude:
+            continue
         file_changes.append(
             ProjectFileChange(
                 file.path,
