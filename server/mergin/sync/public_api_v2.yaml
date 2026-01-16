@@ -367,6 +367,73 @@ paths:
                 $ref: "#/components/schemas/ProjectLocked"
 
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
+  /workspaces/{workspace_id}/projects:
+    get:
+      tags:
+        - workspace
+      summary: List projects in the workspace
+      operationId: list_workspace_projects
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - name: page
+          in: query
+          description: page number
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            example: 1
+        - name: per_page
+          in: query
+          description: Number of results per page
+          required: true
+          schema:
+            type: integer
+            maximum: 50
+            example: 50
+        - name: order_params
+          in: query
+          description: Sorting fields
+          required: false
+          schema:
+            type: string
+            example: name ASC, expire DESC
+        - name: q
+          in: query
+          description: Filter by name with ilike pattern
+          required: false
+          schema:
+            type: string
+            example: my-survey
+      responses:
+        "200":
+          description: List of workspace projects that match the query limited to 50
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                    example: 1
+                  per_page:
+                    type: integer
+                    example: 20
+                  count:
+                    type: integer
+                    example: 10
+                  projects:
+                    type: array
+                    maxItems: 50
+                    items:
+                      $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
 components:
   responses:
     NoContent:
@@ -393,6 +460,13 @@ components:
         type: string
         format: uuid
         pattern: \b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b
+    WorkspaceId:
+      name: workspace_id
+      in: path
+      description: Workspace id
+      required: true
+      schema:
+        type: integer
   schemas:
     # Errors
     CustomError:
@@ -528,11 +602,7 @@ components:
           $ref: "#/components/schemas/ProjectRole"
         role:
           $ref: "#/components/schemas/Role"
-        name:
-          nullable: true
-          type: string
-          example: John Doe
-    ProjectDetail:
+    Project:
       type: object
       required:
         - id
@@ -598,6 +668,24 @@ components:
                     format: date-time
                     description: File modification timestamp
                     example: 2024-11-19T13:50:00Z
+    ProjectDetail:
+      allOf:
+        - $ref: "#/components/schemas/Project"
+        - type: object
+          properties:
+            files:
+              type: array
+              description: List of files in the project
+              items:
+                allOf:
+                  - $ref: "#/components/schemas/File"
+                  - type: object
+                    properties:
+                      mtime:
+                        type: string
+                        format: date-time
+                        description: File modification timestamp
+                        example: 2024-11-19T13:50:00Z
     File:
       type: object
       description: Project file metadata
