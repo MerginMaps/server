@@ -3,22 +3,17 @@
 Suitable for Ubuntu servers, single-node deployment using Docker Compose and system NGINX as a reverse proxy.
 
 > [!IMPORTANT]
-> Docker images for Mergin Maps Enterprise Edition are stored in a private AWS ECR repository.
+> Docker images for Mergin Maps Enterprise Edition are stored in private Dockerhub repositories.
 > To access them, you need a Mergin Maps Enterprise [subscription](https://merginmaps.com/pricing).
 > Please contact the Mergin Maps [sales team](https://merginmaps.com/contact-sales)!
 
-## Login to Mergin Maps AWS ECR Repository
-
-```shell
-aws ecr --region eu-west-1 get-login-password | docker login --username AWS --password-stdin 433835555346.dkr.ecr.eu-west-1.amazonaws.com
-```
-
 ## Load Docker Images, Configure, and Run Mergin Maps Stack
 
-To run Mergin Maps, you need to load local Docker images (if any). Make sure you have access to Lutra's ECR repository. You can check this by running:
+Login to dockerhub (you should have already received your access token from Mergin Maps team).
+To run Mergin Maps, you need to load local Docker images (if any). Make sure you have access to Lutra's repositories. You can check this by running:
 
 ```shell
-docker pull 433835555346.dkr.ecr.eu-west-1.amazonaws.com/mergin/mergin-ee-back:2025.3.0
+docker pull lutraconsulting/merginmaps-backend-ee:2025.7.3
 ```
 
 Then modify the [docker-compose file](docker-compose.yml) and create the environment file `.prod.env` from `.env.template`. Details about configuration can be found in the [docs](https://merginmaps.com/docs/server/install/).
