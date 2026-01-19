@@ -90,7 +90,7 @@ def test_login(client, data, headers, expected):
 
 def test_logout(client):
     login_as_admin(client)
-    resp = client.get(url_for("/.mergin_auth_controller_logout"))
+    resp = client.get("/app/auth/logout")
     assert resp.status_code == 200
 
 

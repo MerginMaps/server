@@ -10,6 +10,7 @@ import wtforms_json
 import gevent
 from marshmallow import fields
 from sqlalchemy.schema import MetaData
+from sqlalchemy import text
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask import (
@@ -27,7 +28,6 @@ from flask_login import current_user, LoginManager
 from flask_wtf.csrf import generate_csrf, CSRFProtect
 from flask_migrate import Migrate
 from flask_mail import Mail
-from connexion.apps.flask_app import FlaskJSONEncoder
 from flask_wtf import FlaskForm
 from wtforms import StringField
 from pathlib import Path
@@ -37,7 +37,6 @@ import traceback
 from werkzeug.exceptions import HTTPException
 from typing import List, Dict, Optional, Tuple
 
-from .sync.utils import get_blacklisted_dirs, get_blacklisted_files
 from .config import Configuration
 from .commands import add_commands as server_commands
 
@@ -139,7 +138,6 @@ def create_simple_app() -> Flask:
     app = connexion.FlaskApp(__name__, specification_dir=os.path.join(this_dir))
     flask_app = app.app
 
-    flask_app.json_encoder = FlaskJSONEncoder
     flask_app.config.from_object(Configuration)
     db.init_app(flask_app)
     ma.init_app(flask_app)
@@ -155,54 +153,36 @@ def create_simple_app() -> Flask:
 def create_app(public_keys: List[str] = None) -> Flask:
     """Factory function to create Flask app instance"""
     from itsdangerous import BadTimeSignature, BadSignature
-    from .auth import auth_required, decode_token
-    from .auth.models import User
 
-    # from .celery import celery
-    from .sync.db_events import register_events
-    from .sync.workspace import GlobalWorkspaceHandler
-    from .sync.config import Configuration as SyncConfig
-    from .sync.commands import add_commands
-    from .auth import register as register_auth
+    from .auth import auth_required, decode_token, register as register_auth
+    from .auth.models import User
+    from .sync.app import register as register_sync
     from .sync.project_handler import ProjectHandler
+    from .sync.utils import get_blacklisted_dirs, get_blacklisted_files
+    from .sync.workspace import GlobalWorkspaceHandler
 
     app = create_simple_app().connexion_app
 
-    app.add_api(
-        "sync/public_api.yaml",
-        arguments={"title": "Mergin"},
-        options={"swagger_ui": Configuration.SWAGGER_UI},
-        validate_responses=True,
-    )
-    app.add_api(
-        "sync/public_api_v2.yaml",
-        arguments={"title": "Mergin"},
-        options={"swagger_ui": Configuration.SWAGGER_UI},
-        validate_responses=True,
-    )
-    app.add_api(
-        "sync/private_api.yaml",
-        base_path="/app",
-        arguments={"title": "Mergin"},
-        options={"swagger_ui": False, "serve_spec": False},
-        validate_responses=True,
-    )
     app.add_api(
         "api.yaml",
         arguments={"title": "Mergin"},
         options={"swagger_ui": False, "serve_spec": False},
         validate_responses=True,
     )
+    app.app.blueprints["/"].name = "main"
+    app.app.blueprints["main"] = app.app.blueprints.pop("/")
 
-    app.app.config.from_object(SyncConfig)
-    app.app.connexion_app = app
+    # register sync module
+    register_sync(app.app)
 
+    # initialize extensions
     mail.init_app(app.app)
-    app.mail = mail
     csrf.init_app(app.app)
     login_manager.init_app(app.app)
+
     # register auth blueprint
     register_auth(app.app)
+
     server_commands(app.app)
 
     # adjust login manager
@@ -227,8 +207,6 @@ def create_app(public_keys: List[str] = None) -> Flask:
                     return user
             except (BadSignature, BadTimeSignature, KeyError):
                 pass
-
-    # csrf = app.app.extensions['csrf']
 
     @app.app.before_request
     def check_maintenance():
@@ -275,9 +253,6 @@ def create_app(public_keys: List[str] = None) -> Flask:
         }
         return data
 
-    # update celery config with flask app config
-    # celery.conf.update(app.app.config)
-
     @app.route("/alive", methods=["POST"])
     @csrf.exempt
     def alive():  # pylint: disable=E0722
@@ -287,7 +262,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
         start_time = time.time()
         try:
             with db.engine.connect() as con:
-                rs = con.execute("SELECT 2 * 2")
+                rs = con.execute(text("SELECT 2 * 2"))
                 assert rs.fetchone()[0] == 4
         except:
             """Although bad form, we have deliberate left this except broad. When we have an uncaught exception in
@@ -388,7 +363,6 @@ def create_app(public_keys: List[str] = None) -> Flask:
         response.headers.set("X-CSRF-Token", generate_csrf())
         return response
 
-    register_events()
     application = app.app
 
     @application.errorhandler(Exception)
@@ -467,8 +441,6 @@ def create_app(public_keys: List[str] = None) -> Flask:
             cfg["build_hash"] = application.config["BUILD_HASH"]
             return jsonify(cfg), 200
 
-    # append project commands (from default sync module)
-    add_commands(application)
     return application
 
 

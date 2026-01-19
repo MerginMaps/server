@@ -429,8 +429,9 @@ def get_paginated_project_versions(
         if descending
         else query.order_by(asc(ProjectVersion.name))
     )
-    result = query.paginate(page, per_page).items
-    total = query.paginate(page, per_page).total
+    paginate = query.paginate(page=page, per_page=per_page)
+    result = paginate.items
+    total = paginate.total
     versions = ProjectVersionListSchema(many=True).dump(result)
     data = {"versions": versions, "count": total}
     return data, 200
@@ -581,7 +582,7 @@ def get_paginated_projects(
         public,
         only_public,
     )
-    result = projects.paginate(page, per_page).items
+    result = projects.paginate(page=page, per_page=per_page).items
     total = projects.paginate().total
 
     # create user map id:username passed to project schema to minimize queries to db
