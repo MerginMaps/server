@@ -435,6 +435,7 @@ paths:
                 $ref: "#/components/schemas/ProjectDeltaResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
   /workspaces/{workspace_id}/projects:
     get:
       tags:
