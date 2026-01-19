@@ -179,7 +179,7 @@ class DiskStorage(ProjectStorage):
         )
         return project_dir
 
-    def initialize(self, template_project=None):
+    def initialize(self, template_project=None, excluded_files=None):
         if os.path.exists(self.project_dir):
             raise InitializationError(
                 "Project directory already exists: {}".format(self.project_dir)
@@ -194,8 +194,12 @@ class DiskStorage(ProjectStorage):
             if ws.disk_usage() + template_project.disk_usage > ws.storage:
                 self.delete()
                 raise InitializationError("Disk quota reached")
+            if excluded_files is None:
+                excluded_files = []
 
             for file in template_project.files:
+                if os.path.basename(file.path) in excluded_files:
+                    continue
                 src = os.path.join(template_project.storage.project_dir, file.location)
                 dest = os.path.join(
                     self.project_dir,

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-from mergin.sync.tasks import remove_transaction_chunks, remove_unused_chunks
+from mergin.sync.tasks import remove_transaction_chunks
 from . import DEFAULT_USER
 from .utils import (
     add_user,
@@ -11,6 +11,8 @@ from .utils import (
     create_workspace,
     create_project,
     upload_file_to_project,
+    login,
+    file_info,
 )
 
 from ..auth.models import User
@@ -46,10 +48,10 @@ from ..sync.utils import Checkpoint, is_versioned_file
 from sqlalchemy.exc import IntegrityError
 import pytest
 from datetime import datetime, timedelta, timezone
+import json
 
 from mergin.app import db
 from mergin.config import Configuration
-from mergin.sync.config import Configuration as SyncConfiguration
 from mergin.sync.errors import (
     BigChunkError,
     DiffDownloadError,
@@ -76,7 +78,7 @@ from .test_project_controller import (
     _get_changes_with_diff_0_size,
     _get_changes_without_added,
 )
-from .utils import add_user, file_info
+from ..sync.interfaces import WorkspaceRole
 
 
 def test_schedule_delete_project(client):
@@ -195,6 +197,7 @@ def test_project_members(client):
     # access provided by workspace role cannot be removed directly
     response = client.delete(url + f"/{user.id}")
     assert response.status_code == 404
+    Configuration.GLOBAL_READ = 0
 
 
 def test_file_diff_download(client, diff_project):
@@ -644,7 +647,12 @@ def test_get_project(client):
     test_workspace = create_workspace()
     project = create_project("new_project", test_workspace, admin)
     logout(client)
+    # anonymous user cannot access the private resource
+    response = client.get(f"v2/projects/{project.id}")
+    assert response.status_code == 404
     # lack of permissions
+    user = add_user("tests", "tests")
+    login(client, user.username, "tests")
     response = client.get(f"v2/projects/{project.id}")
     assert response.status_code == 403
     # access public project
@@ -703,6 +711,9 @@ def test_get_project(client):
     )
     assert len(response.json["files"]) == 3
     assert {f["path"] for f in response.json["files"]} == set(files)
+    # invalid version format parameter
+    response = client.get(f"v2/projects/{project.id}?files_at_version=3")
+    assert response.status_code == 400
 
 
 push_data = [
@@ -1170,3 +1181,97 @@ def test_project_pull_diffs(client, diff_project):
     assert second_diff["id"] == current_diffs[1].path
     response = client.get(f"v2/projects/{diff_project.id}/raw/diff/{first_diff['id']}")
     assert response.status_code == 200
+
+
+def test_list_workspace_projects(client):
+    admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
+    test_workspace = create_workspace()
+    url = f"v2/workspaces/{test_workspace.id}/projects"
+    for i in range(1, 11):
+        create_project(f"project_{i}", test_workspace, admin)
+
+    # missing required query params
+    assert client.get(url).status_code == 400
+
+    # success
+    page = 1
+    per_page = 10
+    response = client.get(url + f"?page={page}&per_page={per_page}")
+    resp_data = json.loads(response.data)
+    assert response.status_code == 200
+    assert resp_data["count"] == 11
+    assert len(resp_data["projects"]) == per_page
+    # correct number on the last page
+    page = 4
+    per_page = 3
+    response = client.get(url + f"?page={page}&per_page={per_page}")
+    assert response.json["count"] == 11
+    assert len(response.json["projects"]) == 2
+    # name search - more results
+    page = 1
+    per_page = 3
+    response = client.get(
+        url + f"?page={page}&per_page={per_page}&q=1&order_params=updated ASC"
+    )
+    assert response.json["count"] == 2
+    assert len(response.json["projects"]) == 2
+    assert response.json["projects"][1]["name"] == "project_10"
+    # name search - specific result
+    project_name = "project_4"
+    response = client.get(url + f"?page={page}&per_page={per_page}&q={project_name}")
+    assert response.json["projects"][0]["name"] == project_name
+    # sorting
+    response = client.get(
+        url + f"?page={page}&per_page={per_page}&q=1&order_params=created DESC"
+    )
+    assert response.json["projects"][0]["name"] == "project_10"
+
+    # no permissions to workspace
+    user2 = add_user("user", "password")
+    login(client, user2.username, "password")
+    with patch.object(
+        Configuration,
+        "GLOBAL_READ",
+        0,
+    ), patch.object(
+        Configuration,
+        "GLOBAL_WRITE",
+        0,
+    ), patch.object(
+        Configuration,
+        "GLOBAL_ADMIN",
+        0,
+    ):
+        resp = client.get(url + "?page=1&per_page=10")
+        assert resp.status_code == 200
+        assert resp.json["count"] == 0
+
+    # no existing workspace
+    assert (
+        client.get("/v1/workspace/1234/projects?page=1&per_page=10").status_code == 404
+    )
+
+    # project shared directly
+    p = Project.query.filter_by(workspace_id=test_workspace.id).first()
+    p.set_role(user2.id, ProjectRole.READER)
+    db.session.commit()
+    resp = client.get(url + "?page=1&per_page=10")
+    resp_data = json.loads(resp.data)
+    assert resp_data["count"] == 1
+    assert resp_data["projects"][0]["name"] == p.name
+
+    # deactivate project
+    p.removed_at = datetime.utcnow()
+    db.session.commit()
+    resp = client.get(url + "?page=1&per_page=10")
+    assert resp.json["count"] == 0
+
+    # add user as a reader
+    with patch.object(Configuration, "GLOBAL_READ", 1):
+        resp = client.get(url + "?page=1&per_page=10")
+        assert p.name not in [proj["name"] for proj in resp.json["projects"]]
+        assert resp.json["count"] == 10
+
+    # logout
+    logout(client)
+    assert client.get(url + "?page=1&per_page=10").status_code == 401

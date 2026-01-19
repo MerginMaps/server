@@ -1731,6 +1731,8 @@ def test_clone_project(client, data, username, expected):
         assert resp.json["code"] == "StorageLimitHit"
         assert resp.json["detail"] == "You have reached a data limit (StorageLimitHit)"
     if expected == 200:
+        excluded_filenames = current_app.config.get("EXCLUDED_CLONE_FILENAMES")
+
         proj = data.get("project", test_project).strip()
         template = Project.query.filter_by(
             name=test_project, workspace_id=test_workspace_id
@@ -1738,9 +1740,12 @@ def test_clone_project(client, data, username, expected):
         project = Project.query.filter_by(
             name=proj, workspace_id=test_workspace_id
         ).first()
+        template_files_filtered = [
+            f for f in template.files if f.path not in excluded_filenames
+        ]
         assert not any(
             x.checksum != y.checksum and x.path != y.path
-            for x, y in zip(project.files, template.files)
+            for x, y in zip(project.files, template_files_filtered)
         )
         assert os.path.exists(
             os.path.join(project.storage.project_dir, project.files[0].location)
@@ -1758,6 +1763,12 @@ def test_clone_project(client, data, username, expected):
             item for item in changes if item.change == PushChangeType.UPDATE.value
         ]
         assert pv.device_id == json_headers["X-Device-Id"]
+
+        assert not any(f.path == excluded_filenames[0] for f in project.files)
+        assert not os.path.exists(
+            os.path.join(project.storage.project_dir, excluded_filenames[0])
+        )
+        assert len(project.files) == len(template.files) - 1
         # cleanup
         shutil.rmtree(project.storage.project_dir)
 
@@ -1988,7 +1999,7 @@ versions_test_data = [
         {"page": 1, "per_page": 5, "desc": False},
         200,
         "v1",
-        {"added": 12, "removed": 0, "updated": 0, "updated_diff": 0},
+        {"added": 13, "removed": 0, "updated": 0, "updated_diff": 0},
     ),
     (
         {"page": 2, "per_page": 3, "desc": True},

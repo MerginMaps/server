@@ -424,6 +424,9 @@ def register_user():  # pylint: disable=W0613,W0612
 @auth_required(permissions=["admin"])
 def get_user(username):
     user = User.query.filter(User.username == username).first_or_404()
+    if not user.last_signed_in:
+        last_signed_in = LoginHistory.get_users_last_signed_in([user.id])
+        user.last_signed_in = last_signed_in.get(user.id)
     data = UserSchema().dump(user)
     return data, 200
 
