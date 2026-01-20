@@ -70,7 +70,7 @@
     "vue-tsc": "^2.1.6"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "version": "0.0.0",
   "dependencies": {}
