@@ -13,6 +13,7 @@ from flask import abort, jsonify, current_app
 from flask_login import current_user
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import ObjectDeletedError
 
 from mergin.sync.tasks import remove_transaction_chunks
 
@@ -333,7 +334,12 @@ def create_project_version(id):
         )
         project_version_created.send(pv)
         push_finished.send(pv)
-    except (psycopg2.Error, FileNotFoundError, IntegrityError) as err:
+    except (
+        psycopg2.Error,
+        FileNotFoundError,
+        IntegrityError,
+        ObjectDeletedError,
+    ) as err:
         db.session.rollback()
         logging.exception(
             f"Failed to finish push for project: {project.id}, project version: {v_next_version}, "
