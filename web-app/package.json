@@ -47,7 +47,7 @@
     "@vitejs/plugin-vue": "^5.1.4",
     "@vue/eslint-config-typescript": "^13.0.0",
     "agent-base": "^6.0.2",
-    "autoprefixer": "^10",
+    "autoprefixer": "^10.4.23",
     "concurrently": "^8.0.1",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^8.8.0",
