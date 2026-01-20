@@ -352,7 +352,6 @@ def create_project_version(id):
             ).count()
         ):
             move_to_tmp(version_dir)
-        upload.clear()
         return UploadError().response(422)
     # catch exception during pg transaction so we can rollback and prevent PendingRollbackError during upload clean up
     except gevent.timeout.Timeout:
