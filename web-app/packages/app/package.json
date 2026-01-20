@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@tabler/icons-webfont": "^2.42.0",
-    "axios": "^0.28.1",
+    "axios": "^0.30.0",
     "lodash": "^4.17.21",
     "pinia": "^2.1.7",
     "primeflex": "^3.3.1",
