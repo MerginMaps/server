@@ -20,6 +20,7 @@ import os
 import shutil
 from unittest.mock import patch
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import ObjectDeletedError
 import pytest
 from datetime import datetime, timedelta, timezone
 import json
@@ -483,6 +484,46 @@ def test_create_version_failures(client):
     ):
         response = client.post(f"v2/projects/{project.id}/versions", json=data)
         assert response.status_code == 409
+
+
+def test_create_version_object_deleted_error(client):
+    """Test that ObjectDeletedError during push returns 422 without secondary exception"""
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+
+    data = {
+        "version": "v1",
+        "changes": {
+            "added": [],
+            "removed": [
+                file_info(test_project_dir, "base.gpkg"),
+            ],
+            "updated": [],
+        },
+    }
+
+    # Create a real ObjectDeletedError by using internal SQLAlchemy state
+    def raise_object_deleted(*args, **kwargs):
+        # Create a minimal state-like object that ObjectDeletedError can use
+        class FakeState:
+            class_ = Upload
+
+            def obj(self):
+                return None
+
+        raise ObjectDeletedError(FakeState())
+
+    with patch.object(
+        ProjectVersion,
+        "__init__",
+        side_effect=raise_object_deleted,
+    ):
+        response = client.post(f"v2/projects/{project.id}/versions", json=data)
+
+    # Should return 422 UploadError, not 500 from secondary exception
+    assert response.status_code == 422
+    assert response.json["code"] == UploadError.code
 
 
 def test_upload_chunk(client):

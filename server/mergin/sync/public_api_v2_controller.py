@@ -302,6 +302,7 @@ def create_project_version(id):
         upload.clear()
         return DataSyncError(failed_files=errors).response(422)
 
+    upload_deleted = False
     try:
         pv = ProjectVersion(
             project,
@@ -330,7 +331,7 @@ def create_project_version(id):
             remove_transaction_chunks.delay(chunks_ids)
 
         logging.info(
-            f"Push finished for project: {project.id}, project version: {v_next_version}, upload id: {upload.id}."
+            f"Push finished for project: {project.id}, project version: {v_next_version}."
         )
         project_version_created.send(pv)
         push_finished.send(pv)
@@ -341,9 +342,9 @@ def create_project_version(id):
         ObjectDeletedError,
     ) as err:
         db.session.rollback()
+        upload_deleted = isinstance(err, ObjectDeletedError)
         logging.exception(
-            f"Failed to finish push for project: {project.id}, project version: {v_next_version}, "
-            f"upload id: {upload.id}.: {str(err)}"
+            f"Failed to finish push for project: {project.id}, project version: {v_next_version}: {str(err)}"
         )
         if (
             os.path.exists(version_dir)
@@ -365,8 +366,9 @@ def create_project_version(id):
             move_to_tmp(version_dir)
         raise
     finally:
-        # remove artifacts
-        upload.clear()
+        # remove artifacts only if upload object is still valid
+        if not upload_deleted:
+            upload.clear()
 
     result = ProjectSchemaV2().dump(project)
     result["files"] = ProjectFileSchema(
