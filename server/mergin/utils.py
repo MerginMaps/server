@@ -59,7 +59,7 @@ def get_order_param(
         attr = None
     order_attr = cls.__table__.c.get(col, None)
     if not isinstance(order_attr, Column):
-        return
+        abort(400, "Invalid order parameter")
     # sort by key in JSON field
     if attr:
         if not json_sort:

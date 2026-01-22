@@ -651,6 +651,11 @@ def test_list_workspace_projects(client):
     resp_data = json.loads(response.data)
     assert resp_data["projects"][0]["name"] == project_name
 
+    # invalid order param
+    response = client.get(url + f"?page=1&per_page=10&order_params=invalid DESC")
+    assert response.status_code == 400
+    assert response.json["detail"] == "Invalid order parameter"
+
     # no permissions to workspace
     user2 = add_user("user", "password")
     login(client, user2.username, "password")
