@@ -49,7 +49,7 @@ from .schemas import (
 from .storages.disk import move_to_tmp, save_to_file
 from .utils import get_device_id, get_ip, get_user_agent, get_chunk_location
 from .workspace import WorkspaceRole
-from ..utils import parse_order_params
+from ..utils import parse_order_params, get_schema_fields_map
 
 
 @auth_required
@@ -437,7 +437,9 @@ def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=N
         projects = projects.filter(Project.name.ilike(f"%{q}%"))
 
     if order_params:
-        order_by_params = parse_order_params(Project, order_params)
+        order_by_params = parse_order_params(
+            Project, order_params, field_map=ProjectSchemaV2.field_map
+        )
         projects = projects.order_by(*order_by_params)
 
     result = projects.paginate(page, per_page).items

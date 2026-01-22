@@ -11,6 +11,7 @@ from .models import (
     Project,
     ProjectVersion,
 )
+from ..utils import get_schema_fields_map
 
 
 class ProjectSchema(ma.SQLAlchemyAutoSchema):
@@ -46,3 +47,6 @@ class ProjectSchema(ma.SQLAlchemyAutoSchema):
             "workspace",
             "role",
         )
+
+
+ProjectSchema.field_map = get_schema_fields_map(ProjectSchema)
