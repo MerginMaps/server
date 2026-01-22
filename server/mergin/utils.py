@@ -1,6 +1,8 @@
 # Copyright (C) Lutra Consulting Limited
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+import logging
+
 import math
 from collections import namedtuple
 from datetime import datetime, timedelta, timezone
@@ -59,7 +61,8 @@ def get_order_param(
         attr = None
     order_attr = cls.__table__.c.get(col, None)
     if not isinstance(order_attr, Column):
-        abort(400, "Invalid order parameter")
+        logging.warning("Ignoring invalid order parameter.")
+        return
     # sort by key in JSON field
     if attr:
         if not json_sort:
