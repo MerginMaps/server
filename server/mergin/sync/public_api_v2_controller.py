@@ -443,7 +443,7 @@ def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=N
         )
         projects = projects.order_by(*order_by_params)
 
-    pagination = projects.paginate(page, per_page)
+    pagination = projects.paginate(page=page, per_page=per_page)
     result = pagination.items
     total = pagination.total
 

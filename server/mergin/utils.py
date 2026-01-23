@@ -162,7 +162,9 @@ def get_schema_fields_map(schema: Type[Schema]) -> dict:
         if not field:
             continue
         # skip virtual fields as DB cannot sort by them
-        if isinstance(field, (fields.Function, fields.Method)):
+        if isinstance(
+            field, (fields.Function, fields.Method, fields.Nested, fields.List)
+        ):
             continue
         if field.attribute:
             mapping[name] = field.attribute
