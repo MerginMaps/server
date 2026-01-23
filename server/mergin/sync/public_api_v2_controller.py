@@ -443,8 +443,9 @@ def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=N
         )
         projects = projects.order_by(*order_by_params)
 
-    result = projects.paginate(page, per_page).items
-    total = projects.paginate(page, per_page).total
+    pagination = projects.paginate(page, per_page)
+    result = pagination.items
+    total = pagination.total
 
     data = ProjectSchemaV2(many=True).dump(result)
     return jsonify(projects=data, count=total, page=page, per_page=per_page), 200
