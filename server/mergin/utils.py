@@ -8,14 +8,13 @@ from collections import namedtuple
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 import os
-from flask import current_app, abort
+from flask import current_app
 from flask_sqlalchemy import Model
-from marshmallow import Schema
+from marshmallow import Schema, fields
 from pathvalidate import sanitize_filename
 from sqlalchemy import Column, JSON
 from sqlalchemy.sql.elements import UnaryExpression
-from typing import Optional
-
+from typing import Optional, Type
 
 OrderParam = namedtuple("OrderParam", "name direction")
 
@@ -151,7 +150,7 @@ def save_diagnostic_log_file(app: str, username: str, body: bytes) -> str:
     return file_name
 
 
-def get_schema_fields_map(schema: Schema) -> dict:
+def get_schema_fields_map(schema: Type[Schema]) -> dict:
     """
     Creates a mapping of schema field names to corresponding DB columns.
     This allows sorting by the API field name (e.g. 'size') while
@@ -159,6 +158,15 @@ def get_schema_fields_map(schema: Schema) -> dict:
     """
     mapping = {}
     for name, field in schema._declared_fields.items():
-        if field and field.attribute:
+        # some fields could have been overridden with None to be excluded
+        if not field:
+            continue
+        # skip virtual fields as DB cannot sort by them
+        if isinstance(field, (fields.Function, fields.Method)):
+            continue
+        if field.attribute:
             mapping[name] = field.attribute
+        # keep the map complete
+        else:
+            mapping[name] = name
     return mapping

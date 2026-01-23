@@ -437,8 +437,9 @@ def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=N
         projects = projects.filter(Project.name.ilike(f"%{q}%"))
 
     if order_params:
+        schema_map = get_schema_fields_map(ProjectSchemaV2)
         order_by_params = parse_order_params(
-            Project, order_params, field_map=ProjectSchemaV2.field_map
+            Project, order_params, field_map=schema_map
         )
         projects = projects.order_by(*order_by_params)
 
