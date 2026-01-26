@@ -16,7 +16,7 @@ from sqlalchemy.exc import IntegrityError
 
 from mergin.sync.tasks import remove_transaction_chunks
 
-from .schemas_v2 import ProjectSchema as ProjectSchemaV2
+from .schemas_v2 import BatchErrorSchema, ProjectSchema as ProjectSchemaV2
 from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
@@ -40,7 +40,11 @@ from .models import (
     project_version_created,
     push_finished,
 )
-from .permissions import ProjectPermissions, require_project_by_uuid, projects_query
+from .permissions import (
+    ProjectPermissions, 
+    require_project_by_uuid, 
+    projects_query,
+    require_project_by_many_uuids)
 from .public_api_controller import catch_sync_failure
 from .schemas import (
     ProjectMemberSchema,
@@ -445,3 +449,24 @@ def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=N
 
     data = ProjectSchemaV2(many=True).dump(result)
     return jsonify(projects=data, count=total, page=page, per_page=per_page), 200
+
+@auth_required
+def list_batch_projects():
+    """List projects by given list of UUIDs. Limit to 100 projects per request.
+
+    :rtype: Dict[str: List[Project]]
+    """
+    ids = request.json.get("ids", [])
+    if not ids:
+        abort(400, "No project UUIDs provided")
+    if len(ids) > 100:
+        abort(400, "BatchLimitExceeded")
+
+    items = require_project_by_many_uuids(ids, ProjectPermissions.Read, expose=False)
+    project_objects = [i for i in items if not isinstance(i, dict)]
+    error_items  = [i for i in items if isinstance(i, dict)]
+
+    project_data = ProjectSchemaV2(many=True).dump(project_objects)
+    error_data = BatchErrorSchema(many=True).dump(error_items)
+    return jsonify(projects=project_data + error_data), 200
+    

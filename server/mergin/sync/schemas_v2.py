@@ -46,3 +46,7 @@ class ProjectSchema(ma.SQLAlchemyAutoSchema):
             "workspace",
             "role",
         )
+
+class BatchErrorSchema(ma.Schema):
+    id = fields.UUID(required=True)
+    error = fields.Integer(required=True)
