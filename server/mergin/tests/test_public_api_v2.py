@@ -643,6 +643,17 @@ def test_list_workspace_projects(client):
         url + f"?page={page}&per_page={per_page}&q=1&order_params=created DESC"
     )
     assert response.json["projects"][0]["name"] == "project_10"
+    # using field name instead column names for sorting
+    p4 = Project.query.filter(Project.name == project_name).first()
+    p4.disk_usage = 1234567
+    db.session.commit()
+    response = client.get(url + f"?page=1&per_page=10&order_params=size DESC")
+    resp_data = json.loads(response.data)
+    assert resp_data["projects"][0]["name"] == project_name
+
+    # invalid order param
+    response = client.get(url + f"?page=1&per_page=10&order_params=invalid DESC")
+    assert response.status_code == 200
 
     # no permissions to workspace
     user2 = add_user("user", "password")
