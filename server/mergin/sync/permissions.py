@@ -247,6 +247,60 @@ def require_project_by_uuid(
 
     return project
 
+def require_project_by_many_uuids(
+    uuids: list[str], permission: ProjectPermissions, scheduled=False, expose=True
+) -> list[dict]:
+    """
+    Retrieves multiple projects by their UUIDs after validating existence, workspace status, and permissions.
+
+    Args:
+        uuids (list[str]): The unique identifiers of the projects.
+        permission (ProjectPermissions): The permission level required to access the projects.
+        scheduled (bool, optional): If ``True``, bypasses the check for projects marked for deletion.
+        expose (bool, optional): Controls security disclosure behavior on permission failure.
+            - If `True`: Returns 403 Forbidden (reveals project exists but access is denied).
+            - If `False`: Returns 404 Not Found (hides project existence for security).
+            Standard is that reading results in 404, while writing results in 403
+    """
+    valid_uuids = [uuid for uuid in uuids if is_valid_uuid(uuid)]
+    if not valid_uuids:
+        abort(404)
+
+    projects = Project.query.filter(Project.id.in_(valid_uuids)).filter(
+        Project.storage_params.isnot(None)
+    )
+    if not scheduled:
+        projects = projects.filter(Project.removed_at.is_(None))
+    projects = projects.all()
+    if not projects:
+        abort(404)
+
+    filtered_projects = []
+    for project in projects:
+        
+        workspace = project.workspace
+        if not workspace:
+            continue
+        if not is_active_workspace(workspace):
+            continue
+
+        if not permission.check(project, current_user) and not expose:
+            # logged in - NO, have acccess - NONE, public project - NO
+            if current_user.is_anonymous and not project.public:
+                # we don't want to tell anonymous user if a private project exists
+                filtered_projects.append({"id": project.id, "error": 404})
+                continue
+            # logged in - YES, have access - NO, public project - NO
+            elif not current_user.is_anonymous and not project.public:
+                filtered_projects.append({"id": project.id, "error": 403})
+                continue
+        filtered_projects.append(project)
+
+    if not filtered_projects:
+        abort(404)
+
+    return filtered_projects
+
 
 def get_upload(transaction_id):
     upload = Upload.query.get_or_404(transaction_id)
