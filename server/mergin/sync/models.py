@@ -1735,9 +1735,12 @@ class Upload(db.Model):
         """Clean up pending upload.
         Uploaded files and table records are removed, and another upload can start.
         """
-        move_to_tmp(self.upload_dir, self.id)
-        db.session.delete(self)
-        db.session.commit()
+        try:
+            move_to_tmp(self.upload_dir, self.id)
+            db.session.delete(self)
+            db.session.commit()
+        except Exception:
+            logging.exception(f"Failed to clear upload.")
 
     def process_chunks(
         self, use_shared_chunk_dir: bool

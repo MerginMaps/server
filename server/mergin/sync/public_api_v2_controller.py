@@ -16,6 +16,7 @@ from flask import abort, jsonify, current_app
 from flask_login import current_user
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import ObjectDeletedError
 
 from ..app import db
 from ..auth import auth_required
@@ -59,7 +60,7 @@ from .utils import (
 )
 from .tasks import remove_transaction_chunks
 from .workspace import WorkspaceRole
-from ..utils import parse_order_params
+from ..utils import parse_order_params, get_schema_fields_map
 
 
 @auth_required
@@ -328,6 +329,7 @@ def create_project_version(id):
         upload.clear()
         return DataSyncError(failed_files=errors).response(422)
 
+    upload_deleted = False
     try:
         pv = ProjectVersion(
             project,
@@ -356,15 +358,20 @@ def create_project_version(id):
             remove_transaction_chunks.delay(chunks_ids)
 
         logging.info(
-            f"Push finished for project: {project.id}, project version: {v_next_version}, upload id: {upload.id}."
+            f"Push finished for project: {project.id}, project version: {v_next_version}."
         )
         project_version_created.send(pv)
         push_finished.send(pv)
-    except (psycopg2.Error, FileNotFoundError, IntegrityError) as err:
+    except (
+        psycopg2.Error,
+        FileNotFoundError,
+        IntegrityError,
+        ObjectDeletedError,
+    ) as err:
         db.session.rollback()
+        upload_deleted = isinstance(err, ObjectDeletedError)
         logging.exception(
-            f"Failed to finish push for project: {project.id}, project version: {v_next_version}, "
-            f"upload id: {upload.id}.: {str(err)}"
+            f"Failed to finish push for project: {project.id}, project version: {v_next_version}: {str(err)}"
         )
         if (
             os.path.exists(version_dir)
@@ -386,8 +393,9 @@ def create_project_version(id):
             move_to_tmp(version_dir)
         raise
     finally:
-        # remove artifacts
-        upload.clear()
+        # remove artifacts only if upload object is still valid
+        if not upload_deleted:
+            upload.clear()
 
     result = ProjectSchemaV2().dump(project)
     result["files"] = ProjectFileSchema(
@@ -497,11 +505,15 @@ def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=N
         projects = projects.filter(Project.name.ilike(f"%{q}%"))
 
     if order_params:
-        order_by_params = parse_order_params(Project, order_params)
+        schema_map = get_schema_fields_map(ProjectSchemaV2)
+        order_by_params = parse_order_params(
+            Project, order_params, field_map=schema_map
+        )
         projects = projects.order_by(*order_by_params)
 
-    result = projects.paginate(page=page, per_page=per_page).items
-    total = projects.paginate(page=page, per_page=per_page).total
+    pagination = projects.paginate(page=page, per_page=per_page)
+    result = pagination.items
+    total = pagination.total
 
     data = ProjectSchemaV2(many=True).dump(result)
     return jsonify(projects=data, count=total, page=page, per_page=per_page), 200

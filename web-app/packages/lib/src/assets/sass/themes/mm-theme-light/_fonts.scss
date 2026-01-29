@@ -24,85 +24,97 @@ body {
 
 $fontFamily: Inter, sans-serif;
 
+.title-d1 {
+  font-size: 5.375rem !important;
+  line-height: 1.13;
+  font-weight: 600;
+}
+
+.title-d2 {
+  font-size: 4.25rem !important;
+  line-height: 1.17;
+  font-weight: 600;
+}
+
 .headline-h1 {
   font-size: 3rem !important;
-  line-height: 1.25;
+  line-height: 1.125;
   font-weight: 600;
 }
 
 .headline-h2 {
   font-size: 2.25rem !important;
-  line-height: 1.33;
+  line-height: 1.166666666666667;
   font-weight: 600;
 }
 
 .headline-h3 {
   font-size: 1.5rem !important;
-  line-height: 1.5;
+  line-height: 1.25;
   font-weight: 600;
 }
 
 .title-t1 {
   font-size: 1.125rem !important;
-  line-height: 1.6;
+  line-height: 1.333333333333333;
   font-weight: 600;
 }
 
 .title-t2 {
   font-size: 1rem !important;
-  line-height: 1.75;
+  line-height: 1.375;
   font-weight: 600;
 }
 
 .title-t3 {
   font-size: 0.875rem !important;
-  line-height: 1.857;
+  line-height: 1.428571428571429;
   font-weight: 600;
 }
 
 .title-t4 {
   font-size: 0.75rem !important;
-  line-height: 2;
+  line-height: 1.5;
   font-weight: 600;
 }
 
 .title-t5 {
   font-size: 0.625rem !important;
-  line-height: 2.2;
+  line-height: 1.6;
   font-weight: 600;
 }
 
 .paragraph-p1 {
   font-size: 2rem !important;
-  line-height: 1.375;
+  line-height: 1.1875;
 }
 
 .paragraph-p2 {
   font-size: 1.5rem !important;
-  line-height: 1.5;
+  line-height: 1.25;
 }
 
 .paragraph-p3 {
   font-size: 1.25rem !important;
-  line-height: 1.6;
+  line-height: 1.3;
 }
 
 .paragraph-p4 {
   font-size: 1rem !important;
-  line-height: 1.75;
+  line-height: 1.375;
 }
 
 .paragraph-p5 {
   font-size: 0.875rem !important;
-  line-height: 1.857;
+  line-height: 1.428571428571429;
 }
 
 .paragraph-p6 {
   font-size: 0.75rem !important;
-  line-height: 2;
+  line-height: 1.5;
 }
 
 .paragraph-p7 {
   font-size: 0.625rem !important;
-  line-height: 2.2;
+  line-height: 1.6;
 }
