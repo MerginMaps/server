@@ -65,7 +65,7 @@ def create_workspace():
 
 def login(client, username, password):
     resp = client.post(
-        url_for("/.mergin_auth_controller_login"),
+        "/app/auth/login",
         data=json.dumps({"login": username, "password": password}),
         headers=json_headers,
     )

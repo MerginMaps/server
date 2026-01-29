@@ -7,6 +7,7 @@ from flask import Flask
 import random
 import string
 import os
+from sqlalchemy import inspect
 
 
 def _echo_title(title):
@@ -136,7 +137,8 @@ def _check_server(app: Flask):  # pylint: disable=W0612
     else:
         _echo_error("No service ID set.")
 
-    tables = db.engine.table_names()
+    inspect_engine = inspect(db.engine)
+    tables = inspect_engine.get_table_names()
     if not tables:
         _echo_error("Database not initialized. Run flask init-db command")
     else:
@@ -157,9 +159,9 @@ def _init_db(app: Flask):
         label="Creating database", length=4, show_eta=False
     ) as progress_bar:
         progress_bar.update(0)
-        db.drop_all(bind=None)
+        db.drop_all(bind_key=None)
         progress_bar.update(1)
-        db.create_all(bind=None)
+        db.create_all(bind_key=None)
         progress_bar.update(2)
         db.session.commit()
         progress_bar.update(3)
@@ -202,7 +204,8 @@ def add_commands(app: Flask):
         """Initialize database if does not exist or -r is provided. Perform check of server configuration. Send statistics, respecting your setup."""
         from .auth.models import User, UserProfile
 
-        tables = db.engine.table_names()
+        inspect_engine = inspect(db.engine)
+        tables = inspect_engine.get_table_names()
         if recreate and tables:
             click.confirm(
                 "Are you sure you want to recreate database and admin user? This will remove all data!",

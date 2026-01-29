@@ -59,19 +59,19 @@ def test_catch_timeout():
 
         def unhandled():
             try:
-                db.session.execute("SELECT pg_sleep(1.1);")
+                db.session.execute(sqlalchemy.text("SELECT pg_sleep(1.1);"))
             finally:
-                db.session.execute("SELECT 1;")
+                db.session.execute(sqlalchemy.text("SELECT 1;"))
             return ""
 
         def timeout():
             try:
-                db.session.execute("SELECT pg_sleep(1.1);")
+                db.session.execute(sqlalchemy.text("SELECT pg_sleep(1.1);"))
             except gevent.timeout.Timeout:
                 db.session.rollback()
                 raise
             finally:
-                db.session.execute("SELECT 1;")
+                db.session.execute(sqlalchemy.text("SELECT 1;"))
             return ""
 
         application.add_url_rule("/unhandled", "unhandled", unhandled)
