@@ -7,6 +7,7 @@ from datetime import datetime
 import json
 import pytest
 from flask import url_for, current_app
+from marshmallow import Schema, fields
 from sqlalchemy import desc
 import os
 from unittest.mock import patch
@@ -14,7 +15,7 @@ from pathvalidate import sanitize_filename
 from pygeodiff import GeoDiff
 from pathlib import PureWindowsPath
 
-from ..utils import save_diagnostic_log_file
+from ..utils import save_diagnostic_log_file, get_schema_fields_map
 
 from ..sync.utils import (
     is_reserved_word,
@@ -331,3 +332,26 @@ def test_checkpoint_utils():
     # dummy request
     versions = Checkpoint.get_checkpoints(2, 1)
     assert len(versions) == 0
+
+def test_get_schema_fields_map():
+    """Test that schema map correctly resolves DB attributes, keeps all fields, and ignores virtual fields."""
+
+    # dummy schema for testing
+    class TestSchema(Schema):
+        # standard field -> map 'name': 'name'
+        name = fields.String()
+        # aliased field -> map 'size': 'disk_usage
+        size = fields.Integer(attribute="disk_usage")
+        # virtual fields -> skip
+        version = fields.Function(lambda obj: "v1")
+        role = fields.Method("get_role")
+        # excluded field - set to None in schema inheritance -> skip
+        hidden_field = None
+
+    schema_map = get_schema_fields_map(TestSchema)
+
+    expected_map = {
+        "name": "name",
+        "size": "disk_usage",
+    }
+    assert schema_map == expected_map

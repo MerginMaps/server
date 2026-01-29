@@ -46,6 +46,7 @@ from ..sync.models import (
 from ..sync.files import DeltaChange, PushChangeType
 from ..sync.utils import Checkpoint, is_versioned_file
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import ObjectDeletedError
 import pytest
 from datetime import datetime, timedelta, timezone
 import json
@@ -953,6 +954,46 @@ def test_create_version_failures(client):
         assert response.status_code == 409
 
 
+def test_create_version_object_deleted_error(client):
+    """Test that ObjectDeletedError during push returns 422 without secondary exception"""
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+
+    data = {
+        "version": "v1",
+        "changes": {
+            "added": [],
+            "removed": [
+                file_info(test_project_dir, "base.gpkg"),
+            ],
+            "updated": [],
+        },
+    }
+
+    # Create a real ObjectDeletedError by using internal SQLAlchemy state
+    def raise_object_deleted(*args, **kwargs):
+        # Create a minimal state-like object that ObjectDeletedError can use
+        class FakeState:
+            class_ = Upload
+
+            def obj(self):
+                return None
+
+        raise ObjectDeletedError(FakeState())
+
+    with patch.object(
+        ProjectVersion,
+        "__init__",
+        side_effect=raise_object_deleted,
+    ):
+        response = client.post(f"v2/projects/{project.id}/versions", json=data)
+
+    # Should return 422 UploadError, not 500 from secondary exception
+    assert response.status_code == 422
+    assert response.json["code"] == UploadError.code
+
+
 def test_upload_chunk(client):
     """Test pushing a chunk to a project"""
     project = Project.query.filter_by(
@@ -1225,6 +1266,17 @@ def test_list_workspace_projects(client):
         url + f"?page={page}&per_page={per_page}&q=1&order_params=created DESC"
     )
     assert response.json["projects"][0]["name"] == "project_10"
+    # using field name instead column names for sorting
+    p4 = Project.query.filter(Project.name == project_name).first()
+    p4.disk_usage = 1234567
+    db.session.commit()
+    response = client.get(url + f"?page=1&per_page=10&order_params=size DESC")
+    resp_data = json.loads(response.data)
+    assert resp_data["projects"][0]["name"] == project_name
+
+    # invalid order param
+    response = client.get(url + f"?page=1&per_page=10&order_params=invalid DESC")
+    assert response.status_code == 200
 
     # no permissions to workspace
     user2 = add_user("user", "password")
