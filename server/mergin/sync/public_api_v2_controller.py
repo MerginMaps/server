@@ -50,7 +50,7 @@ from .schemas import (
 from .storages.disk import move_to_tmp, save_to_file
 from .utils import get_device_id, get_ip, get_user_agent, get_chunk_location
 from .workspace import WorkspaceRole
-from ..utils import parse_order_params
+from ..utils import parse_order_params, get_schema_fields_map
 
 
 @auth_required
@@ -445,11 +445,15 @@ def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=N
         projects = projects.filter(Project.name.ilike(f"%{q}%"))
 
     if order_params:
-        order_by_params = parse_order_params(Project, order_params)
+        schema_map = get_schema_fields_map(ProjectSchemaV2)
+        order_by_params = parse_order_params(
+            Project, order_params, field_map=schema_map
+        )
         projects = projects.order_by(*order_by_params)
 
-    result = projects.paginate(page, per_page).items
-    total = projects.paginate(page, per_page).total
+    pagination = projects.paginate(page=page, per_page=per_page)
+    result = pagination.items
+    total = pagination.total
 
     data = ProjectSchemaV2(many=True).dump(result)
     return jsonify(projects=data, count=total, page=page, per_page=per_page), 200
