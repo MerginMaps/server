@@ -30,14 +30,12 @@ WORKDIR /app
 
 # keep installing to system packages
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
-ENV PIP_IGNORE_INSTALLED=1
-
 RUN pip install pipenv==2026.0.3
 # for locale check this http://click.pocoo.org/5/python3/
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
-RUN pipenv install --system --deploy --verbose --python 3.12
+RUN PIP_IGNORE_INSTALLED=1 pipenv install --system --deploy --verbose --python 3.12
 
 USER mergin
 
