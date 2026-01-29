@@ -13,7 +13,7 @@ from mergin.app import db
 from mergin.auth.models import User
 from mergin.commands import _check_permissions, _check_celery
 from mergin.stats.models import MerginInfo
-from mergin.sync.models import Project, ProjectVersion
+from mergin.sync.models import FileDiff, Project, ProjectVersion, ProjectVersionDelta
 from mergin.tests import (
     test_project,
     test_workspace_id,
@@ -545,3 +545,70 @@ def test_check_celery(mock_ping, ping, result, output, capsys):
     out, err = capsys.readouterr()  # capture what was echoed to stdout
     assert ("Error: " not in out) == result
     assert output in out
+
+
+create_project_checkpoint_data = [
+    (
+        f"{test_workspace_name}/non-existing",
+        0,
+        1,
+        "ERROR: Project does not exist",
+    ),
+    (
+        f"{test_workspace_name}/{test_project}",
+        4,
+        1,
+        "ERROR: 'since' version must be less than 'to' version",
+    ),
+    (
+        f"{test_workspace_name}/{test_project}",
+        0,
+        100,
+        "ERROR: 'to' version exceeds latest project version",
+    ),
+    (
+        f"{test_workspace_name}/{test_project}",
+        0,
+        0,
+        "ERROR: Invalid version number, minimum version for 'since' is 0 and minimum version for 'to' is 1",
+    ),
+    (
+        f"{test_workspace_name}/{test_project}",
+        0,
+        4,
+        "Project checkpoint(s) created",
+    ),
+    (
+        f"{test_workspace_name}/{test_project}",
+        None,
+        None,
+        "Project checkpoint(s) created",
+    ),
+]
+
+
+@pytest.mark.parametrize("project_name,since,to,output", create_project_checkpoint_data)
+def test_create_checkpoint(runner, project_name, since, to, output, diff_project):
+    """Test 'project remove' command"""
+    ProjectVersionDelta.query.filter_by(project_id=diff_project.id).filter(
+        ProjectVersionDelta.rank > 0
+    ).delete()
+    db.session.commit()
+
+    remove = runner.invoke(
+        args=[
+            "project",
+            "create-checkpoint",
+            project_name,
+            "--since",
+            since,
+            "--to",
+            to,
+        ]
+    )
+    assert output in remove.output
+    checkpoints = ProjectVersionDelta.query.filter(ProjectVersionDelta.rank > 0).count()
+    if remove.exit_code == 0:
+        assert checkpoints > 0
+    else:
+        assert checkpoints == 0

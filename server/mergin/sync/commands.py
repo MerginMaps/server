@@ -127,3 +127,50 @@ def add_commands(app: Flask):
         project.removed_by = None
         db.session.commit()
         click.secho("Project removed", fg="green")
+
+    @project.command()
+    @click.argument("project-name", callback=normalize_input(lowercase=False))
+    @click.option("--since", type=int, required=False)
+    @click.option("--to", type=int, required=False)
+    def create_checkpoint(project_name, since=None, to=None):
+        """Create project delta checkpoint, corresponding lower checkpoints and merged diffs for project"""
+        ws, name = split_project_path(project_name)
+        workspace = current_app.ws_handler.get_by_name(ws)
+        if not workspace:
+            click.secho("ERROR: Workspace does not exist", fg="red", err=True)
+            sys.exit(1)
+        project = (
+            Project.query.filter_by(workspace_id=workspace.id, name=name)
+            .filter(Project.storage_params.isnot(None))
+            .first()
+        )
+        if not project:
+            click.secho("ERROR: Project does not exist", fg="red", err=True)
+            sys.exit(1)
+
+        since = since if since is not None else 0
+        to = to if to is not None else project.latest_version
+        if since < 0 or to < 1:
+            click.secho(
+                "ERROR: Invalid version number, minimum version for 'since' is 0 and minimum version for 'to' is 1",
+                fg="red",
+                err=True,
+            )
+            sys.exit(1)
+
+        if to > project.latest_version:
+            click.secho(
+                "ERROR: 'to' version exceeds latest project version", fg="red", err=True
+            )
+            sys.exit(1)
+
+        if since >= to:
+            click.secho(
+                "ERROR: 'since' version must be less than 'to' version",
+                fg="red",
+                err=True,
+            )
+            sys.exit(1)
+
+        project.get_delta_changes(since, to)
+        click.secho("Project checkpoint(s) created", fg="green")

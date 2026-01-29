@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import os
+from datetime import datetime
+from typing import Optional
 import uuid
 import gevent
 import logging
@@ -15,9 +18,6 @@ from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import ObjectDeletedError
 
-from mergin.sync.tasks import remove_transaction_chunks
-
-from .schemas_v2 import ProjectSchema as ProjectSchemaV2
 from ..app import db
 from ..auth import auth_required
 from ..auth.models import User
@@ -25,14 +25,16 @@ from .errors import (
     AnotherUploadRunning,
     BigChunkError,
     DataSyncError,
+    DiffDownloadError,
     ProjectLocked,
     ProjectVersionExists,
     StorageLimitHit,
     UploadError,
 )
-from .files import ChangesSchema, ProjectFileSchema
+from .files import ChangesSchema, DeltaChangeRespSchema, ProjectFileSchema
 from .forms import project_name_validation
 from .models import (
+    FileDiff,
     Project,
     ProjectRole,
     ProjectMember,
@@ -47,8 +49,16 @@ from .schemas import (
     ProjectMemberSchema,
     UploadChunkSchema,
 )
+from .schemas_v2 import ProjectSchema as ProjectSchemaV2
 from .storages.disk import move_to_tmp, save_to_file
-from .utils import get_device_id, get_ip, get_user_agent, get_chunk_location
+from .utils import (
+    get_device_id,
+    get_ip,
+    get_user_agent,
+    get_chunk_location,
+    prepare_download_response,
+)
+from .tasks import remove_transaction_chunks
 from .workspace import WorkspaceRole
 from ..utils import parse_order_params, get_schema_fields_map
 
@@ -164,6 +174,23 @@ def remove_project_collaborator(id, user_id):
     project.unset_role(user_id)
     db.session.commit()
     return NoContent, 204
+
+
+def download_diff_file(id: str, file: str):
+    """Download project geopackage diff file"""
+    project = require_project_by_uuid(id, ProjectPermissions.Read)
+    diff_file = FileDiff.query.filter_by(path=file).first_or_404()
+
+    # create merged diff if it does not exist
+    if not os.path.exists(diff_file.abs_path):
+        diff_created = diff_file.construct_checkpoint()
+        if not diff_created:
+            return DiffDownloadError().response(422)
+
+    response = prepare_download_response(
+        project.storage.project_dir, diff_file.location
+    )
+    return response
 
 
 def get_project(id, files_at_version=None):
@@ -403,6 +430,39 @@ def upload_chunk(id: str):
     ).replace(tzinfo=None)
     return (
         UploadChunkSchema().dump({"id": chunk_id, "valid_until": valid_until}),
+        200,
+    )
+
+
+def get_project_delta(id: str, since: str, to: Optional[str] = None):
+    """Get project changes (delta) between two versions"""
+
+    project: Project = require_project_by_uuid(id, ProjectPermissions.Read)
+    since_version = ProjectVersion.from_v_name(since)
+    to_provided = to is not None
+    to_version = (
+        project.latest_version if not to_provided else ProjectVersion.from_v_name(to)
+    )
+    if since_version < 0 or to_version < 0:
+        abort(
+            400,
+            "Invalid version number, minimum version for 'since' is 0 and minimum version for 'to' is 0",
+        )
+
+    if to_version > project.latest_version:
+        abort(400, "The 'to' parameter exceeds latest project version")
+
+    if since_version > to_version:
+        abort(
+            400,
+            f"""The 'since' parameter must be less than or equal to the {"'to' parameter" if to_provided else 'latest project version'}""",
+        )
+    delta_changes = project.get_delta_changes(since_version, to_version) or []
+
+    return (
+        DeltaChangeRespSchema().dump(
+            {"to_version": f"v{to_version}", "items": delta_changes}
+        ),
         200,
     )
 
