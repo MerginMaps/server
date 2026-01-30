@@ -8,7 +8,7 @@ import shutil
 import pytest
 from unittest.mock import patch
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import url_for
 
 from ..app import db, current_app
@@ -524,7 +524,7 @@ def test_prepare_archive(
         temp_zip_path.parent.mkdir(parents=True, exist_ok=True)
         temp_zip_path.touch()
         if expired:
-            new_time = datetime.now() - timedelta(
+            new_time = datetime.now(timezone.utc) - timedelta(
                 seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"] + 1
             )
             modify_file_times(temp_zip_path, new_time)

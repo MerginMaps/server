@@ -280,6 +280,46 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
+  /projects/{id}/raw/diff/{file}:
+    get:
+      tags:
+        - project
+      summary: Download project geopackage diff file
+      operationId: download_diff_file
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - name: file
+          required: true
+          in: path
+          description: File id of the diff file to download
+          schema:
+            type: string
+            example: survey.gpkg-diff-1b9fe848-d2e4-4c53-958d-3dd97e5486f6
+      responses:
+        "200":
+          description: File content (or its part)
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          description: Requested diff file could not be downloaded as it was not created
+          # mixing content types would trigger 500 on response validation
+          # might be related to issue https://github.com/spec-first/connexion/issues/2054
+          # content:
+          #   application/json+problem:
+          #     schema:
+          #       $ref: "#/components/schemas/DiffDownloadError"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
   /projects/{id}/versions:
     post:
       tags:
@@ -366,6 +406,35 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProjectLocked"
 
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
+  /projects/{id}/delta:
+    get:
+      tags:
+        - project
+      summary: Get project changes (delta) between two versions
+      operationId: get_project_delta
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - name: since
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/VersionName"
+          description: Start version (exclusive)
+        - name: to
+          in: query
+          schema:
+            $ref: "#/components/schemas/VersionName"
+          description: End version (inclusive)
+      responses:
+        "200":
+          description: Project changes between two versions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDeltaResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
   /workspaces/{workspace_id}/projects:
     get:
@@ -547,6 +616,12 @@ components:
       example:
         code: UploadError
         detail: "Project version could not be created (UploadError)"
+    DiffDownloadError:
+      allOf:
+        - $ref: "#/components/schemas/CustomError"
+      example:
+        code: DiffDownloadError
+        detail: Required diff file could not be created (DiffDownloadError)
     # Data
     ProjectRole:
       type: string
@@ -860,6 +935,53 @@ components:
                 type: string
                 format: date-time
                 example: 2019-02-26T08:47:58.636074Z
+    ProjectChangeType:
+      type: string
+      enum: [create, update, delete, update_diff]
+      example: update
+    ProjectDeltaChange:
+      type: object
+      required:
+        - path
+        - size
+        - checksum
+        - version
+        - change
+      properties:
+        path:
+          type: string
+          example: survey.gpkg
+        size:
+          type: integer
+          example: 1024
+        checksum:
+          type: string
+          example: 9adb76bf81a34880209040ffe5ee262a090b62ab
+        version:
+          $ref: "#/components/schemas/VersionName"
+        change:
+          $ref: "#/components/schemas/ProjectChangeType"
+        diffs:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: survey.gpkg-diff-1
+    ProjectDeltaResponse:
+      type: object
+      required:
+        - items
+        - to_version
+      properties:
+        to_version:
+          $ref: "#/components/schemas/VersionName"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectDeltaChange"
     VersionName:
       type: string
       pattern: '^$|^v\d+$'

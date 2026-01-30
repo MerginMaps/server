@@ -8,12 +8,13 @@ import pytest
 import os
 from unittest.mock import patch
 from pathlib import Path
+from sqlalchemy import inspect
 
 from mergin.app import db
 from mergin.auth.models import User
 from mergin.commands import _check_permissions, _check_celery
 from mergin.stats.models import MerginInfo
-from mergin.sync.models import Project, ProjectVersion
+from mergin.sync.models import FileDiff, Project, ProjectVersion, ProjectVersionDelta
 from mergin.tests import (
     test_project,
     test_workspace_id,
@@ -421,7 +422,7 @@ test_check_server_data = [
 
 @patch("mergin.commands._check_celery")
 @patch("mergin.commands._check_permissions")
-@patch("mergin.app.db.engine.table_names")
+@patch("sqlalchemy.engine.reflection.Inspector.get_table_names")
 @pytest.mark.parametrize(
     "edition,base_url,contact_email,service_id,tables,permission_check,celery_check,error,output",
     test_check_server_data,
@@ -492,10 +493,10 @@ def test_check_server(
 
 def test_init_db(runner):
     """Test initializing database"""
-    db.drop_all(bind=None)
-    assert not db.engine.table_names()
+    db.drop_all(bind_key=None)
+    assert not inspect(db.engine).get_table_names()
     result = runner.invoke(args=["init-db"])
-    assert db.engine.table_names()
+    assert inspect(db.engine).get_table_names()
     assert "Tables created." in result.output
 
 
@@ -508,7 +509,7 @@ def test_init_server(
 ):
     """Test initializing DB with admin and checks"""
     if not tables:
-        db.drop_all(bind=None)
+        db.drop_all(bind_key=None)
     send_statistics_mock.return_value = None
     send_email_mock.return_value = None
     check_server_mock.return_value = None
@@ -545,3 +546,70 @@ def test_check_celery(mock_ping, ping, result, output, capsys):
     out, err = capsys.readouterr()  # capture what was echoed to stdout
     assert ("Error: " not in out) == result
     assert output in out
+
+
+create_project_checkpoint_data = [
+    (
+        f"{test_workspace_name}/non-existing",
+        0,
+        1,
+        "ERROR: Project does not exist",
+    ),
+    (
+        f"{test_workspace_name}/{test_project}",
+        4,
+        1,
+        "ERROR: 'since' version must be less than 'to' version",
+    ),
+    (
+        f"{test_workspace_name}/{test_project}",
+        0,
+        100,
+        "ERROR: 'to' version exceeds latest project version",
+    ),
+    (
+        f"{test_workspace_name}/{test_project}",
+        0,
+        0,
+        "ERROR: Invalid version number, minimum version for 'since' is 0 and minimum version for 'to' is 1",
+    ),
+    (
+        f"{test_workspace_name}/{test_project}",
+        0,
+        4,
+        "Project checkpoint(s) created",
+    ),
+    (
+        f"{test_workspace_name}/{test_project}",
+        None,
+        None,
+        "Project checkpoint(s) created",
+    ),
+]
+
+
+@pytest.mark.parametrize("project_name,since,to,output", create_project_checkpoint_data)
+def test_create_checkpoint(runner, project_name, since, to, output, diff_project):
+    """Test 'project remove' command"""
+    ProjectVersionDelta.query.filter_by(project_id=diff_project.id).filter(
+        ProjectVersionDelta.rank > 0
+    ).delete()
+    db.session.commit()
+
+    remove = runner.invoke(
+        args=[
+            "project",
+            "create-checkpoint",
+            project_name,
+            "--since",
+            since,
+            "--to",
+            to,
+        ]
+    )
+    assert output in remove.output
+    checkpoints = ProjectVersionDelta.query.filter(ProjectVersionDelta.rank > 0).count()
+    if remove.exit_code == 0:
+        assert checkpoints > 0
+    else:
+        assert checkpoints == 0

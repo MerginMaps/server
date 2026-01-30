@@ -4,11 +4,18 @@
 import datetime
 from enum import Enum
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, List
 import uuid
 from flask import current_app
-from marshmallow import ValidationError, fields, EXCLUDE, post_dump, validates_schema
+from marshmallow import (
+    ValidationError,
+    fields,
+    EXCLUDE,
+    post_dump,
+    validates_schema,
+    post_load,
+)
 from pathvalidate import sanitize_filename
 
 from .utils import (
@@ -231,7 +238,9 @@ class ChangesSchema(ma.Schema):
 
 class ProjectFileSchema(FileSchema):
     mtime = DateTimeWithZ()
-    diff = fields.Nested(FileSchema())
+    diff = fields.Nested(
+        FileSchema(),
+    )
 
     @post_dump
     def patch_field(self, data, **kwargs):
@@ -239,3 +248,115 @@ class ProjectFileSchema(FileSchema):
         if not data.get("diff"):
             data.pop("diff", None)
         return data
+
+
+@dataclass
+class DeltaDiffFile:
+    """Diff file path in diffs list"""
+
+    id: str
+
+
+class DeltaChangeDiffFileSchema(ma.Schema):
+    """Schema for diff file path in diffs list"""
+
+    id = fields.String(required=True)
+
+
+@dataclass
+class DeltaChangeBase(File):
+    """Base class for changes stored in json list or returned from delta endpoint"""
+
+    change: PushChangeType
+    version: int
+
+
+@dataclass
+class DeltaChangeMerged(DeltaChangeBase):
+    """Delta item with merged diffs to list of multiple diff files"""
+
+    diffs: List[DeltaDiffFile] = field(default_factory=list)
+
+    def to_data_delta(self):
+        """Convert DeltaMerged to DeltaData with single diff"""
+        result = DeltaChange(
+            path=self.path,
+            size=self.size,
+            checksum=self.checksum,
+            change=self.change,
+            version=self.version,
+        )
+        if self.diffs:
+            result.diff = self.diffs[0].id
+        return result
+
+
+@dataclass
+class DeltaChange(DeltaChangeBase):
+    """Change items stored in database as list of this item with single diff file"""
+
+    diff: Optional[str] = None
+
+    def to_merged(self) -> DeltaChangeMerged:
+        """Convert to DeltaMerged with multiple diffs"""
+        result = DeltaChangeMerged(
+            path=self.path,
+            size=self.size,
+            checksum=self.checksum,
+            change=self.change,
+            version=self.version,
+        )
+        if self.diff:
+            result.diffs = [DeltaDiffFile(id=self.diff)]
+        return result
+
+
+class DeltaChangeBaseSchema(ma.Schema):
+    """Base schema for delta json and response from delta endpoint"""
+
+    path = fields.String(required=True)
+    size = fields.Integer(required=True)
+    checksum = fields.String(required=True)
+    version = fields.Integer(required=True)
+    change = fields.Enum(PushChangeType, by_value=True, required=True)
+
+
+class DeltaChangeSchema(DeltaChangeBaseSchema):
+    """Schema for change data in changes column"""
+
+    diff = fields.String(required=False)
+
+    @post_load
+    def make_object(self, data, **kwargs):
+        return DeltaChange(**data)
+
+    @post_dump
+    def patch_field(self, data, **kwargs):
+        # drop 'diff' key entirely if empty or None as database would expect
+        if not data.get("diff"):
+            data.pop("diff", None)
+        return data
+
+
+class DeltaChangeItemSchema(DeltaChangeBaseSchema):
+    """Schema for delta changes response"""
+
+    version = fields.Function(lambda obj: f"v{obj.version}")
+    diffs = fields.List(fields.Nested(DeltaChangeDiffFileSchema()))
+
+    @post_dump
+    def patch_field(self, data, **kwargs):
+        # drop 'diffs' key entirely if empty or None as clients would expect
+        if not data.get("diffs"):
+            data.pop("diffs", None)
+        return data
+
+
+class DeltaChangeRespSchema(ma.Schema):
+    """Schema for list of delta changes wrapped in items field"""
+
+    items = fields.List(fields.Nested(DeltaChangeItemSchema()))
+    to_version = fields.String(required=True)
+
+    class Meta:
+        unknown = EXCLUDE

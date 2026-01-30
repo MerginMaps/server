@@ -41,7 +41,7 @@ def remove_temp_files():
 @celery.task
 def remove_projects_backups():
     """Permanently remove deleted projects. All data is lost, and project could not be restored anymore"""
-    db.session.info = {"msg": "remove_projects_backups"}
+    db.session.info["msg"] = "remove_projects_backups"
     start = time.time()
     while True:
         if time.time() - start > 3 * 3600:
@@ -75,7 +75,7 @@ def optimize_storage(project_id):
     Clean up for recently updated versioned files. Removes expired file versions.
     It applies only on files that can be recreated when needed.
     """
-    db.session.info = {"msg": "optimize_storage"}
+    db.session.info["msg"] = "optimize_storage"
     project = (
         Project.query.filter_by(id=project_id)
         .filter(Project.storage_params.isnot(None))
@@ -91,7 +91,7 @@ def optimize_storage(project_id):
 
         for item in f_history:
             # no diffs, it is a basefile for geodiff
-            if not item.diff:
+            if not item.diff_file:
                 continue
 
             # skip the latest file version (high chance of being used)
@@ -110,7 +110,7 @@ def optimize_storage(project_id):
 @celery.task
 def create_project_version_zip(version_id: int):
     """Create zip file for project version."""
-    db.session.info = {"msg": "create_project_version_zip"}
+    db.session.info["msg"] = "create_project_version_zip"
     project_version = ProjectVersion.query.get(version_id)
     if not project_version:
         return

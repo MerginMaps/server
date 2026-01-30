@@ -9,8 +9,6 @@ import os
 import logging
 from dataclasses import asdict
 from typing import Dict
-from urllib.parse import quote
-import uuid
 from datetime import datetime
 
 import gevent
@@ -20,7 +18,6 @@ from connexion import NoContent, request
 from flask import (
     abort,
     current_app,
-    send_from_directory,
     jsonify,
     make_response,
 )
@@ -28,10 +25,8 @@ from pygeodiff import GeoDiffLibError
 from flask_login import current_user
 from sqlalchemy import and_, desc, asc
 from sqlalchemy.exc import IntegrityError
-from binaryornot.check import is_binary
 from gevent import sleep
 import base64
-
 from werkzeug.exceptions import HTTPException, Conflict
 
 from mergin.sync.forms import project_name_validation
@@ -80,13 +75,13 @@ from .permissions import (
 from .utils import (
     generate_checksum,
     Toucher,
-    get_x_accel_uri,
     get_ip,
     get_user_agent,
     generate_location,
     is_valid_uuid,
     get_device_id,
-    get_mimetype,
+    prepare_download_response,
+    get_device_id,
     wkb2wkt,
 )
 from .errors import StorageLimitHit, ProjectLocked
@@ -353,30 +348,8 @@ def download_project_file(
         logging.error(f"Missing file {namespace}/{project_name}/{file_path}")
         abort(404)
 
-    if current_app.config["USE_X_ACCEL"]:
-        # encoding for nginx to be able to download file with non-ascii chars
-        encoded_file_path = quote(file_path.encode("utf-8"))
-        resp = make_response()
-        resp.headers["X-Accel-Redirect"] = get_x_accel_uri(
-            project.storage_params["location"], encoded_file_path
-        )
-        resp.headers["X-Accel-Buffering"] = True
-        resp.headers["X-Accel-Expires"] = "off"
-    else:
-        resp = send_from_directory(
-            os.path.dirname(abs_path), os.path.basename(abs_path)
-        )
-
-    if not is_binary(abs_path):
-        mime_type = "text/plain"
-    else:
-        mime_type = get_mimetype(abs_path)
-    resp.headers["Content-Type"] = mime_type
-    resp.headers["Content-Disposition"] = "attachment; filename={}".format(
-        quote(os.path.basename(file).encode("utf-8"))
-    )
-    resp.direct_passthrough = False
-    return resp
+    response = prepare_download_response(project.storage.project_dir, file_path)
+    return response
 
 
 def get_project(project_name, namespace, since="", version=None):  # noqa: E501
@@ -456,8 +429,9 @@ def get_paginated_project_versions(
         if descending
         else query.order_by(asc(ProjectVersion.name))
     )
-    result = query.paginate(page, per_page).items
-    total = query.paginate(page, per_page).total
+    paginate = query.paginate(page=page, per_page=per_page)
+    result = paginate.items
+    total = paginate.total
     versions = ProjectVersionListSchema(many=True).dump(result)
     data = {"versions": versions, "count": total}
     return data, 200
@@ -608,7 +582,7 @@ def get_paginated_projects(
         public,
         only_public,
     )
-    result = projects.paginate(page, per_page).items
+    result = projects.paginate(page=page, per_page=per_page).items
     total = projects.paginate().total
 
     # create user map id:username passed to project schema to minimize queries to db

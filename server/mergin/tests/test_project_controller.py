@@ -26,7 +26,9 @@ import tempfile
 from sqlalchemy import desc
 from ..app import db
 from ..sync.models import (
+    FileDiff,
     Project,
+    ProjectVersionDelta,
     Upload,
     ProjectVersion,
     SyncFailuresHistory,
@@ -444,7 +446,7 @@ def test_add_project(client, app, data, expected):
         assert not any(file.diff for file in proj_files)
         assert not any(file.diff for file in pv.files)
         assert all(
-            item.change == PushChangeType.CREATE.value and not item.diff
+            item.change == PushChangeType.CREATE.value and not item.diff_file
             for item in pv.changes.all()
         )
         # cleanup
@@ -535,6 +537,7 @@ def test_delete_project(client):
     assert not Project.query.filter_by(
         workspace_id=test_workspace_id, name=test_project
     ).count()
+    assert not ProjectVersionDelta.query.filter_by(project_id=project.id).count()
     assert not os.path.exists(project_dir)
     rm_project = Project.query.get(project.id)
     assert rm_project.removed_at and not rm_project.storage_params
@@ -1603,7 +1606,7 @@ def test_push_no_diff_finish(client):
     file_meta = latest_version.changes.filter(
         FileHistory.change == PushChangeType.UPDATE_DIFF.value
     ).first()
-    assert file_meta.diff is not None
+    assert file_meta.diff_file is not None
     assert os.path.exists(
         os.path.join(upload.project.storage.project_dir, file_meta.diff_file.location)
     )
@@ -1791,6 +1794,8 @@ def test_optimize_storage(app, client, diff_project):
     diff_project.latest_version = 8
     ProjectVersion.query.filter_by(project_id=diff_project.id, name=9).delete()
     ProjectVersion.query.filter_by(project_id=diff_project.id, name=10).delete()
+    ProjectVersionDelta.query.filter_by(project_id=diff_project.id, version=9).delete()
+    ProjectVersionDelta.query.filter_by(project_id=diff_project.id, version=10).delete()
     db.session.commit()
     diff_project.cache_latest_files()
     assert diff_project.latest_version == 8
@@ -1845,88 +1850,71 @@ def test_optimize_storage(app, client, diff_project):
 
 def test_file_diffs_chain(diff_project):
     # file test.gpkg was added only in v9, and then left intact
+    file_id = (
+        ProjectFilePath.query.filter_by(project_id=diff_project.id, path="test.gpkg")
+        .first()
+        .id
+    )
+
     # direct search
-    basefile, diffs = FileHistory.diffs_chain(diff_project, "test.gpkg", 2)
-    assert not basefile
-    assert not diffs
-    # reverse search
-    basefile, diffs = FileHistory.diffs_chain(diff_project, "test.gpkg", 8)
+    basefile, diffs = FileHistory.diffs_chain(file_id, 2)
     assert not basefile
     assert not diffs
 
     # ask for basefile
-    basefile, diffs = FileHistory.diffs_chain(diff_project, "test.gpkg", 9)
+    basefile, diffs = FileHistory.diffs_chain(file_id, 9)
     assert basefile.version.name == 9
     assert basefile.change == "create"
     assert not diffs
 
+    file_id = (
+        ProjectFilePath.query.filter_by(project_id=diff_project.id, path="base.gpkg")
+        .first()
+        .id
+    )
+
     # version history has been broken by removal of file in v2
-    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 2)
+    basefile, diffs = FileHistory.diffs_chain(file_id, 2)
     assert not basefile
     assert not diffs
 
     # file was re-added in v3
-    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 3)
+    basefile, diffs = FileHistory.diffs_chain(file_id, 3)
     assert basefile.version.name == 3
     assert basefile.change == "create"
     assert not diffs
 
     # diff was used in v4, direct search
-    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 4)
+    basefile, diffs = FileHistory.diffs_chain(file_id, 4)
     assert basefile.version.name == 3
     assert len(diffs) == 1
-    assert "v4" in diffs[0].location
+    assert diffs[0].version == 4
 
     # file was overwritten in v5
-    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 5)
+    basefile, diffs = FileHistory.diffs_chain(file_id, 5)
     assert basefile.version.name == 5
     assert basefile.change == "update"
     assert not diffs
 
-    # diff was used in v6, reverse search followed by direct search
-    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 6)
+    # diff was used in v6
+    basefile, diffs = FileHistory.diffs_chain(file_id, 6)
     assert basefile.version.name == 5
     assert len(diffs) == 1
-    assert "v6" in diffs[0].location
+    assert diffs[0].version == 6
 
-    # diff was used in v7, nothing happened in v8 (=v7), reverse search followed by direct search
-    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 8)
+    # diff was used in v7, nothing happened in v8 (=v7)
+    basefile, diffs = FileHistory.diffs_chain(file_id, 8)
     assert basefile.version.name == 5
     assert len(diffs) == 2
 
     # file was removed in v9
-    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 9)
+    basefile, diffs = FileHistory.diffs_chain(file_id, 9)
     assert not basefile
     assert not diffs
 
     # ask for latest version, but file is already gone
-    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 10)
+    basefile, diffs = FileHistory.diffs_chain(file_id, 10)
     assert not basefile
-    assert not diffs
-
-    # remove v9 and v10 to mimic that project history end with existing file
-    pv_8 = ProjectVersion.query.filter_by(project_id=diff_project.id, name=8).first()
-    pv_9 = ProjectVersion.query.filter_by(project_id=diff_project.id, name=9).first()
-    pv_10 = ProjectVersion.query.filter_by(project_id=diff_project.id, name=10).first()
-    diff_project.latest_version = 8
-    db.session.delete(pv_9)
-    db.session.delete(pv_10)
-    db.session.commit()
-
-    # diff was used in v6, v7, nothing happened in v8 => v7 = v8, reverse search
-    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 6)
-    assert basefile.version.name == 7
-    assert len(diffs) == 1
-    assert "v7" in diffs[0].location
-
-    # we asked for last existing file version - basefile
-    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 7)
-    assert basefile.version.name == 7
-    assert not diffs
-
-    # we asked for last project version
-    basefile, diffs = FileHistory.diffs_chain(diff_project, "base.gpkg", 8)
-    assert basefile.version.name == 7
     assert not diffs
 
 
@@ -2364,6 +2352,10 @@ def test_project_version_integrity(client):
             .order_by(desc(ProjectVersion.created))
             .first()
         )
+        # remove project version delta entries
+        ProjectVersionDelta.query.filter_by(
+            project_id=upload.project_id, version=pv.name
+        ).delete()
         db.session.delete(pv)
         db.session.commit()
         upload.project.cache_latest_files()
@@ -2391,7 +2383,8 @@ def test_version_files(client, diff_project):
             x.checksum == y.checksum
             and x.path == y.path
             and x.location == y.location
-            and x.diff == y.diff
+            and x.diff_path == y.diff_path
+            and x.diff_checksum == y.diff_checksum
             for x, y in zip(
                 sorted(forward_search, key=lambda f: f.path),
                 sorted(backward_search, key=lambda f: f.path),
@@ -2418,7 +2411,7 @@ def test_delete_diff_file(client):
         project_version_name=upload.project.latest_version,
         change=PushChangeType.UPDATE_DIFF.value,
     ).first()
-    assert fh.diff is not None
+    assert fh.diff_file is not None
 
     # delete file
     diff_change = next(
@@ -2445,7 +2438,7 @@ def test_delete_diff_file(client):
         project_version_name=upload.project.latest_version,
         change=PushChangeType.DELETE.value,
     ).first()
-    assert fh.path == "base.gpkg" and fh.diff is None
+    assert fh.path == "base.gpkg" and fh.diff_file is None
 
 
 def test_cache_files_ids(client):

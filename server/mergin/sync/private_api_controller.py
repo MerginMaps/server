@@ -5,15 +5,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 from connexion import NoContent
-from flask import (
-    render_template,
-    request,
-    current_app,
-    jsonify,
-    abort,
-    make_response,
-    send_file,
-)
+from flask import render_template, request, current_app, jsonify, abort
 from flask_login import current_user
 from sqlalchemy.orm import defer
 from sqlalchemy import text
@@ -41,8 +33,7 @@ from .permissions import (
 )
 from ..utils import parse_order_params, split_order_param, get_order_param
 from .tasks import create_project_version_zip
-from .storages.disk import move_to_tmp
-from .utils import get_x_accel_uri
+from .utils import prepare_download_response
 
 
 @auth_required
@@ -155,8 +146,9 @@ def get_project_access_requests(page, per_page, order_params=None, project_name=
         order_by_params = parse_order_params(AccessRequest, order_params)
         access_requests = access_requests.order_by(*order_by_params)
 
-    result = access_requests.paginate(page, per_page).items
-    total = access_requests.paginate(page, per_page).total
+    paginate = access_requests.paginate(page=page, per_page=per_page)
+    result = paginate.items
+    total = paginate.total
     data = ProjectAccessRequestSchema(many=True).dump(result)
     data = {"items": data, "count": total}
     return data, 200
@@ -183,8 +175,9 @@ def list_namespace_project_access_requests(
         order_by_params = parse_order_params(AccessRequest, order_params)
         access_requests = access_requests.order_by(*order_by_params)
 
-    result = access_requests.paginate(page, per_page).items
-    total = access_requests.paginate(page, per_page).total
+    paginate = access_requests.paginate(page=page, per_page=per_page)
+    result = paginate.items
+    total = paginate.total
     data = ProjectAccessRequestSchema(many=True).dump(result)
     data = {"items": data, "count": total}
     return data, 200
@@ -212,8 +205,9 @@ def list_projects(page, per_page, order_params=None, like=None):  # noqa: E501
                 order_by_params.append(get_order_param(Project, order_param))
         projects = projects.order_by(*order_by_params)
 
-    result = projects.paginate(page, per_page).items
-    total = projects.paginate(page, per_page).total
+    paginate = projects.paginate(page=page, per_page=per_page)
+    result = paginate.items
+    total = paginate.total
     data = AdminProjectSchema(many=True).dump(result)
     data = {"items": data, "count": total}
     return data, 200
@@ -333,22 +327,20 @@ def download_project(id: str, version=None):  # noqa: E501 # pylint: disable=W06
 
     # check zip is already created
     if os.path.exists(project_version.zip_path):
+        response = prepare_download_response(
+            os.path.dirname(project_version.zip_path),
+            os.path.basename(project_version.zip_path),
+        )
         if current_app.config["USE_X_ACCEL"]:
-            resp = make_response()
-            resp.headers["X-Accel-Redirect"] = get_x_accel_uri(project_version.zip_path)
-            resp.headers["X-Accel-Buffering"] = current_app.config.get(
+            response.headers["X-Accel-Buffering"] = current_app.config.get(
                 "PROJECTS_ARCHIVES_X_ACCEL_BUFFERING"
             )
-            resp.headers["X-Accel-Expires"] = "off"
-            resp.headers["Content-Type"] = "application/zip"
-        else:
-            resp = send_file(project_version.zip_path, mimetype="application/zip")
-
+        # set custom file in header
         file_name = quote(f"{project.name}-v{lookup_version}.zip".encode("utf-8"))
-        resp.headers["Content-Disposition"] = (
+        response.headers["Content-Disposition"] = (
             f"attachment; filename*=UTF-8''{file_name}"
         )
-        return resp
+        return response
 
     return "Project zip being prepared", 202
 

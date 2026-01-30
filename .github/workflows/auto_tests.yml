@@ -4,7 +4,7 @@ on: push
 
 jobs:
   server_tests:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     services:
       postgres:
@@ -30,8 +30,8 @@ jobs:
         run: |
           cd server
           sudo apt-get -y install libsqlite3-mod-spatialite
-          pip3 install pipenv==2024.0.1
-          pipenv install --dev --verbose
+          pip install pipenv==2026.0.3
+          pipenv install --dev --verbose --python 3.12
 
       - name: Run tests
         run: |

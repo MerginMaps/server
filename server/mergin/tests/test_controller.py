@@ -85,7 +85,7 @@ def test_server_updates(client):
 def test_save_diagnostic_log(client, app):
     """Test save diagnostic log endpoint"""
     user = User.query.filter(User.username == "mergin").first()
-    url = url_for("mergin_controller_save_diagnostic_log")
+    url = url_for("/.mergin_controller_save_diagnostic_log")
     resp = client.post(url)
     assert resp.status_code == 400
 
@@ -93,7 +93,7 @@ def test_save_diagnostic_log(client, app):
     resp = client.post(url, data="test")
     assert resp.status_code == 400
 
-    url = url_for("mergin_controller_save_diagnostic_log", app="test_app")
+    url = url_for("/.mergin_controller_save_diagnostic_log", app="test_app")
 
     # too large request
     max_size = app.config["DIAGNOSTIC_LOGS_MAX_SIZE"]

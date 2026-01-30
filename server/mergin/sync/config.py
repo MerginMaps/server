@@ -75,6 +75,8 @@ class Configuration(object):
     UPLOAD_CHUNKS_EXPIRATION = config(
         "UPLOAD_CHUNKS_EXPIRATION", default=86400, cast=int
     )
+    # whether client can pull using v2 apis
+    V2_PULL_ENABLED = config("V2_PULL_ENABLED", default=True, cast=bool)
     EXCLUDED_CLONE_FILENAMES = config(
         "EXCLUDED_CLONE_FILENAMES", default="qgis_cfg.xml", cast=Csv()
     )
