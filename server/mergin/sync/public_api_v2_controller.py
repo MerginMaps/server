@@ -457,16 +457,22 @@ def list_batch_projects():
     :rtype: Dict[str: List[Project]]
     """
     ids = request.json.get("ids", [])
-    if not ids:
-        abort(400, "No project UUIDs provided")
     if len(ids) > 100:
-        abort(400, "BatchLimitExceeded")
+        abort(400, 
+            {
+                "code" : "BatchLimitExceeded",
+                "detail" : "A maximum of 100 project UUIDS can be requested at once"
+            }
+        )
 
-    items = require_project_by_many_uuids(ids, ProjectPermissions.Read, expose=False)
-    project_objects = [i for i in items if not isinstance(i, dict)]
-    error_items  = [i for i in items if isinstance(i, dict)]
+    items = require_project_by_many_uuids(ids, ProjectPermissions.Read)
 
-    project_data = ProjectSchemaV2(many=True).dump(project_objects)
-    error_data = BatchErrorSchema(many=True).dump(error_items)
-    return jsonify(projects=project_data + error_data), 200
+    projects = []
+    for item in items:
+        if isinstance(item, dict):
+            projects.append(BatchErrorSchema().dump(item))
+        else:
+            projects.append(ProjectSchemaV2().dump(item))
+
+    return jsonify(projects=projects), 200
     

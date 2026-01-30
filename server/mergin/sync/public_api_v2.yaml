@@ -384,18 +384,9 @@ paths:
               properties:
                 ids:
                   type: array
-                  minItems: 1
-                  maxItems: 100
                   description: List of project UUIDs to fetch
                   items:
-                    type: string
-                    format: uuid
-            examples:
-              example:
-                value:
-                  ids:
-                    - "9b2b1a2b-3e73-4f1c-9f7a-1a2b3c4d5e6f"
-                    - "0f1e2d3c-4b5a-6978-9a0b-1c2d3e4f5a6b"
+                    $ref: "#/components/parameters/ProjectId"
       responses:
         "200":
           description: Projects returned as a list of simple project objects and/or error objects.
@@ -410,30 +401,15 @@ paths:
                     items:
                       oneOf:
                         - $ref: "#/components/schemas/Project"
-                        - $ref: "#/components/schemas/BatchError"
-              examples:
-                mixed:
-                  value:
-                    projects:
-                      - id: "9b2b1a2b-3e73-4f1c-9f7a-1a2b3c4d5e6f"
-                        name: survey
-                        version: v2
-                        public: false
-                        size: 17092380
-                        created_at: "2025-10-24T08:27:56Z"
-                        updated_at: "2025-10-24T08:28:00.279699Z"
-                        workspace:
-                          id: 123
-                          name: mergin
-                        role: reader
-                      - id: 9b2b1a2b-3e73-4f1c-9f7a-1a2b3c4d5e6f
-                        error: 404
-        "400":
-          $ref: "#/components/responses/BadRequest"
+                        - $ref: "#/components/schemas/BatchItemError"
+        "400": 
+          description: Batch limit exceeded or one or more UUIDs were invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/CustomError"
         "401":
           $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
@@ -618,13 +594,11 @@ components:
       example:
         code: UploadError
         detail: "Project version could not be created (UploadError)"
-    BatchError:
+    BatchItemError:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
-          example: "9b2b1a2b-3e73-4f1c-9f7a-1a2b3c4d5e6f"
+          $ref: "#/components/parameters/ProjectId"
         error:
           type: integer
           example: 404

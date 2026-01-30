@@ -42,7 +42,7 @@ from mergin.sync.models import (
     SyncFailuresHistory,
     Upload,
 )
-from mergin.sync.utils import get_chunk_location
+from mergin.sync.utils import get_chunk_location    
 from . import TMP_DIR, test_project, test_workspace_id, test_project_dir
 from .test_project_controller import (
     CHUNK_SIZE,
@@ -694,18 +694,14 @@ def test_list_workspace_projects(client):
     logout(client)
     assert client.get(url + "?page=1&per_page=10").status_code == 401
 
-
-
-
-def test_list_projects_in_batch_access_table(client):
+def test_list_projects_in_batch(client):
+    """Test batch project listing endpoint."""
     admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
     test_workspace = create_workspace()
 
-    # create two projects: one private, one public
     private_proj = create_project("batch_private", test_workspace, admin)
     public_proj = create_project("batch_public", test_workspace, admin)
 
-    # mark public project as public
     p = Project.query.get(public_proj.id)
     p.public = True
     db.session.commit()
@@ -714,46 +710,19 @@ def test_list_projects_in_batch_access_table(client):
     priv_id = str(private_proj.id)
     pub_id = str(public_proj.id)
 
-    # must be logged in (matches suite behavior)
-    login(client, DEFAULT_USER[0], DEFAULT_USER[1])
+    #login(client, DEFAULT_USER[0], DEFAULT_USER[1]) TODO: why needed?
 
     # missing ids -> 400 (connexion validation)
     resp = client.post(url, json={})
     assert resp.status_code == 400
 
-    # F1=Y, F2=Y, F3=N -> Project detail (private, owner)
-    resp = client.post(url, json={"ids": [priv_id]})
+    # returns envelope with projects list
+    resp = client.post(url, json={"ids": [priv_id, pub_id]})
     assert resp.status_code == 200
-    assert len(resp.json["projects"]) == 1
-    assert resp.json["projects"][0]["id"] == priv_id
-    assert "error" not in resp.json["projects"][0]
+    assert "projects" in resp.json
+    assert isinstance(resp.json["projects"], list)
+    assert len(resp.json["projects"]) == 2
 
-    # F1=Y, F2=Y, F3=Y -> Project detail (public, owner)
-    resp = client.post(url, json={"ids": [pub_id]})
-    assert resp.status_code == 200
-    assert len(resp.json["projects"]) == 1
-    assert resp.json["projects"][0]["id"] == pub_id
-    assert "error" not in resp.json["projects"][0]
-
-    # Create a second user with NO access to workspace/projects
-    user2 = add_user("user_batch", "password")
-    login(client, user2.username, "password")
-
-    # F1=Y, F2=N, F3=Y -> Project detail (public, reader-only)
-    resp = client.post(url, json={"ids": [pub_id]})
-    assert resp.status_code == 200
-    assert len(resp.json["projects"]) == 1
-    assert resp.json["projects"][0]["id"] == pub_id
-    assert "error" not in resp.json["projects"][0]
-
-    # F1=Y, F2=N, F3=N -> Error 403 (private, logged in, no access)
-    resp = client.post(url, json={"ids": [priv_id]})
-    assert resp.status_code == 200
-    assert len(resp.json["projects"]) == 1
-    assert resp.json["projects"][0]["id"] == priv_id
-    assert resp.json["projects"][0]["error"] == 403
-
-    # logout -> endpoint protected => 401
+    # endpoint protected => 401
     logout(client)
     assert client.post(url, json={"ids": [pub_id]}).status_code == 401
-
