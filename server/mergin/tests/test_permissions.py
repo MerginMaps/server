@@ -154,7 +154,11 @@ def test_permissions_require_project_by_many_uuids(client):
     assert len(items) == 2
     assert all(not isinstance(i, dict) for i in items)
 
+    # Reset global permissions for subsequent tests
     Configuration.GLOBAL_READ = False
+    Configuration.GLOBAL_WRITE = False
+    Configuration.GLOBAL_ADMIN = False
+
     # Second user with no access to private project
     user2 = add_user("user_batch", "password")
     login(client, user2.username, "password")
