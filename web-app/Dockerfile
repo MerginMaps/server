@@ -1,4 +1,4 @@
-FROM node:18-alpine as builder
+FROM node:22-alpine as builder
 MAINTAINER Martin Varga "martin.varga@lutraconsulting.co.uk"
 
 # build frontend apps

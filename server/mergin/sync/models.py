@@ -167,7 +167,7 @@ class Project(db.Model):
             WHERE a.project_id = pf.project_id;
         """
         params = {"project_id": self.id, "latest_version": self.latest_version}
-        db.session.execute(query, params)
+        db.session.execute(text(query), params)
         db.session.commit()
 
     @property
@@ -222,7 +222,7 @@ class Project(db.Model):
                     else None
                 ),
             )
-            for row in db.session.execute(query, params).fetchall()
+            for row in db.session.execute(text(query), params).fetchall()
         ]
         return files
 
@@ -1508,7 +1508,7 @@ class ProjectVersion(db.Model):
             WHERE fh.change != 'delete';
         """
         params = {"project_id": self.project_id, "version": self.name}
-        return db.session.execute(query, params).fetchall()
+        return db.session.execute(text(query), params).fetchall()
 
     def _files_from_end(self):
         """Calculate version files using lookup from the last version
@@ -1569,7 +1569,7 @@ class ProjectVersion(db.Model):
             ORDER BY fp.path;
         """
         params = {"project_id": self.project_id, "version": self.name}
-        return db.session.execute(query, params).fetchall()
+        return db.session.execute(text(query), params).fetchall()
 
     @property
     def files(self) -> List[ProjectFile]:
@@ -1675,7 +1675,7 @@ class ProjectVersion(db.Model):
         """Return number of changes by type"""
         query = f"SELECT change, COUNT(change) FROM file_history WHERE version_id = :version_id GROUP BY change;"
         params = {"version_id": self.id}
-        result = db.session.execute(query, params).fetchall()
+        result = db.session.execute(text(query), params).fetchall()
         return {row[0]: row[1] for row in result}
 
     @property

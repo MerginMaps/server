@@ -333,6 +333,7 @@ def test_checkpoint_utils():
     versions = Checkpoint.get_checkpoints(2, 1)
     assert len(versions) == 0
 
+
 def test_get_schema_fields_map():
     """Test that schema map correctly resolves DB attributes, keeps all fields, and ignores virtual fields."""
 

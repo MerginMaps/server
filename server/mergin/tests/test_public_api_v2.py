@@ -868,7 +868,7 @@ def test_create_version(client, data, expected, err_code):
         # chunks exists after upload, cleanup job did not remove them
         assert all(os.path.exists(chunk) for chunk in chunks)
         if chunk_ids:
-            assert mock_remove.called_once_with(chunk_ids)
+            mock_remove.assert_called_once_with(chunk_ids)
         remove_transaction_chunks(chunk_ids)
         assert all(not os.path.exists(chunk) for chunk in chunks)
     else:

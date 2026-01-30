@@ -396,7 +396,7 @@ def register_user():  # pylint: disable=W0613,W0612
 
     form = UserRegistrationForm()
     form.username.data = User.generate_username(form.email.data)
-    if form.validate_on_submit():
+    if form.is_submitted() and form.validate():
         user = User.create(form.username.data, form.email.data, form.password.data)
         user_created.send(user, source="admin")
         token = generate_confirmation_token(
@@ -500,8 +500,9 @@ def get_paginated_users(
     elif not descending and order_by:
         users = users.order_by(asc(User.__table__.c[order_by]))
 
-    result = users.paginate(page, per_page).items
-    total = users.paginate(page, per_page).total
+    paginate = users.paginate(page=page, per_page=per_page)
+    result = paginate.items
+    total = paginate.total
 
     result_users = UserSchema(many=True).dump(result)
 
