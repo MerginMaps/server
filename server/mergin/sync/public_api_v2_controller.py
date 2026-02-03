@@ -456,7 +456,6 @@ def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=N
     data = ProjectSchemaV2(many=True).dump(result)
     return jsonify(projects=data, count=total, page=page, per_page=per_page), 200
 
-@auth_required
 def list_batch_projects():
     """List projects by given list of UUIDs. Limit to 100 projects per request.
 

@@ -714,6 +714,10 @@ def test_list_projects_in_batch(client):
     resp = client.post(url, json={})
     assert resp.status_code == 400
 
+    # invalid UUID -> 400
+    resp = client.post(url, json={"ids": ["invalid-uuid", pub_id]})
+    assert resp.status_code == 400
+
     # returns envelope with projects list
     resp = client.post(url, json={"ids": [priv_id, pub_id]})
     assert resp.status_code == 200
@@ -726,7 +730,6 @@ def test_list_projects_in_batch(client):
         assert "name" in proj  # full project object
 
     # Reset global permissions
-    from ..config import Configuration
     Configuration.GLOBAL_READ = False
     Configuration.GLOBAL_WRITE = False
     Configuration.GLOBAL_ADMIN = False
