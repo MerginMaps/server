@@ -751,6 +751,17 @@ def test_list_projects_in_batch(client):
     priv_result = next(p for p in projects if p.get("id") == priv_id)
     assert priv_result["error"] == 403
 
-    # Logged-out (anonymous) user - endpoint requires auth
+    # Logged-out (anonymous) user - endpoint allows access to public projects, denies private
     logout(client)
-    assert client.post(url, json={"ids": [pub_id]}).status_code == 401
+    resp = client.post(url, json={"ids": [pub_id, priv_id]})
+    assert resp.status_code == 200
+    projects = resp.json["projects"]
+    assert len(projects) == 2
+
+    # public -> full object
+    pub_result = next(p for p in projects if p.get("id") == pub_id)
+    assert "name" in pub_result
+
+    # private -> error 404 (anonymous cannot access private)
+    priv_result = next(p for p in projects if p.get("id") == priv_id)
+    assert priv_result["error"] == 404
