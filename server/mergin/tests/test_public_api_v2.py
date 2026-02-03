@@ -710,8 +710,6 @@ def test_list_projects_in_batch(client):
     priv_id = str(private_proj.id)
     pub_id = str(public_proj.id)
 
-    #login(client, DEFAULT_USER[0], DEFAULT_USER[1]) TODO: why needed?
-
     # missing ids -> 400 (connexion validation)
     resp = client.post(url, json={})
     assert resp.status_code == 400
@@ -722,7 +720,34 @@ def test_list_projects_in_batch(client):
     assert "projects" in resp.json
     assert isinstance(resp.json["projects"], list)
     assert len(resp.json["projects"]) == 2
+    # Both projects returned as full objects for admin
+    for proj in resp.json["projects"]:
+        assert "id" in proj
+        assert "name" in proj  # full project object
 
-    # endpoint protected => 401
+    # Reset global permissions
+    from ..config import Configuration
+    Configuration.GLOBAL_READ = False
+    Configuration.GLOBAL_WRITE = False
+    Configuration.GLOBAL_ADMIN = False
+
+    # Second user with no access to private project
+    user2 = add_user("user_batch", "password")
+    login(client, user2.username, "password")
+
+    resp = client.post(url, json={"ids": [pub_id, priv_id]})
+    assert resp.status_code == 200
+    projects = resp.json["projects"]
+    assert len(projects) == 2
+
+    # public -> full object
+    pub_result = next(p for p in projects if p.get("id") == pub_id)
+    assert "name" in pub_result
+
+    # private -> error 403
+    priv_result = next(p for p in projects if p.get("id") == priv_id)
+    assert priv_result["error"] == 403
+
+    # Logged-out (anonymous) user - endpoint requires auth
     logout(client)
     assert client.post(url, json={"ids": [pub_id]}).status_code == 401

@@ -247,55 +247,31 @@ def require_project_by_uuid(
 
     return project
 
-def require_project_by_many_uuids(
-    uuids: list[str], permission: ProjectPermissions
-) -> list[dict]:
+
+def check_project_permissions(project: Project, permission: ProjectPermissions) -> int | None:
+    """Check project permissions and return appropriate HTTP error code if check fails.
+    :param project: project
+    :type project: Project
+    :param permission: permission to check
+    :type permission: ProjectPermissions
+    :return: HTTP error code if permission check fails, None otherwise
+    :rtype: int | None
     """
-    Retrieves multiple projects by their UUIDs after validating existence, workspace status, and permissions.
+    
+    workspace = project.workspace
+    if not workspace or not is_active_workspace(workspace):
+        return 404
 
-    Args:
-        uuids (list[str]): The unique identifiers of the projects.
-        permission (ProjectPermissions): The permission level required to access the projects.
-    """
-    valid_uuids = [uuid 
-                    if is_valid_uuid(uuid) 
-                    else abort(400, {"code" : "InvalidUUID", "detail" : "Invalid UUID format"}) 
-                    for uuid in uuids
-                ]
+    if not permission.check(project, current_user):
+        # logged in - NO, have acccess - NONE, public project - NO
+        if current_user.is_anonymous:
+            # we don't want to tell anonymous user if a private project exists
+            return 404
+        # logged in - YES, have access - NO, public project - NO
+        return 403
 
-    projects = (
-        Project.query
-        .filter(Project.id.in_(valid_uuids))
-        .filter(Project.storage_params.isnot(None))
-        .all()
-    )
-    by_id = {str(project.id): project for project in projects}
+    return None
 
-    filtered_projects = []
-    for uuid in valid_uuids:
-
-        project = by_id.get(uuid)
-        if not project:
-            filtered_projects.append({"id": uuid, "error": 404})
-            continue
-
-        workspace = project.workspace
-        if not workspace or not is_active_workspace(workspace):
-            filtered_projects.append({"id": uuid, "error": 404})
-            continue
-
-        if not permission.check(project, current_user):
-            # logged in - NO, have acccess - NONE, public project - NO
-            if current_user.is_anonymous and not project.public:
-                # we don't want to tell anonymous user if a private project exists
-                filtered_projects.append({"id": uuid, "error": 404})
-            # logged in - YES, have access - NO, public project - NO
-            else:
-                filtered_projects.append({"id": uuid, "error": 403})
-            continue
-        filtered_projects.append(project)
-
-    return filtered_projects
 
 
 def get_upload(transaction_id):

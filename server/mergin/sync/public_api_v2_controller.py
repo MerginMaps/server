@@ -41,17 +41,23 @@ from .models import (
     push_finished,
 )
 from .permissions import (
-    ProjectPermissions, 
+    ProjectPermissions,
+    check_project_permissions, 
     require_project_by_uuid, 
-    projects_query,
-    require_project_by_many_uuids)
+    projects_query)
 from .public_api_controller import catch_sync_failure
 from .schemas import (
     ProjectMemberSchema,
     UploadChunkSchema,
 )
 from .storages.disk import move_to_tmp, save_to_file
-from .utils import get_device_id, get_ip, get_user_agent, get_chunk_location
+from .utils import (
+    get_device_id, 
+    get_ip, 
+    get_user_agent, 
+    get_chunk_location, 
+    is_valid_uuid
+) 
 from .workspace import WorkspaceRole
 from ..utils import parse_order_params
 
@@ -465,14 +471,35 @@ def list_batch_projects():
             }
         )
 
-    items = require_project_by_many_uuids(ids, ProjectPermissions.Read)
+    valid_uuids = [uuid 
+                    if is_valid_uuid(uuid) 
+                    else abort(400, {"code" : "InvalidUUID", "detail" : "Invalid UUID format"}) 
+                    for uuid in ids
+                ]
 
-    projects = []
-    for item in items:
-        if isinstance(item, dict):
-            projects.append(BatchErrorSchema().dump(item))
+    projects = (
+        Project.query
+        .filter(Project.id.in_(valid_uuids))
+        .filter(Project.storage_params.isnot(None))
+        .filter(Project.removed_at.is_(None))
+        .all()
+    )
+    by_id = {str(project.id): project for project in projects}
+
+    filtered_projects = []
+    for uuid in valid_uuids:
+
+        project = by_id.get(uuid)
+
+        if not project:
+            filtered_projects.append(BatchErrorSchema().dump({"id": uuid, "error": 404}))
+            continue
+
+        err = check_project_permissions(project, ProjectPermissions.Read)
+        if err is not None:
+            filtered_projects.append(BatchErrorSchema().dump({"id": uuid, "error": err}))
         else:
-            projects.append(ProjectSchemaV2().dump(item))
+            filtered_projects.append(ProjectSchemaV2().dump(project))
 
-    return jsonify(projects=projects), 200
+    return jsonify(projects=filtered_projects), 200
     

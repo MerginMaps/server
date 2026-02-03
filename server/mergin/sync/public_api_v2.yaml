@@ -386,7 +386,7 @@ paths:
                   type: array
                   description: List of project UUIDs to fetch
                   items:
-                    $ref: "#/components/parameters/ProjectId"
+                    $ref: "#/components/schemas/ProjectId"
       responses:
         "200":
           description: Projects returned as a list of simple project objects and/or error objects.
@@ -504,9 +504,7 @@ components:
       description: UUID of the project
       required: true
       schema:
-        type: string
-        format: uuid
-        pattern: \b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b
+        $ref: "#/components/schemas/ProjectId"
     WorkspaceId:
       name: workspace_id
       in: path
@@ -515,6 +513,10 @@ components:
       schema:
         type: integer
   schemas:
+    ProjectId:
+      type: string
+      format: uuid
+      pattern: \b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b
     # Errors
     CustomError:
       type: object
@@ -598,7 +600,7 @@ components:
       type: object
       properties:
         id:
-          $ref: "#/components/parameters/ProjectId"
+          $ref: "#/components/schemas/ProjectId"
         error:
           type: integer
           example: 404
