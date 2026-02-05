@@ -42,7 +42,7 @@ from mergin.sync.models import (
     SyncFailuresHistory,
     Upload,
 )
-from mergin.sync.utils import get_chunk_location    
+from mergin.sync.utils import get_chunk_location
 from . import TMP_DIR, test_project, test_workspace_id, test_project_dir
 from .test_project_controller import (
     CHUNK_SIZE,
@@ -694,6 +694,7 @@ def test_list_workspace_projects(client):
     logout(client)
     assert client.get(url + "?page=1&per_page=10").status_code == 401
 
+
 def test_list_projects_in_batch(client):
     """Test batch project listing endpoint."""
     admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
@@ -729,27 +730,29 @@ def test_list_projects_in_batch(client):
         assert "id" in proj
         assert "name" in proj  # full project object
 
-    # Reset global permissions
-    Configuration.GLOBAL_READ = False
-    Configuration.GLOBAL_WRITE = False
-    Configuration.GLOBAL_ADMIN = False
-
     # Second user with no access to private project
     user2 = add_user("user_batch", "password")
     login(client, user2.username, "password")
 
-    resp = client.post(url, json={"ids": [pub_id, priv_id]})
-    assert resp.status_code == 200
-    projects = resp.json["projects"]
-    assert len(projects) == 2
+    with patch.object(Configuration, "GLOBAL_READ", False):
+        resp = client.post(url, json={"ids": [pub_id, priv_id]})
+        assert resp.status_code == 200
+        projects = resp.json["projects"]
+        assert len(projects) == 2
 
-    # public -> full object
-    pub_result = next(p for p in projects if p.get("id") == pub_id)
-    assert "name" in pub_result
+        # public -> full object
+        pub_result = next(p for p in projects if p.get("id") == pub_id)
+        assert "name" in pub_result
 
-    # private -> error 403
-    priv_result = next(p for p in projects if p.get("id") == priv_id)
-    assert priv_result["error"] == 403
+        # private -> error 403
+        priv_result = next(p for p in projects if p.get("id") == priv_id)
+        assert priv_result["error"] == 403
+
+    # global permission allows any user to list the project
+    with patch.object(Configuration, "GLOBAL_READ", True):
+        resp = client.post(url, json={"ids": [pub_id, priv_id]})
+        priv_result = next(p for p in resp.json["projects"] if p.get("id") == priv_id)
+        assert "name" in priv_result
 
     # Logged-out (anonymous) user - endpoint allows access to public projects, denies private
     logout(client)
