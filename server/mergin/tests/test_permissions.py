@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import pytest
+from unittest.mock import patch
 import datetime
 from flask_login import AnonymousUserMixin
 
@@ -154,19 +155,17 @@ def test_check_project_permissions(client):
         assert check_project_permissions(priv_proj, ProjectPermissions.Read) is None
         assert check_project_permissions(pub_proj, ProjectPermissions.Read) is None
 
-    # Reset global permissions for subsequent tests
-    Configuration.GLOBAL_READ = False
-    Configuration.GLOBAL_WRITE = False
-    Configuration.GLOBAL_ADMIN = False
+    # Second user with no access to private project (ensure global perms disabled)
+    with patch.object(Configuration, "GLOBAL_READ", False), patch.object(
+        Configuration, "GLOBAL_WRITE", False
+    ), patch.object(Configuration, "GLOBAL_ADMIN", False):
+        user2 = add_user("user_batch", "password")
+        login(client, user2.username, "password")
 
-    # Second user with no access to private project
-    user2 = add_user("user_batch", "password")
-    login(client, user2.username, "password")
-
-    with client:
-        client.get("/")
-        assert check_project_permissions(pub_proj, ProjectPermissions.Read) is None
-        assert check_project_permissions(priv_proj, ProjectPermissions.Read) == 403
+        with client:
+            client.get("/")
+            assert check_project_permissions(pub_proj, ProjectPermissions.Read) is None
+            assert check_project_permissions(priv_proj, ProjectPermissions.Read) == 403
 
     # Logged-out (anonymous) user
     logout(client)
