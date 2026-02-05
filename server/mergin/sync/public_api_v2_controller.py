@@ -22,6 +22,7 @@ from ..auth import auth_required
 from ..auth.models import User
 from .errors import (
     AnotherUploadRunning,
+    BatchLimitError,
     BigChunkError,
     DataSyncError,
     ProjectLocked,
@@ -463,17 +464,12 @@ def list_batch_projects():
 
     :rtype: Dict[str: List[Project]]
     """
-    ids = list(
-        dict.fromkeys(request.json.get("ids", []))
-    )  # remove duplicates while preserving the order
-    if len(ids) > 100:
-        abort(
-            400,
-            {
-                "code": "BatchLimitExceeded",
-                "detail": "A maximum of 100 project UUIDS can be requested at once",
-            },
-        )
+    
+    # remove duplicates while preserving the order
+    ids = list(dict.fromkeys(request.json.get("ids", [])))  
+    max_batch = current_app.config.get("MAX_BATCH_SIZE", 100)
+    if len(ids) > max_batch:
+        return BatchLimitError().response(400)
 
     projects = current_app.project_handler.get_projects_by_uuids(ids)
     by_id = {str(project.id): project for project in projects}

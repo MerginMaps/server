@@ -23,6 +23,7 @@ from sqlalchemy.exc import IntegrityError
 import pytest
 from datetime import datetime, timedelta, timezone
 import json
+import uuid
 
 from mergin.app import db
 from mergin.config import Configuration
@@ -768,3 +769,10 @@ def test_list_projects_in_batch(client):
     # private -> error 404 (anonymous cannot access private)
     priv_result = next(p for p in projects if p.get("id") == priv_id)
     assert priv_result["error"] == 404
+
+    # batch size limit: generate more than allowed uuids and expect error
+    max_batch = client.application.config.get("MAX_BATCH_SIZE", 100)
+    ids = [str(uuid.uuid4()) for _ in range(max_batch + 1)]
+    resp = client.post(url, json={"ids": ids})
+    assert resp.status_code == 400
+    assert resp.json["code"] == "BatchLimitExceeded"
