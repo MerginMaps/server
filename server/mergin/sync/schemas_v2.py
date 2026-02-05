@@ -47,6 +47,7 @@ class ProjectSchema(ma.SQLAlchemyAutoSchema):
             "role",
         )
 
+
 class BatchErrorSchema(ma.Schema):
     id = fields.UUID(required=True)
     error = fields.Integer(required=True)

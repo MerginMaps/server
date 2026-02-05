@@ -18,10 +18,10 @@ from ..auth.models import User
 from ..app import db
 from ..config import Configuration
 from .utils import (
-    add_user, 
-    create_project, 
-    create_workspace, 
-    login, 
+    add_user,
+    create_project,
+    create_workspace,
+    login,
     logout,
 )
 
@@ -129,6 +129,7 @@ def test_project_permissions(client):
     assert ProjectPermissions.All.check(project, user)
     assert ProjectPermissions.Edit.check(project, user)
     assert ProjectPermissions.get_user_project_role(project, user) == ProjectRole.OWNER
+
 
 def test_check_project_permissions(client):
     """Test check_project_permissions with various permission scenarios."""
