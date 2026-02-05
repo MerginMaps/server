@@ -464,9 +464,9 @@ def list_batch_projects():
 
     :rtype: Dict[str: List[Project]]
     """
-    
+
     # remove duplicates while preserving the order
-    ids = list(dict.fromkeys(request.json.get("ids", [])))  
+    ids = list(dict.fromkeys(request.json.get("ids", [])))
     max_batch = current_app.config.get("MAX_BATCH_SIZE", 100)
     if len(ids) > max_batch:
         return BatchLimitError().response(400)
