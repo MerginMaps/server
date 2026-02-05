@@ -42,9 +42,10 @@ from .models import (
 )
 from .permissions import (
     ProjectPermissions,
-    check_project_permissions, 
-    require_project_by_uuid, 
-    projects_query)
+    check_project_permissions,
+    require_project_by_uuid,
+    projects_query,
+)
 from .public_api_controller import catch_sync_failure
 from .schemas import (
     ProjectMemberSchema,
@@ -52,12 +53,12 @@ from .schemas import (
 )
 from .storages.disk import move_to_tmp, save_to_file
 from .utils import (
-    get_device_id, 
-    get_ip, 
-    get_user_agent, 
-    get_chunk_location, 
-    is_valid_uuid
-) 
+    get_device_id,
+    get_ip,
+    get_user_agent,
+    get_chunk_location,
+    is_valid_uuid,
+)
 from .workspace import WorkspaceRole
 from ..utils import parse_order_params
 
@@ -456,49 +457,43 @@ def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=N
     data = ProjectSchemaV2(many=True).dump(result)
     return jsonify(projects=data, count=total, page=page, per_page=per_page), 200
 
+
 def list_batch_projects():
     """List projects by given list of UUIDs. Limit to 100 projects per request.
 
     :rtype: Dict[str: List[Project]]
     """
-    ids = request.json.get("ids", [])
+    ids = list(
+        dict.fromkeys(request.json.get("ids", []))
+    )  # remove duplicates while preserving the order
     if len(ids) > 100:
-        abort(400, 
+        abort(
+            400,
             {
-                "code" : "BatchLimitExceeded",
-                "detail" : "A maximum of 100 project UUIDS can be requested at once"
-            }
+                "code": "BatchLimitExceeded",
+                "detail": "A maximum of 100 project UUIDS can be requested at once",
+            },
         )
 
-    valid_uuids = [uuid 
-                    if is_valid_uuid(uuid) 
-                    else abort(400, {"code" : "InvalidUUID", "detail" : "Invalid UUID format"}) 
-                    for uuid in ids
-                ]
-
-    projects = (
-        Project.query
-        .filter(Project.id.in_(valid_uuids))
-        .filter(Project.storage_params.isnot(None))
-        .filter(Project.removed_at.is_(None))
-        .all()
-    )
+    projects = current_app.project_handler.get_projects_by_uuids(ids)
     by_id = {str(project.id): project for project in projects}
 
     filtered_projects = []
-    for uuid in valid_uuids:
-
+    for uuid in ids:
         project = by_id.get(uuid)
 
         if not project:
-            filtered_projects.append(BatchErrorSchema().dump({"id": uuid, "error": 404}))
+            filtered_projects.append(
+                BatchErrorSchema().dump({"id": uuid, "error": 404})
+            )
             continue
 
         err = check_project_permissions(project, ProjectPermissions.Read)
         if err is not None:
-            filtered_projects.append(BatchErrorSchema().dump({"id": uuid, "error": err}))
+            filtered_projects.append(
+                BatchErrorSchema().dump({"id": uuid, "error": err})
+            )
         else:
             filtered_projects.append(ProjectSchemaV2().dump(project))
 
     return jsonify(projects=filtered_projects), 200
-    

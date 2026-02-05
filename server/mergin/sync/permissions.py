@@ -248,7 +248,9 @@ def require_project_by_uuid(
     return project
 
 
-def check_project_permissions(project: Project, permission: ProjectPermissions) -> int | None:
+def check_project_permissions(
+    project: Project, permission: ProjectPermissions
+) -> int | None:
     """Check project permissions and return appropriate HTTP error code if check fails.
     :param project: project
     :type project: Project
@@ -257,10 +259,6 @@ def check_project_permissions(project: Project, permission: ProjectPermissions) 
     :return: HTTP error code if permission check fails, None otherwise
     :rtype: int | None
     """
-    
-    workspace = project.workspace
-    if not workspace or not is_active_workspace(workspace):
-        return 404
 
     if not permission.check(project, current_user):
         # logged in - NO, have acccess - NONE, public project - NO
@@ -271,7 +269,6 @@ def check_project_permissions(project: Project, permission: ProjectPermissions) 
         return 403
 
     return None
-
 
 
 def get_upload(transaction_id):
