@@ -459,14 +459,16 @@ def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=N
     return jsonify(projects=data, count=total, page=page, per_page=per_page), 200
 
 
-def list_batch_projects():
+def list_batch_projects(ids):
     """List projects by given list of UUIDs. Limit to 100 projects per request.
 
+    :param ids: List of project UUIDs
+    :type ids: List[str]
     :rtype: Dict[str: List[Project]]
     """
 
     # remove duplicates while preserving the order
-    ids = list(dict.fromkeys(request.json.get("ids", [])))
+    ids = list(dict.fromkeys(ids))
     max_batch = current_app.config.get("MAX_BATCH_SIZE", 100)
     if len(ids) > max_batch:
         return BatchLimitError().response(400)
