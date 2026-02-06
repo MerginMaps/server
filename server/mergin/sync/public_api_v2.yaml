@@ -367,6 +367,53 @@ paths:
                 $ref: "#/components/schemas/ProjectLocked"
 
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
+
+  /projects/batch:
+    post:
+      tags:
+        - project
+      summary: Get multiple projects by UUIDs
+      operationId: list_batch_projects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  description: List of project UUIDs to fetch
+                  items:
+                    $ref: "#/components/schemas/ProjectId"
+      responses:
+        "200":
+          description: Projects returned as a list of simple project objects and/or error objects.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [projects]
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      oneOf:
+                        - $ref: "#/components/schemas/Project"
+                        - $ref: "#/components/schemas/BatchItemError"
+        "400": 
+          description: Batch limit exceeded or one or more UUIDs were invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/CustomError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
+
   /workspaces/{workspace_id}/projects:
     get:
       tags:
@@ -457,9 +504,7 @@ components:
       description: UUID of the project
       required: true
       schema:
-        type: string
-        format: uuid
-        pattern: \b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b
+        $ref: "#/components/schemas/ProjectId"
     WorkspaceId:
       name: workspace_id
       in: path
@@ -468,6 +513,10 @@ components:
       schema:
         type: integer
   schemas:
+    ProjectId:
+      type: string
+      format: uuid
+      pattern: \b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b
     # Errors
     CustomError:
       type: object
@@ -547,6 +596,17 @@ components:
       example:
         code: UploadError
         detail: "Project version could not be created (UploadError)"
+    BatchItemError:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ProjectId"
+        error:
+          type: integer
+          example: 404
+      required:
+        - id
+        - error
     # Data
     ProjectRole:
       type: string

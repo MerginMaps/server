@@ -78,3 +78,5 @@ class Configuration(object):
     EXCLUDED_CLONE_FILENAMES = config(
         "EXCLUDED_CLONE_FILENAMES", default="qgis_cfg.xml", cast=Csv()
     )
+    # max batch size for fetch projects in batch endpoint
+    MAX_BATCH_SIZE = config("MAX_BATCH_SIZE", default=100, cast=int)

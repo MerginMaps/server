@@ -2,15 +2,29 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import pytest
+from unittest.mock import patch
 import datetime
 from flask_login import AnonymousUserMixin
 
-from ..sync.permissions import require_project, ProjectPermissions
-from ..sync.models import ProjectRole
+from mergin.tests import DEFAULT_USER
+
+from ..sync.permissions import (
+    require_project,
+    check_project_permissions,
+    ProjectPermissions,
+)
+from ..sync.models import Project, ProjectRole
 from ..auth.models import User
 from ..app import db
 from ..config import Configuration
-from .utils import add_user, create_project, create_workspace
+from .utils import (
+    add_user,
+    create_project,
+    create_workspace,
+    login,
+    logout,
+)
 
 
 def test_project_permissions(client):
@@ -116,3 +130,47 @@ def test_project_permissions(client):
     assert ProjectPermissions.All.check(project, user)
     assert ProjectPermissions.Edit.check(project, user)
     assert ProjectPermissions.get_user_project_role(project, user) == ProjectRole.OWNER
+
+
+def test_check_project_permissions(client):
+    """Test check_project_permissions with various permission scenarios."""
+    admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
+    test_workspace = create_workspace()
+
+    private_proj = create_project("batch_private", test_workspace, admin)
+    public_proj = create_project("batch_public", test_workspace, admin)
+
+    p = Project.query.get(public_proj.id)
+    p.public = True
+    db.session.commit()
+
+    priv_proj = Project.query.get(private_proj.id)
+    pub_proj = Project.query.get(public_proj.id)
+
+    # First user with access to both projects
+    login(client, DEFAULT_USER[0], DEFAULT_USER[1])
+
+    with client:
+        client.get("/")
+        assert check_project_permissions(priv_proj, ProjectPermissions.Read) is None
+        assert check_project_permissions(pub_proj, ProjectPermissions.Read) is None
+
+    # Second user with no access to private project (ensure global perms disabled)
+    with patch.object(Configuration, "GLOBAL_READ", False), patch.object(
+        Configuration, "GLOBAL_WRITE", False
+    ), patch.object(Configuration, "GLOBAL_ADMIN", False):
+        user2 = add_user("user_batch", "password")
+        login(client, user2.username, "password")
+
+        with client:
+            client.get("/")
+            assert check_project_permissions(pub_proj, ProjectPermissions.Read) is None
+            assert check_project_permissions(priv_proj, ProjectPermissions.Read) == 403
+
+    # Logged-out (anonymous) user
+    logout(client)
+
+    with client:
+        client.get("/")
+        assert check_project_permissions(priv_proj, ProjectPermissions.Read) == 404
+        assert check_project_permissions(pub_proj, ProjectPermissions.Read) is None

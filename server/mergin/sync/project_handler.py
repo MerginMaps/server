@@ -28,3 +28,13 @@ class ProjectHandler(AbstractProjectHandler):
             )
             .all()
         )
+
+    @staticmethod
+    def get_projects_by_uuids(uuids: List[str]) -> [Project]:
+        """Gets non-deleted projects"""
+        return (
+            Project.query.filter(Project.id.in_(uuids))
+            .filter(Project.storage_params.isnot(None))
+            .filter(Project.removed_at.is_(None))
+            .all()
+        )
