@@ -608,8 +608,9 @@ def get_paginated_projects(
         public,
         only_public,
     )
-    result = projects.paginate(page, per_page).items
-    total = projects.paginate().total
+    pagination = projects.paginate(page, per_page)
+    result = pagination.items
+    total = pagination.total
 
     # create user map id:username passed to project schema to minimize queries to db
     projects_ids = [p.id for p in result]

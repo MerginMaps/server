@@ -428,12 +428,12 @@ def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=N
     if not (ws and ws.is_active):
         abort(404, "Workspace not found")
 
-    if ws.user_has_permissions(current_user, "read"):
+    if ws.user_has_permissions(current_user, WorkspaceRole.READER.value):
         # regular members can list all projects
         projects = Project.query.filter_by(workspace_id=ws.id).filter(
             Project.removed_at.is_(None)
         )
-    elif ws.user_has_permissions(current_user, "guest"):
+    elif ws.user_has_permissions(current_user, WorkspaceRole.GUEST.value):
         # guest can list only explicitly shared projects
         projects = projects_query(
             ProjectPermissions.Read, as_admin=False, public=False

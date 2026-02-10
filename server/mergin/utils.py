@@ -60,7 +60,7 @@ def get_order_param(
         attr = None
     order_attr = cls.__table__.c.get(col, None)
     if not isinstance(order_attr, Column):
-        logging.warning("Ignoring invalid order parameter.")
+        logging.warning(f"Ignoring invalid order parameter: {order_param}.")
         return
     # sort by key in JSON field
     if attr:
