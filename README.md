@@ -66,7 +66,7 @@ Try Mergin Maps at https://merginmaps.com/ - the SaaS service run by Lutra Consu
 
 ### Running locally
 
-A step-by-step guide how to run local Mergin Maps instance can be found in our [documentation](https://merginmaps.com/docs/dev/mergince/). 
+A step-by-step guide how to run local Mergin Maps instance can be found in our [documentation](https://merginmaps.com/docs/server/install/). 
 
 ### Manage Mergin Maps
 
