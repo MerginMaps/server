@@ -248,6 +248,29 @@ def require_project_by_uuid(
     return project
 
 
+def check_project_permissions(
+    project: Project, permission: ProjectPermissions
+) -> int | None:
+    """Check project permissions and return appropriate HTTP error code if check fails.
+    :param project: project
+    :type project: Project
+    :param permission: permission to check
+    :type permission: ProjectPermissions
+    :return: HTTP error code if permission check fails, None otherwise
+    :rtype: int | None
+    """
+
+    if not permission.check(project, current_user):
+        # logged in - NO, have acccess - NONE, public project - NO
+        if current_user.is_anonymous:
+            # we don't want to tell anonymous user if a private project exists
+            return 404
+        # logged in - YES, have access - NO, public project - NO
+        return 403
+
+    return None
+
+
 def get_upload(transaction_id):
     upload = Upload.query.get_or_404(transaction_id)
     # upload to 'removed' projects is forbidden
