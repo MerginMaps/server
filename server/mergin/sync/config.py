@@ -78,3 +78,5 @@ class Configuration(object):
     EXCLUDED_CLONE_FILENAMES = config(
         "EXCLUDED_CLONE_FILENAMES", default="qgis_cfg.xml", cast=Csv()
     )
+    # files that should be ignored during extension and mime type check
+    UPLOAD_FILES_WHITELIST = config("UPLOAD_FILES_WHITELIST", default="", cast=Csv())

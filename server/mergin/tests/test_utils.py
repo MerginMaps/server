@@ -22,10 +22,13 @@ from ..sync.utils import (
     has_valid_characters,
     has_valid_first_character,
     check_filename,
+    is_supported_extension,
+    is_supported_type,
     is_valid_path,
     get_x_accel_uri,
     wkb2wkt,
     has_trailing_space,
+    check_skip_validation,
 )
 from ..auth.models import LoginHistory, User
 from . import json_headers
@@ -322,3 +325,46 @@ def test_get_schema_fields_map():
         "size": "disk_usage",
     }
     assert schema_map == expected_map
+
+
+def test_check_skip_validation():
+    ALLOWED_FILES = ["script.js", "config/script.js"]
+
+    # We patch the Configuration class attribute directly
+    with patch("mergin.sync.utils.Configuration.UPLOAD_FILES_WHITELIST", ALLOWED_FILES):
+
+        # Test allowed files
+        for file_path in ALLOWED_FILES:
+            assert check_skip_validation(file_path)
+
+        # Test not allowed files
+        assert not check_skip_validation("test.py")
+        assert not check_skip_validation("/some/path/test.py")
+        assert not check_skip_validation("image.png")
+
+
+def test_is_supported_extension():
+    ALLOWED_FILES = ["script.js", "config/script.js"]
+
+    with patch("mergin.sync.utils.Configuration.UPLOAD_FILES_WHITELIST", ALLOWED_FILES):
+        for file_path in ALLOWED_FILES:
+            assert is_supported_extension(file_path)
+
+        # Allowed normal file
+        assert is_supported_extension("image.png")
+
+        # Forbidden file
+        assert not is_supported_extension("test.js")
+
+
+def test_mime_type_validation_skip():
+    ALLOWED_FILES = ["script.js", "config/script.js"]
+    # Mocking get_mimetype to return forbidden mime type
+    with patch(
+        "mergin.sync.utils.get_mimetype", return_value="application/x-python-code"
+    ), patch("mergin.sync.utils.Configuration.UPLOAD_FILES_WHITELIST", ALLOWED_FILES):
+        for file_path in ALLOWED_FILES:
+            assert is_supported_extension(file_path)
+
+        # Should be forbidden
+        assert not is_supported_type("other.js")
