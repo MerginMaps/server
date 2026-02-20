@@ -1215,6 +1215,7 @@ class ProjectVersionDelta(db.Model):
         elif action == ChangeComparisonAction.FORCE_UPDATE:
             # handle force update case, when previous change was delete and new change is create - just revert to update with new metadata
             new.change = PushChangeType.UPDATE
+            new.diffs = []
             result = new
 
         elif action == ChangeComparisonAction.UPDATE_METADATA:
