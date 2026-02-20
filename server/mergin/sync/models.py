@@ -1269,6 +1269,13 @@ class ProjectVersionDelta(db.Model):
         changes = []
         for delta in delta_range:
             changes.extend(DeltaChangeSchema(many=True).load(delta.changes))
+
+        # Compute merged result only to decide which FileDiff checkpoints to create.
+        # The raw (unmerged) changes are what gets stored — pre-merging would collapse
+        # DELETE+CREATE sequences into a single CREATE, losing the DELETE. When the
+        # outer merge_changes in get_delta_changes later combines adjacent checkpoints,
+        # that missing DELETE causes can_delete to be False, making CREATE+DELETE or
+        # CREATE+CREATE sequences produce EXCLUDE instead of DELETE or CREATE.
         merged_delta_items: List[DeltaChange] = [
             d.to_data_delta() for d in cls.merge_changes(changes)
         ]
@@ -1323,7 +1330,7 @@ class ProjectVersionDelta(db.Model):
             project_id=project_id,
             version=checkpoint.end,
             rank=checkpoint.rank,
-            changes=DeltaChangeSchema(many=True).dump(merged_delta_items),
+            changes=DeltaChangeSchema(many=True).dump(changes),
         )
         db.session.add(checkpoint_delta)
         db.session.commit()

@@ -25,6 +25,7 @@ from pygeodiff import GeoDiffLibError
 
 from .utils import (
     add_user,
+    create_blank_version,
     create_project,
     create_workspace,
     diffs_are_equal,
@@ -491,6 +492,135 @@ def test_delta_merge_changes():
     assert merged[0].version == delete8.version
     assert merged[0].size == delete8.size
     assert merged[0].checksum == delete8.checksum
+
+
+def test_delta_cross_checkpoint_create_delete_recreate(client):
+    """
+    Regression test for cross-checkpoint pre-merge bug: scenario 1.
+
+    A file that is created within the queried range and then deleted+re-created
+    across a rank-1 chunk boundary is silently excluded from the delta result.
+
+    Root cause: create_checkpoint calls merge_changes before storing, collapsing
+    DELETE+CREATE into CREATE and losing the DELETE. When two chunks both store
+    CREATE for the same file, the outer merge_changes in get_delta_changes sees
+    CREATE+CREATE which maps to EXCLUDE — and the file disappears from the result.
+
+    Setup (rank-1 chunks cover 4 versions each, 4^1=4):
+        v1–v4:  tracked.gpkg does NOT exist (client at v4 has never seen it)
+        v5–v8:  tracked.gpkg is CREATED at v5  → rank-1 stores [CREATE(v5)]
+        v9–v12: tracked.gpkg is DELETED at v9, RE-CREATED at v10
+                → rank-1 stores [CREATE(v10)] after pre-merging DELETE+CREATE
+
+    get_delta_changes(4, 12) then loads [CREATE(v5), CREATE(v10)] and the outer
+    merge_changes hits CREATE+CREATE → EXCLUDE → returns [].
+
+    Expected: [CREATE(v10)] so the client downloads the re-created file.
+    """
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+
+    tracked_gpkg = os.path.join(TMP_DIR, "tracked.gpkg")
+    shutil.copy(os.path.join(test_project_dir, "base.gpkg"), tracked_gpkg)
+
+    # advance to v4 with blank versions (project starts at v1)
+    create_blank_version(project)  # v2
+    create_blank_version(project)  # v3
+    create_blank_version(project)  # v4
+    assert project.latest_version == 4
+
+    # rank-1 chunk [v5–v8]: file is born at v5
+    push_change(project, "added", "tracked.gpkg", TMP_DIR)  # v5
+    create_blank_version(project)  # v6
+    create_blank_version(project)  # v7
+    create_blank_version(project)  # v8
+    assert project.latest_version == 8
+
+    # rank-1 chunk [v9–v12]: file is deleted then re-created in the same chunk
+    push_change(project, "removed", "tracked.gpkg", TMP_DIR)  # v9
+    push_change(project, "added", "tracked.gpkg", TMP_DIR)  # v10
+    create_blank_version(project)  # v11
+    create_blank_version(project)  # v12
+    assert project.latest_version == 12
+
+    # client at v4 never had tracked.gpkg; it was created at v5, deleted at v9, re-created at v10
+    delta = project.get_delta_changes(4, 12)
+
+    assert delta is not None
+    tracked = next((d for d in delta if d.path == "tracked.gpkg"), None)
+    assert tracked is not None, (
+        "tracked.gpkg missing from delta — cross-checkpoint pre-merge bug: "
+        "DELETE(v9)+CREATE(v10) was collapsed to CREATE inside checkpoint(v9-v12), "
+        "then CREATE(v5)+CREATE(v10) hit CREATE+CREATE→EXCLUDE in the outer merge"
+    )
+    assert tracked.change == PushChangeType.CREATE
+    assert tracked.version == 10
+
+
+def test_delta_cross_checkpoint_recreate_then_delete(client):
+    """
+    Regression test for cross-checkpoint pre-merge bug: scenario 2.
+
+    A file that existed before the queried range, is deleted+re-created within
+    chunk A, and then permanently deleted in chunk B is silently excluded from
+    the delta result instead of appearing as DELETE.
+
+    Root cause: create_checkpoint pre-merges DELETE+CREATE to CREATE in chunk A,
+    losing the DELETE. The outer merge then sees CREATE (chunk A) + DELETE (chunk B).
+    Because the stored CREATE did not populate updating_files, can_delete=False,
+    so CREATE+DELETE maps to EXCLUDE rather than DELETE — the file is never
+    removed from the client even though it no longer exists on the server.
+
+    Setup:
+        v1–v4:  base.gpkg exists (client at v4 has the file, can_delete should be True)
+        v5–v8:  base.gpkg DELETED at v5, RE-CREATED at v6
+                → rank-1 stores [CREATE(v6)] after pre-merging DELETE+CREATE
+        v9–v12: base.gpkg DELETED at v9 (permanently gone)
+                → rank-1 stores [DELETE(v9)]
+
+    get_delta_changes(4, 12) loads [CREATE(v6), DELETE(v9)]. The stored CREATE
+    from chunk A did not set can_delete, so the outer merge treats it as a fresh
+    creation. CREATE+DELETE with can_delete=False → EXCLUDE → returns [].
+
+    Expected: [DELETE] so the client removes the stale local copy of base.gpkg.
+    """
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+
+    # advance to v4; base.gpkg is present throughout (client at v4 has it)
+    create_blank_version(project)  # v2
+    create_blank_version(project)  # v3
+    create_blank_version(project)  # v4
+    assert project.latest_version == 4
+
+    # rank-1 chunk [v5–v8]: delete then immediately re-create in the same chunk
+    push_change(project, "removed", "base.gpkg", TMP_DIR)  # v5
+    push_change(project, "added", "base.gpkg", test_project_dir)  # v6
+    create_blank_version(project)  # v7
+    create_blank_version(project)  # v8
+    assert project.latest_version == 8
+
+    # rank-1 chunk [v9–v12]: file is permanently deleted
+    push_change(project, "removed", "base.gpkg", TMP_DIR)  # v9
+    create_blank_version(project)  # v10
+    create_blank_version(project)  # v11
+    create_blank_version(project)  # v12
+    assert project.latest_version == 12
+
+    # client at v4 has base.gpkg; server deleted it at v9
+    delta = project.get_delta_changes(4, 12)
+
+    assert delta is not None
+    base_gpkg = next((d for d in delta if d.path == "base.gpkg"), None)
+    assert base_gpkg is not None, (
+        "base.gpkg missing from delta — cross-checkpoint pre-merge bug: "
+        "DELETE(v5)+CREATE(v6) was collapsed to CREATE inside checkpoint(v5-v8), "
+        "then CREATE(v6)+DELETE(v9) hit CREATE+DELETE with can_delete=False→EXCLUDE "
+        "in the outer merge, so client is never told to remove the file"
+    )
+    assert base_gpkg.change == PushChangeType.DELETE
 
 
 def test_project_version_delta_changes(client, diff_project: Project):
