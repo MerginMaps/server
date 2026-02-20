@@ -69,8 +69,8 @@ class ChangeComparisonAction(Enum):
     """Actions to take when comparing two changes"""
 
     REPLACE = "replace"
-    UPDATE_METADATA = "update"
-    REPLACE_DIFFS = "update_diff"
+    UPDATE_METADATA = "update_metadata"  # Update metadata and keep diffs (used for update + update sequence)
+    REPLACE_DIFFS = "replace_diffs"  # Replace diffs but keep metadata (used for update + update sequence when only diffs are changed)
     EXCLUDE = "exclude"  # Return None to exclude the file
     FORCE_UPDATE = (
         "force_update"  # Force update even if it looks like a delete + create sequence
