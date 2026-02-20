@@ -496,16 +496,6 @@ def test_delta_merge_changes():
 
 def test_delta_cross_checkpoint_create_delete_recreate(client):
     """
-    Regression test for cross-checkpoint pre-merge bug: scenario 1.
-
-    A file that is created within the queried range and then deleted+re-created
-    across a rank-1 chunk boundary is silently excluded from the delta result.
-
-    Root cause: create_checkpoint calls merge_changes before storing, collapsing
-    DELETE+CREATE into CREATE and losing the DELETE. When two chunks both store
-    CREATE for the same file, the outer merge_changes in get_delta_changes sees
-    CREATE+CREATE which maps to EXCLUDE — and the file disappears from the result.
-
     Setup (rank-1 chunks cover 4 versions each, 4^1=4):
         v1–v4:  tracked.gpkg does NOT exist (client at v4 has never seen it)
         v5–v8:  tracked.gpkg is CREATED at v5  → rank-1 stores [CREATE(v5)]
@@ -549,29 +539,15 @@ def test_delta_cross_checkpoint_create_delete_recreate(client):
 
     assert delta is not None
     tracked = next((d for d in delta if d.path == "tracked.gpkg"), None)
-    assert tracked is not None, (
-        "tracked.gpkg missing from delta — cross-checkpoint pre-merge bug: "
-        "DELETE(v9)+CREATE(v10) was collapsed to CREATE inside checkpoint(v9-v12), "
-        "then CREATE(v5)+CREATE(v10) hit CREATE+CREATE→EXCLUDE in the outer merge"
-    )
+    # DELETE(v9)+CREATE(v10) was collapsed to CREATE inside checkpoint(v9-v12)
+    # then CREATE(v5)+CREATE(v10) hit CREATE+CREATE→EXCLUDE in the outer merge
+    assert tracked is not None
     assert tracked.change == PushChangeType.CREATE
     assert tracked.version == 10
 
 
 def test_delta_cross_checkpoint_recreate_then_delete(client):
     """
-    Regression test for cross-checkpoint pre-merge bug: scenario 2.
-
-    A file that existed before the queried range, is deleted+re-created within
-    chunk A, and then permanently deleted in chunk B is silently excluded from
-    the delta result instead of appearing as DELETE.
-
-    Root cause: create_checkpoint pre-merges DELETE+CREATE to CREATE in chunk A,
-    losing the DELETE. The outer merge then sees CREATE (chunk A) + DELETE (chunk B).
-    Because the stored CREATE did not populate updating_files, exclude_delete=True,
-    so CREATE+DELETE maps to EXCLUDE rather than DELETE — the file is never
-    removed from the client even though it no longer exists on the server.
-
     Setup:
         v1–v4:  base.gpkg exists (client at v4 has the file, exclude_delete should be False)
         v5–v8:  base.gpkg DELETED at v5, RE-CREATED at v6
@@ -614,12 +590,7 @@ def test_delta_cross_checkpoint_recreate_then_delete(client):
 
     assert delta is not None
     base_gpkg = next((d for d in delta if d.path == "base.gpkg"), None)
-    assert base_gpkg is not None, (
-        "base.gpkg missing from delta — cross-checkpoint pre-merge bug: "
-        "DELETE(v5)+CREATE(v6) was collapsed to CREATE inside checkpoint(v5-v8), "
-        "then CREATE(v6)+DELETE(v9) hit CREATE+DELETE with exclude_delete=True→EXCLUDE "
-        "in the outer merge, so client is never told to remove the file"
-    )
+    assert base_gpkg is not None
     assert base_gpkg.change == PushChangeType.DELETE
 
 

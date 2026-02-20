@@ -1191,7 +1191,7 @@ class ProjectVersionDelta(db.Model):
                 PushChangeType.DELETE,
                 PushChangeType.CREATE,
             ): ChangeComparisonAction.FORCE_UPDATE,
-            # delete + update = invalid sequence
+            # delete + update = replace it (used for multicheckpoint ranges when we want to keep file in history even if it was deleted in the middle, so we keep delete but update metadata and diffs)
             (
                 PushChangeType.DELETE,
                 PushChangeType.UPDATE,
