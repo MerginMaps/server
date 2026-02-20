@@ -69,10 +69,12 @@ class ChangeComparisonAction(Enum):
     """Actions to take when comparing two changes"""
 
     REPLACE = "replace"
-    DELETE = "delete"
-    UPDATE = "update"
-    UPDATE_DIFF = "update_diff"
+    UPDATE_METADATA = "update_metadata"  # Update metadata and keep diffs (used for update + update sequence)
+    REPLACE_DIFFS = "replace_diffs"  # Replace diffs but keep metadata (used for update + update sequence when only diffs are changed)
     EXCLUDE = "exclude"  # Return None to exclude the file
+    FORCE_UPDATE = (
+        "force_update"  # Force update even if it looks like a delete + create sequence
+    )
 
 
 class Project(db.Model):
@@ -1089,9 +1091,11 @@ class ProjectVersionDelta(db.Model):
                 continue
 
             # Compare and merge with previous change for this file
-            can_delete = path in updating_files
+            # If file did not exist before this range (first change was CREATE),
+            # a CREATE+DELETE sequence is transparent — exclude the pair.
+            exclude_delete = path not in updating_files
             new_change = ProjectVersionDelta._compare_changes(
-                result[path], current, can_delete
+                result[path], current, exclude_delete
             )
 
             # Update result (or remove if no change is detected)
@@ -1106,7 +1110,7 @@ class ProjectVersionDelta(db.Model):
     def _compare_changes(
         previous: DeltaChangeMerged,
         new: DeltaChangeMerged,
-        prevent_delete_change: bool,
+        exclude_delete: bool,
     ) -> Optional[DeltaChangeMerged]:
         """
         Compare and merge two changes for the same file.
@@ -1114,7 +1118,10 @@ class ProjectVersionDelta(db.Model):
         Args:
             previous: Previously accumulated change
             new: New change to compare
-            prevent_delete_change: Whether the change can be deleted when resolving create+delete sequences
+            exclude_delete: If True, a CREATE+DELETE pair is excluded (file was
+                created and deleted within the same range — no net effect).
+                If False, the DELETE is kept (file existed before this range
+                and the client needs to remove it).
 
         Returns:
             Merged change or None if file should be excluded
@@ -1122,29 +1129,35 @@ class ProjectVersionDelta(db.Model):
 
         # Map change type pairs to actions
         action_map = {
-            # create + delete = file is transparent for current changes -> delete it
+            # CREATE + DELETE: if file didn't exist before (exclude_delete=True),
+            # the pair cancels out (EXCLUDE). If it did exist, keep the DELETE
+            # so the client removes its local copy.
             (
                 PushChangeType.CREATE,
                 PushChangeType.DELETE,
-            ): ChangeComparisonAction.DELETE,
+            ): (
+                ChangeComparisonAction.EXCLUDE
+                if exclude_delete
+                else ChangeComparisonAction.REPLACE
+            ),
             # create + update = create with updated info
             (
                 PushChangeType.CREATE,
                 PushChangeType.UPDATE,
-            ): ChangeComparisonAction.UPDATE,
+            ): ChangeComparisonAction.UPDATE_METADATA,
             (
                 PushChangeType.CREATE,
                 PushChangeType.UPDATE_DIFF,
-            ): ChangeComparisonAction.UPDATE,
+            ): ChangeComparisonAction.UPDATE_METADATA,
             (
                 PushChangeType.CREATE,
                 PushChangeType.CREATE,
-            ): ChangeComparisonAction.EXCLUDE,
+            ): ChangeComparisonAction.REPLACE,
             # update + update_diff = update with latest info
             (
                 PushChangeType.UPDATE,
                 PushChangeType.UPDATE_DIFF,
-            ): ChangeComparisonAction.UPDATE,
+            ): ChangeComparisonAction.UPDATE_METADATA,
             (
                 PushChangeType.UPDATE,
                 PushChangeType.UPDATE,
@@ -1161,7 +1174,7 @@ class ProjectVersionDelta(db.Model):
             (
                 PushChangeType.UPDATE_DIFF,
                 PushChangeType.UPDATE_DIFF,
-            ): ChangeComparisonAction.UPDATE_DIFF,
+            ): ChangeComparisonAction.REPLACE_DIFFS,
             (
                 PushChangeType.UPDATE_DIFF,
                 PushChangeType.UPDATE,
@@ -1173,16 +1186,16 @@ class ProjectVersionDelta(db.Model):
             (
                 PushChangeType.UPDATE_DIFF,
                 PushChangeType.CREATE,
-            ): ChangeComparisonAction.EXCLUDE,
+            ): ChangeComparisonAction.REPLACE,
             (
                 PushChangeType.DELETE,
                 PushChangeType.CREATE,
-            ): ChangeComparisonAction.REPLACE,
-            # delete + update = invalid sequence
+            ): ChangeComparisonAction.FORCE_UPDATE,
+            # delete + update = replace it (used for multicheckpoint ranges when we want to keep file in history even if it was deleted in the middle, so we keep delete but update metadata and diffs)
             (
                 PushChangeType.DELETE,
                 PushChangeType.UPDATE,
-            ): ChangeComparisonAction.EXCLUDE,
+            ): ChangeComparisonAction.REPLACE,
             (
                 PushChangeType.DELETE,
                 PushChangeType.UPDATE_DIFF,
@@ -1190,27 +1203,28 @@ class ProjectVersionDelta(db.Model):
             (
                 PushChangeType.DELETE,
                 PushChangeType.DELETE,
-            ): ChangeComparisonAction.EXCLUDE,
+            ): ChangeComparisonAction.REPLACE,
         }
 
         action = action_map.get((previous.change, new.change))
+
         result = None
         if action == ChangeComparisonAction.REPLACE:
             result = new
 
-        elif action == ChangeComparisonAction.DELETE:
-            # if change is create + delete, we can just remove the change from accumulated changes
-            # only if this action is allowed (file existed before)
-            if prevent_delete_change:
-                result = new
+        elif action == ChangeComparisonAction.FORCE_UPDATE:
+            # handle force update case, when previous change was delete and new change is create - just revert to update with new metadata
+            new.change = PushChangeType.UPDATE
+            new.diffs = []
+            result = new
 
-        elif action == ChangeComparisonAction.UPDATE:
+        elif action == ChangeComparisonAction.UPDATE_METADATA:
             # handle update case, when previous change was create - just revert to create with new metadata
             new.change = previous.change
             new.diffs = []
             result = new
 
-        elif action == ChangeComparisonAction.UPDATE_DIFF:
+        elif action == ChangeComparisonAction.REPLACE_DIFFS:
             new.diffs = (previous.diffs or []) + (new.diffs or [])
             result = new
 
@@ -1269,8 +1283,12 @@ class ProjectVersionDelta(db.Model):
         changes = []
         for delta in delta_range:
             changes.extend(DeltaChangeSchema(many=True).load(delta.changes))
+
+        # Merge changes for compact storage and FileDiff checkpoint decisions.
+        merged_changes = cls.merge_changes(changes)
+
         merged_delta_items: List[DeltaChange] = [
-            d.to_data_delta() for d in cls.merge_changes(changes)
+            d.to_data_delta() for d in merged_changes
         ]
 
         # Pre-fetch data for all versioned files to create FileDiff checkpoints where it makes sense

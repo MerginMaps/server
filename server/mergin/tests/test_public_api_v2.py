@@ -25,6 +25,7 @@ from pygeodiff import GeoDiffLibError
 
 from .utils import (
     add_user,
+    create_blank_version,
     create_project,
     create_workspace,
     diffs_are_equal,
@@ -493,6 +494,106 @@ def test_delta_merge_changes():
     assert merged[0].checksum == delete8.checksum
 
 
+def test_delta_cross_checkpoint_create_delete_recreate(client):
+    """
+    Setup (rank-1 chunks cover 4 versions each, 4^1=4):
+        v1–v4:  tracked.gpkg does NOT exist (client at v4 has never seen it)
+        v5–v8:  tracked.gpkg is CREATED at v5  → rank-1 stores [CREATE(v5)]
+        v9–v12: tracked.gpkg is DELETED at v9, RE-CREATED at v10
+                → rank-1 stores [CREATE(v10)] after pre-merging DELETE+CREATE
+
+    get_delta_changes(4, 12) then loads [CREATE(v5), CREATE(v10)] and the outer
+    merge_changes hits CREATE+CREATE → EXCLUDE → returns [].
+
+    Expected: [CREATE(v10)] so the client downloads the re-created file.
+    """
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+
+    tracked_gpkg = os.path.join(TMP_DIR, "tracked.gpkg")
+    shutil.copy(os.path.join(test_project_dir, "base.gpkg"), tracked_gpkg)
+
+    # advance to v4 with blank versions (project starts at v1)
+    create_blank_version(project)  # v2
+    create_blank_version(project)  # v3
+    create_blank_version(project)  # v4
+    assert project.latest_version == 4
+
+    # rank-1 chunk [v5–v8]: file is born at v5
+    push_change(project, "added", "tracked.gpkg", TMP_DIR)  # v5
+    create_blank_version(project)  # v6
+    create_blank_version(project)  # v7
+    create_blank_version(project)  # v8
+    assert project.latest_version == 8
+
+    # rank-1 chunk [v9–v12]: file is deleted then re-created in the same chunk
+    push_change(project, "removed", "tracked.gpkg", TMP_DIR)  # v9
+    push_change(project, "added", "tracked.gpkg", TMP_DIR)  # v10
+    create_blank_version(project)  # v11
+    create_blank_version(project)  # v12
+    assert project.latest_version == 12
+
+    # client at v4 never had tracked.gpkg; it was created at v5, deleted at v9, re-created at v10
+    delta = project.get_delta_changes(4, 12)
+
+    assert delta is not None
+    tracked = next((d for d in delta if d.path == "tracked.gpkg"), None)
+    # DELETE(v9)+CREATE(v10) was collapsed to CREATE inside checkpoint(v9-v12)
+    # then CREATE(v5)+CREATE(v10) hit CREATE+CREATE→EXCLUDE in the outer merge
+    assert tracked is not None
+    assert tracked.change == PushChangeType.CREATE
+    assert tracked.version == 10
+
+
+def test_delta_cross_checkpoint_recreate_then_delete(client):
+    """
+    Setup:
+        v1–v4:  base.gpkg exists (client at v4 has the file, exclude_delete should be False)
+        v5–v8:  base.gpkg DELETED at v5, RE-CREATED at v6
+                → rank-1 stores [CREATE(v6)] after pre-merging DELETE+CREATE
+        v9–v12: base.gpkg DELETED at v9 (permanently gone)
+                → rank-1 stores [DELETE(v9)]
+
+    get_delta_changes(4, 12) loads [CREATE(v6), DELETE(v9)]. The stored CREATE
+    from chunk A did not set updating_files, so exclude_delete=True and
+    CREATE+DELETE → EXCLUDE → returns [].
+
+    Expected: [DELETE] so the client removes the stale local copy of base.gpkg.
+    """
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+
+    # advance to v4; base.gpkg is present throughout (client at v4 has it)
+    create_blank_version(project)  # v2
+    create_blank_version(project)  # v3
+    create_blank_version(project)  # v4
+    assert project.latest_version == 4
+
+    # rank-1 chunk [v5–v8]: delete then immediately re-create in the same chunk
+    push_change(project, "removed", "base.gpkg", TMP_DIR)  # v5
+    push_change(project, "added", "base.gpkg", test_project_dir)  # v6
+    create_blank_version(project)  # v7
+    create_blank_version(project)  # v8
+    assert project.latest_version == 8
+
+    # rank-1 chunk [v9–v12]: file is permanently deleted
+    push_change(project, "removed", "base.gpkg", TMP_DIR)  # v9
+    create_blank_version(project)  # v10
+    create_blank_version(project)  # v11
+    create_blank_version(project)  # v12
+    assert project.latest_version == 12
+
+    # client at v4 has base.gpkg; server deleted it at v9
+    delta = project.get_delta_changes(4, 12)
+
+    assert delta is not None
+    base_gpkg = next((d for d in delta if d.path == "base.gpkg"), None)
+    assert base_gpkg is not None
+    assert base_gpkg.change == PushChangeType.DELETE
+
+
 def test_project_version_delta_changes(client, diff_project: Project):
     """Test that get_delta_changes and its schema work as expected"""
     latest_version = diff_project.get_latest_version()
@@ -524,7 +625,7 @@ def test_project_version_delta_changes(client, diff_project: Project):
     # delete + create version
     delta = diff_project.get_delta_changes(1, 3)
     assert len(delta) == 1
-    assert delta[0].change == PushChangeType.CREATE
+    assert delta[0].change == PushChangeType.UPDATE
     # file was created in v3
     assert delta[0].version == 3
     assert delta[0].checksum == deltas[3].changes[0]["checksum"]
@@ -532,7 +633,7 @@ def test_project_version_delta_changes(client, diff_project: Project):
     # get_delta with update diff
     delta = diff_project.get_delta_changes(1, 4)
     assert len(delta) == 1
-    assert delta[0].change == PushChangeType.CREATE
+    assert delta[0].change == PushChangeType.UPDATE
     assert ProjectVersionDelta.query.filter_by(rank=1).count() == 0
 
     # create rank 1 checkpoint for v4
