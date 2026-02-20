@@ -568,20 +568,20 @@ def test_delta_cross_checkpoint_recreate_then_delete(client):
 
     Root cause: create_checkpoint pre-merges DELETE+CREATE to CREATE in chunk A,
     losing the DELETE. The outer merge then sees CREATE (chunk A) + DELETE (chunk B).
-    Because the stored CREATE did not populate updating_files, can_delete=False,
+    Because the stored CREATE did not populate updating_files, exclude_delete=True,
     so CREATE+DELETE maps to EXCLUDE rather than DELETE — the file is never
     removed from the client even though it no longer exists on the server.
 
     Setup:
-        v1–v4:  base.gpkg exists (client at v4 has the file, can_delete should be True)
+        v1–v4:  base.gpkg exists (client at v4 has the file, exclude_delete should be False)
         v5–v8:  base.gpkg DELETED at v5, RE-CREATED at v6
                 → rank-1 stores [CREATE(v6)] after pre-merging DELETE+CREATE
         v9–v12: base.gpkg DELETED at v9 (permanently gone)
                 → rank-1 stores [DELETE(v9)]
 
     get_delta_changes(4, 12) loads [CREATE(v6), DELETE(v9)]. The stored CREATE
-    from chunk A did not set can_delete, so the outer merge treats it as a fresh
-    creation. CREATE+DELETE with can_delete=False → EXCLUDE → returns [].
+    from chunk A did not set updating_files, so exclude_delete=True and
+    CREATE+DELETE → EXCLUDE → returns [].
 
     Expected: [DELETE] so the client removes the stale local copy of base.gpkg.
     """
@@ -617,7 +617,7 @@ def test_delta_cross_checkpoint_recreate_then_delete(client):
     assert base_gpkg is not None, (
         "base.gpkg missing from delta — cross-checkpoint pre-merge bug: "
         "DELETE(v5)+CREATE(v6) was collapsed to CREATE inside checkpoint(v5-v8), "
-        "then CREATE(v6)+DELETE(v9) hit CREATE+DELETE with can_delete=False→EXCLUDE "
+        "then CREATE(v6)+DELETE(v9) hit CREATE+DELETE with exclude_delete=True→EXCLUDE "
         "in the outer merge, so client is never told to remove the file"
     )
     assert base_gpkg.change == PushChangeType.DELETE
@@ -654,7 +654,7 @@ def test_project_version_delta_changes(client, diff_project: Project):
     # delete + create version
     delta = diff_project.get_delta_changes(1, 3)
     assert len(delta) == 1
-    assert delta[0].change == PushChangeType.CREATE
+    assert delta[0].change == PushChangeType.UPDATE
     # file was created in v3
     assert delta[0].version == 3
     assert delta[0].checksum == deltas[3].changes[0]["checksum"]
@@ -662,7 +662,7 @@ def test_project_version_delta_changes(client, diff_project: Project):
     # get_delta with update diff
     delta = diff_project.get_delta_changes(1, 4)
     assert len(delta) == 1
-    assert delta[0].change == PushChangeType.CREATE
+    assert delta[0].change == PushChangeType.UPDATE
     assert ProjectVersionDelta.query.filter_by(rank=1).count() == 0
 
     # create rank 1 checkpoint for v4
