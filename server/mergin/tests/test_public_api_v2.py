@@ -261,7 +261,7 @@ def test_create_diff_checkpoint(diff_project):
     shutil.copy(
         os.path.join(diff_project.storage.project_dir, "v9", "test.gpkg"), base_gpkg
     )
-    for i in range(22):
+    for i in range(23):
         sql = f"UPDATE simple SET rating={i}"
         execute_query(base_gpkg, sql)
         pv = push_change(
@@ -347,6 +347,24 @@ def test_create_diff_checkpoint(diff_project):
         diff.construct_checkpoint()
         assert mock.called
         assert not os.path.exists(diff.abs_path)
+
+    # testing checkpoint with one diff only, no merging should happen, just copy the diff file
+    individual_diffs = (
+        FileDiff.query.filter_by(file_path_id=file_path_id, rank=0)
+        .filter(FileDiff.version.between(33, 36))
+        .all()
+    )
+    create_blank_version(diff_project)  # v34
+    create_blank_version(diff_project)  # v35
+    create_blank_version(diff_project)  # v36
+    diff = FileDiff(
+        basefile=basefile, path=f"test.gpkg-diff-{uuid.uuid4()}", version=36, rank=1
+    )
+    db.session.add(diff)
+    db.session.commit()
+    diff.construct_checkpoint()
+    assert os.path.exists(diff.abs_path)
+    assert diffs_are_equal(diff.abs_path, individual_diffs[0].abs_path)
 
 
 def test_can_create_checkpoint(diff_project):
