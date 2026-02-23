@@ -37,7 +37,7 @@ from .files import (
     PushChangeType,
 )
 from .interfaces import WorkspaceRole
-from .storages.disk import move_to_tmp
+from .storages.disk import copy_file, move_to_tmp
 from ..app import db
 from .storages import DiskStorage
 from .utils import (
@@ -1021,8 +1021,14 @@ class FileDiff(db.Model):
 
         project: Project = basefile.file.project
         os.makedirs(project.storage.diffs_dir, exist_ok=True)
+
         try:
-            project.storage.geodiff.concat_changes(diffs_paths, self.abs_path)
+            if len(diffs_paths) == 1:
+                # if there is only one diff, we can just copy it as a checkpoint without merging
+                # geodiff.concat_changes is not able to concat one diff
+                copy_file(diffs_paths[0], self.abs_path)
+            else:
+                project.storage.geodiff.concat_changes(diffs_paths, self.abs_path)
         except (GeoDiffLibError, GeoDiffLibConflictError):
             logging.error(
                 f"Geodiff: Failed to merge diffs for file {self.file_path_id}"

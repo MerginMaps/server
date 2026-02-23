@@ -62,27 +62,28 @@ def upgrade():
     # migrate data
     conn = op.get_bind()
     conn.execute(
-        """
+        sa.text(
+            """
         WITH diffs AS (
-            SELECT * 
-            FROM file_history 
+            SELECT *
+            FROM file_history
             WHERE diff IS NOT NULL
         ),
         basefiles AS (
-            SELECT DISTINCT 
-                fh.id AS basefile_id, 
+            SELECT DISTINCT
+                fh.id AS basefile_id,
                 fh.file_path_id,
                 fh.project_version_name AS basefile_version
             FROM diffs d
             LEFT OUTER JOIN file_history fh ON fh.file_path_id = d.file_path_id
-            WHERE 
+            WHERE
                 fh.change = ANY(ARRAY['create'::push_change_type, 'update'::push_change_type])
         ),
         relevant_basefiles AS (
-            SELECT 
-                d.id, 
-                d.project_version_name, 
-                b.basefile_id, 
+            SELECT
+                d.id,
+                d.project_version_name,
+                b.basefile_id,
                 b.basefile_version
             FROM diffs d
             LEFT OUTER JOIN basefiles b ON b.file_path_id = d.file_path_id AND b.basefile_version < d.project_version_name
@@ -104,6 +105,7 @@ def upgrade():
         -- it seems that some projects / files might be broken so we need to play it safe here
         SELECT * FROM file_diffs WHERE basefile_id IS NOT NULL;
         """
+        )
     )
 
     op.drop_column("file_history", "diff")
@@ -123,7 +125,8 @@ def downgrade():
     # migrate data
     conn = op.get_bind()
     conn.execute(
-        """
+        sa.text(
+            """
         UPDATE file_history fh
         SET diff = jsonb_build_object(
             'path', fd.path,
@@ -134,11 +137,13 @@ def downgrade():
         FROM file_diff fd
         WHERE fh.file_path_id = fd.file_path_id AND fh.project_version_name = fd.version AND fd.rank = 0;
         """
+        )
     )
 
     # if there were any broken gpkg files (ommited in upgrade), let's add there a dummy diff
     conn.execute(
-        """
+        sa.text(
+            """
         UPDATE file_history fh
         SET diff = jsonb_build_object(
             'path', 'missing-diff',
@@ -148,6 +153,7 @@ def downgrade():
         )
         WHERE fh.change = 'update_diff' AND fh.diff IS NULL;
         """
+        )
     )
 
     # add back consistency constraint
