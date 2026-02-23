@@ -30,7 +30,7 @@
 @mixin invalid-input() {
 	border-color: $inputErrorBorderColor;
   background-color: $inputErrorBackgroundColor;
-  box-shadow: inset 0 0 0 1px $inputErrorBorderColor;
+  box-shadow: inset 0 0 0 2px $inputErrorBorderColor;
 }
 
 @mixin menuitem {
