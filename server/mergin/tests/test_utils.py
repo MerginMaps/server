@@ -364,7 +364,7 @@ def test_mime_type_validation_skip():
         "mergin.sync.utils.get_mimetype", return_value="application/x-python-code"
     ), patch("mergin.sync.utils.Configuration.UPLOAD_FILES_WHITELIST", ALLOWED_FILES):
         for file_path in ALLOWED_FILES:
-            assert is_supported_extension(file_path)
+            assert is_supported_type(file_path)
 
         # Should be forbidden
         assert not is_supported_type("other.js")
