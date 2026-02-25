@@ -415,7 +415,6 @@ class Project(db.Model):
                 raise ValueError(
                     f"Missing expected checkpoint of rank 0 for version {checkpoint.end}"
                 )
-                return
 
             # If higher rank delta checkopoint does not exists we need to create it
             if checkpoint.rank > 0:
