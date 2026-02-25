@@ -766,7 +766,7 @@ def test_project_version_delta_changes(client, diff_project: Project):
 
     # check if checkpoint will be there
     response = client.get(
-        f"v2/projects/{diff_project.id}/raw/diff/{delta[0].diffs[0].id}"
+        f"v2/projects/{diff_project.id}/raw/diff?file={delta[0].diffs[0].id}"
     )
     assert response.status_code == 200
 
@@ -1367,7 +1367,9 @@ def test_project_pull_diffs(client, diff_project):
     second_diff = delta[0]["diffs"][1]
     assert first_diff["id"] == current_diffs[0].path
     assert second_diff["id"] == current_diffs[1].path
-    response = client.get(f"v2/projects/{diff_project.id}/raw/diff/{first_diff['id']}")
+    response = client.get(
+        f"v2/projects/{diff_project.id}/raw/diff?file={first_diff['id']}"
+    )
     assert response.status_code == 200
 
 
