@@ -457,7 +457,14 @@ def get_project_delta(id: str, since: str, to: Optional[str] = None):
             400,
             f"""The 'since' parameter must be less than or equal to the {"'to' parameter" if to_provided else 'latest project version'}""",
         )
-    delta_changes = project.get_delta_changes(since_version, to_version) or []
+
+    try:
+        delta_changes = project.get_delta_changes(since_version, to_version) or []
+    except ValueError:
+        logging.exception(
+            f"Failed to get delta changes for project {project.id} between versions {since_version} and {to_version}"
+        )
+        abort(422)
 
     return (
         DeltaChangeRespSchema().dump(

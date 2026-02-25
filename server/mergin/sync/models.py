@@ -411,6 +411,11 @@ class Project(db.Model):
                 result.extend(DeltaChangeSchema(many=True).load(existing_delta.changes))
                 continue
 
+            if checkpoint.rank == 0:
+                raise ValueError(
+                    f"Missing expected checkpoint of rank 0 for version {checkpoint.end}"
+                )
+
             # If higher rank delta checkopoint does not exists we need to create it
             if checkpoint.rank > 0:
                 new_checkpoint = ProjectVersionDelta.create_checkpoint(
@@ -918,6 +923,11 @@ class FileDiff(db.Model):
         if os.path.exists(self.abs_path):
             return True
 
+        if self.rank == 0:
+            raise ValueError(
+                "Checkpoint of rank 0 should be created by user upload, cannot be constructed"
+            )
+
         # merged diffs can only be created for certain versions
         if self.version % LOG_BASE:
             return False
@@ -1245,6 +1255,11 @@ class ProjectVersionDelta(db.Model):
         """
         Creates and caches new checkpoint and any required FileDiff checkpoints recursively if needed.
         """
+        if checkpoint.rank == 0:
+            raise ValueError(
+                f"Missing expected checkpoint of rank 0 for version {checkpoint.end}"
+            )
+
         delta_range = []
         # our new checkpoint will be created by adding last individual delta to previous checkpoints
         expected_checkpoints = Checkpoint.get_checkpoints(
@@ -1267,7 +1282,7 @@ class ProjectVersionDelta(db.Model):
         # make sure we have all components, if not, created them (recursively)
         for item in expected_checkpoints:
             existing_delta = existing_delta_map.get((item.rank, item.end))
-            if not existing_delta:
+            if not existing_delta and item.rank > 0:
                 existing_delta = cls.create_checkpoint(project_id, item)
 
             if existing_delta:

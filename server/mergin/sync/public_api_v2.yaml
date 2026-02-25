@@ -280,7 +280,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
-  /projects/{id}/raw/diff/{file}:
+  /projects/{id}/raw/diff:
     get:
       tags:
         - project
@@ -290,7 +290,7 @@ paths:
         - $ref: "#/components/parameters/ProjectId"
         - name: file
           required: true
-          in: path
+          in: query
           description: File id of the diff file to download
           schema:
             type: string
@@ -443,7 +443,7 @@ paths:
       summary: List projects in the workspace
       operationId: list_workspace_projects
       parameters:
-        - $ref: '#/components/parameters/WorkspaceId'
+        - $ref: "#/components/parameters/WorkspaceId"
         - name: page
           in: query
           description: page number

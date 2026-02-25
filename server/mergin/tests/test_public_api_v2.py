@@ -212,7 +212,9 @@ def test_file_diff_download(client, diff_project):
         file_path_id=gpkg_file.id, version=4, rank=0
     ).first()
 
-    response = client.get(f"v2/projects/{diff_project.id}/raw/diff/{diff_file.path}")
+    response = client.get(
+        f"v2/projects/{diff_project.id}/raw/diff?file={diff_file.path}"
+    )
     assert response.status_code == 200
     assert response.content_type == "application/octet-stream"
 
@@ -231,7 +233,7 @@ def test_file_diff_download(client, diff_project):
     assert not os.path.exists(diff.abs_path)
 
     # download merged diff with its reconstuction on the fly
-    response = client.get(f"v2/projects/{diff_project.id}/raw/diff/{diff.path}")
+    response = client.get(f"v2/projects/{diff_project.id}/raw/diff?file={diff.path}")
     assert response.status_code == 200
     assert response.content_type == "application/octet-stream"
     assert os.path.exists(diff.abs_path)
@@ -240,12 +242,38 @@ def test_file_diff_download(client, diff_project):
     with patch.object(FileDiff, "construct_checkpoint") as construct_checkpoint_mock:
         os.remove(diff.abs_path)
         construct_checkpoint_mock.return_value = False
-        response = client.get(f"v2/projects/{diff_project.id}/raw/diff/{diff.path}")
+        response = client.get(
+            f"v2/projects/{diff_project.id}/raw/diff?file={diff.path}"
+        )
         assert response.status_code == 422
         assert response.json["code"] == DiffDownloadError.code
 
-    response = client.get(f"v2/projects/{diff_project.id}/raw/diff/{diff.path}+1")
+    response = client.get(f"v2/projects/{diff_project.id}/raw/diff?file={diff.path}+1")
     assert response.status_code == 404
+
+    subfolder_test_gpkg = os.path.join(
+        diff_project.storage.project_dir, "test_dir", "test.gpkg"
+    )
+    os.makedirs(os.path.dirname(subfolder_test_gpkg), exist_ok=True)
+    shutil.copy(
+        os.path.join(test_project_dir, "base.gpkg"),
+        subfolder_test_gpkg,
+    )
+    # shutil.copy(
+    #     test_gpkg_file,
+    #     os.path.join(diff_project.storage.project_dir, "v9", "test_dir", "test.gpkg"),
+    # )
+    push_change(
+        diff_project, "added", "test_dir/test.gpkg", diff_project.storage.project_dir
+    )
+    sql = f"UPDATE simple SET rating={1000}"
+    execute_query(subfolder_test_gpkg, sql)
+    pv = push_change(
+        diff_project, "updated", "test_dir/test.gpkg", diff_project.storage.project_dir
+    )
+    fd = FileDiff.query.filter_by(version=pv.name, rank=0).first()
+    response = client.get(f"v2/projects/{diff_project.id}/raw/diff?file={fd.path}")
+    assert response.status_code == 200
 
 
 def test_create_diff_checkpoint(diff_project):
@@ -738,7 +766,7 @@ def test_project_version_delta_changes(client, diff_project: Project):
 
     # check if checkpoint will be there
     response = client.get(
-        f"v2/projects/{diff_project.id}/raw/diff/{delta[0].diffs[0].id}"
+        f"v2/projects/{diff_project.id}/raw/diff?file={delta[0].diffs[0].id}"
     )
     assert response.status_code == 200
 
@@ -1339,7 +1367,9 @@ def test_project_pull_diffs(client, diff_project):
     second_diff = delta[0]["diffs"][1]
     assert first_diff["id"] == current_diffs[0].path
     assert second_diff["id"] == current_diffs[1].path
-    response = client.get(f"v2/projects/{diff_project.id}/raw/diff/{first_diff['id']}")
+    response = client.get(
+        f"v2/projects/{diff_project.id}/raw/diff?file={first_diff['id']}"
+    )
     assert response.status_code == 200
 
 
