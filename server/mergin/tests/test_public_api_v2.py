@@ -24,6 +24,7 @@ from sqlalchemy.orm.exc import ObjectDeletedError
 import pytest
 from datetime import datetime, timedelta, timezone
 import json
+import uuid
 
 from mergin.app import db
 from mergin.config import Configuration
@@ -745,3 +746,85 @@ def test_list_workspace_projects(client):
     # logout
     logout(client)
     assert client.get(url + "?page=1&per_page=10").status_code == 401
+
+
+def test_list_projects_in_batch(client):
+    """Test batch project listing endpoint."""
+    admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
+    test_workspace = create_workspace()
+
+    private_proj = create_project("batch_private", test_workspace, admin)
+    public_proj = create_project("batch_public", test_workspace, admin)
+
+    p = Project.query.get(public_proj.id)
+    p.public = True
+    db.session.commit()
+
+    url = "/v2/projects/batch"
+    priv_id = str(private_proj.id)
+    pub_id = str(public_proj.id)
+
+    # missing ids -> 400 (connexion validation)
+    resp = client.post(url, json={})
+    assert resp.status_code == 400
+
+    # invalid UUID -> 400
+    resp = client.post(url, json={"ids": ["invalid-uuid", pub_id]})
+    assert resp.status_code == 400
+
+    # returns envelope with projects list
+    resp = client.post(url, json={"ids": [priv_id, pub_id]})
+    assert resp.status_code == 200
+    assert "projects" in resp.json
+    assert isinstance(resp.json["projects"], list)
+    assert len(resp.json["projects"]) == 2
+    # Both projects returned as full objects for admin
+    for proj in resp.json["projects"]:
+        assert "id" in proj
+        assert "name" in proj  # full project object
+
+    # Second user with no access to private project
+    user2 = add_user("user_batch", "password")
+    login(client, user2.username, "password")
+
+    with patch.object(Configuration, "GLOBAL_READ", False):
+        resp = client.post(url, json={"ids": [pub_id, priv_id]})
+        assert resp.status_code == 200
+        projects = resp.json["projects"]
+        assert len(projects) == 2
+
+        # public -> full object
+        pub_result = next(p for p in projects if p.get("id") == pub_id)
+        assert "name" in pub_result
+
+        # private -> error 403
+        priv_result = next(p for p in projects if p.get("id") == priv_id)
+        assert priv_result["error"] == 403
+
+    # global permission allows any user to list the project
+    with patch.object(Configuration, "GLOBAL_READ", True):
+        resp = client.post(url, json={"ids": [pub_id, priv_id]})
+        priv_result = next(p for p in resp.json["projects"] if p.get("id") == priv_id)
+        assert "name" in priv_result
+
+    # Logged-out (anonymous) user - endpoint allows access to public projects, denies private
+    logout(client)
+    resp = client.post(url, json={"ids": [pub_id, priv_id]})
+    assert resp.status_code == 200
+    projects = resp.json["projects"]
+    assert len(projects) == 2
+
+    # public -> full object
+    pub_result = next(p for p in projects if p.get("id") == pub_id)
+    assert "name" in pub_result
+
+    # private -> error 404 (anonymous cannot access private)
+    priv_result = next(p for p in projects if p.get("id") == priv_id)
+    assert priv_result["error"] == 404
+
+    # batch size limit: generate more than allowed uuids and expect error
+    max_batch = client.application.config.get("MAX_BATCH_SIZE", 100)
+    ids = [str(uuid.uuid4()) for _ in range(max_batch + 1)]
+    resp = client.post(url, json={"ids": ids})
+    assert resp.status_code == 400
+    assert resp.json["code"] == "BatchLimitExceeded"

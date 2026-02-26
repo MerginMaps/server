@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 class="w-full"
               />
             </span>
-            <app-menu :items="filterMenuItems" />
+            <app-menu v-if="!onlyPublic" :items="filterMenuItems" />
           </div>
         </app-section>
         <app-section>
