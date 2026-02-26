@@ -1030,7 +1030,9 @@ class FileDiff(db.Model):
             return False
 
         project: Project = basefile.file.project
-        os.makedirs(project.storage.diffs_dir, exist_ok=True)
+
+        # create diffs directory if not exists and subfolders in case of diffs/subfolder/diff-file
+        os.makedirs(os.path.dirname(self.abs_path), exist_ok=True)
 
         try:
             if len(diffs_paths) == 1:
