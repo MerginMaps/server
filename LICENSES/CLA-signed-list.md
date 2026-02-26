@@ -21,4 +21,5 @@ C/ My company has custom contribution contract with Lutra Consulting Ltd. or I a
 * luxusko, 25th August 2023
 * jozef-budac, 30th January 2024
 * fernandinand, 13th March 2025
+* wonder-sk, 9th February 2026
 * xkello, 26th January 2026

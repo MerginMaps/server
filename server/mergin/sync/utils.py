@@ -27,6 +27,8 @@ import magic
 from flask import current_app
 from pathlib import Path
 
+from .config import Configuration
+
 
 def generate_checksum(file, chunk_size=4096):
     """
@@ -349,6 +351,8 @@ def has_trailing_space(filepath: str) -> bool:
 
 def is_supported_extension(filepath) -> bool:
     """Check whether file's extension is supported."""
+    if check_skip_validation(filepath):
+        return True
     ext = os.path.splitext(filepath)[1].lower()
     return ext and ext not in FORBIDDEN_EXTENSIONS
 
@@ -491,6 +495,15 @@ FORBIDDEN_EXTENSIONS = {
     ".xnk",
 }
 
+
+def check_skip_validation(file_path: str) -> bool:
+    """
+    Check if we can skip validation for this file path.
+    Some files are allowed even if they have forbidden extension or mime type.
+    """
+    return file_path in Configuration.UPLOAD_FILES_WHITELIST
+
+
 FORBIDDEN_MIME_TYPES = {
     "application/x-msdownload",
     "application/x-sh",
@@ -515,6 +528,8 @@ FORBIDDEN_MIME_TYPES = {
 
 def is_supported_type(filepath) -> bool:
     """Check whether the file mimetype is supported."""
+    if check_skip_validation(filepath):
+        return True
     mime_type = get_mimetype(filepath)
     return mime_type.startswith("image/") or mime_type not in FORBIDDEN_MIME_TYPES
 

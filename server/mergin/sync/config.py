@@ -78,5 +78,7 @@ class Configuration(object):
     EXCLUDED_CLONE_FILENAMES = config(
         "EXCLUDED_CLONE_FILENAMES", default="qgis_cfg.xml", cast=Csv()
     )
+    # files that should be ignored during extension and MIME type checks
+    UPLOAD_FILES_WHITELIST = config("UPLOAD_FILES_WHITELIST", default="", cast=Csv())
     # max batch size for fetch projects in batch endpoint
     MAX_BATCH_SIZE = config("MAX_BATCH_SIZE", default=100, cast=int)
