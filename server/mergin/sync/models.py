@@ -1359,6 +1359,11 @@ class ProjectVersionDelta(db.Model):
                     # Patch the delta with the path to the new diff checkpoint
                     item.diff = checkpoint_diff.path
                     db.session.add(checkpoint_diff)
+                else:
+                    # checkpoint already exists, just patch the delta with the path to the existing diff checkpoint
+                    # this could happen when file diff exists but dela was missing
+                    # this allowing us to remove rank > 0 delta checkpoints in case of inconsistencies
+                    item.diff = existing_diff_checkpoint.path
 
         checkpoint_delta = ProjectVersionDelta(
             project_id=project_id,

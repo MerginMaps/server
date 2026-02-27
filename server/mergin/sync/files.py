@@ -287,7 +287,7 @@ class DeltaChangeMerged(DeltaChangeBase):
             version=self.version,
         )
         if self.diffs:
-            result.diff = self.diffs[0].id
+            result.diff = None
         return result
 
 
