@@ -37,7 +37,9 @@ $colors: (
     "rose": #FFBABC,
     "field": #9BD1A9,
     "sky": #A6CBF4,
-    "informative": #BEDAF0
+    "informative": #BEDAF0,
+    "dark-gray": #41464C,
+    "medium-gray": #A0A3A5
 );
 
 // Mandatory Designer Variables
@@ -115,5 +117,7 @@ $colors: (
     --dark-green-color: #{map-get($colors, "dark-green")};
     --negative-light-color: #{map-get($colors, "negative-light")};
     --earth-color: #{map-get($colors, "earth")};
+    --dark-gray-color: #{map-get($colors, "dark-gray")};
+    --medium-gray-color: #{map-get($colors, "medium-gray")};
     color-scheme: light;
 }

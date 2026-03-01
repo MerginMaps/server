@@ -110,6 +110,10 @@ img {
   color: map-get($colors, 'dark-green');
 }
 
+.text-color-dark-gray {
+  color: map-get($colors, 'dark-gray');
+}
+
 .overflow-wrap-anywhere {
   overflow-wrap: anywhere;
 }
@@ -123,4 +127,9 @@ img {
 // Font size in avatar
 .p-avatar:not(.p-avatar-lg):not(.p-avatar-xl) {
   font-size: 0.857rem;
+}
+
+.tooltip {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
 }
