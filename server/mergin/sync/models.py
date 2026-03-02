@@ -1043,7 +1043,7 @@ class FileDiff(db.Model):
                 project.storage.geodiff.concat_changes(diffs_paths, self.abs_path)
         except (GeoDiffLibError, GeoDiffLibConflictError):
             logging.error(
-                f"Geodiff: Failed to merge diffs for file {self.file_path_id}. Diffs: {diffs_paths}"
+                f"Geodiff: Failed to merge diffs for file {self.file_path_id}."
             )
             return False
 
