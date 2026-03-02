@@ -1030,7 +1030,9 @@ class FileDiff(db.Model):
             return False
 
         project: Project = basefile.file.project
-        os.makedirs(project.storage.diffs_dir, exist_ok=True)
+
+        # create diffs directory if not exists and subfolders in case of diffs/subfolder/diff-file
+        os.makedirs(os.path.dirname(self.abs_path), exist_ok=True)
 
         try:
             if len(diffs_paths) == 1:
@@ -1041,7 +1043,7 @@ class FileDiff(db.Model):
                 project.storage.geodiff.concat_changes(diffs_paths, self.abs_path)
         except (GeoDiffLibError, GeoDiffLibConflictError):
             logging.error(
-                f"Geodiff: Failed to merge diffs for file {self.file_path_id}"
+                f"Geodiff: Failed to merge diffs for file {self.file_path_id}."
             )
             return False
 
@@ -1357,6 +1359,11 @@ class ProjectVersionDelta(db.Model):
                     # Patch the delta with the path to the new diff checkpoint
                     item.diff = checkpoint_diff.path
                     db.session.add(checkpoint_diff)
+                else:
+                    # checkpoint already exists, just patch the delta with the path to the existing diff checkpoint
+                    # this could happen when file diff exists but dela was missing
+                    # this allowing us to remove rank > 0 delta checkpoints in case of inconsistencies
+                    item.diff = existing_diff_checkpoint.path
 
         checkpoint_delta = ProjectVersionDelta(
             project_id=project_id,

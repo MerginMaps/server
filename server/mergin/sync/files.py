@@ -286,8 +286,6 @@ class DeltaChangeMerged(DeltaChangeBase):
             change=self.change,
             version=self.version,
         )
-        if self.diffs:
-            result.diff = self.diffs[0].id
         return result
 
 
@@ -332,6 +330,9 @@ class DeltaChangeSchema(DeltaChangeBaseSchema):
 
     @post_dump
     def patch_field(self, data, **kwargs):
+        assert data.get("change") != PushChangeType.UPDATE_DIFF.value or data.get(
+            "diff"
+        ), "Diff file must be provided for update_diff change type"
         # drop 'diff' key entirely if empty or None as database would expect
         if not data.get("diff"):
             data.pop("diff", None)
