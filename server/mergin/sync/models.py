@@ -1332,8 +1332,9 @@ class ProjectVersionDelta(db.Model):
 
             for item in versioned_delta_items:
                 file_path_id = file_path_map.get(item.path)
-                if not file_path_id:
-                    continue
+                assert (
+                    file_path_id
+                ), f"ProjectFilePath not found for UPDATE_DIFF item '{item.path}' — data inconsistency"
 
                 # Check if a FileDiff checkpoint already exists
                 existing_diff_checkpoint = FileDiff.query.filter_by(
@@ -1344,11 +1345,13 @@ class ProjectVersionDelta(db.Model):
                 # If does not exists, let's create diff with higher rank and some generated path (name of diff file)
                 if not existing_diff_checkpoint:
                     base_file = FileHistory.get_basefile(file_path_id, checkpoint.end)
-                    if not base_file:
-                        continue
+                    assert (
+                        base_file
+                    ), f"Basefile not found for file_path_id={file_path_id} — data inconsistency"
 
-                    if not FileDiff.can_create_checkpoint(file_path_id, checkpoint):
-                        continue
+                    assert FileDiff.can_create_checkpoint(
+                        file_path_id, checkpoint
+                    ), f"Cannot create FileDiff checkpoint for file_path_id={file_path_id}"
 
                     checkpoint_diff = FileDiff(
                         basefile=base_file,

@@ -465,6 +465,11 @@ def get_project_delta(id: str, since: str, to: Optional[str] = None):
             f"Failed to get delta changes for project {project.id} between versions {since_version} and {to_version}"
         )
         abort(422)
+    except AssertionError as err:
+        logging.exception(
+            f"Data inconsistency when getting delta changes for project {project.id}: {str(err)}"
+        )
+        abort(422)
 
     return (
         DeltaChangeRespSchema().dump(
