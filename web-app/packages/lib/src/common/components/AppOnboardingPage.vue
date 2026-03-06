@@ -7,8 +7,16 @@
         { 'onborading-page-logo': $slots.aside }
       ]"
     >
-      <slot name="logo">
-        <img src="@/assets/mm-logo.svg" />
+      <template v-if="brandingLogoUrl && !customLogoLoadFailed">
+        <img
+          class="logo-image"
+          :src="brandingLogoUrl"
+          @error="onCustomLogoError"
+          alt="Not Found"
+        />
+      </template>
+      <slot v-else name="logo">
+        <img class="logo-image" :src="defaultLogoUrl" alt="Not Found" />
       </slot>
     </aside>
 
@@ -45,12 +53,34 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useInstanceStore } from '@/modules/instance/store'
+import defaultLogoUrl from '@/assets/mm-logo.svg'
+
+const customLogoLoadFailed = ref(false)
+function onCustomLogoError(): void {
+  customLogoLoadFailed.value = true
+}
+const instanceStore = useInstanceStore()
+const brandingLogoUrl = computed(
+  () => instanceStore.configData?.['dashboard_logo_url'] as string
+)
+
 withDefaults(defineProps<{ contentMaxWidth?: string }>(), {
   contentMaxWidth: '480px'
 })
 </script>
 
 <style scoped lang="scss">
+.logo-image {
+  display: block;
+  width: auto;
+  height: 24px;
+  max-width: 129px;
+  max-height: 24px;
+  object-fit: contain;
+}
+
 @media screen and (min-width: $md) {
   .onborading-page-logo {
     // reset background on tablet > screens
