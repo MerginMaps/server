@@ -35,8 +35,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             />
           </div>
 
-          <div class="flex justify-content-center">
-            <img src="@/assets/mm-logo.svg" />
+          <div class="logo flex justify-content-center">
+            <img 
+              class="logo-image"
+              :src="logoUrl" 
+              @error="onCustomLogoError" 
+              alt="Not Found" 
+            />
+            
           </div>
 
           <div
@@ -79,15 +85,32 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import defaultLogoUrl from '@/assets/mm-logo.svg'
 
 import { SideBarItemModel } from '../types'
 
 import { DashboardRouteName, useUserStore } from '@/main'
 import SideBarItem from '@/modules/layout/components/SideBarItem.vue'
 import { useLayoutStore } from '@/modules/layout/store'
+import { useInstanceStore } from '@/modules/instance/store'
 import { ProjectRouteName } from '@/modules/project'
+
+
+const customLogoLoadFailed = ref(false)
+function onCustomLogoError(): void {
+  customLogoLoadFailed.value = true
+}
+const instanceStore = useInstanceStore()
+const brandingLogoUrl = computed(
+  () => instanceStore.configData?.['dashboard_logo_url'] as string
+)
+const logoUrl = computed(() =>
+  brandingLogoUrl.value && !customLogoLoadFailed.value
+    ? brandingLogoUrl.value
+    : defaultLogoUrl
+)
 
 const route = useRoute()
 const layoutStore = useLayoutStore()
@@ -140,6 +163,18 @@ const onCloseClick = () => {
       rgba(223, 240, 232, 1) 85%,
       rgba(239, 245, 243, 1) 100%
     );
+  }
+}
+.logo {
+  max-width: 100%;
+
+  &-image {
+    display: block;
+    width: auto;
+    height: 24px;
+    max-width: 129px;
+    max-height: 24px;
+    object-fit: contain;
   }
 }
 
