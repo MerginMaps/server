@@ -40,7 +40,7 @@
     "lint": "eslint . --ext .js,.vue,.ts"
   },
   "dependencies": {
-    "axios": "^0.28.1",
+    "axios": "^0.30.0",
     "axios-retry": "^3.2.4",
     "lodash": "^4.17.21",
     "pinia": "^2.1.7",

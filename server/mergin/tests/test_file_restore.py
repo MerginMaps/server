@@ -112,16 +112,11 @@ def test_crud_in_version_file_restore(app, forward_check):
         assert gpkgs_are_equal(test_file, test_file + "_backup")
 
 
-@pytest.mark.parametrize("forward_check", [True, False])
-def test_version_file_restore_with_no_changes(app, forward_check):
+def test_version_file_restore_with_no_changes(app):
     """Test to restore gpkg file from diffs where history contains some blank versions (no changes)."""
     working_dir = os.path.join(TMP_DIR, "restore_from_diffs_with_gaps")
     basefile = os.path.join(working_dir, "base.gpkg")
     p = _prepare_restore_project(working_dir)
-
-    if not forward_check:
-        for _ in range(6):
-            create_blank_version(p)
 
     base_version = p.get_latest_version().name
     for i in range(3):
@@ -183,25 +178,8 @@ def test_version_file_restore(diff_project):
     diff_project.storage.restore_versioned_file("base.gpkg", 6)
     assert os.path.exists(test_file)
     assert gpkgs_are_equal(test_file, test_file + "_backup")
-
-    # remove v9 and v10 to mimic that project history end with existing file
-    pv_8 = ProjectVersion.query.filter_by(project_id=diff_project.id, name=8).first()
-    pv_9 = ProjectVersion.query.filter_by(project_id=diff_project.id, name=9).first()
-    pv_10 = ProjectVersion.query.filter_by(project_id=diff_project.id, name=10).first()
-    diff_project.latest_version = 8
-    db.session.delete(pv_9)
-    db.session.delete(pv_10)
-    db.session.commit()
-    diff_project.cache_latest_files()
-    # restore v6 backward, from the latest file (v7=v8)
-    test_file = os.path.join(diff_project.storage.project_dir, "v6", "base.gpkg")
-    if os.path.exists(test_file):
-        os.remove(test_file)
-    diff_project.storage.restore_versioned_file("base.gpkg", 6)
-    assert os.path.exists(test_file)
-    assert gpkgs_are_equal(test_file, test_file + "_backup")
     gh = GeodiffActionHistory.query.filter_by(
-        project_id=diff_project.id, base_version="v7", target_version="v6"
+        project_id=diff_project.id, base_version="v5", target_version="v6"
     ).first()
     assert gh.geodiff_time
     assert gh.copy_time

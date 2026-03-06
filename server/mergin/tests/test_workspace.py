@@ -52,6 +52,7 @@ def test_workspace_implementation(client):
     Configuration.GLOBAL_ADMIN = True
     # create project with dummy file to count for workspace usage
     project = create_project("test_permissions", ws, user)
+    latest_version = project.get_latest_version()
     file = ProjectFilePath(project.id, path="some_file.txt")
     file_history = FileHistory(
         file,
@@ -60,12 +61,11 @@ def test_workspace_implementation(client):
         ),
         checksum="89469a6482267de394c7c7270cb7ffafe694ea76",
         size=1024,
-        diff=null(),
+        diff=None,
         change=PushChangeType.CREATE,
+        version_name=latest_version.name,
     )
-    latest_version = project.get_latest_version()
     file_history.version = latest_version
-    file_history.project_version_name = file_history.version.name
     default_project_usage = ws.disk_usage()
     db.session.add(file_history)
     project.disk_usage = 1024

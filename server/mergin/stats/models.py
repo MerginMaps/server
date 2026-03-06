@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import uuid
 from dataclasses import dataclass
 from typing import Optional
-import uuid
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from datetime import datetime, timezone
+from datetime import datetime
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column
 
 from ..app import db
 
@@ -30,8 +31,8 @@ class ServerCallhomeData:
 class MerginInfo(db.Model):
     """Information about deployment"""
 
-    service_id = db.Column(UUID(as_uuid=True), primary_key=True)
-    last_reported = db.Column(db.DateTime)
+    service_id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    last_reported: Mapped[Optional[datetime]]
 
     def __init__(self, service_id: str = None):
         if service_id:
@@ -43,9 +44,7 @@ class MerginInfo(db.Model):
 class MerginStatistics(db.Model):
     """Information about deployment"""
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    created_at = db.Column(
-        db.DateTime, index=True, nullable=False, default=datetime.utcnow
-    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(index=True, default=datetime.utcnow)
     # data with statistics
-    data = db.Column(JSONB, nullable=False)
+    data: Mapped[dict] = mapped_column(JSONB)
