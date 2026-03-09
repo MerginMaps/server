@@ -4,11 +4,13 @@
 
 from dataclasses import asdict
 import requests
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import json
 import logging
 from flask import current_app
 from sqlalchemy.sql.operators import is_
+from sqlalchemy import inspect
+from sqlalchemy.sql import select, func
 
 from .models import MerginInfo, MerginStatistics, ServerCallhomeData
 from ..celery import celery
@@ -21,21 +23,25 @@ def get_callhome_data(info: MerginInfo | None = None) -> ServerCallhomeData:
     """
     Get data about server to send to callhome service
     """
-    last_change_item = (
-        db.session.query(Project.updated).order_by(Project.updated.desc()).first()
-    )
+    last_change = db.session.scalars(
+        select(Project.updated).order_by(Project.updated.desc())
+    ).first()
     service_uuid = str(info.service_id) if info else None
     data = ServerCallhomeData(
         service_uuid=service_uuid,
         url=current_app.config["MERGIN_BASE_URL"],
         contact_email=current_app.config["CONTACT_EMAIL"],
         licence=current_app.config["SERVER_TYPE"],
-        projects_count=Project.query.filter(Project.removed_at.is_(None)).count(),
-        users_count=User.query.filter(
-            is_(User.username.ilike("deleted_%"), False)
-        ).count(),
+        projects_count=db.session.scalar(
+            select(func.count(Project.id)).where(is_(Project.removed_at, None))
+        ),
+        users_count=db.session.scalar(
+            select(func.count(User.id)).where(
+                is_(User.username.ilike("deleted_%"), False)
+            )
+        ),
         workspaces_count=current_app.ws_handler.workspace_count(),
-        last_change=str(last_change_item.updated) + "Z" if last_change_item else "",
+        last_change=str(last_change) + "Z" if last_change else "",
         server_version=current_app.config["VERSION"],
         monthly_contributors=current_app.ws_handler.monthly_contributors_count(),
         editors=current_app.ws_handler.server_editors_count(),
@@ -47,7 +53,7 @@ def get_callhome_data(info: MerginInfo | None = None) -> ServerCallhomeData:
 @celery.task(ignore_result=True)
 def save_statistics():
     """Save statistics about usage."""
-    info = MerginInfo.query.first()
+    info = db.session.execute(select(MerginInfo)).scalar_one_or_none()
     data = get_callhome_data(info)
     stat = MerginStatistics(data=data)
     db.session.add(stat)
@@ -71,11 +77,12 @@ def send_statistics():
     if not current_app.config["COLLECT_STATISTICS"]:
         return
 
-    if not db.engine.has_table("mergin_info"):
+    inspect_engine = inspect(db.engine)
+    if not inspect_engine.has_table("mergin_info"):
         logging.warning("Database not initialized")
         return
 
-    info = MerginInfo.query.first()
+    info = db.session.execute(select(MerginInfo)).scalar_one_or_none()
     if not info:
         # create new info with random service id
         service_id = current_app.config.get("SERVICE_ID", None)

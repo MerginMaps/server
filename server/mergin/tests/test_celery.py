@@ -7,14 +7,18 @@ import os
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-
 from flask import current_app
 from flask_mail import Mail
 from unittest.mock import patch
 
 from ..app import db
 from ..config import Configuration
-from ..sync.models import Project, AccessRequest, ProjectRole, ProjectVersion
+from ..sync.models import (
+    Project,
+    AccessRequest,
+    ProjectRole,
+    ProjectVersion,
+)
 from ..celery import send_email_async
 from ..sync.config import Configuration as SyncConfiguration
 from ..sync.tasks import (
@@ -25,6 +29,7 @@ from ..sync.tasks import (
     remove_unused_chunks,
 )
 from ..sync.storages.disk import move_to_tmp
+from . import test_project, test_workspace_name, test_workspace_id
 from ..sync.utils import get_chunk_location
 from . import (
     test_project,
@@ -175,7 +180,7 @@ def test_create_project_version_zip(diff_project):
     # mock expired partial zip -> celery removes it and creates new zip
     partial_zip_path.parent.mkdir(parents=True, exist_ok=True)
     partial_zip_path.touch()
-    new_time = datetime.now() - timedelta(
+    new_time = datetime.now(timezone.utc) - timedelta(
         seconds=current_app.config["PARTIAL_ZIP_EXPIRATION"] + 1
     )
     modify_file_times(partial_zip_path, new_time)
@@ -198,7 +203,7 @@ def test_create_project_version_zip(diff_project):
     os.remove(partial_zip_path)
     remove_projects_archives()  # zip is valid -> keep
     assert zip_path.exists()
-    new_time = datetime.now() - timedelta(
+    new_time = datetime.now(timezone.utc) - timedelta(
         days=current_app.config["PROJECTS_ARCHIVES_EXPIRATION"] + 1
     )
     modify_file_times(latest_version.zip_path, new_time)

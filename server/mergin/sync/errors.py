@@ -100,3 +100,10 @@ class BigChunkError(ResponseError):
 class BatchLimitError(ResponseError):
     code = "BatchLimitExceeded"
     detail = f"Batch size exceeds maximum allowed size {Configuration.MAX_BATCH_SIZE}"
+
+
+class DiffDownloadError(ResponseError):
+    code = "DiffDownloadError"
+    detail = (
+        "Required diff file could not be downloaded as it could not be reconstructed"
+    )

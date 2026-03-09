@@ -17,7 +17,13 @@ from pygeodiff import GeoDiff
 
 from ..auth.models import User, UserProfile
 from ..sync.utils import generate_location, generate_checksum
-from ..sync.models import Project, ProjectVersion, FileHistory, ProjectRole
+from ..sync.models import (
+    Project,
+    ProjectVersion,
+    FileHistory,
+    ProjectRole,
+    PushChangeType,
+)
 from ..sync.files import ProjectFileChange, PushChangeType, files_changes_from_upload
 from ..sync.workspace import GlobalWorkspace
 from ..app import db
@@ -59,7 +65,7 @@ def create_workspace():
 
 def login(client, username, password):
     resp = client.post(
-        url_for("/.mergin_auth_controller_login"),
+        "/app/auth/login",
         data=json.dumps({"login": username, "password": password}),
         headers=json_headers,
     )
@@ -178,7 +184,7 @@ def initialize():
 
     # make sure for history without diff there is a proper Null in database jsonb column
     assert FileHistory.query.filter_by(version_id=pv.id).filter(
-        FileHistory.diff.is_(None)
+        FileHistory.changes != PushChangeType.UPDATE_DIFF.value
     ).count() == len(project_files)
 
     # mimic files were uploaded
@@ -297,9 +303,12 @@ def push_change(project, action, path, src_dir):
     current_files = project.files
     new_version = ProjectVersion.to_v_name(project.next_version())
     changes = {"added": [], "updated": [], "removed": []}
-    metadata = {**file_info(src_dir, path), "location": os.path.join(new_version, path)}
 
     if action == "added":
+        metadata = {
+            **file_info(src_dir, path),
+            "location": os.path.join(new_version, path),
+        }
         new_file = os.path.join(project.storage.project_dir, metadata["location"])
         os.makedirs(os.path.dirname(new_file), exist_ok=True)
         shutil.copy(os.path.join(src_dir, metadata["path"]), new_file)
@@ -343,6 +352,7 @@ def push_change(project, action, path, src_dir):
         changes["updated"].append(metadata)
     elif action == "removed":
         f_removed = next(f for f in current_files if f.path == path)
+        os.remove(os.path.join(project.storage.project_dir, f_removed.location))
         changes["removed"].append(asdict(f_removed))
     else:
         return
@@ -379,6 +389,17 @@ def modify_file_times(path, time: datetime, accessed=True, modified=True):
     mtime = epoch_time if modified else file_stat.st_mtime
 
     os.utime(path, (atime, mtime))
+
+
+def diffs_are_equal(diff1, diff2):
+    """Compare changes of two geodiff files"""
+    changes1 = os.path.join(TMP_DIR, "changeset" + str(uuid.uuid4()))
+    changes2 = os.path.join(TMP_DIR, "changeset" + str(uuid.uuid4()))
+    geodiff = GeoDiff()
+    geodiff.list_changes_summary(diff1, changes1)
+    geodiff.list_changes_summary(diff2, changes2)
+    with open(changes1) as f, open(changes2) as f2:
+        return json.load(f) == json.load(f2)
 
 
 def logout(client):
