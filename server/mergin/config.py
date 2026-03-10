@@ -69,7 +69,7 @@ class Configuration(object):
         "CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS", default="{}", cast=eval
     )
     CELERY_ACKS_LATE = config("CELERY_ACKS_LATE", default=False, cast=bool)
-    CELERYD_CONCURRENCY = config("CELERYD_CONCURRENCY", default=1, cast=int)    # for links to logos in EE branding
+    CELERYD_CONCURRENCY = config("CELERYD_CONCURRENCY", default=1, cast=int)
     CELERYD_PREFETCH_MULTIPLIER = config(
         "CELERYD_PREFETCH_MULTIPLIER", default=4, cast=int
     )
