@@ -69,7 +69,7 @@ class Configuration(object):
         "CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS", default="{}", cast=eval
     )
     CELERY_ACKS_LATE = config("CELERY_ACKS_LATE", default=False, cast=bool)
-    CELERYD_CONCURRENCY = config("CELERYD_CONCURRENCY", default=1, cast=int)
+    CELERYD_CONCURRENCY = config("CELERYD_CONCURRENCY", default=1, cast=int)    # for links to logos in EE branding
     CELERYD_PREFETCH_MULTIPLIER = config(
         "CELERYD_PREFETCH_MULTIPLIER", default=4, cast=int
     )
@@ -79,8 +79,8 @@ class Configuration(object):
     MERGIN_BASE_URL = config("MERGIN_BASE_URL", default="")
     # for link to logo in emails
     MERGIN_LOGO_URL = config("MERGIN_LOGO_URL", default="")
-    # for link to logos in EE branding  ../web-app/packages/lib/src/assets/mm-logo.png
-    DASHBOARD_LOGO_URL = config("DASHBOARD_LOGO_URL", default="")
+    # for link to logos in EE branding
+    DASHBOARD_LOGO_URL = config("DASHBOARD_LOGO_URL", default="MERGIN_LOGO_URL")
 
     MERGIN_SUBSCRIPTIONS = config("MERGIN_SUBSCRIPTIONS", default=False, cast=bool)
     MERGIN_TESTING = config("MERGIN_TESTING", default=False, cast=bool)
