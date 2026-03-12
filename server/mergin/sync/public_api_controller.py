@@ -337,12 +337,17 @@ def download_project_file(
     else:
         file_path = fh.location
 
+    abs_path = os.path.join(project.storage.project_dir, file_path)
+
     if version and not diff:
+        logging.info(f"Restoring {namespace}/{project_name}/{file} at {version}")
         project.storage.restore_versioned_file(
             file, ProjectVersion.from_v_name(version)
         )
+        if not os.path.exists(abs_path):
+            logging.error(f"Could not restore {namespace}/{project_name}/{file_path}")
+            abort(404)
 
-    abs_path = os.path.join(project.storage.project_dir, file_path)
     # check file exists (e.g. there might have been issue with restore)
     if not os.path.exists(abs_path):
         logging.error(f"Missing file {namespace}/{project_name}/{file_path}")
