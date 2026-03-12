@@ -791,14 +791,14 @@ class FileHistory(db.Model):
                     .all()
                 )
                 logging.info(
-                    f"File {file_id} checkpoint {item.version} of rank {item.rank} missing, "
+                    f"File {file_id} checkpoint {item.end} of rank {item.rank} missing, "
                     f"replacing with {len(individual_diffs)} diffs"
                 )
                 diffs.extend(individual_diffs)
             else:
                 # we asked for individual diff but there is no such diff as there was not change at that version
                 logging.warning(
-                    f"File {file_id} checkpoint {item.version} of rank {item.rank} missing as there was no data change"
+                    f"File {file_id} checkpoint {item.end} of rank {item.rank} missing as there was no data change"
                 )
                 continue
 
