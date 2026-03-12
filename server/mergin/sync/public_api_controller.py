@@ -346,7 +346,7 @@ def download_project_file(
         )
         if not os.path.exists(abs_path):
             logging.error(f"Could not restore {namespace}/{project_name}/{file_path}")
-            abort(422)
+            abort(404)
 
     # check file exists (e.g. there might have been issue with restore)
     if not os.path.exists(abs_path):
