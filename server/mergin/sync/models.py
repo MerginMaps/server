@@ -725,10 +725,14 @@ class FileHistory(db.Model):
         )
         # file never existed prior that version
         if not latest_change:
+            logging.warning(f"File {file_id} never existed prior version {version}")
             return None, []
 
         # the last update to file was a delete
         if latest_change.change == PushChangeType.DELETE.value:
+            logging.warning(
+                f"File {file_id} latest change prior version {version} was delete"
+            )
             return None, []
 
         # the last update to file was a create / force update
@@ -736,10 +740,14 @@ class FileHistory(db.Model):
             PushChangeType.CREATE.value,
             PushChangeType.UPDATE.value,
         ):
+            logging.warning(
+                f"File {file_id} latest change prior version {version} was {latest_change.change}"
+            )
             return latest_change, []
 
         basefile = cls.get_basefile(file_id, version)
         if not basefile:
+            logging.warning(f"File {file_id} has no basefile prior version {version}")
             return None, []
 
         diffs = []
@@ -782,9 +790,16 @@ class FileHistory(db.Model):
                     .order_by(FileDiff.version)
                     .all()
                 )
+                logging.info(
+                    f"File {file_id} checkpoint {item.version} of rank {item.rank} missing, "
+                    f"replacing with {len(individual_diffs)} diffs"
+                )
                 diffs.extend(individual_diffs)
             else:
                 # we asked for individual diff but there is no such diff as there was not change at that version
+                logging.warning(
+                    f"File {file_id} checkpoint {item.version} of rank {item.rank} missing as there was no data change"
+                )
                 continue
 
         return basefile, diffs

@@ -375,6 +375,7 @@ class DiskStorage(ProjectStorage):
         )
 
         if not is_versioned_file(file):
+            logging.warning(f"File {file} is not gpkg file")
             return
 
         # if project version is not found, return it
@@ -382,15 +383,20 @@ class DiskStorage(ProjectStorage):
             project_id=self.project.id, name=version
         ).first()
         if not project_version:
+            logging.warning(f"Project version {version} for file {file} not found")
             return
 
         # check actual file from the version files
         file_found = next((i for i in project_version.files if i.path == file), None)
 
-        # check the location that we found on the file
-        if not file_found or os.path.exists(
-            os.path.join(self.project_dir, file_found.location)
-        ):
+        # check the file is found in files at particular version
+        if not file_found:
+            logging.warning(f"File {file} not found in version {version}")
+            return
+
+        # check if file already exists
+        if os.path.exists(os.path.join(self.project_dir, file_found.location)):
+            logging.info(f"File {file} already exists at {version}")
             return
 
         file_id = (
@@ -401,6 +407,9 @@ class DiskStorage(ProjectStorage):
 
         base_meta, diffs = FileHistory.diffs_chain(file_id, version)
         if not (base_meta and diffs):
+            logging.warning(
+                f"File {file} at version {version} does not have basefile or there are no diffs"
+            )
             return
 
         start = time.time()
