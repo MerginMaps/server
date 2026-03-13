@@ -743,22 +743,21 @@ class FileHistory(db.Model):
             return None, []
 
         diffs = []
-        cached_items = Checkpoint.get_checkpoints(
-            basefile.project_version_name, version
-        )
+        checkpoints = Checkpoint.get_checkpoints(basefile.project_version_name, version)
         expected_diffs = (
             FileDiff.query.filter_by(
                 basefile_id=basefile.id,
             )
             .filter(
                 tuple_(FileDiff.rank, FileDiff.version).in_(
-                    [(item.rank, item.end) for item in cached_items]
+                    [(item.rank, item.end) for item in checkpoints]
                 )
             )
             .all()
         )
 
-        for item in cached_items:
+        for item in checkpoints:
+            diff_needs_to_be_created = False
             diff = next(
                 (
                     d
@@ -767,25 +766,38 @@ class FileHistory(db.Model):
                 ),
                 None,
             )
-            if diff and os.path.exists(diff.abs_path):
-                diffs.append(diff)
-            elif item.rank > 0:
-                # fallback if checkpoint does not exist: replace merged diff with individual diffs
-                individual_diffs = (
-                    FileDiff.query.filter_by(
-                        basefile_id=basefile.id,
-                        rank=0,
-                    )
-                    .filter(
-                        FileDiff.version >= item.start, FileDiff.version <= item.end
-                    )
-                    .order_by(FileDiff.version)
-                    .all()
-                )
-                diffs.extend(individual_diffs)
+            if diff:
+                if os.path.exists(diff.abs_path):
+                    diffs.append(diff)
+                else:
+                    diff_needs_to_be_created = True
             else:
-                # we asked for individual diff but there is no such diff as there was not change at that version
-                continue
+                # we do not have record in DB, create a checkpoint if it makes sense
+                if item.rank > 0 and FileDiff.can_create_checkpoint(file_id, item):
+                    diff = FileDiff(
+                        basefile=basefile,
+                        version=item.end,
+                        rank=item.rank,
+                        path=basefile.file.generate_diff_name(),
+                        size=None,
+                        checksum=None,
+                    )
+                    db.session.add(diff)
+                    db.session.commit()
+                    diff_needs_to_be_created = True
+                else:
+                    # we asked for checkpoint where there was no change
+                    continue
+
+            if diff_needs_to_be_created:
+                diff_created = diff.construct_checkpoint()
+                if diff_created:
+                    diffs.append(diff)
+                else:
+                    logging.error(
+                        f"Failed to create a diff for file {basefile.file.path} at version {basefile.project_version_name} of rank {item.rank}."
+                    )
+                    return None, []
 
         return basefile, diffs
 
@@ -924,9 +936,10 @@ class FileDiff(db.Model):
             return True
 
         if self.rank == 0:
-            raise ValueError(
+            logging.error(
                 "Checkpoint of rank 0 should be created by user upload, cannot be constructed"
             )
+            return False
 
         # merged diffs can only be created for certain versions
         if self.version % LOG_BASE:
