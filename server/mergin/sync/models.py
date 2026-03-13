@@ -135,6 +135,36 @@ class Project(db.Model):
         project_workspace = current_app.ws_handler.get(self.workspace_id)
         return project_workspace
 
+    def get_latest_file_history_ids(self) -> List[int]:
+        """Get latest file history ids either from cached table or calculate them on the fly"""
+        if self.latest_project_files.file_history_ids is not None:
+            return self.latest_project_files.file_history_ids
+
+        query = f"""
+            WITH latest_changes AS (
+                SELECT
+                    fp.id,
+                    pv.project_id,
+                    max(pv.name) AS version
+                FROM
+                    project_version pv
+                    LEFT OUTER JOIN file_history fh ON fh.version_id = pv.id
+                    LEFT OUTER JOIN project_file_path fp ON fp.id = fh.file_path_id
+                WHERE
+                    pv.project_id = :project_id
+                    AND pv.name <= :latest_version
+                GROUP BY
+                    fp.id, pv.project_id
+            )
+            SELECT
+                fh.id 
+            FROM latest_changes ch
+            LEFT OUTER JOIN file_history fh ON (fh.file_path_id = ch.id AND fh.project_version_name = ch.version AND fh.change != 'delete')
+            WHERE fh.id IS NOT NULL;
+        """
+        params = {"project_id": self.id, "latest_version": self.latest_version}
+        return [row.id for row in db.session.execute(text(query), params).fetchall()]
+
     def cache_latest_files(self) -> None:
         """Get project files from changes (FileHistory) and save them for later use."""
         if self.latest_version is None:
@@ -514,7 +544,11 @@ class ProjectFilePath(db.Model):
 
 
 class LatestProjectFiles(db.Model):
-    """Store project latest version files history ids"""
+    """Store project latest version files history ids.
+
+    This is a caching table to store the latest relevant files history ids for further use in
+    Project.files and ProjectVersion.files. It is updated when ProjectVersion itself is created.
+    """
 
     project_id = db.Column(
         UUID(as_uuid=True),
@@ -1434,7 +1468,7 @@ class ProjectVersion(db.Model):
         latest_files_map = {
             fh.path: fh.id
             for fh in FileHistory.query.filter(
-                FileHistory.id.in_(self.project.latest_project_files.file_history_ids)
+                FileHistory.id.in_(self.project.get_latest_file_history_ids())
             ).all()
         }
 
@@ -1565,6 +1599,10 @@ class ProjectVersion(db.Model):
         files that were delete after the version (and thus not necessarily present now). From these candidates
         get the latest file change before or at the specific version. If that change was not 'delete', file is present.
         """
+        # if we do not have cached file history ids use different strategy where it is not necessary
+        if self.project.latest_project_files.file_history_ids is None:
+            return self._files_from_start()
+
         query = f"""
             WITH files_changes_before_version AS (
                 WITH files_candidates AS (
