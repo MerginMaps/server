@@ -8,7 +8,13 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from ..app import db
 from ..auth.models import User
-from ..sync.models import ProjectVersion, Project, GeodiffActionHistory
+from ..sync.models import (
+    FileDiff,
+    ProjectFilePath,
+    ProjectVersion,
+    Project,
+    GeodiffActionHistory,
+)
 from . import test_project_dir, TMP_DIR
 from .utils import (
     create_project,
@@ -163,6 +169,19 @@ def test_version_file_restore(diff_project):
     diff_project.storage.restore_versioned_file("base.gpkg", 7)
     assert os.path.exists(test_file)
     assert gpkgs_are_equal(test_file, test_file + "_backup")
+    # no merged diffs needed
+    file_path_id = (
+        ProjectFilePath.query.filter_by(project_id=diff_project.id, path="base.gpkg")
+        .first()
+        .id
+    )
+    assert (
+        FileDiff.query.filter_by(file_path_id=file_path_id)
+        .filter(FileDiff.rank > 0)
+        .count()
+        == 0
+    )
+
     # check we track performance of reconstruction
     gh = GeodiffActionHistory.query.filter_by(
         project_id=diff_project.id, target_version="v7"
@@ -198,3 +217,44 @@ def test_version_file_restore(diff_project):
     diff_project.storage.restore_versioned_file("test.txt", 1)
     assert not os.path.exists(test_file)
     assert not os.path.exists(diff_project.storage.geodiff_working_dir)
+
+    # let's add some dummy changes to test.gpkg so we can restore full gpkg using checkpoints created on demand
+    file_path_id = (
+        ProjectFilePath.query.filter_by(project_id=diff_project.id, path="test.gpkg")
+        .first()
+        .id
+    )
+    base_gpkg = os.path.join(diff_project.storage.project_dir, "test.gpkg")
+    shutil.copy(
+        os.path.join(diff_project.storage.project_dir, "v9", "test.gpkg"), base_gpkg
+    )
+    for i in range(23):
+        sql = f"UPDATE simple SET rating={i}"
+        execute_query(base_gpkg, sql)
+        pv = push_change(
+            diff_project, "updated", "test.gpkg", diff_project.storage.project_dir
+        )
+        assert diff_project.latest_version == pv.name == (11 + i)
+        file_diff = FileDiff.query.filter_by(
+            file_path_id=file_path_id, version=pv.name, rank=0
+        ).first()
+        assert file_diff and os.path.exists(file_diff.abs_path)
+
+    assert (
+        FileDiff.query.filter_by(file_path_id=file_path_id)
+        .filter(FileDiff.rank > 0)
+        .count()
+        == 0
+    )
+
+    test_file = os.path.join(diff_project.storage.project_dir, "v30", "test.gpkg")
+    os.rename(test_file, test_file + "_backup")
+    diff_project.storage.restore_versioned_file("test.gpkg", 30)
+    assert os.path.exists(test_file)
+    assert gpkgs_are_equal(test_file, test_file + "_backup")
+    assert (
+        FileDiff.query.filter_by(file_path_id=file_path_id)
+        .filter(FileDiff.rank > 0)
+        .count()
+        > 0
+    )

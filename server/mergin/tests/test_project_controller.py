@@ -880,6 +880,14 @@ def test_download_diff_file(client, diff_project):
 
     # download full version after file was removed
     os.remove(os.path.join(diff_project.storage.project_dir, file_change.location))
+    file_path_id = (
+        ProjectFilePath.query.filter_by(project_id=diff_project.id, path=test_file)
+        .first()
+        .id
+    )
+    basefile, diffs = FileHistory.diffs_chain(file_path_id, 4)
+    # we construct full gpkg from basefile and single diff v4
+    assert basefile is not None and len(diffs) == 1
     resp = client.get(
         "/v1/project/raw/{}/{}?file={}&version=v4".format(
             test_workspace_name, test_project, test_file
@@ -1902,10 +1910,16 @@ def test_file_diffs_chain(diff_project):
     assert len(diffs) == 1
     assert diffs[0].version == 6
 
-    # diff was used in v7, nothing happened in v8 (=v7)
-    basefile, diffs = FileHistory.diffs_chain(file_id, 8)
+    # diff was used in v7
+    basefile, diffs = FileHistory.diffs_chain(file_id, 7)
     assert basefile.version.name == 5
     assert len(diffs) == 2
+
+    # nothing happened in v8 (=v7) but we have now merged diff in chain v5-v8
+    basefile, diffs = FileHistory.diffs_chain(file_id, 8)
+    assert basefile.version.name == 5
+    assert len(diffs) == 1
+    assert diffs[0].rank == 1 and diffs[0].version == 8
 
     # file was removed in v9
     basefile, diffs = FileHistory.diffs_chain(file_id, 9)

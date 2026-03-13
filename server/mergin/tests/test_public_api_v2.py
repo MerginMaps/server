@@ -304,44 +304,30 @@ def test_create_diff_checkpoint(diff_project):
 
     basefile, diffs = FileHistory.diffs_chain(file_path_id, 32)
     assert basefile.project_version_name == 9
-    # so far we only have individual diffs
-    assert len(diffs) == 22
+    assert len(diffs) == 3
+    # also a lower diff rank was created
+    lower_diff = FileDiff.query.filter_by(version=24, rank=1).first()
+    assert os.path.exists(lower_diff.abs_path)
 
     # diff for v17-v20 from individual diffs
     assert FileDiff.can_create_checkpoint(file_path_id, Checkpoint(1, 5)) is True
-    diff = FileDiff(
-        basefile=basefile, path=f"test.gpkg-diff-{uuid.uuid4()}", version=20, rank=1
-    )
-    db.session.add(diff)
-    db.session.commit()
-    assert not os.path.exists(diff.abs_path)
+    diff = FileDiff.query.filter_by(
+        file_path_id=file_path_id, version=20, rank=1
+    ).first()
+    os.remove(diff.abs_path)
     diff.construct_checkpoint()
     assert os.path.exists(diff.abs_path)
 
     basefile, diffs = FileHistory.diffs_chain(file_path_id, 20)
     assert basefile.project_version_name == 9
-    # 6 individual diffs (v11-v16) + merged diff (v17-v20) as the last one
-    assert len(diffs) == 7
+    # individual diff v12 + (v13-v16) + (v17-v20) as the last one
+    assert len(diffs) == 3
     assert diffs[-1] == diff
 
     # repeat - nothing to do
     mtime = os.path.getmtime(diff.abs_path)
     diff.construct_checkpoint()
     assert mtime == os.path.getmtime(diff.abs_path)
-
-    # some lower rank diffs still missing
-    assert not FileDiff.query.filter_by(version=24, rank=1).count()
-
-    # diff for v17-v32 with merged diffs, this will also create lower missing ranks
-    diff = FileDiff(
-        basefile=basefile, path=f"test.gpkg-diff-{uuid.uuid4()}", version=32, rank=2
-    )
-    db.session.add(diff)
-    db.session.commit()
-    diff.construct_checkpoint()
-    assert os.path.exists(diff.abs_path)
-    lower_diff = FileDiff.query.filter_by(version=24, rank=1).first()
-    assert os.path.exists(lower_diff.abs_path)
 
     # assert gpkg diff is the same as it would be from merging all individual diffs
     individual_diffs = (
@@ -368,11 +354,12 @@ def test_create_diff_checkpoint(diff_project):
 
         # geodiff failure
         mock.side_effect = GeoDiffLibError
-        diff = FileDiff(
-            basefile=basefile, path=f"test.gpkg-diff-{uuid.uuid4()}", version=16, rank=1
-        )
-        db.session.add(diff)
-        db.session.commit()
+        diff = FileDiff.query.filter_by(
+            file_path_id=file_path_id, version=16, rank=1
+        ).first()
+        if os.path.exists(diff.abs_path):
+            os.remove(diff.abs_path)
+
         diff.construct_checkpoint()
         assert mock.called
         assert not os.path.exists(diff.abs_path)
