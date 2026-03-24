@@ -363,17 +363,17 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
 
     def server_editors_count(self) -> int:
         if Configuration.GLOBAL_ADMIN or Configuration.GLOBAL_WRITE:
-            return User.query.filter(
-                is_(User.username.ilike("deleted_%"), False),
-            ).count()
+            return User.query.filter(User.active == True).count()
 
         return (
             db.session.query(ProjectUser.user_id)
             .select_from(Project)
             .join(ProjectUser)
+            .join(User, User.id == ProjectUser.user_id)
             .filter(
                 Project.removed_at.is_(None),
                 ProjectUser.role != ProjectRole.READER.value,
+                User.active == True,
             )
             .group_by(ProjectUser.user_id)
             .count()

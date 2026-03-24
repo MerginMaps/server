@@ -46,6 +46,12 @@ def test_workspace_implementation(client):
     assert ws.user_has_permissions(user, "write")
     assert ws.user_has_permissions(user, "read")
     assert handler.server_editors_count() == 2
+    # inactive user should not be counted
+    user.active = False
+    db.session.commit()
+    assert handler.server_editors_count() == 1
+    user.active = True
+    db.session.commit()
     assert not ws.user_has_permissions(user, "admin")
     assert not ws.user_has_permissions(user, "owner")
 
