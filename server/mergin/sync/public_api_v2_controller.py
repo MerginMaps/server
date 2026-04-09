@@ -295,14 +295,23 @@ def create_project_version(id):
     if request.json.get("check_only", False):
         return NoContent, 204
 
+    upload_dir = None
     try:
         # while processing data, block other uploads
         upload = Upload(project, version, upload_changes, current_user.id)
         db.session.add(upload)
+        # Save path as local before any potential rollback expires the ORM instance
+        upload_dir = upload.upload_dir
+        # Create dir and lockfile BEFORE committing so concurrent is_active() checks
+        # always see this upload as active once its DB row is visible to other workers.
+        os.makedirs(upload_dir)
+        open(upload.lockfile, "w").close()
         # Creating blocking upload can fail, e.g. in case of racing condition
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
+        if upload_dir:
+            move_to_tmp(upload_dir)
         # check and clean dangling blocking uploads or abort
         for current_upload in project.uploads.all():
             if current_upload.is_active():
@@ -321,15 +330,16 @@ def create_project_version(id):
             # Try again after cleanup
             upload = Upload(project, version, upload_changes, current_user.id)
             db.session.add(upload)
+            upload_dir = upload.upload_dir
+            os.makedirs(upload_dir)
+            open(upload.lockfile, "w").close()
             db.session.commit()
-            move_to_tmp(upload.upload_dir)
         except IntegrityError as err:
+            db.session.rollback()
+            if upload_dir:
+                move_to_tmp(upload_dir)
             logging.error(f"Failed to create upload session: {str(err)}")
             return AnotherUploadRunning().response(409)
-
-    # Create transaction folder and lockfile
-    os.makedirs(upload.upload_dir)
-    open(upload.lockfile, "w").close()
 
     file_changes, errors = upload.process_chunks(use_shared_chunk_dir=True)
     # files consistency or geodiff related issues, project push would never succeed, whole upload is aborted
