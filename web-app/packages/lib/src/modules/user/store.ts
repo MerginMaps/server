@@ -498,15 +498,10 @@ export const useUserStore = defineStore('userModule', {
      */
     async getAuthNotProjectUserSearch(params: UserSearchParams) {
       const projectStore = useProjectStore()
-      const access = projectStore.project.access
-      const projectUsers = [
-        ...access.readers,
-        ...access.writers,
-        ...access.owners
-      ]
+      const projectUsers = projectStore.access.map((item) => item.id)
 
       const response = await UserApi.getAuthUserSearch(params)
-      if (access) {
+      if (projectUsers.length) {
         response.data = response.data.filter(
           (item) => !projectUsers.find((id) => id === item.id)
         )
