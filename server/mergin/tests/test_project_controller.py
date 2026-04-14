@@ -41,7 +41,7 @@ from ..sync.models import (
 from ..sync.files import files_changes_from_upload
 from ..sync.schemas import ProjectListSchema
 from ..sync.utils import Checkpoint, generate_checksum, is_versioned_file
-from ..auth.models import User, UserProfile
+from ..auth.models import User
 
 from . import (
     test_project,
@@ -666,7 +666,6 @@ def test_update_project(client):
         username="tester", passwd="tester", is_admin=False, email="tester@mergin.com"
     )
     test_user.active = True
-    test_user.profile = UserProfile()
     db.session.add(test_user)
     db.session.commit()
 

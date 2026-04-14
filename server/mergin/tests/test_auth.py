@@ -14,7 +14,7 @@ from unittest.mock import patch
 from ..auth.bearer import decode_token, encode_token
 from ..auth.forms import ResetPasswordForm
 from ..auth.app import generate_confirmation_token, confirm_token
-from ..auth.models import User, UserProfile, LoginHistory
+from ..auth.models import User, LoginHistory
 from ..auth.tasks import anonymize_removed_users
 from ..app import db
 from ..sync.models import Project, ProjectRole
@@ -286,7 +286,6 @@ def test_change_password(client):
         email="user_test@mergin.com",
     )
     user.active = True
-    user.profile = UserProfile()
     db.session.add(user)
     db.session.commit()
 
