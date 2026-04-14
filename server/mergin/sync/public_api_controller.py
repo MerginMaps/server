@@ -75,7 +75,6 @@ from .permissions import (
 )
 from .utils import (
     generate_checksum,
-    Toucher,
     get_ip,
     get_user_agent,
     generate_location,
@@ -849,11 +848,10 @@ def project_push(namespace, project_name):
             logging.error(f"Failed to create upload session: {str(err)}")
             abort(422, "Failed to create upload session. Please try later.")
 
-    # Create transaction folder and lockfile
+    # Create transaction folder
     os.makedirs(upload.upload_dir)
-    open(upload.lockfile, "w").close()
 
-    # Update immediately without uploading of new/modified files and remove transaction/lockfile after successful commit
+    # Update immediately without uploading of new/modified files and remove transaction after successful commit
     if not (changes["added"] or changes["updated"]):
         next_version = version + 1
         file_changes = files_changes_from_upload(
@@ -920,7 +918,7 @@ def chunk_upload(transaction_id, chunk_id):
         abort(404)
 
     dest = os.path.join(upload_dir, "chunks", chunk_id)
-    with Toucher(upload.lockfile, 30):
+    with upload.heartbeat(30):
         try:
             # we could have used request.data here, but it could eventually cause OOM issue
             save_to_file(request.stream, dest, current_app.config["MAX_CHUNK_SIZE"])
@@ -945,7 +943,7 @@ def push_finish(transaction_id):
      - do integrity check comparing uploaded file sizes with what was expected
      - move uploaded files to new version dir and applying sync changes (e.g. geodiff apply_changeset)
      - bump up version in database
-     - remove artifacts (chunks, lockfile) by moving them to tmp directory
+     - remove artifacts (chunks) by moving them to tmp directory
 
     :param transaction_id: Transaction id.
     :type transaction_id: str

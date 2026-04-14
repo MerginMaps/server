@@ -1035,7 +1035,6 @@ def test_create_version_failures(client):
     db.session.add(upload)
     db.session.commit()
     os.makedirs(upload.upload_dir)
-    open(upload.lockfile, "w").close()
 
     response = client.post(f"v2/projects/{project.id}/versions", json=data)
     assert response.status_code == 409

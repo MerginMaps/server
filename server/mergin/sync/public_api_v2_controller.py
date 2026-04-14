@@ -327,9 +327,8 @@ def create_project_version(id):
             logging.error(f"Failed to create upload session: {str(err)}")
             return AnotherUploadRunning().response(409)
 
-    # Create transaction folder and lockfile
+    # Create transaction folder
     os.makedirs(upload.upload_dir)
-    open(upload.lockfile, "w").close()
 
     file_changes, errors = upload.process_chunks(use_shared_chunk_dir=True)
     # files consistency or geodiff related issues, project push would never succeed, whole upload is aborted

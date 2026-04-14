@@ -2,12 +2,14 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 from __future__ import annotations
+from contextlib import contextmanager
 import json
 import logging
 import os
+import threading
 import time
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Optional, List, Dict, Set, Tuple
 from dataclasses import dataclass, asdict
@@ -21,7 +23,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM
 from sqlalchemy.types import String
 from sqlalchemy.ext.hybrid import hybrid_property
 from pygeodiff.geodifflib import GeoDiffLibError, GeoDiffLibConflictError
-from flask import current_app
+from flask import Flask, current_app
 
 from .files import (
     DeltaChangeMerged,
@@ -44,7 +46,6 @@ from .utils import (
     LOG_BASE,
     Checkpoint,
     generate_checksum,
-    Toucher,
     get_chunk_location,
     get_project_path,
     is_supported_type,
@@ -1805,6 +1806,8 @@ class Upload(db.Model):
         db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), nullable=True
     )
     created = db.Column(db.DateTime, default=datetime.utcnow)
+    # last ping time to determine if upload is still active
+    last_ping = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     user = db.relationship("User")
     project = db.relationship(
@@ -1827,16 +1830,66 @@ class Upload(db.Model):
     def upload_dir(self):
         return os.path.join(self.project.storage.project_dir, "tmp", self.id)
 
-    @property
-    def lockfile(self):
-        return os.path.join(self.upload_dir, "lockfile")
-
     def is_active(self):
-        """Check if upload is still active because there was a ping (lockfile update) from underlying process"""
-        return os.path.exists(self.lockfile) and (
-            time.time() - os.path.getmtime(self.lockfile)
-            < current_app.config["LOCKFILE_EXPIRATION"]
+        """Check if upload is still active because there was a ping from underlying process"""
+        return datetime.now(tz=timezone.utc) < self.last_ping.replace(
+            tzinfo=timezone.utc
+        ) + timedelta(seconds=current_app.config["LOCKFILE_EXPIRATION"])
+
+    def _heartbeat_task(self, app: Flask, stop_event: threading.Event, timeout: int):
+        """
+        Background task: Runs as a Thread (Sync) or Greenlet (Gevent) based on worker type.
+        Uses a fresh engine connection to stay pool-efficient.
+        """
+        # manual context push is required for background execution
+        with app.app_context():
+            while not stop_event.is_set():
+                try:
+                    # db.engine.begin() is efficient and isolated, it immediately returns a connection to the pool
+                    with db.engine.begin() as conn:
+                        conn.execute(
+                            db.text(
+                                "UPDATE upload SET last_ping = NOW() WHERE id = :id"
+                            ),
+                            {"id": self.id},
+                        )
+                except Exception as e:
+                    logging.exception(
+                        f"Upload heartbeat failed for ID {self.project_id} and version {self.version}: {e}"
+                    )
+
+                # wait for x seconds, but wake up immediately if stop_event is set
+                stop_event.wait(timeout)
+
+    @contextmanager
+    def heartbeat(self, timeout: int = 5):
+        """
+        Context manager to be used inside a Flask route.
+
+        Example of usage:
+        -----------------
+        with upload.heartbeat(interval):
+            do_something_slow
+        """
+        # we need to pass a real Flask app object to the thread
+        app = current_app._get_current_object()
+        stop_event = threading.Event()
+
+        bg = threading.Thread(
+            target=self._heartbeat_task, args=(app, stop_event, timeout), daemon=True
         )
+
+        bg.start()
+        try:
+            yield
+        finally:
+            # signal the loop to stop
+            stop_event.set()
+
+            # wait for the task to finish its last SQL call.
+            # in Gevent, this yields to other requests (non-blocking), while in Sync, this blocks the current thread for up to 2s
+            # this is to protect main thread / greenlet from zombie bg processes
+            bg.join(timeout=2)
 
     def clear(self):
         """Clean up pending upload.
@@ -1864,7 +1917,7 @@ class Upload(db.Model):
         to_remove = [i.path for i in file_changes if i.change == PushChangeType.DELETE]
         current_files = [f for f in self.project.files if f.path not in to_remove]
 
-        with Toucher(self.lockfile, 5):
+        with self.heartbeat(5):
             for f in file_changes:
                 if f.change == PushChangeType.DELETE:
                     continue

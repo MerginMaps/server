@@ -1294,7 +1294,6 @@ def create_transaction(username, changes, version=1):
     db.session.commit()
     upload_dir = os.path.join(upload.project.storage.project_dir, "tmp", upload.id)
     os.makedirs(upload_dir)
-    open(os.path.join(upload_dir, "lockfile"), "w").close()
     return upload, upload_dir
 
 
@@ -1320,6 +1319,7 @@ def test_chunk_upload(client, app):
     resp = client.post(url, data=data, headers=headers)
     assert resp.status_code == 200
     assert resp.json["checksum"] == checksum.hexdigest()
+    assert os.path.exists(os.path.join(upload_dir, "chunks", chunk_id))
 
     # tests to send bigger chunk than allowed
     app.config["MAX_CHUNK_SIZE"] = 10 * CHUNK_SIZE
@@ -1332,6 +1332,8 @@ def test_chunk_upload(client, app):
     failure = SyncFailuresHistory.query.filter_by(project_id=upload.project.id).first()
     assert failure.error_type == "chunk_upload"
     assert failure.error_details == "Too big chunk"
+    # residual after upload was removed
+    assert not os.path.exists(os.path.join(upload_dir, "chunks", chunk_id))
 
     # tests with transaction with no uploads expected
     changes = _get_changes(test_project_dir)
@@ -1342,9 +1344,8 @@ def test_chunk_upload(client, app):
     resp2 = client.post(url, data=data, headers=headers)
     assert resp2.status_code == 404
     assert SyncFailuresHistory.query.count() == 1
-
-    # cleanup
-    shutil.rmtree(upload_dir)
+    # we do not have any chunks, so parent dir was removed as well
+    assert not os.path.exists(os.path.join(upload_dir))
 
 
 def upload_chunks(upload_dir, changes, src_dir=test_project_dir):
