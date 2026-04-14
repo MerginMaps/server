@@ -114,8 +114,7 @@ def test_remove_project(client, diff_project):
     # set up
     mergin_user = User.query.filter_by(username=DEFAULT_USER[0]).first()
     project_dir = Path(diff_project.storage.project_dir)
-    upload = Upload(diff_project, 10, [], mergin_user.id)
-    db.session.add(upload)
+    upload = Upload.create_upload(diff_project.id, 10, [], mergin_user.id)
     project_id = diff_project.id
     user = add_user("user", "user")
     access_request = AccessRequest(diff_project, user.id)

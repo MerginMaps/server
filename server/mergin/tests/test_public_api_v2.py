@@ -1031,11 +1031,7 @@ def test_create_version_failures(client):
     data = {"version": "v1", "changes": _get_changes_without_added(test_project_dir)}
 
     # somebody else is syncing
-    upload = Upload(project, 1, _get_changes(test_project_dir), 1)
-    db.session.add(upload)
-    db.session.commit()
-    os.makedirs(upload.upload_dir)
-
+    upload = Upload.create_upload(project.id, 1, _get_changes(test_project_dir), 1)
     response = client.post(f"v2/projects/{project.id}/versions", json=data)
     assert response.status_code == 409
     assert response.json["code"] == AnotherUploadRunning.code
@@ -1072,16 +1068,6 @@ def test_create_version_failures(client):
         assert response.status_code == 422
         assert response.json["code"] == UploadError.code
 
-    # try to finish the transaction which would fail on existing Upload integrity error, e.g. race conditions
-    with patch.object(
-        Upload,
-        "__init__",
-        side_effect=IntegrityError("Cannot insert upload", None, None),
-    ):
-        response = client.post(f"v2/projects/{project.id}/versions", json=data)
-        assert response.status_code == 409
-        assert response.json["code"] == AnotherUploadRunning.code
-
     # try to finish the transaction which would fail on unexpected integrity error
     # patch of ChangesSchema is just a workaround to trigger and error
     with patch.object(
@@ -1091,46 +1077,6 @@ def test_create_version_failures(client):
     ):
         response = client.post(f"v2/projects/{project.id}/versions", json=data)
         assert response.status_code == 409
-
-
-def test_create_version_object_deleted_error(client):
-    """Test that ObjectDeletedError during push returns 422 without secondary exception"""
-    project = Project.query.filter_by(
-        workspace_id=test_workspace_id, name=test_project
-    ).first()
-
-    data = {
-        "version": "v1",
-        "changes": {
-            "added": [],
-            "removed": [
-                file_info(test_project_dir, "base.gpkg"),
-            ],
-            "updated": [],
-        },
-    }
-
-    # Create a real ObjectDeletedError by using internal SQLAlchemy state
-    def raise_object_deleted(*args, **kwargs):
-        # Create a minimal state-like object that ObjectDeletedError can use
-        class FakeState:
-            class_ = Upload
-
-            def obj(self):
-                return None
-
-        raise ObjectDeletedError(FakeState())
-
-    with patch.object(
-        ProjectVersion,
-        "__init__",
-        side_effect=raise_object_deleted,
-    ):
-        response = client.post(f"v2/projects/{project.id}/versions", json=data)
-
-    # Should return 422 UploadError, not 500 from secondary exception
-    assert response.status_code == 422
-    assert response.json["code"] == UploadError.code
 
 
 def test_upload_chunk(client):

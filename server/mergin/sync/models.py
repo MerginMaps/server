@@ -19,7 +19,7 @@ from blinker import signal
 from flask_login import current_user
 from pygeodiff import GeoDiff
 from sqlalchemy import text, null, desc, nullslast, tuple_
-from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM
+from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM, insert
 from sqlalchemy.types import String
 from sqlalchemy.ext.hybrid import hybrid_property
 from pygeodiff.geodifflib import GeoDiffLibError, GeoDiffLibConflictError
@@ -1808,6 +1808,7 @@ class Upload(db.Model):
     created = db.Column(db.DateTime, default=datetime.utcnow)
     # last ping time to determine if upload is still active
     last_ping = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    transaction_id = db.Column(db.String, unique=True, nullable=False, index=True)
 
     user = db.relationship("User")
     project = db.relationship(
@@ -1825,10 +1826,98 @@ class Upload(db.Model):
         self.version = version
         self.changes = ChangesSchema().dump(changes)
         self.user_id = user_id
+        self.transaction_id = str(uuid.uuid4())
+
+    @classmethod
+    def create_upload(
+        cls, project_id: str, version: int, changes: dict, user_id: int
+    ) -> Upload | None:
+        """Create upload session, it can either create a new record or handover an existing one but with new transaction id
+        Old transaction folder is removed and new one is created.
+        """
+        now = datetime.now(timezone.utc)
+        expiration = current_app.config["LOCKFILE_EXPIRATION"]
+        new_tx_id = str(uuid.uuid4())
+
+        # CTE captures the existing row's transaction_id BEFORE the upsert (pre-statement snapshot)
+        # NULL in RETURNING means fresh INSERT, non-NULL means we took over a stale upload
+        existing_cte = (
+            db.select(Upload.transaction_id)
+            .where(
+                Upload.project_id == project_id,
+                Upload.version == version,
+            )
+            .cte("existing")
+        )
+
+        stmt = (
+            insert(Upload)
+            .values(
+                id=str(uuid.uuid4()),
+                transaction_id=new_tx_id,
+                project_id=project_id,
+                version=version,
+                user_id=user_id,
+                last_ping=now,
+                changes=ChangesSchema().dump(changes),
+            )
+            .add_cte(existing_cte)
+        )
+
+        upsert_stmt = stmt.on_conflict_do_update(
+            constraint="uq_upload_project_id",
+            set_={
+                "transaction_id": new_tx_id,
+                "user_id": user_id,
+                "last_ping": now,
+                "changes": ChangesSchema().dump(changes),
+            },
+            # ONLY update if the existing row is stale
+            where=(Upload.last_ping < (now - timedelta(seconds=expiration))),
+        )
+
+        upsert_stmt = upsert_stmt.returning(
+            Upload,
+            db.select(existing_cte.c.transaction_id)
+            .scalar_subquery()
+            .label("old_transaction_id"),
+        )
+
+        result = db.session.execute(upsert_stmt).fetchone()
+        db.session.commit()
+
+        # if nothing returned, it means the WHERE clause failed (active upload)
+        if not result:
+            return
+
+        upload = result.Upload
+        old_transaction_id = result.old_transaction_id
+        os.makedirs(upload.upload_dir)
+
+        # old_transaction_id is NULL on fresh INSERT, set to old UUID when taking over a stale upload
+        if old_transaction_id:
+            upload.project.sync_failed(
+                "", "push_lost", "Push artefact removed by subsequent push", user_id
+            )
+            if os.path.exists(
+                os.path.join(
+                    upload.project.storage.project_dir, "tmp", old_transaction_id
+                )
+            ):
+                move_to_tmp(
+                    os.path.join(
+                        upload.project.storage.project_dir, "tmp", old_transaction_id
+                    ),
+                    old_transaction_id,
+                )
+
+        return upload
 
     @property
     def upload_dir(self):
-        return os.path.join(self.project.storage.project_dir, "tmp", self.id)
+        return os.path.join(
+            self.project.storage.project_dir, "tmp", self.transaction_id
+        )
 
     def is_active(self):
         """Check if upload is still active because there was a ping from underlying process"""
@@ -1896,7 +1985,7 @@ class Upload(db.Model):
         Uploaded files and table records are removed, and another upload can start.
         """
         try:
-            move_to_tmp(self.upload_dir, self.id)
+            move_to_tmp(self.upload_dir, self.transaction_id)
             db.session.delete(self)
             db.session.commit()
         except Exception:

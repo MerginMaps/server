@@ -15,8 +15,7 @@ from datetime import datetime, timedelta, timezone
 from flask import abort, jsonify, current_app
 from flask_login import current_user
 from marshmallow import ValidationError
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm.exc import ObjectDeletedError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from .schemas_v2 import BatchErrorSchema, ProjectSchema as ProjectSchemaV2
 from ..app import db
@@ -296,87 +295,65 @@ def create_project_version(id):
         return NoContent, 204
 
     try:
-        # while processing data, block other uploads
-        upload = Upload(project, version, upload_changes, current_user.id)
-        db.session.add(upload)
-        # Creating blocking upload can fail, e.g. in case of racing condition
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        # check and clean dangling blocking uploads or abort
-        for current_upload in project.uploads.all():
-            if current_upload.is_active():
-                return AnotherUploadRunning().response(409)
-            db.session.delete(current_upload)
-            db.session.commit()
-            # previous push attempt is definitely lost
-            project.sync_failed(
-                "",
-                "push_lost",
-                "Push artefact removed by subsequent push",
-                current_user.id,
-            )
-
-        try:
-            # Try again after cleanup
-            upload = Upload(project, version, upload_changes, current_user.id)
-            db.session.add(upload)
-            db.session.commit()
-            move_to_tmp(upload.upload_dir)
-        except IntegrityError as err:
-            logging.error(f"Failed to create upload session: {str(err)}")
+        upload = Upload.create_upload(
+            project.id, version, upload_changes, current_user.id
+        )
+        if not upload:
             return AnotherUploadRunning().response(409)
+    except (IntegrityError, SQLAlchemyError) as err:
+        db.session.rollback()
+        logging.exception(f"Failed to create upload: {str(err)}")
+        return UploadError().response(422)
 
-    # Create transaction folder
-    os.makedirs(upload.upload_dir)
-
+    # this is the heavy work of processing upload data
     file_changes, errors = upload.process_chunks(use_shared_chunk_dir=True)
     # files consistency or geodiff related issues, project push would never succeed, whole upload is aborted
     if errors:
         upload.clear()
         return DataSyncError(failed_files=errors).response(422)
 
-    upload_deleted = False
     try:
-        pv = ProjectVersion(
-            project,
-            next_version,
-            current_user.id,
-            file_changes,
-            get_ip(request),
-            get_user_agent(request),
-            get_device_id(request),
-        )
-        db.session.add(pv)
-        db.session.add(project)
-        db.session.commit()
+        # let's keep upload alive until all work is done so no one else can claim it
+        with upload.heartbeat(5):
+            pv = ProjectVersion(
+                project,
+                next_version,
+                current_user.id,
+                file_changes,
+                get_ip(request),
+                get_user_agent(request),
+                get_device_id(request),
+            )
+            db.session.add(pv)
+            db.session.add(project)
+            db.session.commit()
 
-        # let's move uploaded files where they are expected to be
-        if to_be_added_files or to_be_updated_files:
-            temp_files_dir = os.path.join(upload.upload_dir, "files", v_next_version)
-            os.renames(temp_files_dir, version_dir)
+            # let's move uploaded files where they are expected to be
+            if to_be_added_files or to_be_updated_files:
+                temp_files_dir = os.path.join(
+                    upload.upload_dir, "files", v_next_version
+                )
+                os.renames(temp_files_dir, version_dir)
 
-            # remove used chunks
-            # get chunks from added and updated files
-            chunks_ids = []
-            for file in to_be_added_files + to_be_updated_files:
-                file_chunks = file.get("chunks", [])
-                chunks_ids.extend(file_chunks)
-            remove_transaction_chunks.delay(chunks_ids)
+                # remove used chunks
+                # get chunks from added and updated files
+                chunks_ids = []
+                for file in to_be_added_files + to_be_updated_files:
+                    file_chunks = file.get("chunks", [])
+                    chunks_ids.extend(file_chunks)
+                remove_transaction_chunks.delay(chunks_ids)
 
-        logging.info(
-            f"Push finished for project: {project.id}, project version: {v_next_version}."
-        )
-        project_version_created.send(pv)
-        push_finished.send(pv)
+            logging.info(
+                f"Push finished for project: {project.id}, project version: {v_next_version}."
+            )
+            project_version_created.send(pv)
+            push_finished.send(pv)
     except (
         psycopg2.Error,
         FileNotFoundError,
         IntegrityError,
-        ObjectDeletedError,
     ) as err:
         db.session.rollback()
-        upload_deleted = isinstance(err, ObjectDeletedError)
         logging.exception(
             f"Failed to finish push for project: {project.id}, project version: {v_next_version}: {str(err)}"
         )
@@ -400,9 +377,8 @@ def create_project_version(id):
             move_to_tmp(version_dir)
         raise
     finally:
-        # remove artifacts only if upload object is still valid
-        if not upload_deleted:
-            upload.clear()
+        # remove upload artifacts
+        upload.clear()
 
     result = ProjectSchemaV2().dump(project)
     result["files"] = ProjectFileSchema(

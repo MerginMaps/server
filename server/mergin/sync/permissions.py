@@ -271,8 +271,8 @@ def check_project_permissions(
     return None
 
 
-def get_upload(transaction_id):
-    upload = Upload.query.get_or_404(transaction_id)
+def get_upload_or_fail(transaction_id: str) -> Upload:
+    upload = Upload.query.filter_by(transaction_id=transaction_id).first_or_404()
     # upload to 'removed' projects is forbidden
     if upload.project.removed_at:
         abort(404)
@@ -280,8 +280,7 @@ def get_upload(transaction_id):
     if upload.user_id != current_user.id:
         abort(403, "You do not have permissions for ongoing upload")
 
-    upload_dir = os.path.join(upload.project.storage.project_dir, "tmp", transaction_id)
-    return upload, upload_dir
+    return upload
 
 
 def projects_query(permission, as_admin=True, public=True):
