@@ -40,7 +40,7 @@ def upgrade():
 
     # Fill in default for any users without a profile row (should not exist, but be safe)
     op.execute(
-        'UPDATE "user" SET receive_notifications = TRUE WHERE receive_notifications IS NULL;'
+        'UPDATE "user" SET receive_notifications = FALSE WHERE receive_notifications IS NULL;'
     )
 
     op.alter_column("user", "receive_notifications", nullable=False)
@@ -53,7 +53,7 @@ def downgrade():
     op.create_table(
         "user_profile",
         sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("receive_notifications", sa.Boolean(), nullable=False),
+        sa.Column("receive_notifications", sa.Boolean(), nullable=True),
         sa.Column("first_name", sa.String(256), nullable=True),
         sa.Column("last_name", sa.String(256), nullable=True),
         sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
