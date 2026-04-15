@@ -24,7 +24,7 @@ from .app import (
     CANNOT_EDIT_PROFILE_MSG,
 )
 from .bearer import encode_token
-from .models import User, LoginHistory, UserProfile
+from .models import User, LoginHistory
 from .schemas import UserSchema, UserSearchSchema, UserProfileSchema, UserInfoSchema
 from .forms import (
     LoginForm,
@@ -65,7 +65,7 @@ def user_profile(user, return_all=True):
             {
                 "email": user.email,
                 "storage_limit": data["storage"],  # duplicate - we should remove it
-                "receive_notifications": user.profile.receive_notifications,
+                "receive_notifications": user.receive_notifications,
                 "verified_email": user.verified_email,
                 "tier": "free",
                 "registration_date": user.registration_date,
@@ -369,7 +369,6 @@ def update_user_profile():  # pylint: disable=W0613,W0612
             return jsonify(form.errors), 400
         current_user.verified_email = False
 
-    form.update_obj(current_user.profile)
     form.update_obj(current_user)
     db.session.add(current_user)
     db.session.commit()
@@ -483,7 +482,7 @@ def get_paginated_users(
 
     :rtype: Dict[str: List[User], str: Integer]
     """
-    users = User.query.join(UserProfile).filter(
+    users = User.query.filter(
         is_(User.username.ilike("deleted_%"), False) | is_(User.active, True)
     )
 
@@ -491,14 +490,16 @@ def get_paginated_users(
         users = users.filter(
             User.username.ilike(f"%{like}%")
             | User.email.ilike(f"%{like}%")
-            | UserProfile.first_name.ilike(f"%{like}%")
-            | UserProfile.last_name.ilike(f"%{like}%")
+            | User.first_name.ilike(f"%{like}%")
+            | User.last_name.ilike(f"%{like}%")
         )
 
     if descending and order_by:
         users = users.order_by(desc(User.__table__.c[order_by]))
     elif not descending and order_by:
         users = users.order_by(asc(User.__table__.c[order_by]))
+    else:
+        users = users.order_by(asc(User.id))
 
     paginate = users.paginate(page=page, per_page=per_page)
     result = paginate.items
@@ -561,7 +562,7 @@ def create_user():
         workspace_role=request.json["role"],
     )
 
-    if user.profile.receive_notifications:
+    if user.receive_notifications:
         send_confirmation_email(
             current_app,
             user,

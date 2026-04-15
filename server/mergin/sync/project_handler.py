@@ -3,7 +3,7 @@ from .interfaces import AbstractProjectHandler
 from .permissions import ProjectPermissions
 from sqlalchemy import or_, and_
 from typing import List
-from ..auth.models import User, UserProfile
+from ..auth.models import User
 
 
 class ProjectHandler(AbstractProjectHandler):
@@ -12,8 +12,7 @@ class ProjectHandler(AbstractProjectHandler):
 
     def get_email_receivers(self, project: Project) -> List[User]:
         return (
-            User.query.join(UserProfile)
-            .outerjoin(ProjectUser, ProjectUser.user_id == User.id)
+            User.query.outerjoin(ProjectUser, ProjectUser.user_id == User.id)
             .filter(
                 or_(
                     and_(
@@ -24,7 +23,7 @@ class ProjectHandler(AbstractProjectHandler):
                 ),
                 User.active,
                 User.verified_email,
-                UserProfile.receive_notifications,
+                User.receive_notifications,
             )
             .all()
         )
