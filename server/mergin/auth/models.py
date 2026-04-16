@@ -19,12 +19,9 @@ MAX_USERNAME_LENGTH = 50
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-
     username = db.Column(db.String(80), info={"label": "Username"})
     email = db.Column(db.String(120))
-
     passwd = db.Column(db.String(80), info={"label": "Password"})  # salted + hashed
-
     active = db.Column(db.Boolean, default=True)
     is_admin = db.Column(db.Boolean)
     verified_email = db.Column(db.Boolean, default=False)
@@ -35,8 +32,12 @@ class User(db.Model):
         info={"label": "Date of creation of user account"},
         default=datetime.datetime.utcnow,
     )
-
     last_signed_in = db.Column(db.DateTime(), nullable=True)
+    receive_notifications = db.Column(
+        db.Boolean, default=True, nullable=False, index=True
+    )
+    first_name = db.Column(db.String(256), nullable=True)
+    last_name = db.Column(db.String(256), nullable=True)
 
     __table_args__ = (
         db.Index("ix_user_username", func.lower(username), unique=True),
@@ -187,8 +188,8 @@ class User(db.Model):
         self.username = del_str
         self.email = None
         self.passwd = None
-        self.profile.first_name = None
-        self.profile.last_name = None
+        self.first_name = None
+        self.last_name = None
         db.session.commit()
 
     @classmethod
@@ -240,36 +241,24 @@ class User(db.Model):
         cls, username: str, email: str, password: str, notifications: bool = True
     ) -> User:
         user = cls(username.strip(), email.strip(), password, False)
-        user.profile = UserProfile(receive_notifications=notifications)
+        user.receive_notifications = notifications
         db.session.add(user)
         db.session.commit()
         return user
+
+    @property
+    def profile(self) -> "User":
+        """Compatibility shim: profile fields are now on User directly."""
+        return self
+
+    def name(self) -> Optional[str]:
+        return f'{self.first_name if self.first_name else ""} {self.last_name if self.last_name else ""}'.strip()
 
     @property
     def can_edit_profile(self) -> bool:
         """Flag if we allow user to edit their email and name"""
         # False when user is created by SSO login
         return self.passwd is not None and self.active
-
-
-class UserProfile(db.Model):
-    user_id = db.Column(
-        db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), primary_key=True
-    )
-    receive_notifications = db.Column(db.Boolean, default=True, index=True)
-    first_name = db.Column(db.String(256), nullable=True, info={"label": "First name"})
-    last_name = db.Column(db.String(256), nullable=True, info={"label": "Last name"})
-
-    user = db.relationship(
-        "User",
-        uselist=False,
-        backref=db.backref(
-            "profile", single_parent=True, uselist=False, cascade="all,delete"
-        ),
-    )
-
-    def name(self) -> Optional[str]:
-        return f'{self.first_name if self.first_name else ""} {self.last_name if self.last_name else ""}'.strip()
 
 
 class LoginHistory(db.Model):

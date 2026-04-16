@@ -202,7 +202,7 @@ def add_commands(app: Flask):
     )
     def init(email: str, recreate: bool):
         """Initialize database if does not exist or -r is provided. Perform check of server configuration. Send statistics, respecting your setup."""
-        from .auth.models import User, UserProfile
+        from .auth.models import User
 
         inspect_engine = inspect(db.engine)
         tables = inspect_engine.get_table_names()
@@ -221,7 +221,6 @@ def add_commands(app: Flask):
             password_chars = string.ascii_letters + string.digits
             password = "".join(random.choice(password_chars) for i in range(12))
             user = User(username=username, passwd=password, email=email, is_admin=True)
-            user.profile = UserProfile()
             user.active = True
             db.session.add(user)
             db.session.commit()

@@ -8,7 +8,7 @@ from flask import Flask
 from sqlalchemy import or_, func
 
 from ..app import db
-from .models import User, UserProfile
+from .models import User
 from ..commands import normalize_input
 
 
@@ -36,7 +36,6 @@ def add_commands(app: Flask):
             sys.exit(1)
 
         user = User(username=username, passwd=password, is_admin=is_admin, email=email)
-        user.profile = UserProfile()
         user.active = True
         db.session.add(user)
         db.session.commit()
