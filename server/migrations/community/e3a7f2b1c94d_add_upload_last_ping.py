@@ -1,7 +1,7 @@
 """Add last_ping to upload
 
 Revision ID: e3a7f2b1c94d
-Revises: 4b4648483770
+Revises: e3f1a9b2c4d6
 Create Date: 2026-04-14 00:00:00.000000
 
 """
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "e3a7f2b1c94d"
-down_revision = "4b4648483770"
+down_revision = "e3f1a9b2c4d6"
 branch_labels = None
 depends_on = None
 
