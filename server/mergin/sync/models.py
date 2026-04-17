@@ -1808,7 +1808,9 @@ class Upload(db.Model):
     created = db.Column(db.DateTime, default=datetime.utcnow)
     # last ping time to determine if upload is still active
     last_ping = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    transaction_id = db.Column(db.String, unique=True, nullable=False, index=True)
+    transaction_id = db.Column(
+        UUID(as_uuid=True), unique=True, nullable=False, index=True
+    )
 
     user = db.relationship("User")
     project = db.relationship(
@@ -1835,7 +1837,7 @@ class Upload(db.Model):
         """Create upload session, it can either create a new record or handover an existing one but with new transaction id
         Old transaction folder is removed and new one is created.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         expiration = current_app.config["LOCKFILE_EXPIRATION"]
         new_tx_id = str(uuid.uuid4())
 
@@ -1892,42 +1894,49 @@ class Upload(db.Model):
 
         upload = result.Upload
         old_transaction_id = result.old_transaction_id
-        os.makedirs(upload.upload_dir)
 
-        # old_transaction_id is NULL on fresh INSERT, set to old UUID when taking over a stale upload
-        if old_transaction_id:
-            upload.project.sync_failed(
-                "", "push_lost", "Push artefact removed by subsequent push", user_id
-            )
-            if os.path.exists(
-                os.path.join(
-                    upload.project.storage.project_dir, "tmp", old_transaction_id
+        try:
+            os.makedirs(upload.upload_dir)
+
+            # old_transaction_id is NULL on fresh INSERT, set to old UUID when taking over a stale upload
+            if old_transaction_id:
+                upload.project.sync_failed(
+                    "", "push_lost", "Push artefact removed by subsequent push", user_id
                 )
-            ):
-                move_to_tmp(
+                if os.path.exists(
                     os.path.join(
-                        upload.project.storage.project_dir, "tmp", old_transaction_id
-                    ),
-                    old_transaction_id,
-                )
+                        upload.project.storage.project_dir,
+                        "tmp",
+                        str(old_transaction_id),
+                    )
+                ):
+                    move_to_tmp(
+                        os.path.join(
+                            upload.project.storage.project_dir,
+                            "tmp",
+                            str(old_transaction_id),
+                        ),
+                        str(old_transaction_id),
+                    )
+        except OSError as err:
+            # filesystem setup failed after the DB row was already committed.
+            # delete the row immediately so the next attempt isn't blocked until expiration.
+            db.session.delete(upload)
+            db.session.commit()
+            logging.error(f"Failed to create upload directory: {err}")
+            return
 
         return upload
 
     @property
     def upload_dir(self):
         return os.path.join(
-            self.project.storage.project_dir, "tmp", self.transaction_id
+            self.project.storage.project_dir, "tmp", str(self.transaction_id)
         )
-
-    def is_active(self):
-        """Check if upload is still active because there was a ping from underlying process"""
-        return datetime.now(tz=timezone.utc) < self.last_ping.replace(
-            tzinfo=timezone.utc
-        ) + timedelta(seconds=current_app.config["LOCKFILE_EXPIRATION"])
 
     def _heartbeat_task(self, app: Flask, stop_event: threading.Event, timeout: int):
         """
-        Background task: Runs as a Thread (Sync) or Greenlet (Gevent) based on worker type.
+        Background task: Runs as a Thread, it is compatible with Sync (direct) or Gevent (monkey-patch) worker type.
         Uses a fresh engine connection to stay pool-efficient.
         """
         # manual context push is required for background execution
@@ -1985,7 +1994,7 @@ class Upload(db.Model):
         Uploaded files and table records are removed, and another upload can start.
         """
         try:
-            move_to_tmp(self.upload_dir, self.transaction_id)
+            move_to_tmp(self.upload_dir, str(self.transaction_id))
             db.session.delete(self)
             db.session.commit()
         except Exception:

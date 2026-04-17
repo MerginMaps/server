@@ -8,6 +8,7 @@ Create Date: 2026-04-14 00:00:00.000000
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import UUID
 
 
 # revision identifiers, used by Alembic.
@@ -18,11 +19,11 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column("upload", sa.Column("transaction_id", sa.String(), nullable=True))
-    # backfill existing rows before adding NOT NULL constraint
-    op.execute(
-        "UPDATE upload SET transaction_id = id::text WHERE transaction_id IS NULL"
+    op.add_column(
+        "upload", sa.Column("transaction_id", UUID(as_uuid=True), nullable=True)
     )
+    # backfill existing rows before adding NOT NULL constraint
+    op.execute("UPDATE upload SET transaction_id = id WHERE transaction_id IS NULL")
     op.alter_column("upload", "transaction_id", nullable=False)
     op.create_index(
         op.f("ix_upload_transaction_id"), "upload", ["transaction_id"], unique=True

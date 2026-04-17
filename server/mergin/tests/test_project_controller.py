@@ -1520,7 +1520,7 @@ def test_whole_push_process(client):
     # assert we can get project info with active upload
     resp = client.get(f"/v1/project/{test_workspace_name}/{upload.project.name}")
     assert resp.status_code == 200
-    assert upload.transaction_id in resp.json["uploads"]
+    assert str(upload.transaction_id) in resp.json["uploads"]
     assert (
         client.get(
             f"/v1/project/{test_workspace_name}/{upload.project.name}?version=v1"

@@ -240,11 +240,6 @@ def create_project_version(id):
     if pv and pv.name != version:
         return ProjectVersionExists(version, pv.name).response(409)
 
-    # reject push if there is another one already running
-    pending_upload = Upload.query.filter_by(project_id=project.id).first()
-    if pending_upload and pending_upload.is_active():
-        return AnotherUploadRunning().response(409)
-
     try:
         ChangesSchema().validate(changes)
         upload_changes = ChangesSchema().dump(changes)
@@ -303,6 +298,9 @@ def create_project_version(id):
     except (IntegrityError, SQLAlchemyError) as err:
         db.session.rollback()
         logging.exception(f"Failed to create upload: {str(err)}")
+        return UploadError().response(422)
+    except OSError as err:
+        logging.exception(f"Failed to create upload directory: {str(err)}")
         return UploadError().response(422)
 
     # this is the heavy work of processing upload data
