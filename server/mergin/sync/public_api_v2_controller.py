@@ -310,6 +310,15 @@ def create_project_version(id):
         upload.clear()
         return DataSyncError(failed_files=errors).response(422)
 
+    if os.path.exists(version_dir):
+        if ProjectVersion.query.filter_by(
+            project_id=project.id, name=next_version
+        ).count():
+            return UploadError(
+                error=f"Version {v_next_version} already exists"
+            ).response(409)
+        move_to_tmp(version_dir)
+
     try:
         # let's keep upload alive until all work is done so no one else can claim it
         with upload.heartbeat(5):
@@ -324,17 +333,18 @@ def create_project_version(id):
             )
             db.session.add(pv)
             db.session.add(project)
-            db.session.commit()
 
-            # let's move uploaded files where they are expected to be
+            # move files before committing so a filesystem failure leaves the DB clean
             if to_be_added_files or to_be_updated_files:
                 temp_files_dir = os.path.join(
                     upload.upload_dir, "files", v_next_version
                 )
                 os.renames(temp_files_dir, version_dir)
 
-                # remove used chunks
-                # get chunks from added and updated files
+            db.session.commit()
+
+            # remove used chunks only after commit — chunks belong to the now-committed version
+            if to_be_added_files or to_be_updated_files:
                 chunks_ids = []
                 for file in to_be_added_files + to_be_updated_files:
                     file_chunks = file.get("chunks", [])
@@ -348,7 +358,7 @@ def create_project_version(id):
             push_finished.send(pv)
     except (
         psycopg2.Error,
-        FileNotFoundError,
+        OSError,
         IntegrityError,
     ) as err:
         db.session.rollback()

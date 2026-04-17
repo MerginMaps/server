@@ -991,26 +991,42 @@ def push_finish(transaction_id):
             )
             db.session.add(pv)
             db.session.add(project)
-            db.session.commit()
 
-            # let's move uploaded files where they are expected to be
-            os.renames(files_dir, version_dir)
+            # move files before committing so a filesystem failure leaves the DB clean
+            if os.path.exists(files_dir):
+                os.renames(files_dir, version_dir)
+
+            db.session.commit()
 
             logging.info(
                 f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
             )
             project_version_created.send(pv)
             push_finished.send(pv)
-    except (psycopg2.Error, FileNotFoundError, IntegrityError) as err:
+    except (psycopg2.Error, OSError, IntegrityError) as err:
         db.session.rollback()
         logging.exception(
             f"Failed to finish push for project: {project.id}, project version: {v_next_version}, "
             f"transaction id: {transaction_id}.: {str(err)}"
         )
+        if (
+            os.path.exists(version_dir)
+            and not ProjectVersion.query.filter_by(
+                project_id=project.id, name=next_version
+            ).count()
+        ):
+            move_to_tmp(version_dir)
         abort(422, "Failed to create new version: {}".format(str(err)))
     # catch exception during pg transaction so we can rollback and prevent PendingRollbackError during upload clean up
     except gevent.timeout.Timeout:
         db.session.rollback()
+        if (
+            os.path.exists(version_dir)
+            and not ProjectVersion.query.filter_by(
+                project_id=project.id, name=next_version
+            ).count()
+        ):
+            move_to_tmp(version_dir)
         raise
     finally:
         # remove artifacts
