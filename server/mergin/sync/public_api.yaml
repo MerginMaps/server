@@ -699,7 +699,7 @@ paths:
        - do integrity check comparing uploaded file sizes with what was expected
        - move uploaded files to new version dir and applying sync changes (e.g. geodiff apply_changeset)
        - bump up version in database
-       - remove artifacts (chunks, lockfile) by moving them to tmp directory"
+       - remove artifacts (chunks) by moving them to tmp directory"
       operationId: push_finish
       parameters:
         - name: transaction_id

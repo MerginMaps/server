@@ -57,53 +57,6 @@ def generate_checksum(file, chunk_size=4096):
             checksum.update(chunk)
 
 
-class Toucher:
-    """
-    Helper class to periodically update modification time of file during
-    execution of longer lasting task.
-
-    Example of usage:
-    -----------------
-    with Toucher(file, interval):
-        do_something_slow
-
-    """
-
-    def __init__(self, lockfile, interval):
-        self.lockfile = lockfile
-        self.interval = interval
-        self.running = False
-        self.timer = None
-
-    def __enter__(self):
-        self.acquire()
-
-    def __exit__(self, type, value, tb):  # pylint: disable=W0612,W0622
-        self.release()
-
-    def release(self):
-        self.running = False
-        if self.timer:
-            self.timer.cancel()
-            self.timer = None
-
-    def acquire(self):
-        self.running = True
-        self.touch_lockfile()
-
-    def touch_lockfile(self):
-        # do an NFS ACCESS procedure request to clear the attribute cache (for various pods to actually see the file)
-        # https://docs.aws.amazon.com/efs/latest/ug/troubleshooting-efs-general.html#custom-nfs-settings-write-delays
-        os.access(self.lockfile, os.W_OK)
-        with open(self.lockfile, "a"):
-            os.utime(self.lockfile, None)
-
-        sleep(0)  # to unblock greenlet
-        if self.running:
-            self.timer = Timer(self.interval, self.touch_lockfile)
-            self.timer.start()
-
-
 def is_qgis(path: str) -> bool:
     """
     Check if file is a QGIS project file.

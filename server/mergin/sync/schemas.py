@@ -132,7 +132,7 @@ class ProjectSchemaForVersion(ma.SQLAlchemyAutoSchema):
         return role.value
 
     def _uploads(self, obj):
-        return [u.id for u in obj.project.uploads.all()]
+        return [u.transaction_id for u in obj.project.uploads.all()]
 
     def _permissions(self, obj):
         return project_user_permissions(obj.project)
@@ -180,7 +180,7 @@ class ProjectSchema(ma.SQLAlchemyAutoSchema):
         return role.value
 
     def _uploads(self, obj):
-        return [u.id for u in obj.uploads.all()]
+        return [u.transaction_id for u in obj.uploads.all()]
 
     class Meta:
         model = Project
