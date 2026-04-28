@@ -102,6 +102,12 @@ def optimize_storage(project_id):
             if not os.path.exists(item.abs_path):
                 continue
 
+            # skip cleanup if missing corresponding diff file - this should never happen but in case of some inconsistency keep full gpkg on disk
+            if not os.path.exists(
+                os.path.join(project.storage.project_dir, item.diff_file.location)
+            ):
+                continue
+
             age = time.time() - os.path.getmtime(item.abs_path)
             if age > Configuration.FILE_EXPIRATION:
                 move_to_tmp(item.abs_path)
