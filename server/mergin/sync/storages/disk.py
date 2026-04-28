@@ -333,7 +333,7 @@ class DiskStorage(ProjectStorage):
                 # create changeset next to uploaded file copy
                 changeset_tmp = os.path.join(
                     os.path.dirname(uploaded_file_tmp),
-                    diff_name,
+                    diff_name + "_tmp",
                 )
                 self.flush_geodiff_logger()
                 logging.info(
