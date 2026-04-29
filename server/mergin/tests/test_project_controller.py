@@ -38,6 +38,7 @@ from ..sync.models import (
     PushChangeType,
     ProjectFilePath,
 )
+from ..sync.storages.disk import copy_file as real_copy_file
 from ..sync.files import files_changes_from_upload
 from ..sync.schemas import ProjectListSchema
 from ..sync.utils import Checkpoint, generate_checksum, is_versioned_file
@@ -57,6 +58,7 @@ from .utils import (
     create_project,
     create_workspace,
     DateTimeEncoder,
+    execute_query,
     login,
     file_info,
     login_as_admin,
@@ -1664,6 +1666,44 @@ def test_push_no_diff_finish(client):
     )
     assert not os.path.exists(upload.project.storage.geodiff_working_dir)
 
+    # test the same with geodiff working dir error (fallback to _tmp next to original file)
+    working_file = os.path.join(working_dir, "base.gpkg")
+    sql = "INSERT INTO simple (geometry, name) VALUES (GeomFromText('POINT(24.5, 38.2)', 4326), 'insert_test')"
+    execute_query(working_file, sql)
+    changes = {
+        "added": [],
+        "removed": [],
+        "updated": [
+            file_info(working_dir, "base.gpkg", chunk_size=CHUNK_SIZE),
+        ],
+    }
+    upload, upload_dir = create_transaction("mergin", changes, version=2)
+    upload_chunks(upload_dir, upload.changes, src_dir=working_dir)
+
+    def copy_file_failing_for_geodiff(src, dest):
+        """Mocked implementation of copy_file, failing if dest is geodiff directory."""
+        if current_app.config["GEODIFF_WORKING_DIR"] in dest:
+            raise OSError("Mocked: copy to geodiff dir failed")
+        return real_copy_file(src, dest)
+
+    with patch(
+        "mergin.sync.storages.disk.copy_file",
+        side_effect=copy_file_failing_for_geodiff,
+    ):
+        resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+        assert resp.status_code == 200
+        latest_version = upload.project.get_latest_version()
+        file_meta = latest_version.changes.filter(
+            FileHistory.change == PushChangeType.UPDATE_DIFF.value
+        ).first()
+        assert file_meta.diff_file is not None
+        assert os.path.exists(
+            os.path.join(
+                upload.project.storage.project_dir, file_meta.diff_file.location
+            )
+        )
+        assert not os.path.exists(upload.project.storage.geodiff_working_dir)
+
     # change structure of gpkg file so diff would not be available -> hard overwrite
     gpkg_conn = pysqlite3.connect(os.path.join(working_dir, "base.gpkg"))
     gpkg_conn.enable_load_extension(True)
@@ -1679,7 +1719,7 @@ def test_push_no_diff_finish(client):
             file_info(working_dir, "test.txt", chunk_size=CHUNK_SIZE),
         ],
     }
-    upload, upload_dir = create_transaction("mergin", changes, version=2)
+    upload, upload_dir = create_transaction("mergin", changes, version=3)
     upload_chunks(upload_dir, upload.changes, src_dir=working_dir)
     resp = client.post("/v1/project/push/finish/{}".format(upload.transaction_id))
     assert resp.status_code == 200
@@ -1696,7 +1736,7 @@ def test_push_no_diff_finish(client):
         ).count()
         == 2
     )
-    version_files = os.listdir(os.path.join(upload.project.storage.project_dir, "v3"))
+    version_files = os.listdir(os.path.join(upload.project.storage.project_dir, "v4"))
     diff_files = [f for f in version_files if re.findall("-diff-", f)]
     assert not diff_files
 
