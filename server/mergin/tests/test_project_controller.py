@@ -1690,7 +1690,7 @@ def test_push_no_diff_finish(client):
         "mergin.sync.storages.disk.copy_file",
         side_effect=copy_file_failing_for_geodiff,
     ):
-        resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+        resp = client.post("/v1/project/push/finish/{}".format(upload.transaction_id))
         assert resp.status_code == 200
         latest_version = upload.project.get_latest_version()
         file_meta = latest_version.changes.filter(
