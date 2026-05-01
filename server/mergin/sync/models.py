@@ -18,7 +18,9 @@ import logging
 from blinker import signal
 from flask_login import current_user
 from pygeodiff import GeoDiff
+from functools import cached_property
 from sqlalchemy import text, null, desc, nullslast, tuple_
+from sqlalchemy.orm import contains_eager, joinedload, load_only
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM, insert
 from sqlalchemy.types import String
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -658,7 +660,7 @@ class FileHistory(db.Model):
     def path(self) -> str:
         return self.file.path
 
-    @property
+    @cached_property
     def diff(self) -> Optional[FileDiff]:
         """Diff file pushed with UPDATE_DIFF change type.
 
@@ -713,9 +715,36 @@ class FileHistory(db.Model):
         if not (is_versioned_file(file) and since is not None and to is not None):
             return []
 
-        history = []
+        # when since=1 the range spans the entire project history; narrow it to
+        # the most recent CREATE/DELETE so we don't load records from previous
+        # file lifecycles that the Python break would discard anyway
+        if since == 1:
+            boundary = (
+                FileHistory.query.join(ProjectFilePath)
+                .filter(
+                    ProjectFilePath.project_id == project_id,
+                    ProjectFilePath.path == file,
+                    FileHistory.project_version_name <= to,
+                    FileHistory.change.in_(
+                        [PushChangeType.CREATE.value, PushChangeType.DELETE.value]
+                    ),
+                )
+                .order_by(desc(FileHistory.project_version_name))
+                .with_entities(FileHistory.project_version_name)
+                .first()
+            )
+            since = boundary[0] if boundary else since
+
         full_history = (
             FileHistory.query.join(ProjectFilePath)
+            .join(FileHistory.version)
+            .join(ProjectVersion.project)
+            .options(
+                contains_eager(FileHistory.version)
+                .load_only(ProjectVersion.name, ProjectVersion.project_id)
+                .contains_eager(ProjectVersion.project)
+                .load_only(Project.storage_params)
+            )
             .filter(
                 ProjectFilePath.project_id == project_id,
                 FileHistory.project_version_name <= to,
@@ -726,6 +755,7 @@ class FileHistory(db.Model):
             .all()
         )
 
+        history = []
         for item in full_history:
             history.append(item)
 

@@ -166,7 +166,6 @@ def test_file_history(client, diff_project):
     assert "v1" not in history
     assert "v3" in history
     assert "location" not in history["v7"]
-    assert "expiration" in history["v7"]
 
 
 def test_get_paginated_projects(client):

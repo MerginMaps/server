@@ -24,8 +24,9 @@ from flask import (
 )
 from pygeodiff import GeoDiffLibError
 from flask_login import current_user
-from sqlalchemy import and_, desc, asc
+from sqlalchemy import and_, desc, asc, tuple_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import contains_eager, joinedload, load_only
 from gevent import sleep
 import base64
 from werkzeug.exceptions import HTTPException, Conflict
@@ -37,6 +38,7 @@ from ..auth import auth_required
 from ..auth.models import User
 from .models import (
     FileSyncErrorType,
+    FileDiff,
     Project,
     ProjectVersion,
     Upload,
@@ -397,19 +399,73 @@ def get_project(project_name, namespace, since="", version=None):  # noqa: E501
         abort(400, "Parameters 'since' and 'version' are mutually exclusive")
     elif since:
         data = ProjectSchema(exclude=["storage_params"]).dump(project)
-        # append history for versioned files
+        since_version = ProjectVersion.from_v_name(since)
+        versioned_paths = [f.path for f in project.files if is_versioned_file(f.path)]
+
+        # load history for all versioned files in one query; only the columns
+        # actually used downstream are fetched from the joined tables
+        all_history = (
+            FileHistory.query.join(ProjectFilePath)
+            .join(FileHistory.version)
+            .options(
+                contains_eager(FileHistory.file).load_only(
+                    ProjectFilePath.path, ProjectFilePath.project_id
+                ),
+                contains_eager(FileHistory.version).load_only(ProjectVersion.name),
+            )
+            .filter(
+                ProjectFilePath.project_id == project.id,
+                FileHistory.project_version_name.between(
+                    since_version, project.latest_version
+                ),
+                ProjectFilePath.path.in_(versioned_paths),
+            )
+            .order_by(FileHistory.file_path_id, desc(FileHistory.project_version_name))
+            .all()
+        )
+
+        # partition by file and apply stop-at-CREATE logic, matching FileHistory.changes behaviour
+        history_by_file: dict = {}
+        for item in all_history:
+            fid = item.file_path_id
+            file_history = history_by_file.setdefault(fid, [])
+            if file_history and file_history[-1].change in (
+                PushChangeType.CREATE.value,
+                PushChangeType.DELETE.value,
+            ):
+                continue
+            file_history.append(item)
+
+        # batch-load all FileDiff records needed across all files in one query
+        update_diff_items = [
+            i
+            for items in history_by_file.values()
+            for i in items
+            if i.change == PushChangeType.UPDATE_DIFF.value
+        ]
+        if update_diff_items:
+            diffs = FileDiff.query.filter(
+                FileDiff.file_path_id.in_({i.file_path_id for i in update_diff_items}),
+                FileDiff.rank == 0,
+                FileDiff.version.in_(
+                    [i.project_version_name for i in update_diff_items]
+                ),
+            ).all()
+            diff_map = {(d.file_path_id, d.version): d for d in diffs}
+            for item in update_diff_items:
+                item.__dict__["diff"] = diff_map.get(
+                    (item.file_path_id, item.project_version_name)
+                )
+
+        path_to_file_id = {i.file.path: i.file_path_id for i in all_history}
         files = []
         for f in project.files:
             history_field = {}
-            for item in FileHistory.changes(
-                project.id,
-                f.path,
-                ProjectVersion.from_v_name(since),
-                project.latest_version,
-            ):
-                history_field[ProjectVersion.to_v_name(item.version.name)] = (
-                    FileHistorySchema(exclude=("mtime",)).dump(item)
-                )
+            if is_versioned_file(f.path):
+                for item in history_by_file.get(path_to_file_id.get(f.path), []):
+                    history_field[ProjectVersion.to_v_name(item.version.name)] = (
+                        FileHistorySchema(exclude=("mtime", "expiration")).dump(item)
+                    )
             files.append({**asdict(f), "history": history_field})
         data["files"] = files
     elif version:
@@ -470,38 +526,63 @@ def get_projects_by_names():  # noqa: E501
     list_of_projects = request.json.get("projects", [])
     if len(list_of_projects) > 50:
         abort(400, "Too many projects")
+
+    # batch-resolve workspaces by name (one DB query for DB-backed handlers)
+    unique_ws_names = {
+        key.split("/")[0] for key in list_of_projects if len(key.split("/")) == 2
+    }
+    workspaces_by_name = {
+        ws.name: ws for ws in current_app.ws_handler.get_by_names(unique_ws_names)
+    }
+
     results = {}
-    for project in list_of_projects:
-        projects = projects_query(ProjectPermissions.Read, as_admin=False)
-        splitted = project.split("/")
-        if len(splitted) != 2:
-            results[project] = {"error": 404}
+    valid_projects = []  # list of (key, workspace, project_name)
+    for key in list_of_projects:
+        parts = key.split("/")
+        if len(parts) != 2:
+            results[key] = {"error": 404}
             continue
-        ws = splitted[0]
-        name = splitted[1]
-        workspace = current_app.ws_handler.get_by_name(ws)
+        workspace = workspaces_by_name.get(parts[0])
         if not workspace:
-            results[project] = {"error": 404}
+            results[key] = {"error": 404}
             continue
-        result = projects.filter(
-            Project.workspace_id == workspace.id, Project.name == name
-        ).first()
-        if result:
-            users_map = {
-                u.id: u.username
-                for u in User.query.select_from(ProjectUser)
-                .join(User)
-                .filter(ProjectUser.project_id == result.id)
-                .all()
-            }
-            workspaces_map = {workspace.id: workspace.name}
-            ctx = {"users_map": users_map, "workspaces_map": workspaces_map}
-            results[project] = ProjectListSchema(context=ctx).dump(result)
-        else:
-            if not current_user or not current_user.is_authenticated:
-                results[project] = {"error": 401}
+        valid_projects.append((key, workspace, parts[1]))
+
+    if valid_projects:
+        # batch-fetch all requested projects in one query
+        ws_name_pairs = [(ws.id, name) for _, ws, name in valid_projects]
+        found_projects = (
+            projects_query(ProjectPermissions.Read, as_admin=False)
+            .filter(tuple_(Project.workspace_id, Project.name).in_(ws_name_pairs))
+            .all()
+        )
+        found_map = {(p.workspace_id, p.name): p for p in found_projects}
+
+        # batch-fetch all project members in one query
+        users_map = {
+            u.id: u.username
+            for u in User.query.select_from(ProjectUser)
+            .join(User)
+            .filter(ProjectUser.project_id.in_([p.id for p in found_projects]))
+            .all()
+        }
+        ws_ids = {p.workspace_id for p in found_projects}
+        workspaces_map = {
+            w.id: w.name for w in current_app.ws_handler.get_by_ids(ws_ids)
+        }
+        ctx = {"users_map": users_map, "workspaces_map": workspaces_map}
+
+        for key, workspace, name in valid_projects:
+            result = found_map.get((workspace.id, name))
+            if result:
+                results[key] = ProjectListSchema(context=ctx).dump(result)
             else:
-                results[project] = {"error": 404}
+                results[key] = (
+                    {"error": 401}
+                    if not current_user or not current_user.is_authenticated
+                    else {"error": 404}
+                )
+
     return results, 200
 
 
@@ -1191,10 +1272,30 @@ def get_resource_history(project_name, namespace, path):  # noqa: E501
     )
 
     data = ProjectFileSchema().dump(fh)
+    history = FileHistory.changes(project.id, path, 1, project.latest_version)
+
+    # batch-load all rank-0 FileDiff records needed for the history in one query
+    diff_map = {}
+    if history:
+        update_diff_versions = [
+            i.project_version_name
+            for i in history
+            if i.change == PushChangeType.UPDATE_DIFF.value
+        ]
+        if update_diff_versions:
+            diffs = FileDiff.query.filter(
+                FileDiff.file_path_id == history[0].file_path_id,
+                FileDiff.rank == 0,
+                FileDiff.version.in_(update_diff_versions),
+            ).all()
+            diff_map = {d.version: d for d in diffs}
+
     history_field = {}
-    for item in FileHistory.changes(project.id, path, 1, project.latest_version):
+    for item in history:
+        if item.change == PushChangeType.UPDATE_DIFF.value:
+            item.__dict__["diff"] = diff_map.get(item.project_version_name)
         history_field[ProjectVersion.to_v_name(item.version.name)] = FileHistorySchema(
-            exclude=("mtime",)
+            exclude=("mtime", "expiration")
         ).dump(item)
 
     data["history"] = history_field
