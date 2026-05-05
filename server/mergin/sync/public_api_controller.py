@@ -24,9 +24,10 @@ from flask import (
 )
 from pygeodiff import GeoDiffLibError
 from flask_login import current_user
-from sqlalchemy import and_, desc, asc, tuple_
+import re
+from sqlalchemy import and_, desc, asc, text, tuple_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.orm import contains_eager, joinedload, load_only
+from sqlalchemy.orm import contains_eager, joinedload, load_only, selectinload
 from gevent import sleep
 import base64
 from werkzeug.exceptions import HTTPException, Conflict
@@ -502,6 +503,8 @@ def get_paginated_project_versions(
     project = require_project(namespace, project_name, ProjectPermissions.Read)
     query = ProjectVersion.query.filter(
         and_(ProjectVersion.project_id == project.id, ProjectVersion.name != 0)
+    ).options(
+        joinedload(ProjectVersion.project).load_only(Project.name, Project.workspace_id)
     )
     query = (
         query.order_by(desc(ProjectVersion.name))
@@ -511,9 +514,57 @@ def get_paginated_project_versions(
     paginate = query.paginate(page=page, per_page=per_page)
     result = paginate.items
     total = paginate.total
-    versions = ProjectVersionListSchema(many=True).dump(result)
+
+    # batch-resolve workspace names for the page
+    ws_ids = {v.project.workspace_id for v in result}
+    workspaces_map = {w.id: w.name for w in current_app.ws_handler.get_by_ids(ws_ids)}
+
+    # batch-compute change counts for all versions in the page in one query
+    if result:
+        version_ids = [v.id for v in result]
+        rows = db.session.execute(
+            text(
+                "SELECT version_id, change, COUNT(change) AS cnt"
+                " FROM file_history"
+                " WHERE version_id = ANY(:ids)"
+                " GROUP BY version_id, change"
+            ),
+            {"ids": version_ids},
+        ).fetchall()
+        counts_map = {}
+        for row in rows:
+            counts_map.setdefault(row.version_id, {})[row.change] = row.cnt
+        for v in result:
+            v.__dict__["_changes_count"] = counts_map.get(v.id, {})
+
+    ctx = {"workspaces_map": workspaces_map}
+    versions = ProjectVersionListSchema(many=True, context=ctx).dump(result)
     data = {"versions": versions, "count": total}
     return data, 200
+
+
+def _precompute_has_conflict(projects):
+    """Pre-populate _has_conflict on each project using a single SQL query."""
+    if not projects:
+        return
+    conflict_regex = r"(\.gpkg|\.qgs|.qgz)(.*conflict.*)|( \(.*conflict.*)"
+    rows = db.session.execute(
+        text(
+            """
+            SELECT DISTINCT lpf.project_id
+            FROM latest_project_files lpf
+            CROSS JOIN unnest(lpf.file_history_ids) AS fh_id
+            JOIN file_history fh ON fh.id = fh_id
+            JOIN project_file_path fp ON fp.id = fh.file_path_id
+            WHERE lpf.project_id = ANY(:project_ids)
+            AND fp.path ~ :pattern
+        """
+        ),
+        {"project_ids": [p.id for p in projects], "pattern": conflict_regex},
+    ).fetchall()
+    conflict_ids = {row.project_id for row in rows}
+    for p in projects:
+        p.__dict__["_has_conflict"] = p.id in conflict_ids
 
 
 def get_projects_by_names():  # noqa: E501
@@ -529,10 +580,13 @@ def get_projects_by_names():  # noqa: E501
 
     # batch-resolve workspaces by name (one DB query for DB-backed handlers)
     unique_ws_names = {
-        key.split("/")[0] for key in list_of_projects if len(key.split("/")) == 2
+        key.split("/")[0].lower()
+        for key in list_of_projects
+        if len(key.split("/")) == 2
     }
     workspaces_by_name = {
-        ws.name: ws for ws in current_app.ws_handler.get_by_names(unique_ws_names)
+        ws.name.lower(): ws
+        for ws in current_app.ws_handler.get_by_names(unique_ws_names)
     }
 
     results = {}
@@ -542,17 +596,19 @@ def get_projects_by_names():  # noqa: E501
         if len(parts) != 2:
             results[key] = {"error": 404}
             continue
-        workspace = workspaces_by_name.get(parts[0])
+        workspace = workspaces_by_name.get(parts[0].lower())
         if not workspace:
             results[key] = {"error": 404}
             continue
         valid_projects.append((key, workspace, parts[1]))
 
     if valid_projects:
-        # batch-fetch all requested projects in one query
+        # batch-fetch all requested projects, eagerly loading project_users so
+        # members_by_role / get_role don't trigger per-project lazy loads
         ws_name_pairs = [(ws.id, name) for _, ws, name in valid_projects]
         found_projects = (
             projects_query(ProjectPermissions.Read, as_admin=False)
+            .options(selectinload(Project.project_users))
             .filter(tuple_(Project.workspace_id, Project.name).in_(ws_name_pairs))
             .all()
         )
@@ -570,6 +626,9 @@ def get_projects_by_names():  # noqa: E501
         workspaces_map = {
             w.id: w.name for w in current_app.ws_handler.get_by_ids(ws_ids)
         }
+
+        _precompute_has_conflict(found_projects)
+
         ctx = {"users_map": users_map, "workspaces_map": workspaces_map}
 
         for key, workspace, name in valid_projects:
@@ -602,9 +661,11 @@ def get_projects_by_uuids(uuids):  # noqa: E501
 
     projects = (
         projects_query(ProjectPermissions.Read, as_admin=False)
+        .options(selectinload(Project.project_users))
         .filter(Project.id.in_(proj_ids))
         .all()
     )
+    _precompute_has_conflict(projects)
     ws_ids = set([p.workspace_id for p in projects])
     projects_ids = [p.id for p in projects]
     users_map = {
@@ -686,9 +747,12 @@ def get_paginated_projects(
         public,
         only_public,
     )
-    pagination = projects.paginate(page=page, per_page=per_page)
+    pagination = projects.options(selectinload(Project.project_users)).paginate(
+        page=page, per_page=per_page
+    )
     result = pagination.items
     total = pagination.total
+    _precompute_has_conflict(result)
 
     # create user map id:username passed to project schema to minimize queries to db
     projects_ids = [p.id for p in result]
@@ -699,7 +763,7 @@ def get_paginated_projects(
         .filter(ProjectUser.project_id.in_(projects_ids))
         .all()
     }
-    ws_ids = [p.workspace_id for p in projects]
+    ws_ids = [p.workspace_id for p in result]
     workspaces_map = {w.id: w.name for w in current_app.ws_handler.get_by_ids(ws_ids)}
     ctx = {"users_map": users_map, "workspaces_map": workspaces_map}
     sleep(

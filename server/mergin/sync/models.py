@@ -6,6 +6,7 @@ from contextlib import contextmanager
 import json
 import logging
 import os
+import re
 import threading
 import time
 import uuid
@@ -137,6 +138,12 @@ class Project(db.Model):
         """Discover project workspace"""
         project_workspace = current_app.ws_handler.get(self.workspace_id)
         return project_workspace
+
+    @cached_property
+    def _has_conflict(self) -> bool:
+        """True if any current project file matches a known conflict-copy pattern."""
+        pattern = r"(\.gpkg|\.qgs|.qgz)(.*conflict.*)|( \(.*conflict.*)"
+        return any(re.search(pattern, f.path) for f in self.files)
 
     def get_latest_files_cache(self) -> List[int]:
         """Get latest file history ids either from cached table or calculate them on the fly"""
@@ -740,10 +747,11 @@ class FileHistory(db.Model):
             .join(FileHistory.version)
             .join(ProjectVersion.project)
             .options(
+                contains_eager(FileHistory.file).load_only(ProjectFilePath.path),
                 contains_eager(FileHistory.version)
                 .load_only(ProjectVersion.name, ProjectVersion.project_id)
                 .contains_eager(ProjectVersion.project)
-                .load_only(Project.storage_params)
+                .load_only(Project.storage_params),
             )
             .filter(
                 ProjectFilePath.project_id == project_id,
@@ -1811,10 +1819,14 @@ class ProjectVersion(db.Model):
 
     def changes_count(self) -> Dict:
         """Return number of changes by type"""
-        query = f"SELECT change, COUNT(change) FROM file_history WHERE version_id = :version_id GROUP BY change;"
+        query = "SELECT change, COUNT(change) FROM file_history WHERE version_id = :version_id GROUP BY change;"
         params = {"version_id": self.id}
         result = db.session.execute(text(query), params).fetchall()
         return {row[0]: row[1] for row in result}
+
+    @cached_property
+    def _changes_count(self) -> Dict:
+        return self.changes_count()
 
     @property
     def zip_path(self):
