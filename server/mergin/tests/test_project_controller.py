@@ -2166,7 +2166,12 @@ def test_project_conflict_files(diff_project, file):
             }
         ]
     }
+    project_id = diff_project.id
     _ = add_project_version(diff_project, changes)
+    # expunge so the identity map releases the instance; re-query gives a fresh
+    # object without the stale cached_property value
+    db.session.expunge(diff_project)
+    diff_project = db.session.get(Project, project_id)
     project_info = ProjectListSchema(only=("has_conflict",), context=ctx).dump(
         diff_project
     )
