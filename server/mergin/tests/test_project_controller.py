@@ -42,7 +42,7 @@ from ..sync.storages.disk import copy_file as real_copy_file
 from ..sync.files import files_changes_from_upload
 from ..sync.schemas import ProjectListSchema
 from ..sync.utils import Checkpoint, generate_checksum, is_versioned_file
-from ..auth.models import User, UserProfile
+from ..auth.models import User
 
 from . import (
     test_project,
@@ -406,7 +406,7 @@ def test_add_project(client, app, data, expected):
         "mergin", _get_changes_with_diff(test_project_dir)
     )
     upload_chunks(upload_dir, upload.changes)
-    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    resp = client.post("/v1/project/push/finish/{}".format(upload.transaction_id))
     assert resp.status_code == 200
 
     # add TEMPLATES user and make him creator of test_project (to become template)
@@ -510,7 +510,7 @@ def test_delete_project(client):
                 with open(os.path.join(upload_dir, "chunks", chunk), "wb") as out_file:
                     out_file.write(in_file.read(CHUNK_SIZE))
 
-    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    resp = client.post("/v1/project/push/finish/{}".format(upload.transaction_id))
     assert resp.status_code == 200
 
     # try force delete for active project
@@ -668,7 +668,6 @@ def test_update_project(client):
         username="tester", passwd="tester", is_admin=False, email="tester@mergin.com"
     )
     test_user.active = True
-    test_user.profile = UserProfile()
     db.session.add(test_user)
     db.session.commit()
 
@@ -1122,7 +1121,7 @@ def test_push_to_new_project(client):
     assert resp.status_code == 200
 
     upload_id = resp.json["transaction"]
-    upload = Upload.query.filter_by(id=upload_id).first()
+    upload = Upload.query.filter_by(transaction_id=upload_id).first()
     blacklisted_file = all(
         added["path"] != "test_dir/test4.txt" for added in upload.changes["added"]
     )
@@ -1213,6 +1212,52 @@ def test_push_integrity_error(client, app):
     assert failure.error_details == "No changes"
 
 
+def test_stale_upload_takeover(client, app):
+    """Stale upload (last_ping expired) is atomically replaced by a new one.
+
+    Verifies that:
+    - the new upload gets a fresh transaction_id
+    - the old upload directory is cleaned up
+    - a push_lost failure is recorded for the abandoned upload
+    """
+    project = Project.query.filter_by(
+        name=test_project, workspace_id=test_workspace_id
+    ).first()
+    user = User.query.filter_by(username="mergin").first()
+    changes = _get_changes(test_project_dir)
+    changes["added"] = changes["removed"] = []
+
+    # create initial upload and record its identity
+    upload = Upload.create_upload(project.id, 1, changes, user.id)
+    old_tx_id = upload.transaction_id
+    old_upload_dir = upload.upload_dir
+    assert os.path.exists(old_upload_dir)
+
+    # backdate last_ping to make the upload appear stale
+    db.session.execute(
+        db.text(
+            "UPDATE upload SET last_ping = NOW() - :expiry * INTERVAL '1 second' WHERE id = :id"
+        ),
+        {
+            "id": upload.id,
+            "expiry": client.application.config["LOCKFILE_EXPIRATION"] + 1,
+        },
+    )
+    db.session.commit()
+
+    # takeover — should succeed and replace the stale upload
+    new_upload = Upload.create_upload(project.id, 1, changes, user.id)
+    assert new_upload is not None
+    assert new_upload.transaction_id != old_tx_id
+    assert os.path.exists(new_upload.upload_dir)
+    # old directory was moved away
+    assert not os.path.exists(old_upload_dir)
+    # push_lost was recorded for the abandoned upload
+    failure = SyncFailuresHistory.query.filter_by(project_id=project.id).first()
+    assert failure.error_type == "push_lost"
+    assert failure.error_details == "Push artefact removed by subsequent push"
+
+
 def test_exceed_data_limit(client):
     project = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
@@ -1291,13 +1336,8 @@ def create_transaction(username, changes, version=1):
     project = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
     ).first()
-    upload = Upload(project, version, changes, user.id)
-    db.session.add(upload)
-    db.session.commit()
-    upload_dir = os.path.join(upload.project.storage.project_dir, "tmp", upload.id)
-    os.makedirs(upload_dir)
-    open(os.path.join(upload_dir, "lockfile"), "w").close()
-    return upload, upload_dir
+    upload = Upload.create_upload(project.id, version, changes, user.id)
+    return upload, upload.upload_dir
 
 
 def remove_transaction(transaction_id):
@@ -1313,7 +1353,7 @@ def test_chunk_upload(client, app):
     changes = _get_changes(test_project_dir)
     upload, upload_dir = create_transaction("mergin", changes)
     chunk_id = upload.changes["added"][0]["chunks"][0]
-    url = "/v1/project/push/chunk/{}/{}".format(upload.id, chunk_id)
+    url = "/v1/project/push/chunk/{}/{}".format(upload.transaction_id, chunk_id)
     with open(os.path.join(test_project_dir, "test_dir", "test4.txt"), "rb") as file:
         data = file.read(CHUNK_SIZE)
         checksum = hashlib.sha1()
@@ -1322,6 +1362,7 @@ def test_chunk_upload(client, app):
     resp = client.post(url, data=data, headers=headers)
     assert resp.status_code == 200
     assert resp.json["checksum"] == checksum.hexdigest()
+    assert os.path.exists(os.path.join(upload_dir, "chunks", chunk_id))
 
     # tests to send bigger chunk than allowed
     app.config["MAX_CHUNK_SIZE"] = 10 * CHUNK_SIZE
@@ -1334,6 +1375,8 @@ def test_chunk_upload(client, app):
     failure = SyncFailuresHistory.query.filter_by(project_id=upload.project.id).first()
     assert failure.error_type == "chunk_upload"
     assert failure.error_details == "Too big chunk"
+    # residual after upload was removed
+    assert not os.path.exists(os.path.join(upload_dir, "chunks", chunk_id))
 
     # tests with transaction with no uploads expected
     changes = _get_changes(test_project_dir)
@@ -1344,9 +1387,8 @@ def test_chunk_upload(client, app):
     resp2 = client.post(url, data=data, headers=headers)
     assert resp2.status_code == 404
     assert SyncFailuresHistory.query.count() == 1
-
-    # cleanup
-    shutil.rmtree(upload_dir)
+    # we do not have any chunks, so parent dir was removed as well
+    assert not os.path.exists(os.path.join(upload_dir))
 
 
 def upload_chunks(upload_dir, changes, src_dir=test_project_dir):
@@ -1368,7 +1410,9 @@ def test_push_finish(client):
     changes = _get_changes(test_project_dir)
     upload, upload_dir = create_transaction("mergin", changes)
 
-    resp = client.post(f"/v1/project/push/finish/{upload.id}", headers=json_headers)
+    resp = client.post(
+        f"/v1/project/push/finish/{upload.transaction_id}", headers=json_headers
+    )
     assert resp.status_code == 422
     assert "corrupted_files" in resp.json["detail"].keys()
     assert not os.path.exists(os.path.join(upload_dir, "files", "test.txt"))
@@ -1389,7 +1433,7 @@ def test_push_finish(client):
                     chunks.append(chunk)
 
     resp2 = client.post(
-        f"/v1/project/push/finish/{upload.id}",
+        f"/v1/project/push/finish/{upload.transaction_id}",
         headers={**json_headers, "User-Agent": "Werkzeug"},
     )
     assert resp2.status_code == 200
@@ -1416,7 +1460,7 @@ def test_push_finish(client):
     db.session.commit()
 
     upload, upload_dir = create_transaction(user.username, changes)
-    url = "/v1/project/push/finish/{}".format(upload.id)
+    url = "/v1/project/push/finish/{}".format(upload.transaction_id)
     db.session.add(upload)
     db.session.commit()
     # still log in as mergin user
@@ -1430,7 +1474,7 @@ def test_push_finish(client):
 def test_push_close(client):
     changes = _get_changes(test_project_dir)
     upload, upload_dir = create_transaction("mergin", changes)
-    url = "/v1/project/push/cancel/{}".format(upload.id)
+    url = "/v1/project/push/cancel/{}".format(upload.transaction_id)
     resp = client.post(url)
     assert resp.status_code == 200
 
@@ -1473,12 +1517,12 @@ def test_whole_push_process(client):
 
     assert resp.status_code == 200
     assert "transaction" in resp.json.keys()
-    upload = Upload.query.get(resp.json["transaction"])
+    upload = Upload.query.filter_by(transaction_id=resp.json["transaction"]).first()
     assert upload
     # assert we can get project info with active upload
     resp = client.get(f"/v1/project/{test_workspace_name}/{upload.project.name}")
     assert resp.status_code == 200
-    assert upload.id in resp.json["uploads"]
+    assert str(upload.transaction_id) in resp.json["uploads"]
     assert (
         client.get(
             f"/v1/project/{test_workspace_name}/{upload.project.name}?version=v1"
@@ -1489,7 +1533,7 @@ def test_whole_push_process(client):
     # push upload: upload file chunks
     for file in changes["added"]:
         for chunk_id in file["chunks"]:
-            url = "/v1/project/push/chunk/{}/{}".format(upload.id, chunk_id)
+            url = "/v1/project/push/chunk/{}/{}".format(upload.transaction_id, chunk_id)
             with open(os.path.join(test_dir, file["path"]), "rb") as f:
                 data = f.read(CHUNK_SIZE)
                 checksum = hashlib.sha1()
@@ -1501,7 +1545,7 @@ def test_whole_push_process(client):
             assert resp.json["checksum"] == checksum.hexdigest()
 
     # push finish: call server to concatenate chunks and finish upload
-    resp = client.post(f"/v1/project/push/finish/{upload.id}")
+    resp = client.post(f"/v1/project/push/finish/{upload.transaction_id}")
     assert resp.status_code == 200
     project = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
@@ -1529,7 +1573,7 @@ def test_push_diff_finish(client):
     changes = _get_changes_with_diff(test_project_dir)
     upload, upload_dir = create_transaction("mergin", changes)
     upload_chunks(upload_dir, upload.changes)
-    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    resp = client.post("/v1/project/push/finish/{}".format(upload.transaction_id))
     assert resp.status_code == 200
     # check there are not any changes between local modified file and server patched file (using geodiff)
     geodiff = GeoDiff()
@@ -1553,7 +1597,7 @@ def test_push_diff_finish(client):
     upload, upload_dir = create_transaction("mergin", changes, 2)
     upload_chunks(upload_dir, upload.changes)
 
-    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    resp = client.post("/v1/project/push/finish/{}".format(upload.transaction_id))
     assert resp.status_code == 422
     assert (
         "GEODIFF ERROR: Nothing inserted (this should never happen)"
@@ -1562,10 +1606,10 @@ def test_push_diff_finish(client):
     error = resp.json["detail"]
 
     # try again to make sure geodiff logs are related only to recent event
-    client.post("/v1/project/push/cancel/{}".format(upload.id))
+    client.post("/v1/project/push/cancel/{}".format(upload.transaction_id))
     upload, upload_dir = create_transaction("mergin", changes, 2)
     upload_chunks(upload_dir, upload.changes)
-    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    resp = client.post("/v1/project/push/finish/{}".format(upload.transaction_id))
     assert resp.status_code == 422
     assert resp.json["detail"] == error
 
@@ -1573,7 +1617,7 @@ def test_push_diff_finish(client):
     changes = _get_changes_with_diff_0_size(test_project_dir)
     upload, upload_dir = create_transaction("mergin", changes, 3)
     upload_chunks(upload_dir, upload.changes)
-    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    resp = client.post("/v1/project/push/finish/{}".format(upload.transaction_id))
     assert resp.status_code == 422
 
 
@@ -1599,7 +1643,7 @@ def test_push_no_diff_finish(client):
     }
     upload, upload_dir = create_transaction("mergin", changes)
     upload_chunks(upload_dir, upload.changes, src_dir=working_dir)
-    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    resp = client.post("/v1/project/push/finish/{}".format(upload.transaction_id))
     assert resp.status_code == 200
     # check diff file was generated by server, and it is in file history
     latest_version = upload.project.get_latest_version()
@@ -1646,7 +1690,7 @@ def test_push_no_diff_finish(client):
         "mergin.sync.storages.disk.copy_file",
         side_effect=copy_file_failing_for_geodiff,
     ):
-        resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+        resp = client.post("/v1/project/push/finish/{}".format(upload.transaction_id))
         assert resp.status_code == 200
         latest_version = upload.project.get_latest_version()
         file_meta = latest_version.changes.filter(
@@ -1677,7 +1721,7 @@ def test_push_no_diff_finish(client):
     }
     upload, upload_dir = create_transaction("mergin", changes, version=3)
     upload_chunks(upload_dir, upload.changes, src_dir=working_dir)
-    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    resp = client.post("/v1/project/push/finish/{}".format(upload.transaction_id))
     assert resp.status_code == 200
     latest_version = upload.project.get_latest_version()
     assert all(
@@ -1749,7 +1793,7 @@ def test_clone_project(client, data, username, expected):
         "mergin", _get_changes_with_diff(test_project_dir)
     )
     upload_chunks(upload_dir, upload.changes)
-    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    resp = client.post("/v1/project/push/finish/{}".format(upload.transaction_id))
     assert resp.status_code == 200
 
     endpoint = "/v1/project/clone/{}/{}".format(test_workspace_name, test_project)
@@ -1891,7 +1935,7 @@ def test_optimize_storage(app, client, diff_project):
                 with open(os.path.join(upload_dir, "chunks", chunk), "wb") as out_file:
                     out_file.write(in_file.read(CHUNK_SIZE))
 
-    resp = client.post(f"/v1/project/push/finish/{upload.id}")
+    resp = client.post(f"/v1/project/push/finish/{upload.transaction_id}")
     assert resp.status_code == 200
     assert os.path.exists(optimize_v4)
 
@@ -2253,16 +2297,16 @@ def test_inactive_project(client, diff_project):
     upload, upload_dir = create_transaction("mergin", _get_changes(test_project_dir))
     chunk_id = upload.changes["added"][0]["chunks"][0]
     resp = client.post(
-        f"/v1/project/push/chunk/{upload.id}/{chunk_id}",
+        f"/v1/project/push/chunk/{upload.transaction_id}/{chunk_id}",
         data=data,
         headers={"Content-Type": "application/octet-stream"},
     )
     assert resp.status_code == 404
 
-    resp = client.post(f"/v1/project/push/finish/{upload.id}")
+    resp = client.post(f"/v1/project/push/finish/{upload.transaction_id}")
     assert resp.status_code == 404
 
-    resp = client.post(f"/v1/project/push/cancel/{upload.id}")
+    resp = client.post(f"/v1/project/push/cancel/{upload.transaction_id}")
     assert resp.status_code == 404
 
     # delete project again
@@ -2363,7 +2407,7 @@ def test_project_version_integrity(client):
         "__init__",
         side_effect=IntegrityError("Project version already exists", None, None),
     ):
-        resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+        resp = client.post("/v1/project/push/finish/{}".format(upload.transaction_id))
         assert resp.status_code == 422
         assert "Failed to create new version" in resp.json["detail"]
         failure = SyncFailuresHistory.query.filter_by(
@@ -2422,7 +2466,7 @@ def test_project_version_integrity(client):
     changes = _get_changes(test_project_dir)
     upload, upload_dir = create_transaction("mergin", changes)
     upload_chunks(upload_dir, upload.changes)
-    resp = client.post("/v1/project/push/finish/{}".format(upload.id))
+    resp = client.post("/v1/project/push/finish/{}".format(upload.transaction_id))
     assert resp.status_code == 200
 
 
@@ -2458,12 +2502,12 @@ def test_delete_diff_file(client):
     }
     upload, upload_dir = create_transaction("mergin", changes)
     upload_chunks(upload_dir, upload.changes)
-    client.post(f"/v1/project/push/finish/{upload.id}")
+    client.post(f"/v1/project/push/finish/{upload.transaction_id}")
 
     changes = _get_changes_with_diff(test_project_dir)
     upload, upload_dir = create_transaction("mergin", changes, version=2)
     upload_chunks(upload_dir, upload.changes)
-    client.post(f"/v1/project/push/finish/{upload.id}")
+    client.post(f"/v1/project/push/finish/{upload.transaction_id}")
 
     fh = FileHistory.query.filter_by(
         project_version_name=upload.project.latest_version,
@@ -2609,12 +2653,12 @@ def test_supported_file_upload(client):
         headers=json_headers,
     )
     assert resp.status_code == 200
-    upload = Upload.query.get(resp.json["transaction"])
+    upload = Upload.query.filter_by(transaction_id=resp.json["transaction"]).first()
     assert upload
     # Even chunks are correctly uploaded
     for file in changes["added"]:
         for chunk_id in file["chunks"]:
-            url = "/v1/project/push/chunk/{}/{}".format(upload.id, chunk_id)
+            url = "/v1/project/push/chunk/{}/{}".format(upload.transaction_id, chunk_id)
             with open(os.path.join(TMP_DIR, file["path"]), "rb") as f:
                 data = f.read(CHUNK_SIZE)
                 checksum = hashlib.sha1()
@@ -2625,7 +2669,7 @@ def test_supported_file_upload(client):
             assert resp.status_code == 200
             assert resp.json["checksum"] == checksum.hexdigest()
     # Unsupported file type is revealed when reconstructed from chunks - based on the mime type - and upload is refused
-    resp = client.post(f"/v1/project/push/finish/{upload.id}")
+    resp = client.post(f"/v1/project/push/finish/{upload.transaction_id}")
     assert resp.status_code == 400
     assert (
         resp.json["detail"]
@@ -2658,8 +2702,8 @@ def test_locked_project(client, diff_project):
     assert resp.headers["Content-Type"] == "application/problem+json"
     assert resp.json["code"] == "ProjectLocked"
     # to play safe push finish is also blocked
-    upload, upload_dir = create_transaction("mergin", changes)
-    url = "/v1/project/push/finish/{}".format(upload.id)
+    upload, _ = create_transaction("mergin", changes)
+    url = "/v1/project/push/finish/{}".format(upload.transaction_id)
 
     resp = client.post(url, headers=json_headers)
     assert resp.status_code == 422

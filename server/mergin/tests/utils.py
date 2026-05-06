@@ -15,7 +15,7 @@ import os
 from dateutil.tz import tzlocal
 from pygeodiff import GeoDiff
 
-from ..auth.models import User, UserProfile
+from ..auth.models import User
 from ..sync.utils import generate_location, generate_checksum
 from ..sync.models import (
     Project,
@@ -52,7 +52,6 @@ def add_user(username="random", password="random", is_admin=False) -> User:
     )
     user.active = True
     user.verified_email = True
-    user.profile = UserProfile()
     db.session.add(user)
     db.session.commit()
     return user

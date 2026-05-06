@@ -5,7 +5,7 @@
 from flask import current_app
 from marshmallow import fields
 
-from .models import User, UserProfile
+from .models import User
 from ..app import DateTimeWithZ, ma
 
 
@@ -20,13 +20,13 @@ class UserProfileSchema(ma.SQLAlchemyAutoSchema):
 
     def get_storage(self, obj):
         # DEPRECATED functionality - kept for the backward-compatibility
-        ws = current_app.ws_handler.get_by_name(obj.user.username)
+        ws = current_app.ws_handler.get_by_name(obj.username)
         if ws:
             return ws.storage
 
     def get_disk_usage(self, obj):
         # DEPRECATED functionality - kept for the backward-compatibility
-        ws = current_app.ws_handler.get_by_name(obj.user.username)
+        ws = current_app.ws_handler.get_by_name(obj.username)
         if ws:
             return ws.disk_usage()
 
@@ -34,21 +34,30 @@ class UserProfileSchema(ma.SQLAlchemyAutoSchema):
         # DEPRECATED functionality - kept for the backward-compatibility
         from ..sync.models import ProjectUser, Project
 
-        ws = current_app.ws_handler.get_by_name(obj.user.username)
+        ws = current_app.ws_handler.get_by_name(obj.username)
         if ws:
             projects_count = (
                 Project.query.join(ProjectUser)
-                .filter(Project.creator_id == obj.user.id)
+                .filter(Project.creator_id == obj.id)
                 .filter(Project.removed_at.is_(None))
                 .filter(Project.workspace_id == ws.id)
-                .filter(ProjectUser.user_id == obj.user.id)
+                .filter(ProjectUser.user_id == obj.id)
                 .count()
             )
             return projects_count > 0
         return False
 
     class Meta:
-        model = UserProfile
+        model = User
+        fields = (
+            "receive_notifications",
+            "first_name",
+            "last_name",
+            "name",
+            "storage",
+            "disk_usage",
+            "has_project",
+        )
         load_instance = True
 
 
@@ -81,7 +90,7 @@ class UserSearchSchema(ma.SQLAlchemyAutoSchema):
     name = fields.Method("_name", dump_only=True)
 
     def _name(self, obj):
-        return obj.profile.name()
+        return obj.name()
 
     class Meta:
         model = User
@@ -97,11 +106,11 @@ class UserSearchSchema(ma.SQLAlchemyAutoSchema):
 class UserInfoSchema(ma.SQLAlchemyAutoSchema):
     """User schema with full information"""
 
-    first_name = fields.String(attribute="profile.first_name")
-    last_name = fields.String(attribute="profile.last_name")
-    receive_notifications = fields.Boolean(attribute="profile.receive_notifications")
+    first_name = fields.String()
+    last_name = fields.String()
+    receive_notifications = fields.Boolean()
     registration_date = DateTimeWithZ(attribute="registration_date")
-    name = fields.Function(lambda obj: obj.profile.name())
+    name = fields.Function(lambda obj: obj.name())
     can_edit_profile = fields.Boolean(attribute="can_edit_profile")
 
     class Meta:
