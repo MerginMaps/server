@@ -389,9 +389,10 @@ def create_app(public_keys: List[str] = None) -> Flask:
     def log_bad_request(response):
         """Log bad requests for easier debugging"""
         if response.status_code == 400:
-            if response.json.get("detail"):
+            json_body = response.get_json(silent=True)
+            if json_body and json_body.get("detail"):
                 # default response from connexion (check against swagger.yaml)
-                logging.warning(f'HTTP 400: {response.json["detail"]}')
+                logging.warning(f'HTTP 400: {json_body["detail"]}')
             else:
                 # either WTF form validation error or custom validation with abort(400)
                 logging.warning(f"HTTP 400: {response.data}")
