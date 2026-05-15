@@ -3,12 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import debounce from 'lodash/debounce'
+import { DataTablePageEvent, DataTableSortEvent } from 'primevue/datatable'
 import { ref, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import {
-  DataTablePageEvent,
-  DataTableSortEvent
-} from 'primevue/datatable'
 
 export interface DataTableSearchOptions {
   defaultSortBy?: string
