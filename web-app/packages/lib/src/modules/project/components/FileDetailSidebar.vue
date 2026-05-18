@@ -126,7 +126,7 @@ export default defineComponent({
     },
     file() {
       return (
-        this.project?.files[this.filePath] || this.upload?.files[this.filePath]
+        this.project?.files?.[this.filePath] || this.upload?.files?.[this.filePath]
       )
     },
     fileName() {

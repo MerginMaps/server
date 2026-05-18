@@ -181,7 +181,7 @@ const breadcrumps = computed(() => {
 })
 
 const projectFiles = computed(() => {
-  let files = projectStore.project.files
+  let files = projectStore.project.files ?? []
   if (projectStore.uploads[projectStore.project.path] && diff.value) {
     files = {
       ...files,
