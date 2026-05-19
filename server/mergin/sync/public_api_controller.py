@@ -4,6 +4,7 @@
 
 import binascii
 import functools
+import http
 import json
 import os
 import logging
@@ -19,8 +20,10 @@ from connexion import NoContent, request
 from flask import (
     abort,
     current_app,
+    g,
     jsonify,
     make_response,
+    Response,
 )
 from pygeodiff import GeoDiffLibError
 from flask_login import current_user
@@ -45,6 +48,7 @@ from .models import (
     ProjectFilePath,
     ProjectUser,
     ProjectRole,
+    PushIdempotencyKey,
     project_version_created,
     push_finished,
 )
@@ -687,6 +691,67 @@ def update_project(namespace, project_name):  # noqa: E501  # pylint: disable=W0
     return ProjectSchema().dump(project), 200
 
 
+def idempotent_push(f):
+    """Decorator for push finish endpoints to support idempotency via Mm-push-id header.
+
+    If the header is present and a cached response exists, it is returned immediately.
+    After processing, success and permanent sync failures are cached so retrying clients
+    receive the same response without re-processing.
+    """
+
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        key = request.headers.get("Mm-push-id")
+        if key:
+            record = PushIdempotencyKey.query.get(key)
+            if record:
+                r = record.response
+                cached = Response(
+                    r["body"], status=r["status_code"], content_type=r["content_type"]
+                )
+                if r["status_code"] >= 400:
+                    # raise so connexion's error path is used, bypassing response-body validation
+                    raise HTTPException(response=cached)
+                return cached
+
+        try:
+            result = f(*args, **kwargs)
+            body, code = result
+            if key and not getattr(g, "skip_idempotency", False):
+                if isinstance(body, Response):
+                    serialized = body.get_data(as_text=True)
+                    content_type = body.headers.get("Content-Type", "application/json")
+                else:
+                    serialized = json.dumps(body)
+                    content_type = "application/json"
+                PushIdempotencyKey.store(key, code, serialized, content_type)
+            return result
+        except HTTPException as e:
+            if key and getattr(g, "cacheable_sync_error", False):
+                if e.response:
+                    body = e.response.get_data(as_text=True)
+                    content_type = e.response.headers.get(
+                        "Content-Type", "application/problem+json"
+                    )
+                    # HTTPException(response=r) does not copy the status code onto e.code
+                    status_code = e.response.status_code
+                else:
+                    status_code = e.code
+                    body = json.dumps(
+                        {
+                            "detail": e.description,
+                            "status": status_code,
+                            "title": http.HTTPStatus(status_code).phrase,
+                            "type": "about:blank",
+                        }
+                    )
+                    content_type = "application/problem+json"
+                PushIdempotencyKey.store(key, status_code, body, content_type)
+            raise
+
+    return wrapper
+
+
 def catch_sync_failure(f):
     """Decorator to catch sync failures in push related endpoints"""
 
@@ -903,6 +968,7 @@ def chunk_upload(transaction_id, chunk_id):
 
 
 @auth_required
+@idempotent_push
 @catch_sync_failure
 def push_finish(transaction_id):
     """Finalize project data upload.
@@ -931,6 +997,7 @@ def push_finish(transaction_id):
     file_changes, errors = upload.process_chunks(use_shared_chunk_dir=False)
     if errors:
         upload.clear()
+        g.cacheable_sync_error = True
 
         unsupported_files = [
             k for k, v in errors.items() if v == FileSyncErrorType.UNSUPPORTED.value

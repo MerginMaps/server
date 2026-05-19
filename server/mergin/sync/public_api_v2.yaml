@@ -328,6 +328,13 @@ paths:
       operationId: create_project_version
       parameters:
         - $ref: "#/components/parameters/ProjectId"
+        - name: Mm-push-id
+          in: header
+          description: Optional idempotency key (UUID) to prevent duplicate data push on client retries.
+          required: false
+          schema:
+            type: string
+            format: uuid
       requestBody:
         description: Project files changes and current version head.
         required: true
