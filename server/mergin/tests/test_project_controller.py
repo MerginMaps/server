@@ -2567,9 +2567,12 @@ def test_signals(client):
     project = create_project("test-project", workspace, user)
     with patch(
         "mergin.sync.public_api_controller.push_finished.send"
-    ) as push_finished_mock:
+    ) as push_finished_mock, patch(
+        "mergin.sync.public_api_controller.project_version_created.send"
+    ) as project_version_created_mock:
         upload_file_to_project(project, "test.txt", client)
         push_finished_mock.assert_called_once()
+        project_version_created_mock.assert_called_once()
 
 
 def test_filepath_manipulation(client):
