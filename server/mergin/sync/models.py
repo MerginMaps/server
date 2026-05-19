@@ -2275,6 +2275,37 @@ class GeodiffActionHistory(db.Model):
             self.changes = GeoDiff().changes_count(diff_path)
 
 
+class PushIdempotencyKey(db.Model):
+    """Stores idempotency keys for push finish operations.
+
+    Clients send an optional Mm-push-id header (UUID) with push finish requests.
+    If the key is found here, the cached response is returned immediately without
+    re-processing.
+    """
+
+    __tablename__ = "push_idempotency_keys"
+
+    key = db.Column(UUID(as_uuid=True), primary_key=True)
+    response = db.Column(JSONB, nullable=False)
+    created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    @classmethod
+    def store(cls, key: str, status_code: int, body: str, content_type: str) -> None:
+        record = cls(
+            key=key,
+            response={
+                "status_code": status_code,
+                "body": body,
+                "content_type": content_type,
+            },
+        )
+        try:
+            db.session.add(record)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+
 class ProjectUser(db.Model):
     """Association table for project membership"""
 
