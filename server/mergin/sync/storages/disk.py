@@ -114,7 +114,11 @@ def move_to_tmp(src, dest=None):
             else:
                 root = tempfile.gettempdir()
             temp_path = os.path.join(root, "delete-me-" + dest, os.path.basename(src))
-            os.renames(src, temp_path)
+            try:
+                os.renames(src, temp_path)
+            except OSError as rename_err:
+                logging.error(f"Failed to move {src} to tmp: {rename_err}")
+                return None
         else:
             raise
     return temp_path
