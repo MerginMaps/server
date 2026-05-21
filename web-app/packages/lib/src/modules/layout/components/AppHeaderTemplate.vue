@@ -22,6 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         ><slot name="menu">
           <div class="flex flex-column lg:flex-row lg:align-items-center gap-2">
             <PButton
+              v-if="hasSidebar"
               :icon="menuButtonIcon"
               plain
               text
@@ -37,6 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
       <template #end>
         <div class="flex align-items-center flex-shrink-0">
+          <slot name="action-button"></slot>
           <PButton
             v-if="loggedUser"
             text
@@ -214,6 +216,11 @@ export default defineComponent({
       return this.getUserFullName.length > 15
         ? `${this.getUserFullName.substring(0, 15)}...`
         : this.getUserFullName
+    },
+    hasSidebar() {
+      return this.$route.matched.some(
+        (record) => record.components != null && 'sidebar' in record.components
+      )
     },
     menuButtonIcon() {
       if (this.isUnderOverlayBreakpoint) {

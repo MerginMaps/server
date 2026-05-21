@@ -57,6 +57,21 @@ export interface Project {
   created?: string
 }
 
+export interface ProjectV2Response {
+  id: string
+  name: string
+  version: string
+  public: boolean
+  size: number
+  created_at: string
+  updated_at: string
+  workspace: {
+    id: number
+    name: string
+  }
+  role: ProjectRoleName | null
+}
+
 export interface ProjectListItem extends Project {
   access: ProjectAccess
   creator: number | null
