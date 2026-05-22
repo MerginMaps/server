@@ -37,6 +37,7 @@ from ..sync.models import (
     FileHistory,
     PushChangeType,
     ProjectFilePath,
+    project_soft_deleted,
 )
 from ..sync.storages.disk import copy_file as real_copy_file
 from ..sync.files import files_changes_from_upload
@@ -2573,6 +2574,22 @@ def test_signals(client):
         upload_file_to_project(project, "test.txt", client)
         push_finished_mock.assert_called_once()
         project_version_created_mock.assert_called_once()
+
+
+def test_project_soft_delete(client):
+    """project.schedule_deletion() sets removed_at/removed_by and fires project_soft_deleted signal"""
+    workspace = create_workspace()
+    user = User.query.filter_by(username="mergin").first()
+    project = create_project("remove-test", workspace, user)
+
+    with patch("mergin.sync.models.project_soft_deleted.send") as signal_mock:
+        project.schedule_deletion(removed_by=user.id)
+        signal_mock.assert_called_once_with(project)
+
+    assert project.removed_at is not None
+    assert project.removed_by == user.id
+    # project storage params is still present (soft delete)
+    assert project.storage_params is not None
 
 
 def test_filepath_manipulation(client):
