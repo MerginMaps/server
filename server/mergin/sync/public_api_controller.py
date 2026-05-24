@@ -25,7 +25,7 @@ from flask import (
 from pygeodiff import GeoDiffLibError
 from flask_login import current_user
 from sqlalchemy import and_, desc, asc
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from gevent import sleep
 import base64
 from werkzeug.exceptions import HTTPException, Conflict
@@ -70,12 +70,11 @@ from .permissions import (
     require_project,
     projects_query,
     ProjectPermissions,
-    get_upload,
+    get_upload_or_fail,
     require_project_by_uuid,
 )
 from .utils import (
     generate_checksum,
-    Toucher,
     get_ip,
     get_user_agent,
     generate_location,
@@ -775,13 +774,6 @@ def project_push(namespace, project_name):
     if all(len(changes[key]) == 0 for key in changes.keys()):
         abort(400, "No changes")
 
-    # reject upload early if there is another one already running
-    pending_upload = Upload.query.filter_by(
-        project_id=project.id, version=version
-    ).first()
-    if pending_upload and pending_upload.is_active():
-        abort(400, "Another process is running. Please try later.")
-
     try:
         ChangesSchema().validate(changes)
         upload_changes = ChangesSchema().dump(changes)
@@ -813,47 +805,22 @@ def project_push(namespace, project_name):
     if requested_storage > ws.storage:
         return StorageLimitHit(current_usage, ws.storage).response(422)
 
-    upload = Upload(project, version, upload_changes, current_user.id)
-    db.session.add(upload)
     try:
-        # Creating upload transaction with different project's version is possible.
-        db.session.commit()
-        logging.info(
-            f"Upload transaction {upload.id} created for project: {project.id}, version: {version}"
+        upload = Upload.create_upload(
+            project.id, version, upload_changes, current_user.id
         )
-    except IntegrityError:
+        if not upload:
+            abort(400, "Another process is running. Please try later.")
+
+        logging.info(
+            f"Upload transaction {upload.transaction_id} created for project: {project.id}, version: {version}"
+        )
+    except (IntegrityError, SQLAlchemyError) as err:
         db.session.rollback()
-        # check and clean dangling uploads or abort
-        for current_upload in project.uploads.all():
-            if current_upload.is_active():
-                abort(400, "Another process is running. Please try later.")
-            db.session.delete(current_upload)
-            db.session.commit()
-            # previous push attempt is definitely lost
-            project.sync_failed(
-                "",
-                "push_lost",
-                "Push artefact removed by subsequent push",
-                current_user.id,
-            )
+        logging.exception(f"Failed to create upload: {str(err)}")
+        abort(422, "Failed to create upload session. Please try later.")
 
-        # Try again after cleanup
-        db.session.add(upload)
-        try:
-            db.session.commit()
-            logging.info(
-                f"Upload transaction {upload.id} created for project: {project.id}, version: {version}"
-            )
-            move_to_tmp(upload.upload_dir)
-        except IntegrityError as err:
-            logging.error(f"Failed to create upload session: {str(err)}")
-            abort(422, "Failed to create upload session. Please try later.")
-
-    # Create transaction folder and lockfile
-    os.makedirs(upload.upload_dir)
-    open(upload.lockfile, "w").close()
-
-    # Update immediately without uploading of new/modified files and remove transaction/lockfile after successful commit
+    # Update immediately without uploading of new/modified files and remove transaction after successful commit
     if not (changes["added"] or changes["updated"]):
         next_version = version + 1
         file_changes = files_changes_from_upload(
@@ -876,7 +843,7 @@ def project_push(namespace, project_name):
             db.session.commit()
             logging.info(
                 f"A project version {ProjectVersion.to_v_name(next_version)} for project: {project.id} created. "
-                f"Transaction id: {upload.id}. No upload."
+                f"Transaction id: {upload.transaction_id}. No upload."
             )
             project_version_created.send(pv)
             push_finished.send(pv)
@@ -884,7 +851,7 @@ def project_push(namespace, project_name):
         except IntegrityError as err:
             db.session.rollback()
             logging.exception(
-                f"Failed to upload a new project version using transaction id: {upload.id}: {str(err)}"
+                f"Failed to upload a new project version using transaction id: {upload.transaction_id}: {str(err)}"
             )
             abort(422, "Failed to upload a new project version. Please try later.")
         except gevent.timeout.Timeout:
@@ -893,7 +860,7 @@ def project_push(namespace, project_name):
         finally:
             upload.clear()
 
-    return {"transaction": upload.id}, 200
+    return {"transaction": upload.transaction_id}, 200
 
 
 @auth_required
@@ -910,7 +877,7 @@ def chunk_upload(transaction_id, chunk_id):
 
     :rtype: Dict
     """
-    upload, upload_dir = get_upload(transaction_id)
+    upload = get_upload_or_fail(transaction_id)
     request.view_args["project"] = upload.project
     chunks = []
     for file in upload.changes["added"] + upload.changes["updated"]:
@@ -919,8 +886,8 @@ def chunk_upload(transaction_id, chunk_id):
     if chunk_id not in chunks:
         abort(404)
 
-    dest = os.path.join(upload_dir, "chunks", chunk_id)
-    with Toucher(upload.lockfile, 30):
+    dest = os.path.join(upload.upload_dir, "chunks", chunk_id)
+    with upload.heartbeat(30):
         try:
             # we could have used request.data here, but it could eventually cause OOM issue
             save_to_file(request.stream, dest, current_app.config["MAX_CHUNK_SIZE"])
@@ -945,14 +912,14 @@ def push_finish(transaction_id):
      - do integrity check comparing uploaded file sizes with what was expected
      - move uploaded files to new version dir and applying sync changes (e.g. geodiff apply_changeset)
      - bump up version in database
-     - remove artifacts (chunks, lockfile) by moving them to tmp directory
+     - remove artifacts (chunks) by moving them to tmp directory
 
     :param transaction_id: Transaction id.
     :type transaction_id: str
 
     :rtype: None
     """
-    upload, upload_dir = get_upload(transaction_id)
+    upload = get_upload_or_fail(transaction_id)
     request.view_args["project"] = upload.project
     project = upload.project
     next_version = project.next_version()
@@ -991,7 +958,7 @@ def push_finish(transaction_id):
 
             abort(422, f"Failed to create new version: {msg}")
 
-    files_dir = os.path.join(upload_dir, "files", v_next_version)
+    files_dir = os.path.join(upload.upload_dir, "files", v_next_version)
     target_dir = os.path.join(project.storage.project_dir, v_next_version)
     if os.path.exists(target_dir):
         pv = ProjectVersion.query.filter_by(
@@ -1009,39 +976,57 @@ def push_finish(transaction_id):
         move_to_tmp(target_dir)
 
     try:
-        user_agent = get_user_agent(request)
-        device_id = get_device_id(request)
-        pv = ProjectVersion(
-            project,
-            next_version,
-            current_user.id,
-            file_changes,
-            get_ip(request),
-            user_agent,
-            device_id,
-        )
-        db.session.add(pv)
-        db.session.add(project)
-        db.session.commit()
+        # let's keep upload alive until all work is done so no one else can claim it
+        with upload.heartbeat(5):
+            user_agent = get_user_agent(request)
+            device_id = get_device_id(request)
+            pv = ProjectVersion(
+                project,
+                next_version,
+                current_user.id,
+                file_changes,
+                get_ip(request),
+                user_agent,
+                device_id,
+            )
+            db.session.add(pv)
+            db.session.add(project)
 
-        # let's move uploaded files where they are expected to be
-        os.renames(files_dir, version_dir)
+            # move files before committing so a filesystem failure leaves the DB clean
+            if os.path.exists(files_dir):
+                os.renames(files_dir, version_dir)
 
-        logging.info(
-            f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
-        )
-        project_version_created.send(pv)
-        push_finished.send(pv)
-    except (psycopg2.Error, FileNotFoundError, IntegrityError) as err:
+            db.session.commit()
+
+            logging.info(
+                f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
+            )
+            project_version_created.send(pv)
+            push_finished.send(pv)
+    except (psycopg2.Error, OSError, IntegrityError) as err:
         db.session.rollback()
         logging.exception(
             f"Failed to finish push for project: {project.id}, project version: {v_next_version}, "
             f"transaction id: {transaction_id}.: {str(err)}"
         )
+        if (
+            os.path.exists(version_dir)
+            and not ProjectVersion.query.filter_by(
+                project_id=project.id, name=next_version
+            ).count()
+        ):
+            move_to_tmp(version_dir)
         abort(422, "Failed to create new version: {}".format(str(err)))
     # catch exception during pg transaction so we can rollback and prevent PendingRollbackError during upload clean up
     except gevent.timeout.Timeout:
         db.session.rollback()
+        if (
+            os.path.exists(version_dir)
+            and not ProjectVersion.query.filter_by(
+                project_id=project.id, name=next_version
+            ).count()
+        ):
+            move_to_tmp(version_dir)
         raise
     finally:
         # remove artifacts
@@ -1061,10 +1046,8 @@ def push_cancel(transaction_id):
 
     :rtype: None
     """
-    upload, upload_dir = get_upload(transaction_id)
-    db.session.delete(upload)
-    db.session.commit()
-    move_to_tmp(upload_dir)
+    upload = get_upload_or_fail(transaction_id)
+    upload.clear()
     return NoContent, 200
 
 
