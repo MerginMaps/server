@@ -51,38 +51,28 @@
           @sort="onSort"
           data-cy="accounts-table"
         >
-          <PColumn field="username" header="Username" :sortable="true">
-            <template #body="{ data }">
-              <router-link
-                :to="accountRoute(data)"
-                class="dt-row-link title-t4"
-              >
-                {{ data.username }}
-              </router-link>
-            </template>
-          </PColumn>
-          <PColumn field="email" header="Email" :sortable="true">
-            <template #body="{ data }">
-              <router-link :to="accountRoute(data)" class="dt-row-link">
-                {{ data.email }}
-              </router-link>
-            </template>
-          </PColumn>
-          <PColumn field="profile.name" header="Full name">
-            <template #body="{ data }">
-              <router-link :to="accountRoute(data)" class="dt-row-link">
-                {{ data.profile?.name }}
-              </router-link>
-            </template>
-          </PColumn>
-          <PColumn field="active" header="Active">
-            <template #body="{ data }">
-              <router-link :to="accountRoute(data)" class="dt-row-link">
-                <i v-if="data.active" class="ti ti-check" />
-                <i v-else class="ti ti-x" />
-              </router-link>
-            </template>
-          </PColumn>
+          <template v-for="header in headers" :key="header.field">
+            <PColumn
+              :field="header.field"
+              :header="header.header"
+              :sortable="header.sortable"
+            >
+              <template #body="{ data }">
+                <router-link
+                  :to="accountRoute(data)"
+                  class="dt-row-link"
+                  :class="header.class"
+                >
+                  <template v-if="header.type === 'boolean'">{{
+                    fieldValue(data, header.field) ? 'Active' : 'Inactive'
+                  }}</template>
+                  <template v-else>{{
+                    fieldValue(data, header.field)
+                  }}</template>
+                </router-link>
+              </template>
+            </PColumn>
+          </template>
           <template #paginatorstart>
             <PButton
               icon="ti ti-refresh"
@@ -102,17 +92,32 @@
 <script lang="ts">
 import {
   PaginatedUsersParams,
+  TableDataHeader,
   useDataTableSearch,
   useDialogStore,
   AppContainer,
   AppSection
 } from '@mergin/lib'
+import get from 'lodash/get'
 import { mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
 import { AdminRoutes } from '@/modules'
 import CreateUserForm from '@/modules/admin/components/CreateUserForm.vue'
 import { useAdminStore } from '@/modules/admin/store'
+
+const headers: TableDataHeader[] = [
+  {
+    field: 'username',
+    header: 'Username',
+    sortable: true,
+    linked: true,
+    class: 'title-t4'
+  },
+  { field: 'email', header: 'Email', sortable: true, linked: true },
+  { field: 'profile.name', header: 'Full name', linked: true },
+  { field: 'active', header: 'Active', linked: true, type: 'boolean' }
+]
 
 export default defineComponent({
   name: 'AccountsTable',
@@ -145,7 +150,8 @@ export default defineComponent({
 
     return {
       ...tableSearch,
-      show: dialogStore.show.bind(dialogStore)
+      show: dialogStore.show.bind(dialogStore),
+      headers
     }
   },
   computed: {
@@ -156,6 +162,10 @@ export default defineComponent({
     this.doFetch()
   },
   methods: {
+    fieldValue(data: unknown, field: string) {
+      return get(data, field)
+    },
+
     accountRoute(data) {
       return { name: AdminRoutes.ACCOUNT, params: { username: data.username } }
     },

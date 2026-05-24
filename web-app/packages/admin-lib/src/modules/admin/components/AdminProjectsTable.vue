@@ -51,66 +51,39 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           @sort="onSort"
           data-cy="projects-table"
         >
-          <PColumn
-            v-if="showNamespace"
-            field="workspace"
-            header="Workspace"
-            :sortable="true"
-          >
-            <template #body="{ data }">
-              <router-link
-                v-if="!data.removed_at"
-                :to="projectRoute(data)"
-                class="dt-row-link"
-              >
-                {{ data.workspace }}
-              </router-link>
-              <span v-else>{{ data.workspace }}</span>
-            </template>
-          </PColumn>
-
-          <PColumn field="name" header="Name" :sortable="true">
-            <template #body="{ data }">
-              <router-link
-                v-if="!data.removed_at"
-                :to="projectRoute(data)"
-                class="dt-row-link font-semibold"
-              >
-                {{ data.name }}
-              </router-link>
-              <span v-else>{{ data.name }}</span>
-            </template>
-          </PColumn>
-
-          <PColumn field="updated" header="Last Update" :sortable="true">
-            <template #body="{ data }">
-              <router-link
-                v-if="!data.removed_at"
-                :to="projectRoute(data)"
-                class="dt-row-link"
-              >
-                <span :title="$filters.datetime(data.updated)">
-                  {{ $filters.timediff(data.updated) }}
+          <template v-for="header in headers" :key="header.field">
+            <PColumn
+              :field="header.field"
+              :header="header.header"
+              :sortable="header.sortable"
+            >
+              <template #body="{ data }">
+                <router-link
+                  v-if="
+                    !header.conditionalLink || !data[header.conditionalLink]
+                  "
+                  :to="projectRoute(data)"
+                  class="dt-row-link"
+                  :class="header.class"
+                >
+                  <span
+                    v-if="header.type === 'timediff'"
+                    :title="$filters.datetime(data[header.field])"
+                    >{{ $filters.timediff(data[header.field]) }}</span
+                  >
+                  <template v-else>{{ cellContent(data, header) }}</template>
+                </router-link>
+                <span v-else>
+                  <span
+                    v-if="header.type === 'timediff'"
+                    :title="$filters.datetime(data[header.field])"
+                    >{{ $filters.timediff(data[header.field]) }}</span
+                  >
+                  <template v-else>{{ cellContent(data, header) }}</template>
                 </span>
-              </router-link>
-              <span v-else :title="$filters.datetime(data.updated)">
-                {{ $filters.timediff(data.updated) }}
-              </span>
-            </template>
-          </PColumn>
-
-          <PColumn field="disk_usage" header="Size" :sortable="true">
-            <template #body="{ data }">
-              <router-link
-                v-if="!data.removed_at"
-                :to="projectRoute(data)"
-                class="dt-row-link"
-              >
-                {{ $filters.filesize(data.disk_usage, 'MB') }}
-              </router-link>
-              <span v-else>{{ $filters.filesize(data.disk_usage, 'MB') }}</span>
-            </template>
-          </PColumn>
+              </template>
+            </PColumn>
+          </template>
 
           <PColumn
             field="removed_at"
@@ -175,6 +148,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import {
   ConfirmDialog,
+  TableDataHeader,
   useDataTableSearch,
   useDialogStore,
   useNotificationStore,
@@ -233,7 +207,46 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState(useAdminStore, ['projects'])
+    ...mapState(useAdminStore, ['projects']),
+    headers(): TableDataHeader[] {
+      const cols: TableDataHeader[] = []
+      if (this.showNamespace) {
+        cols.push({
+          field: 'workspace',
+          header: 'Workspace',
+          sortable: true,
+          linked: true,
+          conditionalLink: 'removed_at'
+        })
+      }
+      cols.push(
+        {
+          field: 'name',
+          header: 'Name',
+          sortable: true,
+          linked: true,
+          class: 'font-semibold',
+          conditionalLink: 'removed_at'
+        },
+        {
+          field: 'updated',
+          header: 'Last Update',
+          sortable: true,
+          linked: true,
+          type: 'timediff',
+          conditionalLink: 'removed_at'
+        },
+        {
+          field: 'disk_usage',
+          header: 'Size',
+          sortable: true,
+          linked: true,
+          type: 'filesize',
+          conditionalLink: 'removed_at'
+        }
+      )
+      return cols
+    }
   },
   created() {
     this.initFromQuery()
@@ -241,6 +254,16 @@ export default defineComponent({
   },
   methods: {
     ...mapActions(useAdminStore, ['restoreProject', 'deleteProject']),
+
+    cellContent(
+      data: Record<string, unknown>,
+      header: TableDataHeader
+    ): string {
+      const val = data[header.field]
+      if (header.type === 'timediff') return this.$filters.timediff(val)
+      if (header.type === 'filesize') return this.$filters.filesize(val, 'MB')
+      return String(val ?? '')
+    },
 
     projectRoute(data) {
       return {

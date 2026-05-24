@@ -44,7 +44,9 @@
               ></i>
               {{ user?.email }}
             </p>
-            <dl class="profile-view-detail-list grid grid-nogutter paragraph-p5">
+            <dl
+              class="profile-view-detail-list grid grid-nogutter paragraph-p5"
+            >
               <div
                 class="col-6 flex flex-column align-items-start text-left flex-wrap"
               >

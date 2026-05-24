@@ -10,6 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 export interface DataTableSearchOptions {
   defaultSortBy?: string
   defaultSortDesc?: boolean
+  defaultItemsPerPage?: number
 }
 
 /**
@@ -19,7 +20,11 @@ export interface DataTableSearchOptions {
  * fetch action; all event handlers will invoke it automatically.
  */
 export function useDataTableSearch(opts: DataTableSearchOptions = {}) {
-  const { defaultSortBy = '', defaultSortDesc = false } = opts
+  const {
+    defaultSortBy = '',
+    defaultSortDesc = false,
+    defaultItemsPerPage = 20
+  } = opts
 
   const route = useRoute()
   const router = useRouter()
@@ -28,7 +33,7 @@ export function useDataTableSearch(opts: DataTableSearchOptions = {}) {
   const options = reactive({
     sortBy: [defaultSortBy] as string[],
     sortDesc: [defaultSortDesc] as boolean[],
-    itemsPerPage: 20,
+    itemsPerPage: defaultItemsPerPage,
     page: 1,
     perPageOptions: [20, 50, 100]
   })
@@ -52,7 +57,7 @@ export function useDataTableSearch(opts: DataTableSearchOptions = {}) {
     const query: Record<string, string> = {}
     if (search.value) query.q = search.value
     if (options.page > 1) query.page = String(options.page)
-    if (options.itemsPerPage !== 20)
+    if (options.itemsPerPage !== defaultItemsPerPage)
       query.per_page = String(options.itemsPerPage)
     if (options.sortBy[0] && options.sortBy[0] !== defaultSortBy)
       query.order_by = options.sortBy[0]
