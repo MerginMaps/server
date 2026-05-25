@@ -1124,11 +1124,6 @@ components:
                           - added
                           - updated
                           - removed
-                      expiration:
-                        nullable: true
-                        type: string
-                        format: date-time
-                        example: 2019-02-26T08:47:58.636074Z
     UploadFileInfo:
       allOf:
         - $ref: "#/components/schemas/FileInfo"
