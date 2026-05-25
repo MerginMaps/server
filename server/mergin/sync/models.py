@@ -55,6 +55,7 @@ from .utils import (
 
 Storages = {"local": DiskStorage}
 project_deleted = signal("project_deleted")
+project_soft_deleted = signal("project_soft_deleted")
 project_access_granted = signal("project_access_granted")
 push_finished = signal("push_finished")
 project_version_created = signal("project_version_created")
@@ -285,6 +286,16 @@ class Project(db.Model):
         This time should be used to remove all local copies of the file."""
         initial = timedelta(days=current_app.config["DELETED_PROJECT_EXPIRATION"])
         return initial - (datetime.utcnow() - self.removed_at)
+
+    def schedule_deletion(self, removed_by: int = None):
+        """Schedule project for removal (soft-delete).
+        Sets removed_at so the project is hidden from users but kept in db
+        until a background job permanently deletes it.
+        """
+        self.removed_at = datetime.utcnow()
+        self.removed_by = removed_by
+        db.session.commit()
+        project_soft_deleted.send(self)
 
     def delete(self, removed_by: int = None):
         """Mark project as permanently deleted (but keep in db)
