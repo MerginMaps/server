@@ -63,6 +63,7 @@
           </div>
         </app-section>
       </app-container>
+      <slot name="additionalContent" />
       <app-container v-if="userStore.loggedUser?.id !== user?.id">
         <app-section>
           <template #title>Advanced</template>
