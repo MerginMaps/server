@@ -226,7 +226,7 @@ def data_downgrade():
         WHERE pv.name = 1
     )
     UPDATE project_version pv
-    SET files = first_pushes.files
+    SET files = first_pushes.file
     FROM first_pushes
     WHERE first_pushes.version_id = pv.id;
     """

@@ -34,7 +34,9 @@ def upgrade():
         uuid.UUID(os.getenv("SERVICE_ID")) if os.getenv("SERVICE_ID") else uuid.uuid4()
     )
     conn = op.get_bind()
-    conn.execute(f"INSERT INTO mergin_info VALUES ('{key}')")
+    conn.execute(
+        sa.text("INSERT INTO mergin_info VALUES (:service_id)"), {"service_id": key}
+    )
 
 
 def downgrade():
