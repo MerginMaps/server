@@ -59,7 +59,7 @@ export const getProjectTitle = (
       query.file_path || 'Files',
       route.params.projectName as string
     ],
-    [ProjectRouteName.ProjectSettings]: ['Settings', projectName],
+    [ProjectRouteName.ProjectSettings]: ['Settings & API', projectName],
     [ProjectRouteName.ProjectHistory]: [
       query.version_id || 'History',
       projectName

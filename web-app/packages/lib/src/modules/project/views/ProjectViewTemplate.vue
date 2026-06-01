@@ -208,7 +208,7 @@ export default defineComponent({
           })
           tabs.push({
             route: ProjectRouteName.ProjectSettings,
-            header: 'Settings'
+            header: 'Settings & API'
           })
         }
       }
