@@ -63,7 +63,7 @@
                   class="dt-row-link"
                   :class="header.class"
                 >
-                  <template v-if="header.type === 'boolean'">{{
+                  <template v-if="header.field === 'active'">{{
                     fieldValue(data, header.field) ? 'Active' : 'Inactive'
                   }}</template>
                   <template v-else>{{
@@ -116,7 +116,7 @@ const headers: TableDataHeader[] = [
   },
   { field: 'email', header: 'Email', sortable: true, linked: true },
   { field: 'profile.name', header: 'Full name', linked: true },
-  { field: 'active', header: 'Active', linked: true, type: 'boolean' }
+  { field: 'active', header: 'Active', linked: true }
 ]
 
 export default defineComponent({
