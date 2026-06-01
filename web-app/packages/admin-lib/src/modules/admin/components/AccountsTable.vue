@@ -24,7 +24,7 @@
           <PInputText
             placeholder="Search accounts"
             data-cy="search-members-field"
-            v-model="searchByName"
+            v-model="search"
             class="w-full"
             @input="onSearch"
           />
@@ -44,48 +44,34 @@
           :first="(options.page - 1) * options.itemsPerPage"
           :sort-field="options.sortBy[0]"
           :sort-order="options.sortDesc[0] ? -1 : 1"
+          :rowHover="true"
           removableSort
           reorderable-columns
           @page="onPage"
-          @row-click="rowClick"
           @sort="onSort"
           data-cy="accounts-table"
         >
           <template v-for="header in headers" :key="header.field">
             <PColumn
-              v-if="header.field === 'username'"
               :field="header.field"
               :header="header.header"
               :sortable="header.sortable"
             >
-              <template #body="slotProps">
+              <template #body="{ data }">
                 <router-link
-                  class="title-t4"
-                  :to="{
-                    name: 'account',
-                    params: { username: slotProps.data.username }
-                  }"
+                  :to="accountRoute(data)"
+                  class="dt-row-link"
+                  :class="header.class"
                 >
-                  {{ slotProps.data.username }}
+                  <template v-if="header.field === 'active'">{{
+                    fieldValue(data, header.field) ? 'Active' : 'Inactive'
+                  }}</template>
+                  <template v-else>{{
+                    fieldValue(data, header.field)
+                  }}</template>
                 </router-link>
               </template>
             </PColumn>
-            <PColumn
-              v-else-if="header.field === 'active'"
-              :header="header.header"
-              :field="header.field"
-            >
-              <template #body="slotProps">
-                <i v-if="slotProps.data.active" class="ti ti-check" />
-                <i v-else class="ti ti-x" />
-              </template>
-            </PColumn>
-            <PColumn
-              v-else
-              :field="header.field"
-              :header="header.header"
-              :sortable="header.sortable"
-            ></PColumn>
           </template>
           <template #paginatorstart>
             <PButton
@@ -106,23 +92,32 @@
 <script lang="ts">
 import {
   PaginatedUsersParams,
-  useDialogStore,
   TableDataHeader,
+  useDataTableSearch,
+  useDialogStore,
   AppContainer,
   AppSection
 } from '@mergin/lib'
-import debounce from 'lodash/debounce'
-import { mapActions, mapState } from 'pinia'
-import {
-  DataTablePageEvent,
-  DataTableRowClickEvent,
-  DataTableSortEvent
-} from 'primevue/datatable'
+import get from 'lodash/get'
+import { mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
 import { AdminRoutes } from '@/modules'
 import CreateUserForm from '@/modules/admin/components/CreateUserForm.vue'
 import { useAdminStore } from '@/modules/admin/store'
+
+const headers: TableDataHeader[] = [
+  {
+    field: 'username',
+    header: 'Username',
+    sortable: true,
+    linked: true,
+    class: 'title-t4'
+  },
+  { field: 'email', header: 'Email', sortable: true, linked: true },
+  { field: 'profile.name', header: 'Full name', linked: true },
+  { field: 'active', header: 'Active', linked: true }
+]
 
 export default defineComponent({
   name: 'AccountsTable',
@@ -130,88 +125,57 @@ export default defineComponent({
     AppContainer,
     AppSection
   },
-  data() {
+  setup() {
+    const adminStore = useAdminStore()
+    const dialogStore = useDialogStore()
+
+    const tableSearch = useDataTableSearch({
+      defaultSortBy: 'username',
+      defaultSortDesc: false
+    })
+
+    tableSearch.setFetchFn((signal) => {
+      const { options, search } = tableSearch
+      const params: PaginatedUsersParams = {
+        page: options.page,
+        per_page: options.itemsPerPage
+      }
+      if (options.sortBy[0]) {
+        params.descending = options.sortDesc[0]
+        params.order_by = options.sortBy[0]
+      }
+      if (search.value) params.like = search.value.trim()
+      adminStore.fetchUsers({ params, signal })
+    })
+
     return {
-      options: {
-        sortBy: ['username'],
-        sortDesc: [false],
-        itemsPerPage: 20,
-        page: 1,
-        perPageOptions: [20, 50, 100]
-      },
-      searchByName: '',
-      headers: [
-        { field: 'username', header: 'Username', sortable: true },
-        { field: 'email', header: 'Email', sortable: true },
-        { field: 'profile.name', header: 'Full name' },
-        { field: 'active', header: 'Active' }
-      ] as TableDataHeader[]
+      ...tableSearch,
+      show: dialogStore.show.bind(dialogStore),
+      headers
     }
   },
   computed: {
     ...mapState(useAdminStore, ['users', 'loading'])
   },
   created() {
-    this.resetPaging = debounce(this.resetPaging, 1000)
-    this.fetchUsers({ params: this.getParams() })
+    this.initFromQuery()
+    this.doFetch()
   },
   methods: {
-    ...mapActions(useAdminStore, ['fetchUsers']),
-    ...mapActions(useDialogStore, ['show']),
-
-    onSearch() {
-      this.resetPaging()
-      this.fetchUsers({ params: this.getParams() })
+    fieldValue(data: unknown, field: string) {
+      return get(data, field)
     },
 
-    async resetPaging() {
-      this.options.page = 1
-    },
-
-    getParams(): PaginatedUsersParams {
-      const params = {
-        page: this.options.page,
-        per_page: this.options.itemsPerPage
-      } as PaginatedUsersParams
-      if (this.options.sortBy[0]) {
-        params.descending = this.options.sortDesc[0]
-        params.order_by = this.options.sortBy[0]
-      }
-      if (this.searchByName) {
-        params.like = this.searchByName.trim()
-      }
-      return params
-    },
-
-    onRefresh() {
-      this.fetchUsers({ params: this.getParams() })
-    },
-
-    onPage(event: DataTablePageEvent) {
-      this.options.page = event.page + 1
-      this.options.itemsPerPage = event.rows
-      this.fetchUsers({ params: this.getParams() })
-    },
-
-    onSort(event: DataTableSortEvent) {
-      this.options.sortBy[0] = event.sortField?.toString()
-      this.options.sortDesc[0] = event.sortOrder < 1
-      this.fetchUsers({ params: this.getParams() })
-    },
-
-    rowClick(event: DataTableRowClickEvent) {
-      this.$router.push({
-        name: AdminRoutes.ACCOUNT,
-        params: { username: event.data.username }
-      })
+    accountRoute(data) {
+      return { name: AdminRoutes.ACCOUNT, params: { username: data.username } }
     },
 
     createUserDialog() {
       const dialog = { maxWidth: 500, header: 'Create user' }
       const listeners = {
         success: () => {
-          this.resetPaging()
-          this.fetchUsers({ params: this.getParams() })
+          this.options.page = 1
+          this.doFetch()
         }
       }
       this.show({

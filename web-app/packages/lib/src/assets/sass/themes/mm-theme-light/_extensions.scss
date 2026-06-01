@@ -133,3 +133,12 @@ img {
   text-decoration-line: underline;
   text-decoration-style: dotted;
 }
+
+td:has(.dt-row-link) {
+  padding: 0;
+}
+
+.dt-row-link {
+  display: block;
+  padding: $tableBodyCellPadding;
+}
