@@ -164,7 +164,11 @@ export default defineComponent({
       type: Boolean,
       default: false
     },
-    mapRoute: String
+    mapRoute: String,
+    settingsTabHeader: {
+      type: String,
+      default: 'Settings'
+    }
   },
   data() {
     return {
@@ -208,7 +212,7 @@ export default defineComponent({
           })
           tabs.push({
             route: ProjectRouteName.ProjectSettings,
-            header: 'Settings & API'
+            header: this.settingsTabHeader
           })
         }
       }
