@@ -580,15 +580,11 @@ def get_projects_by_names():  # noqa: E501
 
     # batch-resolve workspaces by name (one DB query for DB-backed handlers)
     unique_ws_names = {
-        key.split("/")[0].lower()
-        for key in list_of_projects
-        if len(key.split("/")) == 2
+        key.split("/")[0] for key in list_of_projects if len(key.split("/")) == 2
     }
     workspaces_by_name = {
-        ws.name.lower(): ws
-        for ws in current_app.ws_handler.get_by_names(unique_ws_names)
+        ws.name: ws for ws in current_app.ws_handler.get_by_names(unique_ws_names)
     }
-
     results = {}
     valid_projects = []  # list of (key, workspace, project_name)
     for key in list_of_projects:
@@ -596,7 +592,7 @@ def get_projects_by_names():  # noqa: E501
         if len(parts) != 2:
             results[key] = {"error": 404}
             continue
-        workspace = workspaces_by_name.get(parts[0].lower())
+        workspace = workspaces_by_name.get(parts[0])
         if not workspace:
             results[key] = {"error": 404}
             continue
