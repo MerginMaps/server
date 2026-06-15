@@ -94,6 +94,28 @@ def test_logout(client):
     assert resp.status_code == 200
 
 
+def test_bcrypt_lazy_rehash(app):
+    """Password is transparently rehashed on login when the cost factor changes."""
+    import bcrypt
+    from ..auth.app import authenticate
+
+    user = add_user("rehashuser", "rehashpassword")
+    # Store a hash with a low cost factor (4 is the minimum bcrypt allows)
+    low_rounds_hash = bcrypt.hashpw(b"rehashpassword", bcrypt.gensalt(4)).decode(
+        "utf-8"
+    )
+    user.passwd = low_rounds_hash
+    db.session.commit()
+
+    app.config["BCRYPT_LOG_ROUNDS"] = 5
+    result = authenticate("rehashuser", "rehashpassword")
+    assert result is not None
+
+    db.session.refresh(user)
+    hash_rounds = int(user.passwd.split("$")[2])
+    assert hash_rounds == 5
+
+
 def test_deactivated_user_session_rejected(client):
     """Session cookie for a deactivated account must be rejected."""
     user = add_user("testdeactivate", "testpassword")

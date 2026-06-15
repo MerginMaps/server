@@ -91,12 +91,17 @@ def edit_profile_enabled(f):
 
 
 def authenticate(login, password):
+    from ..app import db
+
     if "@" in login:
         query = func.lower(User.email) == func.lower(login)
     else:
         query = func.lower(User.username) == func.lower(login)
     user = User.query.filter(query).one_or_none()
     if user and user.check_password(password):
+        if user.needs_rehash():
+            user.assign_password(password)
+            db.session.commit()
         return user
 
 

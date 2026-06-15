@@ -64,11 +64,24 @@ class User(db.Model):
     def assign_password(self, password):
         if isinstance(password, str):
             password = password.encode("utf-8")
+        rounds = current_app.config.get("BCRYPT_LOG_ROUNDS", 12)
         self.passwd = (
-            bcrypt.hashpw(password, bcrypt.gensalt()).decode("utf-8")
+            bcrypt.hashpw(password, bcrypt.gensalt(rounds)).decode("utf-8")
             if password
             else None
         )
+
+    def needs_rehash(self):
+        """Return True if the stored hash was generated with a different cost factor than configured."""
+        if self.passwd is None:
+            return False
+        rounds = current_app.config.get("BCRYPT_LOG_ROUNDS", 12)
+        try:
+            # bcrypt hash format: $2b$<rounds>$<salt+hash>
+            hash_rounds = int(self.passwd.split("$")[2])
+            return hash_rounds != rounds
+        except (IndexError, ValueError):
+            return False
 
     @property
     def is_authenticated(self):
