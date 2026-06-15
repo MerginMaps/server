@@ -185,6 +185,7 @@ class User(db.Model):
         """Anonymize user object in database - remove personal information"""
         ts = round(datetime.datetime.utcnow().timestamp() * 1000)
         del_str = f"deleted_{ts}"
+        self.active = False
         self.username = del_str
         self.email = None
         self.passwd = None

@@ -188,7 +188,9 @@ def create_app(public_keys: List[str] = None) -> Flask:
     # adjust login manager
     @login_manager.user_loader
     def load_user(user_id):  # pylint: disable=W0613,W0612
-        return User.query.get(user_id)
+        user = User.query.get(user_id)
+        if user and user.active:
+            return user
 
     @login_manager.header_loader
     def load_user_from_header(header_val):  # pylint: disable=W0613,W0612

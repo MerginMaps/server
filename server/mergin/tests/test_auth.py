@@ -94,6 +94,23 @@ def test_logout(client):
     assert resp.status_code == 200
 
 
+def test_deactivated_user_session_rejected(client):
+    """Session cookie for a deactivated account must be rejected."""
+    user = add_user("testdeactivate", "testpassword")
+    login(client, "testdeactivate", "testpassword")
+
+    # session works before deactivation
+    resp = client.get(f"/v1/user/{user.username}")
+    assert resp.status_code == 200
+
+    user.active = False
+    db.session.commit()
+
+    # same session must now be rejected
+    resp = client.get(f"/v1/user/{user.username}")
+    assert resp.status_code == 401
+
+
 # user registration tests
 test_user_reg_data = [
     ("test@test.com", "#pwd1234", 201),  # success
@@ -469,7 +486,8 @@ def test_update_user(client):
         data=json.dumps(data),
         headers=json_headers,
     )
-    assert resp.status_code == 403
+    # user is deactivated, so session is rejected before permission check
+    assert resp.status_code == 401
 
 
 def test_update_user_profile(client):

@@ -61,7 +61,11 @@ def auth_required(f=None, permissions=None):
 
     @functools.wraps(f)
     def wrapped_func(*args, **kwargs):
-        if not current_user or not current_user.is_authenticated:
+        if (
+            not current_user
+            or not current_user.is_authenticated
+            or not current_user.is_active
+        ):
             return "Authentication information is missing or invalid.", 401
         if permissions:
             for check_permission in permissions:
