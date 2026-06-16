@@ -119,8 +119,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </div>
       </template>
     </PMenubar>
-    <!-- Show breadcrumps under menu in smaller screens -->
-    <app-breadcrumbs class="lg:hidden px-3 pb-3 pt-0"></app-breadcrumbs>
+    <!-- Show breadcrumps under menu in smaller screens (only when the default menu slot is used) -->
+    <app-breadcrumbs
+      v-if="!$slots.menu"
+      class="lg:hidden px-3 pb-3 pt-0"
+    ></app-breadcrumbs>
   </div>
 </template>
 
