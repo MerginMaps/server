@@ -122,6 +122,11 @@ img {
 .p-button.icon-action-btn {
   color: map-get($colors, 'forest');
 
+  // Suppress the focus halo after a mouse click
+  &:focus:not(:focus-visible) {
+    box-shadow: none;
+  }
+
   &:not(:disabled):hover {
     background: map-get($colors, 'light-green');
     color: map-get($colors, 'forest');
