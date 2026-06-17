@@ -12,6 +12,7 @@ from sqlalchemy import func
 from .commands import add_commands
 from .config import Configuration
 from .models import User
+from .errors import AccountLockedError
 
 # signal for other versions to listen to
 user_account_closed = signal("user_account_closed")
@@ -98,11 +99,25 @@ def authenticate(login, password):
     else:
         query = func.lower(User.username) == func.lower(login)
     user = User.query.filter(query).one_or_none()
-    if user and user.check_password(password):
+    if user is None:
+        return None
+    needs_commit = False
+    if user.is_locked_out():
+        raise AccountLockedError(user.locked_until)
+    if user.check_password(password):
+        if user.failed_login_attempts or user.locked_until:
+            user.reset_lockout()
+            needs_commit = True
         if user.needs_rehash():
             user.assign_password(password)
+            needs_commit = True
+        if needs_commit:
             db.session.commit()
         return user
+    else:
+        user.record_failed_login()
+        db.session.commit()
+        return None
 
 
 def generate_confirmation_token(app, email, salt):

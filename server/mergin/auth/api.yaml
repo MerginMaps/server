@@ -360,6 +360,8 @@ paths:
           $ref: "#/components/responses/BadStatusResp"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "423":
+          $ref: "#/components/responses/LockedResp"
   /app/auth/logout:
     get:
       summary: Logout
@@ -617,6 +619,8 @@ paths:
           $ref: "#/components/responses/NotFoundResp"
         "415":
           $ref: "#/components/responses/UnsupportedMediaType"
+        "423":
+          $ref: "#/components/responses/LockedResp"
       x-openapi-router-controller: mergin.auth.controller
   /app/admin/login:
     post:
@@ -646,6 +650,8 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "423":
+          $ref: "#/components/responses/LockedResp"
   /v2/users:
     post:
       tags:
@@ -718,6 +724,8 @@ components:
       description: Request could not be processed becuase of conflict in resources
     UnprocessableEntity:
       description: Request was correct and yet server could not process it
+    LockedResp:
+      description: Account is temporarily locked due to too many failed login attempts.
     NoContent:
       description: Success. No content returned.
   schemas:

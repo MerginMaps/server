@@ -94,6 +94,75 @@ def test_logout(client):
     assert resp.status_code == 200
 
 
+def test_login_lockout(client):
+    """Test account lockout: progressive tiers, freeze during lock, reset on success.
+
+    policy: 3 failures → 60s lock, 4 failures → 3600s lock
+    counter is never reset between lockouts, so tier-2 is reached after one
+    extra failure following the first expired tier-1 lock
+    """
+    client.application.config["LOCKOUT_POLICY"] = "3:60,4:3600"
+    user = add_user("lockoutuser", "correctpassword")
+
+    def assert_locked():
+        resp = client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "lockoutuser", "password": "wrong"},
+        )
+        assert resp.status_code == 423
+        assert resp.json["code"] == "AccountLocked"
+        assert "locked_until" in resp.json
+
+    # tier 1: 3 failures → 60s lock
+    for _ in range(3):
+        resp = client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "lockoutuser", "password": "wrong"},
+        )
+        assert resp.status_code == 401
+
+    assert_locked()
+
+    # correct password is also blocked while locked
+    resp = client.post(
+        url_for("/.mergin_auth_controller_login"),
+        json={"login": "lockoutuser", "password": "correctpassword"},
+    )
+    assert resp.status_code == 423
+
+    # counter stays frozen during lockout
+    assert user.failed_login_attempts == 3
+    assert user.locked_until is not None
+
+    # tier 2 escalation: one more failure after tier-1 expiry
+    # counter was at 3; one new failure pushes it to 4, crossing tier-2 threshold
+
+    # expire_lock
+    user.locked_until = datetime.now(tz=timezone.utc) - timedelta(seconds=1)
+    db.session.commit()
+
+    resp = client.post(
+        url_for("/.mergin_auth_controller_login"),
+        json={"login": "lockoutuser", "password": "wrong"},
+    )
+    # returns 401 (wrong password), but now locked for 3600s
+    assert resp.status_code == 401
+    assert_locked()
+    assert user.locked_until > datetime.now(tz=timezone.utc) + timedelta(seconds=60)
+    assert user.failed_login_attempts == 4
+
+    # successful login after expiry resets everything
+    user.locked_until = datetime.now(tz=timezone.utc) - timedelta(seconds=1)
+    db.session.commit()
+    resp = client.post(
+        url_for("/.mergin_auth_controller_login"),
+        json={"login": "lockoutuser", "password": "correctpassword"},
+    )
+    assert resp.status_code == 200
+    assert user.failed_login_attempts == 0
+    assert user.locked_until is None
+
+
 def test_bcrypt_lazy_rehash(app):
     """Password is transparently rehashed on login when the cost factor changes."""
     import bcrypt

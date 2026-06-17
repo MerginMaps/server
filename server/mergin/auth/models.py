@@ -13,8 +13,18 @@ from sqlalchemy import or_, func, text
 from ..app import db
 from ..sync.models import ProjectUser
 from ..sync.utils import get_user_agent, get_ip, get_device_id, is_reserved_word
+from .errors import AccountLockedError
 
 MAX_USERNAME_LENGTH = 50
+
+
+def _parse_lockout_policy(policy_str: str) -> list:
+    """Parse "5:300,10:3600" into [(5, 300), (10, 3600)] sorted ascending by threshold."""
+    result = []
+    for part in policy_str.split(","):
+        threshold, seconds = part.strip().split(":")
+        result.append((int(threshold), int(seconds)))
+    return sorted(result, key=lambda x: x[0])
 
 
 class User(db.Model):
@@ -33,6 +43,10 @@ class User(db.Model):
         default=datetime.datetime.utcnow,
     )
     last_signed_in = db.Column(db.DateTime(), nullable=True)
+    failed_login_attempts = db.Column(
+        db.Integer, default=0, nullable=False, server_default="0"
+    )
+    locked_until = db.Column(db.DateTime(), nullable=True)
     receive_notifications = db.Column(
         db.Boolean, default=True, nullable=False, index=True
     )
@@ -82,6 +96,38 @@ class User(db.Model):
             return hash_rounds != rounds
         except (IndexError, ValueError):
             return False
+
+    def is_locked_out(self) -> bool:
+        """Return True if the account is currently under a temporary lockout."""
+        if self.locked_until is None:
+            return False
+        now = datetime.datetime.utcnow()
+        if self.locked_until <= now:
+            # lockout has expired — clear it so subsequent queries see a clean state
+            self.locked_until = None
+            return False
+        return True
+
+    def record_failed_login(self) -> None:
+        """Increment the failed-login counter and apply a lockout if a threshold is crossed."""
+        self.failed_login_attempts = (self.failed_login_attempts or 0) + 1
+        policy = _parse_lockout_policy(
+            current_app.config.get("LOCKOUT_POLICY", "5:300,10:3600")
+        )
+        # find the highest applicable tier
+        duration = None
+        for threshold, seconds in policy:
+            if self.failed_login_attempts >= threshold:
+                duration = seconds
+        if duration is not None:
+            self.locked_until = datetime.datetime.utcnow() + datetime.timedelta(
+                seconds=duration
+            )
+
+    def reset_lockout(self) -> None:
+        """Clear lockout state after a successful login."""
+        self.failed_login_attempts = 0
+        self.locked_until = None
 
     @property
     def is_authenticated(self):

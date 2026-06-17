@@ -14,3 +14,5 @@ class Configuration(object):
     )  # in seconds
     ACCOUNT_EXPIRATION = config("ACCOUNT_EXPIRATION", default=5, cast=int)  # in days
     BCRYPT_LOG_ROUNDS = config("BCRYPT_LOG_ROUNDS", default=12, cast=int)
+    # Comma-separated "attempts:seconds" pairs, e.g. "5:300,10:3600"
+    LOCKOUT_POLICY = config("LOCKOUT_POLICY", default="5:300,10:3600")
