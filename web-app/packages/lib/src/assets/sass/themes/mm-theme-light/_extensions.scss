@@ -118,14 +118,15 @@ img {
   overflow-wrap: anywhere;
 }
 
+// Suppress the focus halo after a mouse click on any PrimeVue button while
+// keeping the ring for keyboard navigation (accessibility).
+.p-button:focus:not(:focus-visible) {
+  box-shadow: none;
+}
+
 // Icon-only action button used in list rows (e.g. resend / trash on invitation rows)
 .p-button.icon-action-btn {
   color: map-get($colors, 'forest');
-
-  // Suppress the focus halo after a mouse click
-  &:focus:not(:focus-visible) {
-    box-shadow: none;
-  }
 
   &:not(:disabled):hover {
     background: map-get($colors, 'light-green');
