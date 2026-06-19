@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import time
 import itsdangerous
 import pytest
