@@ -114,6 +114,10 @@ img {
   color: map-get($colors, 'dark-gray');
 }
 
+.text-color-medium-gray {
+  color: map-get($colors, 'medium-gray');
+}
+
 .overflow-wrap-anywhere {
   overflow-wrap: anywhere;
 }
