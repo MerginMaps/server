@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import time
 import itsdangerous
 import pytest
@@ -138,7 +138,7 @@ def test_login_lockout(client):
     # counter was at 3; one new failure pushes it to 4, crossing tier-2 threshold
 
     # expire_lock
-    user.locked_until = datetime.now(tz=timezone.utc) - timedelta(seconds=1)
+    user.locked_until = datetime.utcnow() - timedelta(seconds=1)
     db.session.commit()
 
     resp = client.post(
@@ -148,11 +148,11 @@ def test_login_lockout(client):
     # returns 401 (wrong password), but now locked for 3600s
     assert resp.status_code == 401
     assert_locked()
-    assert user.locked_until > datetime.now(tz=timezone.utc) + timedelta(seconds=60)
+    assert user.locked_until > datetime.utcnow() + timedelta(seconds=60)
     assert user.failed_login_attempts == 4
 
     # successful login after expiry resets everything
-    user.locked_until = datetime.now(tz=timezone.utc) - timedelta(seconds=1)
+    user.locked_until = datetime.utcnow() - timedelta(seconds=1)
     db.session.commit()
     resp = client.post(
         url_for("/.mergin_auth_controller_login"),
