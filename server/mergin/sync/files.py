@@ -224,7 +224,7 @@ class ChangesSchema(ma.Schema):
 
             if not is_supported_extension(file_path):
                 raise ValidationError(
-                    f"stop Unsupported file type detected: '{file_path}'. "
+                    f"Unsupported file type detected: '{file_path}'. "
                     f"Please remove the file or try compressing it into a ZIP file before uploading.",
                 )
         # new checks must restrict only new files not to block existing projects
