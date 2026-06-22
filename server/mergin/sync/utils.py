@@ -315,6 +315,8 @@ def is_supported_extension(filepath) -> bool:
     if check_skip_validation(filepath):
         return True
     ext = os.path.splitext(filepath)[1].lower()
+    if ext in {e.lower() for e in Configuration.UPLOAD_EXTENSIONS_WHITELIST}:
+        return True
     return ext and ext not in FORBIDDEN_EXTENSIONS
 
 
@@ -493,6 +495,8 @@ def is_supported_type(filepath) -> bool:
     if check_skip_validation(filepath):
         return True
     mime_type = get_mimetype(filepath)
+    if mime_type in Configuration.UPLOAD_MIME_TYPES_WHITELIST:
+        return True
     return mime_type.startswith("image/") or mime_type not in FORBIDDEN_MIME_TYPES
 
 

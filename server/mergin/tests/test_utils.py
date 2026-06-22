@@ -402,3 +402,32 @@ def test_mime_type_validation_skip():
 
         # Should be forbidden
         assert not is_supported_type("other.js")
+
+
+def test_allowed_extensions_override():
+    """Extensions in UPLOAD_EXTENSIONS_WHITELIST are accepted even though they are in FORBIDDEN_EXTENSIONS."""
+    with patch(
+        "mergin.sync.utils.Configuration.UPLOAD_EXTENSIONS_WHITELIST", [".py", ".sh"]
+    ):
+        # forbidden by default, now explicitly allowed
+        assert is_supported_extension("model.py")
+        assert is_supported_extension("scripts/deploy.sh")
+        # match is case-insensitive
+        assert is_supported_extension("MODEL.PY")
+        # extensions not in the override stay blocked
+        assert not is_supported_extension("malware.exe")
+        assert not is_supported_extension("app.js")
+
+
+def test_allowed_mime_types_override():
+    """MIME types in UPLOAD_MIME_TYPES_WHITELIST are accepted even though they are in FORBIDDEN_MIME_TYPES."""
+    with patch("mergin.sync.utils.get_mimetype", return_value="text/x-shellscript"):
+        # blocked by default
+        with patch("mergin.sync.utils.Configuration.UPLOAD_MIME_TYPES_WHITELIST", []):
+            assert not is_supported_type("deploy.sh")
+        # explicitly allowed
+        with patch(
+            "mergin.sync.utils.Configuration.UPLOAD_MIME_TYPES_WHITELIST",
+            ["text/x-shellscript"],
+        ):
+            assert is_supported_type("deploy.sh")
