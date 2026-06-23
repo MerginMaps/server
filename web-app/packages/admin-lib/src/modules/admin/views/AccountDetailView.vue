@@ -44,7 +44,9 @@
               ></i>
               {{ user?.email }}
             </p>
-            <dl class="profile-view-detail-list grid grid-nogutter paragraph-p5">
+            <dl
+              class="profile-view-detail-list grid grid-nogutter paragraph-p5"
+            >
               <div
                 class="col-6 flex flex-column align-items-start text-left flex-wrap"
               >
@@ -63,6 +65,7 @@
           </div>
         </app-section>
       </app-container>
+      <slot name="additionalContent" />
       <app-container v-if="userStore.loggedUser?.id !== user?.id">
         <app-section>
           <template #title>Advanced</template>

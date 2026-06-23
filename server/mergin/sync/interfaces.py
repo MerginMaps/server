@@ -110,6 +110,12 @@ class WorkspaceHandler(ABC):
         """
         pass
 
+    def get_by_names(self, names):
+        """
+        Return list of workspaces whose names are in the given collection.
+        """
+        pass
+
     @abstractmethod
     def get_by_project(self, project):
         """
