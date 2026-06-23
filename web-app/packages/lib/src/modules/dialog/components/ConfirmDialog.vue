@@ -9,14 +9,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <img
       v-if="severity === 'danger'"
       src="@/assets/trash.svg"
-      alt="Cover for confirm dialog"
+      :alt="t('CoverForConfirmDialog')"
     />
     <img
       v-else-if="severity === 'warning'"
       src="@/assets/warning-dialog.svg"
-      alt="Cover for confirm dialog"
+      :alt="t('CoverForConfirmDialog')"
     />
-    <img v-else src="@/assets/neutral.svg" alt="Cover for confirm dialog" />
+    <img v-else src="@/assets/neutral.svg" :alt="t('CoverForConfirmDialog')" />
     <span class="text-color-forest title-t1">{{ text }}</span>
     <span class="paragraph-p5 opacity-80">{{ description }}</span>
     <span v-if="hint" class="title-t2 my-2">{{ hint }}</span>
@@ -31,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :id="'confirmValue'"
           v-model="confirmValue"
           type="text"
-          :placeholder="confirmField.placeholder ?? 'Type in value to confirm'"
+          :placeholder="confirmField.placeholder ?? t('TypeInValueToConfirm')"
         />
       </span>
 
@@ -53,7 +53,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         @click="close"
         class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
         data-cy="clone-dialog-close-btn"
-        >{{ cancelText }}</PButton
+        >{{ cancelLabel }}</PButton
       >
 
       <PButton
@@ -62,7 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         :severity="severity"
         class="flex w-12 lg:w-6 justify-content-center"
       >
-        {{ confirmText }}
+        {{ confirmLabel }}
       </PButton>
     </div>
   </div>
@@ -73,8 +73,11 @@ import { ref, computed, defineEmits, withDefaults } from 'vue'
 
 import { ConfirmDialogProps } from '../types'
 
+import returnTranslation from '@/../../lang/translate'
 import TipMessage from '@/common/components/TipMessage.vue'
 import { useDialogStore } from '@/modules/dialog/store'
+
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 const props = withDefaults(defineProps<ConfirmDialogProps>(), {
   confirmText: 'Ok',
@@ -90,6 +93,12 @@ const isConfirmed = computed(() => {
     ? props.confirmField.expected === confirmValue.value
     : true
 })
+const confirmLabel = computed(() =>
+  props.confirmText === 'Ok' ? t('Ok') : props.confirmText
+)
+const cancelLabel = computed(() =>
+  props.cancelText === 'Cancel' ? t('Cancel') : props.cancelText
+)
 
 const { close } = useDialogStore()
 

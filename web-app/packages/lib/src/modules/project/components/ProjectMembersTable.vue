@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         :columns="columns"
         :paginator="searchedItems.length > itemsPerPage"
         :loading="projectStore.accessLoading"
-        :empty-message="'No members found.'"
+        :empty-message="t('NoMembersFound')"
         :row-cursor-pointer="false"
         :options="{
           itemsPerPage,
@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           sortDesc: projectStore.accessSorting?.sortDesc
         }"
       >
-        <template #header-title>Members</template>
+        <template #header-title>{{ t('Members') }}</template>
         <template #actions="{ item }">
           <PButton
             icon="ti ti-trash"
@@ -76,6 +76,7 @@ import ProjectMemberItem from '../../../common/components/UserSummary.vue'
 import { useProjectStore } from '../store'
 import { ProjectCollaborator } from '../types'
 
+import returnTranslation from '@/../../lang/translate'
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppDropdown from '@/common/components/AppDropdown.vue'
 import AppSection from '@/common/components/AppSection.vue'
@@ -93,22 +94,23 @@ import { useInstanceStore, useUserStore } from '@/main'
 const projectStore = useProjectStore()
 const userStore = useUserStore()
 const instanceStore = useInstanceStore()
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 const itemsPerPage = ref(10)
 const columns = ref<DataViewWrapperColumnItem[]>([
   {
-    text: 'Member',
+    text: t('Member'),
     value: 'member',
     textClass: 'font-semibold',
     cols: 10
   },
   {
-    text: 'Project permissions',
+    text: t('ProjectPermissions'),
     value: 'roles',
     cols: 2
   },
   {
-    text: 'Remove',
+    text: t('Remove'),
     value: 'remove',
     fixed: true
   }

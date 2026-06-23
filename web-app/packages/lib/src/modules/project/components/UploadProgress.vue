@@ -31,6 +31,7 @@ import debounce from 'lodash/debounce'
 import { mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import { useProjectStore } from '@/modules/project/store'
 
 export default defineComponent({
@@ -48,11 +49,14 @@ export default defineComponent({
     uploading: 'updateVisibility'
   },
   methods: {
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
     open() {
       this.$toast.add({
         group: 'upload-progress',
         severity: 'info',
-        summary: 'Uploading data to project.'
+        summary: this.t('UploadingDataToProjects')
       })
     },
     close() {

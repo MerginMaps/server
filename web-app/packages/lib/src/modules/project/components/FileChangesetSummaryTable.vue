@@ -58,6 +58,8 @@ import { PropType, defineComponent } from 'vue'
 
 import { ChangesetSuccessSummaryItem } from '../types'
 
+import returnTranslation from '@/../../lang/translate'
+
 export default defineComponent({
   name: 'file-changeset-summary-table',
   props: {
@@ -66,14 +68,14 @@ export default defineComponent({
   data() {
     return {
       columns: [
-        { text: 'Layer', value: 'table' },
+        { text: this.t('Layer'), value: 'table' },
         {
-          text: 'Inserts',
+          text: this.t('Inserts'),
           icon: 'ti-plus',
           value: 'insert'
         },
-        { text: 'Updates', icon: 'ti-pencil', value: 'update' },
-        { text: 'Deletes', icon: 'ti-trash', value: 'delete' }
+        { text: this.t('Updates'), icon: 'ti-pencil', value: 'update' },
+        { text: this.t('Deletes'), icon: 'ti-trash', value: 'delete' }
       ],
       itemsPerPage: 10
     }
@@ -82,6 +84,11 @@ export default defineComponent({
     displayedChangeset() {
       // Displayed changesets data into table data
       return this.changesets.filter((p) => p.table !== 'gpkg_contents')
+    }
+  },
+  methods: {
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
     }
   }
 })

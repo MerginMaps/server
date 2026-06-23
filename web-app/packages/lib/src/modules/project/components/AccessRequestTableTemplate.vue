@@ -18,7 +18,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     @page="onPage"
   >
     <template #header>
-      <h3 class="font-semibold paragraph-p6 text-color">Access requests</h3>
+      <h3 class="font-semibold paragraph-p6 text-color">
+        {{ t('AccessRequests') }}
+      </h3>
     </template>
     <template #list="slotProps">
       <template v-for="item in slotProps.items" :key="item.id">
@@ -30,15 +32,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             v-if="loggedUser.username === item.requested_by"
             class="w-12 lg:w-6 paragraph-p6"
           >
-            You requested an access to project
-            <span class="font-semibold">{{ item.project_name }}</span> in
-            workspace <span class="font-semibold">{{ item.namespace }}</span
+            {{ t('YouRequestedAnAccessToProject') }}
+            <span class="font-semibold">{{ item.project_name }}</span>
+            {{ t('InWorkspace') }}
+            <span class="font-semibold">{{ item.namespace }}</span
             >.
           </p>
           <p v-else class="w-12 lg:w-6 paragraph-p6">
-            User
+            {{ t('User') }}
             <span class="font-semibold">{{ item.requested_by }}</span>
-            requested an access to your project
+            {{ t('RequestedAnAccessToYourProject') }}
             <span class="font-semibold">{{ item.project_name }}.</span>
           </p>
           <div
@@ -48,10 +51,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <span v-tooltip.right="{ value: $filters.datetime(item.expire) }">
                 <template
                   v-if="$filters.remainingtime(item.expire) === 'expired'"
-                  >Expired</template
+                  >{{ t('Expired') }}</template
                 >
                 <template v-else
-                  >Expiring in
+                  >{{ t('ExpiringIn') }}
                   {{ $filters.remainingtime(item.expire) }}</template
                 >
               </span>
@@ -68,7 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <PButton
                 icon="ti ti-x"
                 rounded
-                aria-label="Disallow"
+                :aria-label="t('Disallow')"
                 severity="danger"
                 class="mr-2"
                 @click="cancelRequest(item)"
@@ -77,7 +80,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 v-if="showAccept"
                 icon="ti ti-check"
                 rounded
-                aria-label="Accept"
+                :aria-label="t('Accept')"
                 severity="success"
                 :disabled="expired(item.expire)"
                 @click="acceptRequest(item)"
@@ -88,7 +91,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </template>
     </template>
     <template #empty>
-      <p>No access requests found</p>
+      <p>{{ t('NoAccessRequestsFound') }}</p>
     </template>
   </PDataView>
 </template>
@@ -99,6 +102,7 @@ import { DataViewPageEvent } from 'primevue/dataview'
 import { DropdownChangeEvent } from 'primevue/dropdown'
 import { defineComponent } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import AppDropdown from '@/common/components/AppDropdown.vue'
 import { ProjectPermissionName } from '@/common/permission_utils'
 import { useUserStore } from '@/main'
@@ -161,6 +165,9 @@ export default defineComponent({
       'getAccessRequests'
     ]),
     ...mapActions(useNotificationStore, ['error']),
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
 
     onPage(e: DataViewPageEvent) {
       this.options.page = e.page + 1

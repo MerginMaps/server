@@ -8,6 +8,7 @@ import keyBy from 'lodash/keyBy'
 import omit from 'lodash/omit'
 import { defineStore, getActivePinia } from 'pinia'
 
+import returnTranslation from '@/../../lang/translate'
 import { DropdownOption, permissionUtils } from '@/common'
 import { getErrorMessage } from '@/common/error_utils'
 import { waitCursor } from '@/common/html_utils'
@@ -48,6 +49,8 @@ import {
   ProjectCollaborator
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
+
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 interface File {
   chunks: unknown
@@ -218,7 +221,7 @@ export const useProjectStore = defineStore('projectModule', {
       // Check if there are any changes to upload
       if (upload.diff.changes < 1) {
         notificationStore.error({
-          text: 'No changes detected. File already exists?'
+          text: t('NoChangesDetectedFileAlreadyExists')
         })
         this.discardUpload({ projectPath: this.project.path })
         return
@@ -300,7 +303,7 @@ export const useProjectStore = defineStore('projectModule', {
         })
       } catch (_err) {
         await notificationStore.error({
-          text: 'Failed to load projects'
+          text: t('FailedToLoadProjects')
         })
       }
       return response
@@ -370,7 +373,7 @@ export const useProjectStore = defineStore('projectModule', {
         })
       } catch {
         await notificationStore.error({
-          text: 'Failed to fetch project access requests'
+          text: t('FailedToFetchProjectAccessRequests')
         })
       }
     },
@@ -406,7 +409,7 @@ export const useProjectStore = defineStore('projectModule', {
         })
       } catch {
         await notificationStore.error({
-          text: 'Failed to fetch project access requests'
+          text: t('FailedToFetchProjectAccessRequests')
         })
       }
     },
@@ -432,7 +435,7 @@ export const useProjectStore = defineStore('projectModule', {
         await ProjectApi.cancelProjectAccessRequest(payload.itemId, true)
       } catch (err) {
         await notificationStore.error({
-          text: getErrorMessage(err, 'Failed to cancel access request')
+          text: getErrorMessage(err, t('FailedToCancelAccessRequest'))
         })
       } finally {
         waitCursor(false)
@@ -485,7 +488,7 @@ export const useProjectStore = defineStore('projectModule', {
         )
         this.setProject({ project: projectResponse.data })
       } catch {
-        await notificationStore.error({ text: 'Failed to load project data' })
+        await notificationStore.error({ text: t('FailedToLoadProjectData') })
       }
     },
 
@@ -499,7 +502,7 @@ export const useProjectStore = defineStore('projectModule', {
         waitCursor(false)
       } catch (err) {
         await notificationStore.error({
-          text: getErrorMessage(err, 'Failed to unsubscribe from project')
+          text: getErrorMessage(err, t('FailedToUnsubscribeFromProject'))
         })
         waitCursor(false)
       }
@@ -518,7 +521,7 @@ export const useProjectStore = defineStore('projectModule', {
       } catch (e) {
         if (!axios.isAxiosError(e)) {
           notificationStore.error({
-            text: 'Failed to load project data'
+            text: t('FailedToLoadProjectData')
           })
           return
         }
@@ -526,7 +529,7 @@ export const useProjectStore = defineStore('projectModule', {
 
         if (e.response.status !== 404 && e.response.status !== 403) {
           notificationStore.error({
-            text: 'Failed to load project data'
+            text: t('FailedToLoadProjectData')
           })
         } else if (e.response.status === 403 && !isLoggedUser) {
           await getActivePinia().router.push(
@@ -545,7 +548,7 @@ export const useProjectStore = defineStore('projectModule', {
             })
             .catch(() => {
               notificationStore.error({
-                text: 'Failed to load project access requests data'
+                text: t('FailedToLoadProjectAccessRequestsData')
               })
             })
         }
@@ -566,7 +569,7 @@ export const useProjectStore = defineStore('projectModule', {
         this.versionsCount = response.data?.count
       } catch {
         await notificationStore.error({
-          text: 'Failed to fetch project versions'
+          text: t('FailedToFetchProjectVersions')
         })
       } finally {
         this.versionsLoading = false
@@ -601,7 +604,7 @@ export const useProjectStore = defineStore('projectModule', {
         if (code === 'UpdateProjectAccessError') {
           notificationStore.warn({
             life: 1000000,
-            text: 'Unable to share project with the following users',
+            text: t('UnableToShareProjectWithTheFollowingUsers'),
             detail: (error.response.data?.invalid_usernames ?? []).join(', ')
           })
         }
@@ -646,7 +649,7 @@ export const useProjectStore = defineStore('projectModule', {
       })
 
       notificationStore.show({
-        text: 'Following users have been added to the project',
+        text: t('FollowingUsersHaveBeenAddedToTheProject'),
         detail: userNames.join(', ')
       })
     },
@@ -797,7 +800,7 @@ export const useProjectStore = defineStore('projectModule', {
         this.access = response.data
       } catch {
         notificationStore.error({
-          text: 'Failed to get project access'
+          text: t('FailedToGetProjectAccess')
         })
       } finally {
         this.accessLoading = false
@@ -813,7 +816,7 @@ export const useProjectStore = defineStore('projectModule', {
         this.collaborators = response.data
       } catch {
         notificationStore.error({
-          text: 'Failed to get project collaborators'
+          text: t('FailedToGetProjectCollaborators')
         })
       } finally {
         this.accessLoading = false

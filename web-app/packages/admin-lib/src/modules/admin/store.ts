@@ -20,6 +20,7 @@ import Cookies from 'universal-cookie'
 
 import { AdminRoutes } from './routes'
 
+import returnTranslation from '@/../../lang/translate'
 import { AdminApi } from '@/modules/admin/adminApi'
 import {
   LatestServerVersionResponse,
@@ -50,6 +51,7 @@ export interface AdminState {
 
 const cookies = new Cookies()
 const COOKIES_HIDE_SERVER_CONFIGURED_BANNER = 'hideServerConfiguredBanner'
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 export const useAdminStore = defineStore('adminModule', {
   state: (): AdminState => ({
@@ -138,8 +140,8 @@ export const useAdminStore = defineStore('adminModule', {
       try {
         const response = await AdminApi.fetchUserByName(payload.username)
         this.user = response.data
-      } catch (e) {
-        await notificationStore.error({ text: 'Failed to fetch user profile' })
+      } catch {
+        await notificationStore.error({ text: t('FailedToFetchUserProfile') })
       } finally {
         htmlUtils.waitCursor(false)
       }
@@ -154,7 +156,7 @@ export const useAdminStore = defineStore('adminModule', {
         await getActivePinia().router.push({ name: AdminRoutes.ACCOUNTS })
       } catch (err) {
         await notificationStore.error({
-          text: errorUtils.getErrorMessage(err, 'Unable to close account')
+          text: errorUtils.getErrorMessage(err, t('UnableToCloseAccount'))
         })
       } finally {
         htmlUtils.waitCursor(false)
@@ -178,7 +180,7 @@ export const useAdminStore = defineStore('adminModule', {
         await notificationStore.error({
           text: errorUtils.getErrorMessage(
             err,
-            'Unable to permanently remove account'
+            t('UnableToPermanentlyRemoveAccount')
           )
         })
       } finally {
@@ -197,7 +199,7 @@ export const useAdminStore = defineStore('adminModule', {
         await formStore.handleError({
           componentId: payload.componentId,
           error,
-          generalMessage: 'Failed to login'
+          generalMessage: t('FailedToLogin')
         })
       }
     },
@@ -280,9 +282,9 @@ export const useAdminStore = defineStore('adminModule', {
         const response = await AdminApi.getProjects(params)
         this.projects.items = response.data.items
         this.projects.count = response.data.count
-      } catch (e) {
+      } catch {
         notificationStore.error({
-          text: 'Failed to fetch projects'
+          text: t('FailedToFetchProjects')
         })
       } finally {
         this.projects.loading = false
@@ -295,9 +297,9 @@ export const useAdminStore = defineStore('adminModule', {
       try {
         this.projects.loading = true
         await AdminApi.restoreProject(payload.projectId)
-      } catch (e) {
+      } catch {
         notificationStore.error({
-          text: 'Failed to restore project'
+          text: t('FailedToRestoreProject')
         })
       } finally {
         this.projects.loading = false
@@ -311,11 +313,11 @@ export const useAdminStore = defineStore('adminModule', {
         await AdminApi.deleteProject(payload.projectId)
         await getActivePinia().router.push({ name: AdminRoutes.PROJECTS })
         notificationStore.show({
-          text: 'Project removed successfully'
+          text: t('ProjectRemovedSuccessfully')
         })
-      } catch (e) {
+      } catch {
         notificationStore.error({
-          text: 'Unable to remove project'
+          text: t('UnableToRemoveProject')
         })
       }
     },

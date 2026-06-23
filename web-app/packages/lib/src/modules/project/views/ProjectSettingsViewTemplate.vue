@@ -11,17 +11,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <app-settings>
           <app-settings-item>
             <template #title>
-              <template v-if="project.access.public"
-                >This is public project</template
-              >
-              <template v-else>This is private project</template>
+              <template v-if="project.access.public">{{
+                t('ThisIsPublicProject')
+              }}</template>
+              <template v-else>{{ t('ThisIsPrivateProject') }}</template>
             </template>
 
             <template #description>
               <template v-if="project.access.public">
-                Hide this project from everyone
+                {{ t('HideThisProjectFromEveryone') }}
               </template>
-              <template v-else>Make this project visible to anyone.</template>
+              <template v-else>{{
+                t('MakeThisProjectVisibleToAnyone')
+              }}</template>
             </template>
 
             <template #action>
@@ -31,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                   severity="secondary"
                   data-cy="settings-public-btn"
                   :label="
-                    project.access.public ? 'Make private' : 'Make public'
+                    project.access.public ? t('MakePrivate') : t('MakePublic')
                   "
                 />
               </div>
@@ -39,15 +41,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </app-settings-item>
           <slot name="operations"></slot>
           <app-settings-item>
-            <template #title>Delete project</template>
-            <template #description>All data will be lost</template>
+            <template #title>{{ t('DeleteProject') }}</template>
+            <template #description>{{ t('AllDataWillBeLost') }}</template>
             <template #action
               ><div class="flex-shrink-0">
                 <PButton
                   @click="confirmDelete"
                   severity="danger"
                   data-cy="settings-delete-btn"
-                  label="Delete project"
+                  :label="t('DeleteProject')"
                 /></div
             ></template>
           </app-settings-item>
@@ -61,6 +63,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { PropType, defineComponent } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import AppSettings from '@/common/components/app-settings/AppSettings.vue'
 import AppSettingsItem from '@/common/components/app-settings/AppSettingsItem.vue'
 import AppContainer from '@/common/components/AppContainer.vue'
@@ -97,6 +100,9 @@ export default defineComponent({
   methods: {
     ...mapActions(useProjectStore, ['deleteProject', 'updatePublicFlag']),
     ...mapActions(useDialogStore, { showDialog: 'show' }),
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
     togglePublicPrivate() {
       this.updatePublicFlag({
         projectId: this.project.id,
@@ -107,15 +113,15 @@ export default defineComponent({
     },
     confirmDelete() {
       const props: ConfirmDialogProps = {
-        text: `Are you sure to delete project?`,
-        description: 'All files will be lost. Type in project name to confirm:',
+        text: this.t('AreYouSureToDeleteProject'),
+        description: this.t('AllFilesWillBeLostTypeInProjectNameToConfirm'),
         hint: `${this.projectName}`,
         severity: 'danger',
-        confirmText: 'Delete',
+        confirmText: this.t('Delete'),
         confirmField: {
-          label: 'Project name',
+          label: this.t('ProjectName'),
           expected: this.projectName,
-          placeholder: 'Type in project name to confirm deletion'
+          placeholder: this.t('TypeInProjectNameToConfirmDeletion')
         }
       }
       const listeners = {
@@ -126,20 +132,22 @@ export default defineComponent({
         params: {
           props,
           listeners,
-          dialog: { header: 'Confirm delete project' }
+          dialog: { header: this.t('ConfirmDeleteProject') }
         }
       })
     },
     confirmPublicPrivate() {
       const props: ConfirmDialogProps = {
         text: `Do you really want to make this project ${
-          this.project?.access.public ? 'private' : 'public'
+          this.project?.access.public ? this.t('Private') : this.t('Public')
         }?`,
-        confirmText: 'Yes',
-        cancelText: 'No',
+        confirmText: this.t('Yes'),
+        cancelText: this.t('No'),
         description: this.project?.access.public
-          ? 'Once you make your project private it can not be accessed by the community.'
-          : 'Once you make your project public it can be accessed by the community.'
+          ? this.t(
+              'OnceYouMakeYourProjectPrivateItCanNotBeAccessedByTheCommunity'
+            )
+          : this.t('OnceYouMakeYourProjectPublicItCanBeAccessedByTheCommunity')
       }
       const listeners = {
         confirm: () => this.togglePublicPrivate()
@@ -151,8 +159,8 @@ export default defineComponent({
           listeners,
           dialog: {
             header: this.project?.access.public
-              ? 'Private project'
-              : 'Public project'
+              ? this.t('PrivateProject')
+              : this.t('PublicProject')
           }
         }
       })

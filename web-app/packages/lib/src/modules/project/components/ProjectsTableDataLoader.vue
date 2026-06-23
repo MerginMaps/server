@@ -18,17 +18,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div class="flex flex-column align-items-center p-4 text-center">
           <img src="@/assets/map-circle.svg" alt="No projects" />
           <p class="title-t2 m-0 p-4">
-            <template v-if="projectsSearch"
-              >We couldn't find any projects matching your search
-              criteria.</template
-            >
-            <template v-else>You don't have any projects yet.</template>
+            <template v-if="projectsSearch">{{
+              t('WeCouldntFindAnyProjectsMatchingYourSearchCriteria')
+            }}</template>
+            <template v-else>{{ t('YouDontHaveAnyProjectsYet') }}</template>
           </p>
           <template v-if="canCreateProject">
             <p class="paragraph-p6 opacity-80 pb-4">
-              Let’s start by creating a first one!
+              {{ t('LetsStartByCreatingAFirstOne') }}
             </p>
-            <PButton @click="newProjectDialog">Create new project</PButton>
+            <PButton @click="newProjectDialog">{{
+              t('CreateNewProject')
+            }}</PButton>
           </template>
         </div>
       </template>
@@ -40,6 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapState, mapActions } from 'pinia'
 import { defineComponent, PropType } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import { PaginatedGridOptions } from '@/common'
 import { ProjectForm, useDialogStore } from '@/modules'
 import { useNotificationStore } from '@/modules/notification/store'
@@ -100,6 +102,9 @@ export default defineComponent({
     ...mapActions(useProjectStore, ['getProjects']),
     ...mapActions(useNotificationStore, ['error']),
     ...mapActions(useDialogStore, ['show']),
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
     async fetchProjects(
       projectGridState: ProjectGridState,
       additionalGridOptions: PaginatedGridOptions,
@@ -147,11 +152,11 @@ export default defineComponent({
         if (onFinish) {
           onFinish()
         }
-        await this.error({ text: 'Failed to fetch list of projects' })
+        await this.error({ text: this.t('FailedToFetchListOfProjects') })
       }
     },
     newProjectDialog() {
-      const dialog = { persistent: true, header: 'New project' }
+      const dialog = { persistent: true, header: this.t('NewProject') }
       this.show({
         component: ProjectForm,
         params: {

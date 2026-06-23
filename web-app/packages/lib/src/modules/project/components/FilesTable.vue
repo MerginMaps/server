@@ -56,7 +56,7 @@
           >
             {{ col.text }}
           </div>
-          <div class="col-12 flex lg:hidden">Files</div>
+          <div class="col-12 flex lg:hidden">{{ t('Files') }}</div>
         </div>
       </template>
       <template #list="slotProps">
@@ -95,7 +95,7 @@
       </template>
       <template #empty>
         <div class="w-full text-center p-4">
-          <span>No files found.</span>
+          <span>{{ t('NoFilesFound') }}</span>
         </div>
       </template>
     </PDataView>
@@ -108,6 +108,7 @@ import max from 'lodash/max'
 import Path from 'path'
 import { computed } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import { dirname } from '@/common/path_utils'
 import { removeAccents } from '@/common/text_utils'
 import FileIcon from '@/modules/project/components/FileIcon.vue'
@@ -150,11 +151,12 @@ const emit = defineEmits<{
 const projectStore = useProjectStore()
 
 const ITEMS_PER_PAGE = 100
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 const columns: Column[] = [
-  { text: 'Name', key: 'name', cols: 8 },
-  { text: 'Modified', key: 'mtime' },
-  { text: 'Size', key: 'size' }
+  { text: t('Name'), key: 'name', cols: 8 },
+  { text: t('Modified'), key: 'mtime' },
+  { text: t('Size'), key: 'size' }
 ]
 
 const breadcrumps = computed(() => {
@@ -172,7 +174,7 @@ const breadcrumps = computed(() => {
   return [
     {
       icon: 'ti ti-folder',
-      label: 'Files',
+      label: t('Files'),
       path: folderLink(''),
       active: parts.length === 0
     },

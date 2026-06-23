@@ -3,7 +3,7 @@
     <app-container>
       <app-section ground>
         <template #header>
-          <h1 class="headline-h3">Account details</h1>
+          <h1 class="headline-h3">{{ $t('AccountDetails') }}</h1>
         </template>
       </app-section>
     </app-container>
@@ -37,24 +37,30 @@
               <i
                 v-if="!user?.verified_email"
                 v-tooltip.top="{
-                  value: 'Email verification status'
+                  value: $t('EmailVerificationStatus')
                 }"
                 class="ti ti-alert-circle-filled"
                 style="color: var(--grape-color)"
               ></i>
               {{ user?.email }}
             </p>
-            <dl class="profile-view-detail-list grid grid-nogutter paragraph-p5">
+            <dl
+              class="profile-view-detail-list grid grid-nogutter paragraph-p5"
+            >
               <div
                 class="col-6 flex flex-column align-items-start text-left flex-wrap"
               >
-                <dt class="paragraph-p6 opacity-80 mb-2">Last signed in</dt>
+                <dt class="paragraph-p6 opacity-80 mb-2">
+                  {{ $t('LastSignedIn') }}
+                </dt>
                 <dd class="font-semibold" data-cy="profile-last-signed-in">
                   {{ $filters.date(user.last_signed_in) || '-' }}
                 </dd>
               </div>
               <div class="col-6 flex flex-column align-items-end">
-                <dt class="paragraph-p6 opacity-80 mb-2">Registered</dt>
+                <dt class="paragraph-p6 opacity-80 mb-2">
+                  {{ $t('Registered') }}
+                </dt>
                 <dd class="font-semibold" data-cy="profile-registered">
                   {{ $filters.date(user?.registration_date) }}
                 </dd>
@@ -65,7 +71,7 @@
       </app-container>
       <app-container v-if="userStore.loggedUser?.id !== user?.id">
         <app-section>
-          <template #title>Advanced</template>
+          <template #title>{{ $t('Advanced') }}</template>
 
           <app-settings :items="settingsItems">
             <template #notifications>
@@ -90,8 +96,8 @@
                     @click="switchAdminAccess"
                     :label="
                       !user?.is_admin
-                        ? 'Grant admin access'
-                        : 'Revoke admin access'
+                        ? $t('GrantAdminAccess')
+                        : $t('RevokeAdminAccess')
                     "
                   />
                 </div>
@@ -103,7 +109,9 @@
                   @click="changeStatusDialog"
                   :severity="user?.active ? 'warning' : 'secondary'"
                   :label="
-                    user?.active ? 'Deactivate account' : 'Activate account'
+                    user?.active
+                      ? $t('DeactivateAccount')
+                      : $t('ActivateAccount')
                   "
                   class="w-auto mr-1"
                 />
@@ -115,7 +123,7 @@
                   @click="confirmDeleteUser"
                   severity="danger"
                   data-cy="profile-close-account-btn"
-                  label="Delete account"
+                  :label="$t('DeleteAccount')"
                 />
               </div>
             </template>
@@ -141,6 +149,7 @@ import {
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import returnTranslation from '@/../../lang/translate'
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
 import { useAdminStore } from '@/modules/admin/store'
 
@@ -149,34 +158,40 @@ const adminStore = useAdminStore()
 const dialogStore = useDialogStore()
 const instanceStore = useInstanceStore()
 const userStore = useUserStore()
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 const settingsItems = computed<AppSettingsItemConfig[]>(() => [
   {
     key: 'notifications',
-    title: 'Receive notifications',
+    title: t('ReceiveNotifications'),
     description: profile?.value?.receive_notifications
-      ? 'User has enabled receiving notifications'
-      : 'User has disabled notifications.'
+      ? t('UserHasEnabledReceivingNotifications')
+      : t('UserHasDisabledNotifications')
   },
   {
     key: 'adminAccess',
-    title: 'Access to admin panel',
+    title: t('AccessToAdminPanel'),
     description: user.value?.is_admin
-      ? 'User has access to the admin panel.'
-      : 'User does not have access to the admin panel.'
+      ? t('UserHasAccessToTheAdminPanel')
+      : t('UserDoesNotHaveAccessToTheAdminPanel')
   },
   {
     key: 'accountActivation',
-    title: 'Account activation',
+    title: t('AccountActivation'),
     description: user?.value?.active
-      ? "The user's account is currently active. Deactivation will lead to a temporary ban from Mergin Maps usage."
-      : "The user's account is currently inactive. Activating it will allow access to Mergin Maps."
+      ? t(
+          'TheUsersAccountIsCurrentlyActiveDeactivationWillLeadToATemporaryBanFromMerginMapsUsage'
+        )
+      : t(
+          'TheUsersAccountIsCurrentlyInactiveActivatingItWillAllowAccessToMerginMaps'
+        )
   },
   {
     key: 'deleteAccount',
-    title: 'Delete account',
-    description:
-      'Deleting this user will remove them and all their data. This action cannot be undone.'
+    title: t('DeleteAccount'),
+    description: t(
+      'DeletingThisUserWillRemoveThemAndAllTheirDataThisActionCannotBeUndone'
+    )
   }
 ])
 
@@ -202,17 +217,18 @@ watch(
 const changeStatusDialog = () => {
   const props: ConfirmDialogProps = user.value.active
     ? {
-        confirmText: 'Deactivate',
+        confirmText: t('Deactivate'),
         severity: 'warning',
-        text: 'Do you really want deactivate this account?',
-        description:
-          'Deactivating this account will lead to a temporary ban from Mergin Maps usage.'
+        text: t('DoYouReallyWantDeactivateThisAccount'),
+        description: t(
+          'DeactivatingThisAccountWillLeadToATemporaryBanFromMerginMapsUsage'
+        )
       }
     : {
-        text: 'Do you really want activate this account?',
-        confirmText: 'Activate'
+        text: t('DoYouReallyWantActivateThisAccount'),
+        confirmText: t('Activate')
       }
-  const dialog = { header: 'User activation' }
+  const dialog = { header: t('UserActivation') }
   const listeners = {
     confirm: async () => {
       await adminStore.updateUser({
@@ -235,13 +251,14 @@ const changeStatusDialog = () => {
 
 const confirmDeleteUser = () => {
   const props: ConfirmDialogProps = {
-    text: `Are you sure you want to permanently delete this account?`,
-    description: `Deleting this user will remove them
-      and all their data. This action cannot be undone. Type in username to confirm:`,
+    text: t('AreYouSureYouWantToPermanentlyDeleteThisAccount'),
+    description: t(
+      'DeletingThisUserWillRemoveThemAndAllTheirDataThisActionCannotBeUndoneTypeInUsernameToConfirm'
+    ),
     hint: user.value.username,
-    confirmText: 'Delete permanently',
+    confirmText: t('DeletePermanently'),
     confirmField: {
-      label: 'Username',
+      label: t('Username'),
       expected: user.value.username
     },
     severity: 'danger'
@@ -252,30 +269,32 @@ const confirmDeleteUser = () => {
   }
   dialogStore.show({
     component: ConfirmDialog,
-    params: { props, listeners, dialog: { header: 'Delete user' } }
+    params: { props, listeners, dialog: { header: t('DeleteUser') } }
   })
 }
 
 const switchAdminAccess = async () => {
   const props: ConfirmDialogProps = !user.value?.is_admin
     ? {
-        text: `Are you sure to grant access to admin panel to this user?`,
-        description: `This person will have full management access to all data on the server. They will see all users and projects and can update or remove them.`,
+        text: t('AreYouSureToGrantAccessToAdminPanelToThisUser'),
+        description: t(
+          'ThisPersonWillHaveFullManagementAccessToAllDataOnTheServerTheyWillSeeAllUsersAndProjectsAndCanUpdateOrRemoveThem'
+        ),
         hint: user.value.username,
-        confirmText: 'Grant access',
+        confirmText: t('GrantAccess'),
         confirmField: {
-          label: 'Username',
+          label: t('Username'),
           expected: user.value.username
         },
         severity: 'warning'
       }
     : {
-        text: `Are you sure you want to revoke access to admin panel to this user?`,
-        description: `This person will no longer have access to the admin panel.`,
+        text: t('AreYouSureYouWantToRevokeAccessToAdminPanelToThisUser'),
+        description: t('ThisPersonWillNoLongerHaveAccessToTheAdminPanel'),
         hint: user.value.username,
-        confirmText: 'Revoke access',
+        confirmText: t('RevokeAccess'),
         confirmField: {
-          label: 'Username',
+          label: t('Username'),
           expected: user.value.username
         },
         severity: 'danger'
@@ -291,7 +310,7 @@ const switchAdminAccess = async () => {
   }
   dialogStore.show({
     component: ConfirmDialog,
-    params: { props, listeners, dialog: { header: 'Admin access' } }
+    params: { props, listeners, dialog: { header: t('AdminAccess') } }
   })
 }
 </script>

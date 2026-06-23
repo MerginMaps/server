@@ -3,13 +3,13 @@
     <app-container>
       <app-section ground>
         <template #header>
-          <h1 class="headline-h3">Project version</h1>
+          <h1 class="headline-h3">{{ $t('ProjectVersion') }}</h1>
         </template>
         <template #headerActions>
           <PButton
             severity="secondary"
             @click="download"
-            label="Download"
+            :label="$t('Download')"
             icon="ti ti-download"
           />
         </template>
@@ -34,25 +34,25 @@
           </h2>
           <dl class="paragraph-p5 flex flex-column gap-3">
             <div>
-              <dt class="paragraph-p6 opacity-80">Author</dt>
+              <dt class="paragraph-p6 opacity-80">{{ $t('Author') }}</dt>
               <dd class="font-semibold">
                 {{ data?.author }}
               </dd>
             </div>
             <div>
-              <dt class="paragraph-p6 opacity-80">Project size</dt>
+              <dt class="paragraph-p6 opacity-80">{{ $t('ProjectSize') }}</dt>
               <dd class="font-semibold">
                 {{ $filters.filesize(data?.project_size) }}
               </dd>
             </div>
             <div>
-              <dt class="paragraph-p6 opacity-80">Created</dt>
+              <dt class="paragraph-p6 opacity-80">{{ $t('Created') }}</dt>
               <dd class="font-semibold">
                 {{ $filters.datetime(data?.created) }}
               </dd>
             </div>
             <div>
-              <dt class="paragraph-p6 opacity-80">User agent</dt>
+              <dt class="paragraph-p6 opacity-80">{{ $t('UserAgent') }}</dt>
               <dd class="font-semibold">
                 {{ data?.user_agent }}
               </dd>
@@ -85,6 +85,7 @@ import { useRoute } from 'vue-router'
 
 import { AdminRoutes } from '../routes'
 
+import returnTranslation from '@/../../lang/translate'
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
 
 defineProps<{
@@ -97,6 +98,7 @@ const route = useRoute()
 const projectStore = useProjectStore()
 const notificationStore = useNotificationStore()
 const data = ref<ProjectVersion>(null)
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 const project = computed(() => projectStore.project)
 const versionId = computed(() => route.params.version_id as string)
 const routeProjectName = computed(() => route?.params?.projectName as string)
@@ -120,7 +122,7 @@ async function fetchVersion() {
   } catch (err) {
     console.error(err)
     notificationStore.error({
-      text: errorUtils.getErrorMessage(err, 'Failed to fetch project version')
+      text: errorUtils.getErrorMessage(err, t('FailedToFetchProjectVersion'))
     })
   }
 }

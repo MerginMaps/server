@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </div>
 
       <div class="flex flex-column p-input-filled">
-        <label>Project permission</label>
+        <label>{{ t('ProjectPermission') }}</label>
         <app-dropdown :options="permissions" v-model="permission" />
       </div>
     </div>
@@ -29,7 +29,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         class="text-color-forest w-12 lg:w-8 font-semibold flex align-items-center"
         ><i class="ti ti-info-circle-filled mr-2 paragraph-p4" /><span
           class="underline"
-          >Learn more about permission system</span
+          >{{ t('LearnMoreAboutPermissionSystem') }}</span
         ></a
       >.
 
@@ -40,7 +40,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         data-cy="project-form-create-btn"
         class="flex w-12 lg:w-4 justify-content-center"
       >
-        Share
+        {{ t('Share') }}
       </PButton>
     </div>
   </aside>
@@ -49,11 +49,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import AppDropdown from '@/common/components/AppDropdown.vue'
 import { ProjectRoleName } from '@/common/permission_utils'
 import { DropdownOption, useInstanceStore } from '@/main'
 
 const instanceStore = useInstanceStore()
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 const props = defineProps<{
   modelValue: ProjectRoleName
   disabled: boolean

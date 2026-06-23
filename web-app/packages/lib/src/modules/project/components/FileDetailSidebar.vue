@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
         <dl class="grid grid-nogutter row-gap-4">
           <div class="col-12">
-            <dt class="paragraph-p6 opacity-80">File</dt>
+            <dt class="paragraph-p6 opacity-80">{{ t('File') }}</dt>
             <dd class="font-semibold">
               <h3 class="headline-h3 mt-0">
                 <FileIcon :file="{ ...file, name: fileName }" />{{ fileName }}
@@ -37,7 +37,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           </div>
           <PDivider class="m-0" />
           <div class="col-6">
-            <dt class="paragraph-p6 opacity-80">Modified</dt>
+            <dt class="paragraph-p6 opacity-80">{{ t('Modified') }}</dt>
             <dd class="font-semibold paragraph-p5">
               <span v-tooltip="$filters.datetime(file.mtime)">{{
                 $filters.timediff(file.mtime)
@@ -45,11 +45,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             </dd>
           </div>
           <div class="col-6 flex flex-column align-items-end">
-            <dt class="paragraph-p6 opacity-80">Size</dt>
+            <dt class="paragraph-p6 opacity-80">{{ t('Size') }}</dt>
             <dd class="font-semibold paragraph-p5">
               {{ $filters.filesize(file.size) }}
               <span v-if="state === 'updated'"
-                >(new:
+                >({{ t('New') }}
                 {{ $filters.filesize(upload.files[file.path].size) }})</span
               >
             </dd>
@@ -61,7 +61,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           v-if="isOverLimit"
           class="flex justify-content-center m-4 opacity-60"
         >
-          File too large to preview — download to view instead.
+          {{ t('FileTooLargeToPreviewDownloadToViewInstead') }}
         </p>
         <output
           v-else-if="mimetype"
@@ -88,7 +88,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           class="flex justify-content-center w-full text-center"
           data-cy="file-detail-remove-btn"
         >
-          Delete file
+          {{ t('DeleteFile') }}
         </PButton>
       </template>
     </AppSidebarRight>
@@ -102,6 +102,7 @@ import { defineComponent } from 'vue'
 
 import FileIcon from './FileIcon.vue'
 
+import returnTranslation from '@/../../lang/translate'
 import AppSidebarRight from '@/common/components/AppSidebarRight.vue'
 import { ProjectApi } from '@/modules/project/projectApi'
 import { useProjectStore } from '@/modules/project/store'
@@ -164,9 +165,9 @@ export default defineComponent({
     },
     stateText() {
       const stateText: Record<State, string> = {
-        added: 'New file',
-        removed: 'Deleted file',
-        updated: 'Modified file'
+        added: this.t('NewFile'),
+        removed: this.t('DeletedFile'),
+        updated: this.t('ModifiedFile')
       }
       return this.state && stateText[this.state]
     },
@@ -212,6 +213,9 @@ export default defineComponent({
   },
   methods: {
     ...mapActions(useProjectStore, ['deleteFiles']),
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
     txtPreview() {
       if (this.isOverLimit) {
         this.content = null

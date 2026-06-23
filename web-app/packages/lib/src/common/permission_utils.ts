@@ -4,6 +4,7 @@
 
 import { DropdownOption } from './components/types'
 
+import returnTranslation from '@/../../lang/translate'
 import { ProjectAccess } from '@/modules'
 
 export enum WorkspaceRole {
@@ -41,6 +42,13 @@ export type ProjectRoleName = keyof typeof ProjectRole
 
 export type ProjectPermissionName = keyof typeof ProjectPermission
 
+const PROJECT_ROLE_OPTIONS = [
+  ['reader', 'read', 'Reader', 'CanViewProjectFiles'],
+  ['editor', 'edit', 'Editor', 'CanCollectFeaturesInProject'],
+  ['writer', 'write', 'Writer', 'CanEditProjectFiles'],
+  ['owner', 'owner', 'Owner', 'CanShareAndRemoveProject']
+] as const
+
 export const USER_ROLE_NAME_BY_ROLE: Record<WorkspaceRole, WorkspaceRoleName> =
   {
     [WorkspaceRole.guest]: 'guest',
@@ -57,7 +65,6 @@ export const PROJECT_ROLE_NAME_BY_ROLE: Record<ProjectRole, ProjectRoleName> = {
   [ProjectRole.writer]: 'writer',
   [ProjectRole.owner]: 'owner'
 }
-
 
 export function isAtLeastRole(
   roleName: WorkspaceRoleName,
@@ -93,53 +100,23 @@ export function isAtLeastGlobalRole(
 }
 
 export function getProjectRoleNameValues(): DropdownOption<ProjectRoleName>[] {
-  return [
-    {
-      value: 'reader',
-      label: 'Reader',
-      description: 'Can view project files'
-    },
-    {
-      value: 'editor',
-      label: 'Editor',
-      description: 'Can collect features in project'
-    },
-    {
-      value: 'writer',
-      label: 'Writer',
-      description: 'Can edit project files'
-    },
-    {
-      value: 'owner',
-      label: 'Owner',
-      description: 'Can share and remove project'
-    }
-  ]
+  const lang = import.meta.env.VITE_LANG
+
+  return PROJECT_ROLE_OPTIONS.map(([value, , label, description]) => ({
+    value,
+    label: returnTranslation(lang, label),
+    description: returnTranslation(lang, description)
+  }))
 }
 
 export function getProjectPermissionsValues(): DropdownOption<ProjectPermissionName>[] {
-  return [
-    {
-      value: 'read',
-      label: 'Reader',
-      description: 'Can view project files'
-    },
-    {
-      value: 'edit',
-      label: 'Editor',
-      description: 'Can collect features in project'
-    },
-    {
-      value: 'write',
-      label: 'Writer',
-      description: 'Can edit project files'
-    },
-    {
-      value: 'owner',
-      label: 'Owner',
-      description: 'Can share and remove project'
-    }
-  ]
+  const lang = import.meta.env.VITE_LANG
+
+  return PROJECT_ROLE_OPTIONS.map(([, value, label, description]) => ({
+    value,
+    label: returnTranslation(lang, label),
+    description: returnTranslation(lang, description)
+  }))
 }
 
 export function getProjectAccessKeyByRoleName(

@@ -63,6 +63,10 @@ import { useToast } from 'primevue/usetoast'
 import { defineComponent, watchEffect } from 'vue'
 import { useMeta } from 'vue-meta'
 
+import returnTranslation from '@/../../lang/translate'
+
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
+
 export default defineComponent({
   name: 'app',
   components: {
@@ -77,13 +81,15 @@ export default defineComponent({
       meta: [
         {
           name: 'description',
-          content:
-            'Store and track changes to your geo-data. Mergin Maps is a repository of geo-data for collaborative work.'
+          content: t(
+            'StoreAndTrackChangesToYourGeoDataMerginMapsIsARepositoryOfGeoDataForCollaborativeWork'
+          )
         },
         {
           property: 'og:title',
-          content:
-            'Store and track changes to your geo-data. Mergin Maps is a repository of geo-data for collaborative work.'
+          content: t(
+            'StoreAndTrackChangesToYourGeoDataMerginMapsIsARepositoryOfGeoDataForCollaborativeWork'
+          )
         },
         { property: 'og:site_name', content: 'Mergin Maps' }
       ]
@@ -122,20 +128,22 @@ export default defineComponent({
   },
   setup() {
     const { title } = useRouterTitle({
-      defaultTitle: 'Mergin Maps Admin Panel'
+      defaultTitle: t('MerginMapsAdminPanel')
     })
     useMeta({
-      title: 'Mergin Maps Admin Panel',
+      title: t('MerginMapsAdminPanel'),
       meta: [
         {
           name: 'description',
-          content:
-            'Store and track changes to your geo-data. Mergin Maps is a repository of geo-data for collaborative work.'
+          content: t(
+            'StoreAndTrackChangesToYourGeoDataMerginMapsIsARepositoryOfGeoDataForCollaborativeWork'
+          )
         },
         {
           property: 'og:title',
-          content:
-            'Store and track changes to your geo-data. Mergin Maps is a repository of geo-data for collaborative work.'
+          content: t(
+            'StoreAndTrackChangesToYourGeoDataMerginMapsIsARepositoryOfGeoDataForCollaborativeWork'
+          )
         },
         { property: 'og:site_name', content: 'Mergin Maps' }
       ]

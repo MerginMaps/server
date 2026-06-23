@@ -47,7 +47,7 @@
                 path: change?.path
               }
             }"
-            >Show advanced</router-link
+            >{{ t('ShowAdvanced') }}</router-link
           >
           <file-changeset-summary-table
             :changesets="changesets?.[change.path]['summary']"
@@ -59,7 +59,7 @@
           "
           class="text-center"
         >
-          Details not available:
+          {{ t('DetailsNotAvailable') }}
           {{ changesets?.[change.path].error }}
         </div>
       </div>
@@ -71,12 +71,14 @@
 import { ProjectVersion } from '@mergin/lib'
 import { computed, ref, defineProps } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import AppCircle from '@/common/components/AppCircle.vue'
 import FileChangesetSummaryTable from '@/modules/project/components/FileChangesetSummaryTable.vue'
 
 const props = defineProps<{
   version: ProjectVersion
 }>()
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 const changeTabs = ref<
   {
@@ -89,19 +91,19 @@ const changeTabs = ref<
   {
     key: 'added',
     severity: 'success',
-    text: 'Files added',
+    text: t('FilesAdded'),
     icon: 'ti-plus'
   },
   {
     key: 'updated',
     severity: 'warn',
-    text: 'Files edited',
+    text: t('FilesEdited'),
     icon: 'ti-pencil'
   },
   {
     key: 'removed',
     severity: 'danger',
-    text: 'Files removed',
+    text: t('FilesRemoved'),
     icon: 'ti-trash'
   }
 ])

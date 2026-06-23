@@ -16,20 +16,20 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         width="50"
         height="50"
         src="@/assets/bulb.svg"
-        aria-label="Bulb"
+        :aria-label="t('Bulb')"
       />
       <img
         v-if="severity === 'danger'"
         width="50"
         height="50"
         src="@/assets/exclamation.svg"
-        aria-label="Exclamation"
+        :aria-label="t('Exclamation')"
       />
     </slot>
 
     <div class="md:pl-4 text-center md:text-left">
       <p :class="['tip-message-title title-t3']">
-        <slot name="title">Tip from Mergin Maps</slot>
+        <slot name="title">{{ tipFromMerginMaps }}</slot>
       </p>
       <p class="opacity-80 paragraph-p6">
         <slot name="description"></slot>
@@ -43,7 +43,15 @@ import { computed } from 'vue'
 
 import { TipMessageProps } from './types'
 
+import returnTranslation from '@/../../lang/translate'
+
 type Severity = 'info' | 'danger'
+
+const tipFromMerginMaps = returnTranslation(
+  import.meta.env.VITE_LANG,
+  'TipFromMerginMaps'
+)
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 const props = withDefaults(defineProps<TipMessageProps>(), {
   severity: 'info'

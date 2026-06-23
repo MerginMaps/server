@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   >
     <template #header>
       <p class="font-semibold">
-        Data Sync
+        {{ t('DataSync') }}
         <span v-if="upload.diff" class="text-color-secondary"
           >({{ $filters.filesize(uploadSize) }})</span
         >
@@ -28,7 +28,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <app-circle :severity="circleSeverity[key]" class="mr-2"
           ><i :class="['ti', `${diffIcon[key]}`]"></i
         ></app-circle>
-        <span class="paragraph-p5 opacity-80 capitalize">{{ key }}</span>
+        <span class="paragraph-p5 opacity-80 capitalize">{{
+          t(diffLabel[key])
+        }}</span>
         <app-circle class="ml-auto">{{ upload.diff[key].length }}</app-circle>
       </div>
       <PButton
@@ -36,7 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         @click="confirmUpload"
         :disabled="upload.running || remainingAnalyzingFiles > 0"
         class="mt-2 w-full my-4"
-        label="Update Changes"
+        :label="t('UpdateChanges')"
       />
     </div>
   </PDialog>
@@ -48,6 +50,7 @@ import pick from 'lodash/pick'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import AppCircle from '@/common/components/AppCircle.vue'
 import { CHUNK_SIZE, isVersionedFile } from '@/common/mergin_utils'
 import {
@@ -106,6 +109,14 @@ export default defineComponent({
       }
       return icons
     },
+    diffLabel() {
+      const labels: Record<DiffKeys, string> = {
+        removed: 'RemovedL',
+        added: 'AddedL',
+        updated: 'UpdatedL'
+      }
+      return labels
+    },
     circleSeverity() {
       const severities: Record<DiffKeys, 'success' | 'warn' | 'danger'> = {
         removed: 'danger',
@@ -127,6 +138,9 @@ export default defineComponent({
       'pushFinishTransaction',
       'pushCancelTransaction'
     ]),
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
     resetUpload() {
       this.discardUpload({ projectPath: this.project.path })
       if (this.source) {
@@ -158,7 +172,7 @@ export default defineComponent({
       if (!transaction) {
         this.discardUpload({ projectPath })
         await this.show({
-          text: 'Project updated'
+          text: this.t('ProjectUpdated')
         })
         this.setProject({ project: resp.data })
         return
@@ -203,11 +217,12 @@ export default defineComponent({
     },
     confirmUpload() {
       const props: ConfirmDialogProps = {
-        text: `Are you really sure you want to continue?`,
-        description:
-          'Changes from other users may get lost when uploading data from browser. It is highly recommended to use Mergin Maps QGIS plugin instead.',
-        confirmText: 'Update',
-        cancelText: 'Cancel'
+        text: this.t('AreYouReallySureYouWantToContinue'),
+        description: this.t(
+          'ChangesFromOtherUsersMayGetLostWhenUploadingDataFromBrowserItIsHighlyRecommendedToUseMerginMapsQGISPluginInstead'
+        ),
+        confirmText: this.t('Update'),
+        cancelText: this.t('Cancel')
       }
       const listeners = {
         confirm: () => this.uploadChanges()
@@ -218,7 +233,7 @@ export default defineComponent({
           params: {
             props,
             listeners,
-            dialog: { maxWidth: 500, header: 'Confirm continue upload' }
+            dialog: { maxWidth: 500, header: this.t('ConfirmContinueUpload') }
           }
         })
       } else {

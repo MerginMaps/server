@@ -30,11 +30,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
         <div class="col-12 xl:col-5 mb-2 xl:mb-0 text-center xl:text-left">
           <h2 class="text-color paragraph-p5">
-            Download Mergin Maps to your phone
+            {{ t('DownloadMerginMapsToYourPhone') }}
           </h2>
           <p class="opacity-60 paragraph-p6">
-            Capture geo-info easily through your mobile/tablet with our mobile
-            app.
+            {{
+              t('CaptureGeoInfoEasilyThroughYourMobileTabletWithOurMobileApp')
+            }}
           </p>
         </div>
 
@@ -60,7 +61,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             text
             rounded
             plain
-            aria-label="Close section"
+            :aria-label="t('CloseSection')"
             @click="closeElement"
             class="text-2xl"
           />
@@ -72,9 +73,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import { AppContainer, AppSection } from '@/common'
 import { useLayoutStore } from '@/main'
 
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 const elementId = ref('dashboard-footer')
 const layoutStore = useLayoutStore()
 function closeElement() {

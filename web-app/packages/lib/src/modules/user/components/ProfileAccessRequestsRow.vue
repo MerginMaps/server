@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <app-section v-if="accessRequests && accessRequestsCount > 0">
-    <template #title>You requested access to these projects</template>
+    <template #title>{{ t('YouRequestedAccessToTheseProjects') }}</template>
     <access-request-table />
   </app-section>
 </template>
@@ -15,12 +15,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import AppSection from '@/common/components/AppSection.vue'
 import AccessRequestTable from '@/modules/project/components/AccessRequestTable.vue'
 import { useProjectStore } from '@/modules/project/store'
 
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
+
 export default defineComponent({
   name: 'ProfileAccessRequestsRow',
+  setup() {
+    return { t }
+  },
   components: { AccessRequestTable, AppSection },
   computed: {
     ...mapState(useProjectStore, ['accessRequests', 'accessRequestsCount'])

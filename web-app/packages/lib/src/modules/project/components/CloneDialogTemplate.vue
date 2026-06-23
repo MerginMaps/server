@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         data-cy="clone-dialog-project-name"
         class="flex-grow-1"
       />
-      <label for="name">Project name</label>
+      <label for="name">{{ t('ProjectName') }}</label>
     </span>
     <!-- Dynamic items to pass other inputs -->
     <slot name="dynamic-items"></slot>
@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         @click="close"
         class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
         data-cy="clone-dialog-close-btn"
-        >Cancel</PButton
+        >{{ t('Cancel') }}</PButton
       >
 
       <PButton
@@ -40,7 +40,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         data-cy="project-form-create-btn"
         class="flex w-12 lg:w-6 justify-content-center"
       >
-        Clone project
+        {{ t('CloneProject') }}
       </PButton>
     </div>
   </div>
@@ -50,6 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import { useDialogStore } from '@/modules/dialog/store'
 import { useFormStore } from '@/modules/form/store'
 import { useProjectStore } from '@/modules/project/store'
@@ -84,6 +85,9 @@ export default defineComponent({
     ...mapActions(useDialogStore, ['close']),
     ...mapActions(useFormStore, ['clearErrors', 'handleError']),
     ...mapActions(useProjectStore, ['cloneProject']),
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
 
     successCloneCallback() {
       this.close()

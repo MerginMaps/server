@@ -18,17 +18,24 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts" setup>
+import returnTranslation from '@/../../lang/translate'
+
 defineProps<{ for: string }>()
+
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
+
 const tooltip = `
   <ul>
-    <li>Password must be at least 8 characters long.</li>
-    <li>Password must contain at least 3 character categories among the following:</li>
-      <ul>
-        <li>Lowercase characters (a-z)</li>
-        <li>Uppercase characters (A-Z)</li>
-        <li>Digits (0-9)</li>
-        <li>Special characters</li>
-      </ul>
+    <li>${t('PasswordMustBeAtLeastCharactersLong')}</li>
+    <li>${t(
+      'PasswordMustContainAtLeastCharacterCategoriesAmongTheFollowing'
+    )}</li>
+    <ul>
+      <li>${t('LowercaseCharactersAZ')}</li>
+      <li>${t('UppercaseCharactersAZ')}</li>
+      <li>${t('Digits09')}</li>
+      <li>${t('SpecialCharacters')}</li>
+    </ul>
   </ul>
 `
 </script>

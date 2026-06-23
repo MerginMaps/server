@@ -4,7 +4,7 @@
       <app-section ground>
         <template #header>
           <h1 class="headline-h3">
-            Accounts
+            {{ $t('Accounts') }}
             <span class="text-color-medium-green">({{ users.count }})</span>
           </h1>
         </template>
@@ -12,7 +12,7 @@
           <PButton
             icon="ti ti-users-plus"
             @click="createUserDialog"
-            label="Add user"
+            :label="$t('AddUser')"
           />
         </template>
       </app-section>
@@ -22,7 +22,7 @@
         <span class="p-input-icon-left w-full">
           <i class="ti ti-search paragraph-p3"></i>
           <PInputText
-            placeholder="Search accounts"
+            :placeholder="$t('SearchAccounts')"
             data-cy="search-members-field"
             v-model="searchByName"
             class="w-full"
@@ -105,11 +105,11 @@
 
 <script lang="ts">
 import {
-  PaginatedUsersParams,
-  useDialogStore,
-  TableDataHeader,
   AppContainer,
-  AppSection
+  AppSection,
+  PaginatedUsersParams,
+  TableDataHeader,
+  useDialogStore
 } from '@mergin/lib'
 import debounce from 'lodash/debounce'
 import { mapActions, mapState } from 'pinia'
@@ -120,9 +120,12 @@ import {
 } from 'primevue/datatable'
 import { defineComponent } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import { AdminRoutes } from '@/modules'
 import CreateUserForm from '@/modules/admin/components/CreateUserForm.vue'
 import { useAdminStore } from '@/modules/admin/store'
+
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 export default defineComponent({
   name: 'AccountsTable',
@@ -141,10 +144,10 @@ export default defineComponent({
       },
       searchByName: '',
       headers: [
-        { field: 'username', header: 'Username', sortable: true },
-        { field: 'email', header: 'Email', sortable: true },
-        { field: 'profile.name', header: 'Full name' },
-        { field: 'active', header: 'Active' }
+        { field: 'username', header: t('Username'), sortable: true },
+        { field: 'email', header: t('Email'), sortable: true },
+        { field: 'profile.name', header: t('FullName') },
+        { field: 'active', header: t('Active') }
       ] as TableDataHeader[]
     }
   },
@@ -207,7 +210,7 @@ export default defineComponent({
     },
 
     createUserDialog() {
-      const dialog = { maxWidth: 500, header: 'Create user' }
+      const dialog = { maxWidth: 500, header: t('CreateUser') }
       const listeners = {
         success: () => {
           this.resetPaging()

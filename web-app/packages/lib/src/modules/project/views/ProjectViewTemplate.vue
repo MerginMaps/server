@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             data-cy="project-download-btn"
             icon="ti ti-download"
             class="mr-2"
-            label="Download"
+            :label="t('Download')"
             :disabled="projectDownloading"
           />
           <PButton
@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             v-if="canCloneProject"
             data-cy="project-clone-btn"
             icon="ti ti-copy"
-            label="Clone"
+            :label="t('Clone')"
             class="mr-2"
           />
           <PButton
@@ -36,7 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             @click="leaveDialog"
             data-cy="project-leave-btn"
             icon="ti ti-logout"
-            label="Leave project"
+            :label="t('LeaveProject')"
             v-if="canLeaveProject"
           />
         </div>
@@ -80,21 +80,21 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <app-section v-if="fetchProjectsResponseStatus === 403">
         <div class="flex flex-column align-items-center p-4 text-center gap-4">
           <img src="@/assets/map-circle.svg" alt="No project" />
-          <p class="font-semibold">This is a private project</p>
+          <p class="font-semibold">{{ t('ThisIsAPrivateProject') }}</p>
           <p class="paragraph-p5 opacity-80 mt-2 mb-4">
-            You don't have permissions to access this project.
+            {{ t('YouDontHavePermissionsToAccessThisProject') }}
           </p>
-          <PButton id="request-access-btn" @click="createAccessRequest"
-            >Request access</PButton
-          >
+          <PButton id="request-access-btn" @click="createAccessRequest">{{
+            t('RequestAccess')
+          }}</PButton>
         </div>
       </app-section>
       <app-section v-else-if="fetchProjectsResponseStatus === 404">
         <div class="flex flex-column align-items-center p-4 text-center gap-4">
           <img src="@/assets/map-circle.svg" alt="No project" />
-          <p class="font-semibold">Project not found</p>
+          <p class="font-semibold">{{ t('ProjectNotFound') }}</p>
           <p class="paragraph-p5 opacity-80 mt-2 mb-4">
-            Please check if address is written correctly
+            {{ t('PleaseCheckIfAddressIsWrittenCorrectly') }}
           </p>
         </div>
       </app-section>
@@ -102,10 +102,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <div class="flex flex-column align-items-center p-4 text-center gap-4">
           <img src="@/assets/map-circle.svg" alt="No project" />
           <p class="font-semibold">
-            You don't have permission to access this project
+            {{ t('YouDontHavePermissionsToAccessThisProject') }}
           </p>
           <p class="paragraph-p5 opacity-80 mt-2 mb-4">
-            You already requested access
+            {{ t('YouAlreadyRequestedAccess') }}
           </p>
         </div>
       </app-section>
@@ -125,6 +125,7 @@ import { defineComponent, PropType } from 'vue'
 import DownloadFileLarge from '../components/DownloadFileLarge.vue'
 import DownloadProgress from '../components/DownloadProgress.vue'
 
+import returnTranslation from '@/../../lang/translate'
 import { AppContainer, AppSection } from '@/common'
 import { waitCursor } from '@/common/html_utils'
 import {
@@ -184,7 +185,7 @@ export default defineComponent({
       const tabs: TabItem[] = [
         {
           route: ProjectRouteName.ProjectTree,
-          header: 'Files'
+          header: this.t('Files')
         }
       ]
 
@@ -198,17 +199,17 @@ export default defineComponent({
         if (this.showHistory) {
           tabs.push({
             route: ProjectRouteName.ProjectHistory,
-            header: 'History'
+            header: this.t('History')
           })
         }
         if (this.showSettings) {
           tabs.push({
             route: ProjectRouteName.ProjectCollaborators,
-            header: 'Collaborators'
+            header: this.t('Collaborators')
           })
           tabs.push({
             route: ProjectRouteName.ProjectSettings,
-            header: 'Settings'
+            header: this.t('Settings')
           })
         }
       }
@@ -288,6 +289,9 @@ export default defineComponent({
     ...mapActions(useProjectStore, ['setProject']),
     ...mapActions(useDialogStore, { showDialog: 'show' }),
     ...mapActions(useNotificationStore, ['error', 'show']),
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
 
     setFetchProjectResponseStatus(status) {
       this.fetchProjectsResponseStatus = status
@@ -313,7 +317,7 @@ export default defineComponent({
         .then(() => {
           waitCursor(false)
           this.show({
-            text: 'Access has been requested'
+            text: this.t('AccessHasBeenRequested')
           })
           this.$router.push({
             name: 'projects'
@@ -321,18 +325,18 @@ export default defineComponent({
         })
         .catch(() => {
           this.error({
-            text: 'Failed to request'
+            text: this.t('FailedToRequest')
           })
           waitCursor(false)
         })
     },
     leaveDialog() {
       const props: ConfirmDialogProps = {
-        text: `Are you sure to leave the project ${this.projectName}?`,
-        description: 'You will not have access to it anymore.',
+        text: `${this.t('AreYouSureToLeaveTheProject')} ${this.projectName}?`,
+        description: this.t('YouWillNotHaveAccessToItAnymore'),
         severity: 'danger',
-        confirmText: 'Yes',
-        cancelText: 'No'
+        confirmText: this.t('Yes'),
+        cancelText: this.t('No')
       }
       const listeners = {
         confirm: async () => {
@@ -347,7 +351,7 @@ export default defineComponent({
         params: {
           props,
           listeners,
-          dialog: { header: 'Leave project' }
+          dialog: { header: this.t('LeaveProject') }
         }
       })
     },

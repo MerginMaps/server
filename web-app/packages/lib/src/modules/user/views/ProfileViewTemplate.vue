@@ -11,7 +11,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         class="flex flex-column lg:flex-row lg:align-items-center row-gap-3"
       >
         <!-- Title with buttons -->
-        <h1 class="headline-h3 text-color font-semibold">Profile</h1>
+        <h1 class="headline-h3 text-color font-semibold">
+          {{ t('AccountDetails') }}
+        </h1>
         <div
           v-if="loggedUser?.can_edit_profile"
           class="flex flex-grow-1 align-items-center lg:justify-content-end"
@@ -19,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <PButton
             @click="editProfileDialog"
             icon="ti ti-pencil"
-            label="Edit profile"
+            :label="t('EditAccount')"
             class="w-auto mr-1"
             data-cy="profile-edit-btn"
           />
@@ -29,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             data-cy="profile-change-password-btn"
             class="w-auto"
             icon="ti ti-lock"
-            label="Change password"
+            :label="t('ChangePassword')"
           />
         </div></section
     ></app-container>
@@ -41,17 +43,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         <template #header-image
           ><img width="50" height="50" src="@/assets/warning.svg"
         /></template>
-        <template #title>Please verify your email</template>
-        <template #description
-          >We sent you a verification email to the account you provided during
-          signup.</template
-        >
+        <template #title>{{ t('PleaseVerifyYourEmail') }}</template>
+        <template #description>{{
+          t('WeSentYouAVerificationEmailToTheAccountYouProvidedDuringSignup')
+        }}</template>
         <template #header-actions
           ><PButton
             @click="resendConfirmationEmail"
             severity="secondary"
             data-cy="profile-send-email-btn"
-            label="Send confirmation email"
+            :label="t('SendConfirmationEmail')"
         /></template>
       </app-section-banner>
     </app-container>
@@ -78,7 +79,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <i
               v-if="!loggedUser?.verified_email"
               v-tooltip.top="{
-                value: 'Your email is not verified.'
+                value: t('EmailVerificationStatus')
               }"
               class="ti ti-alert-circle-filled"
               data-cy="project-form-missing-project"
@@ -90,13 +91,17 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             <div
               class="col-6 flex flex-column align-items-start text-left flex-wrap"
             >
-              <dt class="paragraph-p6 opacity-80 mb-2">Full name</dt>
+              <dt class="paragraph-p6 opacity-80 mb-2">
+                {{ t('FullName') }}
+              </dt>
               <dd class="font-semibold" data-cy="profile-name">
                 {{ loggedUser?.name || '-' }}
               </dd>
             </div>
             <div class="col-6 flex flex-column align-items-end">
-              <dt class="paragraph-p6 opacity-80 mb-2">Registered</dt>
+              <dt class="paragraph-p6 opacity-80 mb-2">
+                {{ t('Registered') }}
+              </dt>
               <dd class="font-semibold" data-cy="profile-registered">
                 {{ $filters.date(loggedUser?.registration_date) }}
               </dd>
@@ -107,7 +112,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </app-container>
     <app-container>
       <app-section>
-        <template #title>Advanced</template>
+        <template #title>{{ t('Advanced') }}</template>
         <div class="flex flex-column row-gap-3 paragraph-p5 px-4 pb-4">
           <div
             v-if="loggedUser?.can_edit_profile"
@@ -118,10 +123,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ]"
           >
             <div class="flex-grow-1">
-              <p class="title-t3">Receive notifications</p>
-              <span class="paragraph-p6 opacity-80"
-                >We will send you information about workspace activity</span
-              >
+              <p class="title-t3">{{ t('ReceiveNotifications') }}</p>
+              <span class="paragraph-p6 opacity-80">{{
+                t('WeWillSendYouInformationAboutWorkspaceActivity')
+              }}</span>
             </div>
             <div
               class="flex align-items-center flex-shrink-0"
@@ -141,19 +146,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             ]"
           >
             <div class="flex-grow-1">
-              <p class="title-t3">Close account</p>
-              <span class="paragraph-p6 opacity-80"
-                >Your account will be closed. In case you are an owner of a
-                workspace, you might need to transfer the ownership first or
-                close the workspace.</span
-              >
+              <p class="title-t3">{{ t('CloseAccount') }}</p>
+              <span class="paragraph-p6 opacity-80">{{
+                t(
+                  'YourAccountWillBeClosedInCaseYouAreAnOwnerOfAWorkspaceYouMightNeedToTransferTheOwnershipFirstOrCloseTheWorkspace'
+                )
+              }}</span>
             </div>
             <div class="flex-shrink-0">
               <PButton
                 @click="confirmDeleteUser"
                 severity="danger"
                 data-cy="profile-close-account-btn"
-                label="Close account"
+                :label="t('CloseAccount')"
               />
             </div>
           </div>
@@ -170,6 +175,7 @@ import { defineComponent } from 'vue'
 
 import DeleteAccountDialog from '../components/DeleteAccountConfirm.vue'
 
+import returnTranslation from '@/../../lang/translate'
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppSection from '@/common/components/AppSection.vue'
 import AppSectionBanner from '@/common/components/AppSectionBanner.vue'
@@ -179,8 +185,13 @@ import ChangePasswordForm from '@/modules/user/components/ChangePasswordForm.vue
 import EditProfileForm from '@/modules/user/components/EditProfileForm.vue'
 import { useUserStore } from '@/modules/user/store'
 
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
+
 export default defineComponent({
   name: 'ProfileViewTemplate',
+  setup() {
+    return { t }
+  },
   props: {
     name: String
   },
@@ -221,12 +232,12 @@ export default defineComponent({
         params: {
           props,
           listeners,
-          dialog: { header: 'Close account' }
+          dialog: { header: t('CloseAccount') }
         }
       })
     },
     changePasswordDialog() {
-      const dialog = { persistent: true, header: 'Change password' }
+      const dialog = { persistent: true, header: t('ChangePassword') }
       this.show({
         component: ChangePasswordForm,
         params: {
@@ -236,7 +247,7 @@ export default defineComponent({
     },
     editProfileDialog() {
       const props = { profile: this.loggedUser }
-      const dialog = { header: 'Edit profile' }
+      const dialog = { header: t('EditAccount') }
       this.show({
         component: EditProfileForm,
         params: {

@@ -6,6 +6,7 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios'
 import axiosRetry, { isNetworkError, isRetryableError } from 'axios-retry'
 import https from 'https'
 
+import returnTranslation from '@/../../lang/translate'
 import { CustomError } from '@/common/errors'
 
 export interface HttpService extends AxiosInstance {
@@ -58,8 +59,10 @@ export function initRequestInterceptors(
         // mimic regular response object, server will not be called
         const custError = new CustomError('reason', {
           data: {
-            detail:
-              'The service is currently in read-only mode for maintenance. Upload and update functions are not available at this time. Please try again later.'
+            detail: returnTranslation(
+              import.meta.env.VITE_LANG,
+              'TheServiceIsCurrentlyInReadOnlyModeForMaintenanceUploadAndUpdateFunctionsAreNotAvailableAtThisTimePleaseTryAgainLater'
+            )
           },
           status: 503
         })

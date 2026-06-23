@@ -6,15 +6,19 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <ConfirmDialog
-    text="Do you really wish to close your account?"
-    description="This action will delete your Mergin Maps account. If you are a workspace owner, you need to transfer the ownership to somebody else or close the workspace."
-    cancelText="No"
-    confirmText="Yes"
+    :text="t('DoYouReallyWishToCloseYourAccount')"
+    :description="
+      t(
+        'ThisActionWillDeleteYourMerginMapsAccountIfYouAreAWorkspaceOwnerYouNeedToTransferTheOwnershipToSomebodyElseOrCloseTheWorkspace'
+      )
+    "
+    :cancelText="t('No')"
+    :confirmText="t('Yes')"
     :hint="username"
     :confirmField="{
-      label: 'Username',
+      label: t('Username'),
       expected: username,
-      placeholder: 'Type in your username to confirm deletion'
+      placeholder: t('Username')
     }"
     severity="danger"
     @confirm="confirm"
@@ -22,11 +26,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script setup lang="ts">
+import returnTranslation from '@/../../lang/translate'
 import { DeleteAccountConfirmProps } from '@/modules'
 import ConfirmDialog from '@/modules/dialog/components/ConfirmDialog.vue'
 
 defineProps<DeleteAccountConfirmProps>()
 const emit = defineEmits(['confirm'])
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 function confirm() {
   emit('confirm')

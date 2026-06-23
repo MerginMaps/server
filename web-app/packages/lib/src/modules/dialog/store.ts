@@ -7,6 +7,10 @@ import { Component, markRaw } from 'vue'
 
 import { DialogParams, DialogPayload } from './types'
 
+import returnTranslation from '@/../../lang/translate'
+
+const action = returnTranslation(import.meta.env.VITE_LANG, 'Action')
+
 export interface DialogState {
   isDialogOpen: boolean
   params: DialogParams
@@ -19,7 +23,7 @@ export const useDialogStore = defineStore('dialogModule', {
     params: {
       dialog: {
         maxWidth: 500,
-        header: 'Action'
+        header: action
       }
     },
     component: null
@@ -29,7 +33,7 @@ export const useDialogStore = defineStore('dialogModule', {
     dialogProps(state): DialogParams['dialog'] {
       return state.params
         ? state.params.dialog
-        : { header: 'Action', maxWidth: 500 }
+        : { header: action, maxWidth: 500 }
     }
   },
 

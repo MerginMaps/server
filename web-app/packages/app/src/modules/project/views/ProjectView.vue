@@ -28,6 +28,8 @@ import {
 } from '@mergin/lib'
 import { computed, defineComponent } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
+
 export default defineComponent({
   name: 'ProjectView',
   components: {
@@ -45,6 +47,7 @@ export default defineComponent({
 
     const canCreateProject = computed(() => userStore.isGlobalWorkspaceAdmin)
     const isProjectOwner = computed(() => projectStore.isProjectOwner)
+    const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
     function openCloneDialog() {
       const dialogProps = {
@@ -54,14 +57,14 @@ export default defineComponent({
       const dialog = {
         maxWidth: 580,
         persistent: true,
-        header: 'Clone project'
+        header: t('CloneProject')
       }
       const listeners = {
         error: (error, data) => {
           formStore.handleError({
             componentId: data.merginComponentUuid,
             error,
-            generalMessage: 'Failed to clone project'
+            generalMessage: t('FailedToCloneProject')
           })
         }
       }
@@ -78,7 +81,7 @@ export default defineComponent({
     function openShareDialog() {
       const dialog = {
         maxWidth: 600,
-        header: 'Share project'
+        header: t('ShareProject')
       }
       dialogStore.show({
         component: ProjectShareDialog,

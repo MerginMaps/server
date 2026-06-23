@@ -11,14 +11,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <template #description
         >{{ item.description
         }}<template v-if="item.key === 'usageInformation'">
-          Click
+          {{ $t('Click') }}
           <a
             class="font-semibold text-color-forest"
             :href="instanceStore.configData?.docs_url"
             target="_blank"
-            >here</a
+            >{{ $t('Here') }}</a
           >
-          for more information.</template
+          {{ $t('ForMoreInformation') }}</template
         ></template
       >
       <template #action>
@@ -41,15 +41,18 @@ import {
 } from '@mergin/lib'
 import { ref } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import SettingsViewTemplate from '@/modules/admin/views/SettingsViewTemplate.vue'
 
 const instanceStore = useInstanceStore()
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 const settingsItems = ref<AppSettingsItemConfig[]>([
   {
-    title: 'Collect statistics',
-    description:
-      'Help us improve Mergin Maps by sharing usage information. Mergin Maps collects anonymous usage information to make the service better overtime.',
+    title: t('CollectStatistics'),
+    description: t(
+      'HelpUsImproveMerginMapsBySharingUsageInformationMerginMapsCollectsAnonymousUsageInformationToMakeTheServiceBetterOvertime'
+    ),
     key: 'usageInformation'
   }
 ])

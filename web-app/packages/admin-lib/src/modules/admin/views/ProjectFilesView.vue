@@ -9,7 +9,7 @@
           <span class="p-input-icon-left flex-grow-1">
             <i class="ti ti-search paragraph-p3"></i>
             <PInputText
-              placeholder="Search files"
+              :placeholder="$t('SearchFiles')"
               data-cy="search-files-field"
               v-model="searchFilter"
               class="w-full"
@@ -49,6 +49,8 @@ import { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
+import returnTranslation from '@/../../lang/translate'
+
 interface Props {
   namespace?: string
   projectName?: string
@@ -62,6 +64,7 @@ const props = withDefaults(defineProps<Props>(), {
 const router = useRouter()
 const projectStore = useProjectStore()
 const { project } = storeToRefs(projectStore)
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 const options = ref({
   sortBy: 'name',
@@ -71,10 +74,10 @@ const searchFilter = ref('')
 
 const filterMenuItems = computed<MenuItem[]>(() => {
   const items = [
-    { label: 'Sort by name A-Z', key: 'name', sortDesc: 1 },
-    { label: 'Sort by name Z-A', key: 'name', sortDesc: -1 },
-    { label: 'Sort by last modified', key: 'mtime', sortDesc: -1 },
-    { label: 'Sort by file size', key: 'size', sortDesc: -1 }
+    { label: t('SortByNameAZ'), key: 'name', sortDesc: 1 },
+    { label: t('SortByNameZA'), key: 'name', sortDesc: -1 },
+    { label: t('SortByLastModified'), key: 'mtime', sortDesc: -1 },
+    { label: t('SortByFileSize'), key: 'size', sortDesc: -1 }
   ]
 
   return items.map((item) => ({

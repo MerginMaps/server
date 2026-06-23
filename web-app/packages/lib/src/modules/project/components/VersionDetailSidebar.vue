@@ -22,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       ></template>
       <dl class="grid grid-nogutter row-gap-4">
         <div class="col-12">
-          <dt class="paragraph-p6 opacity-80">Version</dt>
+          <dt class="paragraph-p6 opacity-80">{{ t('Version') }}</dt>
           <dd>
             <h3 class="headline-h3 mt-0">
               {{ version.name }}
@@ -31,25 +31,25 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </div>
         <PDivider class="m-0" />
         <div class="col-6">
-          <dt class="paragraph-p6 opacity-80">Author</dt>
+          <dt class="paragraph-p6 opacity-80">{{ t('Author') }}</dt>
           <dd class="font-semibold paragraph-p5">
             {{ version.author }}
           </dd>
         </div>
         <div class="col-6 flex flex-column align-items-end">
-          <dt class="paragraph-p6 opacity-80">Project size</dt>
+          <dt class="paragraph-p6 opacity-80">{{ t('ProjectSize') }}</dt>
           <dd class="font-semibold paragraph-p5">
             {{ $filters.filesize(version.project_size) }}
           </dd>
         </div>
         <div class="col-12">
-          <dt class="paragraph-p6 opacity-80">Created</dt>
+          <dt class="paragraph-p6 opacity-80">{{ t('Created') }}</dt>
           <dd class="font-semibold paragraph-p5">
             {{ $filters.datetime(version.created) }}
           </dd>
         </div>
         <div class="col-12">
-          <dt class="paragraph-p6 opacity-80">User agent</dt>
+          <dt class="paragraph-p6 opacity-80">{{ t('UserAgent') }}</dt>
           <dd class="font-semibold paragraph-p5">
             {{ version.user_agent }}
           </dd>
@@ -66,6 +66,7 @@ import { defineComponent } from 'vue'
 
 import ProjectVersionChanges from './ProjectVersionChanges.vue'
 
+import returnTranslation from '@/../../lang/translate'
 import AppSidebarRight from '@/common/components/AppSidebarRight.vue'
 import { getErrorMessage } from '@/common/error_utils'
 import { ProjectVersion } from '@/modules'
@@ -114,6 +115,9 @@ export default defineComponent({
   methods: {
     ...mapActions(useNotificationStore, ['error']),
     ...mapActions(useProjectStore, ['downloadArchive']),
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
     async getVersion() {
       try {
         const response = await ProjectApi.getProjectVersion(
@@ -123,7 +127,7 @@ export default defineComponent({
         this.version = response.data
       } catch (err) {
         this.error({
-          text: getErrorMessage(err, 'Failed to fetch project version')
+          text: getErrorMessage(err, this.t('FailedToFetchProjectVersion'))
         })
       }
     },

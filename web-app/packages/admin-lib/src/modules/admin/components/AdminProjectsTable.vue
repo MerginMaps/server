@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <app-container>
       <app-section ground>
         <template #header>
-          <h1 class="headline-h3">Projects</h1>
+          <h1 class="headline-h3">{{ $t('Projects') }}</h1>
         </template>
       </app-section>
     </app-container>
@@ -20,8 +20,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <PInputText
             :placeholder="
               showNamespace
-                ? 'Search by workspace name or project name'
-                : 'Search projects'
+                ? $t('SearchByWorkspaceNameOrProjectName')
+                : $t('SearchProjects')
             "
             v-model="search"
             class="w-full"
@@ -138,13 +138,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 >
                   <div class="flex align-items-center gap-1">
                     <PButton
-                      label="Restore"
+                      :label="$t('Restore')"
                       severity="secondary"
                       size="small"
                       @click="confirmRestore(slotProps.data)"
                     />
                     <PButton
-                      label="Delete"
+                      :label="$t('Delete')"
                       severity="danger"
                       size="small"
                       @click="confirmDelete(slotProps.data)"
@@ -180,14 +180,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <script lang="ts">
 import {
+  AppContainer,
+  AppSection,
   ConfirmDialog,
-  useDialogStore,
-  useNotificationStore,
+  ConfirmDialogProps,
   SortingOptions,
   TableDataHeader,
-  AppSection,
-  AppContainer,
-  ConfirmDialogProps
+  useDialogStore,
+  useNotificationStore
 } from '@mergin/lib'
 import { mapActions, mapState } from 'pinia'
 import {
@@ -197,7 +197,10 @@ import {
 } from 'primevue/datatable'
 import { PropType, defineComponent } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import { AdminRoutes, useAdminStore } from '@/main'
+
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 export default defineComponent({
   name: 'projects-table',
@@ -231,17 +234,21 @@ export default defineComponent({
         ...(this.showNamespace
           ? [
               {
-                header: 'Workspace',
+                header: t('Workspace'),
                 field: 'workspace',
                 sortable: true
               }
             ]
           : []),
-        { header: 'Name', field: 'name', sortable: true },
-        { header: 'Last Update', field: 'updated', sortable: true },
-        { header: 'Size', field: 'disk_usage', sortable: true },
-        { header: 'Scheduled removal at', field: 'removed_at', sortable: true },
-        { header: 'Removed by', field: 'removed_by', sortable: true },
+        { header: t('Name'), field: 'name', sortable: true },
+        { header: t('LastUpdate'), field: 'updated', sortable: true },
+        { header: t('Size'), field: 'disk_usage', sortable: true },
+        {
+          header: t('ScheduledRemovalAt'),
+          field: 'removed_at',
+          sortable: true
+        },
+        { header: t('RemovedBy'), field: 'removed_by', sortable: true },
         { header: '', field: 'buttons', sortable: false }
       ]
     }
@@ -303,8 +310,10 @@ export default defineComponent({
 
     confirmRestore(item) {
       const props: ConfirmDialogProps = {
-        text: `Are you sure to restore project ${item.workspace}/${item.name}?`,
-        confirmText: 'Restore'
+        text: `${t('AreYouSureToRestoreProject')} ${item.workspace}/${
+          item.name
+        }?`,
+        confirmText: t('Restore')
       }
       const listeners = {
         confirm: async () => {
@@ -314,19 +323,20 @@ export default defineComponent({
       }
       this.showDialog({
         component: ConfirmDialog,
-        params: { props, listeners, dialog: { header: 'Restore project' } }
+        params: { props, listeners, dialog: { header: t('RestoreProject') } }
       })
     },
 
     confirmDelete(item) {
       const props: ConfirmDialogProps = {
-        text: `Are you sure you want to permanently delete this project?`,
-        description: `Deleting this project will remove it
-      and all its data. This action cannot be undone. Type in project name to confirm:`,
+        text: t('AreYouSureYouWantToPermanentlyDeleteThisProject'),
+        description: t(
+          'DeletingThisProjectWillRemoveItAndAllItsDataThisActionCannotBeUndoneTypeInProjectNameToConfirm'
+        ),
         hint: item.name,
-        confirmText: 'Delete permanently',
+        confirmText: t('DeletePermanently'),
         confirmField: {
-          label: 'Project name',
+          label: t('ProjectName'),
           expected: item.name
         },
         severity: 'danger'
@@ -339,7 +349,7 @@ export default defineComponent({
       }
       this.showDialog({
         component: ConfirmDialog,
-        params: { props, listeners, dialog: { header: 'Delete project' } }
+        params: { props, listeners, dialog: { header: t('DeleteProject') } }
       })
     },
 

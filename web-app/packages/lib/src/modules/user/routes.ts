@@ -6,7 +6,10 @@ import { RouteLocationNormalizedLoaded, RouteRecord } from 'vue-router'
 
 import { UserRouteParams } from './types'
 
+import returnTranslation from '@/../../lang/translate'
 import { DEFAULT_PAGE_TITLE } from '@/common/route_utils'
+
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 /**
  * Enum for user routes names
@@ -24,12 +27,12 @@ export const getUserTitle = (route: RouteLocationNormalizedLoaded) => {
   const params = route.params as UserRouteParams
   const titles: Record<UserRouteName, string | string[]> = {
     [UserRouteName.Login]: [
-      params.reset ? 'Reset password' : 'Sign in',
+      params.reset ? t('ResetPassword') : t('SignIn'),
       DEFAULT_PAGE_TITLE
     ],
-    [UserRouteName.ConfirmEmail]: ['Confirm email address', DEFAULT_PAGE_TITLE],
-    [UserRouteName.ChangePassword]: ['Change password', DEFAULT_PAGE_TITLE],
-    [UserRouteName.UserProfile]: ['Your profile']
+    [UserRouteName.ConfirmEmail]: [t('EmailConfirmation'), DEFAULT_PAGE_TITLE],
+    [UserRouteName.ChangePassword]: [t('ChangePassword'), DEFAULT_PAGE_TITLE],
+    [UserRouteName.UserProfile]: [t('YourProfile')]
   }
   return titles[name]
 }

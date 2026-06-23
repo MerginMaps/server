@@ -7,17 +7,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <app-container v-if="adminStore.displayUpdateAvailable">
     <app-section-banner>
-      <template #title>Update available 🎉!</template>
-      <template #description
-        >A new version of Mergin Maps is available for users. Let's explore its
-        new features.</template
-      >
+      <template #title>{{ $t('UpdateAvailable') }}</template>
+      <template #description>{{
+        $t(
+          'ANewVersionOfMerginMapsIsAvailableForUsersLetsExploreItsNewFeatures'
+        )
+      }}</template>
       <template #header-actions
         ><PButton
           @click="openUpdateUrl"
           severity="secondary"
           data-cy="check-for-updates-btn"
-          label="Update"
+          :label="$t('Update')"
       /></template>
     </app-section-banner>
   </app-container>
