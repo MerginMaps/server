@@ -118,15 +118,20 @@ export const useAdminStore = defineStore('adminModule', {
       this.isServerConfigHidden = value
     },
 
-    async fetchUsers(payload: { params: PaginatedUsersParams }) {
+    async fetchUsers(payload: {
+      params: PaginatedUsersParams
+      signal?: AbortSignal
+    }) {
       const notificationStore = useNotificationStore()
 
       this.setLoading(true)
       try {
-        const response = await AdminApi.fetchUsers(payload.params)
+        const response = await AdminApi.fetchUsers(payload.params, payload.signal)
         this.setUsers(response.data)
       } catch (e) {
-        notificationStore.error({ text: errorUtils.getErrorMessage(e) })
+        if (!axios.isCancel(e)) {
+          notificationStore.error({ text: errorUtils.getErrorMessage(e) })
+        }
       } finally {
         this.setLoading(false)
       }
@@ -261,6 +266,7 @@ export const useAdminStore = defineStore('adminModule', {
 
     async getProjects(payload: {
       params: SortingOptions & Pick<PaginatedAdminProjectsParams, 'like'>
+      signal?: AbortSignal
     }) {
       const notificationStore = useNotificationStore()
 
@@ -277,13 +283,15 @@ export const useAdminStore = defineStore('adminModule', {
           params.like = payload.params.like.trim()
         }
 
-        const response = await AdminApi.getProjects(params)
+        const response = await AdminApi.getProjects(params, payload.signal)
         this.projects.items = response.data.items
         this.projects.count = response.data.count
       } catch (e) {
-        notificationStore.error({
-          text: 'Failed to fetch projects'
-        })
+        if (!axios.isCancel(e)) {
+          notificationStore.error({
+            text: 'Failed to fetch projects'
+          })
+        }
       } finally {
         this.projects.loading = false
       }

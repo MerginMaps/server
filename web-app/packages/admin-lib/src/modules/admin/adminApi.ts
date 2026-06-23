@@ -28,9 +28,10 @@ export const AdminApi = {
   },
 
   async fetchUsers(
-    params: PaginatedUsersParams
+    params: PaginatedUsersParams,
+    signal?: AbortSignal
   ): Promise<AxiosResponse<UsersResponse>> {
-    return AdminModule.httpService.get(`/app/admin/users`, { params })
+    return AdminModule.httpService.get(`/app/admin/users`, { params, signal })
   },
 
   async fetchUserByName(
@@ -73,9 +74,10 @@ export const AdminApi = {
   },
 
   async getProjects(
-    params: PaginatedAdminProjectsParams
+    params: PaginatedAdminProjectsParams,
+    signal?: AbortSignal
   ): Promise<AxiosResponse<PaginatedAdminProjectsResponse>> {
-    return AdminModule.httpService.get('/app/admin/projects', { params })
+    return AdminModule.httpService.get('/app/admin/projects', { params, signal })
   },
 
   /**

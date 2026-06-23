@@ -118,6 +118,31 @@ img {
   overflow-wrap: anywhere;
 }
 
+// Suppress the focus halo after a mouse click on any PrimeVue button while
+// keeping the ring for keyboard navigation (accessibility).
+.p-button:focus:not(:focus-visible) {
+  box-shadow: none;
+}
+
+// Icon-only action button used in list rows (e.g. resend / trash on invitation rows)
+.p-button.icon-action-btn {
+  color: map-get($colors, 'forest');
+
+  &:not(:disabled):hover {
+    background: map-get($colors, 'light-green');
+    color: map-get($colors, 'forest');
+  }
+
+  &.icon-action-btn--danger {
+    color: map-get($colors, 'grape');
+
+    &:not(:disabled):hover {
+      background: map-get($colors, 'negative-light');
+      color: map-get($colors, 'grape');
+    }
+  }
+}
+
 // Color of error messages in inputs ...
 .p-error {
   color: map-get($map: $colors, $key: grape);
@@ -132,4 +157,13 @@ img {
 .tooltip {
   text-decoration-line: underline;
   text-decoration-style: dotted;
+}
+
+td:has(.dt-row-link) {
+  padding: 0;
+}
+
+.dt-row-link {
+  display: block;
+  padding: $tableBodyCellPadding;
 }

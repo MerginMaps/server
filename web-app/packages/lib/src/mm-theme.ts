@@ -157,7 +157,7 @@ export default usePassThrough(
     } as TagPassThroughOptions,
     column: {
       bodyCell: {
-        class: 'pl-4 py-2'
+        // class: 'pl-4 py-2'
       },
       headerCell: {
         class: 'pl-4 py-1',
