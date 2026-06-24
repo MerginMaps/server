@@ -72,7 +72,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             </template>
             <template #empty>
               <div class="flex flex-column align-items-center p-4 text-center">
-                <p>No changeset for current layer</p>
+                <p>{{ t('NoChangesetForCurrentLayer') }}</p>
               </div>
               console.log('getChangeset', this.namespace, this.projectName,
               this.version_id, this.path)
@@ -84,14 +84,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <app-container v-else-if="!versionsChangesetLoading">
       <app-section class="p-4">
         <div class="flex flex-column align-items-center text-center">
-          <h3>Changes cannot be calculated</h3>
+          <h3>{{ t('ChangesCannotBeCalculated') }}</h3>
           <p>
-            For details please check the
+            {{ t('ForDetailsPleaseCheckThe') }}
             <a
               class="font-semibold text-underline text-color-forest"
               :href="docsLinkManageSynchronisation"
               target="_blank"
-              >documentation</a
+              >{{ t('Documentation') }}</a
             >.
           </p>
         </div>
@@ -106,6 +106,7 @@ import isArray from 'lodash/isArray'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import AppCircle from '@/common/components/AppCircle.vue'
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppSection from '@/common/components/AppSection.vue'
@@ -153,6 +154,9 @@ export default defineComponent({
   methods: {
     ...mapActions(useNotificationStore, ['error']),
     ...mapActions(useProjectStore, ['getVersionChangeset']),
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
     // TODO: refactor to pinia action
     async getChangeset() {
       const changesetData = await this.getVersionChangeset({
@@ -170,7 +174,7 @@ export default defineComponent({
       for (const [key, value] of Object.entries(changeset)) {
         _this.tables[key] = {}
         const headers = [
-          { text: 'Change', value: 'operationTypeHeader', width: 50 }
+          { text: this.t('Change'), value: 'operationTypeHeader', width: 50 }
         ]
         const changes = []
         if (isArray(value)) {

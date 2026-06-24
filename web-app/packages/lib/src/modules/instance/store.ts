@@ -4,6 +4,7 @@
 
 import { defineStore } from 'pinia'
 
+import returnTranslation from '@/../../lang/translate'
 import { GlobalRole } from '@/common/permission_utils'
 import { InstanceApi } from '@/modules/instance/instanceApi'
 import {
@@ -13,6 +14,8 @@ import {
 } from '@/modules/instance/types'
 import { useNotificationStore } from '@/modules/notification/store'
 import { useUserStore } from '@/modules/user/store'
+
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 export interface InstanceState {
   initData: InitResponse
@@ -72,7 +75,7 @@ export const useInstanceStore = defineStore('instanceModule', {
         }
         return response
       } catch {
-        notificationStore.error({ text: 'Failed to init application.' })
+        notificationStore.error({ text: t('FailedToInitApplication') })
       }
     },
 
@@ -83,7 +86,7 @@ export const useInstanceStore = defineStore('instanceModule', {
         this.setPingData(response.data)
         return response
       } catch {
-        await notificationStore.error({ text: 'Failed to fetch ping data.' })
+        await notificationStore.error({ text: t('FailedToFetchPingData') })
       }
     },
 
@@ -94,7 +97,7 @@ export const useInstanceStore = defineStore('instanceModule', {
         this.setConfigData(response.data)
         return response
       } catch {
-        await notificationStore.error({ text: 'Failed to fetch config data.' })
+        await notificationStore.error({ text: t('FailedToFetchConfigData') })
       }
     }
   }

@@ -3,7 +3,7 @@
     <app-container>
       <app-section ground>
         <template #header>
-          <h1 class="headline-h3">Project details</h1>
+          <h1 class="headline-h3">{{ $t('ProjectDetails') }}</h1>
         </template>
         <template #headerActions>
           <PButton
@@ -12,7 +12,7 @@
             data-cy="project-download-btn"
             icon="ti ti-download"
             class="mr-2"
-            label="Download"
+            :label="$t('Download')"
             :disabled="projectStore.projectDownloading"
           />
           <PButton
@@ -20,7 +20,7 @@
             @click="openDashboard"
             data-cy="project-dashboard"
             icon="ti ti-external-link"
-            label="Open in dashboard"
+            :label="$t('OpenInDashboard')"
           />
         </template>
       </app-section>
@@ -46,19 +46,19 @@
             class="project-view-detail-list paragraph-p5 flex flex-column gap-3"
           >
             <div>
-              <dt class="paragraph-p6 opacity-80">Created</dt>
+              <dt class="paragraph-p6 opacity-80">{{ $t('Created') }}</dt>
               <dd class="font-semibold" data-cy="project-owner">
                 {{ $filters.datetime(project?.created) }}
               </dd>
             </div>
             <div>
-              <dt class="paragraph-p6 opacity-80">Updated</dt>
+              <dt class="paragraph-p6 opacity-80">{{ $t('Updated') }}</dt>
               <dd class="font-semibold" data-cy="project-created">
                 {{ $filters.datetime(project?.updated) }}
               </dd>
             </div>
             <div>
-              <dt class="paragraph-p6 opacity-80">Disk usage</dt>
+              <dt class="paragraph-p6 opacity-80">{{ $t('DiskUsage') }}</dt>
               <dd class="font-semibold" data-cy="project-created">
                 {{ $filters.filesize(project?.disk_usage, 'MB') }}
               </dd>
@@ -117,6 +117,7 @@ import {
 import { computed, watch, defineProps } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
+import returnTranslation from '@/../../lang/translate'
 import { AdminRoutes } from '@/modules'
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
 
@@ -128,6 +129,7 @@ interface TabItem {
 const route = useRoute()
 const router = useRouter()
 const projectStore = useProjectStore()
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 defineProps<{
   projectName: string
@@ -138,15 +140,15 @@ const tabs = computed(() => {
   const tabs: TabItem[] = [
     {
       route: AdminRoutes.ProjectTree,
-      header: 'Files'
+      header: t('Files')
     },
     {
       route: AdminRoutes.ProjectHistory,
-      header: 'History'
+      header: t('History')
     },
     {
       route: AdminRoutes.ProjectSettings,
-      header: 'Settings'
+      header: t('Settings')
     }
   ]
   return tabs

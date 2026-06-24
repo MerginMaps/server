@@ -20,14 +20,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               v-if="canCreateProject && loggedUser && loggedUser.email"
               @click="newProjectDialog"
               data-cy="action-button-create"
-              label="Create project"
+              :label="CreateProject"
             />
           </template>
           <div class="flex align-items-center justify-content-between mt-3">
             <span class="p-input-icon-left flex-grow-1">
               <i class="ti ti-search paragraph-p3"></i>
               <PInputText
-                placeholder="Search projects by name"
+                :placeholder="SearchProjectsByName"
                 v-model="projectsStore.projectsSearch"
                 class="w-full"
               />
@@ -42,8 +42,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <!-- TODO: Do not understand logic here :() -->
       <AppSection v-else>
         <span>
-          <b>Namespace not found</b><br />
-          Please check if address is written correctly
+          <b>{{ NamespaceNotFound }}</b>
+          <br />
+          {{ PleaseCheckIfAddressIsWrittenCorrectly }}
         </span>
       </AppSection>
     </app-container>
@@ -52,18 +53,29 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script lang="ts">
+const lang = import.meta.env.VITE_LANG
+
 import { mapActions, mapState } from 'pinia'
 import { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { defineComponent, ref } from 'vue'
 
 import CommunityBanner from '../components/CommunityBanner.vue'
 
+import returnTranslation from '@/../../lang/translate'
 import { AppContainer, AppSection } from '@/common'
 import AppMenu from '@/common/components/AppMenu.vue'
 import { useDialogStore, useProjectStore } from '@/modules'
 import { useLayoutStore } from '@/modules/layout/store'
 import ProjectForm from '@/modules/project/components/ProjectForm.vue'
 import { useUserStore } from '@/modules/user/store'
+
+const CreateProject = returnTranslation(lang, 'CreateProject')
+const SearchProjectsByName = returnTranslation(lang, 'SearchProjectsByName')
+const NamespaceNotFound = returnTranslation(lang, 'NamespaceNotFound')
+const PleaseCheckIfAddressIsWrittenCorrectly = returnTranslation(
+  lang,
+  'PleaseCheckIfAddressIsWrittenCorrectly'
+)
 
 export default defineComponent({
   name: 'ProjectsListView',
@@ -76,14 +88,24 @@ export default defineComponent({
     const projectsStore = useProjectStore()
     const menu = ref()
 
-    return { menu, projectsStore }
+    return {
+      CreateProject,
+      NamespaceNotFound,
+      PleaseCheckIfAddressIsWrittenCorrectly,
+      SearchProjectsByName,
+      menu,
+      projectsStore
+    }
   },
   computed: {
     ...mapState(useUserStore, ['loggedUser']),
     ...mapState(useLayoutStore, ['drawer']),
     ...mapState(useProjectStore, ['projectsSorting', 'projectsCount']),
     header() {
-      return this.onlyPublic ? 'Public projects' : 'My projects'
+      const lang = import.meta.env.VITE_LANG
+      return this.onlyPublic
+        ? returnTranslation(lang, 'PublicProjects')
+        : returnTranslation(lang, 'MyProjects')
     },
     onlyPublic() {
       return this.$route.name === 'explore' || !this.loggedUser?.email
@@ -91,25 +113,31 @@ export default defineComponent({
     filterMenuItems(): MenuItem[] {
       return [
         {
-          label: 'Sort by name A-Z',
+          label: returnTranslation(import.meta.env.VITE_LANG, 'SortByNameAZ'),
           key: 'name-asc',
           value: 'name',
           sortDesc: false
         },
         {
-          label: 'Sort by name Z-A',
+          label: returnTranslation(import.meta.env.VITE_LANG, 'SortByNameZA'),
           key: 'name-desc',
           value: 'name',
           sortDesc: true
         },
         {
-          label: 'Sort by last updated',
+          label: returnTranslation(
+            import.meta.env.VITE_LANG,
+            'SortByLastUpdated'
+          ),
           key: 'updated',
           value: 'updated',
           sortDesc: true
         },
         {
-          label: 'Sort by files size',
+          label: returnTranslation(
+            import.meta.env.VITE_LANG,
+            'SortByFilesSize'
+          ),
           key: 'meta.size',
           value: 'meta.size',
           sortDesc: true
@@ -130,7 +158,11 @@ export default defineComponent({
     ...mapActions(useProjectStore, ['setProjectsSorting']),
 
     newProjectDialog() {
-      const dialog = { persistent: true, header: 'New project' }
+      const lang = import.meta.env.VITE_LANG
+      const dialog = {
+        persistent: true,
+        header: returnTranslation(lang, 'NewProject')
+      }
       this.show({
         component: ProjectForm,
         params: {

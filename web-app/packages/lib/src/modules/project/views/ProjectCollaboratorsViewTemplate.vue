@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     >
       <app-section
         ><template #title
-          >Requests
+          >{{ t('Requests') }}
           <span class="text-color-medium-green"
             >({{ projectStore.accessRequestsCount }})</span
           ></template
@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <span class="p-input-icon-left flex-grow-1">
             <i class="ti ti-search paragraph-p3"></i>
             <PInputText
-              placeholder="Search members"
+              :placeholder="t('SearchMembers')"
               data-cy="search-members-field"
               v-model="projectStore.accessSearch"
               class="w-full"
@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             v-if="allowShare"
             @click="$emit('share')"
             icon="ti ti-send"
-            label="Share"
+            :label="t('Share')"
             data-cy="project-share-btn"
           />
           <AppMenu :items="filterMenuItems" />
@@ -58,6 +58,7 @@ import { ProjectMembersTable } from '../components'
 import ProjectAccessRequests from '../components/ProjectAccessRequests.vue'
 import { useProjectStore } from '../store'
 
+import returnTranslation from '@/../../lang/translate'
 import AppContainer from '@/common/components/AppContainer.vue'
 import AppMenu from '@/common/components/AppMenu.vue'
 import AppSection from '@/common/components/AppSection.vue'
@@ -74,17 +75,18 @@ withDefaults(
 
 const projectStore = useProjectStore()
 const userStore = useUserStore()
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 const filterMenuItems = computed<MenuItem[]>(() =>
   [
     {
-      label: 'Sort by name A-Z',
+      label: t('SortByNameAZ'),
       key: 'username',
       value: 'username',
       sortDesc: false
     },
     {
-      label: 'Sort by name Z-A',
+      label: t('SortByNameZA'),
       key: 'name-desc',
       value: 'username',
       sortDesc: true

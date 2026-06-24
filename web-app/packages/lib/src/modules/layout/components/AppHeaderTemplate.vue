@@ -56,7 +56,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 v-if="renderNamespace"
                 class="paragraph-p6 opacity-80 font-normal"
               >
-                {{ currentWorkspace?.name || 'no workspace' }}
+                {{ currentWorkspace?.name || t('NoWorkspace') }}
               </span>
             </div>
             <i class="ti ti-chevron-down"></i
@@ -70,7 +70,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             data-cy="app-header-profile-btn"
             @click="login"
             class="p-2 shadow-none"
-            label="Sign in"
+            :label="t('SignIn')"
           />
           <POverlayPanel
             v-if="loggedUser"
@@ -129,6 +129,7 @@ import { defineComponent, ref, PropType } from 'vue'
 
 import { AppBreadcrumbs } from '.'
 
+import returnTranslation from '@/../../lang/translate'
 import { AppMenu, UserRouteName, useInstanceStore } from '@/main'
 import { useLayoutStore } from '@/modules/layout/store'
 import { useUserStore } from '@/modules/user/store'
@@ -176,7 +177,7 @@ export default defineComponent({
         ...(this.$router.hasRoute(UserRouteName.UserProfile)
           ? [
               {
-                label: 'Your profile',
+                label: this.t('YourProfile'),
                 icon: 'ti ti-user-circle',
                 command: () => {
                   this.$router.push({
@@ -187,7 +188,7 @@ export default defineComponent({
             ]
           : []),
         {
-          label: 'Sign out',
+          label: this.t('SignOut'),
           icon: 'ti ti-logout',
           command: () => {
             this.logout()
@@ -198,12 +199,12 @@ export default defineComponent({
     _helpMenuItems() {
       return [
         {
-          label: 'Documentation',
+          label: this.t('Documentation'),
           url: this.configData?.docs_url,
           target: '_blank'
         },
         {
-          label: 'Community chat',
+          label: this.t('CommunityChat'),
           url: import.meta.env.VITE_VUE_APP_JOIN_COMMUNITY_LINK,
           target: '_blank'
         },
@@ -228,6 +229,9 @@ export default defineComponent({
   methods: {
     ...mapActions(useLayoutStore, ['setDrawer']),
     ...mapActions(useUserStore, { logoutUser: 'logout' }),
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
 
     async logout() {
       try {

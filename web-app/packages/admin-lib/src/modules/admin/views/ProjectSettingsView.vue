@@ -1,7 +1,7 @@
 <template>
   <app-container>
     <app-section>
-      <template #title>Advanced</template>
+      <template #title>{{ $t('Advanced') }}</template>
       <app-settings :items="settingsItems">
         <template #publicProject>
           <div class="flex-shrink-0 paragraph-p1">
@@ -14,7 +14,7 @@
               @click="confirmDelete"
               severity="danger"
               data-cy="project-delete-btn"
-              label="Delete project"
+              :label="$t('DeleteProject')"
             />
           </div>
         </template>
@@ -36,38 +36,41 @@ import {
 } from '@mergin/lib'
 import { computed } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import { useAdminStore } from '@/modules/admin/store'
 
 const projectStore = useProjectStore()
 const dialogStore = useDialogStore()
 const adminStore = useAdminStore()
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 const project = computed(() => projectStore.project)
 
 const settingsItems = computed<AppSettingsItemConfig[]>(() => [
   {
     key: 'publicProject',
-    title: 'Public project',
-    description:
-      'The project will be visible to everyone if it is marked as public.'
+    title: t('PublicProject'),
+    description: t('TheProjectWillBeVisibleToEveryoneIfItIsMarkedAsPublic')
   },
   {
     key: 'deleteProject',
-    title: 'Delete project',
-    description:
-      'Deleting this project will remove it and all its data. This action cannot be undone.'
+    title: t('DeleteProject'),
+    description: t(
+      'DeletingThisProjectWillRemoveItAndAllItsDataThisActionCannotBeUndone'
+    )
   }
 ])
 
 const confirmDelete = () => {
   const props: ConfirmDialogProps = {
-    text: `Are you sure you want to permanently delete this project?`,
-    description: `Deleting this project will remove it
-      and all its data. This action cannot be undone. Type in project name to confirm:`,
+    text: t('AreYouSureYouWantToPermanentlyDeleteThisProject'),
+    description: t(
+      'DeletingThisProjectWillRemoveItAndAllItsDataThisActionCannotBeUndoneTypeInProjectNameToConfirm'
+    ),
     hint: project.value.name,
-    confirmText: 'Delete permanently',
+    confirmText: t('DeletePermanently'),
     confirmField: {
-      label: 'Project name',
+      label: t('ProjectName'),
       expected: project.value.name
     },
     severity: 'danger'
@@ -78,7 +81,7 @@ const confirmDelete = () => {
   }
   dialogStore.show({
     component: ConfirmDialog,
-    params: { props, listeners, dialog: { header: 'Delete project' } }
+    params: { props, listeners, dialog: { header: t('DeleteProject') } }
   })
 }
 </script>

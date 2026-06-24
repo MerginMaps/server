@@ -30,6 +30,7 @@ import { defineComponent, PropType } from 'vue'
 
 import VersionDetailSidebar from '../components/VersionDetailSidebar.vue'
 
+import returnTranslation from '@/../../lang/translate'
 import { AppSection, AppContainer } from '@/common/components'
 import AppMenu from '@/common/components/AppMenu.vue'
 import { DataViewWrapperOptions } from '@/common/components/data-view/types'
@@ -67,12 +68,12 @@ export default defineComponent({
     filterMenuItems(): MenuItem[] {
       return [
         {
-          label: 'Newest versions',
+          label: this.t('NewestVersions'),
           key: 'newest',
           sortDesc: true
         },
         {
-          label: 'Oldest versions',
+          label: this.t('OldestVersions'),
           key: 'oldest',
           sortDesc: false
         }
@@ -84,6 +85,9 @@ export default defineComponent({
     }
   },
   methods: {
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
     rowClick(item) {
       this.$router.push({
         query: {

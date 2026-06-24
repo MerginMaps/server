@@ -47,12 +47,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 v-if="slotProps.data.access.public && !onlyPublic"
                 severity="success"
                 :pt="{ root: { class: 'ml-1' } }"
-                >Public</PTag
+                >{{ t('Public') }}</PTag
               >
               <i
                 v-if="!slotProps.data.tags.includes('valid_qgis')"
                 v-tooltip.right="{
-                  value: 'Failed to find a QGIS project file'
+                  value: t('FailedToFindAQGISProjectFile')
                 }"
                 class="ti ti-alert-circle-filled ml-1"
                 data-cy="project-form-missing-project"
@@ -61,7 +61,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <i
                 v-if="slotProps.data.has_conflict"
                 v-tooltip.right="{
-                  value: 'Conflicting file in project'
+                  value: t('ConflictingFileInProject')
                 }"
                 class="ti ti-alert-triangle-filled ml-1"
                 style="margin-right: 20px"
@@ -75,7 +75,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               }"
               class="opacity-80 m-0 paragraph-p7"
             >
-              Updated {{ $filters.timediff(slotProps.data.updated) }}
+              {{ t('Updated') }} {{ $filters.timediff(slotProps.data.updated) }}
             </span>
           </template>
         </PColumn>
@@ -130,6 +130,7 @@ import { defineComponent, PropType } from 'vue'
 
 import { useProjectStore } from '../store'
 
+import returnTranslation from '@/../../lang/translate'
 import { PaginatedGridOptions, TableDataHeader } from '@/common'
 import { ProjectListItem } from '@/modules/project/types'
 
@@ -167,9 +168,9 @@ export default defineComponent({
     ...mapState(useProjectStore, ['projectsSearch', 'projectsSorting']),
     columns(): TableDataHeader[] {
       return [
-        { header: 'Project name', field: 'name' },
-        { header: 'Versions', field: 'version' },
-        { header: 'Size', field: 'meta.size' }
+        { header: this.t('ProjectName'), field: 'name' },
+        { header: this.t('Versions'), field: 'version' },
+        { header: this.t('Size'), field: 'meta.size' }
         // {
         //   header: 'Collaborators',
         //   field: 'access.readers'
@@ -194,6 +195,9 @@ export default defineComponent({
     this.filterData()
   },
   methods: {
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
     fetchProjects() {
       this.loading = true
       this.$emit(

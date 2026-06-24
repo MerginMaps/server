@@ -7,19 +7,24 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <app-container v-if="displayBanner">
     <app-section-banner>
-      <template #title> Server is not properly configured</template>
+      <template #title>{{ $t('ServerIsNotProperlyConfigured') }}</template>
       <template #description
-        >Your server is not configured properly for use in the production
-        environment. Read more in the
-        <a :href="docsLinkDocumentation" target="_blank">documentation</a> how
-        to properly set up the deployment.</template
+        >{{
+          $t(
+            'YourServerIsNotConfiguredProperlyForUseInTheProductionEnvironmentReadMoreInThe'
+          )
+        }}
+        <a :href="docsLinkDocumentation" target="_blank">{{
+          $t('Documentation')
+        }}</a>
+        {{ $t('HowToProperlySetUpTheDeployment') }}.</template
       >
       <template #header-actions
         ><PButton
           @click="dismiss"
           severity="secondary"
           data-cy="dismiss-server-configured-btn"
-          label="Dismiss"
+          :label="$t('Dismiss')"
       /></template>
     </app-section-banner>
   </app-container>

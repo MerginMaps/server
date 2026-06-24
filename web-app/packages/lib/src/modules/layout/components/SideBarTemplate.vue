@@ -74,7 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               href="/admin"
               target="__blank"
               class="flex justify-content-between align-items-center title-t5 no-underline cursor-pointer"
-              >Admin Panel <i class="title-t1 ti ti-external-link"
+              >{{ t('AdminPanel') }} <i class="title-t1 ti ti-external-link"
             /></a>
           </template>
         </slot>
@@ -89,6 +89,7 @@ import { useRoute } from 'vue-router'
 
 import { SideBarItemModel } from '../types'
 
+import returnTranslation from '@/../../lang/translate'
 import defaultLogoUrl from '@/assets/mm-logo.svg'
 import { DashboardRouteName, useUserStore } from '@/main'
 import { useInstanceStore } from '@/modules/instance/store'
@@ -113,6 +114,7 @@ const logoUrl = computed(() =>
 const route = useRoute()
 const layoutStore = useLayoutStore()
 const userStore = useUserStore()
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 const props = defineProps<{
   sidebarItems?: SideBarItemModel[]
 }>()
@@ -124,7 +126,7 @@ const initialSidebarItems = computed<SideBarItemModel[]>(() => {
         active: route.matched.some(
           (item) => item.name === DashboardRouteName.Dashboard
         ),
-        title: 'Dashboard',
+        title: t('Dashboard'),
         to: '/dashboard',
         icon: 'ti ti-home'
       },
@@ -134,7 +136,7 @@ const initialSidebarItems = computed<SideBarItemModel[]>(() => {
             item.name === ProjectRouteName.Projects ||
             item.name === ProjectRouteName.Project
         ),
-        title: 'Projects',
+        title: t('Projects'),
         to: '/projects',
         icon: 'ti ti-article'
       }

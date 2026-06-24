@@ -40,10 +40,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           <i class="ti ti-download" />
         </div>
         <h4 class="title-t1 font-semibold text-color-forest">
-          Drag and drop files
+          {{ t('DragAndDropFiles') }}
         </h4>
         <p class="paragraph-p6 opacity-80 m-0">
-          You can drop files from your computer to start uploading
+          {{ t('YouCanDropFilesFromYourComputerToStartUploading') }}
         </p>
       </div>
     </slot>
@@ -58,6 +58,7 @@ import Path from 'path'
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import { getFiles, checksum } from '@/common/mergin_utils'
 import { useInstanceStore } from '@/modules/instance/store'
 import { useNotificationStore } from '@/modules/notification/store'
@@ -94,6 +95,9 @@ export default defineComponent({
       'finishFileAnalysis',
       'analysingFiles'
     ]),
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
 
     setOver: debounce(function (isOver) {
       this.dragOver = isOver
@@ -110,7 +114,7 @@ export default defineComponent({
       }
       if (this.upload && this.upload.running) {
         return this.error({
-          text: 'You cannot update files during upload'
+          text: this.t('YouCannotUpdateFilesDuringUpload')
         })
       }
       // prepare all entries because they will be not accessible after this callback ends (after 'await')
@@ -119,7 +123,7 @@ export default defineComponent({
       ).map((i) => i.webkitGetAsEntry())
       if (entries.some((e) => e === null)) {
         return this.error({
-          text: 'Drop only files or folders'
+          text: this.t('DropOnlyFilesOrFolders')
         })
       }
       this.createUpload(entries)

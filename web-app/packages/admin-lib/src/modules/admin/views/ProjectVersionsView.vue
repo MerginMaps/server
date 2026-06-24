@@ -41,6 +41,8 @@ import { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
+import returnTranslation from '@/../../lang/translate'
+
 interface Props {
   projectName?: string
   namespace?: string
@@ -49,6 +51,7 @@ interface Props {
 defineProps<Props>()
 
 const router = useRouter()
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 const options = ref<DataViewWrapperOptions>({
   sortDesc: true,
@@ -59,12 +62,12 @@ const options = ref<DataViewWrapperOptions>({
 const filterMenuItems = computed<MenuItem[]>(() => {
   return [
     {
-      label: 'Newest versions',
+      label: t('NewestVersions'),
       key: 'newest',
       sortDesc: true
     },
     {
-      label: 'Oldest versions',
+      label: t('OldestVersions'),
       key: 'oldest',
       sortDesc: false
     }

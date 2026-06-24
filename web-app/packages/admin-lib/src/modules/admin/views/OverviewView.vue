@@ -8,14 +8,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <admin-layout>
     <app-container>
       <app-section ground>
-        <template #header><h1 class="headline-h3">Overview</h1></template>
+        <template #header
+          ><h1 class="headline-h3">{{ $t('Overview') }}</h1></template
+        >
       </app-section>
     </app-container>
 
     <app-container>
       <div class="grid" v-if="usage">
         <usage-card class="col-12 sm:col-6 lg:col-3">
-          <template #heading>Contributors</template>
+          <template #heading>{{ $t('Contributors') }}</template>
           <div
             class="w-full"
             :style="{
@@ -29,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           >
         </usage-card>
         <usage-card class="col-12 sm:col-6 lg:col-3">
-          <template #heading>Used storage</template>
+          <template #heading>{{ $t('UsedStorage') }}</template>
           <div
             class="w-full"
             :style="{
@@ -45,7 +47,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           >
         </usage-card>
         <usage-card class="col-12 sm:col-6 lg:col-3">
-          <template #heading>Registered accounts</template>
+          <template #heading>{{ $t('RegisteredAccounts') }}</template>
           <div
             class="w-full"
             :style="{
@@ -62,12 +64,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               severity="secondary"
               @click="$router.push({ name: AdminRoutes.ACCOUNTS })"
               class="w-full"
-              label="Manage users"
+              :label="$t('ManageUsers')"
             />
           </template>
         </usage-card>
         <usage-card class="col-12 sm:col-6 lg:col-3">
-          <template #heading>Projects</template>
+          <template #heading>{{ $t('Projects') }}</template>
           <div
             class="w-full"
             :style="{
@@ -84,12 +86,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               severity="secondary"
               @click="$router.push({ name: AdminRoutes.PROJECTS })"
               class="w-full"
-              label="Manage projects"
+              :label="$t('ManageProjects')"
             />
           </template>
         </usage-card>
         <usage-card v-if="showWorkspaces" class="col-12 sm:col-6 lg:col-3">
-          <template #heading>Workspaces</template>
+          <template #heading>{{ $t('Workspaces') }}</template>
           <div
             class="w-full"
             :style="{
@@ -106,7 +108,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               severity="secondary"
               @click="$router.push({ name: 'adminWorkspaces' })"
               class="w-full"
-              label="Manage workspaces"
+              :label="$t('ManageWorkspaces')"
             />
           </template>
         </usage-card>

@@ -6,6 +6,10 @@ import { RouteLocationNormalizedLoaded, RouteRecord } from 'vue-router'
 
 import { AdminRouteParams } from './types'
 
+import returnTranslation from '@/../../lang/translate'
+
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
+
 export enum AdminRoutes {
   ACCOUNTS = 'accounts',
   ACCOUNT = 'account',
@@ -24,16 +28,16 @@ export enum AdminRoutes {
 export const getAdminTitle = (route: RouteLocationNormalizedLoaded) => {
   const params = route.params as AdminRouteParams
   const titles: Record<AdminRoutes, string | string[]> = {
-    [AdminRoutes.Login]: ['Sign in', 'Mergin Maps Admin Panel'],
-    [AdminRoutes.ACCOUNTS]: 'Accounts',
-    [AdminRoutes.ACCOUNT]: 'Account details',
-    [AdminRoutes.OVERVIEW]: 'Admin overview',
-    [AdminRoutes.PROJECTS]: 'Projects',
-    [AdminRoutes.PROJECT]: ['Details', params.projectName],
-    [AdminRoutes.SETTINGS]: 'Settings',
-    [AdminRoutes.ProjectTree]: ['Files', params.projectName],
-    [AdminRoutes.ProjectHistory]: ['History', params.projectName],
-    [AdminRoutes.ProjectSettings]: ['Settings', params.projectName],
+    [AdminRoutes.Login]: [t('SignIn'), t('MerginMapsAdminPanel')],
+    [AdminRoutes.ACCOUNTS]: t('Accounts'),
+    [AdminRoutes.ACCOUNT]: t('AccountDetails'),
+    [AdminRoutes.OVERVIEW]: t('Overview'),
+    [AdminRoutes.PROJECTS]: t('Projects'),
+    [AdminRoutes.PROJECT]: [t('ProjectDetails'), params.projectName],
+    [AdminRoutes.SETTINGS]: t('Settings'),
+    [AdminRoutes.ProjectTree]: [t('Files'), params.projectName],
+    [AdminRoutes.ProjectHistory]: [t('History'), params.projectName],
+    [AdminRoutes.ProjectSettings]: [t('Settings'), params.projectName],
     [AdminRoutes.ProjectVersion]: [params.version_id, params.projectName],
     [AdminRoutes.FileVersionDetail]: [params.path, params.version_id]
   }

@@ -8,8 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <app-onboarding-page>
     <template #header>
       <h1 class="headline-h1">
-        <template v-if="forgotPassword">Reset password</template
-        ><template v-else>Sign in</template>
+        <template v-if="forgotPassword">{{ t('ResetPassword') }}</template
+        ><template v-else>{{ t('SignIn') }}</template>
       </h1>
     </template>
 
@@ -23,9 +23,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       class="flex flex-column"
     >
       <div>
-        <label for="login">Email</label>
+        <label for="login">{{ t('Email') }}</label>
         <PInputText
-          placeholder="Type your email"
+          :placeholder="t('TypeYourEmail')"
           name="email"
           color="inputColor"
           data-cy="reset-form-email"
@@ -40,7 +40,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <router-link
         class="text-color-forest align-self-center font-semibold"
         :to="{ name: 'login' }"
-        >Back to login</router-link
+        >{{ t('BackToLogin') }}</router-link
       >
 
       <PButton
@@ -48,12 +48,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         data-cy="reset-form-btn"
         :disabled="!email"
         @click="reset"
-        label="Reset password"
+        :label="t('ResetPassword')"
       />
     </form>
     <form v-else @submit.prevent="loginUser" class="flex flex-column">
       <div>
-        <label for="login">Username or email</label>
+        <label for="login">{{ t('UsernameOrEmail') }}</label>
         <PInputText
           id="login"
           name="login"
@@ -61,7 +61,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           data-cy="login-form-login"
           :class="['w-full', errors.login ? 'p-invalid' : '']"
           aria-describedby="login-error"
-          placeholder="Please enter username or email"
+          :placeholder="t('PleaseEnterUsernameOrEmail')"
           :inputProps="{ autocomplete: 'on' }"
           autofocus
         />
@@ -71,7 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </div>
 
       <div>
-        <label for="password">Password</label>
+        <label for="password">{{ t('Password') }}</label>
         <PPassword
           id="password"
           name="password"
@@ -81,7 +81,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           aria-describedby="password-error"
           toggleMask
           :feedback="false"
-          placeholder="Please enter your password"
+          :prompt-label="t('EnterPassword')"
+          :placeholder="t('PleaseEnterYourPassword')"
           :pt="{
             input: {
               root: {
@@ -99,7 +100,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       <router-link
         class="text-color-forest title-t3 align-self-center"
         :to="{ name: 'login', params: { reset: 'reset' } }"
-        >Forgot password?</router-link
+        >{{ t('ForgotPassword') }}</router-link
       >
 
       <PButton
@@ -109,7 +110,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         id="login-btn"
         class="mt-6 w-full"
         size="large"
-        label="Sign in"
+        :label="t('SignIn')"
       />
     </form>
     <div class="flex flex-column align-items-center">
@@ -121,12 +122,18 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import { mapActions, mapState } from 'pinia'
 
+import returnTranslation from '@/../../lang/translate'
 import AppOnboardingPage from '@/common/components/AppOnboardingPage.vue'
 import { useFormStore } from '@/modules/form/store'
 import { useUserStore } from '@/modules/user/store'
 
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
+
 export default {
   name: 'LoginViewTemplate',
+  setup() {
+    return { t }
+  },
   props: {
     presetLogin: {
       type: String,

@@ -11,6 +11,8 @@ import diffInYears from 'date-fns/differenceInYears'
 import isDate from 'date-fns/isDate'
 import isValid from 'date-fns/isValid'
 
+import returnTranslation from '@/../../lang/translate'
+
 const DurationKeys = {
   years: ['year', 'years'],
   months: ['month', 'months'],
@@ -19,6 +21,8 @@ const DurationKeys = {
   hours: ['hour', 'hours'],
   minutes: ['minute', 'minutes']
 }
+
+const lang = import.meta.env.VITE_LANG
 
 export function formatDateTime(isoString) {
   return isoString ? new Date(isoString).toUTCString() : ''
@@ -29,11 +33,16 @@ export function formatDate(isoString) {
 }
 
 function formatDuration(num, unit) {
-  return `${num} ${DurationKeys[unit][num === 1 ? 0 : 1]} ago`
+  const duration = DurationKeys[unit][num === 1 ? 0 : 1]
+  return `${num} ${returnTranslation(lang, duration)} ${returnTranslation(
+    lang,
+    'ago'
+  )}`
 }
 
 function remainingFormatDuration(num, unit) {
-  return `${num} ${DurationKeys[unit][num === 1 ? 0 : 1]}`
+  const duration = DurationKeys[unit][num === 1 ? 0 : 1]
+  return `${num} ${returnTranslation(lang, duration)}`
 }
 
 function parseDate(date) {
@@ -87,12 +96,12 @@ export function formatRemainingTime(t2, t1 = new Date()) {
       return remainingFormatDuration(diffInWeeks(t2Parsed, t1Parsed), 'weeks')
     case days < 1:
       if (days < 0) {
-        return 'expired'
+        return returnTranslation(lang, 'expired')
       }
       if (hours < 1) {
         const minutes = diffInMinutes(t2Parsed, t1Parsed)
         if (minutes <= 0) {
-          return 'expired'
+          return returnTranslation(lang, 'expired')
         } else {
           return remainingFormatDuration(minutes, 'minutes')
         }

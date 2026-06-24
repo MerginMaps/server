@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     @submit="share"
   >
     <template #accountsInput
-      ><label for="accounts">Share with</label
+      ><label for="accounts">{{ t('ShareWith') }}</label
       ><PAutoComplete
         @complete="search"
         v-model="data.selectedUsers"
@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         optionLabel="label"
         :suggestions="data.users"
         :placeholder="
-          data.selectedUsers.length ? '' : 'Search users by username or email'
+          data.selectedUsers.length ? '' : t('SearchUsersByUsernameOrEmail')
         "
         input-id="accounts"
         data-key="key"
@@ -57,14 +57,14 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         </template>
         <template #empty>
           <p class="p-2">
-            <i class="text-color-forest ti ti-info-circle-filled"></i
-            >{{ ' ' }}No matches found - Try using their emails instead
+            <i class="text-color-forest ti ti-info-circle-filled"></i>{{ ' '
+            }}{{ t('NoMatchesFoundTryUsingTheirEmailsInstead') }}
           </p></template
         >
         <template v-if="data.users.length" #footer
           ><p class="px-2">
-            <i class="text-color-forest ti ti-info-circle-filled"></i
-            >{{ ' ' }}Not the right person? Try typing their email instead
+            <i class="text-color-forest ti ti-info-circle-filled"></i>{{ ' '
+            }}{{ t('NotTheRightPersonTryTypingTheirRmailInstead') }}
           </p></template
         >
         <template #removetokenicon="slotProps"
@@ -88,6 +88,7 @@ import { reactive } from 'vue'
 
 import ProjectShareTemplate from './ProjectShareDialogTemplate.vue'
 
+import returnTranslation from '@/../../lang/translate'
 import { ProjectRoleName } from '@/common/permission_utils'
 import { AutoCompleteItem, useUserStore } from '@/main'
 import { useDialogStore } from '@/modules/dialog/store'
@@ -115,6 +116,7 @@ const emit = defineEmits<{
 const projectStore = useProjectStore()
 const userStore = useUserStore()
 const dialogStore = useDialogStore()
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 const search = async (e: AutoCompleteCompleteEvent) => {
   if (data.isPending) {

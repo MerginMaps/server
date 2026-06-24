@@ -18,7 +18,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     @page="onPage"
   >
     <template #header>
-      <h3 class="font-semibold paragraph-p6 text-color m-0">Access requests</h3>
+      <h3 class="font-semibold paragraph-p6 text-color m-0">
+        {{ t('AccessRequests') }}
+      </h3>
     </template>
     <template #list="slotProps">
       <template v-for="item in slotProps.items" :key="item.id">
@@ -27,9 +29,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           class="flex flex-column lg:flex-row align-items-center justify-content-between px-4 py-2 mt-0 border-bottom-1 border-gray-200"
         >
           <p class="w-12 lg:w-6 paragraph-p6 m-0">
-            User
+            {{ t('User') }}
             <span class="font-semibold">{{ item.requested_by }}</span>
-            requested an access to your project
+            {{ t('RequestedAnAccessToYourProject') }}
             <span class="font-semibold">{{ item.project_name }}.</span>
           </p>
           <div
@@ -39,10 +41,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <span v-tooltip.right="{ value: $filters.datetime(item.expire) }">
                 <template
                   v-if="$filters.remainingtime(item.expire) === 'expired'"
-                  >Expired</template
+                  >{{ t('Expired') }}</template
                 >
                 <template v-else
-                  >Expiring in
+                  >{{ t('ExpiringIn') }}
                   {{ $filters.remainingtime(item.expire) }}</template
                 >
               </span>
@@ -57,7 +59,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 :disabled="!canCancelAccessRequest()"
                 icon="ti ti-x"
                 rounded
-                aria-label="Disallow"
+                :aria-label="t('Disallow')"
                 severity="danger"
                 class="mr-2"
                 @click="cancelRequest(item)"
@@ -66,7 +68,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 :disabled="!canAcceptAccessRequest(item.expire)"
                 icon="ti ti-check"
                 rounded
-                aria-label="Accept"
+                :aria-label="t('Accept')"
                 severity="success"
                 @click="acceptRequest(item)"
               />
@@ -76,7 +78,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       </template>
     </template>
     <template #empty>
-      <p class="text-center p-4 m-0">No access requests found</p>
+      <p class="text-center p-4 m-0">{{ t('NoAccessRequestsFound') }}</p>
     </template>
   </PDataView>
 </template>
@@ -86,6 +88,7 @@ import { mapActions, mapState } from 'pinia'
 import { DataViewPageEvent } from 'primevue/dataview'
 import { defineComponent } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import AppDropdown from '@/common/components/AppDropdown.vue'
 import { getErrorMessage } from '@/common/error_utils'
 import { isAtLeastProjectRole, ProjectRole } from '@/common/permission_utils'
@@ -128,6 +131,9 @@ export default defineComponent({
       'getAccessRequests'
     ]),
     ...mapActions(useNotificationStore, ['error']),
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
 
     onUpdateOptions(options) {
       this.options = options
@@ -163,7 +169,7 @@ export default defineComponent({
         await this.updatePaginationOrFetch()
       } catch (err) {
         this.error({
-          text: getErrorMessage(err, 'Failed to accept access request')
+          text: getErrorMessage(err, this.t('FailedToAcceptAccessRequest'))
         })
       }
     },

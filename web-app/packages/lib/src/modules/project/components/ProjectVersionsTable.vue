@@ -15,9 +15,9 @@
       showPagination && options && versionsCount > options.itemsPerPage
     "
     data-cy="project-version-table"
-    :empty-message="'No versions found.'"
+    :empty-message="t('NoVersionsFound')"
   >
-    <template #header-title>Versions</template>
+    <template #header-title>{{ t('Versions') }}</template>
 
     <template #actions="{ item }">
       <PButton
@@ -75,6 +75,7 @@
 import { storeToRefs } from 'pinia'
 import { ref, computed, StyleValue, watch } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import DataViewWrapper from '@/common/components/data-view/DataViewWrapper.vue'
 import {
   DataViewWrapperColumnItem,
@@ -106,20 +107,21 @@ const emit = defineEmits<{
 const projectStore = useProjectStore()
 const { versions, versionsLoading, versionsCount, project } =
   storeToRefs(projectStore)
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 const columns = ref<DataViewWrapperColumnItem[]>([
   {
-    text: 'Version',
+    text: t('Version'),
     value: 'name',
     textClass: 'white-space-normal',
     cols: 1
   },
-  { text: 'Created', value: 'created' },
-  { text: 'Author', value: 'author' },
-  { text: 'Files added', value: 'changes.added' },
-  { text: 'Files edited', value: 'changes.updated' },
-  { text: 'Files removed', value: 'changes.removed' },
-  { text: 'Size', value: 'project_size', cols: 1 },
+  { text: t('Created'), value: 'created' },
+  { text: t('Author'), value: 'author' },
+  { text: t('FilesAdded'), value: 'changes.added' },
+  { text: t('FilesEdited'), value: 'changes.updated' },
+  { text: t('FilesRemoved'), value: 'changes.removed' },
+  { text: t('Size'), value: 'project_size', cols: 1 },
   { text: '', value: 'archived', fixed: true }
 ])
 

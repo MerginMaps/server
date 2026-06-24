@@ -18,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           data-cy="project-form-name"
           class="flex-grow-1"
         />
-        <label for="name">Project name</label>
+        <label for="name">{{ t('ProjectName') }}</label>
         <small class="p-error" id="text-error">{{
           errors.detail || '&nbsp;'
         }}</small>
@@ -26,10 +26,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     </div>
 
     <tip-message class="mb-6">
-      ><template #description
-        >A good candidate for a project name is name of the location or purpose
-        of the field survey.</template
-      ></tip-message
+      ><template #description>{{
+        t(
+          'AGoodCandidateForAProjectNameIsNameOfTheLocationOrPurposeOfTheFieldSurvey'
+        )
+      }}</template></tip-message
     >
 
     <div
@@ -39,7 +40,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         severity="secondary"
         @click="close"
         class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
-        >Cancel</PButton
+        >{{ t('Cancel') }}</PButton
       >
 
       <PButton
@@ -49,7 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         data-cy="project-form-create-btn"
         class="flex w-12 lg:w-6 justify-content-center"
       >
-        Create project
+        {{ t('CreateProject') }}
       </PButton>
     </div>
   </div>
@@ -59,6 +60,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import { TipMessage } from '@/common/components'
 import { useUserStore } from '@/main'
 import { useDialogStore } from '@/modules/dialog/store'
@@ -92,6 +94,9 @@ export default defineComponent({
     ...mapActions(useDialogStore, ['close']),
     ...mapActions(useFormStore, ['clearErrors']),
     ...mapActions(useProjectStore, ['createProject']),
+    t(key: string) {
+      return returnTranslation(import.meta.env.VITE_LANG, key)
+    },
 
     async create() {
       // TODO: add types

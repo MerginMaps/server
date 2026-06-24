@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <!-- Projects -->
   <app-container>
     <app-section>
-      <template #title>Recent active projects</template>
+      <template #title>{{ t('RecentActiveProjects') }}</template>
       <slot>
         <projects-table-data-loader
           :show-namespace="false"
@@ -25,9 +25,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script setup lang="ts">
 import { reactive } from 'vue'
 
+import returnTranslation from '@/../../lang/translate'
 import { AppContainer, AppSection } from '@/common'
 import ProjectsTableDataLoader from '@/modules/project/components/ProjectsTableDataLoader.vue'
 defineProps<{ canCreateProject: boolean }>()
+
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 const initialOptions = reactive({
   sortBy: 'updated',

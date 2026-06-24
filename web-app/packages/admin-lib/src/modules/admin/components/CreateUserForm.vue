@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <form @submit.prevent="submit" class="flex flex-column pb-4">
     <span class="p-input-filled">
-      <label for="email">Email</label>
+      <label for="email">{{ $t('Email') }}</label>
       <PInputText
         id="email"
         v-model="email"
@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
     <span class="p-input-filled">
       <app-password-tooltip for="newPassword"
-        ><template #label>Password</template>
+        ><template #label>{{ $t('Password') }}</template>
       </app-password-tooltip>
       <PPassword
         id="newPassword"
@@ -34,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         toggleMask
         :feedback="false"
         aria-describedby="password-error"
-        placeholder="Enter password"
+        :placeholder="$t('EnterPassword')"
       />
       <span class="p-error paragraph-p6" id="password-error">{{
         errors.password?.[0] || '&nbsp;'
@@ -50,7 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         @click="close"
         class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
         data-cy="profile-edit-close-btn"
-        >Cancel</PButton
+        >{{ $t('Cancel') }}</PButton
       >
 
       <PButton
@@ -58,7 +58,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         class="flex w-12 lg:w-6 justify-content-center"
         data-cy="profile-edit-save-btn"
       >
-        Create
+        {{ $t('Create') }}
       </PButton>
     </div>
   </form>
@@ -77,6 +77,10 @@ import { mapActions, mapState } from 'pinia'
 import { defineComponent } from 'vue'
 
 import { AdminApi, CreateUserData } from '..'
+
+import returnTranslation from '@/../../lang/translate'
+
+const t = (key: string) => returnTranslation(import.meta.env.VITE_LANG, key)
 
 export default defineComponent({
   components: {
@@ -130,7 +134,7 @@ export default defineComponent({
           this.close()
           this.$emit('success')
           this.show({
-            text: 'User created'
+            text: t('UserCreated')
           })
         })
         .catch((err) => {
@@ -139,7 +143,7 @@ export default defineComponent({
             error: err,
             generalMessage: errorUtils.getErrorMessage(
               err,
-              'Failed to create user'
+              t('FailedToCreateUser')
             )
           })
         })
