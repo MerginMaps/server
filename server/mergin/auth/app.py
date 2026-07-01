@@ -101,9 +101,14 @@ def authenticate(login, password):
     user = User.query.filter(query).one_or_none()
     if user is None:
         return None
-    needs_commit = False
     if user.is_locked_out():
-        raise AccountLockedError(user.locked_until)
+        raise AccountLockedError()
+    needs_commit = False
+    # reset non-null locked_until as it has already expired
+    if user.locked_until is not None:
+        user.locked_until = None
+        needs_commit = True
+
     if user.check_password(password):
         if user.failed_login_attempts or user.locked_until:
             user.reset_lockout()

@@ -13,7 +13,6 @@ from sqlalchemy import or_, func, text
 from ..app import db
 from ..sync.models import ProjectUser
 from ..sync.utils import get_user_agent, get_ip, get_device_id, is_reserved_word
-from .errors import AccountLockedError
 
 MAX_USERNAME_LENGTH = 50
 
@@ -93,7 +92,7 @@ class User(db.Model):
         try:
             # bcrypt hash format: $2b$<rounds>$<salt+hash>
             hash_rounds = int(self.passwd.split("$")[2])
-            return hash_rounds != rounds
+            return hash_rounds < rounds
         except (IndexError, ValueError):
             return False
 
@@ -101,12 +100,7 @@ class User(db.Model):
         """Return True if the account is currently under a temporary lockout."""
         if self.locked_until is None:
             return False
-        now = datetime.datetime.utcnow()
-        if self.locked_until <= now:
-            # lockout has expired — clear it so subsequent queries see a clean state
-            self.locked_until = None
-            return False
-        return True
+        return self.locked_until > datetime.datetime.utcnow()
 
     def record_failed_login(self) -> None:
         """Increment the failed-login counter and apply a lockout if a threshold is crossed."""

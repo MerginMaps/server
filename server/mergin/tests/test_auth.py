@@ -111,7 +111,6 @@ def test_login_lockout(client):
         )
         assert resp.status_code == 423
         assert resp.json["code"] == "AccountLocked"
-        assert "locked_until" in resp.json
 
     # tier 1: 3 failures → 60s lock
     for _ in range(3):

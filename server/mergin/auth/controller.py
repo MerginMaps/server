@@ -248,7 +248,7 @@ def admin_login():  # pylint: disable=W0613,W0612
     try:
         user = authenticate(form.login.data, form.password.data)
     except AccountLockedError as e:
-        abort(423, f"Account temporarily locked until {e.locked_until.isoformat()}")
+        return e.response(423)
     if user:
         if user.active and user.is_admin:
             login_user(user)
