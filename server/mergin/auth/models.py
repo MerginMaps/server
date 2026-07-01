@@ -12,7 +12,8 @@ from sqlalchemy import or_, func, text
 
 from ..app import db
 from ..sync.models import ProjectUser
-from ..sync.utils import get_user_agent, get_ip, get_device_id, is_reserved_word
+from ..sync.utils import is_reserved_word
+from ..utils import get_ip, get_user_agent, get_device_id
 
 MAX_USERNAME_LENGTH = 50
 

@@ -11,6 +11,7 @@ from sqlalchemy import func
 
 from .commands import add_commands
 from .config import Configuration
+from .listeners import register_listeners
 from .models import User
 
 # signal for other versions to listen to
@@ -37,6 +38,7 @@ def register(app):
     app.blueprints["/"].name = "auth"
     app.blueprints["auth"] = app.blueprints.pop("/")
     add_commands(app)
+    register_listeners()
 
 
 _permissions = {}

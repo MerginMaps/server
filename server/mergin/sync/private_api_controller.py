@@ -11,8 +11,12 @@ from sqlalchemy.orm import defer
 from sqlalchemy import text
 
 from ..app import db
+from ..audit import emit
+from ..audit.listeners import actor_context
 from ..auth import auth_required
+from ..auth.models import User
 from .forms import AccessPermissionForm
+from .events import SyncEventType
 from .models import (
     Project,
     AccessRequest,
@@ -99,8 +103,17 @@ def decline_project_access_request(request_id):  # noqa: E501
         project_role == ProjectRole.OWNER
         or current_user.id == access_request.requested_by
     ):
+        requester = User.query.get(access_request.requested_by)
         access_request.resolve(RequestStatus.DECLINED, current_user.id)
         db.session.commit()
+        emit(
+            SyncEventType.PROJECT_ACCESS_REQUEST_DECLINED,
+            **actor_context(),
+            target_id=str(project.id),
+            scope_id=project.workspace_id,
+            target_email=requester.email if requester else None,
+            project_name=project.name,
+        )
         return "", 200
     abort(403, "You don't have permissions to remove project access request")
 
@@ -124,7 +137,17 @@ def accept_project_access_request(request_id):
     project = access_request.project
     project_role = ProjectPermissions.get_user_project_role(project, current_user)
     if project_role == ProjectRole.OWNER:
+        requester = User.query.get(access_request.requested_by)
         access_request.accept(permission)
+        emit(
+            SyncEventType.PROJECT_ACCESS_REQUEST_ACCEPTED,
+            **actor_context(),
+            target_id=str(project.id),
+            scope_id=project.workspace_id,
+            target_email=requester.email if requester else None,
+            project_name=project.name,
+            role=permission,
+        )
         return "", 200
     abort(403, "You don't have permissions to accept project access request")
 
@@ -228,6 +251,13 @@ def restore_project(id):  # noqa: E501
     project.removed_at = None
     project.removed_by = None
     db.session.commit()
+    emit(
+        SyncEventType.PROJECT_RESTORED,
+        **actor_context(),
+        target_id=str(project.id),
+        scope_id=project.workspace_id,
+        project_name=project.name,
+    )
     return "", 201
 
 
@@ -240,7 +270,16 @@ def force_project_delete(id):  # noqa: E501
     )
     if not project.removed_at:
         abort(400, "Failed to remove: Project is still active")
+    emit(
+        SyncEventType.PROJECT_DELETED,
+        **actor_context(),
+        target_id=str(project.id),
+        scope_id=project.workspace_id,
+        project_name=project.name,
+    )
+    db.session.info["audit_skip_project_update"] = True
     project.delete()
+    db.session.info.pop("audit_skip_project_update", None)
     return "", 204
 
 

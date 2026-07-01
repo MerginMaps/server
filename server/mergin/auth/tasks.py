@@ -7,6 +7,8 @@ from sqlalchemy.sql.operators import isnot
 
 from ..celery import celery
 from ..app import db
+from ..audit.listeners import emit_safe
+from .events import AuthEventType
 from .models import User
 from .config import Configuration
 
@@ -21,5 +23,12 @@ def anonymize_removed_users():
         User.inactive_since <= before_expiration,
         User.username.op("~")("^(?!deleted_\d{13})"),
     ).all()
+    db.session.info["audit_skip_user_update"] = True
     for user in users:
+        emit_safe(
+            AuthEventType.USER_ANONYMIZED,
+            target_id=str(user.id),
+            target_email=user.email,
+        )
         user.anonymize()
+    db.session.info.pop("audit_skip_user_update", None)

@@ -29,4 +29,4 @@ def register_events():
 
 def remove_events():
     event.remove(db.session, "before_commit", check)
-    event.listen(ProjectVersion, "after_insert", optimize_gpgk_storage)
+    event.remove(ProjectVersion, "after_insert", optimize_gpgk_storage)

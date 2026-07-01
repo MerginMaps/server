@@ -37,6 +37,9 @@ from .forms import (
     ApiLoginForm,
 )
 from ..app import db
+from ..audit import emit
+from ..audit.listeners import actor_context, request_context
+from .events import AuthEventType
 from ..sync.models import Project
 from ..sync.utils import files_size
 
@@ -157,8 +160,20 @@ def login_public():  # noqa: E501
             data = user_profile(user)
             data["session"] = {"token": token, "expire": expire}
             LoginHistory.add_record(user.id, request)
+            emit(
+                AuthEventType.USER_LOGIN_SUCCEEDED,
+                actor_id=user.id,
+                actor_email=user.email,
+                **request_context(),
+                target_id=str(user.id),
+            )
             return data
         else:
+            emit(
+                AuthEventType.USER_LOGIN_FAILED,
+                **request_context(),
+                login=form.login.data,
+            )
             abort(401, "Invalid username or password")
     abort(400, _extract_first_error(form.errors))
 
@@ -169,7 +184,14 @@ def close_user_account():
     Closing user account effectively means to inactivate user (will be removed by cron job) and remove explicitly
     shared projects as well clean references to created projects.
     """
+    emit(
+        AuthEventType.USER_CLOSED,
+        **actor_context(),
+        target_id=str(current_user.id),
+    )
+    db.session.info["audit_skip_user_update"] = True
     current_user.inactivate()
+    db.session.info.pop("audit_skip_user_update", None)
     # emit signal to be caught elsewhere
     user_account_closed.send(current_user)
     return NoContent, 204
@@ -226,8 +248,20 @@ def login():  # pylint: disable=W0613,W0612
             login_user(user)
             if not os.path.isfile(current_app.config["MAINTENANCE_FILE"]):
                 LoginHistory.add_record(user.id, request)
+            emit(
+                AuthEventType.USER_LOGIN_SUCCEEDED,
+                actor_id=user.id,
+                actor_email=user.email,
+                **request_context(),
+                target_id=str(user.id),
+            )
             return "", 200
         else:
+            emit(
+                AuthEventType.USER_LOGIN_FAILED,
+                **request_context(),
+                login=form.login.data,
+            )
             abort(401, "Invalid username or password")
     return jsonify(form.errors), 401
 
@@ -242,15 +276,32 @@ def admin_login():  # pylint: disable=W0613,W0612
     if user:
         if user.active and user.is_admin:
             login_user(user)
+            emit(
+                AuthEventType.USER_LOGIN_SUCCEEDED,
+                actor_id=user.id,
+                actor_email=user.email,
+                **request_context(),
+                target_id=str(user.id),
+            )
             return "", 200
         else:
             abort(403, "You do not have permissions")
     else:
+        emit(
+            AuthEventType.USER_LOGIN_FAILED,
+            **request_context(),
+            login=form.login.data,
+        )
         abort(401, "Invalid username or password")
 
 
 @auth_required
 def logout():  # pylint: disable=W0613,W0612
+    emit(
+        AuthEventType.USER_LOGOUT,
+        **actor_context(),
+        target_id=str(current_user.id),
+    )
     logout_user()
     return "", 200
 
@@ -266,6 +317,11 @@ def change_password():  # pylint: disable=W0613,W0612
         current_user.assign_password(form.password.data)
         db.session.add(current_user)
         db.session.commit()
+        emit(
+            AuthEventType.USER_PASSWORD_CHANGED,
+            **actor_context(),
+            target_id=str(current_user.id),
+        )
         return "", 200
     return jsonify(form.errors), 400
 
@@ -326,6 +382,12 @@ def confirm_new_password(token):  # pylint: disable=W0613,W0612
         user.assign_password(form.password.data)
         db.session.add(user)
         db.session.commit()
+        emit(
+            AuthEventType.USER_PASSWORD_RESET,
+            **request_context(),
+            target_id=str(user.id),
+            target_email=user.email,
+        )
         return "", 200
     return jsonify(form.errors), 400
 
@@ -454,10 +516,23 @@ def update_user(username):  # pylint: disable=W0613,W0612
 @auth_required(permissions=["admin"])
 def delete_user(username):  # pylint: disable=W0613,W0612
     user = User.query.filter_by(username=username).first_or_404("User not found")
+    emit(
+        AuthEventType.USER_CLOSED,
+        **actor_context(),
+        target_id=str(user.id),
+        target_email=user.email,
+    )
+    db.session.info["audit_skip_user_update"] = True
     user.inactivate()
     user_account_closed.send(user)
-    # force 'delete' user
+    emit(
+        AuthEventType.USER_ANONYMIZED,
+        **actor_context(),
+        target_id=str(user.id),
+        target_email=user.email,
+    )
     user.anonymize()
+    db.session.info.pop("audit_skip_user_update", None)
     return "", 204
 
 

@@ -4,6 +4,7 @@
 
 import json
 import shutil
+from typing import List
 import pysqlite3
 import uuid
 import math
@@ -405,3 +406,20 @@ def logout(client):
     """Test helper to log out the client"""
     resp = client.get(url_for("/.mergin_auth_controller_logout"))
     assert resp.status_code == 200
+
+
+class ListSink:
+    """In-memory audit sink for use in automated tests.
+
+    Install via the audit_capture fixture; do not use in production code.
+    """
+
+    def __init__(self):
+        self.events: List = []
+
+    def write(self, event) -> None:
+        self.events.append(event)
+
+    def of_type(self, event_type) -> List:
+        """Return all captured events matching event_type."""
+        return [e for e in self.events if e.event_type == event_type]

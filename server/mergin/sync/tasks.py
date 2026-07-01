@@ -11,12 +11,14 @@ from typing import List, Optional
 from zipfile import ZIP_DEFLATED, ZipFile
 from flask import current_app
 
+from .events import SyncEventType
 from .models import Project, ProjectVersion, FileHistory
 from .storages.disk import move_to_tmp
 from .config import Configuration
 from .utils import get_chunk_location, remove_outdated_files
 from ..celery import celery
 from ..app import db
+from ..audit.listeners import emit_safe
 
 
 @celery.task
@@ -64,8 +66,16 @@ def remove_projects_backups():
         if not len(projects):
             break
 
+        db.session.info["audit_skip_project_update"] = True
         for p in projects:
+            emit_safe(
+                SyncEventType.PROJECT_DELETED,
+                target_id=str(p.id),
+                scope_id=p.workspace_id,
+                project_name=p.name,
+            )
             p.delete()
+        db.session.info.pop("audit_skip_project_update", None)
 
 
 @celery.task

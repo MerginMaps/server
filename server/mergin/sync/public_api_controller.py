@@ -78,16 +78,13 @@ from .permissions import (
 )
 from .utils import (
     generate_checksum,
-    get_ip,
-    get_user_agent,
     generate_location,
     is_valid_uuid,
-    get_device_id,
     is_versioned_file,
     prepare_download_response,
-    get_device_id,
     wkb2wkt,
 )
+from ..utils import get_ip, get_user_agent, get_device_id
 from .errors import StorageLimitHit, ProjectLocked
 from ..utils import format_time_delta
 
