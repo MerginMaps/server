@@ -17,6 +17,15 @@ from ..sync.utils import get_user_agent, get_ip, get_device_id, is_reserved_word
 MAX_USERNAME_LENGTH = 50
 
 
+def _parse_lockout_policy(policy_str: str) -> list:
+    """Parse "5:300,10:3600" into [(5, 300), (10, 3600)] sorted ascending by threshold."""
+    result = []
+    for part in policy_str.split(","):
+        threshold, seconds = part.strip().split(":")
+        result.append((int(threshold), int(seconds)))
+    return sorted(result, key=lambda x: x[0])
+
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), info={"label": "Username"})
@@ -33,6 +42,10 @@ class User(db.Model):
         default=datetime.datetime.utcnow,
     )
     last_signed_in = db.Column(db.DateTime(), nullable=True)
+    failed_login_attempts = db.Column(
+        db.Integer, default=0, nullable=False, server_default="0"
+    )
+    locked_until = db.Column(db.DateTime(), nullable=True)
     receive_notifications = db.Column(
         db.Boolean, default=True, nullable=False, index=True
     )
@@ -64,11 +77,51 @@ class User(db.Model):
     def assign_password(self, password):
         if isinstance(password, str):
             password = password.encode("utf-8")
+        rounds = current_app.config.get("BCRYPT_LOG_ROUNDS", 12)
         self.passwd = (
-            bcrypt.hashpw(password, bcrypt.gensalt()).decode("utf-8")
+            bcrypt.hashpw(password, bcrypt.gensalt(rounds)).decode("utf-8")
             if password
             else None
         )
+
+    def needs_rehash(self):
+        """Return True if the stored hash was generated with a different cost factor than configured."""
+        if self.passwd is None:
+            return False
+        rounds = current_app.config.get("BCRYPT_LOG_ROUNDS", 12)
+        try:
+            # bcrypt hash format: $2b$<rounds>$<salt+hash>
+            hash_rounds = int(self.passwd.split("$")[2])
+            return hash_rounds < rounds
+        except (IndexError, ValueError):
+            return False
+
+    def is_locked_out(self) -> bool:
+        """Return True if the account is currently under a temporary lockout."""
+        if self.locked_until is None:
+            return False
+        return self.locked_until > datetime.datetime.utcnow()
+
+    def record_failed_login(self) -> None:
+        """Increment the failed-login counter and apply a lockout if a threshold is crossed."""
+        self.failed_login_attempts = (self.failed_login_attempts or 0) + 1
+        policy = _parse_lockout_policy(
+            current_app.config.get("LOCKOUT_POLICY", "5:300,10:3600")
+        )
+        # find the highest applicable tier
+        duration = None
+        for threshold, seconds in policy:
+            if self.failed_login_attempts >= threshold:
+                duration = seconds
+        if duration is not None:
+            self.locked_until = datetime.datetime.utcnow() + datetime.timedelta(
+                seconds=duration
+            )
+
+    def reset_lockout(self) -> None:
+        """Clear lockout state after a successful login."""
+        self.failed_login_attempts = 0
+        self.locked_until = None
 
     @property
     def is_authenticated(self):
@@ -185,6 +238,7 @@ class User(db.Model):
         """Anonymize user object in database - remove personal information"""
         ts = round(datetime.datetime.utcnow().timestamp() * 1000)
         del_str = f"deleted_{ts}"
+        self.active = False
         self.username = del_str
         self.email = None
         self.passwd = None

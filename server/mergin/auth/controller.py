@@ -25,6 +25,7 @@ from .app import (
 )
 from .bearer import encode_token
 from .models import User, LoginHistory
+from .errors import AccountLockedError
 from .schemas import UserSchema, UserSearchSchema, UserProfileSchema, UserInfoSchema
 from .forms import (
     LoginForm,
@@ -137,7 +138,10 @@ def login_public():  # noqa: E501
     """
     form = ApiLoginForm()
     if form.validate():
-        user = authenticate(form.login.data, form.password.data)
+        try:
+            user = authenticate(form.login.data, form.password.data)
+        except AccountLockedError as e:
+            return e.response(423)
         if user and user.active:
             expire = datetime.now(pytz.utc) + timedelta(
                 seconds=current_app.config["BEARER_TOKEN_EXPIRATION"]
@@ -221,7 +225,10 @@ def search_users():  # pylint: disable=W0613,W0612
 def login():  # pylint: disable=W0613,W0612
     form = LoginForm()
     if form.validate():
-        user = authenticate(form.login.data, form.password.data)
+        try:
+            user = authenticate(form.login.data, form.password.data)
+        except AccountLockedError as e:
+            return e.response(423)
         if user and user.active:
             login_user(user)
             if not os.path.isfile(current_app.config["MAINTENANCE_FILE"]):
@@ -238,7 +245,10 @@ def admin_login():  # pylint: disable=W0613,W0612
     if not form.validate():
         return jsonify(form.errors), 400
 
-    user = authenticate(form.login.data, form.password.data)
+    try:
+        user = authenticate(form.login.data, form.password.data)
+    except AccountLockedError as e:
+        return e.response(423)
     if user:
         if user.active and user.is_admin:
             login_user(user)

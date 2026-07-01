@@ -12,6 +12,7 @@ from sqlalchemy import func
 from .commands import add_commands
 from .config import Configuration
 from .models import User
+from .errors import AccountLockedError
 
 # signal for other versions to listen to
 user_account_closed = signal("user_account_closed")
@@ -61,7 +62,11 @@ def auth_required(f=None, permissions=None):
 
     @functools.wraps(f)
     def wrapped_func(*args, **kwargs):
-        if not current_user or not current_user.is_authenticated:
+        if (
+            not current_user
+            or not current_user.is_authenticated
+            or not current_user.is_active
+        ):
             return "Authentication information is missing or invalid.", 401
         if permissions:
             for check_permission in permissions:
@@ -87,13 +92,37 @@ def edit_profile_enabled(f):
 
 
 def authenticate(login, password):
+    from ..app import db
+
     if "@" in login:
         query = func.lower(User.email) == func.lower(login)
     else:
         query = func.lower(User.username) == func.lower(login)
     user = User.query.filter(query).one_or_none()
-    if user and user.check_password(password):
+    if user is None:
+        return None
+    if user.is_locked_out():
+        raise AccountLockedError()
+    needs_commit = False
+    # reset non-null locked_until as it has already expired
+    if user.locked_until is not None:
+        user.locked_until = None
+        needs_commit = True
+
+    if user.check_password(password):
+        if user.failed_login_attempts or user.locked_until:
+            user.reset_lockout()
+            needs_commit = True
+        if user.needs_rehash():
+            user.assign_password(password)
+            needs_commit = True
+        if needs_commit:
+            db.session.commit()
         return user
+    else:
+        user.record_failed_login()
+        db.session.commit()
+        return None
 
 
 def generate_confirmation_token(app, email, salt):

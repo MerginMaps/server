@@ -94,6 +94,113 @@ def test_logout(client):
     assert resp.status_code == 200
 
 
+def test_login_lockout(client):
+    """Test account lockout: progressive tiers, freeze during lock, reset on success.
+
+    policy: 3 failures → 60s lock, 4 failures → 3600s lock
+    counter is never reset between lockouts, so tier-2 is reached after one
+    extra failure following the first expired tier-1 lock
+    """
+    client.application.config["LOCKOUT_POLICY"] = "3:60,4:3600"
+    user = add_user("lockoutuser", "correctpassword")
+
+    def assert_locked():
+        resp = client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "lockoutuser", "password": "wrong"},
+        )
+        assert resp.status_code == 423
+        assert resp.json["code"] == "AccountLocked"
+
+    # tier 1: 3 failures → 60s lock
+    for _ in range(3):
+        resp = client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "lockoutuser", "password": "wrong"},
+        )
+        assert resp.status_code == 401
+
+    assert_locked()
+
+    # correct password is also blocked while locked
+    resp = client.post(
+        url_for("/.mergin_auth_controller_login"),
+        json={"login": "lockoutuser", "password": "correctpassword"},
+    )
+    assert resp.status_code == 423
+
+    # counter stays frozen during lockout
+    assert user.failed_login_attempts == 3
+    assert user.locked_until is not None
+
+    # tier 2 escalation: one more failure after tier-1 expiry
+    # counter was at 3; one new failure pushes it to 4, crossing tier-2 threshold
+
+    # expire_lock
+    user.locked_until = datetime.utcnow() - timedelta(seconds=1)
+    db.session.commit()
+
+    resp = client.post(
+        url_for("/.mergin_auth_controller_login"),
+        json={"login": "lockoutuser", "password": "wrong"},
+    )
+    # returns 401 (wrong password), but now locked for 3600s
+    assert resp.status_code == 401
+    assert_locked()
+    assert user.locked_until > datetime.utcnow() + timedelta(seconds=60)
+    assert user.failed_login_attempts == 4
+
+    # successful login after expiry resets everything
+    user.locked_until = datetime.utcnow() - timedelta(seconds=1)
+    db.session.commit()
+    resp = client.post(
+        url_for("/.mergin_auth_controller_login"),
+        json={"login": "lockoutuser", "password": "correctpassword"},
+    )
+    assert resp.status_code == 200
+    assert user.failed_login_attempts == 0
+    assert user.locked_until is None
+
+
+def test_bcrypt_lazy_rehash(app):
+    """Password is transparently rehashed on login when the cost factor changes."""
+    import bcrypt
+    from ..auth.app import authenticate
+
+    user = add_user("rehashuser", "rehashpassword")
+    # Store a hash with a low cost factor (4 is the minimum bcrypt allows)
+    low_rounds_hash = bcrypt.hashpw(b"rehashpassword", bcrypt.gensalt(4)).decode(
+        "utf-8"
+    )
+    user.passwd = low_rounds_hash
+    db.session.commit()
+
+    app.config["BCRYPT_LOG_ROUNDS"] = 5
+    result = authenticate("rehashuser", "rehashpassword")
+    assert result is not None
+
+    db.session.refresh(user)
+    hash_rounds = int(user.passwd.split("$")[2])
+    assert hash_rounds == 5
+
+
+def test_deactivated_user_session_rejected(client):
+    """Session cookie for a deactivated account must be rejected."""
+    user = add_user("testdeactivate", "testpassword")
+    login(client, "testdeactivate", "testpassword")
+
+    # session works before deactivation
+    resp = client.get(f"/v1/user/{user.username}")
+    assert resp.status_code == 200
+
+    user.active = False
+    db.session.commit()
+
+    # same session must now be rejected
+    resp = client.get(f"/v1/user/{user.username}")
+    assert resp.status_code == 401
+
+
 # user registration tests
 test_user_reg_data = [
     ("test@test.com", "#pwd1234", 201),  # success
@@ -469,7 +576,8 @@ def test_update_user(client):
         data=json.dumps(data),
         headers=json_headers,
     )
-    assert resp.status_code == 403
+    # user is deactivated, so session is rejected before permission check
+    assert resp.status_code == 401
 
 
 def test_update_user_profile(client):
