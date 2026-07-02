@@ -419,15 +419,14 @@ def test_allowed_extensions_override():
         assert not is_supported_extension("app.js")
 
 
-def test_allowed_mime_types_override():
-    """MIME types in UPLOAD_MIME_TYPES_WHITELIST are accepted even though they are in FORBIDDEN_MIME_TYPES."""
+def test_extension_whitelist_skips_mime_check():
+    """A whitelisted extension also bypasses the MIME check via check_skip_validation."""
     with patch("mergin.sync.utils.get_mimetype", return_value="text/x-shellscript"):
-        # blocked by default
-        with patch("mergin.sync.utils.Configuration.UPLOAD_MIME_TYPES_WHITELIST", []):
+        # blocked when the extension is not whitelisted
+        with patch("mergin.sync.utils.Configuration.UPLOAD_EXTENSIONS_WHITELIST", []):
             assert not is_supported_type("deploy.sh")
-        # explicitly allowed
+        # allowed once the extension is whitelisted
         with patch(
-            "mergin.sync.utils.Configuration.UPLOAD_MIME_TYPES_WHITELIST",
-            ["text/x-shellscript"],
+            "mergin.sync.utils.Configuration.UPLOAD_EXTENSIONS_WHITELIST", [".sh"]
         ):
             assert is_supported_type("deploy.sh")

@@ -86,9 +86,5 @@ class Configuration(object):
     UPLOAD_EXTENSIONS_WHITELIST = config(
         "UPLOAD_EXTENSIONS_WHITELIST", default="", cast=Csv()
     )
-    # extra MIME types to permit beyond the default block-list
-    UPLOAD_MIME_TYPES_WHITELIST = config(
-        "UPLOAD_MIME_TYPES_WHITELIST", default="", cast=Csv()
-    )
     # max batch size for fetch projects in batch endpoint
     MAX_BATCH_SIZE = config("MAX_BATCH_SIZE", default=100, cast=int)
