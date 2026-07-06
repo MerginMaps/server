@@ -186,12 +186,15 @@ class User(db.Model):
         """Anonymize user object in database - remove personal information"""
         ts = round(datetime.datetime.utcnow().timestamp() * 1000)
         del_str = f"deleted_{ts}"
+        # Suppress user.updated — these changes are covered by the USER_DELETED event.
+        db.session.info["audit_skip_user_update"] = True
         self.username = del_str
         self.email = None
         self.passwd = None
         self.first_name = None
         self.last_name = None
         db.session.commit()
+        db.session.info.pop("audit_skip_user_update", None)
 
     @classmethod
     def get_by_login(cls, login: str) -> Optional[User]:

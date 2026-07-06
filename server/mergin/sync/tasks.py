@@ -70,9 +70,9 @@ def remove_projects_backups():
         for p in projects:
             emit_safe(
                 SyncEventType.PROJECT_DELETED,
-                target_id=str(p.id),
-                scope_id=p.workspace_id,
-                project_name=p.name,
+                project_id=p.id,
+                workspace_id=p.workspace_id,
+                project_name=f"{p.workspace.name}/{p.name}",
             )
             p.delete()
         db.session.info.pop("audit_skip_project_update", None)

@@ -23,12 +23,10 @@ def anonymize_removed_users():
         User.inactive_since <= before_expiration,
         User.username.op("~")("^(?!deleted_\d{13})"),
     ).all()
-    db.session.info["audit_skip_user_update"] = True
     for user in users:
         emit_safe(
-            AuthEventType.USER_ANONYMIZED,
-            target_id=str(user.id),
+            AuthEventType.USER_DELETED,
+            user_id=user.id,
             target_email=user.email,
         )
         user.anonymize()
-    db.session.info.pop("audit_skip_user_update", None)

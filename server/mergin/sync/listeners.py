@@ -27,12 +27,14 @@ _SKIP = frozenset(
 
 
 def _on_project_created(_mapper, _connection, target):
+    if object_session(target).info.get("audit_skip_project_create"):
+        return
     emit_safe(
         SyncEventType.PROJECT_CREATED,
         **actor_context(),
-        target_id=str(target.id),
-        scope_id=target.workspace_id,
-        project_name=target.name,
+        project_id=target.id,
+        workspace_id=target.workspace_id,
+        project_name=f"{target.workspace.name}/{target.name}",
     )
 
 
@@ -45,9 +47,9 @@ def _on_project_updated(_mapper, _connection, target):
     emit_safe(
         SyncEventType.PROJECT_UPDATED,
         **actor_context(),
-        target_id=str(target.id),
-        scope_id=target.workspace_id,
-        project_name=target.name,
+        project_id=target.id,
+        workspace_id=target.workspace_id,
+        project_name=f"{target.workspace.name}/{target.name}",
         **changes,
     )
 

@@ -423,3 +423,9 @@ class ListSink:
     def of_type(self, event_type) -> List:
         """Return all captured events matching event_type."""
         return [e for e in self.events if e.event_type == event_type]
+
+    def one(self, event_type):
+        """Assert exactly one event of event_type was captured and return it."""
+        events = self.of_type(event_type)
+        assert len(events) == 1, f"Expected 1 {event_type} event, got {len(events)}"
+        return events[0]

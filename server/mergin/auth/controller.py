@@ -165,7 +165,7 @@ def login_public():  # noqa: E501
                 actor_id=user.id,
                 actor_email=user.email,
                 **request_context(),
-                target_id=str(user.id),
+                user_id=user.id,
             )
             return data
         else:
@@ -173,6 +173,7 @@ def login_public():  # noqa: E501
                 AuthEventType.USER_LOGIN_FAILED,
                 **request_context(),
                 login=form.login.data,
+                reason="account_inactive" if user else "invalid_credentials",
             )
             abort(401, "Invalid username or password")
     abort(400, _extract_first_error(form.errors))
@@ -185,13 +186,11 @@ def close_user_account():
     shared projects as well clean references to created projects.
     """
     emit(
-        AuthEventType.USER_CLOSED,
+        AuthEventType.USER_MARKED_FOR_DELETION,
         **actor_context(),
-        target_id=str(current_user.id),
+        user_id=current_user.id,
     )
-    db.session.info["audit_skip_user_update"] = True
     current_user.inactivate()
-    db.session.info.pop("audit_skip_user_update", None)
     # emit signal to be caught elsewhere
     user_account_closed.send(current_user)
     return NoContent, 204
@@ -253,7 +252,7 @@ def login():  # pylint: disable=W0613,W0612
                 actor_id=user.id,
                 actor_email=user.email,
                 **request_context(),
-                target_id=str(user.id),
+                user_id=user.id,
             )
             return "", 200
         else:
@@ -261,6 +260,7 @@ def login():  # pylint: disable=W0613,W0612
                 AuthEventType.USER_LOGIN_FAILED,
                 **request_context(),
                 login=form.login.data,
+                reason="account_inactive" if user else "invalid_credentials",
             )
             abort(401, "Invalid username or password")
     return jsonify(form.errors), 401
@@ -281,7 +281,7 @@ def admin_login():  # pylint: disable=W0613,W0612
                 actor_id=user.id,
                 actor_email=user.email,
                 **request_context(),
-                target_id=str(user.id),
+                user_id=user.id,
             )
             return "", 200
         else:
@@ -291,17 +291,13 @@ def admin_login():  # pylint: disable=W0613,W0612
             AuthEventType.USER_LOGIN_FAILED,
             **request_context(),
             login=form.login.data,
+            reason="invalid_credentials",
         )
         abort(401, "Invalid username or password")
 
 
 @auth_required
 def logout():  # pylint: disable=W0613,W0612
-    emit(
-        AuthEventType.USER_LOGOUT,
-        **actor_context(),
-        target_id=str(current_user.id),
-    )
     logout_user()
     return "", 200
 
@@ -320,7 +316,7 @@ def change_password():  # pylint: disable=W0613,W0612
         emit(
             AuthEventType.USER_PASSWORD_CHANGED,
             **actor_context(),
-            target_id=str(current_user.id),
+            user_id=current_user.id,
         )
         return "", 200
     return jsonify(form.errors), 400
@@ -385,7 +381,7 @@ def confirm_new_password(token):  # pylint: disable=W0613,W0612
         emit(
             AuthEventType.USER_PASSWORD_RESET,
             **request_context(),
-            target_id=str(user.id),
+            user_id=user.id,
             target_email=user.email,
         )
         return "", 200
@@ -503,13 +499,27 @@ def update_user(username):  # pylint: disable=W0613,W0612
         abort(400, "Unable to assign super admin role")
 
     user = User.query.filter_by(username=username).first_or_404("User not found")
+    old_active = user.active
     form.update_obj(user)
-
-    # remove inactive since flag for ban or re-activation
     user.inactive_since = None
-
     db.session.add(user)
     db.session.commit()
+
+    if old_active and not user.active:
+        emit(
+            AuthEventType.USER_DEACTIVATED,
+            **actor_context(),
+            user_id=user.id,
+            target_email=user.email,
+        )
+    elif not old_active and user.active:
+        emit(
+            AuthEventType.USER_RESTORED,
+            **actor_context(),
+            user_id=user.id,
+            target_email=user.email,
+        )
+
     return jsonify(UserSchema().dump(user))
 
 
@@ -517,22 +527,20 @@ def update_user(username):  # pylint: disable=W0613,W0612
 def delete_user(username):  # pylint: disable=W0613,W0612
     user = User.query.filter_by(username=username).first_or_404("User not found")
     emit(
-        AuthEventType.USER_CLOSED,
+        AuthEventType.USER_MARKED_FOR_DELETION,
         **actor_context(),
-        target_id=str(user.id),
+        user_id=user.id,
         target_email=user.email,
     )
-    db.session.info["audit_skip_user_update"] = True
     user.inactivate()
     user_account_closed.send(user)
     emit(
-        AuthEventType.USER_ANONYMIZED,
+        AuthEventType.USER_DELETED,
         **actor_context(),
-        target_id=str(user.id),
+        user_id=user.id,
         target_email=user.email,
     )
     user.anonymize()
-    db.session.info.pop("audit_skip_user_update", None)
     return "", 204
 
 

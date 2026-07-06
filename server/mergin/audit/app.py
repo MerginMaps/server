@@ -25,15 +25,15 @@ def emit(
     actor_user_agent=None,
     actor_device_id=None,
     ip_address=None,
-    target_id=None,
-    scope_id=None,
+    user_id=None,
+    project_id=None,
+    workspace_id=None,
     **detail,
 ) -> None:
     """Emit one audit event to the configured sink.
 
-    target_type is auto-derived from the noun segment of event_type (e.g. "user"
-    from "user.login.succeeded"). scope_id is the workspace that owns this event
-    (None for global events). Extra keyword arguments become the context dict.
+    Set at least one of user_id, project_id, workspace_id to identify the target.
+    Extra keyword arguments become the context dict.
     """
     event = AuditEvent(
         event_type=event_type,
@@ -42,10 +42,10 @@ def emit(
         actor_user_agent=actor_user_agent,
         actor_device_id=actor_device_id,
         ip_address=ip_address,
-        timestamp=datetime.datetime.utcnow(),
-        target_id=target_id,
-        target_type=event_type.split(".")[0] if event_type else None,
-        scope_id=scope_id,
+        happened_at=datetime.datetime.utcnow(),
+        user_id=user_id,
+        project_id=project_id,
+        workspace_id=workspace_id,
         context=detail,
     )
     current_app.audit_sink.write(event)

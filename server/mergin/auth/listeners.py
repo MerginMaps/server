@@ -9,17 +9,21 @@ from ..audit.listeners import actor_context, field_changes, emit_safe
 from .events import AuthEventType
 from .models import User
 
-# Fields excluded from user.updated audit events — high-frequency operational
-# fields (last_signed_in, registration_date) or sensitive values that must never appear in logs (passwd).
+# Fields excluded from user.updated audit events:
+#   - sensitive values that must never appear in logs (passwd)
+#   - high-frequency operational fields (last_signed_in, registration_date)
+#   - lifecycle state fields covered by dedicated events (active, inactive_since)
 # frozenset prevents accidental mutation of module-level state.
-_SKIP = frozenset({"passwd", "last_signed_in", "registration_date"})
+_SKIP = frozenset(
+    {"passwd", "last_signed_in", "registration_date", "active", "inactive_since"}
+)
 
 
 def _on_user_created(_mapper, _connection, target):
     emit_safe(
         AuthEventType.USER_CREATED,
         **actor_context(),
-        target_id=str(target.id),
+        user_id=target.id,
         target_email=target.email,
     )
 
@@ -33,7 +37,7 @@ def _on_user_updated(_mapper, _connection, target):
     emit_safe(
         AuthEventType.USER_UPDATED,
         **actor_context(),
-        target_id=str(target.id),
+        user_id=target.id,
         target_email=target.email,
         **changes,
     )

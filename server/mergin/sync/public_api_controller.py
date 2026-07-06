@@ -35,8 +35,11 @@ from werkzeug.exceptions import HTTPException, Conflict
 from mergin.sync.forms import project_name_validation
 from .interfaces import WorkspaceRole
 from ..app import db
+from ..audit import emit
+from ..audit.listeners import actor_context
 from ..auth import auth_required
 from ..auth.models import User
+from .events import SyncEventType
 from .models import (
     FileSyncErrorType,
     FileDiff,
@@ -221,6 +224,9 @@ def add_project(namespace):  # noqa: E501
 
         template_name = request.json.get("template", None)
         if template_name:
+            # Set flag before the template query — p is already in the session via the
+            # workspace backref, so any query triggers autoflush and fires after_insert.
+            db.session.info["audit_skip_project_create"] = True
             template = (
                 Project.query.filter(Project.creator.has(username="TEMPLATES"))
                 .filter(Project.name == template_name)
@@ -240,7 +246,6 @@ def add_project(namespace):  # noqa: E501
                         change=PushChangeType.CREATE,
                     )
                 )
-
         else:
             template = None
             version_name = 0
@@ -264,6 +269,16 @@ def add_project(namespace):  # noqa: E501
         db.session.add(p)
         db.session.add(version)
         db.session.commit()
+        if template_name:
+            db.session.info.pop("audit_skip_project_create", None)
+            emit(
+                SyncEventType.PROJECT_CREATED,
+                **actor_context(),
+                project_id=p.id,
+                workspace_id=p.workspace_id,
+                project_name=f"{workspace.name}/{p.name}",
+                created_from_template=template_name,
+            )
         project_version_created.send(version)
         return NoContent, 200
 
@@ -1256,6 +1271,7 @@ def clone_project(namespace, project_name):  # noqa: E501
     )
     p.updated = datetime.utcnow()
     db.session.add(p)
+    db.session.info["audit_skip_project_create"] = True
     files_to_exclude = current_app.config.get("EXCLUDED_CLONE_FILENAMES", [])
 
     try:
@@ -1296,6 +1312,16 @@ def clone_project(namespace, project_name):  # noqa: E501
     )
     db.session.add(project_version)
     db.session.commit()
+    db.session.info.pop("audit_skip_project_create", None)
+    emit(
+        SyncEventType.PROJECT_CREATED,
+        **actor_context(),
+        project_id=p.id,
+        workspace_id=p.workspace_id,
+        project_name=f"{ws.name}/{p.name}",
+        cloned_from_id=str(cloned_project.id),
+        cloned_from_name=f"{cp_workspace_name}/{cloned_project.name}",
+    )
     project_version_created.send(project_version)
     return NoContent, 200
 

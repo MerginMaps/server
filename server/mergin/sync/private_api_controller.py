@@ -66,6 +66,13 @@ def create_project_access_request(namespace, project_name):  # noqa: E501
     access_request = AccessRequest(project, current_user.id)
     db.session.add(access_request)
     db.session.commit()
+    emit(
+        SyncEventType.PROJECT_ACCESS_REQUEST_CREATED,
+        **actor_context(),
+        project_id=project.id,
+        workspace_id=project.workspace_id,
+        project_name=f"{project.workspace.name}/{project.name}",
+    )
     # notify project owners
     owners = current_app.project_handler.get_email_receivers(project)
     for owner in owners:
@@ -107,12 +114,12 @@ def decline_project_access_request(request_id):  # noqa: E501
         access_request.resolve(RequestStatus.DECLINED, current_user.id)
         db.session.commit()
         emit(
-            SyncEventType.PROJECT_ACCESS_REQUEST_DECLINED,
+            SyncEventType.PROJECT_ACCESS_REQUEST_REJECTED,
             **actor_context(),
-            target_id=str(project.id),
-            scope_id=project.workspace_id,
+            project_id=project.id,
+            workspace_id=project.workspace_id,
             target_email=requester.email if requester else None,
-            project_name=project.name,
+            project_name=f"{project.workspace.name}/{project.name}",
         )
         return "", 200
     abort(403, "You don't have permissions to remove project access request")
@@ -142,10 +149,18 @@ def accept_project_access_request(request_id):
         emit(
             SyncEventType.PROJECT_ACCESS_REQUEST_ACCEPTED,
             **actor_context(),
-            target_id=str(project.id),
-            scope_id=project.workspace_id,
+            project_id=project.id,
+            workspace_id=project.workspace_id,
             target_email=requester.email if requester else None,
-            project_name=project.name,
+            project_name=f"{project.workspace.name}/{project.name}",
+            role=permission,
+        )
+        emit(
+            SyncEventType.PROJECT_MEMBER_ADDED,
+            **actor_context(),
+            project_id=project.id,
+            workspace_id=project.workspace_id,
+            target_email=requester.email if requester else None,
             role=permission,
         )
         return "", 200
@@ -254,9 +269,9 @@ def restore_project(id):  # noqa: E501
     emit(
         SyncEventType.PROJECT_RESTORED,
         **actor_context(),
-        target_id=str(project.id),
-        scope_id=project.workspace_id,
-        project_name=project.name,
+        project_id=project.id,
+        workspace_id=project.workspace_id,
+        project_name=f"{project.workspace.name}/{project.name}",
     )
     return "", 201
 
@@ -273,9 +288,9 @@ def force_project_delete(id):  # noqa: E501
     emit(
         SyncEventType.PROJECT_DELETED,
         **actor_context(),
-        target_id=str(project.id),
-        scope_id=project.workspace_id,
-        project_name=project.name,
+        project_id=project.id,
+        workspace_id=project.workspace_id,
+        project_name=f"{project.workspace.name}/{project.name}",
     )
     db.session.info["audit_skip_project_update"] = True
     project.delete()
