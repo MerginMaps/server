@@ -9,6 +9,12 @@ class SyncEventType(str, Enum):
     # automatic CRUD events (SQLAlchemy listeners)
     PROJECT_CREATED = "project.created"  # also emitted on clone
     PROJECT_UPDATED = "project.updated"
+    # transfer request events
+    PROJECT_TRANSFER_REQUEST_CREATED = "project.transfer_request.created"
+    PROJECT_TRANSFER_REQUEST_ACCEPTED = "project.transfer_request.accepted"
+    PROJECT_TRANSFER_REQUEST_REJECTED = "project.transfer_request.rejected"
+    # transfer event
+    PROJECT_TRANSFERRED = "project.transferred"
     # lifecycle events (explicit emit)
     PROJECT_MARKED_FOR_DELETION = "project.marked_for_deletion"
     PROJECT_RESTORED = "project.restored"

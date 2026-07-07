@@ -166,6 +166,7 @@ def login_public():  # noqa: E501
                 actor_email=user.email,
                 **request_context(),
                 user_id=user.id,
+                login_method="password",
             )
             return data
         else:
@@ -174,6 +175,7 @@ def login_public():  # noqa: E501
                 **request_context(),
                 login=form.login.data,
                 reason="account_inactive" if user else "invalid_credentials",
+                login_method="password",
             )
             abort(401, "Invalid username or password")
     abort(400, _extract_first_error(form.errors))
@@ -253,6 +255,7 @@ def login():  # pylint: disable=W0613,W0612
                 actor_email=user.email,
                 **request_context(),
                 user_id=user.id,
+                login_method="password",
             )
             return "", 200
         else:
@@ -261,6 +264,7 @@ def login():  # pylint: disable=W0613,W0612
                 **request_context(),
                 login=form.login.data,
                 reason="account_inactive" if user else "invalid_credentials",
+                login_method="password",
             )
             abort(401, "Invalid username or password")
     return jsonify(form.errors), 401
@@ -282,6 +286,7 @@ def admin_login():  # pylint: disable=W0613,W0612
                 actor_email=user.email,
                 **request_context(),
                 user_id=user.id,
+                login_method="password",
             )
             return "", 200
         else:
@@ -292,6 +297,7 @@ def admin_login():  # pylint: disable=W0613,W0612
             **request_context(),
             login=form.login.data,
             reason="invalid_credentials",
+            login_method="password",
         )
         abort(401, "Invalid username or password")
 
