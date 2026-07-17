@@ -80,11 +80,11 @@ $progressSpinnerColorFour:$warningMessageTextColor !default;
 
 /// Background of an avatar
 /// @group misc
-$avatarBg: map-get($map: $colors, $key: medium-green);
+$avatarBg: map-get($map: $colors, $key: informative);
 
 /// Text color of an avatar
 /// @group misc
-$avatarTextColor:$textColor;
+$avatarTextColor: map-get($map: $colors, $key: deep-ocean);
 
 /// Background of a chip
 /// @group misc
