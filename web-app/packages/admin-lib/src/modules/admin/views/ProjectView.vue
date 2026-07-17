@@ -6,6 +6,7 @@
           <h1 class="headline-h3">Project details</h1>
         </template>
         <template #headerActions>
+          <slot name="action-button"></slot>
           <PButton
             severity="secondary"
             @click="downloadArchive"

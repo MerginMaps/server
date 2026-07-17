@@ -19,7 +19,7 @@
               shape="circle"
               :pt="{
                 root: {
-                  class: 'font-semibold text-color-forest'
+                  class: 'font-semibold'
                 }
               }"
             />

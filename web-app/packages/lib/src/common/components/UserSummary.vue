@@ -6,7 +6,7 @@
       :size="avatarSize"
       :pt="{
         root: {
-          class: 'mr-1 text-color-forest font-semibold flex-shrink-0',
+          class: 'mr-1 font-semibold flex-shrink-0',
           style: { borderRadius: '50%' }
         }
       }"
