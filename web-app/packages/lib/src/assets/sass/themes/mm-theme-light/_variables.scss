@@ -121,5 +121,6 @@ $colors: (
     --dark-gray-color: #{map-get($colors, "dark-gray")};
     --medium-gray-color: #{map-get($colors, "medium-gray")};
     --secondary-gray-color: #{map-get($colors, "secondary-gray")};
+    --purple-color: #{map-get($colors, "purple")};
     color-scheme: light;
 }
