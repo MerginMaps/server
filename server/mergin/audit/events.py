@@ -15,15 +15,15 @@ EventType = str
 @dataclass(frozen=True)
 class AuditEvent:
     event_type: EventType
-    ip_address: Optional[str]
+    actor_ip: Optional[str]
     happened_at: datetime.datetime
     actor_id: Optional[int]
     actor_email: Optional[str]
-    actor_user_agent: Optional[str]
-    actor_device_id: Optional[str]  # X-Device-Id header; set by mobile/QGIS clients
+    actor_ua: Optional[str]
+    actor_device: Optional[str]  # X-Device-Id header; set by mobile/QGIS clients
     user_id: Optional[int]  # set when the target is a user
     project_id: Optional[uuid.UUID]  # set when the target is a project
     workspace_id: Optional[
         int
     ]  # workspace the event belongs to; set for project and workspace events
-    context: Dict[str, Any] = field(default_factory=dict)
+    metadata: Dict[str, Any] = field(default_factory=dict)

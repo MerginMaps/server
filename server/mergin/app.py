@@ -181,7 +181,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
     csrf.init_app(app.app)
     login_manager.init_app(app.app)
 
-    # register audit module (NullSink by default; custom sinks overrides app.audit_sink)
+    # register audit module
     register_audit(app.app)
 
     # register auth blueprint

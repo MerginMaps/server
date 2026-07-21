@@ -13,39 +13,39 @@ from .sinks import NullSink
 def register(app: Flask) -> None:
     """Wire the audit module into a Flask app.
 
-    Sets NullSink as the default.
+    Stores the sink in app.extensions["audit"] so emit() has one consistent lookup path.
     """
-    app.audit_sink = NullSink()
+    app.extensions["audit"] = {"sink": NullSink()}
 
 
 def emit(
     event_type: EventType,
     actor_id=None,
     actor_email=None,
-    actor_user_agent=None,
-    actor_device_id=None,
-    ip_address=None,
+    actor_ua=None,
+    actor_device=None,
+    actor_ip=None,
     user_id=None,
     project_id=None,
     workspace_id=None,
-    **detail,
+    **metadata,
 ) -> None:
     """Emit one audit event to the configured sink.
 
     Set at least one of user_id, project_id, workspace_id to identify the target.
-    Extra keyword arguments become the context dict.
+    Extra keyword arguments become the metadata dict.
     """
     event = AuditEvent(
         event_type=event_type,
         actor_id=actor_id,
         actor_email=actor_email,
-        actor_user_agent=actor_user_agent,
-        actor_device_id=actor_device_id,
-        ip_address=ip_address,
+        actor_ua=actor_ua,
+        actor_device=actor_device,
+        actor_ip=actor_ip,
         happened_at=datetime.datetime.utcnow(),
         user_id=user_id,
         project_id=project_id,
         workspace_id=workspace_id,
-        context=detail,
+        metadata=metadata,
     )
-    current_app.audit_sink.write(event)
+    current_app.extensions["audit"]["sink"].write(event)

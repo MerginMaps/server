@@ -9,6 +9,7 @@ Utilities for writing SQLAlchemy-based audit listeners in any module.
 import logging
 
 from sqlalchemy import inspect as sa_inspect
+from sqlalchemy.orm import ColumnProperty
 from flask import has_request_context, has_app_context, request, current_app
 from flask_login import current_user
 
@@ -25,11 +26,11 @@ def request_context():
     field only requires changing this one function.
     """
     if not has_request_context():
-        return dict(actor_user_agent=None, actor_device_id=None, ip_address=None)
+        return dict(actor_ua=None, actor_device=None, actor_ip=None)
     return dict(
-        actor_user_agent=get_user_agent(request),
-        actor_device_id=get_device_id(request),
-        ip_address=get_ip(request),
+        actor_ua=get_user_agent(request),
+        actor_device=get_device_id(request),
+        actor_ip=get_ip(request),
     )
 
 
@@ -40,17 +41,30 @@ def actor_context():
     """
     actor_id = None
     actor_email = None
-    if has_request_context() and current_user.is_authenticated:
-        actor_id = current_user.id
-        actor_email = current_user.email
+    if has_request_context() and hasattr(
+        current_app._get_current_object(), "login_manager"
+    ):
+        try:
+            if current_user.is_authenticated:
+                actor_id = current_user.id
+                actor_email = current_user.email
+        except Exception:
+            pass
     return dict(actor_id=actor_id, actor_email=actor_email, **request_context())
 
 
 def field_changes(target, skip=frozenset()):
-    """Return flat old_<field>/new_<field> context for all changed non-skipped fields."""
+    """Return flat old_<field>/new_<field> context for all changed non-skipped column fields.
+
+    Only column attributes are included — relationships are skipped because their
+    history entries are ORM instances, not JSON-serializable values.
+    """
+    mapper = sa_inspect(type(target))
     ctx = {}
     for attr in sa_inspect(target).attrs:
         if attr.key in skip:
+            continue
+        if not isinstance(mapper.attrs[attr.key], ColumnProperty):
             continue
         hist = attr.history
         if hist.has_changes():
@@ -68,7 +82,7 @@ def emit_safe(event_type, **kwargs):
     Works both inside HTTP requests (actor context populated) and Celery tasks
     (actor fields are None, indicating a system-initiated action).
     """
-    if not has_app_context() or not hasattr(current_app, "audit_sink"):
+    if not has_app_context() or "audit" not in current_app.extensions:
         return
     try:
         emit(event_type, **kwargs)
