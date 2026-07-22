@@ -22,6 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         ><slot name="menu">
           <div class="flex flex-column lg:flex-row lg:align-items-center gap-2">
             <PButton
+              v-if="hasSidebar"
               :icon="menuButtonIcon"
               plain
               text
@@ -37,30 +38,40 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
       <template #end>
         <div class="flex align-items-center flex-shrink-0">
-          <PButton
+          <slot name="action-button"></slot>
+          <slot
             v-if="loggedUser"
-            text
-            plain
-            aria-haspopup="true"
-            aria-controls="app-header-profile"
-            data-cy="app-header-profile-btn"
-            @click="toggleMenu"
-            class="p-2 shadow-none"
+            name="profile-button"
+            :toggle-menu="toggleMenu"
+            :logged-user="loggedUser"
+            :menu-visible="menuVisible"
           >
-            <slot name="invitationsIcon"></slot>
-            <div class="mr-2 max-w-80 flex flex-column align-items-start">
-              <span class="title-t4" :style="{ whiteSpace: 'nowrap' }">{{
-                userName
-              }}</span>
-              <span
-                v-if="renderNamespace"
-                class="paragraph-p6 opacity-80 font-normal"
-              >
-                {{ currentWorkspace?.name || 'no workspace' }}
-              </span>
-            </div>
-            <i class="ti ti-chevron-down"></i
-          ></PButton>
+            <PButton
+              text
+              plain
+              aria-haspopup="true"
+              aria-controls="app-header-profile"
+              data-cy="app-header-profile-btn"
+              @click="toggleMenu"
+              class="p-2 shadow-none"
+            >
+              <slot name="invitationsIcon"></slot>
+              <div class="mr-2 max-w-80 flex flex-column align-items-end">
+                <span class="title-t4" :style="{ whiteSpace: 'nowrap' }">{{
+                  userName
+                }}</span>
+                <span
+                  v-if="renderNamespace"
+                  class="paragraph-p6 opacity-80 font-normal"
+                >
+                  {{ currentWorkspace?.name || 'no workspace' }}
+                </span>
+              </div>
+              <i
+                :class="menuVisible ? 'ti ti-chevron-up' : 'ti ti-chevron-down'"
+              ></i>
+            </PButton>
+          </slot>
           <PButton
             v-else
             text
@@ -77,6 +88,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
             id="app-header-profile"
             data-cy="app-header-profile"
             ref="menu"
+            @show="menuVisible = true"
+            @hide="menuVisible = false"
             :pt="{ root: { class: 'p-3' }, content: { class: 'p-0' } }"
           >
             <div class="flex align-items-center mb-3">
@@ -86,7 +99,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
                 shape="circle"
                 :pt="{
                   root: {
-                    class: 'mr-2 text-color-forest font-semibold flex-shrink-0',
+                    class: 'mr-2 font-semibold flex-shrink-0',
                     style: {
                       borderRadius: '50%'
                     }
@@ -113,12 +126,30 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               }"
             ></PMenu>
           </POverlayPanel>
-          <AppMenu :items="_helpMenuItems" :icon="'ti ti-help'" />
+          <PButton
+            text
+            plain
+            rounded
+            icon="ti ti-help"
+            @click="toggleMenuHelp"
+            aria-haspopup="true"
+            aria-controls="menu-help"
+            class="paragraph-p4 text-color hidden md:inline-flex"
+          />
+          <PMenu
+            ref="menuHelp"
+            id="menu-help"
+            :model="_helpMenuItems"
+            :popup="true"
+          />
         </div>
       </template>
     </PMenubar>
-    <!-- Show breadcrumps under menu in smaller screens -->
-    <app-breadcrumbs class="lg:hidden px-3 pb-3 pt-0"></app-breadcrumbs>
+    <!-- Show breadcrumps under menu in smaller screens (only when the default menu slot is used) -->
+    <app-breadcrumbs
+      v-if="!$slots.menu"
+      class="lg:hidden px-3 pb-3 pt-0"
+    ></app-breadcrumbs>
   </div>
 </template>
 
@@ -129,15 +160,14 @@ import { defineComponent, ref, PropType } from 'vue'
 
 import { AppBreadcrumbs } from '.'
 
-import { AppMenu, UserRouteName, useInstanceStore } from '@/main'
+import { UserRouteName, useInstanceStore } from '@/main'
 import { useLayoutStore } from '@/modules/layout/store'
 import { useUserStore } from '@/modules/user/store'
 
 export default defineComponent({
   name: 'app-header-template',
   components: {
-    AppBreadcrumbs,
-    AppMenu
+    AppBreadcrumbs
   },
   props: {
     renderNamespace: {
@@ -153,14 +183,23 @@ export default defineComponent({
   },
   setup() {
     const menu = ref()
+    const menuHelp = ref()
+    const menuVisible = ref(false)
 
     const toggleMenu = (event) => {
       menu.value.toggle(event)
     }
 
+    const toggleMenuHelp = (event) => {
+      menuHelp.value.toggle(event)
+    }
+
     return {
       menu,
-      toggleMenu
+      menuHelp,
+      menuVisible,
+      toggleMenu,
+      toggleMenuHelp
     }
   },
   computed: {
@@ -214,6 +253,11 @@ export default defineComponent({
       return this.getUserFullName.length > 15
         ? `${this.getUserFullName.substring(0, 15)}...`
         : this.getUserFullName
+    },
+    hasSidebar() {
+      return this.$route.matched.some(
+        (record) => record.components != null && 'sidebar' in record.components
+      )
     },
     menuButtonIcon() {
       if (this.isUnderOverlayBreakpoint) {
