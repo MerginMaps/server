@@ -158,6 +158,10 @@ img {
   font-size: 0.75rem;
 }
 
+.p-avatar-text {
+  color: map-get($map: $colors, $key: deep-ocean)
+}
+
 .tooltip {
   text-decoration-line: underline;
   text-decoration-style: dotted;
