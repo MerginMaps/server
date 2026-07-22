@@ -279,6 +279,13 @@ def add_project(namespace):  # noqa: E501
                 project_name=f"{workspace.name}/{p.name}",
                 created_from_template=template_name,
             )
+            emit(
+                SyncEventType.PROJECT_VERSION_CREATED,
+                **actor_context(),
+                project_id=p.id,
+                workspace_id=p.workspace_id,
+                version=ProjectVersion.to_v_name(version_name),
+            )
         project_version_created.send(version)
         return NoContent, 200
 
@@ -998,6 +1005,13 @@ def project_push(namespace, project_name):
                 f"A project version {ProjectVersion.to_v_name(next_version)} for project: {project.id} created. "
                 f"Transaction id: {upload.transaction_id}. No upload."
             )
+            emit(
+                SyncEventType.PROJECT_VERSION_CREATED,
+                **actor_context(),
+                project_id=project.id,
+                workspace_id=project.workspace_id,
+                version=ProjectVersion.to_v_name(next_version),
+            )
             project_version_created.send(pv)
             push_finished.send(pv)
             return jsonify(ProjectSchema().dump(project)), 200
@@ -1153,6 +1167,13 @@ def push_finish(transaction_id):
 
             logging.info(
                 f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
+            )
+            emit(
+                SyncEventType.PROJECT_VERSION_CREATED,
+                **actor_context(),
+                project_id=project.id,
+                workspace_id=project.workspace_id,
+                version=v_next_version,
             )
             project_version_created.send(pv)
             push_finished.send(pv)
@@ -1322,6 +1343,14 @@ def clone_project(namespace, project_name):  # noqa: E501
         cloned_from_id=str(cloned_project.id),
         cloned_from_name=f"{cp_workspace_name}/{cloned_project.name}",
     )
+    if version >= 1:
+        emit(
+            SyncEventType.PROJECT_VERSION_CREATED,
+            **actor_context(),
+            project_id=p.id,
+            workspace_id=p.workspace_id,
+            version=ProjectVersion.to_v_name(version),
+        )
     project_version_created.send(project_version)
     return NoContent, 200
 

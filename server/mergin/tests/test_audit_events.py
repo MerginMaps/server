@@ -408,3 +408,116 @@ def test_project_version_created(client, audit_capture):
     e = audit_capture.one(SyncEventType.PROJECT_VERSION_CREATED)
     assert e.project_id == project.id
     assert e.metadata["version"] == "v2"
+
+
+def test_project_version_created_v1_no_upload(client, audit_capture):
+    """V1 push with only removals takes the no-upload fast path in project_push."""
+    from .utils import file_info
+    from . import test_project_dir
+
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+    data = {
+        "version": "v1",
+        "changes": {
+            "added": [],
+            "updated": [],
+            "removed": [file_info(test_project_dir, "test3.txt")],
+        },
+    }
+    resp = client.post(
+        f"/v1/project/push/{project.workspace.name}/{project.name}", json=data
+    )
+    assert resp.status_code == 200
+
+    e = audit_capture.one(SyncEventType.PROJECT_VERSION_CREATED)
+    assert e.project_id == project.id
+    assert e.metadata["version"] == "v2"
+
+
+def test_project_version_created_v1_push_finish(client, audit_capture):
+    """V1 push with file uploads goes through push_finish."""
+    import os
+    from .utils import file_info
+    from . import test_project_dir
+
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+    filename = "test.qgs"
+    filepath = os.path.join(test_project_dir, filename)
+    # "updated" because the fixture already uploaded all test_project_dir files at v1.
+    data = {
+        "version": "v1",
+        "changes": {
+            "added": [],
+            "updated": [file_info(test_project_dir, filename)],
+            "removed": [],
+        },
+    }
+    resp = client.post(
+        f"/v1/project/push/{project.workspace.name}/{project.name}", json=data
+    )
+    assert resp.status_code == 200
+    upload_id = resp.json["transaction"]
+    for chunk_id in data["changes"]["updated"][0]["chunks"]:
+        with open(filepath, "rb") as f:
+            client.post(
+                f"/v1/project/push/chunk/{upload_id}/{chunk_id}",
+                data=f.read(1024),
+                headers={"Content-Type": "application/octet-stream"},
+            )
+    resp = client.post(f"/v1/project/push/finish/{upload_id}")
+    assert resp.status_code == 200
+
+    e = audit_capture.one(SyncEventType.PROJECT_VERSION_CREATED)
+    assert e.project_id == project.id
+    assert e.metadata["version"] == "v2"
+
+
+def test_project_version_created_from_template(client, audit_capture):
+    """Creating a project from a template emits PROJECT_VERSION_CREATED for the v1."""
+    template_user = add_user("TEMPLATES", "pass123")
+    template = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+    template.creator = template_user
+    db.session.commit()
+    audit_capture.events.clear()
+
+    client.post(
+        f"/v1/project/{template.workspace.name}",
+        json={"name": "from_template_audit", "template": test_project},
+    )
+
+    new_project = Project.query.filter_by(name="from_template_audit").first()
+    events = [
+        e
+        for e in audit_capture.of_type(SyncEventType.PROJECT_VERSION_CREATED)
+        if e.project_id == new_project.id
+    ]
+    assert len(events) == 1
+    assert events[0].metadata["version"] == "v1"
+
+
+def test_project_version_created_from_clone(client, audit_capture):
+    """Cloning a non-empty project emits PROJECT_VERSION_CREATED for the v1."""
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+    ws = project.workspace
+
+    client.post(
+        f"/v1/project/clone/{ws.name}/{test_project}",
+        json={"namespace": ws.name, "project": "cloned_audit"},
+    )
+
+    cloned = Project.query.filter_by(name="cloned_audit").first()
+    events = [
+        e
+        for e in audit_capture.of_type(SyncEventType.PROJECT_VERSION_CREATED)
+        if e.project_id == cloned.id
+    ]
+    assert len(events) == 1
+    assert events[0].metadata["version"] == "v1"
