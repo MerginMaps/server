@@ -28,7 +28,8 @@ import {
   UpdateProjectCollaboratorPayload,
   UpdatePublicFlagParams,
   ProjectCollaborator,
-  AddProjectCollaboratorPayload
+  AddProjectCollaboratorPayload,
+  ProjectV2Response
 } from '@/modules/project/types'
 
 export const ProjectApi = {
@@ -37,6 +38,10 @@ export const ProjectApi = {
     projectName: string
   ): Promise<AxiosResponse<ProjectDetail>> {
     return ProjectModule.httpService(`/v1/project/${namespace}/${projectName}`)
+  },
+
+  async getProjectV2(id: string): Promise<AxiosResponse<ProjectV2Response>> {
+    return ProjectModule.httpService(`/v2/projects/${id}`)
   },
 
   async createProject(

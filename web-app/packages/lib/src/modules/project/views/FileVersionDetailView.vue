@@ -74,8 +74,6 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
               <div class="flex flex-column align-items-center p-4 text-center">
                 <p>No changeset for current layer</p>
               </div>
-              console.log('getChangeset', this.namespace, this.projectName,
-              this.version_id, this.path)
             </template>
           </PDataTable>
         </app-section>
