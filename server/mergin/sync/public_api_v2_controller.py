@@ -76,9 +76,7 @@ def schedule_delete_project(id):
     rest.
     """
     project = require_project_by_uuid(id, ProjectPermissions.Delete)
-    project.removed_at = datetime.utcnow()
-    project.removed_by = current_user.id
-    db.session.commit()
+    project.schedule_deletion(removed_by=current_user.id)
 
     return NoContent, 204
 

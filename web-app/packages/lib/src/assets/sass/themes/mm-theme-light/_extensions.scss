@@ -114,6 +114,10 @@ img {
   color: map-get($colors, 'dark-gray');
 }
 
+.text-color-medium-gray {
+  color: map-get($colors, 'medium-gray');
+}
+
 .overflow-wrap-anywhere {
   overflow-wrap: anywhere;
 }
@@ -151,7 +155,11 @@ img {
 
 // Font size in avatar
 .p-avatar:not(.p-avatar-lg):not(.p-avatar-xl) {
-  font-size: 0.857rem;
+  font-size: 0.75rem;
+}
+
+.p-avatar-text {
+  color: map-get($map: $colors, $key: deep-ocean)
 }
 
 .tooltip {
