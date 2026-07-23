@@ -68,6 +68,7 @@ def configure_celery(celery: Celery, app: Flask, packages: List[str]):
     celery.conf.update(app.config)
     celery.conf.update(
         task_acks_late=Configuration.CELERY_ACKS_LATE,
+        task_send_sent_event=Configuration.CELERY_TASK_SEND_SENT_EVENT,
         worker_concurrency=Configuration.CELERYD_CONCURRENCY,
         worker_prefetch_multiplier=Configuration.CELERYD_PREFETCH_MULTIPLIER,
     )

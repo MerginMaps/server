@@ -69,6 +69,11 @@ class Configuration(object):
         "CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS", default="{}", cast=eval
     )
     CELERY_ACKS_LATE = config("CELERY_ACKS_LATE", default=False, cast=bool)
+    # send a task-sent event when a task is published so that monitoring tools
+    # (e.g. celery-exporter) can report the queue name, including for failed tasks
+    CELERY_TASK_SEND_SENT_EVENT = config(
+        "CELERY_TASK_SEND_SENT_EVENT", default=False, cast=bool
+    )
     CELERYD_CONCURRENCY = config("CELERYD_CONCURRENCY", default=1, cast=int)
     CELERYD_PREFETCH_MULTIPLIER = config(
         "CELERYD_PREFETCH_MULTIPLIER", default=4, cast=int
