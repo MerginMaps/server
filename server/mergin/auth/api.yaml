@@ -472,6 +472,26 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFoundResp"
+  /app/auth/unlock-account/{token}:
+    post:
+      summary: Unlock account
+      description: Clear an active lockout for the user encoded in the token
+      operationId: mergin.auth.controller.unlock_account
+      parameters:
+        - name: token
+          in: path
+          description: User token for account unlock verification
+          required: true
+          schema:
+            type: string
+            example: InRlc3RAbHV0cmFjb25zdWx0aW5nLmNvLnVrIg.YN2KRg.Vj1LSzSvQx9DcNnQFgZ0baS7LPU
+      responses:
+        "200":
+          description: OK
+        "400":
+          $ref: "#/components/responses/BadStatusResp"
+        "404":
+          $ref: "#/components/responses/NotFoundResp"
   /app/auth/confirm-email/{token}:
     post:
       summary: Email verified

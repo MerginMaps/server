@@ -102,8 +102,11 @@ class User(db.Model):
             return False
         return self.locked_until > datetime.datetime.utcnow()
 
-    def record_failed_login(self) -> None:
-        """Increment the failed-login counter and apply a lockout if a threshold is crossed."""
+    def record_failed_login(self) -> Optional[int]:
+        """Increment the failed-login counter and apply a lockout if a threshold is crossed.
+
+        Returns the lockout duration in seconds if a new lock was just applied, else None.
+        """
         self.failed_login_attempts = (self.failed_login_attempts or 0) + 1
         policy = _parse_lockout_policy(
             current_app.config.get("LOCKOUT_POLICY", "5:300,10:3600")
@@ -117,6 +120,7 @@ class User(db.Model):
             self.locked_until = datetime.datetime.utcnow() + datetime.timedelta(
                 seconds=duration
             )
+        return duration
 
     def reset_lockout(self) -> None:
         """Clear lockout state after a successful login."""

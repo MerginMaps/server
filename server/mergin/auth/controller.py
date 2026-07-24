@@ -18,6 +18,7 @@ from .app import (
     send_confirmation_email,
     confirm_token,
     generate_confirmation_token,
+    confirm_unlock_token,
     user_created,
     user_account_closed,
     edit_profile_enabled,
@@ -43,6 +44,7 @@ from ..sync.utils import files_size
 
 
 EMAIL_CONFIRMATION_EXPIRATION = 12 * 3600
+ACCOUNT_UNLOCK_TOKEN_EXPIRATION = 24 * 3600
 
 
 # public endpoints
@@ -360,6 +362,25 @@ def confirm_email(token):  # pylint: disable=W0613,W0612
         db.session.add(user)
         db.session.commit()
 
+    return "", 200
+
+
+def unlock_account(token):  # pylint: disable=W0613,W0612
+    payload = confirm_unlock_token(token, expiration=ACCOUNT_UNLOCK_TOKEN_EXPIRATION)
+    if not payload:
+        abort(400, "Invalid or expired link")
+
+    user = User.query.filter_by(email=payload["email"]).first_or_404()
+    stale = (
+        not user.is_locked_out()
+        or user.locked_until.replace(microsecond=0).isoformat()
+        != payload["locked_until"]
+    )
+    if stale:
+        abort(400, "This unlock link is no longer valid")
+
+    user.reset_lockout()
+    db.session.commit()
     return "", 200
 
 
