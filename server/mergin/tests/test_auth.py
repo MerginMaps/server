@@ -107,7 +107,6 @@ def test_login_lockout(send_email_mock, client):
     counter is never reset between lockouts, so tier-2 is reached after one
     extra failure following the first expired tier-1 lock
     """
-    client.application.config["LOCKOUT_POLICY"] = "3:60,4:3600"
     user = add_user("lockoutuser", "correctpassword")
 
     def assert_locked():
@@ -118,73 +117,73 @@ def test_login_lockout(send_email_mock, client):
         assert resp.status_code == 423
         assert resp.json["code"] == "AccountLocked"
 
-    # tier 1: 3 failures → 60s lock
-    for _ in range(3):
+    with patch.dict(client.application.config, {"LOCKOUT_POLICY": "3:60,4:3600"}):
+        # tier 1: 3 failures → 60s lock
+        for _ in range(3):
+            resp = client.post(
+                url_for("/.mergin_auth_controller_login"),
+                json={"login": "lockoutuser", "password": "wrong"},
+            )
+            assert resp.status_code == 401
+
+        # lockout email dispatched exactly once, at the moment the lock triggers
+        assert send_email_mock.call_count == 1
+
+        assert_locked()
+
+        # correct password is also blocked while locked
+        resp = client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "lockoutuser", "password": "correctpassword"},
+        )
+        assert resp.status_code == 423
+
+        # counter stays frozen during lockout
+        assert user.failed_login_attempts == 3
+        assert user.locked_until is not None
+
+        # no further emails while already locked out (attempts above were all 423s)
+        assert send_email_mock.call_count == 1
+
+        # tier 2 escalation: one more failure after tier-1 expiry
+        # counter was at 3; one new failure pushes it to 4, crossing tier-2 threshold
+
+        # expire_lock
+        user.locked_until = datetime.utcnow() - timedelta(seconds=1)
+        db.session.commit()
+
         resp = client.post(
             url_for("/.mergin_auth_controller_login"),
             json={"login": "lockoutuser", "password": "wrong"},
         )
+        # returns 401 (wrong password), but now locked for 3600s
         assert resp.status_code == 401
+        assert_locked()
+        assert user.locked_until > datetime.utcnow() + timedelta(seconds=60)
+        assert user.failed_login_attempts == 4
 
-    # lockout email dispatched exactly once, at the moment the lock triggers
-    assert send_email_mock.call_count == 1
+        # second lockout email dispatched for the tier-2 re-lock
+        assert send_email_mock.call_count == 2
 
-    assert_locked()
+        # successful login after expiry resets everything
+        user.locked_until = datetime.utcnow() - timedelta(seconds=1)
+        db.session.commit()
+        resp = client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "lockoutuser", "password": "correctpassword"},
+        )
+        assert resp.status_code == 200
+        assert user.failed_login_attempts == 0
+        assert user.locked_until is None
 
-    # correct password is also blocked while locked
-    resp = client.post(
-        url_for("/.mergin_auth_controller_login"),
-        json={"login": "lockoutuser", "password": "correctpassword"},
-    )
-    assert resp.status_code == 423
-
-    # counter stays frozen during lockout
-    assert user.failed_login_attempts == 3
-    assert user.locked_until is not None
-
-    # no further emails while already locked out (attempts above were all 423s)
-    assert send_email_mock.call_count == 1
-
-    # tier 2 escalation: one more failure after tier-1 expiry
-    # counter was at 3; one new failure pushes it to 4, crossing tier-2 threshold
-
-    # expire_lock
-    user.locked_until = datetime.utcnow() - timedelta(seconds=1)
-    db.session.commit()
-
-    resp = client.post(
-        url_for("/.mergin_auth_controller_login"),
-        json={"login": "lockoutuser", "password": "wrong"},
-    )
-    # returns 401 (wrong password), but now locked for 3600s
-    assert resp.status_code == 401
-    assert_locked()
-    assert user.locked_until > datetime.utcnow() + timedelta(seconds=60)
-    assert user.failed_login_attempts == 4
-
-    # second lockout email dispatched for the tier-2 re-lock
-    assert send_email_mock.call_count == 2
-
-    # successful login after expiry resets everything
-    user.locked_until = datetime.utcnow() - timedelta(seconds=1)
-    db.session.commit()
-    resp = client.post(
-        url_for("/.mergin_auth_controller_login"),
-        json={"login": "lockoutuser", "password": "correctpassword"},
-    )
-    assert resp.status_code == 200
-    assert user.failed_login_attempts == 0
-    assert user.locked_until is None
-
-    # no email on successful login
-    assert send_email_mock.call_count == 2
+        # no email on successful login
+        assert send_email_mock.call_count == 2
 
 
 @patch("mergin.celery.send_email_async.apply_async")
 def test_unlock_account(send_email_mock, client, app):
     """Test the self-service unlock-account link: valid use, reuse, natural
     expiry, and cross-tier reuse, per the token-binding design."""
-    client.application.config["LOCKOUT_POLICY"] = "3:60,4:3600"
     user = add_user("unlockuser", "correctpassword")
 
     def unlock(token):
@@ -199,58 +198,59 @@ def test_unlock_account(send_email_mock, client, app):
                 json={"login": "unlockuser", "password": "wrong"},
             )
 
-    # unknown user -> 404
-    fake_user = SimpleNamespace(email="nope@x.com", locked_until=datetime.utcnow())
-    resp = unlock(generate_unlock_token(app, fake_user))
-    assert resp.status_code == 404
+    with patch.dict(client.application.config, {"LOCKOUT_POLICY": "3:60,4:3600"}):
+        # unknown user -> 404
+        fake_user = SimpleNamespace(email="nope@x.com", locked_until=datetime.utcnow())
+        resp = unlock(generate_unlock_token(app, fake_user))
+        assert resp.status_code == 404
 
-    # tamper with a valid-looking token -> 400
-    resp = unlock("not-a-real-token")
-    assert resp.status_code == 400
+        # tamper with a valid-looking token -> 400
+        resp = unlock("not-a-real-token")
+        assert resp.status_code == 400
 
-    # trigger tier-1 lock and capture its token
-    lock_out()
-    assert user.is_locked_out()
-    tier1_token = generate_unlock_token(app, user)
+        # trigger tier-1 lock and capture its token
+        lock_out()
+        assert user.is_locked_out()
+        tier1_token = generate_unlock_token(app, user)
 
-    # valid token unlocks successfully
-    resp = unlock(tier1_token)
-    assert resp.status_code == 200
-    assert user.failed_login_attempts == 0
-    assert user.locked_until is None
+        # valid token unlocks successfully
+        resp = unlock(tier1_token)
+        assert resp.status_code == 200
+        assert user.failed_login_attempts == 0
+        assert user.locked_until is None
 
-    # reuse of the same (now-consumed) token fails
-    resp = unlock(tier1_token)
-    assert resp.status_code == 400
+        # reuse of the same (now-consumed) token fails
+        resp = unlock(tier1_token)
+        assert resp.status_code == 400
 
-    # naturally-expired lock: token itself still cryptographically valid,
-    # but the lock episode it points to is no longer active
-    lock_out()
-    assert user.is_locked_out()
-    stale_token = generate_unlock_token(app, user)
-    user.locked_until = datetime.utcnow() - timedelta(seconds=1)
-    db.session.commit()
-    resp = unlock(stale_token)
-    assert resp.status_code == 400
+        # naturally-expired lock: token itself still cryptographically valid,
+        # but the lock episode it points to is no longer active
+        lock_out()
+        assert user.is_locked_out()
+        stale_token = generate_unlock_token(app, user)
+        user.locked_until = datetime.utcnow() - timedelta(seconds=1)
+        db.session.commit()
+        resp = unlock(stale_token)
+        assert resp.status_code == 400
 
-    # cross-tier reuse: a token minted for one lock episode must not unlock
-    # a later, different lock episode for the same user
-    user.locked_until = None
-    user.failed_login_attempts = 0
-    db.session.commit()
-    lock_out()
-    tier1_token_2 = generate_unlock_token(app, user)
-    # escalate to tier 2 with a new locked_until
-    user.locked_until = datetime.utcnow() - timedelta(seconds=1)
-    db.session.commit()
-    client.post(
-        url_for("/.mergin_auth_controller_login"),
-        json={"login": "unlockuser", "password": "wrong"},
-    )
-    assert user.failed_login_attempts == 4
-    assert user.locked_until > datetime.utcnow() + timedelta(seconds=60)
-    resp = unlock(tier1_token_2)
-    assert resp.status_code == 400
+        # cross-tier reuse: a token minted for one lock episode must not unlock
+        # a later, different lock episode for the same user
+        user.locked_until = None
+        user.failed_login_attempts = 0
+        db.session.commit()
+        lock_out()
+        tier1_token_2 = generate_unlock_token(app, user)
+        # escalate to tier 2 with a new locked_until
+        user.locked_until = datetime.utcnow() - timedelta(seconds=1)
+        db.session.commit()
+        client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "unlockuser", "password": "wrong"},
+        )
+        assert user.failed_login_attempts == 4
+        assert user.locked_until > datetime.utcnow() + timedelta(seconds=60)
+        resp = unlock(tier1_token_2)
+        assert resp.status_code == 400
 
 
 def test_bcrypt_lazy_rehash(app):

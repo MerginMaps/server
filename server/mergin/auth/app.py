@@ -3,10 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import functools
+from typing import Optional
 from blinker import signal
-from flask import current_app, render_template
+from flask import current_app, render_template, Flask
 from flask_login import current_user
-from itsdangerous import URLSafeTimedSerializer
+from itsdangerous import URLSafeTimedSerializer, BadData
 from sqlalchemy import func
 
 from .commands import add_commands
@@ -167,7 +168,7 @@ def send_confirmation_email(app, user, url, template, header, **kwargs):
     send_email_async.delay(**email_data)
 
 
-def generate_unlock_token(app, user):
+def generate_unlock_token(app: Flask, user: User) -> str:
     """Sign a token binding the current lock episode (email + locked_until) to the user."""
     serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
     payload = {
@@ -177,13 +178,13 @@ def generate_unlock_token(app, user):
     return serializer.dumps(payload, salt=app.config["SECURITY_UNLOCK_SALT"])
 
 
-def confirm_unlock_token(token, expiration=24 * 3600):
+def confirm_unlock_token(token: str, expiration: int = 24 * 3600) -> Optional[dict]:
     serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
     try:
         payload = serializer.loads(
             token, salt=current_app.config["SECURITY_UNLOCK_SALT"], max_age=expiration
         )
-    except Exception:
+    except BadData:
         return None
     return payload
 
@@ -202,7 +203,7 @@ def _format_lockout_duration(seconds: int) -> str:
     return " ".join(parts)
 
 
-def send_account_locked_email(app, user, duration_seconds):
+def send_account_locked_email(app: Flask, user: User, duration_seconds: int) -> None:
     """Notify user their account was locked out and give them a link to unlock it."""
     from ..celery import send_email_async
 

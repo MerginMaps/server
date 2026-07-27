@@ -365,7 +365,7 @@ def confirm_email(token):  # pylint: disable=W0613,W0612
     return "", 200
 
 
-def unlock_account(token):  # pylint: disable=W0613,W0612
+def unlock_account(token: str):  # pylint: disable=W0613,W0612
     payload = confirm_unlock_token(token, expiration=ACCOUNT_UNLOCK_TOKEN_EXPIRATION)
     if not payload:
         abort(400, "Invalid or expired link")
