@@ -30,7 +30,7 @@ export const getUserTitle = (route: RouteLocationNormalizedLoaded) => {
     ],
     [UserRouteName.ConfirmEmail]: ['Confirm email address', DEFAULT_PAGE_TITLE],
     [UserRouteName.ChangePassword]: ['Change password', DEFAULT_PAGE_TITLE],
-    [UserRouteName.UnlockAccount]: ['Account unlock', DEFAULT_PAGE_TITLE],
+    [UserRouteName.UnlockAccount]: ['Unlock your account', DEFAULT_PAGE_TITLE],
     [UserRouteName.UserProfile]: ['Your profile']
   }
   return titles[name]

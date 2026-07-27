@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <app-onboarding-page>
     <template #header>
-      <h1 class="headline-h1">Account unlock</h1>
+      <h1 class="headline-h1">Unlock your account</h1>
     </template>
     <div class="flex flex-column gap-4 align-items-center">
       <template v-if="unlocked"
@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       >
       <PButton
         data-cy="unlock-account-btn"
-        @click="$router.push({ name: 'login' })"
+        @click="router.push({ name: 'login' })"
         class="w-full"
         label="Continue"
       />
@@ -32,33 +32,25 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   </app-onboarding-page>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import AppOnboardingPage from '@/common/components/AppOnboardingPage.vue'
 import { UserApi } from '@/modules/user/userApi'
 
-export default defineComponent({
-  name: 'AccountUnlockView',
-  data() {
-    return {
-      unlocked: false
-    }
-  },
-  computed: {
-    token() {
-      return this.$route.params.token as string
-    }
-  },
-  async created() {
-    try {
-      await UserApi.unlockAccount(this.token)
-      this.unlocked = true
-    } catch (e) {
-      this.unlocked = false
-    }
-  },
-  components: { AppOnboardingPage }
+const route = useRoute()
+const router = useRouter()
+
+const unlocked = ref(false)
+
+onMounted(async () => {
+  try {
+    await UserApi.unlockAccount(route.params.token as string)
+    unlocked.value = true
+  } catch {
+    unlocked.value = false
+  }
 })
 </script>
 
