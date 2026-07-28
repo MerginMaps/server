@@ -85,11 +85,8 @@ def schedule_delete_project(id):
         project_name=f"{project.workspace.name}/{project.name}",
     )
     db.session.info["audit_skip_project_update"] = True
-    project.removed_at = datetime.utcnow()
-    project.removed_by = current_user.id
-    db.session.commit()
+    project.schedule_deletion(removed_by=current_user.id)
     db.session.info.pop("audit_skip_project_update", None)
-
     return NoContent, 204
 
 

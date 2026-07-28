@@ -18,6 +18,7 @@ from .app import (
     send_confirmation_email,
     confirm_token,
     generate_confirmation_token,
+    confirm_unlock_token,
     user_created,
     user_account_closed,
     edit_profile_enabled,
@@ -25,6 +26,7 @@ from .app import (
 )
 from .bearer import encode_token
 from .models import User, LoginHistory
+from .errors import AccountLockedError
 from .schemas import UserSchema, UserSearchSchema, UserProfileSchema, UserInfoSchema
 from .forms import (
     LoginForm,
@@ -45,6 +47,7 @@ from ..sync.utils import files_size
 
 
 EMAIL_CONFIRMATION_EXPIRATION = 12 * 3600
+ACCOUNT_UNLOCK_TOKEN_EXPIRATION = 24 * 3600
 
 
 # public endpoints
@@ -140,7 +143,10 @@ def login_public():  # noqa: E501
     """
     form = ApiLoginForm()
     if form.validate():
-        user = authenticate(form.login.data, form.password.data)
+        try:
+            user = authenticate(form.login.data, form.password.data)
+        except AccountLockedError as e:
+            return e.response(423)
         if user and user.active:
             expire = datetime.now(pytz.utc) + timedelta(
                 seconds=current_app.config["BEARER_TOKEN_EXPIRATION"]
@@ -244,7 +250,10 @@ def search_users():  # pylint: disable=W0613,W0612
 def login():  # pylint: disable=W0613,W0612
     form = LoginForm()
     if form.validate():
-        user = authenticate(form.login.data, form.password.data)
+        try:
+            user = authenticate(form.login.data, form.password.data)
+        except AccountLockedError as e:
+            return e.response(423)
         if user and user.active:
             login_user(user)
             if not os.path.isfile(current_app.config["MAINTENANCE_FILE"]):
@@ -276,7 +285,10 @@ def admin_login():  # pylint: disable=W0613,W0612
     if not form.validate():
         return jsonify(form.errors), 400
 
-    user = authenticate(form.login.data, form.password.data)
+    try:
+        user = authenticate(form.login.data, form.password.data)
+    except AccountLockedError as e:
+        return e.response(423)
     if user:
         if user.active and user.is_admin:
             login_user(user)
@@ -414,6 +426,25 @@ def confirm_email(token):  # pylint: disable=W0613,W0612
         db.session.add(user)
         db.session.commit()
 
+    return "", 200
+
+
+def unlock_account(token: str):  # pylint: disable=W0613,W0612
+    payload = confirm_unlock_token(token, expiration=ACCOUNT_UNLOCK_TOKEN_EXPIRATION)
+    if not payload:
+        abort(400, "Invalid or expired link")
+
+    user = User.query.filter_by(email=payload["email"]).first_or_404()
+    stale = (
+        not user.is_locked_out()
+        or user.locked_until.replace(microsecond=0).isoformat()
+        != payload["locked_until"]
+    )
+    if stale:
+        abort(400, "This unlock link is no longer valid")
+
+    user.reset_lockout()
+    db.session.commit()
     return "", 200
 
 

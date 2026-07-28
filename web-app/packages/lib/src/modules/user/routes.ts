@@ -16,6 +16,7 @@ export enum UserRouteName {
   Login = 'login',
   ConfirmEmail = 'confirm_email',
   ChangePassword = 'change_password',
+  UnlockAccount = 'unlock_account',
   UserProfile = 'user_profile'
 }
 
@@ -29,6 +30,7 @@ export const getUserTitle = (route: RouteLocationNormalizedLoaded) => {
     ],
     [UserRouteName.ConfirmEmail]: ['Confirm email address', DEFAULT_PAGE_TITLE],
     [UserRouteName.ChangePassword]: ['Change password', DEFAULT_PAGE_TITLE],
+    [UserRouteName.UnlockAccount]: ['Unlock your account', DEFAULT_PAGE_TITLE],
     [UserRouteName.UserProfile]: ['Your profile']
   }
   return titles[name]

@@ -432,7 +432,10 @@ def check_skip_validation(file_path: str) -> bool:
     Some files are allowed even if they have forbidden extension or mime type.
     """
     file_name = os.path.basename(file_path)
-    return file_name in Configuration.UPLOAD_FILES_WHITELIST
+    if file_name in Configuration.UPLOAD_FILES_WHITELIST:
+        return True
+    ext = os.path.splitext(file_path)[1].lower()
+    return ext in {e.lower() for e in Configuration.UPLOAD_EXTENSIONS_WHITELIST}
 
 
 FORBIDDEN_MIME_TYPES = {

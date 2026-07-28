@@ -9,7 +9,9 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
     <img :src="logoSrc" alt="Cover for confirm dialog" />
     <span class="text-color-forest title-t1">{{ text }}</span>
     <span class="paragraph-p5 opacity-80">{{ description }}</span>
-    <span v-if="hint" class="title-t2 my-2">{{ hint }}</span>
+    <span v-if="hint" class="title-t2 my-2" style="white-space: pre-wrap">{{
+      hint
+    }}</span>
     <div class="flex flex-column gap-3 w-full">
       <span
         v-if="confirmField"
