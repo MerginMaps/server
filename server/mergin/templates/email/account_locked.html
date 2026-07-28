@@ -1,0 +1,15 @@
+<!--
+Copyright (C) Lutra Consulting Limited
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
+-->
+
+{% set base_url = config['MERGIN_BASE_URL'] %}
+{% extends "email/components/content.html" %}
+{% block html %}
+  <p>Dear {{ user.username }},</p> <br>
+  <p>Your account has been temporarily locked for {{ lockout_duration }} after several failed login attempts. If this wasn't you, someone may be trying to access your account - consider changing your password once you're back in.</p>
+  <p>You will be able to log in again at {{ locked_until.strftime('%Y-%m-%d %H:%M') }} UTC, or you can unlock your account right now by following this link:</p>
+  <p><a href="{{ base_url }}/{{ confirm_url }}">{{ base_url }}/{{ confirm_url }}</a></p>
+{% endblock %}
+{% block notifications_footer %}{% endblock %}

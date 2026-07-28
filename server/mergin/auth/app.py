@@ -3,10 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import functools
+from typing import Optional
 from blinker import signal
-from flask import current_app, render_template
+from flask import current_app, render_template, Flask
 from flask_login import current_user
-from itsdangerous import URLSafeTimedSerializer
+from itsdangerous import URLSafeTimedSerializer, BadData
 from sqlalchemy import func
 
 from .commands import add_commands
@@ -120,8 +121,10 @@ def authenticate(login, password):
             db.session.commit()
         return user
     else:
-        user.record_failed_login()
+        duration = user.record_failed_login()
         db.session.commit()
+        if duration is not None:
+            send_account_locked_email(current_app, user, duration)
         return None
 
 
@@ -158,6 +161,64 @@ def send_confirmation_email(app, user, url, template, header, **kwargs):
     )
     email_data = {
         "subject": header,
+        "html": html,
+        "recipients": [user.email],
+        "sender": app.config["MAIL_DEFAULT_SENDER"],
+    }
+    send_email_async.delay(**email_data)
+
+
+def generate_unlock_token(app: Flask, user: User) -> str:
+    """Sign a token binding the current lock episode (email + locked_until) to the user."""
+    serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
+    payload = {
+        "email": user.email,
+        "locked_until": user.locked_until.replace(microsecond=0).isoformat(),
+    }
+    return serializer.dumps(payload, salt=app.config["SECURITY_UNLOCK_SALT"])
+
+
+def confirm_unlock_token(token: str, expiration: int = 24 * 3600) -> Optional[dict]:
+    serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+    try:
+        payload = serializer.loads(
+            token, salt=current_app.config["SECURITY_UNLOCK_SALT"], max_age=expiration
+        )
+    except BadData:
+        return None
+    return payload
+
+
+def _format_lockout_duration(seconds: int) -> str:
+    """Humanize a lockout duration, e.g. 300 -> "5 minutes", 3600 -> "1 hour"."""
+    minutes, secs = divmod(int(seconds), 60)
+    hours, minutes = divmod(minutes, 60)
+    parts = []
+    if hours:
+        parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+    if minutes:
+        parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+    if not parts:
+        parts.append(f"{secs} second{'s' if secs != 1 else ''}")
+    return " ".join(parts)
+
+
+def send_account_locked_email(app: Flask, user: User, duration_seconds: int) -> None:
+    """Notify user their account was locked out and give them a link to unlock it."""
+    from ..celery import send_email_async
+
+    token = generate_unlock_token(app, user)
+    confirm_url = f"unlock-account/{token}"
+    html = render_template(
+        "email/account_locked.html",
+        subject="Account locked",
+        confirm_url=confirm_url,
+        user=user,
+        lockout_duration=_format_lockout_duration(duration_seconds),
+        locked_until=user.locked_until,
+    )
+    email_data = {
+        "subject": "Account locked",
         "html": html,
         "recipients": [user.email],
         "sender": app.config["MAIL_DEFAULT_SENDER"],
