@@ -15,6 +15,9 @@ from .config import Configuration
 from .listeners import register_listeners
 from .models import User
 from .errors import AccountLockedError
+from ..audit import emit
+from ..audit.listeners import actor_context
+from .events import AuthEventType
 
 # signal for other versions to listen to
 user_account_closed = signal("user_account_closed")
@@ -127,6 +130,12 @@ def authenticate(login, password):
         db.session.commit()
         if duration is not None:
             send_account_locked_email(current_app, user, duration)
+            emit(
+                AuthEventType.USER_LOCKED,
+                **actor_context(),
+                user_id=user.id,
+                locked_until=user.locked_until.isoformat(),
+            )
         return None
 
 

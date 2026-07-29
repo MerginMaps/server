@@ -23,3 +23,6 @@ class AuthEventType(str, Enum):
         "user.restored"  # admin re-activates after deactivation or marked_for_deletion
     )
     USER_DELETED = "user.deleted"  # personal data permanently erased
+    # lockout events (explicit emit)
+    USER_LOCKED = "user.locked"  # account locked after too many failed logins
+    USER_UNLOCKED = "user.unlocked"  # self-service token-based unlock

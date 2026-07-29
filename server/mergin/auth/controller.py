@@ -445,6 +445,11 @@ def unlock_account(token: str):  # pylint: disable=W0613,W0612
 
     user.reset_lockout()
     db.session.commit()
+    emit(
+        AuthEventType.USER_UNLOCKED,
+        **actor_context(),
+        user_id=user.id,
+    )
     return "", 200
 
 

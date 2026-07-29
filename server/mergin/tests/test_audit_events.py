@@ -6,8 +6,10 @@
 with the required fields.  Each test exercises the minimum code path needed to
 trigger the event — it is not a functional test of that path."""
 
+from unittest.mock import patch
+
 from ..app import db
-from ..auth.app import generate_confirmation_token
+from ..auth.app import generate_confirmation_token, generate_unlock_token
 from ..auth.events import AuthEventType
 from ..auth.models import User
 from ..sync.events import SyncEventType
@@ -167,6 +169,35 @@ def test_user_deleted(client, audit_capture):
     e = audit_capture.one(AuthEventType.USER_DELETED)
     assert e.user_id == user.id
     assert e.metadata["target_email"] == "todelete@mergin.com"
+
+
+def test_user_locked(app, client, audit_capture):
+    user = add_user("lockme", "pass123")
+    # Pre-set counter to one below threshold so the next attempt triggers the lock.
+    user.failed_login_attempts = 4
+    db.session.commit()
+
+    with patch.dict(app.config, {"LOCKOUT_POLICY": "5:300,10:3600"}):
+        client.post("/app/auth/login", json={"login": "lockme", "password": "wrong"})
+
+    e = audit_capture.one(AuthEventType.USER_LOCKED)
+    assert e.user_id == user.id
+    assert "locked_until" in e.metadata
+
+
+def test_user_unlocked(app, client, audit_capture):
+    import datetime
+
+    user = add_user("unlockme", "pass123")
+    user.failed_login_attempts = 5
+    user.locked_until = datetime.datetime.utcnow() + datetime.timedelta(seconds=300)
+    db.session.commit()
+
+    token = generate_unlock_token(app, user)
+    client.post(f"/app/auth/unlock-account/{token}")
+
+    e = audit_capture.one(AuthEventType.USER_UNLOCKED)
+    assert e.user_id == user.id
 
 
 # ---------------------------------------------------------------------------
