@@ -50,6 +50,23 @@ EMAIL_CONFIRMATION_EXPIRATION = 12 * 3600
 ACCOUNT_UNLOCK_TOKEN_EXPIRATION = 24 * 3600
 
 
+def _resolve_actor_for_failed_login(
+    user: "User | None", login_str: str
+) -> "tuple[str | None, int | None]":
+    """Return (actor_email, actor_id) to attach to a USER_LOGIN_FAILED audit event."""
+    if user:
+        return user.email, user.id
+    found = (
+        User.query.filter(
+            (func.lower(User.email) == func.lower(login_str))
+            | (func.lower(User.username) == func.lower(login_str))
+        )
+        .with_entities(User.id, User.email)
+        .first()
+    )
+    return (found.email, found.id) if found else (None, None)
+
+
 # public endpoints
 def user_profile(user, return_all=True):
     """Return user profile in json format
@@ -176,8 +193,13 @@ def login_public():  # noqa: E501
             )
             return data
         else:
+            actor_email, actor_user_id = _resolve_actor_for_failed_login(
+                user, form.login.data
+            )
             emit(
                 AuthEventType.USER_LOGIN_FAILED,
+                actor_email=actor_email,
+                user_id=actor_user_id,
                 **request_context(),
                 login=form.login.data,
                 reason="account_inactive" if user else "invalid_credentials",
@@ -268,8 +290,13 @@ def login():  # pylint: disable=W0613,W0612
             )
             return "", 200
         else:
+            actor_email, actor_user_id = _resolve_actor_for_failed_login(
+                user, form.login.data
+            )
             emit(
                 AuthEventType.USER_LOGIN_FAILED,
+                actor_email=actor_email,
+                user_id=actor_user_id,
                 **request_context(),
                 login=form.login.data,
                 reason="account_inactive" if user else "invalid_credentials",
@@ -304,8 +331,13 @@ def admin_login():  # pylint: disable=W0613,W0612
         else:
             abort(403, "You do not have permissions")
     else:
+        actor_email, actor_user_id = _resolve_actor_for_failed_login(
+            None, form.login.data
+        )
         emit(
             AuthEventType.USER_LOGIN_FAILED,
+            actor_email=actor_email,
+            user_id=actor_user_id,
             **request_context(),
             login=form.login.data,
             reason="invalid_credentials",

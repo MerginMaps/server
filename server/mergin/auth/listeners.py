@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+from typing import Any
+
+from flask import has_request_context
 from sqlalchemy import event
 from sqlalchemy.orm import object_session
 
@@ -19,10 +22,22 @@ _SKIP = frozenset(
 )
 
 
-def _on_user_created(_mapper, _connection, target):
+def _on_user_created(_mapper: Any, _connection: Any, target: User) -> None:
+    """Emit USER_CREATED after a User row is inserted.
+
+    Actor attribution:
+    - Authenticated request (admin creates user): actor comes from actor_context().
+    - Unauthenticated request (self-registration): no session yet, so the new user
+      themselves is used as the actor rather than leaving it null.
+    - No request context (Celery/system import): actor stays null to signal a system action.
+    """
+    ctx = actor_context()
+    if not ctx.get("actor_email") and has_request_context():
+        ctx["actor_email"] = target.email
+        ctx["actor_id"] = target.id
     emit_safe(
         AuthEventType.USER_CREATED,
-        **actor_context(),
+        **ctx,
         user_id=target.id,
         target_email=target.email,
     )
