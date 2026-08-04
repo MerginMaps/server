@@ -17,3 +17,5 @@ class Configuration(object):
     BCRYPT_LOG_ROUNDS = config("BCRYPT_LOG_ROUNDS", default=12, cast=int)
     # Comma-separated "attempts:seconds" pairs, e.g. "5:300,10:3600"
     LOCKOUT_POLICY = config("LOCKOUT_POLICY", default="5:300,10:3600")
+    # trailing window in seconds over which failed login attempts are counted
+    LOCKOUT_WINDOW = config("LOCKOUT_WINDOW", default=3600, cast=int)

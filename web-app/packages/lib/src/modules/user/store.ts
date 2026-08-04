@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import { AxiosError } from 'axios'
 import { defineStore, getActivePinia } from 'pinia'
 import { isNavigationFailure } from 'vue-router'
 
@@ -18,6 +19,7 @@ import {
   ResetPasswordPayload,
   ChangePasswordWithTokenPayload,
   ChangePasswordPayload,
+  ErrorCodes,
   IsWorkspaceAdminPayload,
   LoginPayload,
   UserDetailResponse,
@@ -238,11 +240,20 @@ export const useUserStore = defineStore('userModule', {
     async userLogin(payload: LoginPayload) {
       const instanceStore = useInstanceStore()
       const formStore = useFormStore()
+      const notificationStore = useNotificationStore()
 
       try {
         await UserApi.login(payload.data)
         await instanceStore.initApp()
-      } catch (error) {
+      } catch (err) {
+        const error = err as AxiosError
+        const code = error?.response?.data?.code as ErrorCodes
+        if (code === 'AccountLocked') {
+          await notificationStore.error({
+            text: 'Your account is temporarily locked due to too many failed login attempts. Please check your email for a link to unlock it.'
+          })
+          return
+        }
         await formStore.handleError({
           componentId: payload.componentId,
           error,
