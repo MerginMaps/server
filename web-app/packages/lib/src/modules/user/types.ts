@@ -152,4 +152,6 @@ export interface UserRouteParams {
   reset?: string
 }
 
+export type ErrorCodes = 'AccountLocked'
+
 /* eslint-enable camelcase */

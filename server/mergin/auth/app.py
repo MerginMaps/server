@@ -111,9 +111,6 @@ def authenticate(login, password):
         needs_commit = True
 
     if user.check_password(password):
-        if user.failed_login_attempts or user.locked_until:
-            user.reset_lockout()
-            needs_commit = True
         if user.needs_rehash():
             user.assign_password(password)
             needs_commit = True
