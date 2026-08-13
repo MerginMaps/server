@@ -84,10 +84,8 @@ If you'd like to contribute and improve the documentation, visit https://github.
 ## Get in touch
 
 If you need support, a custom deployment, extending the service capabilities and new features do not hesitate to contact us on info@lutraconsulting.co.uk
-<br><br>
 
-<div><img align="left" width="45" height="45" src="https://raw.githubusercontent.com/MerginMaps/docs/main/src/public/slack.svg"><a href="https://merginmaps.com/community/join">Join our community chat</a><br/>and ask questions!</div>
-<br>
+<a href="https://community.merginmaps.com">Join our community</a> and ask questions!
 
 ## Developers
 
