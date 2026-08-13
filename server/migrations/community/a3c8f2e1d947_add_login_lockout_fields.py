@@ -1,4 +1,4 @@
-"""Add failed_login_attempts and locked_until to user table
+"""Add locked_until to user table and successful flag to login_history
 
 Revision ID: a3c8f2e1d947
 Revises: f1d9e4a7b823
@@ -21,22 +21,22 @@ def upgrade():
     op.add_column(
         "user",
         sa.Column(
-            "failed_login_attempts",
-            sa.Integer(),
-            nullable=False,
-            server_default="0",
-        ),
-    )
-    op.add_column(
-        "user",
-        sa.Column(
             "locked_until",
             sa.DateTime(),
             nullable=True,
         ),
     )
+    op.add_column(
+        "login_history",
+        sa.Column(
+            "successful",
+            sa.Boolean(),
+            nullable=False,
+            server_default="true",
+        ),
+    )
 
 
 def downgrade():
+    op.drop_column("login_history", "successful")
     op.drop_column("user", "locked_until")
-    op.drop_column("user", "failed_login_attempts")

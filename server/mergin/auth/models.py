@@ -43,9 +43,6 @@ class User(db.Model):
         default=datetime.datetime.utcnow,
     )
     last_signed_in = db.Column(db.DateTime(), nullable=True)
-    failed_login_attempts = db.Column(
-        db.Integer, default=0, nullable=False, server_default="0"
-    )
     locked_until = db.Column(db.DateTime(), nullable=True)
     receive_notifications = db.Column(
         db.Boolean, default=True, nullable=False, index=True
@@ -104,18 +101,23 @@ class User(db.Model):
         return self.locked_until > datetime.datetime.utcnow()
 
     def record_failed_login(self) -> Optional[int]:
-        """Increment the failed-login counter and apply a lockout if a threshold is crossed.
+        """Record a failed login attempt and apply a lockout if a threshold is crossed,
+        counting only failed attempts within the trailing LOCKOUT_WINDOW.
 
         Returns the lockout duration in seconds if a new lock was just applied, else None.
         """
-        self.failed_login_attempts = (self.failed_login_attempts or 0) + 1
+        LoginHistory.add_record(self.id, request, successful=False)
+        window = current_app.config.get("LOCKOUT_WINDOW", 3600)
+        since = datetime.datetime.utcnow() - datetime.timedelta(seconds=window)
+        recent_failures = LoginHistory.count_recent_failures(self.id, since)
+
         policy = _parse_lockout_policy(
             current_app.config.get("LOCKOUT_POLICY", "5:300,10:3600")
         )
         # find the highest applicable tier
         duration = None
         for threshold, seconds in policy:
-            if self.failed_login_attempts >= threshold:
+            if recent_failures >= threshold:
                 duration = seconds
         if duration is not None:
             self.locked_until = datetime.datetime.utcnow() + datetime.timedelta(
@@ -125,7 +127,6 @@ class User(db.Model):
 
     def reset_lockout(self) -> None:
         """Clear lockout state after a successful login."""
-        self.failed_login_attempts = 0
         self.locked_until = None
 
     @property
@@ -337,28 +338,53 @@ class LoginHistory(db.Model):
     ip_address = db.Column(db.String, index=True)
     ip_geolocation_country = db.Column(db.String, index=True)
     device_id = db.Column(db.String, index=True, nullable=True)
+    successful = db.Column(db.Boolean, nullable=False, server_default="true")
 
-    def __init__(self, user_id: int, ua: str, ip: str, device_id: Optional[str] = None):
+    __table_args__ = (
+        db.Index(
+            "ix_login_history_user_id_successful_timestamp",
+            "user_id",
+            "successful",
+            "timestamp",
+        ),
+    )
+
+    def __init__(
+        self,
+        user_id: int,
+        ua: str,
+        ip: str,
+        device_id: Optional[str] = None,
+        successful: bool = True,
+    ):
         self.user_id = user_id
         self.user_agent = ua
         self.ip_address = ip
         self.device_id = device_id
+        self.successful = successful
         self.timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
 
     @staticmethod
-    def add_record(user_id: int, req: request) -> None:
+    def add_record(user_id: int, req: request, successful: bool = True) -> None:
         ua = get_user_agent(req)
         ip = get_ip(req)
         device_id = get_device_id(req)
-        # ignore login attempts coming from urllib - related to db sync tool
-        if "DB-sync" in ua:
-            return
-        lh = LoginHistory(user_id, ua, ip, device_id)
+        lh = LoginHistory(user_id, ua, ip, device_id, successful=successful)
         db.session.add(lh)
 
-        # cache user last login
-        User.query.filter_by(id=user_id).update({"last_signed_in": lh.timestamp})
+        if successful:
+            # cache user last login
+            User.query.filter_by(id=user_id).update({"last_signed_in": lh.timestamp})
         db.session.commit()
+
+    @staticmethod
+    def count_recent_failures(user_id: int, since: datetime.datetime) -> int:
+        """Count failed login attempts for a user since the given timestamp."""
+        return LoginHistory.query.filter(
+            LoginHistory.user_id == user_id,
+            LoginHistory.successful.is_(False),
+            LoginHistory.timestamp >= since,
+        ).count()
 
     @staticmethod
     def get_users_last_signed_in(user_ids: list) -> dict:
@@ -370,7 +396,10 @@ class LoginHistory(db.Model):
                 LoginHistory.user_id,
                 func.max(LoginHistory.timestamp).label("last_signed_in"),
             )
-            .filter(LoginHistory.user_id.in_(user_ids))
+            .filter(
+                LoginHistory.user_id.in_(user_ids),
+                LoginHistory.successful.is_(True),
+            )
             .group_by(LoginHistory.user_id)
             .all()
         )
