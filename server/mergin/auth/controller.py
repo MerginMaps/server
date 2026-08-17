@@ -290,25 +290,18 @@ def password_reset():  # pylint: disable=W0613,W0612
     if not form.validate():
         return jsonify(form.errors), 400
 
+    # respond the same regardless of account existence/state (enumeration)
     user = User.query.filter(
         func.lower(User.email) == func.lower(form.email.data.strip())
     ).one_or_none()
-    if not user:
-        return jsonify({"email": ["Account with given email does not exist"]}), 404
-    if not user.active:
-        # user should confirm email first
-        return jsonify({"email": ["Account is not active"]}), 400
-    if not user.can_edit_profile:
-        # using SSO
-        abort(403, CANNOT_EDIT_PROFILE_MSG)
-
-    send_confirmation_email(
-        current_app,
-        user,
-        "change-password",
-        "email/password_reset.html",
-        "Password reset",
-    )
+    if user and user.active and user.can_edit_profile:
+        send_confirmation_email(
+            current_app,
+            user,
+            "change-password",
+            "email/password_reset.html",
+            "Password reset",
+        )
     return "", 200
 
 

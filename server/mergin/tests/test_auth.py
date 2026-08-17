@@ -114,7 +114,7 @@ def test_login_lockout(send_email_mock, client):
     baseline = None
 
     def assert_locked():
-        # a locked-out attempt must be byte-identical to an ordinary wrong-password response
+        # must be byte-identical to an ordinary wrong-password response
         resp = client.post(
             url_for("/.mergin_auth_controller_login"),
             json={"login": "lockoutuser", "password": "wrong"},
@@ -131,8 +131,7 @@ def test_login_lockout(send_email_mock, client):
             )
             assert resp.status_code == 401
             if baseline is None:
-                # capture the ordinary wrong-password shape before any lock
-                # kicks in, to compare later locked-out responses against
+                # baseline shape before any lock kicks in
                 baseline = resp
 
         # lockout email dispatched exactly once, at the moment the lock triggers
@@ -140,8 +139,7 @@ def test_login_lockout(send_email_mock, client):
 
         assert_locked()
 
-        # correct password is also blocked while locked, and still
-        # indistinguishable from a wrong-password response
+        # correct password is also blocked while locked
         resp = client.post(
             url_for("/.mergin_auth_controller_login"),
             json={"login": "lockoutuser", "password": "correctpassword"},
@@ -548,12 +546,12 @@ def test_confirm_password(app, client):
     assert resp.status_code == 400
 
 
-# reset password tests: success, no email, not-existing user
+# reset password tests: success, no email, not-existing user (200 - masked)
 test_reset_data = [
     ({"email": "mergin@mergin.com"}, 200),
     ({"email": "Mergin@mergin.com"}, 200),  # case insensitive
     ({}, 400),
-    ({"email": "tests@mergin.com"}, 404),
+    ({"email": "tests@mergin.com"}, 200),
 ]
 
 
@@ -565,6 +563,26 @@ def test_reset_password(client, data, expected):
         headers=json_headers,
     )
     assert resp.status_code == expected
+
+
+@patch("mergin.celery.send_email_async.apply_async")
+def test_reset_password_masks_account_existence(send_email_mock, client):
+    """Response must be identical whether or not the account exists."""
+    resp_existing = client.post(
+        url_for("/.mergin_auth_controller_password_reset"),
+        json={"email": "mergin@mergin.com"},
+    )
+    assert resp_existing.status_code == 200
+    assert send_email_mock.call_count == 1
+
+    resp_missing = client.post(
+        url_for("/.mergin_auth_controller_password_reset"),
+        json={"email": "no-such-user@mergin.com"},
+    )
+    assert resp_missing.status_code == resp_existing.status_code
+    assert resp_missing.json == resp_existing.json
+    # no email dispatched for a nonexistent account
+    assert send_email_mock.call_count == 1
 
 
 def test_change_password(client):
