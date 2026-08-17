@@ -111,14 +111,16 @@ def test_login_lockout(send_email_mock, client):
     """
     user = add_user("lockoutuser", "correctpassword")
     since = datetime.utcnow() - timedelta(hours=1)
+    baseline = None
 
     def assert_locked():
+        # a locked-out attempt must be byte-identical to an ordinary wrong-password response
         resp = client.post(
             url_for("/.mergin_auth_controller_login"),
             json={"login": "lockoutuser", "password": "wrong"},
         )
-        assert resp.status_code == 423
-        assert resp.json["code"] == "AccountLocked"
+        assert resp.status_code == baseline.status_code
+        assert resp.json == baseline.json
 
     with patch.dict(client.application.config, {"LOCKOUT_POLICY": "3:60,4:3600"}):
         # tier 1: 3 failures → 60s lock
@@ -128,24 +130,30 @@ def test_login_lockout(send_email_mock, client):
                 json={"login": "lockoutuser", "password": "wrong"},
             )
             assert resp.status_code == 401
+            if baseline is None:
+                # capture the ordinary wrong-password shape before any lock
+                # kicks in, to compare later locked-out responses against
+                baseline = resp
 
         # lockout email dispatched exactly once, at the moment the lock triggers
         assert send_email_mock.call_count == 1
 
         assert_locked()
 
-        # correct password is also blocked while locked
+        # correct password is also blocked while locked, and still
+        # indistinguishable from a wrong-password response
         resp = client.post(
             url_for("/.mergin_auth_controller_login"),
             json={"login": "lockoutuser", "password": "correctpassword"},
         )
-        assert resp.status_code == 423
+        assert resp.status_code == baseline.status_code
+        assert resp.json == baseline.json
 
         # no new failures recorded while already locked out
         assert LoginHistory.count_recent_failures(user.id, since) == 3
         assert user.locked_until is not None
 
-        # no further emails while already locked out (attempts above were all 423s)
+        # no further emails while already locked out (attempts above were all masked 401s)
         assert send_email_mock.call_count == 1
 
         # tier 2 escalation: one more failure after tier-1 expiry

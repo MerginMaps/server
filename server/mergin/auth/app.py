@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import functools
+import logging
 from typing import Optional
 from blinker import signal
 from flask import current_app, render_template, Flask
@@ -13,7 +14,6 @@ from sqlalchemy import func
 from .commands import add_commands
 from .config import Configuration
 from .models import User
-from .errors import AccountLockedError
 
 # signal for other versions to listen to
 user_account_closed = signal("user_account_closed")
@@ -103,7 +103,8 @@ def authenticate(login, password):
     if user is None:
         return None
     if user.is_locked_out():
-        raise AccountLockedError()
+        logging.info(f"Rejected login attempt for locked-out user {user.id}")
+        return None
     needs_commit = False
     # reset non-null locked_until as it has already expired
     if user.locked_until is not None:
