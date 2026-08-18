@@ -346,6 +346,43 @@ def test_login_history_records_failures(client):
     assert user.last_signed_in == last_signed_in
 
 
+@patch("mergin.celery.send_email_async.apply_async")
+def test_invalid_login_timing(send_email_mock, client):
+    """A bcrypt operation must run for every login outcome - nonexistent
+    user, locked-out user, SSO account, and real wrong password.
+    """
+    import bcrypt
+
+    def login_attempt(login, password="dummy"):
+        client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": login, "password": password},
+        )
+
+    locked_user = add_user("timinguser", "correctpassword")
+    with patch(
+        "mergin.auth.models.bcrypt.hashpw", wraps=bcrypt.hashpw
+    ) as mock_hashpw, patch(
+        "mergin.auth.models.bcrypt.checkpw", wraps=bcrypt.checkpw
+    ) as mock_checkpw:
+        login_attempt("no-such-user")
+        assert mock_hashpw.call_count + mock_checkpw.call_count == 1
+
+        with patch.dict(client.application.config, {"LOCKOUT_POLICY": "1:3600"}):
+            login_attempt("timinguser", "wrong")  # real check, also triggers the lock
+            assert mock_hashpw.call_count + mock_checkpw.call_count == 2
+            assert locked_user.is_locked_out()
+
+            login_attempt("timinguser", "wrong")  # now locked - dummy path
+            assert mock_hashpw.call_count + mock_checkpw.call_count == 3
+
+        sso_user = User("ssouser", "sso@test.com")
+        db.session.add(sso_user)
+        db.session.commit()
+        login_attempt("ssouser")  # SSO - dummy path
+        assert mock_hashpw.call_count + mock_checkpw.call_count == 4
+
+
 def test_bcrypt_lazy_rehash(app):
     """Password is transparently rehashed on login when the cost factor changes."""
     import bcrypt

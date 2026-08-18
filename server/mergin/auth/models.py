@@ -17,6 +17,12 @@ from ..sync.utils import get_user_agent, get_ip, get_device_id, is_reserved_word
 MAX_USERNAME_LENGTH = 50
 
 
+def _check_dummy_password(password: str) -> None:
+    """Burn the same bcrypt cost as a real check, without an actual user."""
+    rounds = current_app.config.get("BCRYPT_LOG_ROUNDS", 12)
+    bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds))
+
+
 def _parse_lockout_policy(policy_str: str) -> list:
     """Parse "5:300,10:3600" into [(5, 300), (10, 3600)] sorted ascending by threshold."""
     result = []
@@ -66,7 +72,8 @@ class User(db.Model):
     def check_password(self, password):
         # users created through SSO
         if self.passwd is None:
-            return
+            _check_dummy_password(password)
+            return False
         if isinstance(password, str):
             password = password.encode("utf-8")
         return bcrypt.checkpw(password, self.passwd.encode("utf-8"))
