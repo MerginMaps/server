@@ -41,7 +41,8 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       class="w-full flex flex-column lg:flex-row justify-content-between align-items-center mt-4"
     >
       <PButton
-        severity="secondary"
+        :severity="severity"
+        outlined
         @click="close"
         class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
         data-cy="clone-dialog-close-btn"
@@ -61,7 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script setup lang="ts">
-import { ref, computed, defineEmits, withDefaults } from 'vue'
+import { ref, computed } from 'vue'
 
 import { ConfirmDialogProps } from '../types'
 

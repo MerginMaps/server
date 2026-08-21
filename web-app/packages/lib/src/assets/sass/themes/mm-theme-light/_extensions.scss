@@ -147,6 +147,38 @@ img {
   }
 }
 
+.p-button.p-button-outlined {
+  &.p-button-warning {
+    border: 2px solid map-get($colors, 'earth');
+    color: map-get($colors, 'earth');
+
+    &:hover {
+      background-color: map-get($colors, 'warning');
+      border: 2px solid map-get($colors, 'warning');
+    }
+  }
+
+  &.p-button-danger {
+    border: 2px solid map-get($colors, 'grape');
+    color: map-get($colors, 'grape');
+
+    &:hover {
+      background-color: map-get($colors, 'negative');
+      border: 2px solid map-get($colors, 'negative');
+    }
+  }
+
+  &.p-button-primary {
+    border: 2px solid $primaryDarkColor;
+    color: $primaryDarkColor;
+
+    &:hover {
+      background-color: $primaryColor;
+      border: 2px solid $primaryColor;
+    }
+  }
+}
+
 // Color of error messages in inputs ...
 .p-error {
   color: map-get($map: $colors, $key: grape);

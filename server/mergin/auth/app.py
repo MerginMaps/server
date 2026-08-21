@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import functools
+import logging
 from typing import Optional
 from blinker import signal
 from flask import current_app, render_template, Flask
@@ -13,8 +14,7 @@ from sqlalchemy import func
 from .commands import add_commands
 from .config import Configuration
 from .listeners import register_listeners
-from .models import User
-from .errors import AccountLockedError
+from .models import User, _check_dummy_password
 from ..audit import emit
 from ..audit.listeners import actor_context
 from .events import AuthEventType
@@ -106,9 +106,12 @@ def authenticate(login, password):
         query = func.lower(User.username) == func.lower(login)
     user = User.query.filter(query).one_or_none()
     if user is None:
+        _check_dummy_password(password)
         return None
     if user.is_locked_out():
-        raise AccountLockedError()
+        logging.info(f"Rejected login attempt for locked-out user {user.id}")
+        _check_dummy_password(password)
+        return None
     needs_commit = False
     # reset non-null locked_until as it has already expired
     if user.locked_until is not None:
