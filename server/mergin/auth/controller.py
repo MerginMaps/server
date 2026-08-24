@@ -244,6 +244,7 @@ def admin_login():  # pylint: disable=W0613,W0612
     if user:
         if user.active and user.is_admin:
             login_user(user)
+            LoginHistory.add_record(user.id, request)
             return "", 200
         else:
             abort(403, "You do not have permissions")
@@ -319,6 +320,7 @@ def confirm_new_password(token):  # pylint: disable=W0613,W0612
     form = UserPasswordForm.from_json(request.json)
     if form.validate():
         user.assign_password(form.password.data)
+        user.reset_lockout()
         db.session.add(user)
         db.session.commit()
         return "", 200

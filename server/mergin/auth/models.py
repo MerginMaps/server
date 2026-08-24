@@ -108,13 +108,16 @@ class User(db.Model):
 
     def record_failed_login(self) -> Optional[int]:
         """Record a failed login attempt and apply a lockout if a threshold is crossed,
-        counting only failed attempts within the trailing LOCKOUT_WINDOW.
+        counting only failed attempts within the trailing LOCKOUT_WINDOW and
+        since the last successful login (whichever bound is more recent).
 
         Returns the lockout duration in seconds if a new lock was just applied, else None.
         """
         LoginHistory.add_record(self.id, request, successful=False)
         window = current_app.config.get("LOCKOUT_WINDOW", 3600)
         since = datetime.datetime.utcnow() - datetime.timedelta(seconds=window)
+        if self.last_signed_in and self.last_signed_in > since:
+            since = self.last_signed_in
         recent_failures = LoginHistory.count_recent_failures(self.id, since)
 
         policy = _parse_lockout_policy(
