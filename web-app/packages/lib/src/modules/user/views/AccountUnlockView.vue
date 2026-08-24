@@ -7,27 +7,28 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <template>
   <app-onboarding-page>
     <template #header>
-      <h1 class="headline-h1">Unlock your account</h1>
+      <h1 class="headline-h1">
+        {{
+          unlocked ? 'Unlock your account' : 'Unlock link is invalid or expired'
+        }}
+      </h1>
     </template>
     <div class="flex flex-column gap-4 align-items-center">
-      <template v-if="unlocked"
-        ><img src="@/assets/neutral.svg" alt="MerginMaps neutral" /><span
+      <template v-if="unlocked">
+        <img src="@/assets/neutral.svg" alt="MerginMaps neutral" /><span
           class="opacity-80 paragraph-p5"
           >Your account has been unlocked. You can now sign in.</span
-        ></template
-      >
-      <template v-else
-        ><img src="@/assets/negative.svg" alt="MerginMaps negative" /><span
-          class="opacity-80 paragraph-p5"
-          >This unlock link is invalid or has expired.</span
-        ></template
-      >
-      <PButton
-        data-cy="unlock-account-btn"
-        @click="router.push({ name: 'login' })"
-        class="w-full"
-        label="Continue"
-      />
+        >
+        <PButton
+          data-cy="unlock-account-btn"
+          @click="router.push({ name: 'login' })"
+          class="w-full"
+          label="Continue"
+        />
+      </template>
+      <template v-else>
+        <img src="@/assets/negative.svg" alt="MerginMaps negative" />
+      </template>
     </div>
   </app-onboarding-page>
 </template>
