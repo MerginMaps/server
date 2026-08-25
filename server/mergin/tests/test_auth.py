@@ -312,6 +312,51 @@ def test_login_lockout_window_expiry(client):
         )
 
 
+def test_login_lockout_only_at_threshold(client):
+    """With a gap between tiers, counts strictly between two thresholds
+    must not trigger (or re-trigger) a lock - only landing exactly on a
+    threshold does."""
+    user = add_user("borderuser", "correctpassword")
+
+    def attempt():
+        return client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "borderuser", "password": "wrong"},
+        )
+
+    with patch.dict(client.application.config, {"LOCKOUT_POLICY": "5:300,10:3600"}):
+        # 1-4: nothing happens
+        for _ in range(4):
+            attempt()
+            assert not user.is_locked_out()
+
+        # 5: tier-1 lock
+        attempt()
+        assert user.is_locked_out()
+        assert user.locked_until < datetime.utcnow() + timedelta(seconds=301)
+
+        # simulate the tier-1 lock having expired, then 6-9: nothing happens,
+        # even though the count is still above the tier-1 threshold
+        for expected_count in range(6, 10):
+            user.locked_until = datetime.utcnow() - timedelta(seconds=1)
+            db.session.commit()
+            attempt()
+            assert not user.is_locked_out()
+            assert (
+                LoginHistory.count_recent_failures(
+                    user.id, datetime.utcnow() - timedelta(hours=1)
+                )
+                == expected_count
+            )
+
+        # 10: tier-2 lock
+        user.locked_until = datetime.utcnow() - timedelta(seconds=1)
+        db.session.commit()
+        attempt()
+        assert user.is_locked_out()
+        assert user.locked_until > datetime.utcnow() + timedelta(seconds=3000)
+
+
 def test_login_history_records_failures(client):
     """Failed attempts are recorded (successful=False) without touching
     last_signed_in; successful logins are recorded as successful=True and

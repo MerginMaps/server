@@ -123,10 +123,10 @@ class User(db.Model):
         policy = _parse_lockout_policy(
             current_app.config.get("LOCKOUT_POLICY", "5:300,10:3600")
         )
-        # find the highest applicable tier
+        # only trigger on landing exactly on a tier's threshold
         duration = None
         for threshold, seconds in policy:
-            if recent_failures >= threshold:
+            if recent_failures == threshold:
                 duration = seconds
         if duration is not None:
             self.locked_until = datetime.datetime.utcnow() + datetime.timedelta(
