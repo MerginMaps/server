@@ -10,26 +10,30 @@
     <template v-if="user">
       <app-container>
         <app-section class="p-4">
-          <div
-            class="flex flex-column align-items-center row-gap-3 text-center"
-          >
-            <PAvatar
-              :label="$filters.getAvatar(user?.email, profile?.name)"
-              size="xlarge"
-              shape="circle"
-              :pt="{
-                root: {
-                  class: 'font-semibold'
-                }
-              }"
-            />
-            <h3 class="headline-h2" data-cy="profile-name">
-              {{
-                profile?.name
-                  ? `${profile.name} (${user?.username})`
-                  : user.username
-              }}
-            </h3>
+          <div class="flex flex-column row-gap-3">
+            <div class="flex align-items-center gap-2">
+              <PAvatar
+                :label="$filters.getAvatar(user?.email, profile?.name)"
+                shape="circle"
+                :pt="{
+                  root: {
+                    class: 'font-semibold flex-shrink-0',
+                    style: {
+                      width: '2.25rem',
+                      height: '2.25rem',
+                      fontSize: '1rem'
+                    }
+                  }
+                }"
+              />
+              <h2 class="headline-h2" data-cy="profile-name">
+                {{
+                  profile?.name
+                    ? `${profile.name} (${user?.username})`
+                    : user.username
+                }}
+              </h2>
+            </div>
             <p
               class="m-0 paragraph-p6 overflow-wrap-anywhere"
               data-cy="profile-email"
@@ -45,18 +49,32 @@
               {{ user?.email }}
             </p>
             <dl
-              class="profile-view-detail-list grid grid-nogutter paragraph-p5"
+              class="project-view-detail-list paragraph-p5 flex flex-column gap-3"
             >
-              <div
-                class="col-6 flex flex-column align-items-start text-left flex-wrap"
-              >
-                <dt class="paragraph-p6 opacity-80 mb-2">Last signed in</dt>
+              <div>
+                <dt class="paragraph-p6 opacity-80">User ID</dt>
+                <dd class="font-semibold" data-cy="profile-id">
+                  <button
+                    type="button"
+                    class="id-copy-pill"
+                    v-tooltip.top="'Copy to clipboard'"
+                    :aria-label="`Copy user ID ${user?.id}`"
+                    :disabled="!user?.id"
+                    @click="copyId"
+                  >
+                    <span>{{ user?.id }}</span>
+                    <i class="ti ti-copy"></i>
+                  </button>
+                </dd>
+              </div>
+              <div>
+                <dt class="paragraph-p6 opacity-80">Last signed in</dt>
                 <dd class="font-semibold" data-cy="profile-last-signed-in">
                   {{ $filters.date(user.last_signed_in) || '-' }}
                 </dd>
               </div>
-              <div class="col-6 flex flex-column align-items-end">
-                <dt class="paragraph-p6 opacity-80 mb-2">Registered</dt>
+              <div>
+                <dt class="paragraph-p6 opacity-80">Registered</dt>
                 <dd class="font-semibold" data-cy="profile-registered">
                   {{ $filters.date(user?.registration_date) }}
                 </dd>
@@ -138,13 +156,15 @@ import {
   ConfirmDialogProps,
   AppSettings,
   AppSettingsItemConfig,
+  useCopyToClipboard,
   useInstanceStore,
   useUserStore
 } from '@mergin/lib'
-import { computed, watch } from 'vue'
+import { computed, watch, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
+import { getAdminTitle } from '@/modules/admin/routes'
 import { useAdminStore } from '@/modules/admin/store'
 
 const route = useRoute()
@@ -183,6 +203,9 @@ const settingsItems = computed<AppSettingsItemConfig[]>(() => [
   }
 ])
 
+const { copy } = useCopyToClipboard()
+const copyId = () => copy(user.value?.id, 'User ID')
+
 const user = computed(() => adminStore.user)
 const profile = computed(() => adminStore.user?.profile)
 const routeUsername = computed(() => route?.params?.username)
@@ -191,6 +214,16 @@ const fetchProfile = (username: string) => {
   adminStore.user = null
   adminStore.fetchUserByName({ username })
 }
+
+watchEffect(() => {
+  // We need to handle the title separately, as the account's email is not
+  // available in the route and only loads after the profile is fetched
+  if (user.value?.email) {
+    document.title = getAdminTitle(route, {
+      accountEmail: user.value.email
+    })?.[0]
+  }
+})
 
 watch(
   routeUsername,
@@ -300,8 +333,46 @@ const switchAdminAccess = async () => {
 </script>
 
 <style lang="scss" scoped>
-.profile-view-detail-list {
+h2 {
+  color: var(--text-color);
+}
+
+.project-view-detail-list {
   max-width: 640px;
   width: 100%;
+}
+
+.id-copy-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: -0.25rem -0.5rem;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-color);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: var(--surface-hover);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+
+    &:hover {
+      background: transparent;
+    }
+  }
+
+  i {
+    font-size: 0.95rem;
+    color: inherit;
+  }
 }
 </style>

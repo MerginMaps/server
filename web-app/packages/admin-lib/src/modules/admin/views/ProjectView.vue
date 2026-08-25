@@ -33,6 +33,8 @@
           <h2 class="headline-h2" data-cy="project-name">
             <template v-if="showWorkspaceName"
               ><router-link
+                class="workspace-name-link"
+                v-tooltip.top="'Open workspace detail'"
                 :to="{
                   name: 'adminWorkspace',
                   params: { id: project?.workspace_id }
@@ -46,6 +48,22 @@
           <dl
             class="project-view-detail-list paragraph-p5 flex flex-column gap-3"
           >
+            <div>
+              <dt class="paragraph-p6 opacity-80">Project ID</dt>
+              <dd class="font-semibold" data-cy="project-id">
+                <button
+                  type="button"
+                  class="id-copy-pill"
+                  v-tooltip.top="'Copy to clipboard'"
+                  :aria-label="`Copy project ID ${project?.id}`"
+                  :disabled="!project?.id"
+                  @click="copyId"
+                >
+                  <span>{{ project?.id }}</span>
+                  <i class="ti ti-copy"></i>
+                </button>
+              </dd>
+            </div>
             <div>
               <dt class="paragraph-p6 opacity-80">Created</dt>
               <dd class="font-semibold" data-cy="project-owner">
@@ -110,6 +128,7 @@
 import {
   AppSection,
   AppContainer,
+  useCopyToClipboard,
   useProjectStore,
   ProjectApi,
   DownloadProgress,
@@ -152,6 +171,9 @@ const tabs = computed(() => {
   ]
   return tabs
 })
+
+const { copy } = useCopyToClipboard()
+const copyId = () => copy(project.value?.id, 'Project ID')
 
 const project = computed(() => projectStore.project)
 const routeProjectName = computed(() => route?.params?.projectName as string)
@@ -214,8 +236,52 @@ function openDashboard() {
 </script>
 
 <style lang="scss" scoped>
+h2 {
+  color: var(--text-color);
+}
+
 .project-view-detail-list {
   max-width: 640px;
   width: 100%;
+}
+
+.id-copy-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: -0.25rem -0.5rem;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-color);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: var(--surface-hover);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+
+    &:hover {
+      background: transparent;
+    }
+  }
+
+  i {
+    font-size: 0.95rem;
+    color: inherit;
+  }
+}
+
+.workspace-name-link {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  color: inherit;
 }
 </style>
