@@ -8,9 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
   <app-onboarding-page>
     <template #header>
       <h1 class="headline-h1">
-        {{
-          unlocked ? 'Unlock your account' : 'Unlock link is invalid or expired'
-        }}
+        {{ unlocked ? 'Unlock your account' : 'Unlock account failed' }}
       </h1>
     </template>
     <div class="flex flex-column gap-4 align-items-center">
@@ -27,7 +25,10 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         />
       </template>
       <template v-else>
-        <img src="@/assets/negative.svg" alt="MerginMaps negative" />
+        <img src="@/assets/negative.svg" alt="MerginMaps negative" /><span
+          class="opacity-80 paragraph-p5"
+          >Unlock link is invalid or expired</span
+        >
       </template>
     </div>
   </app-onboarding-page>
