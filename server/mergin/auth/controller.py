@@ -18,6 +18,7 @@ from .app import (
     send_confirmation_email,
     confirm_token,
     generate_confirmation_token,
+    confirm_unlock_token,
     user_created,
     user_account_closed,
     edit_profile_enabled,
@@ -42,6 +43,7 @@ from ..sync.utils import files_size
 
 
 EMAIL_CONFIRMATION_EXPIRATION = 12 * 3600
+ACCOUNT_UNLOCK_TOKEN_EXPIRATION = 24 * 3600
 
 
 # public endpoints
@@ -242,6 +244,7 @@ def admin_login():  # pylint: disable=W0613,W0612
     if user:
         if user.active and user.is_admin:
             login_user(user)
+            LoginHistory.add_record(user.id, request)
             return "", 200
         else:
             abort(403, "You do not have permissions")
@@ -288,25 +291,18 @@ def password_reset():  # pylint: disable=W0613,W0612
     if not form.validate():
         return jsonify(form.errors), 400
 
+    # respond the same regardless of account existence/state (enumeration)
     user = User.query.filter(
         func.lower(User.email) == func.lower(form.email.data.strip())
     ).one_or_none()
-    if not user:
-        return jsonify({"email": ["Account with given email does not exist"]}), 404
-    if not user.active:
-        # user should confirm email first
-        return jsonify({"email": ["Account is not active"]}), 400
-    if not user.can_edit_profile:
-        # using SSO
-        abort(403, CANNOT_EDIT_PROFILE_MSG)
-
-    send_confirmation_email(
-        current_app,
-        user,
-        "change-password",
-        "email/password_reset.html",
-        "Password reset",
-    )
+    if user and user.active and user.can_edit_profile:
+        send_confirmation_email(
+            current_app,
+            user,
+            "change-password",
+            "email/password_reset.html",
+            "Password reset",
+        )
     return "", 200
 
 
@@ -324,6 +320,7 @@ def confirm_new_password(token):  # pylint: disable=W0613,W0612
     form = UserPasswordForm.from_json(request.json)
     if form.validate():
         user.assign_password(form.password.data)
+        user.reset_lockout()
         db.session.add(user)
         db.session.commit()
         return "", 200
@@ -350,6 +347,25 @@ def confirm_email(token):  # pylint: disable=W0613,W0612
         db.session.add(user)
         db.session.commit()
 
+    return "", 200
+
+
+def unlock_account(token: str):  # pylint: disable=W0613,W0612
+    payload = confirm_unlock_token(token, expiration=ACCOUNT_UNLOCK_TOKEN_EXPIRATION)
+    if not payload:
+        abort(400, "Invalid or expired link")
+
+    user = User.query.filter_by(email=payload["email"]).first_or_404()
+    stale = (
+        not user.is_locked_out()
+        or user.locked_until.replace(microsecond=0).isoformat()
+        != payload["locked_until"]
+    )
+    if stale:
+        abort(400, "This unlock link is no longer valid")
+
+    user.reset_lockout()
+    db.session.commit()
     return "", 200
 
 
