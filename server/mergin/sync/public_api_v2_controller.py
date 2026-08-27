@@ -35,7 +35,7 @@ from .errors import (
 from .files import ChangesSchema, DeltaChangeRespSchema, ProjectFileSchema
 from .events import SyncEventType
 from ..audit import emit
-from ..audit.listeners import actor_context
+from ..audit.listeners import actor_context, audit_session_flags
 from .forms import project_name_validation
 from .models import (
     FileDiff,
@@ -77,16 +77,19 @@ def schedule_delete_project(id):
     rest.
     """
     project = require_project_by_uuid(id, ProjectPermissions.Delete)
+    with audit_session_flags(db.session, audit_skip_project_update=True):
+        project.schedule_deletion(removed_by=current_user.id)
     emit(
         SyncEventType.PROJECT_MARKED_FOR_DELETION,
         **actor_context(),
-        project_id=project.id,
-        workspace_id=project.workspace_id,
+        target_project_id=project.id,
+        target_workspace_id=project.workspace_id,
+        workspace_name=project.workspace.name,
         project_name=f"{project.workspace.name}/{project.name}",
+        scheduled_for_deletion_at=(
+            project.removed_at.isoformat() if project.removed_at else None
+        ),
     )
-    db.session.info["audit_skip_project_update"] = True
-    project.schedule_deletion(removed_by=current_user.id)
-    db.session.info.pop("audit_skip_project_update", None)
     return NoContent, 204
 
 
@@ -94,16 +97,8 @@ def schedule_delete_project(id):
 def delete_project_now(id):
     """Delete the project immediately"""
     project = require_project_by_uuid(id, ProjectPermissions.Delete, scheduled=True)
-    emit(
-        SyncEventType.PROJECT_DELETED,
-        **actor_context(),
-        project_id=project.id,
-        workspace_id=project.workspace_id,
-        project_name=f"{project.workspace.name}/{project.name}",
-    )
-    db.session.info["audit_skip_project_update"] = True
-    project.delete()
-    db.session.info.pop("audit_skip_project_update", None)
+    with audit_session_flags(db.session, audit_skip_project_update=True):
+        project.delete()
 
     return NoContent, 204
 
@@ -171,9 +166,11 @@ def add_project_collaborator(id):
     emit(
         SyncEventType.PROJECT_MEMBER_ADDED,
         **actor_context(),
-        project_id=project.id,
-        workspace_id=project.workspace_id,
+        target_project_id=project.id,
+        target_workspace_id=project.workspace_id,
         target_email=user.email,
+        workspace_name=project.workspace.name,
+        project_name=f"{project.workspace.name}/{project.name}",
         role=request.json["role"],
     )
     data = ProjectMemberSchema().dump(project.get_member(user.id))
@@ -194,9 +191,11 @@ def update_project_collaborator(id, user_id):
     emit(
         SyncEventType.PROJECT_MEMBER_UPDATED,
         **actor_context(),
-        project_id=project.id,
-        workspace_id=project.workspace_id,
+        target_project_id=project.id,
+        target_workspace_id=project.workspace_id,
         target_email=user.email,
+        workspace_name=project.workspace.name,
+        project_name=f"{project.workspace.name}/{project.name}",
         old_role=old_role.value,
         new_role=request.json["role"],
     )
@@ -218,9 +217,11 @@ def remove_project_collaborator(id, user_id):
     emit(
         SyncEventType.PROJECT_MEMBER_DELETED,
         **actor_context(),
-        project_id=project.id,
-        workspace_id=project.workspace_id,
+        target_project_id=project.id,
+        target_workspace_id=project.workspace_id,
         target_email=user.email if user else None,
+        workspace_name=project.workspace.name,
+        project_name=f"{project.workspace.name}/{project.name}",
         role=removed_role.value,
     )
     return NoContent, 204
@@ -389,8 +390,10 @@ def create_project_version(id):
             emit(
                 SyncEventType.PROJECT_VERSION_CREATED,
                 **actor_context(),
-                project_id=project.id,
-                workspace_id=project.workspace_id,
+                target_project_id=project.id,
+                target_workspace_id=project.workspace_id,
+                workspace_name=project.workspace.name,
+                project_name=f"{project.workspace.name}/{project.name}",
                 version=v_next_version,
             )
 

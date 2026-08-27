@@ -28,7 +28,9 @@ def test_user_login_succeeded(client, audit_capture):
 
     e = audit_capture.one(AuthEventType.USER_LOGIN_SUCCEEDED)
     assert e.actor_email == f"{DEFAULT_USER[0]}@mergin.com"
-    assert e.user_id == e.actor_id  # actor and target are the same person on login
+    assert (
+        e.target_user_id == e.actor_id
+    )  # actor and target are the same person on login
 
 
 def test_user_login_failed_invalid_credentials(client, audit_capture):
@@ -71,7 +73,7 @@ def test_user_password_changed(client, audit_capture):
     )
 
     e = audit_capture.one(AuthEventType.USER_PASSWORD_CHANGED)
-    assert e.user_id == user.id
+    assert e.target_user_id == user.id
     assert e.actor_id == user.id
 
 
@@ -86,8 +88,8 @@ def test_user_password_reset(app, client, audit_capture):
         json={"password": "NewPass#123", "confirm": "NewPass#123"},
     )
 
-    e = audit_capture.one(AuthEventType.USER_PASSWORD_RESET)
-    assert e.user_id == user.id
+    e = audit_capture.one(AuthEventType.USER_PASSWORD_RESET_COMPLETED)
+    assert e.target_user_id == user.id
     assert e.metadata["target_email"] == user.email
 
 
@@ -95,7 +97,7 @@ def test_user_created(audit_capture):
     user = add_user("newuser", "pass123")
 
     e = audit_capture.one(AuthEventType.USER_CREATED)
-    assert e.user_id == user.id
+    assert e.target_user_id == user.id
     assert e.metadata["target_email"] == "newuser@mergin.com"
 
 
@@ -103,7 +105,9 @@ def test_user_updated(audit_capture):
     user = add_user("editme", "pass123")
     db.session.refresh(user)
     user.email = "updated@mergin.com"
-    user.passwd = "newpassword"  # in _SKIP — must never appear in audit
+    user.passwd = (
+        "newpassword"  # excluded from user.updated — must never appear in audit
+    )
     db.session.commit()
 
     e = audit_capture.one(AuthEventType.USER_UPDATED)
@@ -131,7 +135,7 @@ def test_user_marked_for_deletion_by_user(client, audit_capture):
     client.delete("/v1/user")
 
     e = audit_capture.one(AuthEventType.USER_MARKED_FOR_DELETION)
-    assert e.user_id == user.id
+    assert e.target_user_id == user.id
     assert e.actor_id == user.id
 
 
@@ -140,7 +144,10 @@ def test_user_marked_for_deletion_by_admin(client, audit_capture):
 
     client.delete(f"/app/admin/user/{user.username}")
 
-    assert audit_capture.one(AuthEventType.USER_MARKED_FOR_DELETION).user_id == user.id
+    assert (
+        audit_capture.one(AuthEventType.USER_MARKED_FOR_DELETION).target_user_id
+        == user.id
+    )
 
 
 def test_user_deactivated(client, audit_capture):
@@ -148,7 +155,7 @@ def test_user_deactivated(client, audit_capture):
 
     client.patch(f"/app/admin/user/{user.username}", json={"active": False})
 
-    assert audit_capture.one(AuthEventType.USER_DEACTIVATED).user_id == user.id
+    assert audit_capture.one(AuthEventType.USER_DEACTIVATED).target_user_id == user.id
 
 
 def test_user_restored(client, audit_capture):
@@ -158,7 +165,7 @@ def test_user_restored(client, audit_capture):
 
     client.patch(f"/app/admin/user/{user.username}", json={"active": True})
 
-    assert audit_capture.one(AuthEventType.USER_RESTORED).user_id == user.id
+    assert audit_capture.one(AuthEventType.USER_RESTORED).target_user_id == user.id
 
 
 def test_user_deleted(client, audit_capture):
@@ -167,21 +174,24 @@ def test_user_deleted(client, audit_capture):
     client.delete(f"/app/admin/user/{user.username}")
 
     e = audit_capture.one(AuthEventType.USER_DELETED)
-    assert e.user_id == user.id
+    assert e.target_user_id == user.id
     assert e.metadata["target_email"] == "todelete@mergin.com"
 
 
 def test_user_locked(app, client, audit_capture):
+    from mergin.auth.models import LoginHistory
+
     user = add_user("lockme", "pass123")
-    # Pre-set counter to one below threshold so the next attempt triggers the lock.
-    user.failed_login_attempts = 4
+    # Insert 4 failed LoginHistory records so the next failed attempt hits threshold 5.
+    for _ in range(4):
+        db.session.add(LoginHistory(user.id, "test-ua", "127.0.0.1", successful=False))
     db.session.commit()
 
     with patch.dict(app.config, {"LOCKOUT_POLICY": "5:300,10:3600"}):
         client.post("/app/auth/login", json={"login": "lockme", "password": "wrong"})
 
     e = audit_capture.one(AuthEventType.USER_LOCKED)
-    assert e.user_id == user.id
+    assert e.target_user_id == user.id
     assert "locked_until" in e.metadata
 
 
@@ -197,7 +207,7 @@ def test_user_unlocked(app, client, audit_capture):
     client.post(f"/app/auth/unlock-account/{token}")
 
     e = audit_capture.one(AuthEventType.USER_UNLOCKED)
-    assert e.user_id == user.id
+    assert e.target_user_id == user.id
 
 
 # ---------------------------------------------------------------------------
@@ -211,8 +221,8 @@ def test_project_created(audit_capture):
     project = create_project("myproject", ws, user)
 
     e = audit_capture.one(SyncEventType.PROJECT_CREATED)
-    assert e.project_id == project.id
-    assert e.workspace_id == test_workspace_id
+    assert e.target_project_id == project.id
+    assert e.target_workspace_id == test_workspace_id
     assert e.metadata["project_name"] == "mergin/myproject"
 
 
@@ -236,7 +246,7 @@ def test_project_created_from_template(client, audit_capture):
     events = [
         e
         for e in audit_capture.of_type(SyncEventType.PROJECT_CREATED)
-        if e.project_id == new_project.id
+        if e.target_project_id == new_project.id
     ]
     assert len(events) == 1
     assert events[0].metadata.get("created_from_template") == test_project
@@ -254,8 +264,7 @@ def test_project_created_from_clone(client, audit_capture):
     )
 
     e = audit_capture.one(SyncEventType.PROJECT_CREATED)
-    assert e.metadata.get("cloned_from_id") == str(project.id)
-    assert e.metadata.get("cloned_from_name") == f"{ws.name}/{test_project}"
+    assert e.metadata.get("cloned_from") == str(project.id)
 
 
 def test_project_updated(audit_capture):
@@ -280,8 +289,8 @@ def test_project_marked_for_deletion(client, audit_capture):
     client.post(f"/v2/projects/{project.id}/scheduleDelete")
 
     e = audit_capture.one(SyncEventType.PROJECT_MARKED_FOR_DELETION)
-    assert e.project_id == project.id
-    assert e.workspace_id == project.workspace_id
+    assert e.target_project_id == project.id
+    assert e.target_workspace_id == project.workspace_id
 
 
 def test_project_restored(client, audit_capture):
@@ -293,7 +302,10 @@ def test_project_restored(client, audit_capture):
 
     client.post(f"/app/project/removed-project/restore/{project.id}")
 
-    assert audit_capture.one(SyncEventType.PROJECT_RESTORED).project_id == project.id
+    assert (
+        audit_capture.one(SyncEventType.PROJECT_RESTORED).target_project_id
+        == project.id
+    )
 
 
 def test_project_deleted(client, audit_capture):
@@ -303,7 +315,9 @@ def test_project_deleted(client, audit_capture):
 
     client.delete(f"/v2/projects/{project.id}")
 
-    assert audit_capture.one(SyncEventType.PROJECT_DELETED).project_id == project.id
+    assert (
+        audit_capture.one(SyncEventType.PROJECT_DELETED).target_project_id == project.id
+    )
 
 
 def test_project_member_added(client, audit_capture):
@@ -318,7 +332,7 @@ def test_project_member_added(client, audit_capture):
     )
 
     e = audit_capture.one(SyncEventType.PROJECT_MEMBER_ADDED)
-    assert e.project_id == project.id
+    assert e.target_project_id == project.id
     assert e.metadata["target_email"] == user.email
     assert e.metadata["role"] == ProjectRole.READER.value
 
@@ -366,8 +380,8 @@ def test_project_access_request_created(client, audit_capture):
 
     client.post(f"/app/project/access-request/{project.workspace.name}/{project.name}")
 
-    e = audit_capture.one(SyncEventType.PROJECT_ACCESS_REQUEST_CREATED)
-    assert e.project_id == project.id
+    e = audit_capture.one(SyncEventType.PROJECT_ACCESS_REQUEST_INITIATED)
+    assert e.target_project_id == project.id
     assert e.actor_id == user.id
 
 
@@ -410,7 +424,7 @@ def test_project_access_request_rejected(client, audit_capture):
     client.delete(f"/app/project/access-request/{access_request.id}")
 
     assert (
-        audit_capture.one(SyncEventType.PROJECT_ACCESS_REQUEST_REJECTED).metadata[
+        audit_capture.one(SyncEventType.PROJECT_ACCESS_REQUEST_CANCELED).metadata[
             "target_email"
         ]
         == requester.email
@@ -437,7 +451,7 @@ def test_project_version_created(client, audit_capture):
     assert resp.status_code == 201
 
     e = audit_capture.one(SyncEventType.PROJECT_VERSION_CREATED)
-    assert e.project_id == project.id
+    assert e.target_project_id == project.id
     assert e.metadata["version"] == "v2"
 
 
@@ -463,7 +477,7 @@ def test_project_version_created_v1_no_upload(client, audit_capture):
     assert resp.status_code == 200
 
     e = audit_capture.one(SyncEventType.PROJECT_VERSION_CREATED)
-    assert e.project_id == project.id
+    assert e.target_project_id == project.id
     assert e.metadata["version"] == "v2"
 
 
@@ -503,7 +517,7 @@ def test_project_version_created_v1_push_finish(client, audit_capture):
     assert resp.status_code == 200
 
     e = audit_capture.one(SyncEventType.PROJECT_VERSION_CREATED)
-    assert e.project_id == project.id
+    assert e.target_project_id == project.id
     assert e.metadata["version"] == "v2"
 
 
@@ -526,7 +540,7 @@ def test_project_version_created_from_template(client, audit_capture):
     events = [
         e
         for e in audit_capture.of_type(SyncEventType.PROJECT_VERSION_CREATED)
-        if e.project_id == new_project.id
+        if e.target_project_id == new_project.id
     ]
     assert len(events) == 1
     assert events[0].metadata["version"] == "v1"
@@ -548,7 +562,7 @@ def test_project_version_created_from_clone(client, audit_capture):
     events = [
         e
         for e in audit_capture.of_type(SyncEventType.PROJECT_VERSION_CREATED)
-        if e.project_id == cloned.id
+        if e.target_project_id == cloned.id
     ]
     assert len(events) == 1
     assert events[0].metadata["version"] == "v1"

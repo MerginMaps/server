@@ -274,16 +274,21 @@ def add_project(namespace):  # noqa: E501
             emit(
                 SyncEventType.PROJECT_CREATED,
                 **actor_context(),
-                project_id=p.id,
-                workspace_id=p.workspace_id,
+                target_project_id=p.id,
+                target_workspace_id=p.workspace_id,
                 project_name=f"{workspace.name}/{p.name}",
+                workspace_name=p.workspace.name,
+                is_public=p.public,
+                creator=p.creator_id,
                 created_from_template=template_name,
             )
             emit(
                 SyncEventType.PROJECT_VERSION_CREATED,
                 **actor_context(),
-                project_id=p.id,
-                workspace_id=p.workspace_id,
+                target_project_id=p.id,
+                target_workspace_id=p.workspace_id,
+                workspace_name=p.workspace.name,
+                project_name=f"{p.workspace.name}/{p.name}",
                 version=ProjectVersion.to_v_name(version_name),
             )
         project_version_created.send(version)
@@ -1006,8 +1011,10 @@ def project_push(namespace, project_name):
             emit(
                 SyncEventType.PROJECT_VERSION_CREATED,
                 **actor_context(),
-                project_id=project.id,
-                workspace_id=project.workspace_id,
+                target_project_id=project.id,
+                target_workspace_id=project.workspace_id,
+                workspace_name=project.workspace.name,
+                project_name=f"{project.workspace.name}/{project.name}",
                 version=ProjectVersion.to_v_name(next_version),
             )
             project_version_created.send(pv)
@@ -1169,8 +1176,10 @@ def push_finish(transaction_id):
             emit(
                 SyncEventType.PROJECT_VERSION_CREATED,
                 **actor_context(),
-                project_id=project.id,
-                workspace_id=project.workspace_id,
+                target_project_id=project.id,
+                target_workspace_id=project.workspace_id,
+                workspace_name=project.workspace.name,
+                project_name=f"{project.workspace.name}/{project.name}",
                 version=v_next_version,
             )
             project_version_created.send(pv)
@@ -1335,18 +1344,22 @@ def clone_project(namespace, project_name):  # noqa: E501
     emit(
         SyncEventType.PROJECT_CREATED,
         **actor_context(),
-        project_id=p.id,
-        workspace_id=p.workspace_id,
+        target_project_id=p.id,
+        target_workspace_id=p.workspace_id,
         project_name=f"{ws.name}/{p.name}",
-        cloned_from_id=str(cloned_project.id),
-        cloned_from_name=f"{cp_workspace_name}/{cloned_project.name}",
+        workspace_name=ws.name,
+        is_public=p.public,
+        creator=p.creator_id,
+        cloned_from=str(cloned_project.id),
     )
     if version >= 1:
         emit(
             SyncEventType.PROJECT_VERSION_CREATED,
             **actor_context(),
-            project_id=p.id,
-            workspace_id=p.workspace_id,
+            target_project_id=p.id,
+            target_workspace_id=p.workspace_id,
+            workspace_name=ws.name,
+            project_name=f"{ws.name}/{p.name}",
             version=ProjectVersion.to_v_name(version),
         )
     project_version_created.send(project_version)

@@ -7,7 +7,7 @@ from sqlalchemy.sql.operators import isnot
 
 from ..celery import celery
 from ..app import db
-from ..audit.listeners import emit_safe
+from ..audit import emit
 from .events import AuthEventType
 from .models import User
 from .config import Configuration
@@ -24,9 +24,9 @@ def anonymize_removed_users():
         User.username.op("~")("^(?!deleted_\d{13})"),
     ).all()
     for user in users:
-        emit_safe(
+        emit(
             AuthEventType.USER_DELETED,
-            user_id=user.id,
+            target_user_id=user.id,
             target_email=user.email,
         )
         user.anonymize()

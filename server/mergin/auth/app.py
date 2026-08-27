@@ -16,7 +16,7 @@ from .config import Configuration
 from .listeners import register_listeners
 from .models import User, _check_dummy_password
 from ..audit import emit
-from ..audit.listeners import actor_context
+from ..audit.listeners import actor_context, request_context
 from .events import AuthEventType
 
 # signal for other versions to listen to
@@ -132,8 +132,9 @@ def authenticate(login, password):
             send_account_locked_email(current_app, user, duration)
             emit(
                 AuthEventType.USER_LOCKED,
-                **actor_context(),
-                user_id=user.id,
+                **request_context(),
+                target_user_id=user.id,
+                target_email=user.email,
                 locked_until=user.locked_until.isoformat(),
             )
         return None

@@ -10,7 +10,10 @@ class AuthEventType(str, Enum):
     USER_LOGIN_SUCCEEDED = "user.login.succeeded"
     USER_LOGIN_FAILED = "user.login.failed"
     USER_PASSWORD_CHANGED = "user.password.changed"
-    USER_PASSWORD_RESET = "user.password.reset"  # token-based reset (unauthenticated)
+    # password reset flow (three separate events; all unauthenticated)
+    USER_PASSWORD_RESET_REQUESTED = "user.password.reset_requested"
+    USER_PASSWORD_RESET_COMPLETED = "user.password.reset_completed"
+    USER_PASSWORD_RESET_FAILED = "user.password.reset_failed"
     # general CRUD (SQLAlchemy listeners)
     USER_CREATED = "user.created"
     USER_UPDATED = "user.updated"
@@ -26,3 +29,5 @@ class AuthEventType(str, Enum):
     # lockout events (explicit emit)
     USER_LOCKED = "user.locked"  # account locked after too many failed logins
     USER_UNLOCKED = "user.unlocked"  # self-service token-based unlock
+    # admin panel access (SQLAlchemy listener + explicit on CLI create)
+    USER_ADMIN_PANEL_ACCESS_CHANGED = "user.admin_panel_access.changed"

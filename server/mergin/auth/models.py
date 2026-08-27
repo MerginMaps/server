@@ -11,6 +11,7 @@ from flask import current_app, request
 from sqlalchemy import or_, func, text
 
 from ..app import db
+from ..audit.listeners import audit_session_flags
 from ..sync.models import ProjectUser
 from ..sync.utils import is_reserved_word
 from ..utils import get_ip, get_user_agent, get_device_id
@@ -255,16 +256,14 @@ class User(db.Model):
         ts = round(datetime.datetime.utcnow().timestamp() * 1000)
         del_str = f"deleted_{ts}"
         # Suppress user.updated — these changes are covered by the USER_DELETED event.
-        db.session.info["audit_skip_user_update"] = True
-
-        self.active = False
-        self.username = del_str
-        self.email = None
-        self.passwd = None
-        self.first_name = None
-        self.last_name = None
-        db.session.commit()
-        db.session.info.pop("audit_skip_user_update", None)
+        with audit_session_flags(db.session, audit_skip_user_update=True):
+            self.active = False
+            self.username = del_str
+            self.email = None
+            self.passwd = None
+            self.first_name = None
+            self.last_name = None
+            db.session.commit()
 
     @classmethod
     def get_by_login(cls, login: str) -> Optional[User]:

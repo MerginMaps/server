@@ -7,16 +7,29 @@ Utilities for writing SQLAlchemy-based audit listeners in any module.
 """
 
 import logging
+from contextlib import contextmanager
 
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import ColumnProperty
-from flask import has_request_context, has_app_context, request, current_app
+from flask import has_request_context, request, current_app
 from flask_login import current_user
 
 from ..utils import get_ip, get_user_agent, get_device_id
 from .app import emit
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def audit_session_flags(session, **flags):
+    """Context manager that sets db.session.info flags for the duration of a block
+    and removes them in a finally clause so they never leak on exceptions."""
+    session.info.update(flags)
+    try:
+        yield
+    finally:
+        for key in flags:
+            session.info.pop(key, None)
 
 
 def request_context():
@@ -74,17 +87,3 @@ def field_changes(target, skip=frozenset()):
                 ctx[f"old_{attr.key}"] = old
                 ctx[f"new_{attr.key}"] = new
     return ctx
-
-
-def emit_safe(event_type, **kwargs):
-    """Emit without raising if outside app context or sink not yet configured.
-
-    Works both inside HTTP requests (actor context populated) and Celery tasks
-    (actor fields are None, indicating a system-initiated action).
-    """
-    if not has_app_context() or "audit" not in current_app.extensions:
-        return
-    try:
-        emit(event_type, **kwargs)
-    except Exception:
-        logger.warning("Failed to emit audit event %s", event_type, exc_info=True)
