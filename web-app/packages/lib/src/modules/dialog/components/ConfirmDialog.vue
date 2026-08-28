@@ -46,14 +46,15 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
         @click="close"
         class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
         data-cy="clone-dialog-close-btn"
-        >{{ cancelText }}</PButton
-      >
+        :label="cancelText"
+      />
 
       <PButton
         :disabled="!isConfirmed"
         @click="confirm"
         :severity="severity"
         class="flex w-12 lg:w-6 justify-content-center"
+        data-cy="confirm-yes"
       >
         {{ confirmText }}
       </PButton>
