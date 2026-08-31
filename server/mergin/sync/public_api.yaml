@@ -709,6 +709,13 @@ paths:
           schema:
             type: string
             example: 970181b5-7143-491b-91a6-36533021c9a2
+        - name: Mm-push-id
+          in: header
+          description: Optional idempotency key (UUID) to prevent duplicate data push on client retries.
+          required: false
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           $ref: "#/components/responses/Success"
