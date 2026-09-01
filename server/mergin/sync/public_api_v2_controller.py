@@ -33,6 +33,9 @@ from .errors import (
     UploadError,
 )
 from .files import ChangesSchema, DeltaChangeRespSchema, ProjectFileSchema
+from .events import SyncEventType
+from ..audit import emit
+from ..audit.listeners import actor_context, audit_session_flags
 from .forms import project_name_validation
 from .models import (
     FileDiff,
@@ -58,12 +61,10 @@ from .schemas import (
 from .schemas_v2 import ProjectSchema as ProjectSchemaV2
 from .storages.disk import move_to_tmp, save_to_file
 from .utils import (
-    get_device_id,
-    get_ip,
-    get_user_agent,
     get_chunk_location,
     prepare_download_response,
 )
+from ..utils import get_ip, get_user_agent, get_device_id
 from .tasks import remove_transaction_chunks
 from .workspace import WorkspaceRole
 from ..utils import parse_order_params, get_schema_fields_map
@@ -76,8 +77,19 @@ def schedule_delete_project(id):
     rest.
     """
     project = require_project_by_uuid(id, ProjectPermissions.Delete)
-    project.schedule_deletion(removed_by=current_user.id)
-
+    with audit_session_flags(db.session, audit_skip_project_update=True):
+        project.schedule_deletion(removed_by=current_user.id)
+    emit(
+        SyncEventType.PROJECT_MARKED_FOR_DELETION,
+        **actor_context(),
+        target_project_id=project.id,
+        target_workspace_id=project.workspace_id,
+        workspace_name=project.workspace.name,
+        project_name=f"{project.workspace.name}/{project.name}",
+        scheduled_for_deletion_at=(
+            project.removed_at.isoformat() if project.removed_at else None
+        ),
+    )
     return NoContent, 204
 
 
@@ -85,7 +97,8 @@ def schedule_delete_project(id):
 def delete_project_now(id):
     """Delete the project immediately"""
     project = require_project_by_uuid(id, ProjectPermissions.Delete, scheduled=True)
-    project.delete()
+    with audit_session_flags(db.session, audit_skip_project_update=True):
+        project.delete()
 
     return NoContent, 204
 
@@ -150,6 +163,16 @@ def add_project_collaborator(id):
 
     project.set_role(user.id, ProjectRole(request.json["role"]))
     db.session.commit()
+    emit(
+        SyncEventType.PROJECT_MEMBER_ADDED,
+        **actor_context(),
+        target_project_id=project.id,
+        target_workspace_id=project.workspace_id,
+        target_email=user.email,
+        workspace_name=project.workspace.name,
+        project_name=f"{project.workspace.name}/{project.name}",
+        role=request.json["role"],
+    )
     data = ProjectMemberSchema().dump(project.get_member(user.id))
     return data, 201
 
@@ -159,11 +182,23 @@ def update_project_collaborator(id, user_id):
     """Update project collaborator"""
     project = require_project_by_uuid(id, ProjectPermissions.Update)
     user = User.query.filter_by(id=user_id, active=True).first_or_404()
-    if not project.get_role(user_id):
+    old_role = project.get_role(user_id)
+    if not old_role:
         abort(404)
 
     project.set_role(user.id, ProjectRole(request.json["role"]))
     db.session.commit()
+    emit(
+        SyncEventType.PROJECT_MEMBER_UPDATED,
+        **actor_context(),
+        target_project_id=project.id,
+        target_workspace_id=project.workspace_id,
+        target_email=user.email,
+        workspace_name=project.workspace.name,
+        project_name=f"{project.workspace.name}/{project.name}",
+        old_role=old_role.value,
+        new_role=request.json["role"],
+    )
     data = ProjectMemberSchema().dump(project.get_member(user.id))
     return data, 200
 
@@ -172,11 +207,14 @@ def update_project_collaborator(id, user_id):
 def remove_project_collaborator(id, user_id):
     """Remove project collaborator"""
     project = require_project_by_uuid(id, ProjectPermissions.Update)
-    if not project.get_role(user_id):
+    removed_role = project.get_role(user_id)
+    if not removed_role:
         abort(404)
 
     project.unset_role(user_id)
+    db.session.info["project_member_delete_reason"] = "removed"
     db.session.commit()
+    db.session.info.pop("project_member_delete_reason", None)
     return NoContent, 204
 
 
@@ -340,6 +378,15 @@ def create_project_version(id):
                 os.renames(temp_files_dir, version_dir)
 
             db.session.commit()
+            emit(
+                SyncEventType.PROJECT_VERSION_CREATED,
+                **actor_context(),
+                target_project_id=project.id,
+                target_workspace_id=project.workspace_id,
+                workspace_name=project.workspace.name,
+                project_name=f"{project.workspace.name}/{project.name}",
+                version=v_next_version,
+            )
 
             # remove used chunks only after commit — chunks belong to the now-committed version
             if to_be_added_files or to_be_updated_files:

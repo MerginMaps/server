@@ -44,6 +44,9 @@ from .files import (
 from .interfaces import WorkspaceRole
 from .storages.disk import copy_file, move_to_tmp
 from ..app import db
+from ..audit import emit
+from ..audit.listeners import actor_context
+from .events import SyncEventType
 from .storages import DiskStorage
 from .utils import (
     LOG_BASE,
@@ -316,6 +319,7 @@ class Project(db.Model):
         # do nothing if the project has been already deleted
         if not self.storage_params:
             return
+        project_name = f"{self.workspace.name}/{self.name}"
         self.name = f"{self.name}_{str(self.id)}"
         # make sure remove_at is not null as it is used as filter for APIs
         if not self.removed_at:
@@ -343,6 +347,8 @@ class Project(db.Model):
         db.session.execute(
             delta_table.delete().where(delta_table.c.project_id == self.id)
         )
+
+        db.session.info["project_member_delete_reason"] = "project_deleted"
         self.project_users.clear()
         access_requests = (
             AccessRequest.query.filter_by(project_id=self.id)
@@ -352,6 +358,16 @@ class Project(db.Model):
         for req in access_requests:
             req.resolve(status=RequestStatus.DECLINED, resolved_by=self.removed_by)
         db.session.commit()
+        db.session.info.pop("project_member_delete_reason", None)
+        emit(
+            SyncEventType.PROJECT_DELETED,
+            **actor_context(),
+            target_project_id=self.id,
+            target_workspace_id=self.workspace_id,
+            workspace_name=self.workspace.name,
+            project_name=project_name,
+            triggered_by=db.session.info.get("audit_project_deletion_source"),
+        )
         project_deleted.send(self)
 
     def _member(self, user_id: int) -> Optional[ProjectUser]:

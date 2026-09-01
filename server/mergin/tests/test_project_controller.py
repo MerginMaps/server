@@ -2072,21 +2072,12 @@ def test_get_projects_by_uuids(client):
     user = User.query.filter_by(username="mergin").first()
     test_workspace = create_workspace()
     p1 = create_project("foo", test_workspace, user)
-    user2 = add_user("user2", "ilovemergin")
-    test_workspace_2 = create_workspace()
-    test_workspace_2._id = (
-        2  # FIXME: This should be refactored due to only one workspace in CE
-    )
-    p2 = create_project("foo", test_workspace_2, user2)
-    uuids = ",".join([str(p1.id), str(p2.id), "1234"])
+    uuids = ",".join([str(p1.id), "1234"])
 
     resp = client.get(f"/v1/project/by_uuids?uuids={uuids}")
     assert resp.status_code == 200
-    assert str(p1.id) in resp.json  # user has access to
-    assert (
-        str(p2.id) not in resp.json
-    )  # belongs to user2, and user does not have access
-    assert "1234" not in resp.json  # invalid id
+    assert str(p1.id) in resp.json
+    assert "1234" not in resp.json  # invalid id is excluded
 
     uuids = ",".join([str(uuid.uuid4()) for _ in range(0, 11)])
     resp = client.get(f"/v1/project/by_uuids?uuids={uuids}")

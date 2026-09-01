@@ -35,8 +35,11 @@ from werkzeug.exceptions import HTTPException, Conflict
 from mergin.sync.forms import project_name_validation
 from .interfaces import WorkspaceRole
 from ..app import db
+from ..audit import emit
+from ..audit.listeners import actor_context
 from ..auth import auth_required
 from ..auth.models import User
+from .events import SyncEventType
 from .models import (
     FileSyncErrorType,
     FileDiff,
@@ -78,16 +81,13 @@ from .permissions import (
 )
 from .utils import (
     generate_checksum,
-    get_ip,
-    get_user_agent,
     generate_location,
     is_valid_uuid,
-    get_device_id,
     is_versioned_file,
     prepare_download_response,
-    get_device_id,
     wkb2wkt,
 )
+from ..utils import get_ip, get_user_agent, get_device_id
 from .errors import StorageLimitHit, ProjectLocked
 from ..utils import format_time_delta
 
@@ -224,6 +224,9 @@ def add_project(namespace):  # noqa: E501
 
         template_name = request.json.get("template", None)
         if template_name:
+            # Set flag before the template query — p is already in the session via the
+            # workspace backref, so any query triggers autoflush and fires after_insert.
+            db.session.info["audit_skip_project_create"] = True
             template = (
                 Project.query.filter(Project.creator.has(username="TEMPLATES"))
                 .filter(Project.name == template_name)
@@ -243,7 +246,6 @@ def add_project(namespace):  # noqa: E501
                         change=PushChangeType.CREATE,
                     )
                 )
-
         else:
             template = None
             version_name = 0
@@ -267,6 +269,28 @@ def add_project(namespace):  # noqa: E501
         db.session.add(p)
         db.session.add(version)
         db.session.commit()
+        if template_name:
+            db.session.info.pop("audit_skip_project_create", None)
+            emit(
+                SyncEventType.PROJECT_CREATED,
+                **actor_context(),
+                target_project_id=p.id,
+                target_workspace_id=p.workspace_id,
+                project_name=f"{workspace.name}/{p.name}",
+                workspace_name=p.workspace.name,
+                is_public=p.public,
+                creator=p.creator_id,
+                created_from_template=template_name,
+            )
+            emit(
+                SyncEventType.PROJECT_VERSION_CREATED,
+                **actor_context(),
+                target_project_id=p.id,
+                target_workspace_id=p.workspace_id,
+                workspace_name=p.workspace.name,
+                project_name=f"{p.workspace.name}/{p.name}",
+                version=ProjectVersion.to_v_name(version_name),
+            )
         project_version_created.send(version)
         return NoContent, 200
 
@@ -984,6 +1008,15 @@ def project_push(namespace, project_name):
                 f"A project version {ProjectVersion.to_v_name(next_version)} for project: {project.id} created. "
                 f"Transaction id: {upload.transaction_id}. No upload."
             )
+            emit(
+                SyncEventType.PROJECT_VERSION_CREATED,
+                **actor_context(),
+                target_project_id=project.id,
+                target_workspace_id=project.workspace_id,
+                workspace_name=project.workspace.name,
+                project_name=f"{project.workspace.name}/{project.name}",
+                version=ProjectVersion.to_v_name(next_version),
+            )
             project_version_created.send(pv)
             push_finished.send(pv)
             return jsonify(ProjectSchema().dump(project)), 200
@@ -1140,6 +1173,15 @@ def push_finish(transaction_id):
             logging.info(
                 f"Push finished for project: {project.id}, project version: {v_next_version}, transaction id: {transaction_id}."
             )
+            emit(
+                SyncEventType.PROJECT_VERSION_CREATED,
+                **actor_context(),
+                target_project_id=project.id,
+                target_workspace_id=project.workspace_id,
+                workspace_name=project.workspace.name,
+                project_name=f"{project.workspace.name}/{project.name}",
+                version=v_next_version,
+            )
             project_version_created.send(pv)
             push_finished.send(pv)
     except (psycopg2.Error, OSError, IntegrityError) as err:
@@ -1257,6 +1299,7 @@ def clone_project(namespace, project_name):  # noqa: E501
     )
     p.updated = datetime.utcnow()
     db.session.add(p)
+    db.session.info["audit_skip_project_create"] = True
     files_to_exclude = current_app.config.get("EXCLUDED_CLONE_FILENAMES", [])
 
     try:
@@ -1297,6 +1340,28 @@ def clone_project(namespace, project_name):  # noqa: E501
     )
     db.session.add(project_version)
     db.session.commit()
+    db.session.info.pop("audit_skip_project_create", None)
+    emit(
+        SyncEventType.PROJECT_CREATED,
+        **actor_context(),
+        target_project_id=p.id,
+        target_workspace_id=p.workspace_id,
+        project_name=f"{ws.name}/{p.name}",
+        workspace_name=ws.name,
+        is_public=p.public,
+        creator=p.creator_id,
+        cloned_from=str(cloned_project.id),
+    )
+    if version >= 1:
+        emit(
+            SyncEventType.PROJECT_VERSION_CREATED,
+            **actor_context(),
+            target_project_id=p.id,
+            target_workspace_id=p.workspace_id,
+            workspace_name=ws.name,
+            project_name=f"{ws.name}/{p.name}",
+            version=ProjectVersion.to_v_name(version),
+        )
     project_version_created.send(project_version)
     return NoContent, 200
 

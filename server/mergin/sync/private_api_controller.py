@@ -11,8 +11,12 @@ from sqlalchemy.orm import defer
 from sqlalchemy import text
 
 from ..app import db
+from ..audit import emit
+from ..audit.listeners import actor_context, audit_session_flags
 from ..auth import auth_required
+from ..auth.models import User
 from .forms import AccessPermissionForm
+from .events import SyncEventType
 from .models import (
     Project,
     AccessRequest,
@@ -62,6 +66,15 @@ def create_project_access_request(namespace, project_name):  # noqa: E501
     access_request = AccessRequest(project, current_user.id)
     db.session.add(access_request)
     db.session.commit()
+    emit(
+        SyncEventType.PROJECT_ACCESS_REQUEST_INITIATED,
+        **actor_context(),
+        target_project_id=project.id,
+        target_workspace_id=project.workspace_id,
+        workspace_name=project.workspace.name,
+        project_name=f"{project.workspace.name}/{project.name}",
+        access_request_id=access_request.id,
+    )
     # notify project owners
     owners = current_app.project_handler.get_email_receivers(project)
     for owner in owners:
@@ -99,8 +112,19 @@ def decline_project_access_request(request_id):  # noqa: E501
         project_role == ProjectRole.OWNER
         or current_user.id == access_request.requested_by
     ):
+        requester = User.query.get(access_request.requested_by)
         access_request.resolve(RequestStatus.DECLINED, current_user.id)
         db.session.commit()
+        emit(
+            SyncEventType.PROJECT_ACCESS_REQUEST_CANCELED,
+            **actor_context(),
+            target_project_id=project.id,
+            target_workspace_id=project.workspace_id,
+            target_email=requester.email if requester else None,
+            workspace_name=project.workspace.name,
+            project_name=f"{project.workspace.name}/{project.name}",
+            access_request_id=access_request.id,
+        )
         return "", 200
     abort(403, "You don't have permissions to remove project access request")
 
@@ -124,7 +148,30 @@ def accept_project_access_request(request_id):
     project = access_request.project
     project_role = ProjectPermissions.get_user_project_role(project, current_user)
     if project_role == ProjectRole.OWNER:
+        requester = User.query.get(access_request.requested_by)
         access_request.accept(permission)
+        emit(
+            SyncEventType.PROJECT_ACCESS_REQUEST_ACCEPTED,
+            **actor_context(),
+            target_project_id=project.id,
+            target_workspace_id=project.workspace_id,
+            target_email=requester.email if requester else None,
+            workspace_name=project.workspace.name,
+            project_name=f"{project.workspace.name}/{project.name}",
+            access_request_id=access_request.id,
+            target_user_id=requester.id if requester else None,
+            role=permission,
+        )
+        emit(
+            SyncEventType.PROJECT_MEMBER_ADDED,
+            **actor_context(),
+            target_project_id=project.id,
+            target_workspace_id=project.workspace_id,
+            target_email=requester.email if requester else None,
+            workspace_name=project.workspace.name,
+            project_name=f"{project.workspace.name}/{project.name}",
+            role=permission,
+        )
         return "", 200
     abort(403, "You don't have permissions to accept project access request")
 
@@ -228,6 +275,14 @@ def restore_project(id):  # noqa: E501
     project.removed_at = None
     project.removed_by = None
     db.session.commit()
+    emit(
+        SyncEventType.PROJECT_RESTORED,
+        **actor_context(),
+        target_project_id=project.id,
+        target_workspace_id=project.workspace_id,
+        workspace_name=project.workspace.name,
+        project_name=f"{project.workspace.name}/{project.name}",
+    )
     return "", 201
 
 
@@ -240,7 +295,8 @@ def force_project_delete(id):  # noqa: E501
     )
     if not project.removed_at:
         abort(400, "Failed to remove: Project is still active")
-    project.delete()
+    with audit_session_flags(db.session, audit_skip_project_update=True):
+        project.delete()
     return "", 204
 
 

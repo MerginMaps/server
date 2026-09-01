@@ -103,32 +103,6 @@ def get_blacklisted_files(blacklist):
     return [p for p in blacklist if not p.endswith("/")]
 
 
-def get_user_agent(request):
-    """Return user agent from request headers
-
-    In case of browser client a parsed version from werkzeug utils is returned else raw value of header.
-    """
-    if request.user_agent.browser and request.user_agent.platform:
-        client = request.user_agent.browser.capitalize()
-        version = request.user_agent.version
-        system = request.user_agent.platform.capitalize()
-        return f"{client}/{version} ({system})"
-    else:
-        return request.user_agent.string
-
-
-def get_ip(request):
-    """Returns request's IP address based on X_FORWARDED_FOR header
-    from proxy webserver (which should always be the case)
-    """
-    forwarded_ips = request.environ.get(
-        "HTTP_X_FORWARDED_FOR", request.environ.get("REMOTE_ADDR", "untrackable")
-    )
-    # seems like we get list of IP addresses from AWS infra (beginning with external IP address of client, followed by some internal IP)
-    ip = forwarded_ips.split(",")[0]
-    return ip
-
-
 def generate_location():
     """Return random location where project is saved on disk
 
@@ -255,11 +229,6 @@ def split_project_path(project_path):
     """Extract workspace and project names out of path."""
     workspace_name, project_name = project_path.split("/")
     return workspace_name, project_name
-
-
-def get_device_id(request: Request) -> Optional[str]:
-    """Get device uuid from http header X-Device-Id"""
-    return request.headers.get("X-Device-Id")
 
 
 def files_size():

@@ -154,6 +154,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
     """Factory function to create Flask app instance"""
     from itsdangerous import BadTimeSignature, BadSignature
 
+    from .audit import register as register_audit
     from .auth import auth_required, decode_token, register as register_auth
     from .auth.models import User
     from .sync.app import register as register_sync
@@ -179,6 +180,9 @@ def create_app(public_keys: List[str] = None) -> Flask:
     mail.init_app(app.app)
     csrf.init_app(app.app)
     login_manager.init_app(app.app)
+
+    # register audit module
+    register_audit(app.app)
 
     # register auth blueprint
     register_auth(app.app)
