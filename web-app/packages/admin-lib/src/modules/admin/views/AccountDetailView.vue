@@ -54,17 +54,7 @@
               <div>
                 <dt class="paragraph-p6 opacity-80">User ID</dt>
                 <dd class="font-semibold" data-cy="profile-id">
-                  <button
-                    type="button"
-                    class="id-copy-pill"
-                    v-tooltip.top="'Copy to clipboard'"
-                    :aria-label="`Copy user ID ${user?.id}`"
-                    :disabled="!user?.id"
-                    @click="copyId"
-                  >
-                    <span>{{ user?.id }}</span>
-                    <i class="ti ti-copy"></i>
-                  </button>
+                  <copy-pill :value="user?.id" label="User ID" />
                 </dd>
               </div>
               <div>
@@ -156,13 +146,13 @@ import {
   ConfirmDialogProps,
   AppSettings,
   AppSettingsItemConfig,
-  useCopyToClipboard,
   useInstanceStore,
   useUserStore
 } from '@mergin/lib'
 import { computed, watch, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 
+import CopyPill from '@/common/components/CopyPill.vue'
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
 import { getAdminTitle } from '@/modules/admin/routes'
 import { useAdminStore } from '@/modules/admin/store'
@@ -202,9 +192,6 @@ const settingsItems = computed<AppSettingsItemConfig[]>(() => [
       'Deleting this user will remove them and all their data. This action cannot be undone.'
   }
 ])
-
-const { copy } = useCopyToClipboard()
-const copyId = () => copy(user.value?.id, 'User ID')
 
 const user = computed(() => adminStore.user)
 const profile = computed(() => adminStore.user?.profile)
@@ -340,39 +327,5 @@ h2 {
 .project-view-detail-list {
   max-width: 640px;
   width: 100%;
-}
-
-.id-copy-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  margin: -0.25rem -0.5rem;
-  padding: 0.25rem 0.5rem;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-color);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-
-  &:hover {
-    background: var(--surface-hover);
-  }
-
-  &:disabled {
-    cursor: default;
-    opacity: 0.6;
-
-    &:hover {
-      background: transparent;
-    }
-  }
-
-  i {
-    font-size: 0.95rem;
-    color: inherit;
-  }
 }
 </style>

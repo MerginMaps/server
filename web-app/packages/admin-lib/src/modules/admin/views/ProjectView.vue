@@ -51,17 +51,7 @@
             <div>
               <dt class="paragraph-p6 opacity-80">Project ID</dt>
               <dd class="font-semibold" data-cy="project-id">
-                <button
-                  type="button"
-                  class="id-copy-pill"
-                  v-tooltip.top="'Copy to clipboard'"
-                  :aria-label="`Copy project ID ${project?.id}`"
-                  :disabled="!project?.id"
-                  @click="copyId"
-                >
-                  <span>{{ project?.id }}</span>
-                  <i class="ti ti-copy"></i>
-                </button>
+                <copy-pill :value="project?.id" label="Project ID" />
               </dd>
             </div>
             <div>
@@ -128,7 +118,6 @@
 import {
   AppSection,
   AppContainer,
-  useCopyToClipboard,
   useProjectStore,
   ProjectApi,
   DownloadProgress,
@@ -137,6 +126,7 @@ import {
 import { computed, watch, defineProps } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
+import CopyPill from '@/common/components/CopyPill.vue'
 import { AdminRoutes } from '@/modules'
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
 
@@ -171,9 +161,6 @@ const tabs = computed(() => {
   ]
   return tabs
 })
-
-const { copy } = useCopyToClipboard()
-const copyId = () => copy(project.value?.id, 'Project ID')
 
 const project = computed(() => projectStore.project)
 const routeProjectName = computed(() => route?.params?.projectName as string)
@@ -243,40 +230,6 @@ h2 {
 .project-view-detail-list {
   max-width: 640px;
   width: 100%;
-}
-
-.id-copy-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  margin: -0.25rem -0.5rem;
-  padding: 0.25rem 0.5rem;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-color);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-
-  &:hover {
-    background: var(--surface-hover);
-  }
-
-  &:disabled {
-    cursor: default;
-    opacity: 0.6;
-
-    &:hover {
-      background: transparent;
-    }
-  }
-
-  i {
-    font-size: 0.95rem;
-    color: inherit;
-  }
 }
 
 .workspace-name-link {
