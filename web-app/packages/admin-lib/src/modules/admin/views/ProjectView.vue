@@ -33,6 +33,8 @@
           <h2 class="headline-h2" data-cy="project-name">
             <template v-if="showWorkspaceName"
               ><router-link
+                class="workspace-name-link"
+                v-tooltip.top="'Open workspace detail'"
                 :to="{
                   name: 'adminWorkspace',
                   params: { id: project?.workspace_id }
@@ -46,6 +48,12 @@
           <dl
             class="project-view-detail-list paragraph-p5 flex flex-column gap-3"
           >
+            <div>
+              <dt class="paragraph-p6 opacity-80">Project ID</dt>
+              <dd class="font-semibold" data-cy="project-id">
+                <copy-pill :value="project?.id" label="Project ID" />
+              </dd>
+            </div>
             <div>
               <dt class="paragraph-p6 opacity-80">Created</dt>
               <dd class="font-semibold" data-cy="project-owner">
@@ -118,6 +126,7 @@ import {
 import { computed, watch, defineProps } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
+import CopyPill from '@/common/components/CopyPill.vue'
 import { AdminRoutes } from '@/modules'
 import AdminLayout from '@/modules/admin/components/AdminLayout.vue'
 
@@ -214,8 +223,18 @@ function openDashboard() {
 </script>
 
 <style lang="scss" scoped>
+h2 {
+  color: var(--text-color);
+}
+
 .project-view-detail-list {
   max-width: 640px;
   width: 100%;
+}
+
+.workspace-name-link {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  color: inherit;
 }
 </style>
