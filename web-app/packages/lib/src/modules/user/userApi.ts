@@ -72,6 +72,10 @@ export const UserApi = {
     return UserModule.httpService.get('/app/auth/resend-confirm-email')
   },
 
+  unlockAccount: (token: string): Promise<AxiosResponse<void>> => {
+    return UserModule.httpService.post(`/app/auth/unlock-account/${token}`)
+  },
+
   login: (data: LoginData): Promise<AxiosResponse<UserResponse>> =>
     UserModule.httpService.post('/app/auth/login', data),
 

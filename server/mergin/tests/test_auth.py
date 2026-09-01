@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 import time
 import itsdangerous
 import pytest
@@ -13,7 +14,11 @@ from unittest.mock import patch
 
 from ..auth.bearer import decode_token, encode_token
 from ..auth.forms import ResetPasswordForm
-from ..auth.app import generate_confirmation_token, confirm_token
+from ..auth.app import (
+    generate_confirmation_token,
+    confirm_token,
+    generate_unlock_token,
+)
 from ..auth.models import User, LoginHistory
 from ..auth.tasks import anonymize_removed_users
 from ..app import db
@@ -92,6 +97,380 @@ def test_logout(client):
     login_as_admin(client)
     resp = client.get("/app/auth/logout")
     assert resp.status_code == 200
+
+
+@patch("mergin.celery.send_email_async.apply_async")
+def test_login_lockout(send_email_mock, client):
+    """Test account lockout: progressive tiers, freeze during lock.
+
+    policy: 3 failures → 60s lock, 4 failures → 3600s lock, counted over a
+    trailing window (LOCKOUT_WINDOW, default 1h) via LoginHistory, bounded
+    by the last successful login.
+    """
+    user = add_user("lockoutuser", "correctpassword")
+    since = datetime.utcnow() - timedelta(hours=1)
+    baseline = None
+
+    def assert_locked():
+        # must be byte-identical to an ordinary wrong-password response
+        resp = client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "lockoutuser", "password": "wrong"},
+        )
+        assert resp.status_code == baseline.status_code
+        assert resp.json == baseline.json
+
+    with patch.dict(client.application.config, {"LOCKOUT_POLICY": "3:60,4:3600"}):
+        # tier 1: 3 failures → 60s lock
+        for _ in range(3):
+            resp = client.post(
+                url_for("/.mergin_auth_controller_login"),
+                json={"login": "lockoutuser", "password": "wrong"},
+            )
+            assert resp.status_code == 401
+            if baseline is None:
+                # baseline shape before any lock kicks in
+                baseline = resp
+
+        # lockout email dispatched exactly once, at the moment the lock triggers
+        assert send_email_mock.call_count == 1
+
+        assert_locked()
+
+        # correct password is also blocked while locked
+        resp = client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "lockoutuser", "password": "correctpassword"},
+        )
+        assert resp.status_code == baseline.status_code
+        assert resp.json == baseline.json
+
+        # no new failures recorded while already locked out
+        assert LoginHistory.count_recent_failures(user.id, since) == 3
+        assert user.locked_until is not None
+
+        # no further emails while already locked out (attempts above were all masked 401s)
+        assert send_email_mock.call_count == 1
+
+        # tier 2 escalation: one more failure after tier-1 expiry
+        # window count was at 3; one new failure pushes it to 4, crossing tier-2 threshold
+
+        # expire_lock
+        user.locked_until = datetime.utcnow() - timedelta(seconds=1)
+        db.session.commit()
+
+        resp = client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "lockoutuser", "password": "wrong"},
+        )
+        # returns 401 (wrong password), but now locked for 3600s
+        assert resp.status_code == 401
+        assert_locked()
+        assert user.locked_until > datetime.utcnow() + timedelta(seconds=60)
+        assert LoginHistory.count_recent_failures(user.id, since) == 4
+
+        # second lockout email dispatched for the tier-2 re-lock
+        assert send_email_mock.call_count == 2
+
+        # successful login after expiry unlocks the account and gives a
+        # clean slate - the 4 prior failures stay in the audit trail...
+        user.locked_until = datetime.utcnow() - timedelta(seconds=1)
+        db.session.commit()
+        resp = client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "lockoutuser", "password": "correctpassword"},
+        )
+        assert resp.status_code == 200
+        assert user.locked_until is None
+        assert LoginHistory.count_recent_failures(user.id, since) == 4
+
+        # no email on successful login
+        assert send_email_mock.call_count == 2
+
+        # ...but no longer count toward a new lock: one wrong attempt right
+        # after a successful login must not immediately relock the account
+        resp = client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "lockoutuser", "password": "wrong"},
+        )
+        assert resp.status_code == 401
+        assert not user.is_locked_out()
+        assert send_email_mock.call_count == 2
+
+
+@patch("mergin.celery.send_email_async.apply_async")
+def test_unlock_account(send_email_mock, client, app):
+    """Test the self-service unlock-account link: valid use, reuse, natural
+    expiry, and cross-tier reuse, per the token-binding design.
+
+    Each scenario below uses its own user so failure counts (sourced from
+    LoginHistory over a trailing window) don't bleed between scenarios
+    within the same test.
+    """
+
+    def unlock(token):
+        return client.post(
+            url_for("/.mergin_auth_controller_unlock_account", token=token)
+        )
+
+    def lock_out(username):
+        for _ in range(3):
+            client.post(
+                url_for("/.mergin_auth_controller_login"),
+                json={"login": username, "password": "wrong"},
+            )
+
+    with patch.dict(client.application.config, {"LOCKOUT_POLICY": "3:60,4:3600"}):
+        # unknown user -> 404
+        fake_user = SimpleNamespace(email="nope@x.com", locked_until=datetime.utcnow())
+        resp = unlock(generate_unlock_token(app, fake_user))
+        assert resp.status_code == 404
+
+        # tamper with a valid-looking token -> 400
+        resp = unlock("not-a-real-token")
+        assert resp.status_code == 400
+
+        # trigger tier-1 lock and capture its token
+        user = add_user("unlockuser", "correctpassword")
+        lock_out("unlockuser")
+        assert user.is_locked_out()
+        tier1_token = generate_unlock_token(app, user)
+
+        # valid token unlocks successfully
+        resp = unlock(tier1_token)
+        assert resp.status_code == 200
+        assert user.locked_until is None
+
+        # reuse of the same (now-consumed) token fails
+        resp = unlock(tier1_token)
+        assert resp.status_code == 400
+
+        # naturally-expired lock: token itself still cryptographically valid,
+        # but the lock episode it points to is no longer active
+        stale_user = add_user("staleuser", "correctpassword")
+        lock_out("staleuser")
+        assert stale_user.is_locked_out()
+        stale_token = generate_unlock_token(app, stale_user)
+        stale_user.locked_until = datetime.utcnow() - timedelta(seconds=1)
+        db.session.commit()
+        resp = unlock(stale_token)
+        assert resp.status_code == 400
+
+        # cross-tier reuse: a token minted for one lock episode must not unlock
+        # a later, different lock episode for the same user
+        cross_user = add_user("crossuser", "correctpassword")
+        lock_out("crossuser")
+        tier1_token_2 = generate_unlock_token(app, cross_user)
+        # escalate to tier 2 with a new locked_until
+        cross_user.locked_until = datetime.utcnow() - timedelta(seconds=1)
+        db.session.commit()
+        client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "crossuser", "password": "wrong"},
+        )
+        assert cross_user.locked_until > datetime.utcnow() + timedelta(seconds=60)
+        resp = unlock(tier1_token_2)
+        assert resp.status_code == 400
+
+
+def test_login_lockout_window_expiry(client):
+    """Failures older than LOCKOUT_WINDOW no longer count toward the threshold."""
+    user = add_user("windowuser", "correctpassword")
+
+    with patch.dict(
+        client.application.config,
+        {"LOCKOUT_POLICY": "3:60,4:3600", "LOCKOUT_WINDOW": 3600},
+    ):
+        for _ in range(3):
+            resp = client.post(
+                url_for("/.mergin_auth_controller_login"),
+                json={"login": "windowuser", "password": "wrong"},
+            )
+            assert resp.status_code == 401
+        assert user.is_locked_out()
+
+        # push all recorded failures outside the 1h window, and let the lock expire
+        LoginHistory.query.filter_by(user_id=user.id, successful=False).update(
+            {"timestamp": datetime.utcnow() - timedelta(hours=2)}
+        )
+        user.locked_until = datetime.utcnow() - timedelta(seconds=1)
+        db.session.commit()
+
+        # old failures no longer count - a single new failure should not relock
+        resp = client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "windowuser", "password": "wrong"},
+        )
+        assert resp.status_code == 401
+        assert not user.is_locked_out()
+        assert user.locked_until is None
+        assert (
+            LoginHistory.count_recent_failures(
+                user.id, datetime.utcnow() - timedelta(hours=1)
+            )
+            == 1
+        )
+
+
+def test_login_lockout_only_at_threshold(client):
+    """With a gap between tiers, counts strictly between two thresholds
+    must not trigger (or re-trigger) a lock - only landing exactly on a
+    threshold does."""
+    user = add_user("borderuser", "correctpassword")
+
+    def attempt():
+        return client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "borderuser", "password": "wrong"},
+        )
+
+    with patch.dict(client.application.config, {"LOCKOUT_POLICY": "5:300,10:3600"}):
+        # 1-4: nothing happens
+        for _ in range(4):
+            attempt()
+            assert not user.is_locked_out()
+
+        # 5: tier-1 lock
+        attempt()
+        assert user.is_locked_out()
+        assert user.locked_until < datetime.utcnow() + timedelta(seconds=301)
+
+        # simulate the tier-1 lock having expired, then 6-9: nothing happens,
+        # even though the count is still above the tier-1 threshold
+        for expected_count in range(6, 10):
+            user.locked_until = datetime.utcnow() - timedelta(seconds=1)
+            db.session.commit()
+            attempt()
+            assert not user.is_locked_out()
+            assert (
+                LoginHistory.count_recent_failures(
+                    user.id, datetime.utcnow() - timedelta(hours=1)
+                )
+                == expected_count
+            )
+
+        # 10: tier-2 lock
+        user.locked_until = datetime.utcnow() - timedelta(seconds=1)
+        db.session.commit()
+        attempt()
+        assert user.is_locked_out()
+        assert user.locked_until > datetime.utcnow() + timedelta(seconds=3000)
+
+
+def test_login_history_records_failures(client):
+    """Failed attempts are recorded (successful=False) without touching
+    last_signed_in; successful logins are recorded as successful=True and
+    do update last_signed_in."""
+    user = add_user("historyuser", "correctpassword")
+    assert user.last_signed_in is None
+
+    resp = client.post(
+        url_for("/.mergin_auth_controller_login"),
+        json={"login": "historyuser", "password": "wrong"},
+    )
+    assert resp.status_code == 401
+    failed = LoginHistory.query.filter_by(user_id=user.id, successful=False).all()
+    assert len(failed) == 1
+    assert user.last_signed_in is None
+
+    resp = client.post(
+        url_for("/.mergin_auth_controller_login"),
+        json={"login": "historyuser", "password": "correctpassword"},
+    )
+    assert resp.status_code == 200
+    successful = LoginHistory.query.filter_by(user_id=user.id, successful=True).all()
+    assert len(successful) == 1
+    assert user.last_signed_in is not None
+    last_signed_in = user.last_signed_in
+
+    # a later failed attempt must not be reported/cached as the last signed-in
+    # time, even though it's the most recent row for this user overall
+    resp = client.post(
+        url_for("/.mergin_auth_controller_login"),
+        json={"login": "historyuser", "password": "wrong"},
+    )
+    assert resp.status_code == 401
+    user.last_signed_in = None
+    db.session.commit()
+    users_last_signed_in = LoginHistory.get_users_last_signed_in([user.id])
+    assert users_last_signed_in[user.id] == last_signed_in
+    assert user.last_signed_in == last_signed_in
+
+
+@patch("mergin.celery.send_email_async.apply_async")
+def test_invalid_login_timing(send_email_mock, client):
+    """A bcrypt operation must run for every login outcome - nonexistent
+    user, locked-out user, SSO account, and real wrong password.
+    """
+    import bcrypt
+
+    def login_attempt(login, password="dummy"):
+        client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": login, "password": password},
+        )
+
+    locked_user = add_user("timinguser", "correctpassword")
+    with patch(
+        "mergin.auth.models.bcrypt.hashpw", wraps=bcrypt.hashpw
+    ) as mock_hashpw, patch(
+        "mergin.auth.models.bcrypt.checkpw", wraps=bcrypt.checkpw
+    ) as mock_checkpw:
+        login_attempt("no-such-user")
+        assert mock_hashpw.call_count + mock_checkpw.call_count == 1
+
+        with patch.dict(client.application.config, {"LOCKOUT_POLICY": "1:3600"}):
+            login_attempt("timinguser", "wrong")  # real check, also triggers the lock
+            assert mock_hashpw.call_count + mock_checkpw.call_count == 2
+            assert locked_user.is_locked_out()
+
+            login_attempt("timinguser", "wrong")  # now locked - dummy path
+            assert mock_hashpw.call_count + mock_checkpw.call_count == 3
+
+        sso_user = User("ssouser", "sso@test.com")
+        db.session.add(sso_user)
+        db.session.commit()
+        login_attempt("ssouser")  # SSO - dummy path
+        assert mock_hashpw.call_count + mock_checkpw.call_count == 4
+
+
+def test_bcrypt_lazy_rehash(app):
+    """Password is transparently rehashed on login when the cost factor changes."""
+    import bcrypt
+    from ..auth.app import authenticate
+
+    user = add_user("rehashuser", "rehashpassword")
+    # Store a hash with a low cost factor (4 is the minimum bcrypt allows)
+    low_rounds_hash = bcrypt.hashpw(b"rehashpassword", bcrypt.gensalt(4)).decode(
+        "utf-8"
+    )
+    user.passwd = low_rounds_hash
+    db.session.commit()
+
+    app.config["BCRYPT_LOG_ROUNDS"] = 5
+    result = authenticate("rehashuser", "rehashpassword")
+    assert result is not None
+
+    db.session.refresh(user)
+    hash_rounds = int(user.passwd.split("$")[2])
+    assert hash_rounds == 5
+
+
+def test_deactivated_user_session_rejected(client):
+    """Session cookie for a deactivated account must be rejected."""
+    user = add_user("testdeactivate", "testpassword")
+    login(client, "testdeactivate", "testpassword")
+
+    # session works before deactivation
+    resp = client.get(f"/v1/user/{user.username}")
+    assert resp.status_code == 200
+
+    user.active = False
+    db.session.commit()
+
+    # same session must now be rejected
+    resp = client.get(f"/v1/user/{user.username}")
+    assert resp.status_code == 401
 
 
 # user registration tests
@@ -255,12 +634,56 @@ def test_confirm_password(app, client):
     assert resp.status_code == 400
 
 
-# reset password tests: success, no email, not-existing user
+@patch("mergin.celery.send_email_async.apply_async")
+def test_confirm_password_clears_lockout(send_email_mock, app, client):
+    """Resetting a password via the emailed link clears an active lock,
+    same as the unlock-account link."""
+    user = add_user("resetlockuser", "correctpassword")
+
+    with patch.dict(client.application.config, {"LOCKOUT_POLICY": "3:60,4:3600"}):
+        for _ in range(3):
+            client.post(
+                url_for("/.mergin_auth_controller_login"),
+                json={"login": "resetlockuser", "password": "wrong"},
+            )
+        assert user.is_locked_out()
+
+        token = generate_confirmation_token(
+            app, user.email, app.config["SECURITY_PASSWORD_SALT"]
+        )
+        resp = client.post(
+            url_for("/.mergin_auth_controller_confirm_new_password", token=token),
+            data=json.dumps({"password": "newpass#1", "confirm": "newpass#1"}),
+            headers=json_headers,
+        )
+        assert resp.status_code == 200
+        assert user.locked_until is None
+
+        # failure history is untouched - one more wrong attempt re-locks
+        resp = client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "resetlockuser", "password": "wrong"},
+        )
+        assert resp.status_code == 401
+        assert user.is_locked_out()
+
+        # but logging in with the new password succeeds and gives a clean slate
+        user.locked_until = None
+        db.session.commit()
+        resp = client.post(
+            url_for("/.mergin_auth_controller_login"),
+            json={"login": "resetlockuser", "password": "newpass#1"},
+        )
+        assert resp.status_code == 200
+        assert not user.is_locked_out()
+
+
+# reset password tests: success, no email, not-existing user (200 - masked)
 test_reset_data = [
     ({"email": "mergin@mergin.com"}, 200),
     ({"email": "Mergin@mergin.com"}, 200),  # case insensitive
     ({}, 400),
-    ({"email": "tests@mergin.com"}, 404),
+    ({"email": "tests@mergin.com"}, 200),
 ]
 
 
@@ -272,6 +695,26 @@ def test_reset_password(client, data, expected):
         headers=json_headers,
     )
     assert resp.status_code == expected
+
+
+@patch("mergin.celery.send_email_async.apply_async")
+def test_reset_password_masks_account_existence(send_email_mock, client):
+    """Response must be identical whether or not the account exists."""
+    resp_existing = client.post(
+        url_for("/.mergin_auth_controller_password_reset"),
+        json={"email": "mergin@mergin.com"},
+    )
+    assert resp_existing.status_code == 200
+    assert send_email_mock.call_count == 1
+
+    resp_missing = client.post(
+        url_for("/.mergin_auth_controller_password_reset"),
+        json={"email": "no-such-user@mergin.com"},
+    )
+    assert resp_missing.status_code == resp_existing.status_code
+    assert resp_missing.json == resp_existing.json
+    # no email dispatched for a nonexistent account
+    assert send_email_mock.call_count == 1
 
 
 def test_change_password(client):
@@ -393,6 +836,8 @@ def test_api_login(client, data, headers, expected):
 
 
 def test_api_login_from_urllib(client):
+    """DB-sync logins are recorded in LoginHistory just like any other client,
+    to keep a full picture of login activity (including for lockout purposes)."""
     with patch("mergin.auth.models.get_user_agent") as mock:
         mock.return_value = "DB-sync/0.1"
         resp = client.post(
@@ -407,9 +852,9 @@ def test_api_login_from_urllib(client):
             .order_by(desc(LoginHistory.timestamp))
             .first()
         )
-        assert not login_history
-        # we do not have recored last login yet
-        assert user.last_signed_in is None
+        assert login_history
+        assert login_history.successful
+        assert user.last_signed_in == login_history.timestamp
 
 
 def test_api_user_profile(client):
@@ -469,7 +914,8 @@ def test_update_user(client):
         data=json.dumps(data),
         headers=json_headers,
     )
-    assert resp.status_code == 403
+    # user is deactivated, so session is rejected before permission check
+    assert resp.status_code == 401
 
 
 def test_update_user_profile(client):

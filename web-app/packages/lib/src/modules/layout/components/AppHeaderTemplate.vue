@@ -242,8 +242,8 @@ export default defineComponent({
           target: '_blank'
         },
         {
-          label: 'Community chat',
-          url: import.meta.env.VITE_VUE_APP_JOIN_COMMUNITY_LINK,
+          label: 'Community',
+          url: import.meta.env.VITE_VUE_APP_COMMUNITY_LINK,
           target: '_blank'
         },
         ...(this.helpMenuItems ?? [])
