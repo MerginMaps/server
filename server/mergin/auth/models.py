@@ -235,8 +235,10 @@ class User(db.Model):
         """
         from ..sync.models import AccessRequest, RequestStatus
 
-        # remove explicit permissions
-        ProjectUser.query.filter(ProjectUser.user_id == self.id).delete()
+        db.session.info["project_member_delete_reason"] = "user_deleted"
+        # Remove explicit project permissions; PROJECT_MEMBER_DELETED events fire automatically via the after_delete listener.
+        for m in ProjectUser.query.filter(ProjectUser.user_id == self.id).all():
+            db.session.delete(m)
 
         # decline all access requests
         for req in (
@@ -250,6 +252,7 @@ class User(db.Model):
         self.active = False
         self.inactive_since = datetime.datetime.utcnow()
         db.session.commit()
+        db.session.info.pop("project_member_delete_reason", None)
 
     def anonymize(self):
         """Anonymize user object in database - remove personal information"""

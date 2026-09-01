@@ -365,10 +365,9 @@ def test_project_member_deleted(client, audit_capture):
 
     client.delete(f"/v2/projects/{project.id}/collaborators/{user.id}")
 
-    assert (
-        audit_capture.one(SyncEventType.PROJECT_MEMBER_DELETED).metadata["target_email"]
-        == user.email
-    )
+    e = audit_capture.one(SyncEventType.PROJECT_MEMBER_DELETED)
+    assert e.metadata["target_email"] == user.email
+    assert e.metadata["reason"] == "removed"
 
 
 def test_project_access_request_created(client, audit_capture):

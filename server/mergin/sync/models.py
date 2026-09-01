@@ -347,6 +347,8 @@ class Project(db.Model):
         db.session.execute(
             delta_table.delete().where(delta_table.c.project_id == self.id)
         )
+
+        db.session.info["project_member_delete_reason"] = "project_deleted"
         self.project_users.clear()
         access_requests = (
             AccessRequest.query.filter_by(project_id=self.id)
@@ -356,6 +358,7 @@ class Project(db.Model):
         for req in access_requests:
             req.resolve(status=RequestStatus.DECLINED, resolved_by=self.removed_by)
         db.session.commit()
+        db.session.info.pop("project_member_delete_reason", None)
         emit(
             SyncEventType.PROJECT_DELETED,
             **actor_context(),

@@ -211,19 +211,10 @@ def remove_project_collaborator(id, user_id):
     if not removed_role:
         abort(404)
 
-    user = User.query.get(user_id)
     project.unset_role(user_id)
+    db.session.info["project_member_delete_reason"] = "removed"
     db.session.commit()
-    emit(
-        SyncEventType.PROJECT_MEMBER_DELETED,
-        **actor_context(),
-        target_project_id=project.id,
-        target_workspace_id=project.workspace_id,
-        target_email=user.email if user else None,
-        workspace_name=project.workspace.name,
-        project_name=f"{project.workspace.name}/{project.name}",
-        role=removed_role.value,
-    )
+    db.session.info.pop("project_member_delete_reason", None)
     return NoContent, 204
 
 
