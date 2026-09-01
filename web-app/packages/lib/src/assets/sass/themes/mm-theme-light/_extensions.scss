@@ -183,6 +183,16 @@ img {
   }
 }
 
+.p-checkbox:not(.p-checkbox-disabled) {
+  .p-checkbox-box {
+    &.p-highlight:hover {
+      .p-checkbox-icon {
+        color: $primaryColor
+      }
+    }
+  }
+}
+
 // Color of error messages in inputs ...
 .p-error {
   color: map-get($map: $colors, $key: grape);
