@@ -316,7 +316,7 @@ $dividerSize:1px;
 
 /// Color of the divider border
 /// @group panel
-$dividerColor:#dee2e6;
+$dividerColor: map-get($colors, 'secondary-gray');
 
 /// Background of the splitter gutter
 /// @group panel

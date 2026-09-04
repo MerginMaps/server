@@ -99,6 +99,10 @@ img {
   }
 }
 
+.p-divider.p-divider-horizontal {
+  margin: 0;
+}
+
 
 // Custom semantic  classes
 
@@ -175,6 +179,16 @@ img {
     &:hover {
       background-color: $primaryColor;
       border: 2px solid $primaryColor;
+    }
+  }
+}
+
+.p-checkbox:not(.p-checkbox-disabled) {
+  .p-checkbox-box {
+    &.p-highlight:hover {
+      .p-checkbox-icon {
+        color: $primaryColor
+      }
     }
   }
 }
