@@ -173,10 +173,11 @@ def login_public():  # noqa: E501
             )
             return data
         else:
+            audit_user = user or User.get_by_login(form.login.data)
             emit(
                 AuthEventType.USER_LOGIN_FAILED,
                 **request_context(),
-                target_user_id=user.id if user else None,
+                target_user_id=audit_user.id if audit_user else None,
                 login=form.login.data,
                 reason="account_inactive" if user else "invalid_credentials",
                 login_method="password",
@@ -267,10 +268,11 @@ def login():  # pylint: disable=W0613,W0612
             )
             return "", 200
         else:
+            audit_user = user or User.get_by_login(form.login.data)
             emit(
                 AuthEventType.USER_LOGIN_FAILED,
                 **request_context(),
-                target_user_id=user.id if user else None,
+                target_user_id=audit_user.id if audit_user else None,
                 login=form.login.data,
                 reason="account_inactive" if user else "invalid_credentials",
                 login_method="password",
@@ -310,10 +312,11 @@ def admin_login():  # pylint: disable=W0613,W0612
             )
             abort(403, "You do not have permissions")
     else:
+        audit_user = User.get_by_login(form.login.data)
         emit(
             AuthEventType.USER_LOGIN_FAILED,
             **request_context(),
-            target_user_id=None,
+            target_user_id=audit_user.id if audit_user else None,
             login=form.login.data,
             reason="invalid_credentials",
             login_method="password",

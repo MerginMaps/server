@@ -70,7 +70,6 @@ def remove_projects_backups():
         with audit_session_flags(
             db.session,
             audit_skip_project_update=True,
-            audit_project_deletion_source="system",
         ):
             for p in projects:
                 p.delete()

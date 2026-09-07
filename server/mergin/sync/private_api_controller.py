@@ -344,7 +344,9 @@ def unsubscribe_project(id):  # pylint: disable=W0612
 
     project.unset_role(current_user.id)
     db.session.add(project)
+    db.session.info["project_member_delete_reason"] = "left"
     db.session.commit()
+    db.session.info.pop("project_member_delete_reason", None)
     return NoContent, 200
 
 

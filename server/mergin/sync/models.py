@@ -366,7 +366,6 @@ class Project(db.Model):
             target_workspace_id=self.workspace_id,
             workspace_name=self.workspace.name,
             project_name=project_name,
-            triggered_by=db.session.info.get("audit_project_deletion_source"),
         )
         project_deleted.send(self)
 

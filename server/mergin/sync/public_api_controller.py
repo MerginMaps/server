@@ -36,7 +36,7 @@ from mergin.sync.forms import project_name_validation
 from .interfaces import WorkspaceRole
 from ..app import db
 from ..audit import emit
-from ..audit.listeners import actor_context
+from ..audit.listeners import actor_context, audit_session_flags
 from ..auth import auth_required
 from ..auth.models import User
 from .events import SyncEventType
@@ -309,7 +309,19 @@ def delete_project(namespace, project_name):  # noqa: E501
     :rtype: None
     """
     project = require_project(namespace, project_name, ProjectPermissions.Delete)
-    project.schedule_deletion(removed_by=current_user.id)
+    with audit_session_flags(db.session, audit_skip_project_update=True):
+        project.schedule_deletion(removed_by=current_user.id)
+    emit(
+        SyncEventType.PROJECT_MARKED_FOR_DELETION,
+        **actor_context(),
+        target_project_id=project.id,
+        target_workspace_id=project.workspace_id,
+        workspace_name=project.workspace.name,
+        project_name=f"{project.workspace.name}/{project.name}",
+        scheduled_for_deletion_at=(
+            project.removed_at.isoformat() if project.removed_at else None
+        ),
+    )
     return NoContent, 200
 
 

@@ -293,6 +293,20 @@ def test_project_marked_for_deletion(client, audit_capture):
     assert e.target_workspace_id == project.workspace_id
 
 
+def test_project_marked_for_deletion_via_v1_api(client, audit_capture):
+    """Deleting a project via the legacy v1 API (used by QGIS plugin) emits PROJECT_MARKED_FOR_DELETION."""
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+    workspace_name = project.workspace.name
+
+    client.delete(f"/v1/project/{workspace_name}/{project.name}")
+
+    e = audit_capture.one(SyncEventType.PROJECT_MARKED_FOR_DELETION)
+    assert e.target_project_id == project.id
+    assert e.target_workspace_id == project.workspace_id
+
+
 def test_project_restored(client, audit_capture):
     project = Project.query.filter_by(
         workspace_id=test_workspace_id, name=test_project
@@ -368,6 +382,22 @@ def test_project_member_deleted(client, audit_capture):
     e = audit_capture.one(SyncEventType.PROJECT_MEMBER_DELETED)
     assert e.metadata["target_email"] == user.email
     assert e.metadata["reason"] == "removed"
+
+
+def test_project_member_left(client, audit_capture):
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+    user = add_user("leavemember", "pass123")
+    project.set_role(user.id, ProjectRole.READER)
+    db.session.commit()
+    login(client, user.username, "pass123")
+
+    client.post(f"/app/project/unsubscribe/{project.id}")
+
+    e = audit_capture.one(SyncEventType.PROJECT_MEMBER_DELETED)
+    assert e.metadata["target_email"] == user.email
+    assert e.metadata["reason"] == "left"
 
 
 def test_project_access_request_created(client, audit_capture):
