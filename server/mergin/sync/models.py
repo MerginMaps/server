@@ -357,8 +357,6 @@ class Project(db.Model):
         )
         for req in access_requests:
             req.resolve(status=RequestStatus.DECLINED, resolved_by=self.removed_by)
-        db.session.commit()
-        db.session.info.pop("project_member_delete_reason", None)
         emit(
             SyncEventType.PROJECT_DELETED,
             **actor_context(),
@@ -367,6 +365,8 @@ class Project(db.Model):
             workspace_name=self.workspace.name,
             project_name=project_name,
         )
+        db.session.commit()
+        db.session.info.pop("project_member_delete_reason", None)
         project_deleted.send(self)
 
     def _member(self, user_id: int) -> Optional[ProjectUser]:
