@@ -221,3 +221,15 @@ td:has(.dt-row-link) {
   display: block;
   padding: $tableBodyCellPadding;
 }
+
+// Multiselect customization of highlighting and focusing
+
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item.p-highlight.p-focus {
+  background-color: transparent;
+  color: var(--text-color);
+}
+
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item.p-highlight {
+  background-color: transparent;
+  color: var(--text-color);
+}
