@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import datetime
+import enum
+import json
 import logging
 
 from flask import Flask, current_app, has_app_context
@@ -21,6 +23,22 @@ def register(app: Flask) -> None:
     app.extensions["audit"] = {"sink": NullSink()}
 
 
+def _json_safe(metadata: dict) -> dict:
+    """Sanitize metadata to a JSON-safe structure using the app's own JSON
+    provider.
+    """
+
+    def default(o):
+        try:
+            return current_app.json.default(o)
+        except TypeError:
+            if isinstance(o, enum.Enum):
+                return o.value
+            return str(o)
+
+    return json.loads(json.dumps(metadata, default=default))
+
+
 def emit(
     event_type: EventType,
     actor_id=None,
@@ -36,8 +54,11 @@ def emit(
     """Emit one audit event to the configured sink.
 
     Set at least one of target_user_id, target_project_id, target_workspace_id to identify the target.
-    Extra keyword arguments become the metadata dict.
+    Extra keyword arguments become the metadata dict — sanitized to a JSON-safe
+    form so callers never need to serialize values (e.g. datetimes) themselves.
     """
+    if not has_app_context() or "audit" not in current_app.extensions:
+        return
     event = AuditEvent(
         event_type=event_type,
         actor_id=actor_id,
@@ -49,10 +70,8 @@ def emit(
         target_user_id=target_user_id,
         target_project_id=target_project_id,
         target_workspace_id=target_workspace_id,
-        metadata=metadata,
+        metadata=_json_safe(metadata),
     )
-    if not has_app_context() or "audit" not in current_app.extensions:
-        return
     try:
         current_app.extensions["audit"]["sink"].write(event)
     except Exception:

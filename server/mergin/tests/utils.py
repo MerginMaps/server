@@ -418,6 +418,7 @@ class ListSink:
         self.events: List = []
 
     def write(self, event) -> None:
+        json.dumps(event.metadata)
         self.events.append(event)
 
     def of_type(self, event_type) -> List:
