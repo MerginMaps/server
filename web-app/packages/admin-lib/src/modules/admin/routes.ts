@@ -21,15 +21,18 @@ export enum AdminRoutes {
   Login = 'login'
 }
 
-export const getAdminTitle = (route: RouteLocationNormalizedLoaded) => {
+export const getAdminTitle = (
+  route: RouteLocationNormalizedLoaded,
+  config?: { accountEmail?: string }
+) => {
   const params = route.params as AdminRouteParams
   const titles: Record<AdminRoutes, string | string[]> = {
     [AdminRoutes.Login]: ['Sign in', 'Mergin Maps Admin Panel'],
     [AdminRoutes.ACCOUNTS]: 'Accounts',
-    [AdminRoutes.ACCOUNT]: 'Account details',
+    [AdminRoutes.ACCOUNT]: [config?.accountEmail || 'Account details'],
     [AdminRoutes.OVERVIEW]: 'Admin overview',
     [AdminRoutes.PROJECTS]: 'Projects',
-    [AdminRoutes.PROJECT]: ['Details', params.projectName],
+    [AdminRoutes.PROJECT]: [params.projectName],
     [AdminRoutes.SETTINGS]: 'Settings',
     [AdminRoutes.ProjectTree]: ['Files', params.projectName],
     [AdminRoutes.ProjectHistory]: ['History', params.projectName],
