@@ -7,6 +7,7 @@ from flask import Flask
 from .commands import add_commands
 from .config import Configuration
 from .db_events import register_events
+from .listeners import register_listeners
 
 
 def register(app: Flask):
@@ -40,3 +41,4 @@ def register(app: Flask):
 
     add_commands(app)
     register_events()
+    register_listeners()

@@ -116,6 +116,33 @@ def parse_order_params(
     return order_by_params
 
 
+def get_user_agent(request) -> str:
+    """Return user agent from request headers.
+
+    For browser clients returns a parsed summary; otherwise the raw header value.
+    """
+    if request.user_agent.browser and request.user_agent.platform:
+        client = request.user_agent.browser.capitalize()
+        version = request.user_agent.version
+        system = request.user_agent.platform.capitalize()
+        return f"{client}/{version} ({system})"
+    return request.user_agent.string
+
+
+def get_ip(request) -> str:
+    """Return the client IP address, respecting X-Forwarded-For from a proxy."""
+    forwarded_ips = request.environ.get(
+        "HTTP_X_FORWARDED_FOR", request.environ.get("REMOTE_ADDR", "untrackable")
+    )
+    # AWS infra may send a comma-separated list; the first entry is the real client IP
+    return forwarded_ips.split(",")[0]
+
+
+def get_device_id(request) -> Optional[str]:
+    """Return the device UUID from the X-Device-Id header, or None if absent."""
+    return request.headers.get("X-Device-Id")
+
+
 def format_time_delta(delta: timedelta) -> str:
     """Format timedelta difference approximately in days or hours"""
     days = round(delta.total_seconds() / (24 * 3600))

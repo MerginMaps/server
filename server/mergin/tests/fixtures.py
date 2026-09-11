@@ -17,7 +17,7 @@ from ..sync.models import Project, ProjectVersion
 from ..stats.app import register
 from ..stats.models import MerginInfo
 from . import test_project, test_workspace_id, test_project_dir, TMP_DIR
-from .utils import login_as_admin, initialize, cleanup, file_info
+from .utils import login_as_admin, initialize, cleanup, file_info, ListSink
 from ..sync.files import files_changes_from_upload
 
 thisdir = os.path.dirname(os.path.realpath(__file__))
@@ -96,6 +96,16 @@ def client(app):
     client = app.test_client()
     login_as_admin(client)
     return client
+
+
+@pytest.fixture(scope="function")
+def audit_capture(app):
+    """Replace the app's audit sink with an in-memory ListSink for the duration of the test."""
+    sink = ListSink()
+    old = app.extensions["audit"]["sink"]
+    app.extensions["audit"]["sink"] = sink
+    yield sink
+    app.extensions["audit"]["sink"] = old
 
 
 @pytest.fixture(scope="function")

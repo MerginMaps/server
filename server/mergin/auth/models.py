@@ -11,8 +11,10 @@ from flask import current_app, request
 from sqlalchemy import or_, func, text
 
 from ..app import db
+from ..audit.listeners import audit_session_flags
 from ..sync.models import ProjectUser
-from ..sync.utils import get_user_agent, get_ip, get_device_id, is_reserved_word
+from ..sync.utils import is_reserved_word
+from ..utils import get_ip, get_user_agent, get_device_id
 
 MAX_USERNAME_LENGTH = 50
 
@@ -233,8 +235,10 @@ class User(db.Model):
         """
         from ..sync.models import AccessRequest, RequestStatus
 
-        # remove explicit permissions
-        ProjectUser.query.filter(ProjectUser.user_id == self.id).delete()
+        db.session.info["project_member_delete_reason"] = "user_deleted"
+        # Remove explicit project permissions; PROJECT_MEMBER_DELETED events fire automatically via the after_delete listener.
+        for m in ProjectUser.query.filter(ProjectUser.user_id == self.id).all():
+            db.session.delete(m)
 
         # decline all access requests
         for req in (
@@ -248,18 +252,21 @@ class User(db.Model):
         self.active = False
         self.inactive_since = datetime.datetime.utcnow()
         db.session.commit()
+        db.session.info.pop("project_member_delete_reason", None)
 
     def anonymize(self):
         """Anonymize user object in database - remove personal information"""
         ts = round(datetime.datetime.utcnow().timestamp() * 1000)
         del_str = f"deleted_{ts}"
-        self.active = False
-        self.username = del_str
-        self.email = None
-        self.passwd = None
-        self.first_name = None
-        self.last_name = None
-        db.session.commit()
+        # Suppress user.updated — these changes are covered by the USER_DELETED event.
+        with audit_session_flags(db.session, audit_skip_user_update=True):
+            self.active = False
+            self.username = del_str
+            self.email = None
+            self.passwd = None
+            self.first_name = None
+            self.last_name = None
+            db.session.commit()
 
     @classmethod
     def get_by_login(cls, login: str) -> Optional[User]:

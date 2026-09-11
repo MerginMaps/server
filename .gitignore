@@ -36,3 +36,6 @@ docker-compose.local.yml
 # SSO
 *.pem
 *.crt
+
+# Local Claude Code skills
+.claude/commands/
