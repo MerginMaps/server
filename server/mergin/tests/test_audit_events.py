@@ -223,7 +223,8 @@ def test_project_created(audit_capture):
     e = audit_capture.one(SyncEventType.PROJECT_CREATED)
     assert e.target_project_id == project.id
     assert e.target_workspace_id == test_workspace_id
-    assert e.metadata["project_name"] == "mergin/myproject"
+    assert e.metadata["project_name"] == "myproject"
+    assert e.metadata["workspace_name"] == "mergin"
 
 
 def test_project_created_from_template(client, audit_capture):
@@ -332,6 +333,8 @@ def test_project_deleted(client, audit_capture):
     assert (
         audit_capture.one(SyncEventType.PROJECT_DELETED).target_project_id == project.id
     )
+    # delete() renames/clears the project internally; must not also emit project.updated
+    assert len(audit_capture.of_type(SyncEventType.PROJECT_UPDATED)) == 0
 
 
 def test_project_member_added(client, audit_capture):

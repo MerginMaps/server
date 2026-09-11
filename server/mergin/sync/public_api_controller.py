@@ -276,7 +276,7 @@ def add_project(namespace):  # noqa: E501
                 **actor_context(),
                 target_project_id=p.id,
                 target_workspace_id=p.workspace_id,
-                project_name=f"{workspace.name}/{p.name}",
+                project_name=p.name,
                 workspace_name=p.workspace.name,
                 is_public=p.public,
                 creator=p.creator_id,
@@ -288,7 +288,7 @@ def add_project(namespace):  # noqa: E501
                 target_project_id=p.id,
                 target_workspace_id=p.workspace_id,
                 workspace_name=p.workspace.name,
-                project_name=f"{p.workspace.name}/{p.name}",
+                project_name=p.name,
                 version=ProjectVersion.to_v_name(version_name),
             )
         project_version_created.send(version)
@@ -317,7 +317,7 @@ def delete_project(namespace, project_name):  # noqa: E501
         target_project_id=project.id,
         target_workspace_id=project.workspace_id,
         workspace_name=project.workspace.name,
-        project_name=f"{project.workspace.name}/{project.name}",
+        project_name=project.name,
         scheduled_for_deletion_at=(
             project.removed_at.isoformat() if project.removed_at else None
         ),
@@ -1026,7 +1026,7 @@ def project_push(namespace, project_name):
                 target_project_id=project.id,
                 target_workspace_id=project.workspace_id,
                 workspace_name=project.workspace.name,
-                project_name=f"{project.workspace.name}/{project.name}",
+                project_name=project.name,
                 version=ProjectVersion.to_v_name(next_version),
             )
             project_version_created.send(pv)
@@ -1191,7 +1191,7 @@ def push_finish(transaction_id):
                 target_project_id=project.id,
                 target_workspace_id=project.workspace_id,
                 workspace_name=project.workspace.name,
-                project_name=f"{project.workspace.name}/{project.name}",
+                project_name=project.name,
                 version=v_next_version,
             )
             project_version_created.send(pv)
@@ -1358,7 +1358,7 @@ def clone_project(namespace, project_name):  # noqa: E501
         **actor_context(),
         target_project_id=p.id,
         target_workspace_id=p.workspace_id,
-        project_name=f"{ws.name}/{p.name}",
+        project_name=p.name,
         workspace_name=ws.name,
         is_public=p.public,
         creator=p.creator_id,
@@ -1371,7 +1371,7 @@ def clone_project(namespace, project_name):  # noqa: E501
             target_project_id=p.id,
             target_workspace_id=p.workspace_id,
             workspace_name=ws.name,
-            project_name=f"{ws.name}/{p.name}",
+            project_name=p.name,
             version=ProjectVersion.to_v_name(version),
         )
     project_version_created.send(project_version)

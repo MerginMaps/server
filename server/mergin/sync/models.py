@@ -319,7 +319,9 @@ class Project(db.Model):
         # do nothing if the project has been already deleted
         if not self.storage_params:
             return
-        project_name = f"{self.workspace.name}/{self.name}"
+        # Set before any mutation below
+        db.session.info["audit_skip_project_update"] = True
+        project_name = self.name
         self.name = f"{self.name}_{str(self.id)}"
         # make sure remove_at is not null as it is used as filter for APIs
         if not self.removed_at:
@@ -357,6 +359,7 @@ class Project(db.Model):
         )
         for req in access_requests:
             req.resolve(status=RequestStatus.DECLINED, resolved_by=self.removed_by)
+        project_delete_reason = db.session.info.get("project_delete_reason")
         emit(
             SyncEventType.PROJECT_DELETED,
             **actor_context(),
@@ -364,9 +367,11 @@ class Project(db.Model):
             target_workspace_id=self.workspace_id,
             workspace_name=self.workspace.name,
             project_name=project_name,
+            **({"reason": project_delete_reason} if project_delete_reason else {}),
         )
         db.session.commit()
         db.session.info.pop("project_member_delete_reason", None)
+        db.session.info.pop("audit_skip_project_update", None)
         project_deleted.send(self)
 
     def _member(self, user_id: int) -> Optional[ProjectUser]:

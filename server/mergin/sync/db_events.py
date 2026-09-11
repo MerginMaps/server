@@ -44,7 +44,7 @@ def on_project_member_deleted(mapper, connection, project_user: ProjectUser):
         target_user_id=project_user.user_id,
         target_email=project_user.user.email if project_user.user else None,
         workspace_name=ws_name,
-        project_name=f"{ws_name}/{project.name}" if ws_name and project else None,
+        project_name=project.name if project else None,
         role=project_user.role,
         reason=reason,
     )

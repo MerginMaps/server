@@ -12,7 +12,7 @@ from sqlalchemy import text
 
 from ..app import db
 from ..audit import emit
-from ..audit.listeners import actor_context, audit_session_flags
+from ..audit.listeners import actor_context
 from ..auth import auth_required
 from ..auth.models import User
 from .forms import AccessPermissionForm
@@ -72,7 +72,7 @@ def create_project_access_request(namespace, project_name):  # noqa: E501
         target_project_id=project.id,
         target_workspace_id=project.workspace_id,
         workspace_name=project.workspace.name,
-        project_name=f"{project.workspace.name}/{project.name}",
+        project_name=project.name,
         access_request_id=access_request.id,
     )
     # notify project owners
@@ -122,7 +122,7 @@ def decline_project_access_request(request_id):  # noqa: E501
             target_workspace_id=project.workspace_id,
             target_email=requester.email if requester else None,
             workspace_name=project.workspace.name,
-            project_name=f"{project.workspace.name}/{project.name}",
+            project_name=project.name,
             access_request_id=access_request.id,
         )
         return "", 200
@@ -157,7 +157,7 @@ def accept_project_access_request(request_id):
             target_workspace_id=project.workspace_id,
             target_email=requester.email if requester else None,
             workspace_name=project.workspace.name,
-            project_name=f"{project.workspace.name}/{project.name}",
+            project_name=project.name,
             access_request_id=access_request.id,
             target_user_id=requester.id if requester else None,
             role=permission,
@@ -169,7 +169,7 @@ def accept_project_access_request(request_id):
             target_workspace_id=project.workspace_id,
             target_email=requester.email if requester else None,
             workspace_name=project.workspace.name,
-            project_name=f"{project.workspace.name}/{project.name}",
+            project_name=project.name,
             role=permission,
         )
         return "", 200
@@ -281,7 +281,7 @@ def restore_project(id):  # noqa: E501
         target_project_id=project.id,
         target_workspace_id=project.workspace_id,
         workspace_name=project.workspace.name,
-        project_name=f"{project.workspace.name}/{project.name}",
+        project_name=project.name,
     )
     return "", 201
 
@@ -295,8 +295,7 @@ def force_project_delete(id):  # noqa: E501
     )
     if not project.removed_at:
         abort(400, "Failed to remove: Project is still active")
-    with audit_session_flags(db.session, audit_skip_project_update=True):
-        project.delete()
+    project.delete()
     return "", 204
 
 

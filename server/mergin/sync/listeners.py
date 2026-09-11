@@ -34,7 +34,7 @@ def _on_project_created(_mapper, _connection, target):
         **actor_context(),
         target_project_id=target.id,
         target_workspace_id=target.workspace_id,
-        project_name=f"{target.workspace.name}/{target.name}",
+        project_name=target.name,
         workspace_name=target.workspace.name,
         is_public=target.public,
         creator=target.creator_id,
@@ -52,7 +52,8 @@ def _on_project_updated(_mapper, _connection, target):
         **actor_context(),
         target_project_id=target.id,
         target_workspace_id=target.workspace_id,
-        project_name=f"{target.workspace.name}/{target.name}",
+        project_name=target.name,
+        workspace_name=target.workspace.name,
         **changes,
     )
 

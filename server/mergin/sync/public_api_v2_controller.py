@@ -85,7 +85,7 @@ def schedule_delete_project(id):
         target_project_id=project.id,
         target_workspace_id=project.workspace_id,
         workspace_name=project.workspace.name,
-        project_name=f"{project.workspace.name}/{project.name}",
+        project_name=project.name,
         scheduled_for_deletion_at=(
             project.removed_at.isoformat() if project.removed_at else None
         ),
@@ -97,8 +97,7 @@ def schedule_delete_project(id):
 def delete_project_now(id):
     """Delete the project immediately"""
     project = require_project_by_uuid(id, ProjectPermissions.Delete, scheduled=True)
-    with audit_session_flags(db.session, audit_skip_project_update=True):
-        project.delete()
+    project.delete()
 
     return NoContent, 204
 
@@ -170,7 +169,7 @@ def add_project_collaborator(id):
         target_workspace_id=project.workspace_id,
         target_email=user.email,
         workspace_name=project.workspace.name,
-        project_name=f"{project.workspace.name}/{project.name}",
+        project_name=project.name,
         role=request.json["role"],
     )
     data = ProjectMemberSchema().dump(project.get_member(user.id))
@@ -195,7 +194,7 @@ def update_project_collaborator(id, user_id):
         target_workspace_id=project.workspace_id,
         target_email=user.email,
         workspace_name=project.workspace.name,
-        project_name=f"{project.workspace.name}/{project.name}",
+        project_name=project.name,
         old_role=old_role.value,
         new_role=request.json["role"],
     )
@@ -384,7 +383,7 @@ def create_project_version(id):
                 target_project_id=project.id,
                 target_workspace_id=project.workspace_id,
                 workspace_name=project.workspace.name,
-                project_name=f"{project.workspace.name}/{project.name}",
+                project_name=project.name,
                 version=v_next_version,
             )
 

@@ -19,7 +19,6 @@ from .utils import get_chunk_location, remove_outdated_files
 from ..celery import celery
 from ..app import db
 from ..audit import emit
-from ..audit.listeners import audit_session_flags
 
 
 @celery.task
@@ -67,12 +66,8 @@ def remove_projects_backups():
         if not len(projects):
             break
 
-        with audit_session_flags(
-            db.session,
-            audit_skip_project_update=True,
-        ):
-            for p in projects:
-                p.delete()
+        for p in projects:
+            p.delete()
 
 
 @celery.task
