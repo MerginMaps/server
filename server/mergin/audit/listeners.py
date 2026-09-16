@@ -11,7 +11,7 @@ from contextlib import contextmanager
 
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import ColumnProperty
-from flask import has_request_context, request, current_app
+from flask import g, has_request_context, request, current_app
 from flask_login import current_user
 
 from ..utils import get_ip, get_user_agent, get_device_id
@@ -47,11 +47,30 @@ def request_context():
     )
 
 
+def set_actor_override(actor_email: str, actor_ua: str = None):
+    """Force the actor identity returned by actor_context() for the rest of this request.
+
+    Some requests are not tied to an authenticated Mergin user - e.g. an API authenticated
+    by a single shared token. Force the actor identity for both its own explicit emit() calls
+    and any emit() triggered indirectly by SQLAlchemy listeners during commit.
+    """
+    g.audit_actor_override = {"actor_email": actor_email, "actor_ua": actor_ua}
+
+
 def actor_context():
     """Return full actor kwargs for emit() drawn from the current request context.
 
-    Used by SQLAlchemy listeners where current_user is the actor.
+    Used by SQLAlchemy listeners where current_user is the actor. Honors an
+    override set via set_actor_override() for this request, if any.
     """
+    if has_request_context():
+        override = getattr(g, "audit_actor_override", None)
+        if override is not None:
+            ctx = request_context()
+            if override.get("actor_ua"):
+                ctx["actor_ua"] = override["actor_ua"]
+            return dict(actor_id=None, actor_email=override.get("actor_email"), **ctx)
+
     actor_id = None
     actor_email = None
     if has_request_context() and hasattr(
