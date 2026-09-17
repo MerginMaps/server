@@ -1,618 +1,1127 @@
 [
     {
-        "library": "alembic",
-        "version": "1.12.0"
+        "library": "@babel/helper-string-parser",
+        "version": "7.25.9",
+        "ecosystem": "npm"
     },
     {
-        "library": "amqp",
-        "version": "5.1.1"
+        "library": "@babel/helper-validator-identifier",
+        "version": "7.25.9",
+        "ecosystem": "npm"
     },
     {
-        "library": "async-timeout",
-        "version": "4.0.3"
+        "library": "@babel/parser",
+        "version": "7.25.9",
+        "ecosystem": "npm"
     },
     {
-        "library": "attrs",
-        "version": "23.1.0"
+        "library": "@babel/runtime",
+        "version": "7.17.9",
+        "ecosystem": "npm"
     },
     {
-        "library": "bcrypt",
-        "version": "4.0.0"
+        "library": "@babel/runtime",
+        "version": "7.21.0",
+        "ecosystem": "npm"
     },
     {
-        "library": "billiard",
-        "version": "3.6.4.0"
+        "library": "@babel/types",
+        "version": "7.25.9",
+        "ecosystem": "npm"
     },
     {
-        "library": "binaryornot",
-        "version": "0.4.4"
+        "library": "@jridgewell/sourcemap-codec",
+        "version": "1.5.0",
+        "ecosystem": "npm"
     },
     {
-        "library": "blinker",
-        "version": "1.6.2"
+        "library": "@mapbox/jsonlint-lines-primitives",
+        "version": "2.0.2",
+        "ecosystem": "npm"
     },
     {
-        "library": "cachelib",
-        "version": "0.9.0"
+        "library": "@mapbox/unitbezier",
+        "version": "0.0.1",
+        "ecosystem": "npm"
     },
     {
-        "library": "celery",
-        "version": "5.2.7"
+        "library": "@maplibre/maplibre-gl-style-spec",
+        "version": "23.1.0",
+        "ecosystem": "npm"
     },
     {
-        "library": "certifi",
-        "version": "2023.7.22"
+        "library": "@petamoriken/float16",
+        "version": "3.9.1",
+        "ecosystem": "npm"
     },
     {
-        "library": "chardet",
-        "version": "5.2.0"
+        "library": "@tabler/icons",
+        "version": "2.42.0",
+        "ecosystem": "npm"
     },
     {
-        "library": "charset-normalizer",
-        "version": "3.3.0"
+        "library": "@tabler/icons",
+        "version": "2.47.0",
+        "ecosystem": "npm"
     },
     {
-        "library": "click",
-        "version": "8.1.7"
+        "library": "@tabler/icons-webfont",
+        "version": "2.42.0",
+        "ecosystem": "npm"
     },
     {
-        "library": "click-didyoumean",
-        "version": "0.3.0"
+        "library": "@tabler/icons-webfont",
+        "version": "2.47.0",
+        "ecosystem": "npm"
     },
     {
-        "library": "click-plugins",
-        "version": "1.1.1"
+        "library": "@types/cookie",
+        "version": "0.3.3",
+        "ecosystem": "npm"
     },
     {
-        "library": "click-repl",
-        "version": "0.3.0"
+        "library": "@types/rbush",
+        "version": "4.0.0",
+        "ecosystem": "npm"
     },
     {
-        "library": "clickclick",
-        "version": "20.10.2"
+        "library": "@vue/compiler-core",
+        "version": "3.5.12",
+        "ecosystem": "npm"
     },
     {
-        "library": "colorama",
-        "version": "0.4.5"
+        "library": "@vue/compiler-dom",
+        "version": "3.5.12",
+        "ecosystem": "npm"
     },
     {
-        "library": "connexion",
-        "version": "2.14.1"
+        "library": "@vue/compiler-sfc",
+        "version": "3.5.12",
+        "ecosystem": "npm"
     },
     {
-        "library": "Deprecated",
-        "version": "1.2.14"
+        "library": "@vue/compiler-ssr",
+        "version": "3.5.12",
+        "ecosystem": "npm"
     },
     {
-        "library": "distro",
-        "version": "1.8.0"
+        "library": "@vue/devtools-api",
+        "version": "6.5.0",
+        "ecosystem": "npm"
     },
     {
-        "library": "dnspython",
-        "version": "2.4.2"
+        "library": "@vue/reactivity",
+        "version": "3.5.12",
+        "ecosystem": "npm"
     },
     {
-        "library": "email-validator",
-        "version": "2.0.0.post2"
+        "library": "@vue/runtime-core",
+        "version": "3.5.12",
+        "ecosystem": "npm"
     },
     {
-        "library": "Faker",
-        "version": "19.6.2"
+        "library": "@vue/runtime-dom",
+        "version": "3.5.12",
+        "ecosystem": "npm"
     },
     {
-        "library": "Flask",
-        "version": "2.2.2"
+        "library": "@vue/server-renderer",
+        "version": "3.5.12",
+        "ecosystem": "npm"
     },
     {
-        "library": "Flask-Caching",
-        "version": "2.0.2"
+        "library": "@vue/shared",
+        "version": "3.5.12",
+        "ecosystem": "npm"
     },
     {
-        "library": "Flask-Login",
-        "version": "0.6.2"
-    },
-    {
-        "library": "Flask-Mail",
-        "version": "0.9.1"
-    },
-    {
-        "library": "flask-marshmallow",
-        "version": "0.14.0"
-    },
-    {
-        "library": "Flask-Migrate",
-        "version": "2.6.0"
-    },
-    {
-        "library": "Flask-SQLAlchemy",
-        "version": "2.5.1"
-    },
-    {
-        "library": "Flask-WTF",
-        "version": "1.0.1"
-    },
-    {
-        "library": "gevent",
-        "version": "23.9.1"
-    },
-    {
-        "library": "greenlet",
-        "version": "3.0.0"
-    },
-    {
-        "library": "gunicorn",
-        "version": "19.9.0"
-    },
-    {
-        "library": "idna",
-        "version": "3.4"
-    },
-    {
-        "library": "importlib-metadata",
-        "version": "4.12.0"
-    },
-    {
-        "library": "inflection",
-        "version": "0.5.1"
-    },
-    {
-        "library": "itsdangerous",
-        "version": "2.1.2"
-    },
-    {
-        "library": "Jinja2",
-        "version": "3.1.2"
-    },
-    {
-        "library": "jsons",
-        "version": "1.6.3"
-    },
-    {
-        "library": "jsonschema",
-        "version": "4.19.1"
-    },
-    {
-        "library": "jsonschema-specifications",
-        "version": "2023.7.1"
-    },
-    {
-        "library": "kombu",
-        "version": "5.3.2"
-    },
-    {
-        "library": "Mako",
-        "version": "1.2.4"
-    },
-    {
-        "library": "MarkupSafe",
-        "version": "2.1.3"
-    },
-    {
-        "library": "marshmallow",
-        "version": "3.20.1"
-    },
-    {
-        "library": "marshmallow-sqlalchemy",
-        "version": "0.28.1"
-    },
-    {
-        "library": "packaging",
-        "version": "23.2"
-    },
-    {
-        "library": "pathvalidate",
-        "version": "2.5.2"
-    },
-    {
-        "library": "pip",
-        "version": "22.3"
-    },
-    {
-        "library": "prompt-toolkit",
-        "version": "3.0.39"
-    },
-    {
-        "library": "psycogreen",
-        "version": "1.0.2"
-    },
-    {
-        "library": "psycopg2-binary",
-        "version": "2.9.3"
-    },
-    {
-        "library": "pygeodiff",
-        "version": "1.0.4"
-    },
-    {
-        "library": "python-dateutil",
-        "version": "2.8.2"
-    },
-    {
-        "library": "python-decouple",
-        "version": "3.6"
-    },
-    {
-        "library": "python-dotenv",
-        "version": "0.20.0"
-    },
-    {
-        "library": "pytz",
-        "version": "2022.2.1"
-    },
-    {
-        "library": "PyYAML",
-        "version": "6.0.1"
-    },
-    {
-        "library": "redis",
-        "version": "4.3.4"
-    },
-    {
-        "library": "referencing",
-        "version": "0.30.2"
-    },
-    {
-        "library": "requests",
-        "version": "2.31.0"
-    },
-    {
-        "library": "result",
-        "version": "0.5.0"
-    },
-    {
-        "library": "rpds-py",
-        "version": "0.10.3"
-    },
-    {
-        "library": "Safe",
-        "version": "0.4"
-    },
-    {
-        "library": "scikit-build",
-        "version": "0.15.0"
-    },
-    {
-        "library": "setuptools",
-        "version": "68.2.2"
-    },
-    {
-        "library": "Shapely",
-        "version": "1.8.4"
-    },
-    {
-        "library": "six",
-        "version": "1.16.0"
-    },
-    {
-        "library": "SQLAlchemy",
-        "version": "1.4.45"
-    },
-    {
-        "library": "swagger-ui-bundle",
-        "version": "0.0.9"
-    },
-    {
-        "library": "typing_extensions",
-        "version": "4.8.0"
-    },
-    {
-        "library": "typish",
-        "version": "1.9.3"
-    },
-    {
-        "library": "urllib3",
-        "version": "1.26.12"
-    },
-    {
-        "library": "vine",
-        "version": "5.0.0"
-    },
-    {
-        "library": "wcwidth",
-        "version": "0.2.8"
-    },
-    {
-        "library": "Werkzeug",
-        "version": "2.3.7"
-    },
-    {
-        "library": "wheel",
-        "version": "0.41.2"
-    },
-    {
-        "library": "wrapt",
-        "version": "1.15.0"
-    },
-    {
-        "library": "WTForms",
-        "version": "3.0.1"
-    },
-    {
-        "library": "WTForms-JSON",
-        "version": "0.3.5"
-    },
-    {
-        "library": "zipp",
-        "version": "3.17.0"
-    },
-    {
-        "library": "zope.event",
-        "version": "5.0"
-    },
-    {
-        "library": "zope.interface",
-        "version": "6.0"
-    },
-    {
-        "library": "babel/parser",
-        "version": "7.22.7"
-    },
-    {
-        "library": "babel/runtime",
-        "version": "7.17.9"
-    },
-    {
-        "library": "fortawesome/fontawesome-free",
-        "version": "6.4.2"
-    },
-    {
-        "library": "gtm-support/core",
-        "version": "1.1.0"
-    },
-    {
-        "library": "gtm-support/vue2-gtm",
-        "version": "1.2.1"
-    },
-    {
-        "library": "mapbox/jsonlint-lines-primitives",
-        "version": "2.0.2"
-    },
-    {
-        "library": "mapbox/mapbox-gl-style-spec",
-        "version": "13.28.0"
-    },
-    {
-        "library": "mapbox/point-geometry",
-        "version": "0.1.0"
-    },
-    {
-        "library": "mapbox/unitbezier",
-        "version": "0.0.0"
-    },
-    {
-        "library": "mdi/font",
-        "version": "6.6.96"
-    },
-    {
-        "library": "petamoriken/float16",
-        "version": "3.8.3"
-    },
-    {
-        "library": "types/cookie",
-        "version": "0.3.3"
-    },
-    {
-        "library": "vue/babel-helper-vue-jsx-merge-props",
-        "version": "1.4.0"
-    },
-    {
-        "library": "vue/compiler-sfc",
-        "version": "2.7.14"
-    },
-    {
-        "library": "vue/devtools-api",
-        "version": "6.5.0"
-    },
-    {
-        "library": "axios-retry",
-        "version": "3.2.5"
+        "library": "asynckit",
+        "version": "0.4.0",
+        "ecosystem": "npm"
     },
     {
         "library": "axios",
-        "version": "0.26.1"
+        "version": "0.30.2",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "axios-retry",
+        "version": "3.2.5",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "axios-retry",
+        "version": "3.4.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "call-bind-apply-helpers",
+        "version": "1.0.2",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "color-name",
+        "version": "2.0.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "color-parse",
+        "version": "2.0.2",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "color-rgba",
+        "version": "3.0.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "color-space",
+        "version": "2.3.1",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "combined-stream",
+        "version": "1.0.8",
+        "ecosystem": "npm"
     },
     {
         "library": "cookie",
-        "version": "0.4.2"
-    },
-    {
-        "library": "country-region-data",
-        "version": "3.0.0"
+        "version": "0.4.2",
+        "ecosystem": "npm"
     },
     {
         "library": "crypto-js",
-        "version": "3.3.0"
-    },
-    {
-        "library": "csscolorparser",
-        "version": "1.0.3"
+        "version": "4.2.0",
+        "ecosystem": "npm"
     },
     {
         "library": "csstype",
-        "version": "3.1.2"
+        "version": "3.1.3",
+        "ecosystem": "npm"
     },
     {
         "library": "date-fns",
-        "version": "2.28.0"
+        "version": "2.28.0",
+        "ecosystem": "npm"
     },
     {
-        "library": "deepmerge",
-        "version": "4.2.2"
+        "library": "date-fns",
+        "version": "2.29.3",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "delayed-stream",
+        "version": "1.0.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "dompurify",
+        "version": "3.4.2",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "dunder-proto",
+        "version": "1.0.1",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "earcut",
+        "version": "3.0.1",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "entities",
+        "version": "4.5.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "es-define-property",
+        "version": "1.0.1",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "es-errors",
+        "version": "1.3.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "es-object-atoms",
+        "version": "1.0.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "es-object-atoms",
+        "version": "1.1.1",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "es-set-tostringtag",
+        "version": "2.1.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "estree-walker",
+        "version": "2.0.2",
+        "ecosystem": "npm"
     },
     {
         "library": "file-saver",
-        "version": "2.0.5"
+        "version": "2.0.5",
+        "ecosystem": "npm"
     },
     {
         "library": "follow-redirects",
-        "version": "1.15.0"
+        "version": "1.15.11",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "form-data",
+        "version": "4.0.5",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "function-bind",
+        "version": "1.1.2",
+        "ecosystem": "npm"
     },
     {
         "library": "geotiff",
-        "version": "2.0.7"
+        "version": "2.1.3",
+        "ecosystem": "npm"
     },
     {
-        "library": "ieee754",
-        "version": "1.2.1"
+        "library": "get-intrinsic",
+        "version": "1.3.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "get-proto",
+        "version": "1.0.1",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "gopd",
+        "version": "1.2.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "has-symbols",
+        "version": "1.0.3",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "has-symbols",
+        "version": "1.1.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "has-tostringtag",
+        "version": "1.0.2",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "hasown",
+        "version": "2.0.2",
+        "ecosystem": "npm"
     },
     {
         "library": "is-retry-allowed",
-        "version": "2.2.0"
+        "version": "2.2.0",
+        "ecosystem": "npm"
     },
     {
         "library": "json-stringify-pretty-compact",
-        "version": "2.0.0"
+        "version": "4.0.0",
+        "ecosystem": "npm"
     },
     {
         "library": "lerc",
-        "version": "3.0.0"
+        "version": "3.0.0",
+        "ecosystem": "npm"
     },
     {
         "library": "lodash",
-        "version": "4.17.21"
+        "version": "4.17.21",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "magic-string",
+        "version": "0.30.12",
+        "ecosystem": "npm"
     },
     {
         "library": "mapbox-to-css-font",
-        "version": "2.4.2"
+        "version": "3.0.2",
+        "ecosystem": "npm"
     },
     {
-        "library": "material-icons",
-        "version": "0.2.3"
+        "library": "math-intrinsics",
+        "version": "1.1.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "mime-db",
+        "version": "1.52.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "mime-types",
+        "version": "2.1.35",
+        "ecosystem": "npm"
     },
     {
         "library": "minimist",
-        "version": "1.2.6"
+        "version": "1.2.8",
+        "ecosystem": "npm"
     },
     {
         "library": "nanoid",
-        "version": "3.3.6"
+        "version": "3.3.7",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "ol",
+        "version": "10.4.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "ol-mapbox-style",
+        "version": "12.4.1",
+        "ecosystem": "npm"
     },
     {
         "library": "pako",
-        "version": "2.1.0"
+        "version": "2.1.0",
+        "ecosystem": "npm"
     },
     {
         "library": "parse-headers",
-        "version": "2.0.5"
+        "version": "2.0.5",
+        "ecosystem": "npm"
     },
     {
         "library": "pbf",
-        "version": "3.2.1"
-    },
-    {
-        "library": "pdfjs-dist",
-        "version": "2.5.207"
+        "version": "4.0.1",
+        "ecosystem": "npm"
     },
     {
         "library": "picocolors",
-        "version": "1.0.0"
+        "version": "1.1.1",
+        "ecosystem": "npm"
     },
     {
         "library": "pinia",
-        "version": "2.1.4"
-    },
-    {
-        "library": "portal-vue",
-        "version": "2.1.7"
+        "version": "2.1.7",
+        "ecosystem": "npm"
     },
     {
         "library": "postcss",
-        "version": "8.4.27"
+        "version": "8.4.47",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "primeflex",
+        "version": "3.3.1",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "primevue",
+        "version": "3.43.0",
+        "ecosystem": "npm"
     },
     {
         "library": "protocol-buffers-schema",
-        "version": "3.6.0"
+        "version": "3.6.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "proxy-from-env",
+        "version": "1.1.0",
+        "ecosystem": "npm"
     },
     {
         "library": "quick-lru",
-        "version": "6.1.1"
+        "version": "6.1.2",
+        "ecosystem": "npm"
     },
     {
         "library": "quickselect",
-        "version": "2.0.0"
+        "version": "3.0.0",
+        "ecosystem": "npm"
     },
     {
         "library": "rbush",
-        "version": "3.0.1"
+        "version": "4.0.1",
+        "ecosystem": "npm"
     },
     {
         "library": "regenerator-runtime",
-        "version": "0.13.9"
+        "version": "0.13.11",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "regenerator-runtime",
+        "version": "0.13.9",
+        "ecosystem": "npm"
     },
     {
         "library": "resolve-protobuf-schema",
-        "version": "2.1.0"
+        "version": "2.1.0",
+        "ecosystem": "npm"
     },
     {
         "library": "rw",
-        "version": "1.3.3"
-    },
-    {
-        "library": "sort-asc",
-        "version": "0.1.0"
-    },
-    {
-        "library": "sort-desc",
-        "version": "0.1.1"
-    },
-    {
-        "library": "sort-object",
-        "version": "0.3.2"
+        "version": "1.3.3",
+        "ecosystem": "npm"
     },
     {
         "library": "source-map-js",
-        "version": "1.0.2"
+        "version": "1.2.0",
+        "ecosystem": "npm"
     },
     {
-        "library": "source-map",
-        "version": "0.6.1"
+        "library": "source-map-js",
+        "version": "1.2.1",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "tinyqueue",
+        "version": "3.0.0",
+        "ecosystem": "npm"
     },
     {
         "library": "universal-cookie",
-        "version": "4.0.4"
-    },
-    {
-        "library": "vue-country-region-select",
-        "version": "2.0.16"
-    },
-    {
-        "library": "vue-demi",
-        "version": "0.14.5"
-    },
-    {
-        "library": "vue-i18n",
-        "version": "8.28.2"
-    },
-    {
-        "library": "vue-meta",
-        "version": "2.4.0"
-    },
-    {
-        "library": "vue-router",
-        "version": "3.6.5"
-    },
-    {
-        "library": "vue-tabler-icons",
-        "version": "1.13.0"
+        "version": "4.0.4",
+        "ecosystem": "npm"
     },
     {
         "library": "vue",
-        "version": "2.7.14"
+        "version": "3.5.12",
+        "ecosystem": "npm"
     },
     {
-        "library": "vuetify",
-        "version": "2.7.0"
+        "library": "vue-demi",
+        "version": "0.14.5",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "vue-meta",
+        "version": "3.0.0-alpha.10",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "vue-meta",
+        "version": "3.0.0-alpha.4",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "vue-router",
+        "version": "4.2.5",
+        "ecosystem": "npm"
     },
     {
         "library": "web-worker",
-        "version": "1.2.0"
-    },
-    {
-        "library": "webfont-matcher",
-        "version": "1.1.0"
+        "version": "1.5.0",
+        "ecosystem": "npm"
     },
     {
         "library": "xml-utils",
-        "version": "1.7.0"
+        "version": "1.10.1",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "zstddec",
+        "version": "0.1.0",
+        "ecosystem": "npm"
+    },
+    {
+        "library": "aiohappyeyeballs",
+        "version": "2.6.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "aiohttp",
+        "version": "3.13.5",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "aiohttp-jinja2",
+        "version": "1.6",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "aiosignal",
+        "version": "1.4.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "alembic",
+        "version": "1.18.4",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "amqp",
+        "version": "5.3.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "annotated-types",
+        "version": "0.7.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "attrs",
+        "version": "26.1.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "bcrypt",
+        "version": "4.2.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "billiard",
+        "version": "4.2.4",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "binaryornot",
+        "version": "0.4.4",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "blinker",
+        "version": "1.9.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "cachelib",
+        "version": "0.13.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "celery",
+        "version": "5.4.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "certifi",
+        "version": "2026.2.25",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "chardet",
+        "version": "4.0.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "charset-normalizer",
+        "version": "3.4.6",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "click",
+        "version": "8.2.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "click-didyoumean",
+        "version": "0.3.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "click-plugins",
+        "version": "1.1.1.2",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "click-repl",
+        "version": "0.3.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "clickclick",
+        "version": "20.10.2",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "colorama",
+        "version": "0.4.5",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "connexion",
+        "version": "2.15.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "distro",
+        "version": "1.9.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "dnspython",
+        "version": "2.8.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "email-validator",
+        "version": "2.3.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "faker",
+        "version": "40.12.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "flask",
+        "version": "3.1.2",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "flask-caching",
+        "version": "2.3.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "flask-login",
+        "version": "0.6.3",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "flask-mail",
+        "version": "0.10.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "flask-marshmallow",
+        "version": "0.15.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "flask-migrate",
+        "version": "4.1.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "flask-sqlalchemy",
+        "version": "3.1.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "flask-wtf",
+        "version": "1.2.2",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "frozenlist",
+        "version": "1.8.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "gevent",
+        "version": "25.9.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "googleapis-common-protos",
+        "version": "1.73.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "greenlet",
+        "version": "3.3.2",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "grpcio",
+        "version": "1.80.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "gunicorn",
+        "version": "23.0.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "idna",
+        "version": "3.11",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "importlib-metadata",
+        "version": "8.4.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "inflection",
+        "version": "0.5.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "itsdangerous",
+        "version": "2.2.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "jinja2",
+        "version": "3.1.6",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "jsons",
+        "version": "1.6.3",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "jsonschema",
+        "version": "4.26.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "jsonschema-specifications",
+        "version": "2025.9.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "kombu",
+        "version": "5.6.2",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "mako",
+        "version": "1.3.10",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "markupsafe",
+        "version": "3.0.3",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "marshmallow",
+        "version": "3.26.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "marshmallow-sqlalchemy",
+        "version": "1.4.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "multidict",
+        "version": "6.7.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "numpy",
+        "version": "2.4.4",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-api",
+        "version": "1.39.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-distro",
+        "version": "0.60b1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-exporter-otlp",
+        "version": "1.39.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-exporter-otlp-proto-common",
+        "version": "1.39.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-exporter-otlp-proto-grpc",
+        "version": "1.39.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-exporter-otlp-proto-http",
+        "version": "1.39.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-instrumentation",
+        "version": "0.60b1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-instrumentation-celery",
+        "version": "0.60b1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-instrumentation-flask",
+        "version": "0.60b1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-instrumentation-logging",
+        "version": "0.60b1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-instrumentation-sqlalchemy",
+        "version": "0.60b1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-instrumentation-wsgi",
+        "version": "0.60b1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-proto",
+        "version": "1.39.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-sdk",
+        "version": "1.39.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-semantic-conventions",
+        "version": "0.60b1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "opentelemetry-util-http",
+        "version": "0.60b1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "packaging",
+        "version": "26.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "pathvalidate",
+        "version": "3.2.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "prompt-toolkit",
+        "version": "3.0.52",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "propcache",
+        "version": "0.4.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "protobuf",
+        "version": "6.33.6",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "psycogreen",
+        "version": "1.0.2",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "psycopg2-binary",
+        "version": "2.9.9",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "pydantic",
+        "version": "2.11.10",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "pydantic-core",
+        "version": "2.33.2",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "pygeodiff",
+        "version": "2.0.4",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "python-dateutil",
+        "version": "2.8.2",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "python-decouple",
+        "version": "3.6",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "python-dotenv",
+        "version": "0.20.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "python-magic",
+        "version": "0.4.27",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "python-multipart",
+        "version": "0.0.22",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "pytz",
+        "version": "2022.2.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "pyyaml",
+        "version": "6.0.3",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "redis",
+        "version": "5.0.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "referencing",
+        "version": "0.37.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "requests",
+        "version": "2.33.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "result",
+        "version": "0.5.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "rpds-py",
+        "version": "0.30.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "safe",
+        "version": "0.4",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "scikit-build",
+        "version": "0.18.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "setuptools",
+        "version": "82.0.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "shapely",
+        "version": "2.0.6",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "six",
+        "version": "1.17.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "sqlalchemy",
+        "version": "2.0.44",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "swagger-ui-bundle",
+        "version": "1.1.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "typing-extensions",
+        "version": "4.12.2",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "typing-inspection",
+        "version": "0.4.2",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "typish",
+        "version": "1.9.3",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "tzdata",
+        "version": "2025.3",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "urllib3",
+        "version": "2.2.2",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "vine",
+        "version": "5.1.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "wcwidth",
+        "version": "0.6.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "werkzeug",
+        "version": "3.1.8",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "wheel",
+        "version": "0.46.3",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "wrapt",
+        "version": "1.17.3",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "wtforms",
+        "version": "3.2.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "wtforms-json",
+        "version": "0.3.5",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "yarl",
+        "version": "1.23.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "zipp",
+        "version": "3.23.0",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "zope.event",
+        "version": "6.1",
+        "ecosystem": "pypi"
+    },
+    {
+        "library": "zope.interface",
+        "version": "8.2",
+        "ecosystem": "pypi"
     }
 ]
