@@ -21,6 +21,7 @@ $ cd server
 # Install dependencies with pipenv
 # Note: You can append --three flag in older versions of pipenv (< 3.16.8 2023-02-04)
 $ pipenv install --dev
+$ pipenv install --categories="telemetry
 $ pipenv run pre-commit install
 $ pipenv run pre-commit run --all-files
 $ export FLASK_APP=application; export COLLECT_STATISTICS=0
