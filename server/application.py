@@ -24,6 +24,7 @@ from celery.schedules import crontab
 from mergin.app import create_app
 from mergin.auth.tasks import anonymize_removed_users
 from mergin.sync.tasks import (
+    cleanup_push_idempotency_keys,
     remove_projects_archives,
     remove_temp_files,
     remove_projects_backups,
@@ -94,4 +95,9 @@ def setup_periodic_tasks(sender, **kwargs):
         crontab(hour="*/4", minute=0),
         remove_unused_chunks,
         name="clean up of outdated chunks",
+    )
+    sender.add_periodic_task(
+        crontab(hour=3, minute=30),
+        cleanup_push_idempotency_keys,
+        name="clean up expired push idempotency keys",
     )
