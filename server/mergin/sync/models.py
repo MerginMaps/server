@@ -2163,7 +2163,11 @@ class Upload(db.Model):
                             errors[f.path] = (
                                 f"{FileSyncErrorType.SYNC_ERROR.value}: project {self.project.workspace.name}/{self.project.name}, {result.value}"
                             )
-                    else:
+                    elif (
+                        expected_size
+                        <= current_app.config["MAX_DIFFABLE_FORCE_UPDATE_SIZE"]
+                    ):
+                        # gpkg small enough - try to construct diff server-side
                         diff_name = mergin_secure_filename(
                             f.path + "-diff-" + str(uuid.uuid4())
                         )
@@ -2188,6 +2192,12 @@ class Upload(db.Model):
                             logging.warning(
                                 f"Geodiff: create changeset error {result.value}"
                             )
+                    else:
+                        # gpkg too large - skip diff construction and keep it as a plain force update
+                        logging.info(
+                            f"Skipping diff construction for {f.path} in project {project_path}: "
+                            f"file size {expected_size} exceeds MAX_DIFFABLE_FORCE_UPDATE_SIZE"
+                        )
         return file_changes, errors
 
 
