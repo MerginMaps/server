@@ -1755,6 +1755,102 @@ def test_push_no_diff_finish(client):
     assert "diff" not in updated_file
 
 
+def test_push_force_update_size_limit(client):
+    """Server should only try to construct a diff for a force-updated (full gpkg,
+    no diff sent) upload when its size is within MAX_DIFFABLE_FORCE_UPDATE_SIZE;
+    above the limit it should skip diff construction and keep it as a plain
+    force update."""
+    working_dir = os.path.join(TMP_DIR, "test_push_force_update_size_limit")
+    # cleanup
+    if os.path.exists(working_dir):
+        shutil.rmtree(working_dir)
+
+    shutil.copytree(test_project_dir, working_dir)
+    # mimic base.gpkg was updated with inserted_1_A.gpkg (but no diff is created)
+    shutil.copy(
+        os.path.join(working_dir, "inserted_1_A.gpkg"),
+        os.path.join(working_dir, "base.gpkg"),
+    )
+    base_gpkg_size = os.path.getsize(os.path.join(working_dir, "base.gpkg"))
+    changes = {
+        "added": [],
+        "removed": [],
+        "updated": [
+            file_info(working_dir, "base.gpkg", chunk_size=CHUNK_SIZE),
+            file_info(working_dir, "test.txt", chunk_size=CHUNK_SIZE),
+        ],
+    }
+
+    # below limit -> diff is still constructed server-side
+    upload, upload_dir = create_transaction("mergin", changes)
+    upload_chunks(upload_dir, upload.changes, src_dir=working_dir)
+    with patch.dict(
+        client.application.config,
+        {"MAX_DIFFABLE_FORCE_UPDATE_SIZE": base_gpkg_size + 1},
+    ):
+        resp = client.post(f"/v1/project/push/finish/{upload.transaction_id}")
+    assert resp.status_code == 200
+    latest_version = upload.project.get_latest_version()
+    assert (
+        latest_version.changes.filter(
+            FileHistory.change == PushChangeType.UPDATE.value
+        ).count()
+        == 1
+    )
+    assert (
+        latest_version.changes.filter(
+            FileHistory.change == PushChangeType.UPDATE_DIFF.value
+        ).count()
+        == 1
+    )
+    file_meta = latest_version.changes.filter(
+        FileHistory.change == PushChangeType.UPDATE_DIFF.value
+    ).first()
+    assert file_meta.diff_file is not None
+    assert os.path.exists(
+        os.path.join(upload.project.storage.project_dir, file_meta.diff_file.location)
+    )
+
+    # above limit -> diff construction is skipped, plain force update
+    working_file = os.path.join(working_dir, "base.gpkg")
+    sql = "INSERT INTO simple (geometry, name) VALUES (GeomFromText('POINT(24.5, 38.2)', 4326), 'insert_test')"
+    execute_query(working_file, sql)
+    updated_gpkg_size = os.path.getsize(working_file)
+    changes["updated"] = [
+        file_info(working_dir, "base.gpkg", chunk_size=CHUNK_SIZE),
+        file_info(working_dir, "test.txt", chunk_size=CHUNK_SIZE),
+    ]
+    upload, upload_dir = create_transaction("mergin", changes, version=2)
+    upload_chunks(upload_dir, upload.changes, src_dir=working_dir)
+    with patch.dict(
+        client.application.config,
+        {"MAX_DIFFABLE_FORCE_UPDATE_SIZE": updated_gpkg_size - 1},
+    ):
+        resp = client.post(f"/v1/project/push/finish/{upload.transaction_id}")
+    assert resp.status_code == 200
+    latest_version = upload.project.get_latest_version()
+    assert (
+        latest_version.changes.filter(
+            FileHistory.change == PushChangeType.UPDATE.value
+        ).count()
+        == 2
+    )
+    assert not latest_version.changes.filter(
+        FileHistory.change == PushChangeType.UPDATE_DIFF.value
+    ).count()
+    assert all(
+        file_meta.diff_file is None
+        for file_meta in latest_version.changes.filter(
+            FileHistory.change == PushChangeType.UPDATE.value
+        ).all()
+    )
+    version_files = os.listdir(
+        os.path.join(upload.project.storage.project_dir, f"v{latest_version.name}")
+    )
+    diff_files = [f for f in version_files if re.findall("-diff-", f)]
+    assert not diff_files
+
+
 clone_project_data = [
     ({"project": " clone "}, "mergin", 200),  # clone own project
     (
