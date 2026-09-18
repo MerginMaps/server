@@ -56,17 +56,7 @@
     },
     {
         "library": "@tabler/icons",
-        "version": "2.42.0",
-        "ecosystem": "npm"
-    },
-    {
-        "library": "@tabler/icons",
         "version": "2.47.0",
-        "ecosystem": "npm"
-    },
-    {
-        "library": "@tabler/icons-webfont",
-        "version": "2.42.0",
         "ecosystem": "npm"
     },
     {
@@ -502,11 +492,6 @@
     {
         "library": "vue-demi",
         "version": "0.14.5",
-        "ecosystem": "npm"
-    },
-    {
-        "library": "vue-meta",
-        "version": "3.0.0-alpha.10",
         "ecosystem": "npm"
     },
     {
