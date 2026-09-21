@@ -21,8 +21,7 @@ def test_emit_sanitizes_metadata_from_real_lockout_event(app, client, audit_capt
     with patch.dict(app.config, {"LOCKOUT_POLICY": "5:300,10:3600"}):
         client.post("/app/auth/login", json={"login": "lockme", "password": "wrong"})
 
-    e = audit_capture.one(AuthEventType.USER_UPDATED)
+    e = audit_capture.one(AuthEventType.USER_LOCKED)
     json.dumps(e.metadata)
 
-    assert e.metadata["old_locked_until"] is None
-    assert isinstance(e.metadata["new_locked_until"], str)
+    assert isinstance(e.metadata["locked_until"], str)
