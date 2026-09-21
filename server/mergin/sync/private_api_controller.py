@@ -167,6 +167,7 @@ def accept_project_access_request(request_id):
             **actor_context(),
             target_project_id=project.id,
             target_workspace_id=project.workspace_id,
+            target_user_id=requester.id if requester else None,
             target_email=requester.email if requester else None,
             workspace_name=project.workspace.name,
             project_name=project.name,

@@ -17,6 +17,7 @@ from .models import User
 #   - high-frequency operational fields (last_signed_in, registration_date)
 #   - lifecycle state fields covered by dedicated events (active, inactive_since)
 #   - is_admin covered by the dedicated user.admin_panel_access.changed event
+#   - locked_until covered by the dedicated user.locked / user.unlocked events
 # frozenset prevents accidental mutation of module-level state.
 _EXCLUDED_FROM_USER_UPDATED = frozenset(
     {
@@ -26,6 +27,7 @@ _EXCLUDED_FROM_USER_UPDATED = frozenset(
         "active",
         "inactive_since",
         "is_admin",
+        "locked_until",
     }
 )
 

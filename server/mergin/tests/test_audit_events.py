@@ -6,7 +6,10 @@
 with the required fields.  Each test exercises the minimum code path needed to
 trigger the event — it is not a functional test of that path."""
 
+from datetime import datetime, timedelta
 from unittest.mock import patch
+
+from flask import current_app
 
 from ..app import db
 from ..auth.app import generate_confirmation_token, generate_unlock_token
@@ -193,6 +196,8 @@ def test_user_locked(app, client, audit_capture):
     e = audit_capture.one(AuthEventType.USER_LOCKED)
     assert e.target_user_id == user.id
     assert "locked_until" in e.metadata
+    # locking must not also emit a spurious user.updated for locked_until
+    assert len(audit_capture.of_type(AuthEventType.USER_UPDATED)) == 0
 
 
 def test_user_unlocked(app, client, audit_capture):
@@ -208,6 +213,8 @@ def test_user_unlocked(app, client, audit_capture):
 
     e = audit_capture.one(AuthEventType.USER_UNLOCKED)
     assert e.target_user_id == user.id
+    # unlocking must not also emit a spurious user.updated for locked_until
+    assert len(audit_capture.of_type(AuthEventType.USER_UPDATED)) == 0
 
 
 # ---------------------------------------------------------------------------
@@ -292,6 +299,14 @@ def test_project_marked_for_deletion(client, audit_capture):
     e = audit_capture.one(SyncEventType.PROJECT_MARKED_FOR_DELETION)
     assert e.target_project_id == project.id
     assert e.target_workspace_id == project.workspace_id
+    # scheduled_for_deletion_at is when the project will actually be purged
+    scheduled_at = datetime.fromisoformat(
+        e.metadata["scheduled_for_deletion_at"]
+    ).replace(tzinfo=None)
+    expected_at = datetime.utcnow() + timedelta(
+        days=current_app.config["DELETED_PROJECT_EXPIRATION"]
+    )
+    assert abs((scheduled_at - expected_at).total_seconds()) < 30
 
 
 def test_project_marked_for_deletion_via_v1_api(client, audit_capture):
@@ -306,6 +321,14 @@ def test_project_marked_for_deletion_via_v1_api(client, audit_capture):
     e = audit_capture.one(SyncEventType.PROJECT_MARKED_FOR_DELETION)
     assert e.target_project_id == project.id
     assert e.target_workspace_id == project.workspace_id
+    # scheduled_for_deletion_at is when the project will actually be purged
+    scheduled_at = datetime.fromisoformat(
+        e.metadata["scheduled_for_deletion_at"]
+    ).replace(tzinfo=None)
+    expected_at = datetime.utcnow() + timedelta(
+        days=current_app.config["DELETED_PROJECT_EXPIRATION"]
+    )
+    assert abs((scheduled_at - expected_at).total_seconds()) < 30
 
 
 def test_project_restored(client, audit_capture):
@@ -350,6 +373,7 @@ def test_project_member_added(client, audit_capture):
 
     e = audit_capture.one(SyncEventType.PROJECT_MEMBER_ADDED)
     assert e.target_project_id == project.id
+    assert e.target_user_id == user.id
     assert e.metadata["target_email"] == user.email
     assert e.metadata["role"] == ProjectRole.READER.value
 
@@ -368,6 +392,7 @@ def test_project_member_updated(client, audit_capture):
     )
 
     e = audit_capture.one(SyncEventType.PROJECT_MEMBER_UPDATED)
+    assert e.target_user_id == user.id
     assert e.metadata["old_role"] == ProjectRole.READER.value
     assert e.metadata["new_role"] == ProjectRole.EDITOR.value
 
@@ -438,10 +463,9 @@ def test_project_access_request_accepted(client, audit_capture):
         == requester.email
     )
     # accepting also fires project.member.added
-    assert (
-        audit_capture.one(SyncEventType.PROJECT_MEMBER_ADDED).metadata["target_email"]
-        == requester.email
-    )
+    member_added = audit_capture.one(SyncEventType.PROJECT_MEMBER_ADDED)
+    assert member_added.target_user_id == requester.id
+    assert member_added.metadata["target_email"] == requester.email
 
 
 def test_project_access_request_rejected(client, audit_capture):

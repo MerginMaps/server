@@ -319,7 +319,7 @@ def delete_project(namespace, project_name):  # noqa: E501
         workspace_name=project.workspace.name,
         project_name=project.name,
         scheduled_for_deletion_at=(
-            project.removed_at.isoformat() if project.removed_at else None
+            project.removal_at.isoformat() if project.removal_at else None
         ),
     )
     return NoContent, 200

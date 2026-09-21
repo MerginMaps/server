@@ -87,7 +87,7 @@ def schedule_delete_project(id):
         workspace_name=project.workspace.name,
         project_name=project.name,
         scheduled_for_deletion_at=(
-            project.removed_at.isoformat() if project.removed_at else None
+            project.removal_at.isoformat() if project.removal_at else None
         ),
     )
     return NoContent, 204
@@ -167,6 +167,7 @@ def add_project_collaborator(id):
         **actor_context(),
         target_project_id=project.id,
         target_workspace_id=project.workspace_id,
+        target_user_id=user.id,
         target_email=user.email,
         workspace_name=project.workspace.name,
         project_name=project.name,
@@ -192,6 +193,7 @@ def update_project_collaborator(id, user_id):
         **actor_context(),
         target_project_id=project.id,
         target_workspace_id=project.workspace_id,
+        target_user_id=user.id,
         target_email=user.email,
         workspace_name=project.workspace.name,
         project_name=project.name,

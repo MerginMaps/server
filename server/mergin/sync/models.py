@@ -299,6 +299,15 @@ class Project(db.Model):
         initial = timedelta(days=current_app.config["DELETED_PROJECT_EXPIRATION"])
         return initial - (datetime.utcnow() - self.removed_at)
 
+    @property
+    def removal_at(self) -> Optional[datetime]:
+        """Timestamp of pending permanent project removal"""
+        if not self.removed_at:
+            return None
+        return self.removed_at + timedelta(
+            days=current_app.config["DELETED_PROJECT_EXPIRATION"]
+        )
+
     def schedule_deletion(self, removed_by: int = None):
         """Schedule project for removal (soft-delete).
         Sets removed_at so the project is hidden from users but kept in db
