@@ -1079,6 +1079,41 @@ def test_create_version_failures(client):
         assert response.status_code == 409
 
 
+def test_create_version_permanent_error_takes_priority(client):
+    """Permanent errors (e.g. storage limit) must be reported before a
+    version conflict, otherwise clients would rebase/retry an upload that
+    is bound to fail anyway."""
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+
+    data = {
+        "version": "v0",
+        "changes": _get_changes_without_added(test_project_dir),
+        "check_only": True,
+    }
+    with patch.object(
+        Configuration,
+        "GLOBAL_STORAGE",
+        0,
+    ):
+        response = client.post(f"v2/projects/{project.id}/versions", json=data)
+        assert response.status_code == 422
+        assert response.json["code"] == StorageLimitHit.code
+
+    # same must hold for the real (non check_only) upload
+    data["check_only"] = False
+    with patch.object(
+        Configuration,
+        "GLOBAL_STORAGE",
+        0,
+    ):
+        response = client.post(f"v2/projects/{project.id}/versions", json=data)
+        assert response.status_code == 422
+        assert response.json["code"] == StorageLimitHit.code
+    assert project.latest_version == 1
+
+
 def test_upload_chunk(client):
     """Test pushing a chunk to a project"""
     project = Project.query.filter_by(
