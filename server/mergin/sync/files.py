@@ -227,6 +227,12 @@ class ChangesSchema(ma.Schema):
                     f"Unsupported file type detected: '{file_path}'. "
                     f"Please remove the file or try compressing it into a ZIP file before uploading.",
                 )
+
+            diff = file.get("diff")
+            if diff and not is_valid_path(diff["path"]):
+                raise ValidationError(
+                    f"Unsupported file name detected: '{diff['path']}'. Please remove the invalid characters."
+                )
         # new checks must restrict only new files not to block existing projects
         for file in data["added"]:
             file_path = file["path"]

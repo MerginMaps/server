@@ -2629,6 +2629,43 @@ def test_filepath_manipulation(client):
     )
 
 
+def test_diff_filepath_manipulation(client):
+    """Test path validation of the nested diff file during file upload"""
+    push_start_url = url_for(
+        f"/v1.mergin_sync_public_api_controller_project_push",
+        namespace=test_workspace_name,
+        project_name=test_project,
+    )
+    filename = "data.gpkg"
+    with open(os.path.join(TMP_DIR, filename), "w") as f:
+        f.write("Hello, Mergin!")
+    changes = {
+        "added": [],
+        "updated": [file_info(TMP_DIR, filename, chunk_size=CHUNK_SIZE)],
+        "removed": [],
+    }
+    # Manipulate the diff's path by prepending ../../
+    manipulated_diff_path = "../../" + filename
+    changes["updated"][0]["diff"] = {
+        "path": manipulated_diff_path,
+        "checksum": changes["updated"][0]["checksum"],
+        "size": changes["updated"][0]["size"],
+    }
+    # Block upload in push_start because of the invalid diff path
+    resp = client.post(
+        push_start_url,
+        data=json.dumps(
+            {"version": "v1", "changes": changes}, cls=DateTimeEncoder
+        ).encode("utf-8"),
+        headers=json_headers,
+    )
+    assert resp.status_code == 400
+    assert (
+        resp.json["detail"]
+        == f"Unsupported file name detected: '{manipulated_diff_path}'. Please remove the invalid characters."
+    )
+
+
 def test_supported_file_upload(client):
     """Test rejecting unsupported file based on extension and its mime type"""
     push_start_url = url_for(

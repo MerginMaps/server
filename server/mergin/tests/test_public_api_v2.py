@@ -857,6 +857,23 @@ def test_get_project(client):
     assert response.status_code == 400
 
 
+def _get_changes_with_diff_updated(project_dir):
+    changes = _get_changes_with_diff(project_dir)
+    # path traversal in the diff file's path must be rejected
+    changes["updated"][2]["diff"]["path"] = (
+        "../../" + changes["updated"][2]["diff"]["path"]
+    )
+    return changes
+
+
+# Simulation of worst case if validation works
+def _get_changes_with_diff_added(project_dir):
+    changes = _get_changes_with_diff_updated(project_dir)
+    changes["added"] = changes["updated"]
+    changes["updated"] = []
+    return changes
+
+
 push_data = [
     # success
     (
@@ -894,6 +911,14 @@ push_data = [
     # broken .gpkg file
     (
         {"version": "v1", "changes": _get_changes_with_diff_0_size(test_project_dir)},
+        422,
+        UploadError.code,
+    ),
+    (
+        {
+            "version": "v1",
+            "changes": _get_changes_with_diff_updated(test_project_dir),
+        },
         422,
         UploadError.code,
     ),
@@ -942,7 +967,12 @@ push_data = [
         422,
         UploadError.code,
     ),
-    # inconsistent changes, a file which does not exist cannot be deleted
+    # inconsistent changes, a file can not be uploaded with the added diff
+    (
+        {"version": "v1", "changes": _get_changes_with_diff_added(test_project_dir)},
+        422,
+        UploadError.code,
+    ),
     (
         {
             "version": "v1",
