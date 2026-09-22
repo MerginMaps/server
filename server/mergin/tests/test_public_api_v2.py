@@ -857,6 +857,23 @@ def test_get_project(client):
     assert response.status_code == 400
 
 
+def _get_changes_with_diff_updated(project_dir):
+    changes = _get_changes_with_diff(project_dir)
+    # path traversal in the diff file's path must be rejected
+    changes["updated"][2]["diff"]["path"] = (
+        "../../" + changes["updated"][2]["diff"]["path"]
+    )
+    return changes
+
+
+# Simulation of worst case if validation works
+def _get_changes_with_diff_added(project_dir):
+    changes = _get_changes_with_diff_updated(project_dir)
+    changes["added"] = changes["updated"]
+    changes["updated"] = []
+    return changes
+
+
 push_data = [
     # success
     (
@@ -894,6 +911,14 @@ push_data = [
     # broken .gpkg file
     (
         {"version": "v1", "changes": _get_changes_with_diff_0_size(test_project_dir)},
+        422,
+        UploadError.code,
+    ),
+    (
+        {
+            "version": "v1",
+            "changes": _get_changes_with_diff_updated(test_project_dir),
+        },
         422,
         UploadError.code,
     ),
@@ -942,7 +967,12 @@ push_data = [
         422,
         UploadError.code,
     ),
-    # inconsistent changes, a file which does not exist cannot be deleted
+    # inconsistent changes, a file can not be uploaded with the added diff
+    (
+        {"version": "v1", "changes": _get_changes_with_diff_added(test_project_dir)},
+        422,
+        UploadError.code,
+    ),
     (
         {
             "version": "v1",
@@ -1077,6 +1107,41 @@ def test_create_version_failures(client):
     ):
         response = client.post(f"v2/projects/{project.id}/versions", json=data)
         assert response.status_code == 409
+
+
+def test_create_version_permanent_error_takes_priority(client):
+    """Permanent errors (e.g. storage limit) must be reported before a
+    version conflict, otherwise clients would rebase/retry an upload that
+    is bound to fail anyway."""
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+
+    data = {
+        "version": "v0",
+        "changes": _get_changes_without_added(test_project_dir),
+        "check_only": True,
+    }
+    with patch.object(
+        Configuration,
+        "GLOBAL_STORAGE",
+        0,
+    ):
+        response = client.post(f"v2/projects/{project.id}/versions", json=data)
+        assert response.status_code == 422
+        assert response.json["code"] == StorageLimitHit.code
+
+    # same must hold for the real (non check_only) upload
+    data["check_only"] = False
+    with patch.object(
+        Configuration,
+        "GLOBAL_STORAGE",
+        0,
+    ):
+        response = client.post(f"v2/projects/{project.id}/versions", json=data)
+        assert response.status_code == 422
+        assert response.json["code"] == StorageLimitHit.code
+    assert project.latest_version == 1
 
 
 def test_upload_chunk(client):

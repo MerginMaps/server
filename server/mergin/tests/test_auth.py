@@ -835,11 +835,33 @@ def test_api_login(client, data, headers, expected):
         assert user.last_signed_in == login_history.timestamp
 
 
+@pytest.mark.parametrize(
+    "ua", ["DB-sync/0.1", "media-sync/1.0", "work-packages-agent/2.0", "db-sync/0.1"]
+)
+def test_api_login_excluded_user_agent(client, ua):
+    """Logins from user agents on the LOGIN_HISTORY_EXCLUDED_USER_AGENTS list (matched
+    case-insensitively as a substring) are not recorded in LoginHistory"""
+    with patch("mergin.auth.models.get_user_agent") as mock:
+        mock.return_value = ua
+        user_before = User.query.filter_by(username=DEFAULT_USER[0]).first()
+        last_signed_in_before = user_before.last_signed_in
+        resp = client.post(
+            "/v1/auth/login",
+            data=json.dumps({"login": "mergin", "password": "ilovemergin"}),
+            headers=json_headers,
+        )
+        assert resp.status_code == 200
+        user = User.query.filter_by(username=DEFAULT_USER[0]).first()
+        login_history = LoginHistory.query.filter_by(user_id=user.id).first()
+        assert login_history is None
+        assert user.last_signed_in == last_signed_in_before
+
+
 def test_api_login_from_urllib(client):
-    """DB-sync logins are recorded in LoginHistory just like any other client,
+    """Non-excluded clients are recorded in LoginHistory just like any other client,
     to keep a full picture of login activity (including for lockout purposes)."""
     with patch("mergin.auth.models.get_user_agent") as mock:
-        mock.return_value = "DB-sync/0.1"
+        mock.return_value = "python-urllib/3.9"
         resp = client.post(
             "/v1/auth/login",
             data=json.dumps({"login": "mergin", "password": "ilovemergin"}),

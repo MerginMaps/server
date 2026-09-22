@@ -273,10 +273,6 @@ def create_project_version(id):
     v_next_version = ProjectVersion.to_v_name(next_version)
     version_dir = os.path.join(project.storage.project_dir, v_next_version)
 
-    pv = project.get_latest_version()
-    if pv and pv.name != version:
-        return ProjectVersionExists(version, pv.name).response(409)
-
     try:
         ChangesSchema().validate(changes)
         upload_changes = ChangesSchema().dump(changes)
@@ -321,6 +317,10 @@ def create_project_version(id):
     requested_storage = current_usage + additional_disk_usage
     if requested_storage > project.workspace.storage:
         return StorageLimitHit(current_usage, project.workspace.storage).response(422)
+
+    pv = project.get_latest_version()
+    if pv and pv.name != version:
+        return ProjectVersionExists(version, pv.name).response(409)
 
     # we have done all checks but this request is just a dry-run
     if request.json.get("check_only", False):
