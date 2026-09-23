@@ -111,6 +111,9 @@ class User(db.Model):
         counting only failed attempts within the trailing LOCKOUT_WINDOW and
         since the last successful login (whichever bound is more recent).
 
+        Note: failed attempts from a user agent excluded from login_history logging
+        are not recorded at all, so they do not count toward lockout either.
+
         Returns the lockout duration in seconds if a new lock was just applied, else None.
         """
         LoginHistory.add_record(self.id, request, successful=False)
@@ -370,8 +373,19 @@ class LoginHistory(db.Model):
         self.timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
 
     @staticmethod
+    def is_excluded_user_agent(ua: Optional[str]) -> bool:
+        """Return True if the user agent matches one of the configured exclusions
+        and should not be logged in the login history."""
+        if not ua:
+            return False
+        excluded = current_app.config.get("LOGIN_HISTORY_EXCLUDED_USER_AGENTS", [])
+        return any(pattern.lower() in ua.lower() for pattern in excluded)
+
+    @staticmethod
     def add_record(user_id: int, req: request, successful: bool = True) -> None:
         ua = get_user_agent(req)
+        if LoginHistory.is_excluded_user_agent(ua):
+            return
         ip = get_ip(req)
         device_id = get_device_id(req)
         lh = LoginHistory(user_id, ua, ip, device_id, successful=successful)

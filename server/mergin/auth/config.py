@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-from decouple import config
+from decouple import config, Csv
 
 
 class Configuration(object):
@@ -19,3 +19,9 @@ class Configuration(object):
     LOCKOUT_POLICY = config("LOCKOUT_POLICY", default="5:300,10:3600")
     # trailing window in seconds over which failed login attempts are counted
     LOCKOUT_WINDOW = config("LOCKOUT_WINDOW", default=3600, cast=int)
+    # comma-separated substrings (case-insensitive) of user agents excluded from login history logging
+    LOGIN_HISTORY_EXCLUDED_USER_AGENTS = config(
+        "LOGIN_HISTORY_EXCLUDED_USER_AGENTS",
+        default="media-sync,work-packages,DB-sync",
+        cast=Csv(),
+    )
