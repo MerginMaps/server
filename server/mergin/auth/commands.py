@@ -37,6 +37,7 @@ def add_commands(app: Flask):
 
         user = User(username=username, passwd=password, is_admin=is_admin, email=email)
         user.active = True
+        db.session.info["audit_user_creation_source"] = "cli"
         db.session.add(user)
         db.session.commit()
         click.secho("User created", fg="green")

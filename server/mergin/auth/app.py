@@ -13,7 +13,11 @@ from sqlalchemy import func
 
 from .commands import add_commands
 from .config import Configuration
+from .listeners import register_listeners
 from .models import User, _check_dummy_password
+from ..audit import emit
+from ..audit.listeners import actor_context, request_context
+from .events import AuthEventType
 
 # signal for other versions to listen to
 user_account_closed = signal("user_account_closed")
@@ -39,6 +43,7 @@ def register(app):
     app.blueprints["/"].name = "auth"
     app.blueprints["auth"] = app.blueprints.pop("/")
     add_commands(app)
+    register_listeners()
 
 
 _permissions = {}
@@ -125,6 +130,13 @@ def authenticate(login, password):
         db.session.commit()
         if duration is not None:
             send_account_locked_email(current_app, user, duration)
+            emit(
+                AuthEventType.USER_LOCKED,
+                **request_context(),
+                target_user_id=user.id,
+                target_email=user.email,
+                locked_until=user.locked_until.isoformat(),
+            )
         return None
 
 
