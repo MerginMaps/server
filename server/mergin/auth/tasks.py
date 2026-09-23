@@ -7,6 +7,9 @@ from sqlalchemy.sql.operators import isnot
 
 from ..celery import celery
 from ..app import db
+from ..audit import emit
+from .app import user_account_closed
+from .events import AuthEventType
 from .models import User
 from .config import Configuration
 
@@ -22,4 +25,12 @@ def anonymize_removed_users():
         User.username.op("~")("^(?!deleted_\d{13})"),
     ).all()
     for user in users:
+        emit(
+            AuthEventType.USER_DELETED,
+            target_user_id=user.id,
+            target_email=user.email,
+        )
+        # Remove project/workspace memberships
+        user.inactivate()
+        user_account_closed.send(user)
         user.anonymize()
