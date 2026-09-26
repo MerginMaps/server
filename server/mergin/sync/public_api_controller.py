@@ -268,6 +268,10 @@ def add_project(namespace):  # noqa: E501
 
         db.session.add(p)
         db.session.add(version)
+        # Grant the creator ownership of the project they have just created.
+        # Without this the project has no roles at all, so it cannot be shared,
+        # and under GLOBAL_ADMIN=True its own creator cannot see it.
+        p.set_role(current_user.id, ProjectRole.OWNER)
         db.session.commit()
         if template_name:
             db.session.info.pop("audit_skip_project_create", None)
@@ -1351,6 +1355,9 @@ def clone_project(namespace, project_name):  # noqa: E501
         device_id,
     )
     db.session.add(project_version)
+    # Same as in add_project: the creator of a cloned project must hold a role
+    # on it, otherwise the clone cannot be shared or, for a non-superuser, seen.
+    p.set_role(current_user.id, ProjectRole.OWNER)
     db.session.commit()
     db.session.info.pop("audit_skip_project_create", None)
     emit(
