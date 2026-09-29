@@ -34,6 +34,7 @@ from flask import current_app
 from pathlib import Path
 
 from .config import Configuration
+from ..utils import format_time_delta
 
 # log base for caching strategy, diff checkpoints, etc.
 LOG_BASE = 4
@@ -111,6 +112,16 @@ def generate_location():
         '1c/624c6af4d6d2710bbfe1c128e8ca267b'
     """
     return os.path.join(secrets.token_hex(1), secrets.token_hex(16))
+
+
+def project_name_conflict_message(project) -> str:
+    """Return error message for a new project clashing with an existing project name"""
+    if project.removed_at:
+        return (
+            f"Project with the same name is scheduled for deletion, "
+            f"you can create a project with this name in {format_time_delta(project.expiration)}"
+        )
+    return "Project with the same name already exists"
 
 
 def is_valid_uuid(uuid):
