@@ -1108,6 +1108,14 @@ def test_create_version_failures(client):
         response = client.post(f"v2/projects/{project.id}/versions", json=data)
         assert response.status_code == 409
 
+    # target version already exists on server (both on disk and in db), upload is released
+    with patch.object(Project, "next_version", return_value=1):
+        response = client.post(f"v2/projects/{project.id}/versions", json=data)
+        assert response.status_code == 409
+        assert response.json["code"] == ProjectVersionExists.code
+        assert not Upload.query.filter_by(project_id=project.id).first()
+        assert project.latest_version == 1
+
 
 def test_create_version_permanent_error_takes_priority(client):
     """Permanent errors (e.g. storage limit) must be reported before a

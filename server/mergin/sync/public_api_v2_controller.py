@@ -351,9 +351,8 @@ def create_project_version(id):
         if ProjectVersion.query.filter_by(
             project_id=project.id, name=next_version
         ).count():
-            return UploadError(
-                error=f"Version {v_next_version} already exists"
-            ).response(409)
+            upload.clear()
+            return ProjectVersionExists(version, next_version).response(409)
         move_to_tmp(version_dir)
 
     try:
