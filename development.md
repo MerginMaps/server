@@ -21,10 +21,23 @@ $ cd server
 # Install dependencies with pipenv
 # Note: You can append --three flag in older versions of pipenv (< 3.16.8 2023-02-04)
 $ pipenv install --dev
-$ pipenv install --categories="telemetry
+$ pipenv install --categories telemetry
 $ pipenv run pre-commit install
 $ pipenv run pre-commit run --all-files
-$ export FLASK_APP=application; export COLLECT_STATISTICS=0
+# pipenv loads server/.env automatically; secrets and salts have no defaults
+$ cat > .env <<EOF
+FLASK_APP=application
+COLLECT_STATISTICS=0
+SECRET_KEY=$(python3 -c 'import secrets;print(secrets.token_hex(32))')
+SECURITY_PASSWORD_SALT=$(python3 -c 'import secrets;print(secrets.token_hex(16))')
+SECURITY_EMAIL_SALT=$(python3 -c 'import secrets;print(secrets.token_hex(16))')
+SECURITY_BEARER_SALT=$(python3 -c 'import secrets;print(secrets.token_hex(16))')
+SECURITY_UNLOCK_SALT=$(python3 -c 'import secrets;print(secrets.token_hex(16))')
+MAIL_DEFAULT_SENDER=dev@localhost
+MERGIN_BASE_URL=http://localhost:8080
+EOF
+# folder for project files (LOCAL_PROJECTS default)
+$ mkdir -p ../projects
 $ pipenv run flask init-db
 # create admin user
 $ pipenv run flask user create admin topsecret --is-admin --email admin@example.com
@@ -36,7 +49,7 @@ $ pipenv run flask run # run dev server on port 5000
 
 ### Web applications
 
-Before installing the web applications, make sure you have Node.js installed in a supported version. The applications require Node.js version **18 or higher**.
+Before installing the web applications, make sure you have Node.js installed in a supported version. The applications require Node.js version **22 or higher**.
 
 ```shell
 $ cd web-app
