@@ -4,6 +4,7 @@
 
 import functools
 import logging
+import secrets
 from typing import Optional
 from blinker import signal
 from flask import current_app, render_template, Flask
@@ -159,15 +160,30 @@ def send_confirmation_email(app, user, url, template, header, **kwargs):
     Send confirmation email from selected template with customizable email subject and confirmation URL.
     Optional kwargs are passed to render_template method if needed for particular template.
     """
+    token = generate_confirmation_token(
+        app, user.email, app.config["SECURITY_EMAIL_SALT"]
+    )
+    _send_token_email(app, user, f"{url}/{token}", template, header, **kwargs)
+
+
+def send_password_reset_email(app: Flask, user: User) -> None:
+    """Issue a new single-use password reset token (revoking any previous one) and email it."""
+    from ..app import db
+
+    token = generate_password_reset_token(app, user)
+    db.session.commit()
+    _send_token_email(
+        app,
+        user,
+        f"change-password/{token}",
+        "email/password_reset.html",
+        "Password reset",
+    )
+
+
+def _send_token_email(app, user, confirm_url, template, header, **kwargs):
     from ..celery import send_email_async
 
-    salt = (
-        app.config["SECURITY_EMAIL_SALT"]
-        if url == "confirm-email"
-        else app.config["SECURITY_PASSWORD_SALT"]
-    )
-    token = generate_confirmation_token(app, user.email, salt)
-    confirm_url = f"{url}/{token}"
     html = render_template(
         template, subject=header, confirm_url=confirm_url, user=user, **kwargs
     )
@@ -178,6 +194,34 @@ def send_confirmation_email(app, user, url, template, header, **kwargs):
         "sender": app.config["MAIL_DEFAULT_SENDER"],
     }
     send_email_async.delay(**email_data)
+
+
+def generate_password_reset_token(app: Flask, user: User) -> str:
+    """Sign a reset token bound to a fresh nonce stored on the user.
+
+    Rotating the nonce revokes previously issued tokens; any password change clears it.
+    """
+    user.password_reset_nonce = secrets.token_urlsafe(32)
+    serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
+    payload = {"email": user.email, "nonce": user.password_reset_nonce}
+    return serializer.dumps(payload, salt=app.config["SECURITY_PASSWORD_SALT"])
+
+
+def confirm_password_reset_token(token: str) -> Optional[dict]:
+    """Return a signed, unexpired reset token payload, or None. The nonce still has to be checked against the user."""
+    serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+    try:
+        payload = serializer.loads(
+            token,
+            salt=current_app.config["SECURITY_PASSWORD_SALT"],
+            max_age=current_app.config["PASSWORD_RESET_TOKEN_EXPIRATION"],
+        )
+    except BadData:
+        return None
+    # tokens issued before nonces were introduced carried only the email
+    if not isinstance(payload, dict):
+        return None
+    return payload
 
 
 def generate_unlock_token(app: Flask, user: User) -> str:

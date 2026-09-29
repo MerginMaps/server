@@ -51,6 +51,8 @@ class User(db.Model):
     )
     last_signed_in = db.Column(db.DateTime(), nullable=True)
     locked_until = db.Column(db.DateTime(), nullable=True)
+    # nonce of the only valid password reset token, cleared on any password change
+    password_reset_nonce = db.Column(db.String(64), nullable=True)
     receive_notifications = db.Column(
         db.Boolean, default=True, nullable=False, index=True
     )
@@ -89,6 +91,7 @@ class User(db.Model):
             if password
             else None
         )
+        self.password_reset_nonce = None
 
     def needs_rehash(self):
         """Return True if the stored hash was generated with a different cost factor than configured."""
@@ -267,6 +270,7 @@ class User(db.Model):
             self.username = del_str
             self.email = None
             self.passwd = None
+            self.password_reset_nonce = None
             self.first_name = None
             self.last_name = None
             db.session.commit()

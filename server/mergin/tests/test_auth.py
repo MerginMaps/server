@@ -17,6 +17,7 @@ from ..auth.forms import ResetPasswordForm
 from ..auth.app import (
     generate_confirmation_token,
     confirm_token,
+    generate_password_reset_token,
     generate_unlock_token,
 )
 from ..auth.models import User, LoginHistory
@@ -578,9 +579,8 @@ def test_confirm_email(app, client):
 
 def test_confirm_password(app, client):
     user = User.query.filter_by(username="mergin").first()
-    token = generate_confirmation_token(
-        app, user.email, app.config["SECURITY_PASSWORD_SALT"]
-    )
+    token = generate_password_reset_token(app, user)
+    db.session.commit()
 
     form_data = {"password": "ilovemergin#0", "confirm": "ilovemergin#0"}
 
@@ -607,8 +607,8 @@ def test_confirm_password(app, client):
     resp = client.post(
         url_for(
             "/.mergin_auth_controller_confirm_new_password",
-            token=generate_confirmation_token(
-                app, "tests@mergin.com", app.config["SECURITY_PASSWORD_SALT"]
+            token=generate_password_reset_token(
+                app, SimpleNamespace(email="tests@mergin.com")
             ),
         ),
         data=json.dumps(form_data),
@@ -622,14 +622,10 @@ def test_confirm_password(app, client):
     )
     user.active = False
     db.session.add(user)
+    token = generate_password_reset_token(app, user)
     db.session.commit()
     resp = client.post(
-        url_for(
-            "/.mergin_auth_controller_confirm_new_password",
-            token=generate_confirmation_token(
-                app, "tests@mergin.com", app.config["SECURITY_PASSWORD_SALT"]
-            ),
-        )
+        url_for("/.mergin_auth_controller_confirm_new_password", token=token)
     )
     assert resp.status_code == 400
 
@@ -648,9 +644,8 @@ def test_confirm_password_clears_lockout(send_email_mock, app, client):
             )
         assert user.is_locked_out()
 
-        token = generate_confirmation_token(
-            app, user.email, app.config["SECURITY_PASSWORD_SALT"]
-        )
+        token = generate_password_reset_token(app, user)
+        db.session.commit()
         resp = client.post(
             url_for("/.mergin_auth_controller_confirm_new_password", token=token),
             data=json.dumps({"password": "newpass#1", "confirm": "newpass#1"}),
@@ -676,6 +671,74 @@ def test_confirm_password_clears_lockout(send_email_mock, app, client):
         )
         assert resp.status_code == 200
         assert not user.is_locked_out()
+
+
+def _confirm_new_password(client, token, password="newpass#1"):
+    return client.post(
+        url_for("/.mergin_auth_controller_confirm_new_password", token=token),
+        data=json.dumps({"password": password, "confirm": password}),
+        headers=json_headers,
+    )
+
+
+@patch("mergin.celery.send_email_async.apply_async")
+def test_reset_password_token_single_use(send_email_mock, app, client):
+    """Reset link is one-off, only the latest link is valid and a regular password change revokes it."""
+    user = add_user("resetuser", "oldpassword")
+
+    # used token cannot be reused
+    token = generate_password_reset_token(app, user)
+    db.session.commit()
+    assert _confirm_new_password(client, token).status_code == 200
+    assert user.password_reset_nonce is None
+    assert _confirm_new_password(client, token, "another#1").status_code == 400
+    assert user.check_password("newpass#1")
+
+    # requesting a new link revokes the older one
+    old_token = generate_password_reset_token(app, user)
+    db.session.commit()
+    resp = client.post(
+        url_for("/.mergin_auth_controller_password_reset"),
+        json={"email": user.email},
+    )
+    assert resp.status_code == 200
+    assert send_email_mock.call_count == 1
+    email_html = send_email_mock.call_args.args[1]["html"]
+    assert old_token not in email_html
+    assert _confirm_new_password(client, old_token).status_code == 400
+    new_token = email_html.split("change-password/")[1].split('"')[0]
+    assert _confirm_new_password(client, new_token, "latest#1").status_code == 200
+
+    # regular password change revokes outstanding link
+    token = generate_password_reset_token(app, user)
+    db.session.commit()
+    login(client, user.username, "latest#1")
+    resp = client.post(
+        url_for("/.mergin_auth_controller_change_password"),
+        json={
+            "old_password": "latest#1",
+            "password": "changed#1",
+            "confirm": "changed#1",
+        },
+    )
+    assert resp.status_code == 200
+    assert _confirm_new_password(client, token).status_code == 400
+    assert user.check_password("changed#1")
+
+
+def test_reset_password_token_expired_or_legacy(app, client):
+    user = add_user("resetuser", "oldpassword")
+    token = generate_password_reset_token(app, user)
+    db.session.commit()
+    with patch.dict(app.config, {"PASSWORD_RESET_TOKEN_EXPIRATION": -1}):
+        assert _confirm_new_password(client, token).status_code == 400
+
+    # token format from before nonces were introduced (email only) is rejected
+    legacy_token = generate_confirmation_token(
+        app, user.email, app.config["SECURITY_PASSWORD_SALT"]
+    )
+    assert _confirm_new_password(client, legacy_token).status_code == 400
+    assert user.check_password("oldpassword")
 
 
 # reset password tests: success, no email, not-existing user (200 - masked)

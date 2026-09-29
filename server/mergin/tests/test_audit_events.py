@@ -12,7 +12,10 @@ from unittest.mock import patch
 from flask import current_app
 
 from ..app import db
-from ..auth.app import generate_confirmation_token, generate_unlock_token
+from ..auth.app import (
+    generate_password_reset_token,
+    generate_unlock_token,
+)
 from ..auth.events import AuthEventType
 from ..auth.models import User
 from ..sync.events import SyncEventType
@@ -82,9 +85,10 @@ def test_user_password_changed(client, audit_capture):
 
 def test_user_password_reset(app, client, audit_capture):
     user = User.query.filter_by(username=DEFAULT_USER[0]).first()
-    token = generate_confirmation_token(
-        app, user.email, app.config["SECURITY_PASSWORD_SALT"]
-    )
+    token = generate_password_reset_token(app, user)
+    db.session.commit()
+    # the nonce is a secret - storing it must not emit user.updated
+    assert len(audit_capture.of_type(AuthEventType.USER_UPDATED)) == 0
 
     client.post(
         f"/app/auth/reset-password/{token}",
@@ -94,6 +98,16 @@ def test_user_password_reset(app, client, audit_capture):
     e = audit_capture.one(AuthEventType.USER_PASSWORD_RESET_COMPLETED)
     assert e.target_user_id == user.id
     assert e.metadata["target_email"] == user.email
+    assert len(audit_capture.of_type(AuthEventType.USER_UPDATED)) == 0
+
+    # reusing the token is rejected
+    client.post(
+        f"/app/auth/reset-password/{token}",
+        json={"password": "NewPass#456", "confirm": "NewPass#456"},
+    )
+    e = audit_capture.one(AuthEventType.USER_PASSWORD_RESET_FAILED)
+    assert e.target_user_id == user.id
+    assert e.metadata["reason"] == "token_revoked"
 
 
 def test_user_created(audit_capture):
