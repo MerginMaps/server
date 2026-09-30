@@ -597,7 +597,6 @@ def create_project(workspace_id):
         storage_params={"type": "local", "location": generate_location()},
         creator=current_user,
         workspace=ws,
-        public=request.json.get("public", False),
     )
     project.updated = datetime.utcnow()
     try:

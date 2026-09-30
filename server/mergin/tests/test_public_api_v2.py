@@ -1498,7 +1498,6 @@ def test_create_project(client):
     assert response.json["size"] == 0
     assert response.json["workspace"]["id"] == test_workspace_id
     assert response.json["role"] == "owner"
-    assert response.json["public"] is False
     assert "files" not in response.json
     project = Project.query.filter_by(
         workspace_id=test_workspace_id, name="new_project"
@@ -1524,12 +1523,6 @@ def test_create_project(client):
         assert response.status_code == 400
         assert response.json["code"] == "InvalidProjectName"
     assert client.post(url, json={}).status_code == 400
-
-    # public project
-    response = client.post(url, json={"name": "public_project", "public": True})
-    assert response.status_code == 201
-    assert response.json["public"] is True
-    assert Project.query.filter_by(name="public_project").first().public
 
     # not existing workspace
     response = client.post("v2/workspaces/1234/projects", json={"name": "other"})

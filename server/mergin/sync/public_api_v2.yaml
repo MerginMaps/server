@@ -569,10 +569,6 @@ paths:
                 name:
                   type: string
                   example: survey
-                public:
-                  type: boolean
-                  default: false
-                  example: false
       responses:
         "201":
           description: New project
