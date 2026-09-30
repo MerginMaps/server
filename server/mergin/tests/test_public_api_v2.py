@@ -1489,6 +1489,59 @@ def test_list_workspace_projects(client):
     assert client.get(url + "?page=1&per_page=10").status_code == 401
 
 
+def test_create_project(client):
+    url = f"v2/workspaces/{test_workspace_id}/projects"
+    response = client.post(url, json={"name": " new_project "})
+    assert response.status_code == 201
+    assert response.json["name"] == "new_project"
+    assert response.json["version"] == "v0"
+    assert response.json["size"] == 0
+    assert response.json["workspace"]["id"] == test_workspace_id
+    assert response.json["role"] == "owner"
+    assert "files" not in response.json
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name="new_project"
+    ).first()
+    assert str(project.id) == response.json["id"]
+    assert project.latest_version == 0
+    assert os.path.exists(project.storage.project_dir)
+
+    # name already exists
+    response = client.post(url, json={"name": "new_project"})
+    assert response.status_code == 409
+    assert response.json["detail"] == "Project with the same name already exists"
+    # name is taken by project scheduled for deletion
+    project.removed_at = datetime.utcnow()
+    db.session.commit()
+    response = client.post(url, json={"name": "new_project"})
+    assert response.status_code == 409
+    assert "scheduled for deletion" in response.json["detail"]
+
+    # invalid project name
+    for name in ["", ".new_project"]:
+        response = client.post(url, json={"name": name})
+        assert response.status_code == 400
+        assert response.json["code"] == "InvalidProjectName"
+    assert client.post(url, json={}).status_code == 400
+
+    # not existing workspace
+    response = client.post("v2/workspaces/1234/projects", json={"name": "other"})
+    assert response.status_code == 404
+
+    # workspace writer cannot create projects
+    user = add_user("user", "password")
+    login(client, user.username, "password")
+    with patch.object(Configuration, "GLOBAL_ADMIN", 0), patch.object(
+        Configuration, "GLOBAL_WRITE", 1
+    ):
+        response = client.post(url, json={"name": "other"})
+        assert response.status_code == 403
+
+    logout(client)
+    assert client.post(url, json={"name": "other"}).status_code == 401
+    assert not Project.query.filter_by(name="other").count()
+
+
 def test_list_projects_in_batch(client):
     """Test batch project listing endpoint."""
     admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
