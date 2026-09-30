@@ -229,7 +229,10 @@ export const useAdminStore = defineStore('adminModule', {
     },
 
     async getCheckUpdateFromCookies() {
-      const currentCheckForUpdatesCookie = cookies.get('checkUpdates')
+      // doNotParse keeps raw 'true' / 'false' strings (universal-cookie >= 7 parses JSON by default)
+      const currentCheckForUpdatesCookie = cookies.get('checkUpdates', {
+        doNotParse: true
+      })
       await this.setCheckUpdatesToCookies({
         value:
           currentCheckForUpdatesCookie === undefined
@@ -248,7 +251,8 @@ export const useAdminStore = defineStore('adminModule', {
 
     async getServerConfiguredCookies() {
       const currentHideServerConfiguredBannerCookie = cookies.get(
-        COOKIES_HIDE_SERVER_CONFIGURED_BANNER
+        COOKIES_HIDE_SERVER_CONFIGURED_BANNER,
+        { doNotParse: true }
       )
       if (currentHideServerConfiguredBannerCookie === 'true') {
         this.setIsServerConfigHidden(true)
