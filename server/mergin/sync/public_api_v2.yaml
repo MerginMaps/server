@@ -396,6 +396,7 @@ paths:
               schema:
                 anyOf:
                   - $ref: "#/components/schemas/UploadError"
+                  - $ref: "#/components/schemas/UnsupportedFilesDetected"
                   - $ref: "#/components/schemas/TrialExpired"
                   - $ref: "#/components/schemas/StorageLimitHit"
                   - $ref: "#/components/schemas/DataSyncError"
@@ -737,6 +738,21 @@ components:
       example:
         code: UploadError
         detail: "Project version could not be created (UploadError)"
+    UnsupportedFilesDetected:
+      allOf:
+        - $ref: "#/components/schemas/CustomError"
+      type: object
+      properties:
+        unsupported_files:
+          type: array
+          items:
+            type: string
+      example:
+        code: UnsupportedFilesDetected
+        detail: "Unsupported files detected: 'notes:draft.txt', 'photos|old/tree.jpg'. Please remove the invalid characters. (UnsupportedFilesDetected)"
+        unsupported_files:
+          - "notes:draft.txt"
+          - "photos|old/tree.jpg"
     BatchItemError:
       type: object
       properties:

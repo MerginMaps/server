@@ -62,6 +62,7 @@ from mergin.sync.errors import (
     ProjectVersionExists,
     AnotherUploadRunning,
     StorageLimitHit,
+    UnsupportedFilesDetected,
     UploadError,
 )
 from mergin.sync.files import ChangesSchema
@@ -920,7 +921,7 @@ push_data = [
             "changes": _get_changes_with_diff_updated(test_project_dir),
         },
         422,
-        UploadError.code,
+        UnsupportedFilesDetected.code,
     ),
     # contains already uploaded file
     (
@@ -971,7 +972,7 @@ push_data = [
     (
         {"version": "v1", "changes": _get_changes_with_diff_added(test_project_dir)},
         422,
-        UploadError.code,
+        UnsupportedFilesDetected.code,
     ),
     (
         {
@@ -1050,6 +1051,40 @@ def test_create_version(client, data, expected, err_code):
             if failure:
                 assert failure.last_version == "v1"
                 assert failure.error_type == "project_push"
+
+
+def test_create_version_unsupported_file_names(client):
+    """Test all files with unsupported names are listed in the error response"""
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+    changes = _get_changes_with_diff_updated(test_project_dir)
+    changes["added"] = [
+        {
+            "path": path,
+            "size": 1234,
+            "checksum": "9adb76bf81a34880209040ffe5ee262a090b62ab",
+            "chunks": [],
+        }
+        for path in ("notes.txt", "notes:draft.txt", "photos|old/tree.jpg")
+    ]
+    invalid_diff_path = changes["updated"][2]["diff"]["path"]
+
+    response = client.post(
+        f"v2/projects/{project.id}/versions",
+        json={"version": "v1", "changes": changes, "check_only": True},
+    )
+    assert response.status_code == 422
+    assert response.json["code"] == UnsupportedFilesDetected.code
+    assert response.json["unsupported_files"] == [
+        "notes:draft.txt",
+        "photos|old/tree.jpg",
+        invalid_diff_path,
+    ]
+    assert response.json["detail"] == (
+        f"Unsupported files detected: 'notes:draft.txt', 'photos|old/tree.jpg', '{invalid_diff_path}'. "
+        "Please remove the invalid characters. (UnsupportedFilesDetected)"
+    )
 
 
 def test_create_version_failures(client):
