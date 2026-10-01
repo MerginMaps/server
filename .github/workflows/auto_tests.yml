@@ -1,6 +1,12 @@
 name: Auto Tests
 
-on: push
+on:
+  push:
+    paths:
+      # Run just when the backend changed
+      - "server/**"
+      - "!server/**/*.md"
+      - ".github/workflows/auto_tests.yml"
 
 jobs:
   tests:
@@ -44,8 +50,8 @@ jobs:
         run: |
           cd server
           sudo apt-get -y install libsqlite3-mod-spatialite
-          pip install pipenv==2026.0.3
-          pipenv install --dev --verbose --python 3.12
+          pip install pipenv==2026.8.0
+          pipenv install --dev --deploy --verbose --python 3.12
 
       - name: Run tests
         run: |

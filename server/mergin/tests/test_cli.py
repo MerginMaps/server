@@ -286,14 +286,10 @@ def test_check_email(
     app.config["MAIL_SUPPRESS_SEND"] = suppressed
     app.config["MAIL_DEFAULT_SENDER"] = "sender@mergin.com" if sender else None
 
-    result = runner.invoke(
-        args=[
-            "server",
-            "send-check-email",
-            "--email",
-            f" test@mergin.com " if recipient else None,
-        ]
-    )
+    args = ["server", "send-check-email"]
+    if recipient:
+        args += ["--email", " test@mergin.com "]
+    result = runner.invoke(args=args)
     assert output in result.output
     sent = 1 if output == "Email sent." else 0
     assert mock_send_email.call_count == sent
