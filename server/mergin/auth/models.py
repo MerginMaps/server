@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 import datetime
+import secrets
 from typing import List, Optional
 import bcrypt
 import re
@@ -145,6 +146,11 @@ class User(db.Model):
     def reset_lockout(self) -> None:
         """Clear lockout state after a successful login."""
         self.locked_until = None
+
+    def rotate_password_reset_nonce(self) -> str:
+        """Set a new password reset nonce, invalidating any previously issued reset token."""
+        self.password_reset_nonce = secrets.token_urlsafe(32)
+        return self.password_reset_nonce
 
     @property
     def is_authenticated(self):

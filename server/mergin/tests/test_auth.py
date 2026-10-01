@@ -607,8 +607,10 @@ def test_confirm_password(app, client):
     resp = client.post(
         url_for(
             "/.mergin_auth_controller_confirm_new_password",
-            token=generate_password_reset_token(
-                app, SimpleNamespace(email="tests@mergin.com")
+            token=generate_confirmation_token(
+                app,
+                {"email": "tests@mergin.com", "nonce": "nonce"},
+                app.config["SECURITY_PASSWORD_SALT"],
             ),
         ),
         data=json.dumps(form_data),

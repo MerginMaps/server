@@ -18,7 +18,6 @@ from .app import (
     send_confirmation_email,
     send_password_reset_email,
     confirm_token,
-    confirm_password_reset_token,
     generate_confirmation_token,
     confirm_unlock_token,
     user_created,
@@ -387,8 +386,13 @@ def password_reset():  # pylint: disable=W0613,W0612
 
 
 def confirm_new_password(token):  # pylint: disable=W0613,W0612
-    payload = confirm_password_reset_token(token)
-    if not payload:
+    payload = confirm_token(
+        token,
+        salt=current_app.config["SECURITY_PASSWORD_SALT"],
+        expiration=current_app.config["PASSWORD_RESET_TOKEN_EXPIRATION"],
+    )
+    # tokens issued before nonces were introduced carried only the email
+    if not isinstance(payload, dict):
         emit(
             AuthEventType.USER_PASSWORD_RESET_FAILED,
             **request_context(),
@@ -410,7 +414,7 @@ def confirm_new_password(token):  # pylint: disable=W0613,W0612
         )
         abort(404)
     # token was already used, superseded by a newer one or revoked by a password change
-    if user.password_reset_nonce != payload["nonce"]:
+    if not user.password_reset_nonce or user.password_reset_nonce != payload["nonce"]:
         emit(
             AuthEventType.USER_PASSWORD_RESET_FAILED,
             **request_context(),
@@ -440,7 +444,6 @@ def confirm_new_password(token):  # pylint: disable=W0613,W0612
 
     form = UserPasswordForm.from_json(request.json)
     if form.validate():
-        # also clears the reset nonce, making the token single-use
         user.assign_password(form.password.data)
         user.reset_lockout()
         db.session.add(user)
