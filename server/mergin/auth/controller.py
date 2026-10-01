@@ -16,6 +16,7 @@ from .app import (
     auth_required,
     authenticate,
     send_confirmation_email,
+    send_password_reset_email,
     confirm_token,
     generate_confirmation_token,
     confirm_unlock_token,
@@ -380,19 +381,18 @@ def password_reset():  # pylint: disable=W0613,W0612
         target_email=form.email.data.strip(),
     )
     if user and user.active and user.can_edit_profile:
-        send_confirmation_email(
-            current_app,
-            user,
-            "change-password",
-            "email/password_reset.html",
-            "Password reset",
-        )
+        send_password_reset_email(current_app, user)
     return "", 200
 
 
 def confirm_new_password(token):  # pylint: disable=W0613,W0612
-    email = confirm_token(token, salt=current_app.config["SECURITY_PASSWORD_SALT"])
-    if not email:
+    payload = confirm_token(
+        token,
+        salt=current_app.config["SECURITY_PASSWORD_SALT"],
+        expiration=current_app.config["PASSWORD_RESET_TOKEN_EXPIRATION"],
+    )
+    # tokens issued before nonces were introduced carried only the email
+    if not isinstance(payload, dict):
         emit(
             AuthEventType.USER_PASSWORD_RESET_FAILED,
             **request_context(),
@@ -402,6 +402,7 @@ def confirm_new_password(token):  # pylint: disable=W0613,W0612
         )
         abort(400, "Invalid token")
 
+    email = payload["email"]
     user = User.query.filter_by(email=email).first()
     if not user:
         emit(
@@ -412,6 +413,16 @@ def confirm_new_password(token):  # pylint: disable=W0613,W0612
             reason="user_not_found",
         )
         abort(404)
+    # token was already used, superseded by a newer one or revoked by a password change
+    if not user.password_reset_nonce or user.password_reset_nonce != payload["nonce"]:
+        emit(
+            AuthEventType.USER_PASSWORD_RESET_FAILED,
+            **request_context(),
+            target_user_id=user.id,
+            target_email=user.email,
+            reason="token_revoked",
+        )
+        abort(400, "Invalid token")
     if not user.active:
         emit(
             AuthEventType.USER_PASSWORD_RESET_FAILED,

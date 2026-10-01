@@ -13,7 +13,7 @@ from .events import AuthEventType
 from .models import User
 
 # Fields excluded from user.updated audit events:
-#   - sensitive values that must never appear in logs (passwd)
+#   - sensitive values that must never appear in logs (passwd, password_reset_nonce)
 #   - high-frequency operational fields (last_signed_in, registration_date)
 #   - lifecycle state fields covered by dedicated events (active, inactive_since)
 #   - is_admin covered by the dedicated user.admin_panel_access.changed event
@@ -22,6 +22,7 @@ from .models import User
 _EXCLUDED_FROM_USER_UPDATED = frozenset(
     {
         "passwd",
+        "password_reset_nonce",
         "last_signed_in",
         "registration_date",
         "active",

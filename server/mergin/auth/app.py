@@ -140,18 +140,18 @@ def authenticate(login, password):
         return None
 
 
-def generate_confirmation_token(app, email, salt):
+def generate_confirmation_token(app, data, salt):
     serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
-    return serializer.dumps(email, salt=salt)
+    return serializer.dumps(data, salt=salt)
 
 
 def confirm_token(token, salt, expiration=3600):
     serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
     try:
-        email = serializer.loads(token, salt=salt, max_age=expiration)
+        data = serializer.loads(token, salt=salt, max_age=expiration)
     except:
         return
-    return email
+    return data
 
 
 def send_confirmation_email(app, user, url, template, header, **kwargs):
@@ -159,14 +159,31 @@ def send_confirmation_email(app, user, url, template, header, **kwargs):
     Send confirmation email from selected template with customizable email subject and confirmation URL.
     Optional kwargs are passed to render_template method if needed for particular template.
     """
+    token = generate_confirmation_token(
+        app, user.email, app.config["SECURITY_EMAIL_SALT"]
+    )
+    _send_token_email(app, user, url, token, template, header, **kwargs)
+
+
+def send_password_reset_email(app: Flask, user: User) -> None:
+    """Issue a new single-use password reset token (revoking any previous one) and email it."""
+    from ..app import db
+
+    token = generate_password_reset_token(app, user)
+    db.session.commit()
+    _send_token_email(
+        app,
+        user,
+        "change-password",
+        token,
+        "email/password_reset.html",
+        "Password reset",
+    )
+
+
+def _send_token_email(app, user, url, token, template, header, **kwargs):
     from ..celery import send_email_async
 
-    salt = (
-        app.config["SECURITY_EMAIL_SALT"]
-        if url == "confirm-email"
-        else app.config["SECURITY_PASSWORD_SALT"]
-    )
-    token = generate_confirmation_token(app, user.email, salt)
     confirm_url = f"{url}/{token}"
     html = render_template(
         template, subject=header, confirm_url=confirm_url, user=user, **kwargs
@@ -178,6 +195,14 @@ def send_confirmation_email(app, user, url, template, header, **kwargs):
         "sender": app.config["MAIL_DEFAULT_SENDER"],
     }
     send_email_async.delay(**email_data)
+
+
+def generate_password_reset_token(app: Flask, user: User) -> str:
+    """Sign a reset token bound to a fresh nonce, revoking previously issued ones."""
+    payload = {"email": user.email, "nonce": user.rotate_password_reset_nonce()}
+    return generate_confirmation_token(
+        app, payload, app.config["SECURITY_PASSWORD_SALT"]
+    )
 
 
 def generate_unlock_token(app: Flask, user: User) -> str:
