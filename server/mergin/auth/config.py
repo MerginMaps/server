@@ -14,7 +14,7 @@ class Configuration(object):
         "BEARER_TOKEN_EXPIRATION", default=3600 * 12, cast=int
     )  # in seconds
     PASSWORD_RESET_TOKEN_EXPIRATION = config(
-        "PASSWORD_RESET_TOKEN_EXPIRATION", default=600, cast=int
+        "PASSWORD_RESET_TOKEN_EXPIRATION", default=900, cast=int
     )  # in seconds
     ACCOUNT_EXPIRATION = config("ACCOUNT_EXPIRATION", default=5, cast=int)  # in days
     BCRYPT_LOG_ROUNDS = config("BCRYPT_LOG_ROUNDS", default=12, cast=int)
