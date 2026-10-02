@@ -222,28 +222,28 @@ class ChangesSchema(ma.Schema):
         if len(set(changes_files)) != len(changes_files):
             raise ValidationError("Not unique changes")
 
-        # collect all unsupported file names so clients can fix them at once
-        unsupported_files = []
-        for file in data["added"] + data["updated"]:
-            if not is_valid_path(file["path"]):
-                unsupported_files.append(file["path"])
-            diff = file.get("diff")
-            if diff and not is_valid_path(diff["path"]):
-                unsupported_files.append(diff["path"])
-        if unsupported_files:
-            raise UnsupportedFileNamesError(unsupported_files)
-
         # check if all files are valid
+        unsupported_files = []
         for file in data["added"] + data["updated"]:
             file_path = file["path"]
             if is_versioned_file(file_path) and file["size"] == 0:
                 raise ValidationError("File is not valid")
+
+            if not is_valid_path(file_path):
+                unsupported_files.append(file_path)
 
             if not is_supported_extension(file_path):
                 raise ValidationError(
                     f"Unsupported file type detected: '{file_path}'. "
                     f"Please remove the file or try compressing it into a ZIP file before uploading.",
                 )
+
+            diff = file.get("diff")
+            if diff and not is_valid_path(diff["path"]):
+                unsupported_files.append(diff["path"])
+
+        if unsupported_files:
+            raise UnsupportedFileNamesError(unsupported_files)
         # new checks must restrict only new files not to block existing projects
         for file in data["added"]:
             file_path = file["path"]
