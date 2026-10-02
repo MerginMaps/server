@@ -499,6 +499,10 @@ def test_project_access_request_rejected(client, audit_capture):
         ]
         == requester.email
     )
+    assert (
+        audit_capture.one(SyncEventType.PROJECT_ACCESS_REQUEST_CANCELED).target_user_id
+        == requester.id
+    )
 
 
 def test_project_version_created(client, audit_capture):
