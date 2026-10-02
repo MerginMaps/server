@@ -585,14 +585,14 @@ class Checkpoint:
         return levels
 
 
-def get_chunk_location(id: str, dir: str | None = None):
+def get_chunk_location(id: str):
     """
     Get file location for chunk on FS
 
     Splits the given identifier into two parts where the first two characters of the identifier are the small hash,
     and the remaining characters is a file identifier.
     """
-    chunk_dir = dir or current_app.config.get("UPLOAD_CHUNKS_DIR")
+    chunk_dir = current_app.config.get("UPLOAD_CHUNKS_DIR")
     small_hash = id[:2]
     file_name = id[2:]
     return os.path.join(chunk_dir, small_hash, file_name)

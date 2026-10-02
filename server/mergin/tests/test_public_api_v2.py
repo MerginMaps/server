@@ -1144,43 +1144,6 @@ def test_create_version_permanent_error_takes_priority(client):
     assert project.latest_version == 1
 
 
-def test_create_version_legacy_chunks_dir(client):
-    """Test push with chunks found only in legacy fallback chunks directory"""
-    project = Project.query.filter_by(
-        workspace_id=test_workspace_id, name=test_project
-    ).first()
-    data = {"version": "v1", "changes": _get_changes_without_added(test_project_dir)}
-    legacy_dir = os.path.join(TMP_DIR, "legacy_chunks")
-
-    def chunk_location(id, dir=None):
-        # redirect hardcoded legacy "/chunks" directory to writable tmp location
-        return get_chunk_location(id, legacy_dir if dir == "/chunks" else dir)
-
-    def push():
-        with patch(
-            "mergin.sync.models.get_chunk_location", side_effect=chunk_location
-        ), patch(
-            "mergin.sync.public_api_v2_controller.remove_transaction_chunks.delay"
-        ):
-            return client.post(f"v2/projects/{project.id}/versions", json=data)
-
-    # mimic chunks were uploaded to legacy directory only
-    for f in data["changes"]["updated"]:
-        with open(os.path.join(test_project_dir, f["path"]), "rb") as in_file:
-            for chunk in f["chunks"]:
-                chunk_file = get_chunk_location(chunk, legacy_dir)
-                os.makedirs(os.path.dirname(chunk_file), exist_ok=True)
-                with open(chunk_file, "wb") as out_file:
-                    out_file.write(in_file.read(CHUNK_SIZE))
-                assert not os.path.exists(get_chunk_location(chunk))
-
-    response = push()
-    assert response.status_code == 201
-    assert response.json["version"] == "v2"
-    assert project.latest_version == 2
-    shutil.rmtree(legacy_dir)
-
-
 def test_upload_chunk(client):
     """Test pushing a chunk to a project"""
     project = Project.query.filter_by(
