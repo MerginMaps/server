@@ -124,6 +124,7 @@ def decline_project_access_request(request_id):  # noqa: E501
             workspace_name=project.workspace.name,
             project_name=project.name,
             access_request_id=access_request.id,
+            target_user_id=requester.id if requester else None,
         )
         return "", 200
     abort(403, "You don't have permissions to remove project access request")
