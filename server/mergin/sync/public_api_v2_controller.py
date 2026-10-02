@@ -30,9 +30,15 @@ from .errors import (
     ProjectLocked,
     ProjectVersionExists,
     StorageLimitHit,
+    UnsupportedFilesDetected,
     UploadError,
 )
-from .files import ChangesSchema, DeltaChangeRespSchema, ProjectFileSchema
+from .files import (
+    ChangesSchema,
+    DeltaChangeRespSchema,
+    ProjectFileSchema,
+    UnsupportedFileNamesError,
+)
 from .events import SyncEventType
 from ..audit import emit
 from ..audit.listeners import actor_context, audit_session_flags
@@ -279,6 +285,8 @@ def create_project_version(id):
     try:
         ChangesSchema().validate(changes)
         upload_changes = ChangesSchema().dump(changes)
+    except UnsupportedFileNamesError as err:
+        return UnsupportedFilesDetected(err.messages[0], err.paths).response(422)
     except ValidationError as err:
         msg = err.messages[0] if type(err.messages) == list else "Invalid input data"
         return UploadError(error=msg).response(422)

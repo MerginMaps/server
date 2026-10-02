@@ -92,6 +92,19 @@ class UploadError(ResponseError):
         return data
 
 
+class UnsupportedFilesDetected(UploadError):
+    code = "UnsupportedFilesDetected"
+
+    def __init__(self, error: str, unsupported_files: List[str]):
+        super().__init__(error)
+        self.unsupported_files = unsupported_files
+
+    def to_dict(self) -> Dict:
+        data = super().to_dict()
+        data["unsupported_files"] = self.unsupported_files
+        return data
+
+
 class BigChunkError(ResponseError):
     code = "BigChunkError"
     detail = f"Chunk size exceeds maximum allowed size {MAX_CHUNK_SIZE} MB"

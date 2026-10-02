@@ -2712,7 +2712,7 @@ def test_filepath_manipulation(client):
     assert resp.status_code == 400
     assert (
         resp.json["detail"]
-        == f"Unsupported file name detected: '{manipulated_path}'. Please remove the invalid characters."
+        == f"Unsupported files detected: '{manipulated_path}'. Please remove the invalid characters."
     )
 
 
@@ -2749,7 +2749,7 @@ def test_diff_filepath_manipulation(client):
     assert resp.status_code == 400
     assert (
         resp.json["detail"]
-        == f"Unsupported file name detected: '{manipulated_diff_path}'. Please remove the invalid characters."
+        == f"Unsupported files detected: '{manipulated_diff_path}'. Please remove the invalid characters."
     )
 
 
