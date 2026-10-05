@@ -168,6 +168,17 @@ class UploadFileSchema(FileSchema):
     diff = fields.Nested(FileSchema(), many=False, load_default=None)
 
 
+class UnsupportedFileNamesError(ValidationError):
+    """Upload changes contain file paths with invalid characters"""
+
+    def __init__(self, paths: List[str]):
+        self.paths = paths
+        files = ", ".join(f"'{path}'" for path in paths)
+        super().__init__(
+            f"Unsupported files detected: {files}. Please remove the invalid characters."
+        )
+
+
 class ChangesSchema(ma.Schema):
     """Schema for upload changes"""
 
@@ -212,15 +223,14 @@ class ChangesSchema(ma.Schema):
             raise ValidationError("Not unique changes")
 
         # check if all files are valid
+        unsupported_files = []
         for file in data["added"] + data["updated"]:
             file_path = file["path"]
             if is_versioned_file(file_path) and file["size"] == 0:
                 raise ValidationError("File is not valid")
 
             if not is_valid_path(file_path):
-                raise ValidationError(
-                    f"Unsupported file name detected: '{file_path}'. Please remove the invalid characters."
-                )
+                unsupported_files.append(file_path)
 
             if not is_supported_extension(file_path):
                 raise ValidationError(
@@ -230,9 +240,10 @@ class ChangesSchema(ma.Schema):
 
             diff = file.get("diff")
             if diff and not is_valid_path(diff["path"]):
-                raise ValidationError(
-                    f"Unsupported file name detected: '{diff['path']}'. Please remove the invalid characters."
-                )
+                unsupported_files.append(diff["path"])
+
+        if unsupported_files:
+            raise UnsupportedFileNamesError(unsupported_files)
         # new checks must restrict only new files not to block existing projects
         for file in data["added"]:
             file_path = file["path"]

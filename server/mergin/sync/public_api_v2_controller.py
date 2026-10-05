@@ -30,9 +30,15 @@ from .errors import (
     ProjectLocked,
     ProjectVersionExists,
     StorageLimitHit,
+    UnsupportedFilesDetected,
     UploadError,
 )
-from .files import ChangesSchema, DeltaChangeRespSchema, ProjectFileSchema
+from .files import (
+    ChangesSchema,
+    DeltaChangeRespSchema,
+    ProjectFileSchema,
+    UnsupportedFileNamesError,
+)
 from .events import SyncEventType
 from ..audit import emit
 from ..audit.listeners import actor_context, audit_session_flags
@@ -60,9 +66,12 @@ from .schemas import (
 )
 from .schemas_v2 import ProjectSchema as ProjectSchemaV2
 from .storages.disk import move_to_tmp, save_to_file
+from .storages.storage import InitializationError
 from .utils import (
+    generate_location,
     get_chunk_location,
     prepare_download_response,
+    project_name_conflict_message,
 )
 from ..utils import get_ip, get_user_agent, get_device_id
 from .tasks import remove_transaction_chunks
@@ -276,6 +285,8 @@ def create_project_version(id):
     try:
         ChangesSchema().validate(changes)
         upload_changes = ChangesSchema().dump(changes)
+    except UnsupportedFileNamesError as err:
+        return UnsupportedFilesDetected(err.messages[0], err.paths).response(422)
     except ValidationError as err:
         msg = err.messages[0] if type(err.messages) == list else "Invalid input data"
         return UploadError(error=msg).response(422)
@@ -351,9 +362,8 @@ def create_project_version(id):
         if ProjectVersion.query.filter_by(
             project_id=project.id, name=next_version
         ).count():
-            return UploadError(
-                error=f"Version {v_next_version} already exists"
-            ).response(409)
+            upload.clear()
+            return ProjectVersionExists(version, next_version).response(409)
         move_to_tmp(version_dir)
 
     try:
@@ -566,6 +576,57 @@ def list_workspace_projects(workspace_id, page, per_page, order_params=None, q=N
 
     data = ProjectSchemaV2(many=True).dump(result)
     return jsonify(projects=data, count=total, page=page, per_page=per_page), 200
+
+
+@auth_required
+def create_project(workspace_id):
+    """Create a new empty project in the workspace"""
+    ws = current_app.ws_handler.get(workspace_id)
+    if not (ws and ws.is_active):
+        abort(404, "Workspace not found")
+
+    if not ws.user_has_permissions(current_user, "admin"):
+        abort(403, "You do not have permissions for this workspace")
+
+    name = request.json["name"].strip()
+    validation_error = project_name_validation(name)
+    if validation_error:
+        return (
+            jsonify(code="InvalidProjectName", detail=validation_error),
+            400,
+        )
+
+    existing_project = Project.query.filter_by(name=name, workspace_id=ws.id).first()
+    if existing_project:
+        abort(409, project_name_conflict_message(existing_project))
+
+    project = Project(
+        name=name,
+        storage_params={"type": "local", "location": generate_location()},
+        creator=current_user,
+        workspace=ws,
+    )
+    project.updated = datetime.utcnow()
+    try:
+        project.storage.initialize()
+    except InitializationError as e:
+        abort(400, f"Failed to initialize project: {str(e)}")
+
+    pv = ProjectVersion(
+        project,
+        0,
+        current_user.id,
+        [],
+        get_ip(request),
+        get_user_agent(request),
+        get_device_id(request),
+    )
+    db.session.add(project)
+    db.session.add(pv)
+    db.session.commit()
+    project_version_created.send(pv)
+
+    return ProjectSchemaV2().dump(project), 201
 
 
 def list_batch_projects(body):

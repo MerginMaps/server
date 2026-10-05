@@ -44,7 +44,9 @@ export default defineConfig(({ mode }) => ({
       entry: resolve(__dirname, 'src/main.ts'),
       name: 'admin-lib',
       // the proper extensions will be added
-      fileName: 'admin-lib'
+      fileName: 'admin-lib',
+      // keep Vite 5 name, apps import dist/style.css
+      cssFileName: 'style'
     },
     rollupOptions: {
       // make sure to externalize deps that shouldn't be bundled
