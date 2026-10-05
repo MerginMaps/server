@@ -32,9 +32,24 @@ Pipenv then creates its own virtualenv on top of that interpreter.
 ```shell
 pip install pipenv==2026.8.0
 cd server
+# pipenv loads server/.env automatically; secrets and salts have no defaults
+$ cat > .env <<EOF
+FLASK_APP=application
+COLLECT_STATISTICS=0
+SECRET_KEY=$(python3 -c 'import secrets;print(secrets.token_hex(32))')
+SECURITY_PASSWORD_SALT=$(python3 -c 'import secrets;print(secrets.token_hex(16))')
+SECURITY_EMAIL_SALT=$(python3 -c 'import secrets;print(secrets.token_hex(16))')
+SECURITY_BEARER_SALT=$(python3 -c 'import secrets;print(secrets.token_hex(16))')
+SECURITY_UNLOCK_SALT=$(python3 -c 'import secrets;print(secrets.token_hex(16))')
+MAIL_DEFAULT_SENDER=dev@localhost
+MERGIN_BASE_URL=http://localhost:8080
+EOF
+# folder for project files (LOCAL_PROJECTS default)
+mkdir -p ../projects
 # Install dependencies with pipenv
+pipenv run flask init-db
 pipenv install --dev --deploy
-pipenv install --categories="telemetry" --deploy
+pipenv install --categories telemetry --deploy
 pipenv run pre-commit install
 pipenv run pre-commit run --all-files
 export FLASK_APP=application; export COLLECT_STATISTICS=0
@@ -49,7 +64,7 @@ pipenv run flask run # run dev server on port 5000
 
 ### Web applications
 
-Before installing the web applications, make sure you have Node.js installed in a supported version. The applications require Node.js version **18 or higher**.
+Before installing the web applications, make sure you have Node.js installed in a supported version. The applications require Node.js version **22 or higher**.
 
 ```shell
 cd web-app

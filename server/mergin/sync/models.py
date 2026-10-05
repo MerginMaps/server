@@ -171,7 +171,7 @@ class Project(db.Model):
                     fp.id, pv.project_id
             )
             SELECT
-                fh.id 
+                fh.id
             FROM latest_changes ch
             LEFT OUTER JOIN file_history fh ON (fh.file_path_id = ch.id AND fh.project_version_name = ch.version AND fh.change != 'delete')
             WHERE fh.id IS NOT NULL;
