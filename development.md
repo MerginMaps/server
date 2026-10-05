@@ -32,7 +32,6 @@ Pipenv then creates its own virtualenv on top of that interpreter.
 ```shell
 pip install pipenv==2026.8.0
 cd server
-
 # pipenv loads server/.env automatically; secrets and salts have no defaults
 $ cat > .env <<EOF
 FLASK_APP=application
@@ -47,7 +46,6 @@ MERGIN_BASE_URL=http://localhost:8080
 EOF
 # folder for project files (LOCAL_PROJECTS default)
 mkdir -p ../projects
-
 # Install dependencies with pipenv
 pipenv run flask init-db
 pipenv install --dev --deploy
