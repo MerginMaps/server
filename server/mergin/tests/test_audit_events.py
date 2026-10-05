@@ -231,6 +231,28 @@ def test_user_unlocked(app, client, audit_capture):
     assert len(audit_capture.of_type(AuthEventType.USER_UPDATED)) == 0
 
 
+def test_user_admin_panel_access_changed(audit_capture):
+    user = add_user("promoteme", "pass123")
+    db.session.refresh(user)
+    user.is_admin = True
+    db.session.commit()
+
+    e = audit_capture.one(AuthEventType.USER_ADMIN_PANEL_ACCESS_CHANGED)
+    assert e.target_user_id == user.id
+    assert e.metadata["target_email"] == "promoteme@mergin.com"
+    assert e.metadata["old_is_admin"] is False
+    assert e.metadata["new_is_admin"] is True
+
+
+def test_user_admin_panel_access_changed_on_create(audit_capture):
+    user = add_user("newadmin", "pass123", is_admin=True)
+
+    e = audit_capture.one(AuthEventType.USER_ADMIN_PANEL_ACCESS_CHANGED)
+    assert e.target_user_id == user.id
+    assert e.metadata["target_email"] == "newadmin@mergin.com"
+    assert e.metadata["new_is_admin"] is True
+
+
 # ---------------------------------------------------------------------------
 # Sync / project events
 # ---------------------------------------------------------------------------
