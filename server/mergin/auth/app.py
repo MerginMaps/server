@@ -4,13 +4,15 @@
 
 import functools
 import logging
-from typing import Optional
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Tuple
 from blinker import signal
 from flask import current_app, render_template, Flask
 from flask_login import current_user
 from itsdangerous import URLSafeTimedSerializer, BadData
 from sqlalchemy import func
 
+from .bearer import encode_token
 from .commands import add_commands
 from .config import Configuration
 from .listeners import register_listeners
@@ -203,6 +205,24 @@ def generate_password_reset_token(app: Flask, user: User) -> str:
     return generate_confirmation_token(
         app, payload, app.config["SECURITY_PASSWORD_SALT"]
     )
+
+
+def generate_bearer_token(
+    app: Flask, user: User, expiration: int
+) -> Tuple[str, datetime]:
+    """Sign a bearer token valid for expiration seconds, bound to the current user auth version."""
+    expire = datetime.now(timezone.utc) + timedelta(seconds=expiration)
+    token_data = {
+        "user_id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "expire": str(expire),
+        "auth_version": user.auth_version,
+    }
+    token = encode_token(
+        app.config["SECRET_KEY"], app.config["SECURITY_BEARER_SALT"], token_data
+    )
+    return token, expire
 
 
 def generate_unlock_token(app: Flask, user: User) -> str:
