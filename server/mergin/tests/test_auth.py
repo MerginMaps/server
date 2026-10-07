@@ -455,6 +455,8 @@ def test_bcrypt_lazy_rehash(app):
     db.session.refresh(user)
     hash_rounds = int(user.passwd.split("$")[2])
     assert hash_rounds == 5
+    # rehash is not a password change, existing sessions stay valid
+    assert user.auth_version == 0
 
 
 def test_deactivated_user_session_rejected(client):
@@ -1564,3 +1566,116 @@ def test_bearer_token_expiration(app):
         "/v1/user/profile", headers={**json_headers, "Authorization": f"Bearer {token}"}
     )
     assert resp.status_code == 401
+
+
+def _api_token(client, username, password):
+    resp = client.post(
+        "/v1/auth/login",
+        data=json.dumps({"login": username, "password": password}),
+        headers=json_headers,
+    )
+    assert resp.status_code == 200
+    return resp.json["session"]["token"]
+
+
+def _profile_status(client, token=None):
+    headers = {**json_headers}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    # fresh app context, so flask-login does not reuse user cached in g by previous request
+    with client.application.app_context():
+        return client.get("/v1/user/profile", headers=headers).status_code
+
+
+def test_password_change_revokes_sessions(app):
+    """Password change invalidates other sessions and bearer tokens, but not the current session"""
+    user = add_user("revokeuser", "oldpassword")
+    current_session = app.test_client()
+    other_session = app.test_client()
+    api_client = app.test_client()
+    login(current_session, user.username, "oldpassword")
+    login(other_session, user.username, "oldpassword")
+    token = _api_token(api_client, user.username, "oldpassword")
+    assert _profile_status(other_session) == 200
+    assert _profile_status(api_client, token) == 200
+
+    resp = current_session.post(
+        url_for("/.mergin_auth_controller_change_password"),
+        json={
+            "old_password": "oldpassword",
+            "password": "changed#1",
+            "confirm": "changed#1",
+        },
+    )
+    assert resp.status_code == 200
+    assert user.auth_version == 1
+    assert _profile_status(current_session) == 200
+    assert _profile_status(other_session) == 401
+    assert _profile_status(api_client, token) == 401
+
+    # login with new credentials works
+    new_token = _api_token(api_client, user.username, "changed#1")
+    assert _profile_status(api_client, new_token) == 200
+    login(other_session, user.username, "changed#1")
+    assert _profile_status(other_session) == 200
+
+
+def test_password_change_with_bearer_token(app):
+    """Password change through bearer token does not create session cookie, caller needs to log in again"""
+    user = add_user("revokeuser", "oldpassword")
+    api_client = app.test_client()
+    token = _api_token(api_client, user.username, "oldpassword")
+    resp = api_client.post(
+        url_for("/.mergin_auth_controller_change_password"),
+        json={
+            "old_password": "oldpassword",
+            "password": "changed#1",
+            "confirm": "changed#1",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200
+    assert "Set-Cookie" not in resp.headers
+    assert _profile_status(api_client, token) == 401
+
+
+def test_password_reset_revokes_sessions(app, client):
+    """Password reset invalidates all sessions and bearer tokens"""
+    user = add_user("revokeuser", "oldpassword")
+    web_session = app.test_client()
+    login(web_session, user.username, "oldpassword")
+    token = _api_token(client, user.username, "oldpassword")
+
+    reset_token = generate_password_reset_token(app, user)
+    db.session.commit()
+    assert _confirm_new_password(client, reset_token).status_code == 200
+    assert user.auth_version == 1
+    assert _profile_status(web_session) == 401
+    assert _profile_status(client, token) == 401
+
+
+def test_legacy_sessions_accepted_until_revoked(app):
+    """Session cookies and bearer tokens issued before auth version was introduced are valid until password change"""
+    user = add_user("legacyuser", "password")
+    web_session = app.test_client()
+    with web_session.session_transaction() as sess:
+        sess["_user_id"] = str(user.id)
+        sess["_fresh"] = True
+    legacy_token = encode_token(
+        app.config["SECRET_KEY"],
+        app.config["SECURITY_BEARER_SALT"],
+        {
+            "user_id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "expire": str(datetime.now(timezone.utc) + timedelta(hours=1)),
+        },
+    )
+    api_client = app.test_client()
+    assert _profile_status(web_session) == 200
+    assert _profile_status(api_client, legacy_token) == 200
+
+    user.revoke_sessions()
+    db.session.commit()
+    assert _profile_status(web_session) == 401
+    assert _profile_status(api_client, legacy_token) == 401

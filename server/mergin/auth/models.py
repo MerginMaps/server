@@ -54,6 +54,8 @@ class User(db.Model):
     locked_until = db.Column(db.DateTime(), nullable=True)
     # nonce of the only valid password reset token, cleared on any password change
     password_reset_nonce = db.Column(db.String(64), nullable=True)
+    # bumped to invalidate all issued bearer tokens and session cookies
+    auth_version = db.Column(db.Integer, nullable=False, default=0, server_default="0")
     receive_notifications = db.Column(
         db.Boolean, default=True, nullable=False, index=True
     )
@@ -152,6 +154,10 @@ class User(db.Model):
         self.password_reset_nonce = secrets.token_urlsafe(32)
         return self.password_reset_nonce
 
+    def revoke_sessions(self) -> None:
+        """Invalidate all bearer tokens and session cookies issued so far."""
+        self.auth_version += 1
+
     @property
     def is_authenticated(self):
         """For Flask-Login"""
@@ -168,8 +174,8 @@ class User(db.Model):
         return False
 
     def get_id(self):
-        """For Flask-Login ... must return unicode user ID"""
-        return str(self.id)
+        """For Flask-Login, stored in session cookie ... user ID bound to auth version"""
+        return f"{self.id}:{self.auth_version}"
 
     @staticmethod
     def search(like: str, limit: int = 10, only_active: bool = True) -> List[User]:
