@@ -252,9 +252,9 @@ def test_has_trailing_space(path, path_platform, result):
         assert has_trailing_space(path) is result
 
 
-def test_get_x_accell_uri(client):
+def test_get_x_accell_uri(client, monkeypatch):
     """Test get_x_accell_uri"""
-    client.application.config["LOCAL_PROJECTS"] = "/data/"
+    monkeypatch.setitem(client.application.config, "LOCAL_PROJECTS", "/data/")
     # Input URL parts
     url_parts = ("/data", "archive", "project1", "file.txt")
     # Expected result

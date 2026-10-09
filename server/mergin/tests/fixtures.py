@@ -17,16 +17,23 @@ from ..sync.models import Project, ProjectVersion
 from ..stats.app import register
 from ..stats.models import MerginInfo
 from . import test_project, test_workspace_id, test_project_dir, TMP_DIR
-from .utils import login_as_admin, initialize, cleanup, file_info, ListSink
+from .utils import (
+    login_as_admin,
+    initialize,
+    cleanup,
+    file_info,
+    ListSink,
+    clean_db,
+)
 from ..sync.files import files_changes_from_upload
 
 thisdir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(thisdir, os.pardir))
 
 
-@pytest.fixture(scope="function")
-def flask_app(request):
-    """Flask app with fresh db and initialized empty tables"""
+@pytest.fixture(scope="session")
+def session_app():
+    """Flask app shared by all tests, db tables are created only once"""
     from ..sync.db_events import remove_events
 
     application = create_app(
@@ -44,24 +51,33 @@ def flask_app(request):
     application.config["SERVER_NAME"] = "localhost.localdomain"
     application.config["SERVER_TYPE"] = "ce"
     application.config["SERVICE_ID"] = str(uuid.uuid4())
-    app_context = application.app_context()
-    app_context.push()
 
-    with app_context:
+    with application.app_context():
+        # start from scratch in case of previous interrupted run
+        db.drop_all()
         db.create_all()
 
-    def teardown():
-        # clean up db
+    yield application
+
+    with application.app_context():
         db.session.remove()
         db.drop_all()
         db.engine.dispose()
+    # detach db hooks
+    remove_events()
 
-        app_context.pop()
-        # detach db hooks
-        remove_events()
 
-    request.addfinalizer(teardown)
-    return application
+@pytest.fixture(scope="function")
+def flask_app(session_app):
+    """Flask app with empty db tables"""
+    app_context = session_app.app_context()
+    app_context.push()
+    clean_db()
+
+    yield session_app
+
+    db.session.remove()
+    app_context.pop()
 
 
 @pytest.fixture(scope="function")

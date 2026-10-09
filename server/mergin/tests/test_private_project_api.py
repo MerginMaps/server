@@ -53,7 +53,7 @@ def test_project_unsubscribe(client, diff_project):
     assert not diff_project.get_role(user.id)
 
 
-def test_project_access_request(client):
+def test_project_access_request(client, monkeypatch):
     """Test project access CRUD operations"""
     user = User.query.filter(User.username == "mergin").first()
     test_workspace = create_workspace()
@@ -105,7 +105,7 @@ def test_project_access_request(client):
     assert access_request2.requested_by == user2.id
 
     # user can not list incoming namespace access requests
-    Configuration.GLOBAL_ADMIN = False
+    monkeypatch.setattr(Configuration, "GLOBAL_ADMIN", False)
     assert (
         client.get(
             f"/app/project/access-request/{test_workspace.name}?page=1&per_page=10",
@@ -456,7 +456,7 @@ def test_download_project(
     assert resp.status_code == 200
 
 
-def test_prepare_large_project_fail(client, diff_project):
+def test_prepare_large_project_fail(client, diff_project, monkeypatch):
     """Test asking for too large project is refused"""
     resp = client.post(
         url_for(
@@ -467,7 +467,7 @@ def test_prepare_large_project_fail(client, diff_project):
     )
     assert resp.status_code == 201
     # pretend testing project to be too large by lowering limit
-    client.application.config["MAX_DOWNLOAD_ARCHIVE_SIZE"] = 10
+    monkeypatch.setitem(client.application.config, "MAX_DOWNLOAD_ARCHIVE_SIZE", 10)
     resp = client.post(
         url_for(
             "/app.mergin_sync_private_api_controller_prepare_archive",
