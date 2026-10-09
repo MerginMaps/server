@@ -49,7 +49,7 @@ from .utils import (
 from ..auth.models import User
 
 
-def test_send_email(app):
+def test_send_email(app, monkeypatch):
     """Test celery is actually sending emails."""
     mail = Mail()
     email_data = {
@@ -59,7 +59,7 @@ def test_send_email(app):
         "sender": "no_reply@cloudmergin.com",
     }
     with mail.record_messages() as outbox:
-        Configuration.MERGIN_TESTING = True
+        monkeypatch.setattr(Configuration, "MERGIN_TESTING", True)
         task = send_email_async.s(**email_data).apply()
         assert len(outbox) == 1
         assert task.status == "SUCCESS"
@@ -70,13 +70,13 @@ def test_send_email(app):
         assert "foo@bar.com" in outbox[0].send_to
 
         # turn off testing mode
-        Configuration.MERGIN_TESTING = False
+        monkeypatch.setattr(Configuration, "MERGIN_TESTING", False)
         task = send_email_async.s(**email_data).apply()
         assert len(outbox) == 2
         assert task.status == "SUCCESS"
         assert current_app.config["MAIL_BCC"] in outbox[1].bcc
 
-    Configuration.MERGIN_TESTING = True
+    monkeypatch.setattr(Configuration, "MERGIN_TESTING", True)
     del email_data["recipients"]
     task = send_email_async.s(**email_data).apply()
     assert task.status == "FAILURE"

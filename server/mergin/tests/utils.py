@@ -15,6 +15,7 @@ from flask import url_for, current_app
 import os
 from dateutil.tz import tzlocal
 from pygeodiff import GeoDiff
+from sqlalchemy import create_engine, text
 
 from ..auth.models import User
 from ..sync.utils import generate_location, generate_checksum
@@ -31,6 +32,45 @@ from ..app import db
 from . import json_headers, DEFAULT_USER, test_project, test_project_dir, TMP_DIR
 
 CHUNK_SIZE = 1024
+
+
+def create_db() -> None:
+    """Create database for tests if it does not exist yet, e.g. a separate one for each xdist worker"""
+    url = db.engine.url
+    engine = create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
+    with engine.connect() as conn:
+        exists = conn.execute(
+            text("SELECT 1 FROM pg_database WHERE datname = :name"),
+            {"name": url.database},
+        ).scalar()
+        if not exists:
+            conn.execute(text(f'CREATE DATABASE "{url.database}"'))
+    engine.dispose()
+
+
+def clean_db() -> None:
+    """Delete all rows from db tables and restart their sequences, so tests can rely on ids.
+    Tables are processed in reversed dependency order, so referencing rows are deleted first.
+    """
+    tables = [
+        f'"{t.schema or "public"}"."{t.name}"'
+        for t in reversed(db.metadata.sorted_tables)
+    ]
+    # delete is much faster than truncate for tables with only few rows.
+    db.session.execute(text("; ".join(f"DELETE FROM {t}" for t in tables)))
+    # restart sequences of serial and identity columns
+    db.session.execute(
+        text(
+            """
+            SELECT setval(s.oid, 1, false)
+            FROM pg_class s
+            JOIN pg_depend d ON d.objid = s.oid AND d.classid = 'pg_class'::regclass AND d.deptype IN ('a', 'i')
+            WHERE s.relkind = 'S' AND d.refobjid = ANY(CAST(:tables AS regclass[]))
+            """
+        ),
+        {"tables": tables},
+    )
+    db.session.commit()
 
 
 def add_user(username="random", password="random", is_admin=False) -> User:
