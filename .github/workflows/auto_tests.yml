@@ -17,7 +17,7 @@ jobs:
       matrix:
         include:
           - suite: server
-            pytest_args: "-v --cov=mergin --cov-report=lcov mergin/tests"
+            pytest_args: "-v -n auto --cov=mergin --cov-report=lcov mergin/tests"
           - suite: migration
             pytest_args: "-v mergin/test_migrations"
 

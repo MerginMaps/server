@@ -15,7 +15,7 @@ from flask import url_for, current_app
 import os
 from dateutil.tz import tzlocal
 from pygeodiff import GeoDiff
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
 
 from ..auth.models import User
 from ..sync.utils import generate_location, generate_checksum
@@ -32,6 +32,20 @@ from ..app import db
 from . import json_headers, DEFAULT_USER, test_project, test_project_dir, TMP_DIR
 
 CHUNK_SIZE = 1024
+
+
+def create_db() -> None:
+    """Create database for tests if it does not exist yet, e.g. a separate one for each xdist worker"""
+    url = db.engine.url
+    engine = create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
+    with engine.connect() as conn:
+        exists = conn.execute(
+            text("SELECT 1 FROM pg_database WHERE datname = :name"),
+            {"name": url.database},
+        ).scalar()
+        if not exists:
+            conn.execute(text(f'CREATE DATABASE "{url.database}"'))
+    engine.dispose()
 
 
 def clean_db() -> None:

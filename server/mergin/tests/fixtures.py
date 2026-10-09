@@ -4,6 +4,7 @@
 
 import os
 import shutil
+import tempfile
 import sys
 import uuid
 from shutil import copy, move
@@ -24,6 +25,7 @@ from .utils import (
     file_info,
     ListSink,
     clean_db,
+    create_db,
 )
 from ..sync.files import files_changes_from_upload
 
@@ -53,6 +55,7 @@ def session_app():
     application.config["SERVICE_ID"] = str(uuid.uuid4())
 
     with application.app_context():
+        create_db()
         # start from scratch in case of previous interrupted run
         db.drop_all()
         db.create_all()
@@ -143,41 +146,40 @@ def diff_project(app):
     """
     from .test_project_controller import create_diff_meta
 
-    test_gpkg_file = os.path.join(test_project_dir, "test.gpkg")
+    # work on a copy of testing project files, the source dir is shared by all tests (and xdist workers)
+    project_dir = tempfile.mkdtemp(dir=TMP_DIR)
+    shutil.copytree(test_project_dir, project_dir, dirs_exist_ok=True)
+    test_gpkg_file = os.path.join(project_dir, "test.gpkg")
     try:
         geodiff = GeoDiff()
         project = Project.query.filter_by(
             name=test_project, workspace_id=test_workspace_id
         ).first()
 
-        update_meta = file_info(test_project_dir, "base.gpkg")
-        diff_meta_A = create_diff_meta(
-            "base.gpkg", "inserted_1_A.gpkg", test_project_dir
-        )
+        update_meta = file_info(project_dir, "base.gpkg")
+        diff_meta_A = create_diff_meta("base.gpkg", "inserted_1_A.gpkg", project_dir)
         diff_meta_mod = create_diff_meta(
-            "base.gpkg", "modified_1_geom.gpkg", test_project_dir
+            "base.gpkg", "modified_1_geom.gpkg", project_dir
         )
 
         patch = os.path.join(TMP_DIR, "patch")
 
-        basefile = os.path.join(test_project_dir, "base.gpkg")
+        basefile = os.path.join(project_dir, "base.gpkg")
         copy(basefile, patch)
         copy(basefile, test_gpkg_file)
         geodiff.apply_changeset(
             patch, os.path.join(TMP_DIR, diff_meta_mod["diff"]["path"])
         )
-        diff_meta_B = create_diff_meta(
-            "base.gpkg", "inserted_1_B.gpkg", test_project_dir
-        )
+        diff_meta_B = create_diff_meta("base.gpkg", "inserted_1_B.gpkg", project_dir)
 
         changes = [
             {
                 "added": [],
-                "removed": [file_info(test_project_dir, "base.gpkg")],
+                "removed": [file_info(project_dir, "base.gpkg")],
                 "updated": [],
             },
             {
-                "added": [file_info(test_project_dir, "base.gpkg")],
+                "added": [file_info(project_dir, "base.gpkg")],
                 "removed": [],
                 "updated": [],
             },
@@ -198,8 +200,8 @@ def diff_project(app):
             },
             # file renamed, by removing old and upload new - break of history
             {
-                "added": [file_info(test_project_dir, "test.gpkg")],
-                "removed": [file_info(test_project_dir, "base.gpkg")],
+                "added": [file_info(project_dir, "test.gpkg")],
+                "removed": [file_info(project_dir, "base.gpkg")],
                 "updated": [],
             },
             {"added": [], "removed": [], "updated": []},
@@ -212,7 +214,7 @@ def diff_project(app):
                     project.storage.project_dir, ver, file_meta["path"]
                 )
                 os.makedirs(os.path.dirname(new_file), exist_ok=True)
-                copy(os.path.join(test_project_dir, file_meta["path"]), new_file)
+                copy(os.path.join(project_dir, file_meta["path"]), new_file)
             elif change["updated"]:
                 file_meta = change["updated"][0]
                 f_updated = next(
@@ -236,7 +238,7 @@ def diff_project(app):
                         ),
                     )
                 else:
-                    copy(os.path.join(test_project_dir, f_updated.path), patchedfile)
+                    copy(os.path.join(project_dir, f_updated.path), patchedfile)
             else:
                 # no files uploaded, hence no action needed
                 pass
@@ -264,7 +266,7 @@ def diff_project(app):
         db.session.add(project)
         db.session.commit()
     finally:
-        os.remove(test_gpkg_file)
+        shutil.rmtree(project_dir)
     return project
 
 
