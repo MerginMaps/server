@@ -468,9 +468,17 @@ def is_supported_type(filepath) -> bool:
     return mime_type.startswith("image/") or mime_type not in FORBIDDEN_MIME_TYPES
 
 
+# libmagic >= 5.46 (e.g. Ubuntu 26.04) reports some types differently than older versions,
+# map them to the older names to keep responses stable regardless of the system libmagic
+MIME_TYPE_ALIASES = {
+    "application/geopackage+sqlite3": "application/vnd.sqlite3",
+}
+
+
 def get_mimetype(filepath: str) -> str:
     """Identifies file types by checking their headers"""
-    return magic.from_file(filepath, mime=True)
+    mime_type = magic.from_file(filepath, mime=True)
+    return MIME_TYPE_ALIASES.get(mime_type, mime_type)
 
 
 def get_x_accel_uri(*url_parts):

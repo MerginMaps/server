@@ -40,3 +40,6 @@ docker-compose.local.yml
 CLAUDE.md
 # Local Claude Code skills
 .claude/commands/
+
+# local dev server settings, see development.md
+server/.dev.env
