@@ -24,6 +24,7 @@ from ..sync.utils import (
     check_filename,
     is_supported_extension,
     is_supported_type,
+    get_mimetype,
     is_valid_path,
     get_x_accel_uri,
     Checkpoint,
@@ -402,6 +403,22 @@ def test_mime_type_validation_skip():
 
         # Should be forbidden
         assert not is_supported_type("other.js")
+
+
+@pytest.mark.parametrize(
+    "detected,expected",
+    [
+        # libmagic < 5.46 (Ubuntu 24.04)
+        ("application/vnd.sqlite3", "application/vnd.sqlite3"),
+        # libmagic >= 5.46 (Ubuntu 26.04)
+        ("application/geopackage+sqlite3", "application/vnd.sqlite3"),
+        ("image/png", "image/png"),
+    ],
+)
+def test_get_mimetype_aliases(detected, expected):
+    """Mime type is the same regardless of libmagic version"""
+    with patch("mergin.sync.utils.magic.from_file", return_value=detected):
+        assert get_mimetype("base.gpkg") == expected
 
 
 def test_allowed_extensions_override():

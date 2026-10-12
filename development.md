@@ -6,6 +6,15 @@ This page contains useful information for those who wish to develop Mergin.
 ## Running locally (for dev)
 Install dependencies and run services:
 
+### Python and Node.js
+
+Required versions are pinned in `.tool-versions` in the repository root. With [asdf](https://asdf-vm.com) or [mise](https://mise.jdx.dev) installed, run in the repository root:
+
+```shell
+$ asdf install  # or: mise install
+$ corepack enable  # provides yarn
+```
+
 ### Postgres and Redis
 
 ```shell
@@ -24,8 +33,9 @@ $ pipenv install --dev
 $ pipenv install --categories telemetry
 $ pipenv run pre-commit install
 $ pipenv run pre-commit run --all-files
-# pipenv loads server/.env automatically; secrets and salts have no defaults
-$ cat > .env <<EOF
+# dev settings, secrets and salts have no defaults
+# not named .env on purpose: pipenv and flask would load it automatically, also into tests
+$ cat > .dev.env <<EOF
 FLASK_APP=application
 COLLECT_STATISTICS=0
 SECRET_KEY=$(python3 -c 'import secrets;print(secrets.token_hex(32))')
@@ -36,6 +46,8 @@ SECURITY_UNLOCK_SALT=$(python3 -c 'import secrets;print(secrets.token_hex(16))')
 MAIL_DEFAULT_SENDER=dev@localhost
 MERGIN_BASE_URL=http://localhost:8080
 EOF
+# let pipenv load it for commands in this shell
+$ export PIPENV_DOTENV_LOCATION=$PWD/.dev.env
 # folder for project files (LOCAL_PROJECTS default)
 $ mkdir -p ../projects
 $ pipenv run flask init-db
@@ -123,5 +135,6 @@ To launch the unit tests run:
 $ docker run -d --rm --name testing_pg -p 5435:5432 -e POSTGRES_PASSWORD=postgres postgres:14
 $ cd server
 $ pipenv install --dev --sequential --verbose
-$ pipenv run pytest -v --cov=mergin mergin/tests
+# tests use .test.env only, do not load dev settings (e.g. exported PIPENV_DOTENV_LOCATION)
+$ PIPENV_DONT_LOAD_ENV=1 pipenv run pytest -v --cov=mergin mergin/tests
 ```
