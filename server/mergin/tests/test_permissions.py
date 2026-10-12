@@ -27,7 +27,7 @@ from .utils import (
 )
 
 
-def test_project_permissions(client):
+def test_project_permissions(client, monkeypatch):
     owner = add_user("owner", "pwd")
     test_workspace = create_workspace()
     project = create_project("test_permissions", test_workspace, owner)
@@ -72,17 +72,17 @@ def test_project_permissions(client):
     assert ProjectPermissions.get_user_project_role(project, user) == ProjectRole.EDITOR
 
     # adjust global permissions
-    Configuration.GLOBAL_READ = True
+    monkeypatch.setattr(Configuration, "GLOBAL_READ", True)
     assert ProjectPermissions.Read.check(project, user)
     assert ProjectPermissions.Edit.check(project, user)
     assert not ProjectPermissions.Upload.check(project, user)
     assert not ProjectPermissions.Delete.check(project, user)
-    Configuration.GLOBAL_WRITE = True
+    monkeypatch.setattr(Configuration, "GLOBAL_WRITE", True)
     assert ProjectPermissions.Upload.check(project, user)
     assert ProjectPermissions.Edit.check(project, user)
     assert not ProjectPermissions.Delete.check(project, user)
     assert not ProjectPermissions.All.check(project, user)
-    Configuration.GLOBAL_ADMIN = True
+    monkeypatch.setattr(Configuration, "GLOBAL_ADMIN", True)
     assert ProjectPermissions.Delete.check(project, user)
     assert ProjectPermissions.All.check(project, user)
 

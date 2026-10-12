@@ -142,3 +142,7 @@ cd server
 pipenv install --dev --deploy --verbose
 pipenv run pytest -v --cov=mergin mergin/tests
 ```
+
+Tests can run in parallel with [pytest-xdist](https://pytest-xdist.readthedocs.io), e.g. `pipenv run pytest -n 4 mergin/tests`.
+Each worker uses its own database (`<DB_DATABASE>_gw<N>`, created automatically) and its own temporary directory.
+To run several test sessions at the same time, give each a different `DB_DATABASE`, e.g. `DB_DATABASE=ce pipenv run pytest -n 4 mergin/tests`.

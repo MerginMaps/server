@@ -18,7 +18,7 @@ from ..stats.models import MerginInfo, MerginStatistics, ServerCallhomeData
 from .utils import Response, add_user, create_project, create_workspace
 
 
-def test_send_statistics(app, caplog):
+def test_send_statistics(app, caplog, monkeypatch):
     """Test job to send usage statistics.
     Test opt-out, repeated request and 3rd party service errors.
     """
@@ -28,8 +28,8 @@ def test_send_statistics(app, caplog):
 
     with patch("requests.post") as mock:
         mock.return_value = Response(True, {})
-        app.config["COLLECT_STATISTICS"] = False
-        app.config["CONTACT_EMAIL"] = "test@example.com"
+        monkeypatch.setitem(app.config, "COLLECT_STATISTICS", False)
+        monkeypatch.setitem(app.config, "CONTACT_EMAIL", "test@example.com")
         user = add_user()
         admin = User.query.filter_by(username="mergin").first()
         # create new project
@@ -42,7 +42,7 @@ def test_send_statistics(app, caplog):
         assert not info.last_reported
 
         # success
-        app.config["COLLECT_STATISTICS"] = True
+        monkeypatch.setitem(app.config, "COLLECT_STATISTICS", True)
         task = send_statistics.s().apply()
         assert task.status == "SUCCESS"
         ts = info.last_reported
@@ -121,10 +121,10 @@ def test_send_statistics(app, caplog):
         assert info.last_reported
 
 
-def test_save_statistics(app, client):
+def test_save_statistics(app, client, monkeypatch):
     """Test save statistics celery job"""
     info = MerginInfo.query.first()
-    app.config["CONTACT_EMAIL"] = "test@example.com"
+    monkeypatch.setitem(app.config, "CONTACT_EMAIL", "test@example.com")
     assert MerginStatistics.query.count() == 0
     save_statistics.s().apply()
     assert MerginStatistics.query.count() == 1
@@ -134,7 +134,7 @@ def test_save_statistics(app, client):
     assert stats.data == asdict(stats_json_data)
 
 
-def test_download_report(app, client):
+def test_download_report(app, client, monkeypatch):
     """Test download report endpoint"""
     url = "/app/admin/report"
     resp = client.get(url)
@@ -144,7 +144,7 @@ def test_download_report(app, client):
     resp = client.get(f"{url}?date_from=2021-01-01T00:00:00&date_to=2021-01-01")
     assert resp.status_code == 400
 
-    app.config["CONTACT_EMAIL"] = "test@example.com"
+    monkeypatch.setitem(app.config, "CONTACT_EMAIL", "test@example.com")
     save_statistics.s().apply()
     resp = client.get(
         f"{url}?date_from=2021-01-01&date_to={datetime.now(timezone.utc).strftime('%Y-%m-%d')}"

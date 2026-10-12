@@ -14,7 +14,7 @@ from ..sync.workspace import GlobalWorkspaceHandler
 from .utils import add_user, login, create_project
 
 
-def test_workspace_implementation(client):
+def test_workspace_implementation(client, monkeypatch):
     """Test global implementation of workspace"""
     handler = GlobalWorkspaceHandler()
     user = add_user("user", "password")
@@ -23,9 +23,9 @@ def test_workspace_implementation(client):
     ws = handler.get_by_name(Configuration.GLOBAL_WORKSPACE)
     assert ws.storage == Configuration.GLOBAL_STORAGE
     assert ws.is_active
-    Configuration.GLOBAL_READ = False
-    Configuration.GLOBAL_WRITE = False
-    Configuration.GLOBAL_ADMIN = False
+    monkeypatch.setattr(Configuration, "GLOBAL_READ", False)
+    monkeypatch.setattr(Configuration, "GLOBAL_WRITE", False)
+    monkeypatch.setattr(Configuration, "GLOBAL_ADMIN", False)
     assert ws.get_user_role(user) == WorkspaceRole.GUEST
     assert not ws.user_has_permissions(user, "owner")
     assert not ws.user_has_permissions(user, "read")
@@ -36,13 +36,13 @@ def test_workspace_implementation(client):
     assert handler.list_active()[0].name == ws.name
     assert len(handler.list_user_workspaces(user.username)) == 1
     assert handler.list_user_workspaces(user.username)[0].name == ws.name
-    Configuration.GLOBAL_READ = True
+    monkeypatch.setattr(Configuration, "GLOBAL_READ", True)
     assert ws.user_has_permissions(user, "read")
     assert not ws.user_has_permissions(user, "write")
     # admin is counted as editor
     assert handler.server_editors_count() == 1
     # change global flag to enable user push to any project
-    Configuration.GLOBAL_WRITE = True
+    monkeypatch.setattr(Configuration, "GLOBAL_WRITE", True)
     assert ws.user_has_permissions(user, "write")
     assert ws.user_has_permissions(user, "read")
     assert handler.server_editors_count() == 2
@@ -55,7 +55,7 @@ def test_workspace_implementation(client):
     assert not ws.user_has_permissions(user, "admin")
     assert not ws.user_has_permissions(user, "owner")
 
-    Configuration.GLOBAL_ADMIN = True
+    monkeypatch.setattr(Configuration, "GLOBAL_ADMIN", True)
     # create project with dummy file to count for workspace usage
     project = create_project("test_permissions", ws, user)
     latest_version = project.get_latest_version()
@@ -98,7 +98,7 @@ def test_workspace_implementation(client):
     assert handler.monthly_contributors_count() == 2
 
 
-def test_workspace(client):
+def test_workspace(client, monkeypatch):
     """Test get global workspace"""
     resp = client.get("/v1/workspaces")
     assert len(resp.json) == 1
@@ -113,9 +113,9 @@ def test_workspace(client):
     assert client.get("/v1/workspace/2").status_code == 404
 
     # login as another user
-    Configuration.GLOBAL_READ = False
-    Configuration.GLOBAL_WRITE = False
-    Configuration.GLOBAL_ADMIN = False
+    monkeypatch.setattr(Configuration, "GLOBAL_READ", False)
+    monkeypatch.setattr(Configuration, "GLOBAL_WRITE", False)
+    monkeypatch.setattr(Configuration, "GLOBAL_ADMIN", False)
     user = add_user("user", "password")
     login(client, "user", "password")
     resp = client.get("/v1/workspace/1")

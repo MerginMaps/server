@@ -234,6 +234,7 @@ def test_send_statistics(
     mock_send_statistics,
     collect_stats,
     app,
+    monkeypatch,
 ):
     """Test '_send_statistics' helper"""
     from mergin.commands import _send_statistics
@@ -242,7 +243,7 @@ def test_send_statistics(
     mock_check_celery.return_value = True
     mock_save_statistics.return_value = None
     mock_send_statistics.return_value = None
-    app.config["COLLECT_STATISTICS"] = 1 if collect_stats else 0
+    monkeypatch.setitem(app.config, "COLLECT_STATISTICS", 1 if collect_stats else 0)
 
     _send_statistics(app)
     assert mock_save_statistics.call_count == 1
@@ -279,12 +280,15 @@ def test_check_email(
     output,
     runner,
     app,
+    monkeypatch,
 ):
     """Test 'send-check-email' command"""
     mock_send_email.return_value = None
     mock_check_celery.return_value = celery_check
-    app.config["MAIL_SUPPRESS_SEND"] = suppressed
-    app.config["MAIL_DEFAULT_SENDER"] = "sender@mergin.com" if sender else None
+    monkeypatch.setitem(app.config, "MAIL_SUPPRESS_SEND", suppressed)
+    monkeypatch.setitem(
+        app.config, "MAIL_DEFAULT_SENDER", "sender@mergin.com" if sender else None
+    )
 
     args = ["server", "send-check-email"]
     if recipient:
@@ -438,19 +442,20 @@ def test_check_server(
     output,
     app,
     runner,
+    monkeypatch,
 ):
     """Test 'check' server command"""
-    app.config["SERVER_TYPE"] = edition
-    app.config["MERGIN_BASE_URL"] = base_url
-    app.config["CONTACT_EMAIL"] = contact_email
+    monkeypatch.setitem(app.config, "SERVER_TYPE", edition)
+    monkeypatch.setitem(app.config, "MERGIN_BASE_URL", base_url)
+    monkeypatch.setitem(app.config, "CONTACT_EMAIL", contact_email)
 
     if service_id is None:
-        app.config["SERVICE_ID"] = ""
+        monkeypatch.setitem(app.config, "SERVICE_ID", "")
         MerginInfo.query.delete()
         db.session.commit()
 
     if service_id == "service_id_config":
-        app.config["SERVICE_ID"] = "service-id-config"
+        monkeypatch.setitem(app.config, "SERVICE_ID", "service-id-config")
 
     if not tables:
         table_names_mock.return_value = ""

@@ -145,7 +145,7 @@ def test_rename_project(client):
     assert response.json["code"] == "InvalidProjectName"
 
 
-def test_project_members(client):
+def test_project_members(client, monkeypatch):
     """Test CRUD endpoints for direct project members"""
     project = Project.query.filter_by(
         workspace_id=test_workspace_id, name=test_project
@@ -170,9 +170,9 @@ def test_project_members(client):
     assert response.json["id"] == user.id
     assert response.json["project_role"] == role
 
-    Configuration.GLOBAL_READ = 0
-    Configuration.GLOBAL_WRITE = 0
-    Configuration.GLOBAL_ADMIN = 0
+    monkeypatch.setattr(Configuration, "GLOBAL_READ", 0)
+    monkeypatch.setattr(Configuration, "GLOBAL_WRITE", 0)
+    monkeypatch.setattr(Configuration, "GLOBAL_ADMIN", 0)
     response = client.get(url)
     assert len(response.json) == 2
     member = next(u for u in response.json if u["id"] == user.id)
@@ -192,7 +192,7 @@ def test_project_members(client):
     assert len(response.json) == 1
 
     # test access only by workspace role
-    Configuration.GLOBAL_READ = 1
+    monkeypatch.setattr(Configuration, "GLOBAL_READ", 1)
     response = client.get(url)
     member = next(u for u in response.json if u["id"] == user.id)
     assert not member["project_role"]
@@ -201,7 +201,7 @@ def test_project_members(client):
     # access provided by workspace role cannot be removed directly
     response = client.delete(url + f"/{user.id}")
     assert response.status_code == 404
-    Configuration.GLOBAL_READ = 0
+    monkeypatch.setattr(Configuration, "GLOBAL_READ", 0)
 
 
 def test_file_diff_download(client, diff_project):
@@ -731,9 +731,15 @@ def test_project_version_delta_changes(client, diff_project: Project):
     delta = diff_project.get_delta_changes(8, latest_version.name + 6)
     assert len(delta) == 2
     # file history in 9.th version is basefile
-    fh = FileHistory.query.filter_by(
-        project_version_name=latest_version.name - 1
-    ).first()
+    fh = (
+        FileHistory.query.join(ProjectFilePath)
+        .filter(
+            ProjectFilePath.project_id == diff_project.id,
+            ProjectFilePath.path == "test.gpkg",
+            FileHistory.project_version_name == latest_version.name - 1,
+        )
+        .first()
+    )
     # testing constistency of db entries FileDiff and ProjectVersionDelta
     test_gpkg_checkpoint = FileDiff.query.filter_by(basefile_id=fh.id, rank=1).first()
     assert test_gpkg_checkpoint
@@ -1187,15 +1193,14 @@ def test_create_version_permanent_error_takes_priority(client):
     assert project.latest_version == 1
 
 
-def test_upload_chunk(client):
+def test_upload_chunk(client, monkeypatch):
     """Test pushing a chunk to a project"""
     project = Project.query.filter_by(
         workspace_id=test_workspace_id, name=test_project
     ).first()
     url = f"/v2/projects/{project.id}/chunks"
-    client.application.config["MAX_CHUNK_SIZE"] = (
-        1024  # Set a small max chunk size for testing
-    )
+    # Set a small max chunk size for testing
+    monkeypatch.setitem(client.application.config, "MAX_CHUNK_SIZE", 1024)
     max_chunk_size = client.application.config["MAX_CHUNK_SIZE"]
 
     response = client.post(

@@ -435,7 +435,7 @@ def test_invalid_login_timing(send_email_mock, client):
         assert mock_hashpw.call_count + mock_checkpw.call_count == 4
 
 
-def test_bcrypt_lazy_rehash(app):
+def test_bcrypt_lazy_rehash(app, monkeypatch):
     """Password is transparently rehashed on login when the cost factor changes."""
     import bcrypt
     from ..auth.app import authenticate
@@ -448,7 +448,7 @@ def test_bcrypt_lazy_rehash(app):
     user.passwd = low_rounds_hash
     db.session.commit()
 
-    app.config["BCRYPT_LOG_ROUNDS"] = 5
+    monkeypatch.setitem(app.config, "BCRYPT_LOG_ROUNDS", 5)
     result = authenticate("rehashuser", "rehashpassword")
     assert result is not None
 
@@ -963,7 +963,7 @@ def test_api_user_profile(client):
         assert key in resp.json
 
 
-def test_update_user(client):
+def test_update_user(client, monkeypatch):
     login_as_admin(client)
     user = User.query.filter_by(username="mergin").first()
     data = {"active": True, "is_admin": True}
@@ -976,7 +976,9 @@ def test_update_user(client):
     assert user.active
     assert user.is_admin
 
-    client.application.config["ENABLE_SUPERADMIN_ASSIGNMENT"] = False
+    monkeypatch.setitem(
+        client.application.config, "ENABLE_SUPERADMIN_ASSIGNMENT", False
+    )
     data = {"active": False, "is_admin": False}
     resp = client.patch(
         url_for("/.mergin_auth_controller_update_user", username=user.username),
@@ -994,7 +996,7 @@ def test_update_user(client):
     assert resp.status_code == 200
     assert not user.active
 
-    client.application.config["ENABLE_SUPERADMIN_ASSIGNMENT"] = True
+    monkeypatch.setitem(client.application.config, "ENABLE_SUPERADMIN_ASSIGNMENT", True)
     user.is_admin = False
     db.session.add(user)
     db.session.commit()
