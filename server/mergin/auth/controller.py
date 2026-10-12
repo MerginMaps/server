@@ -3,12 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import os
-import pytz
-from datetime import datetime, timedelta
 from connexion import NoContent
 from sqlalchemy import func, desc, asc
 from sqlalchemy.sql.operators import is_
-from flask import request, current_app, jsonify, abort, render_template
+from flask import request, current_app, jsonify, abort, render_template, session
 from flask_login import login_user, logout_user, current_user
 from flask_wtf.csrf import generate_csrf
 
@@ -16,15 +14,16 @@ from .app import (
     auth_required,
     authenticate,
     send_confirmation_email,
+    send_password_reset_email,
     confirm_token,
     generate_confirmation_token,
     confirm_unlock_token,
     user_created,
     user_account_closed,
     edit_profile_enabled,
+    generate_bearer_token,
     CANNOT_EDIT_PROFILE_MSG,
 )
-from .bearer import encode_token
 from .models import User, LoginHistory
 from .schemas import UserSchema, UserSearchSchema, UserProfileSchema, UserInfoSchema
 from .forms import (
@@ -144,19 +143,8 @@ def login_public():  # noqa: E501
     if form.validate():
         user = authenticate(form.login.data, form.password.data)
         if user and user.active:
-            expire = datetime.now(pytz.utc) + timedelta(
-                seconds=current_app.config["BEARER_TOKEN_EXPIRATION"]
-            )
-            token_data = {
-                "user_id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "expire": str(expire),
-            }
-            token = encode_token(
-                current_app.config["SECRET_KEY"],
-                current_app.config["SECURITY_BEARER_SALT"],
-                token_data,
+            token, expire = generate_bearer_token(
+                current_app, user, current_app.config["BEARER_TOKEN_EXPIRATION"]
             )
 
             data = user_profile(user)
@@ -339,8 +327,13 @@ def change_password():  # pylint: disable=W0613,W0612
             form.old_password.errors.append("The old password is incorrect")
             return jsonify(form.errors), 400
         current_user.assign_password(form.password.data)
+        current_user.revoke_sessions()
         db.session.add(current_user)
         db.session.commit()
+        # keep the session that made the change logged in (bearer token callers need to log in again)
+        # "_user_id" is flask-login session key, present only for cookie-based authentication
+        if "_user_id" in session:
+            login_user(current_user._get_current_object())
         emit(
             AuthEventType.USER_PASSWORD_CHANGED,
             **actor_context(),
@@ -380,19 +373,18 @@ def password_reset():  # pylint: disable=W0613,W0612
         target_email=form.email.data.strip(),
     )
     if user and user.active and user.can_edit_profile:
-        send_confirmation_email(
-            current_app,
-            user,
-            "change-password",
-            "email/password_reset.html",
-            "Password reset",
-        )
+        send_password_reset_email(current_app, user)
     return "", 200
 
 
 def confirm_new_password(token):  # pylint: disable=W0613,W0612
-    email = confirm_token(token, salt=current_app.config["SECURITY_PASSWORD_SALT"])
-    if not email:
+    payload = confirm_token(
+        token,
+        salt=current_app.config["SECURITY_PASSWORD_SALT"],
+        expiration=current_app.config["PASSWORD_RESET_TOKEN_EXPIRATION"],
+    )
+    # tokens issued before nonces were introduced carried only the email
+    if not isinstance(payload, dict):
         emit(
             AuthEventType.USER_PASSWORD_RESET_FAILED,
             **request_context(),
@@ -402,6 +394,7 @@ def confirm_new_password(token):  # pylint: disable=W0613,W0612
         )
         abort(400, "Invalid token")
 
+    email = payload["email"]
     user = User.query.filter_by(email=email).first()
     if not user:
         emit(
@@ -412,6 +405,16 @@ def confirm_new_password(token):  # pylint: disable=W0613,W0612
             reason="user_not_found",
         )
         abort(404)
+    # token was already used, superseded by a newer one or revoked by a password change
+    if not user.password_reset_nonce or user.password_reset_nonce != payload["nonce"]:
+        emit(
+            AuthEventType.USER_PASSWORD_RESET_FAILED,
+            **request_context(),
+            target_user_id=user.id,
+            target_email=user.email,
+            reason="token_revoked",
+        )
+        abort(400, "Invalid token")
     if not user.active:
         emit(
             AuthEventType.USER_PASSWORD_RESET_FAILED,
@@ -434,6 +437,7 @@ def confirm_new_password(token):  # pylint: disable=W0613,W0612
     form = UserPasswordForm.from_json(request.json)
     if form.validate():
         user.assign_password(form.password.data)
+        user.revoke_sessions()
         user.reset_lockout()
         db.session.add(user)
         db.session.commit()

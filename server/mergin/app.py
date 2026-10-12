@@ -191,9 +191,12 @@ def create_app(public_keys: List[str] = None) -> Flask:
 
     # adjust login manager
     @login_manager.user_loader
-    def load_user(user_id):  # pylint: disable=W0613,W0612
+    def load_user(session_id):  # pylint: disable=W0613,W0612
+        user_id, *rest = session_id.split(":")
+        # legacy session cookies carry only the user id
+        auth_version = int(rest[0]) if rest else 0
         user = User.query.get(user_id)
-        if user and user.active:
+        if user and user.active and user.auth_version == auth_version:
             return user
 
     @login_manager.header_loader
@@ -209,7 +212,12 @@ def create_app(public_keys: List[str] = None) -> Flask:
                 user = User.query.filter_by(
                     id=data["user_id"], username=data["username"], email=data["email"]
                 ).one_or_none()
-                if user and user.active:
+                # legacy tokens were issued without auth version
+                if (
+                    user
+                    and user.active
+                    and user.auth_version == data.get("auth_version", 0)
+                ):
                     return user
             except (BadSignature, BadTimeSignature, KeyError):
                 pass

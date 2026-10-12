@@ -127,7 +127,7 @@ def test_remove_project(client, diff_project):
         .all()
     ]
     file_history = FileHistory.query.filter(
-        FileHistory.version_id.in_(versions_ids)
+        FileHistory.version_id.in_(versions_ids), FileHistory.location.isnot(None)
     ).first()
     file = os.path.join(project_dir, file_history.location)
     assert file_history and os.path.exists(file)

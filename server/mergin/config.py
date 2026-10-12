@@ -20,6 +20,10 @@ class Configuration(object):
     # expiration time in seconds
     WTF_CSRF_TIME_LIMIT = config("WTF_CSRF_TIME_LIMIT", default=3600 * 24, cast=int)
     WTF_CSRF_ENABLED = config("WTF_CSRF_ENABLED", default=True, cast=bool)
+    # how long a web session cookie is accepted, in seconds
+    PERMANENT_SESSION_LIFETIME = config(
+        "PERMANENT_SESSION_LIFETIME", default=3600 * 24 * 31, cast=int
+    )
 
     # Mergin DB related
     SQLALCHEMY_TRACK_MODIFICATIONS = config(

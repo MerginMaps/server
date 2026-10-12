@@ -396,6 +396,7 @@ paths:
               schema:
                 anyOf:
                   - $ref: "#/components/schemas/UploadError"
+                  - $ref: "#/components/schemas/UnsupportedFilesDetected"
                   - $ref: "#/components/schemas/TrialExpired"
                   - $ref: "#/components/schemas/StorageLimitHit"
                   - $ref: "#/components/schemas/DataSyncError"
@@ -550,6 +551,67 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
       x-openapi-router-controller: mergin.sync.public_api_v2_controller
+    post:
+      tags:
+        - workspace
+      summary: Create a new empty project in the workspace
+      operationId: create_project
+      parameters:
+        - $ref: "#/components/parameters/WorkspaceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: survey
+      responses:
+        "201":
+          description: New project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          description: Invalid project name
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - detail
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - InvalidProjectName
+                    example: InvalidProjectName
+                  detail:
+                    type: string
+                    example: "Entered project name is invalid"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          description: New project cannot be created in the workspace
+          content:
+            application/problem+json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/ProjectsLimitHit"
+                  - $ref: "#/components/schemas/TrialExpired"
+      x-openapi-router-controller: mergin.sync.public_api_v2_controller
 components:
   responses:
     NoContent:
@@ -617,6 +679,17 @@ components:
         detail: You have reached a data limit (StorageLimitHit)
         current_usage: 24865
         storage_limit: 24865
+    ProjectsLimitHit:
+      allOf:
+        - $ref: "#/components/schemas/CustomError"
+      type: object
+      properties:
+        projects_quota:
+          type: integer
+      example:
+        code: ProjectsLimitHit
+        detail: Maximum number of projects is reached. Please upgrade your subscription to create new projects (ProjectsLimitHit)
+        projects_quota: 2
     ProjectLocked:
       allOf:
         - $ref: "#/components/schemas/CustomError"
@@ -665,6 +738,21 @@ components:
       example:
         code: UploadError
         detail: "Project version could not be created (UploadError)"
+    UnsupportedFilesDetected:
+      allOf:
+        - $ref: "#/components/schemas/CustomError"
+      type: object
+      properties:
+        unsupported_files:
+          type: array
+          items:
+            type: string
+      example:
+        code: UnsupportedFilesDetected
+        detail: "Unsupported files detected: 'notes:draft.txt', 'photos|old/tree.jpg'. Please remove the invalid characters. (UnsupportedFilesDetected)"
+        unsupported_files:
+          - "notes:draft.txt"
+          - "photos|old/tree.jpg"
     BatchItemError:
       type: object
       properties:

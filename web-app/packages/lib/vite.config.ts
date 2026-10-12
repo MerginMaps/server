@@ -53,7 +53,9 @@ export default defineConfig({
       formats: ['es'],
       entry: resolve(__dirname, 'src/main.ts'),
       name: 'lib',
-      fileName: 'lib'
+      fileName: 'lib',
+      // keep Vite 5 name, apps import dist/style.css
+      cssFileName: 'style'
     },
     rollupOptions: {
       external: ['vue', 'pinia', ...Object.keys(packageJson.dependencies)],

@@ -13,21 +13,24 @@ from .events import AuthEventType
 from .models import User
 
 # Fields excluded from user.updated audit events:
-#   - sensitive values that must never appear in logs (passwd)
+#   - sensitive values that must never appear in logs (passwd, password_reset_nonce)
 #   - high-frequency operational fields (last_signed_in, registration_date)
 #   - lifecycle state fields covered by dedicated events (active, inactive_since)
 #   - is_admin covered by the dedicated user.admin_panel_access.changed event
 #   - locked_until covered by the dedicated user.locked / user.unlocked events
+#   - auth_version bumped only with password change, covered by user.password_* events
 # frozenset prevents accidental mutation of module-level state.
 _EXCLUDED_FROM_USER_UPDATED = frozenset(
     {
         "passwd",
+        "password_reset_nonce",
         "last_signed_in",
         "registration_date",
         "active",
         "inactive_since",
         "is_admin",
         "locked_until",
+        "auth_version",
     }
 )
 
@@ -61,6 +64,7 @@ def _on_user_created(_mapper: Any, _connection: Any, target: User) -> None:
             AuthEventType.USER_ADMIN_PANEL_ACCESS_CHANGED,
             **ctx,
             target_user_id=target.id,
+            target_email=target.email,
             old_is_admin=None,
             new_is_admin=True,
         )
@@ -88,6 +92,7 @@ def _on_user_updated(_mapper, _connection, target):
                 AuthEventType.USER_ADMIN_PANEL_ACCESS_CHANGED,
                 **actor_context(),
                 target_user_id=target.id,
+                target_email=target.email,
                 old_is_admin=old,
                 new_is_admin=new,
             )

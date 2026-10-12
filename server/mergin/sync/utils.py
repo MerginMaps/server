@@ -34,6 +34,7 @@ from flask import current_app
 from pathlib import Path
 
 from .config import Configuration
+from ..utils import format_time_delta
 
 # log base for caching strategy, diff checkpoints, etc.
 LOG_BASE = 4
@@ -111,6 +112,16 @@ def generate_location():
         '1c/624c6af4d6d2710bbfe1c128e8ca267b'
     """
     return os.path.join(secrets.token_hex(1), secrets.token_hex(16))
+
+
+def project_name_conflict_message(project) -> str:
+    """Return error message for a new project clashing with an existing project name"""
+    if project.removed_at:
+        return (
+            f"Project with the same name is scheduled for deletion, "
+            f"you can create a project with this name in {format_time_delta(project.expiration)}"
+        )
+    return "Project with the same name already exists"
 
 
 def is_valid_uuid(uuid):
@@ -593,14 +604,14 @@ class Checkpoint:
         return levels
 
 
-def get_chunk_location(id: str, dir: str | None = None):
+def get_chunk_location(id: str):
     """
     Get file location for chunk on FS
 
     Splits the given identifier into two parts where the first two characters of the identifier are the small hash,
     and the remaining characters is a file identifier.
     """
-    chunk_dir = dir or current_app.config.get("UPLOAD_CHUNKS_DIR")
+    chunk_dir = current_app.config.get("UPLOAD_CHUNKS_DIR")
     small_hash = id[:2]
     file_name = id[2:]
     return os.path.join(chunk_dir, small_hash, file_name)

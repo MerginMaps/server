@@ -85,11 +85,11 @@ from .utils import (
     is_valid_uuid,
     is_versioned_file,
     prepare_download_response,
+    project_name_conflict_message,
     wkb2wkt,
 )
 from ..utils import get_ip, get_user_agent, get_device_id
 from .errors import StorageLimitHit, ProjectLocked
-from ..utils import format_time_delta
 
 
 def parse_project_access_update_request(access: Dict) -> Dict:
@@ -201,14 +201,7 @@ def add_project(namespace):  # noqa: E501
             name=request.json["name"], workspace_id=workspace.id
         ).first()
         if proj:
-            if proj.removed_at:
-                msg = (
-                    f"Project with the same name is scheduled for deletion, "
-                    f"you can create a project with this name in {format_time_delta(proj.expiration)}"
-                )
-            else:
-                msg = "Project with the same name already exists"
-            abort(409, msg)
+            abort(409, project_name_conflict_message(proj))
 
         request.json["storage_params"] = {
             "type": "local",
@@ -1283,14 +1276,7 @@ def clone_project(namespace, project_name):  # noqa: E501
 
     _project = Project.query.filter_by(name=dest_project, workspace_id=ws.id).first()
     if _project:
-        if _project.removed_at:
-            msg = (
-                f"Project with the same name is scheduled for deletion, "
-                f"you can create a project with this name in {format_time_delta(_project.expiration)}"
-            )
-        else:
-            msg = "Project with the same name already exists"
-        abort(409, msg)
+        abort(409, project_name_conflict_message(_project))
 
     # Check storage limit
     additional_storage = cloned_project.disk_usage

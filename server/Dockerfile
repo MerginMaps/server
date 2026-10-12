@@ -30,7 +30,7 @@ WORKDIR /app
 
 # keep installing to system packages
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
-RUN pip install pipenv==2026.0.3
+RUN pip install pipenv==2026.8.0
 # for locale check this http://click.pocoo.org/5/python3/
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8

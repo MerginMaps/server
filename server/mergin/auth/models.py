@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 import datetime
+import secrets
 from typing import List, Optional
 import bcrypt
 import re
@@ -51,6 +52,10 @@ class User(db.Model):
     )
     last_signed_in = db.Column(db.DateTime(), nullable=True)
     locked_until = db.Column(db.DateTime(), nullable=True)
+    # nonce of the only valid password reset token, cleared on any password change
+    password_reset_nonce = db.Column(db.String(64), nullable=True)
+    # bumped to invalidate all issued bearer tokens and session cookies
+    auth_version = db.Column(db.Integer, nullable=False, default=0, server_default="0")
     receive_notifications = db.Column(
         db.Boolean, default=True, nullable=False, index=True
     )
@@ -89,6 +94,7 @@ class User(db.Model):
             if password
             else None
         )
+        self.password_reset_nonce = None
 
     def needs_rehash(self):
         """Return True if the stored hash was generated with a different cost factor than configured."""
@@ -143,6 +149,15 @@ class User(db.Model):
         """Clear lockout state after a successful login."""
         self.locked_until = None
 
+    def rotate_password_reset_nonce(self) -> str:
+        """Set a new password reset nonce, invalidating any previously issued reset token."""
+        self.password_reset_nonce = secrets.token_urlsafe(32)
+        return self.password_reset_nonce
+
+    def revoke_sessions(self) -> None:
+        """Invalidate all bearer tokens and session cookies issued so far."""
+        self.auth_version += 1
+
     @property
     def is_authenticated(self):
         """For Flask-Login"""
@@ -159,8 +174,8 @@ class User(db.Model):
         return False
 
     def get_id(self):
-        """For Flask-Login ... must return unicode user ID"""
-        return str(self.id)
+        """For Flask-Login, stored in session cookie ... user ID bound to auth version"""
+        return f"{self.id}:{self.auth_version}"
 
     @staticmethod
     def search(like: str, limit: int = 10, only_active: bool = True) -> List[User]:
@@ -267,6 +282,7 @@ class User(db.Model):
             self.username = del_str
             self.email = None
             self.passwd = None
+            self.password_reset_nonce = None
             self.first_name = None
             self.last_name = None
             db.session.commit()

@@ -62,6 +62,7 @@ from mergin.sync.errors import (
     ProjectVersionExists,
     AnotherUploadRunning,
     StorageLimitHit,
+    UnsupportedFilesDetected,
     UploadError,
 )
 from mergin.sync.files import ChangesSchema
@@ -144,7 +145,7 @@ def test_rename_project(client):
     assert response.json["code"] == "InvalidProjectName"
 
 
-def test_project_members(client):
+def test_project_members(client, monkeypatch):
     """Test CRUD endpoints for direct project members"""
     project = Project.query.filter_by(
         workspace_id=test_workspace_id, name=test_project
@@ -169,9 +170,9 @@ def test_project_members(client):
     assert response.json["id"] == user.id
     assert response.json["project_role"] == role
 
-    Configuration.GLOBAL_READ = 0
-    Configuration.GLOBAL_WRITE = 0
-    Configuration.GLOBAL_ADMIN = 0
+    monkeypatch.setattr(Configuration, "GLOBAL_READ", 0)
+    monkeypatch.setattr(Configuration, "GLOBAL_WRITE", 0)
+    monkeypatch.setattr(Configuration, "GLOBAL_ADMIN", 0)
     response = client.get(url)
     assert len(response.json) == 2
     member = next(u for u in response.json if u["id"] == user.id)
@@ -191,7 +192,7 @@ def test_project_members(client):
     assert len(response.json) == 1
 
     # test access only by workspace role
-    Configuration.GLOBAL_READ = 1
+    monkeypatch.setattr(Configuration, "GLOBAL_READ", 1)
     response = client.get(url)
     member = next(u for u in response.json if u["id"] == user.id)
     assert not member["project_role"]
@@ -200,7 +201,7 @@ def test_project_members(client):
     # access provided by workspace role cannot be removed directly
     response = client.delete(url + f"/{user.id}")
     assert response.status_code == 404
-    Configuration.GLOBAL_READ = 0
+    monkeypatch.setattr(Configuration, "GLOBAL_READ", 0)
 
 
 def test_file_diff_download(client, diff_project):
@@ -730,9 +731,15 @@ def test_project_version_delta_changes(client, diff_project: Project):
     delta = diff_project.get_delta_changes(8, latest_version.name + 6)
     assert len(delta) == 2
     # file history in 9.th version is basefile
-    fh = FileHistory.query.filter_by(
-        project_version_name=latest_version.name - 1
-    ).first()
+    fh = (
+        FileHistory.query.join(ProjectFilePath)
+        .filter(
+            ProjectFilePath.project_id == diff_project.id,
+            ProjectFilePath.path == "test.gpkg",
+            FileHistory.project_version_name == latest_version.name - 1,
+        )
+        .first()
+    )
     # testing constistency of db entries FileDiff and ProjectVersionDelta
     test_gpkg_checkpoint = FileDiff.query.filter_by(basefile_id=fh.id, rank=1).first()
     assert test_gpkg_checkpoint
@@ -920,7 +927,7 @@ push_data = [
             "changes": _get_changes_with_diff_updated(test_project_dir),
         },
         422,
-        UploadError.code,
+        UnsupportedFilesDetected.code,
     ),
     # contains already uploaded file
     (
@@ -971,7 +978,7 @@ push_data = [
     (
         {"version": "v1", "changes": _get_changes_with_diff_added(test_project_dir)},
         422,
-        UploadError.code,
+        UnsupportedFilesDetected.code,
     ),
     (
         {
@@ -1052,6 +1059,40 @@ def test_create_version(client, data, expected, err_code):
                 assert failure.error_type == "project_push"
 
 
+def test_create_version_unsupported_file_names(client):
+    """Test all files with unsupported names are listed in the error response"""
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name=test_project
+    ).first()
+    changes = _get_changes_with_diff_updated(test_project_dir)
+    changes["added"] = [
+        {
+            "path": path,
+            "size": 1234,
+            "checksum": "9adb76bf81a34880209040ffe5ee262a090b62ab",
+            "chunks": [],
+        }
+        for path in ("notes.txt", "notes:draft.txt", "photos|old/tree.jpg")
+    ]
+    invalid_diff_path = changes["updated"][2]["diff"]["path"]
+
+    response = client.post(
+        f"v2/projects/{project.id}/versions",
+        json={"version": "v1", "changes": changes, "check_only": True},
+    )
+    assert response.status_code == 422
+    assert response.json["code"] == UnsupportedFilesDetected.code
+    assert response.json["unsupported_files"] == [
+        "notes:draft.txt",
+        "photos|old/tree.jpg",
+        invalid_diff_path,
+    ]
+    assert response.json["detail"] == (
+        f"Unsupported files detected: 'notes:draft.txt', 'photos|old/tree.jpg', '{invalid_diff_path}'. "
+        "Please remove the invalid characters. (UnsupportedFilesDetected)"
+    )
+
+
 def test_create_version_failures(client):
     """Test various project push failures beyond invalid payload"""
     project = Project.query.filter_by(
@@ -1108,6 +1149,14 @@ def test_create_version_failures(client):
         response = client.post(f"v2/projects/{project.id}/versions", json=data)
         assert response.status_code == 409
 
+    # target version already exists on server (both on disk and in db), upload is released
+    with patch.object(Project, "next_version", return_value=1):
+        response = client.post(f"v2/projects/{project.id}/versions", json=data)
+        assert response.status_code == 409
+        assert response.json["code"] == ProjectVersionExists.code
+        assert not Upload.query.filter_by(project_id=project.id).first()
+        assert project.latest_version == 1
+
 
 def test_create_version_permanent_error_takes_priority(client):
     """Permanent errors (e.g. storage limit) must be reported before a
@@ -1144,52 +1193,14 @@ def test_create_version_permanent_error_takes_priority(client):
     assert project.latest_version == 1
 
 
-def test_create_version_legacy_chunks_dir(client):
-    """Test push with chunks found only in legacy fallback chunks directory"""
-    project = Project.query.filter_by(
-        workspace_id=test_workspace_id, name=test_project
-    ).first()
-    data = {"version": "v1", "changes": _get_changes_without_added(test_project_dir)}
-    legacy_dir = os.path.join(TMP_DIR, "legacy_chunks")
-
-    def chunk_location(id, dir=None):
-        # redirect hardcoded legacy "/chunks" directory to writable tmp location
-        return get_chunk_location(id, legacy_dir if dir == "/chunks" else dir)
-
-    def push():
-        with patch(
-            "mergin.sync.models.get_chunk_location", side_effect=chunk_location
-        ), patch(
-            "mergin.sync.public_api_v2_controller.remove_transaction_chunks.delay"
-        ):
-            return client.post(f"v2/projects/{project.id}/versions", json=data)
-
-    # mimic chunks were uploaded to legacy directory only
-    for f in data["changes"]["updated"]:
-        with open(os.path.join(test_project_dir, f["path"]), "rb") as in_file:
-            for chunk in f["chunks"]:
-                chunk_file = get_chunk_location(chunk, legacy_dir)
-                os.makedirs(os.path.dirname(chunk_file), exist_ok=True)
-                with open(chunk_file, "wb") as out_file:
-                    out_file.write(in_file.read(CHUNK_SIZE))
-                assert not os.path.exists(get_chunk_location(chunk))
-
-    response = push()
-    assert response.status_code == 201
-    assert response.json["version"] == "v2"
-    assert project.latest_version == 2
-    shutil.rmtree(legacy_dir)
-
-
-def test_upload_chunk(client):
+def test_upload_chunk(client, monkeypatch):
     """Test pushing a chunk to a project"""
     project = Project.query.filter_by(
         workspace_id=test_workspace_id, name=test_project
     ).first()
     url = f"/v2/projects/{project.id}/chunks"
-    client.application.config["MAX_CHUNK_SIZE"] = (
-        1024  # Set a small max chunk size for testing
-    )
+    # Set a small max chunk size for testing
+    monkeypatch.setitem(client.application.config, "MAX_CHUNK_SIZE", 1024)
     max_chunk_size = client.application.config["MAX_CHUNK_SIZE"]
 
     response = client.post(
@@ -1516,6 +1527,59 @@ def test_list_workspace_projects(client):
     # logout
     logout(client)
     assert client.get(url + "?page=1&per_page=10").status_code == 401
+
+
+def test_create_project(client):
+    url = f"v2/workspaces/{test_workspace_id}/projects"
+    response = client.post(url, json={"name": " new_project "})
+    assert response.status_code == 201
+    assert response.json["name"] == "new_project"
+    assert response.json["version"] == "v0"
+    assert response.json["size"] == 0
+    assert response.json["workspace"]["id"] == test_workspace_id
+    assert response.json["role"] == "owner"
+    assert "files" not in response.json
+    project = Project.query.filter_by(
+        workspace_id=test_workspace_id, name="new_project"
+    ).first()
+    assert str(project.id) == response.json["id"]
+    assert project.latest_version == 0
+    assert os.path.exists(project.storage.project_dir)
+
+    # name already exists
+    response = client.post(url, json={"name": "new_project"})
+    assert response.status_code == 409
+    assert response.json["detail"] == "Project with the same name already exists"
+    # name is taken by project scheduled for deletion
+    project.removed_at = datetime.utcnow()
+    db.session.commit()
+    response = client.post(url, json={"name": "new_project"})
+    assert response.status_code == 409
+    assert "scheduled for deletion" in response.json["detail"]
+
+    # invalid project name
+    for name in ["", ".new_project"]:
+        response = client.post(url, json={"name": name})
+        assert response.status_code == 400
+        assert response.json["code"] == "InvalidProjectName"
+    assert client.post(url, json={}).status_code == 400
+
+    # not existing workspace
+    response = client.post("v2/workspaces/1234/projects", json={"name": "other"})
+    assert response.status_code == 404
+
+    # workspace writer cannot create projects
+    user = add_user("user", "password")
+    login(client, user.username, "password")
+    with patch.object(Configuration, "GLOBAL_ADMIN", 0), patch.object(
+        Configuration, "GLOBAL_WRITE", 1
+    ):
+        response = client.post(url, json={"name": "other"})
+        assert response.status_code == 403
+
+    logout(client)
+    assert client.post(url, json={"name": "other"}).status_code == 401
+    assert not Project.query.filter_by(name="other").count()
 
 
 def test_list_projects_in_batch(client):

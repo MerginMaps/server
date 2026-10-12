@@ -17,6 +17,7 @@ from ..auth.forms import ResetPasswordForm
 from ..auth.app import (
     generate_confirmation_token,
     confirm_token,
+    generate_password_reset_token,
     generate_unlock_token,
 )
 from ..auth.models import User, LoginHistory
@@ -434,7 +435,7 @@ def test_invalid_login_timing(send_email_mock, client):
         assert mock_hashpw.call_count + mock_checkpw.call_count == 4
 
 
-def test_bcrypt_lazy_rehash(app):
+def test_bcrypt_lazy_rehash(app, monkeypatch):
     """Password is transparently rehashed on login when the cost factor changes."""
     import bcrypt
     from ..auth.app import authenticate
@@ -447,13 +448,15 @@ def test_bcrypt_lazy_rehash(app):
     user.passwd = low_rounds_hash
     db.session.commit()
 
-    app.config["BCRYPT_LOG_ROUNDS"] = 5
+    monkeypatch.setitem(app.config, "BCRYPT_LOG_ROUNDS", 5)
     result = authenticate("rehashuser", "rehashpassword")
     assert result is not None
 
     db.session.refresh(user)
     hash_rounds = int(user.passwd.split("$")[2])
     assert hash_rounds == 5
+    # rehash is not a password change, existing sessions stay valid
+    assert user.auth_version == 0
 
 
 def test_deactivated_user_session_rejected(client):
@@ -578,9 +581,8 @@ def test_confirm_email(app, client):
 
 def test_confirm_password(app, client):
     user = User.query.filter_by(username="mergin").first()
-    token = generate_confirmation_token(
-        app, user.email, app.config["SECURITY_PASSWORD_SALT"]
-    )
+    token = generate_password_reset_token(app, user)
+    db.session.commit()
 
     form_data = {"password": "ilovemergin#0", "confirm": "ilovemergin#0"}
 
@@ -608,7 +610,9 @@ def test_confirm_password(app, client):
         url_for(
             "/.mergin_auth_controller_confirm_new_password",
             token=generate_confirmation_token(
-                app, "tests@mergin.com", app.config["SECURITY_PASSWORD_SALT"]
+                app,
+                {"email": "tests@mergin.com", "nonce": "nonce"},
+                app.config["SECURITY_PASSWORD_SALT"],
             ),
         ),
         data=json.dumps(form_data),
@@ -622,14 +626,10 @@ def test_confirm_password(app, client):
     )
     user.active = False
     db.session.add(user)
+    token = generate_password_reset_token(app, user)
     db.session.commit()
     resp = client.post(
-        url_for(
-            "/.mergin_auth_controller_confirm_new_password",
-            token=generate_confirmation_token(
-                app, "tests@mergin.com", app.config["SECURITY_PASSWORD_SALT"]
-            ),
-        )
+        url_for("/.mergin_auth_controller_confirm_new_password", token=token)
     )
     assert resp.status_code == 400
 
@@ -648,9 +648,8 @@ def test_confirm_password_clears_lockout(send_email_mock, app, client):
             )
         assert user.is_locked_out()
 
-        token = generate_confirmation_token(
-            app, user.email, app.config["SECURITY_PASSWORD_SALT"]
-        )
+        token = generate_password_reset_token(app, user)
+        db.session.commit()
         resp = client.post(
             url_for("/.mergin_auth_controller_confirm_new_password", token=token),
             data=json.dumps({"password": "newpass#1", "confirm": "newpass#1"}),
@@ -676,6 +675,74 @@ def test_confirm_password_clears_lockout(send_email_mock, app, client):
         )
         assert resp.status_code == 200
         assert not user.is_locked_out()
+
+
+def _confirm_new_password(client, token, password="newpass#1"):
+    return client.post(
+        url_for("/.mergin_auth_controller_confirm_new_password", token=token),
+        data=json.dumps({"password": password, "confirm": password}),
+        headers=json_headers,
+    )
+
+
+@patch("mergin.celery.send_email_async.apply_async")
+def test_reset_password_token_single_use(send_email_mock, app, client):
+    """Reset link is one-off, only the latest link is valid and a regular password change revokes it."""
+    user = add_user("resetuser", "oldpassword")
+
+    # used token cannot be reused
+    token = generate_password_reset_token(app, user)
+    db.session.commit()
+    assert _confirm_new_password(client, token).status_code == 200
+    assert user.password_reset_nonce is None
+    assert _confirm_new_password(client, token, "another#1").status_code == 400
+    assert user.check_password("newpass#1")
+
+    # requesting a new link revokes the older one
+    old_token = generate_password_reset_token(app, user)
+    db.session.commit()
+    resp = client.post(
+        url_for("/.mergin_auth_controller_password_reset"),
+        json={"email": user.email},
+    )
+    assert resp.status_code == 200
+    assert send_email_mock.call_count == 1
+    email_html = send_email_mock.call_args.args[1]["html"]
+    assert old_token not in email_html
+    assert _confirm_new_password(client, old_token).status_code == 400
+    new_token = email_html.split("change-password/")[1].split('"')[0]
+    assert _confirm_new_password(client, new_token, "latest#1").status_code == 200
+
+    # regular password change revokes outstanding link
+    token = generate_password_reset_token(app, user)
+    db.session.commit()
+    login(client, user.username, "latest#1")
+    resp = client.post(
+        url_for("/.mergin_auth_controller_change_password"),
+        json={
+            "old_password": "latest#1",
+            "password": "changed#1",
+            "confirm": "changed#1",
+        },
+    )
+    assert resp.status_code == 200
+    assert _confirm_new_password(client, token).status_code == 400
+    assert user.check_password("changed#1")
+
+
+def test_reset_password_token_expired_or_legacy(app, client):
+    user = add_user("resetuser", "oldpassword")
+    token = generate_password_reset_token(app, user)
+    db.session.commit()
+    with patch.dict(app.config, {"PASSWORD_RESET_TOKEN_EXPIRATION": -1}):
+        assert _confirm_new_password(client, token).status_code == 400
+
+    # token format from before nonces were introduced (email only) is rejected
+    legacy_token = generate_confirmation_token(
+        app, user.email, app.config["SECURITY_PASSWORD_SALT"]
+    )
+    assert _confirm_new_password(client, legacy_token).status_code == 400
+    assert user.check_password("oldpassword")
 
 
 # reset password tests: success, no email, not-existing user (200 - masked)
@@ -896,7 +963,7 @@ def test_api_user_profile(client):
         assert key in resp.json
 
 
-def test_update_user(client):
+def test_update_user(client, monkeypatch):
     login_as_admin(client)
     user = User.query.filter_by(username="mergin").first()
     data = {"active": True, "is_admin": True}
@@ -909,7 +976,9 @@ def test_update_user(client):
     assert user.active
     assert user.is_admin
 
-    client.application.config["ENABLE_SUPERADMIN_ASSIGNMENT"] = False
+    monkeypatch.setitem(
+        client.application.config, "ENABLE_SUPERADMIN_ASSIGNMENT", False
+    )
     data = {"active": False, "is_admin": False}
     resp = client.patch(
         url_for("/.mergin_auth_controller_update_user", username=user.username),
@@ -927,7 +996,7 @@ def test_update_user(client):
     assert resp.status_code == 200
     assert not user.active
 
-    client.application.config["ENABLE_SUPERADMIN_ASSIGNMENT"] = True
+    monkeypatch.setitem(client.application.config, "ENABLE_SUPERADMIN_ASSIGNMENT", True)
     user.is_admin = False
     db.session.add(user)
     db.session.commit()
@@ -1499,3 +1568,116 @@ def test_bearer_token_expiration(app):
         "/v1/user/profile", headers={**json_headers, "Authorization": f"Bearer {token}"}
     )
     assert resp.status_code == 401
+
+
+def _api_token(client, username, password):
+    resp = client.post(
+        "/v1/auth/login",
+        data=json.dumps({"login": username, "password": password}),
+        headers=json_headers,
+    )
+    assert resp.status_code == 200
+    return resp.json["session"]["token"]
+
+
+def _profile_status(client, token=None):
+    headers = {**json_headers}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    # fresh app context, so flask-login does not reuse user cached in g by previous request
+    with client.application.app_context():
+        return client.get("/v1/user/profile", headers=headers).status_code
+
+
+def test_password_change_revokes_sessions(app):
+    """Password change invalidates other sessions and bearer tokens, but not the current session"""
+    user = add_user("revokeuser", "oldpassword")
+    current_session = app.test_client()
+    other_session = app.test_client()
+    api_client = app.test_client()
+    login(current_session, user.username, "oldpassword")
+    login(other_session, user.username, "oldpassword")
+    token = _api_token(api_client, user.username, "oldpassword")
+    assert _profile_status(other_session) == 200
+    assert _profile_status(api_client, token) == 200
+
+    resp = current_session.post(
+        url_for("/.mergin_auth_controller_change_password"),
+        json={
+            "old_password": "oldpassword",
+            "password": "changed#1",
+            "confirm": "changed#1",
+        },
+    )
+    assert resp.status_code == 200
+    assert user.auth_version == 1
+    assert _profile_status(current_session) == 200
+    assert _profile_status(other_session) == 401
+    assert _profile_status(api_client, token) == 401
+
+    # login with new credentials works
+    new_token = _api_token(api_client, user.username, "changed#1")
+    assert _profile_status(api_client, new_token) == 200
+    login(other_session, user.username, "changed#1")
+    assert _profile_status(other_session) == 200
+
+
+def test_password_change_with_bearer_token(app):
+    """Password change through bearer token does not create session cookie, caller needs to log in again"""
+    user = add_user("revokeuser", "oldpassword")
+    api_client = app.test_client()
+    token = _api_token(api_client, user.username, "oldpassword")
+    resp = api_client.post(
+        url_for("/.mergin_auth_controller_change_password"),
+        json={
+            "old_password": "oldpassword",
+            "password": "changed#1",
+            "confirm": "changed#1",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200
+    assert "Set-Cookie" not in resp.headers
+    assert _profile_status(api_client, token) == 401
+
+
+def test_password_reset_revokes_sessions(app, client):
+    """Password reset invalidates all sessions and bearer tokens"""
+    user = add_user("revokeuser", "oldpassword")
+    web_session = app.test_client()
+    login(web_session, user.username, "oldpassword")
+    token = _api_token(client, user.username, "oldpassword")
+
+    reset_token = generate_password_reset_token(app, user)
+    db.session.commit()
+    assert _confirm_new_password(client, reset_token).status_code == 200
+    assert user.auth_version == 1
+    assert _profile_status(web_session) == 401
+    assert _profile_status(client, token) == 401
+
+
+def test_legacy_sessions_accepted_until_revoked(app):
+    """Session cookies and bearer tokens issued before auth version was introduced are valid until password change"""
+    user = add_user("legacyuser", "password")
+    web_session = app.test_client()
+    with web_session.session_transaction() as sess:
+        sess["_user_id"] = str(user.id)
+        sess["_fresh"] = True
+    legacy_token = encode_token(
+        app.config["SECRET_KEY"],
+        app.config["SECURITY_BEARER_SALT"],
+        {
+            "user_id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "expire": str(datetime.now(timezone.utc) + timedelta(hours=1)),
+        },
+    )
+    api_client = app.test_client()
+    assert _profile_status(web_session) == 200
+    assert _profile_status(api_client, legacy_token) == 200
+
+    user.revoke_sessions()
+    db.session.commit()
+    assert _profile_status(web_session) == 401
+    assert _profile_status(api_client, legacy_token) == 401

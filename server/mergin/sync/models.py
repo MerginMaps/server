@@ -2115,19 +2115,10 @@ class Upload(db.Model):
                             # based on API version location for uploaded chunks differs
                             if use_shared_chunk_dir:
                                 chunk_file = get_chunk_location(chunk_id)
-                                chunk_file_fallback = get_chunk_location(
-                                    chunk_id, "/chunks"
-                                )
                             else:
                                 chunk_file = os.path.join(
                                     self.upload_dir, "chunks", chunk_id
                                 )
-                                chunk_file_fallback = None
-
-                            if chunk_file_fallback and os.path.exists(
-                                chunk_file_fallback
-                            ):
-                                chunk_file = chunk_file_fallback
 
                             if not os.path.exists(chunk_file):
                                 errors[f.path] = FileSyncErrorType.CORRUPTED.value
