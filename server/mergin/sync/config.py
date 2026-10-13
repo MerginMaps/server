@@ -65,7 +65,7 @@ class Configuration(object):
     # in seconds, older unfinished zips are moved to temp
     PARTIAL_ZIP_EXPIRATION = config("PARTIAL_ZIP_EXPIRATION", default=600, cast=int)
     # whether new push is allowed
-    V2_PUSH_ENABLED = config("V2_PUSH_ENABLED", default=True, cast=bool)
+    V2_PUSH_ENABLED = config("V2_PUSH_ENABLED", default=False, cast=bool)
     # directory for file chunks
     UPLOAD_CHUNKS_DIR = config(
         "UPLOAD_CHUNKS_DIR",
@@ -76,7 +76,7 @@ class Configuration(object):
         "UPLOAD_CHUNKS_EXPIRATION", default=86400, cast=int
     )
     # whether client can pull using v2 apis
-    V2_PULL_ENABLED = config("V2_PULL_ENABLED", default=True, cast=bool)
+    V2_PULL_ENABLED = config("V2_PULL_ENABLED", default=False, cast=bool)
     EXCLUDED_CLONE_FILENAMES = config(
         "EXCLUDED_CLONE_FILENAMES", default="qgis_cfg.xml", cast=Csv()
     )
