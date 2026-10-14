@@ -12,7 +12,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from flask import current_app
 
 from .events import SyncEventType
-from .models import Project, ProjectVersion, FileHistory
+from .models import Project, ProjectVersion, FileHistory, PushIdempotencyKey
 from .storages.disk import move_to_tmp
 from .config import Configuration
 from .utils import get_chunk_location, remove_outdated_files
@@ -187,6 +187,16 @@ def remove_unused_chunks():
         if not os.path.isdir(dir):
             continue
         remove_outdated_files(dir, time_delta)
+
+
+@celery.task
+def cleanup_push_idempotency_keys():
+    """Remove expired push idempotency keys."""
+    cutoff = datetime.utcnow() - timedelta(
+        seconds=Configuration.PUSH_IDEMPOTENCY_KEY_EXPIRATION
+    )
+    PushIdempotencyKey.query.filter(PushIdempotencyKey.created < cutoff).delete()
+    db.session.commit()
 
 
 @celery.task
