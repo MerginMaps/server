@@ -1,10 +1,25 @@
 name: Auto Tests
 
-on: push
+on:
+  push:
+    paths:
+      # Run just when the backend changed
+      - "server/**"
+      - "!server/**/*.md"
+      - ".github/workflows/auto_tests.yml"
 
 jobs:
-  server_tests:
+  tests:
     runs-on: ubuntu-24.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: server
+            pytest_args: "-v -n auto --cov=mergin --cov-report=lcov mergin/tests"
+          - suite: migration
+            pytest_args: "-v mergin/test_migrations"
 
     services:
       postgres:
@@ -15,12 +30,17 @@ jobs:
           POSTGRES_USER: postgres
         ports:
           - 5435:5432
-        # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
+    env:
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: localhost
+      DB_PORT: 5435
 
     steps:
       - name: Check out repository
@@ -30,15 +50,16 @@ jobs:
         run: |
           cd server
           sudo apt-get -y install libsqlite3-mod-spatialite
-          pip install pipenv==2026.0.3
-          pipenv install --dev --verbose --python 3.12
+          pip install pipenv==2026.8.0
+          pipenv install --dev --deploy --verbose --python 3.12
 
       - name: Run tests
         run: |
           cd server
-          pipenv run pytest -v --cov=mergin --cov-report=lcov mergin/tests
+          pipenv run pytest ${{ matrix.pytest_args }}
 
       - name: Coveralls
+        if: matrix.suite == 'server'
         uses: coverallsapp/github-action@v2
         with:
           base-path: server

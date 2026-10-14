@@ -11,7 +11,6 @@ from smtplib import SMTPException, SMTPServerDisconnected
 from .config import Configuration
 from .app import mail
 
-
 # create on flask app independent object
 # we need this for defining tasks, and celery is then configured in run_celery.py
 celery = Celery(
@@ -68,6 +67,7 @@ def configure_celery(celery: Celery, app: Flask, packages: List[str]):
     celery.conf.update(app.config)
     celery.conf.update(
         task_acks_late=Configuration.CELERY_ACKS_LATE,
+        task_send_sent_event=Configuration.CELERY_SEND_TASK_SENT_EVENT,
         worker_concurrency=Configuration.CELERYD_CONCURRENCY,
         worker_prefetch_multiplier=Configuration.CELERYD_PREFETCH_MULTIPLIER,
     )

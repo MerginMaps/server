@@ -1,7 +1,7 @@
 """Add push_idempotency_keys table
 
 Revision ID: a1b2c3d4e5f6
-Revises: f1d9e4a7b823
+Revises: d8a2f6c1e5b4
 Create Date: 2026-05-19 00:00:00.000000
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 # revision identifiers, used by Alembic.
 revision = "a1b2c3d4e5f6"
-down_revision = "f1d9e4a7b823"
+down_revision = "d8a2f6c1e5b4"
 branch_labels = None
 depends_on = None
 

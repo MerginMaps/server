@@ -6,6 +6,7 @@ from contextlib import contextmanager
 import json
 import logging
 import os
+import re
 import threading
 import time
 import uuid
@@ -18,7 +19,9 @@ import logging
 from blinker import signal
 from flask_login import current_user
 from pygeodiff import GeoDiff
+from functools import cached_property
 from sqlalchemy import text, null, desc, nullslast, tuple_
+from sqlalchemy.orm import contains_eager, joinedload, load_only
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM, insert
 from sqlalchemy.types import String
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -41,6 +44,9 @@ from .files import (
 from .interfaces import WorkspaceRole
 from .storages.disk import copy_file, move_to_tmp
 from ..app import db
+from ..audit import emit
+from ..audit.listeners import actor_context
+from .events import SyncEventType
 from .storages import DiskStorage
 from .utils import (
     LOG_BASE,
@@ -55,6 +61,7 @@ from .utils import (
 
 Storages = {"local": DiskStorage}
 project_deleted = signal("project_deleted")
+project_soft_deleted = signal("project_soft_deleted")
 project_access_granted = signal("project_access_granted")
 push_finished = signal("push_finished")
 project_version_created = signal("project_version_created")
@@ -136,6 +143,12 @@ class Project(db.Model):
         project_workspace = current_app.ws_handler.get(self.workspace_id)
         return project_workspace
 
+    @cached_property
+    def _has_conflict(self) -> bool:
+        """True if any current project file matches a known conflict-copy pattern."""
+        pattern = r"(\.gpkg|\.qgs|.qgz)(.*conflict.*)|( \(.*conflict.*)"
+        return any(re.search(pattern, f.path) for f in self.files)
+
     def get_latest_files_cache(self) -> List[int]:
         """Get latest file history ids either from cached table or calculate them on the fly"""
         if self.latest_project_files.file_history_ids is not None:
@@ -158,7 +171,7 @@ class Project(db.Model):
                     fp.id, pv.project_id
             )
             SELECT
-                fh.id 
+                fh.id
             FROM latest_changes ch
             LEFT OUTER JOIN file_history fh ON (fh.file_path_id = ch.id AND fh.project_version_name = ch.version AND fh.change != 'delete')
             WHERE fh.id IS NOT NULL;
@@ -286,6 +299,25 @@ class Project(db.Model):
         initial = timedelta(days=current_app.config["DELETED_PROJECT_EXPIRATION"])
         return initial - (datetime.utcnow() - self.removed_at)
 
+    @property
+    def removal_at(self) -> Optional[datetime]:
+        """Timestamp of pending permanent project removal"""
+        if not self.removed_at:
+            return None
+        return self.removed_at + timedelta(
+            days=current_app.config["DELETED_PROJECT_EXPIRATION"]
+        )
+
+    def schedule_deletion(self, removed_by: int = None):
+        """Schedule project for removal (soft-delete).
+        Sets removed_at so the project is hidden from users but kept in db
+        until a background job permanently deletes it.
+        """
+        self.removed_at = datetime.utcnow()
+        self.removed_by = removed_by
+        db.session.commit()
+        project_soft_deleted.send(self)
+
     def delete(self, removed_by: int = None):
         """Mark project as permanently deleted (but keep in db)
         - rename (to free up the same name)
@@ -296,6 +328,9 @@ class Project(db.Model):
         # do nothing if the project has been already deleted
         if not self.storage_params:
             return
+        # Set before any mutation below
+        db.session.info["audit_skip_project_update"] = True
+        project_name = self.name
         self.name = f"{self.name}_{str(self.id)}"
         # make sure remove_at is not null as it is used as filter for APIs
         if not self.removed_at:
@@ -323,6 +358,8 @@ class Project(db.Model):
         db.session.execute(
             delta_table.delete().where(delta_table.c.project_id == self.id)
         )
+
+        db.session.info["project_member_delete_reason"] = "project_deleted"
         self.project_users.clear()
         access_requests = (
             AccessRequest.query.filter_by(project_id=self.id)
@@ -331,7 +368,19 @@ class Project(db.Model):
         )
         for req in access_requests:
             req.resolve(status=RequestStatus.DECLINED, resolved_by=self.removed_by)
+        project_delete_reason = db.session.info.get("project_delete_reason")
+        emit(
+            SyncEventType.PROJECT_DELETED,
+            **actor_context(),
+            target_project_id=self.id,
+            target_workspace_id=self.workspace_id,
+            workspace_name=self.workspace.name,
+            project_name=project_name,
+            **({"reason": project_delete_reason} if project_delete_reason else {}),
+        )
         db.session.commit()
+        db.session.info.pop("project_member_delete_reason", None)
+        db.session.info.pop("audit_skip_project_update", None)
         project_deleted.send(self)
 
     def _member(self, user_id: int) -> Optional[ProjectUser]:
@@ -658,7 +707,7 @@ class FileHistory(db.Model):
     def path(self) -> str:
         return self.file.path
 
-    @property
+    @cached_property
     def diff(self) -> Optional[FileDiff]:
         """Diff file pushed with UPDATE_DIFF change type.
 
@@ -713,9 +762,37 @@ class FileHistory(db.Model):
         if not (is_versioned_file(file) and since is not None and to is not None):
             return []
 
-        history = []
+        # when since=1 the range spans the entire project history; narrow it to
+        # the most recent CREATE/DELETE so we don't load records from previous
+        # file lifecycles that the Python break would discard anyway
+        if since == 1:
+            boundary = (
+                FileHistory.query.join(ProjectFilePath)
+                .filter(
+                    ProjectFilePath.project_id == project_id,
+                    ProjectFilePath.path == file,
+                    FileHistory.project_version_name <= to,
+                    FileHistory.change.in_(
+                        [PushChangeType.CREATE.value, PushChangeType.DELETE.value]
+                    ),
+                )
+                .order_by(desc(FileHistory.project_version_name))
+                .with_entities(FileHistory.project_version_name)
+                .first()
+            )
+            since = boundary[0] if boundary else since
+
         full_history = (
             FileHistory.query.join(ProjectFilePath)
+            .join(FileHistory.version)
+            .join(ProjectVersion.project)
+            .options(
+                contains_eager(FileHistory.file).load_only(ProjectFilePath.path),
+                contains_eager(FileHistory.version)
+                .load_only(ProjectVersion.name, ProjectVersion.project_id)
+                .contains_eager(ProjectVersion.project)
+                .load_only(Project.storage_params),
+            )
             .filter(
                 ProjectFilePath.project_id == project_id,
                 FileHistory.project_version_name <= to,
@@ -726,6 +803,7 @@ class FileHistory(db.Model):
             .all()
         )
 
+        history = []
         for item in full_history:
             history.append(item)
 
@@ -1781,10 +1859,14 @@ class ProjectVersion(db.Model):
 
     def changes_count(self) -> Dict:
         """Return number of changes by type"""
-        query = f"SELECT change, COUNT(change) FROM file_history WHERE version_id = :version_id GROUP BY change;"
+        query = "SELECT change, COUNT(change) FROM file_history WHERE version_id = :version_id GROUP BY change;"
         params = {"version_id": self.id}
         result = db.session.execute(text(query), params).fetchall()
         return {row[0]: row[1] for row in result}
+
+    @cached_property
+    def _changes_count(self) -> Dict:
+        return self.changes_count()
 
     @property
     def zip_path(self):
@@ -2110,7 +2192,11 @@ class Upload(db.Model):
                             errors[f.path] = (
                                 f"{FileSyncErrorType.SYNC_ERROR.value}: project {self.project.workspace.name}/{self.project.name}, {result.value}"
                             )
-                    else:
+                    elif (
+                        expected_size
+                        <= current_app.config["MAX_DIFFABLE_FORCE_UPDATE_SIZE"]
+                    ):
+                        # gpkg small enough - try to construct diff server-side
                         diff_name = mergin_secure_filename(
                             f.path + "-diff-" + str(uuid.uuid4())
                         )
@@ -2135,6 +2221,12 @@ class Upload(db.Model):
                             logging.warning(
                                 f"Geodiff: create changeset error {result.value}"
                             )
+                    else:
+                        # gpkg too large - skip diff construction and keep it as a plain force update
+                        logging.info(
+                            f"Skipping diff construction for {f.path} in project {project_path}: "
+                            f"file size {expected_size} exceeds MAX_DIFFABLE_FORCE_UPDATE_SIZE"
+                        )
         return file_changes, errors
 
 
@@ -2287,7 +2379,9 @@ class PushIdempotencyKey(db.Model):
 
     key = db.Column(UUID(as_uuid=True), primary_key=True)
     response = db.Column(JSONB, nullable=False)
-    created = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created = db.Column(
+        db.DateTime, default=datetime.utcnow, nullable=False, index=True
+    )
 
     @classmethod
     def store(cls, key: str, status_code: int, body: str, content_type: str) -> None:

@@ -45,7 +45,8 @@ import {
   ProjectVersionListItem,
   UpdateProjectCollaboratorPayload,
   UpdatePublicFlagParams,
-  ProjectCollaborator
+  ProjectCollaborator,
+  ProjectV2Response
 } from '@/modules/project/types'
 import { useUserStore } from '@/modules/user/store'
 
@@ -168,6 +169,29 @@ export const useProjectStore = defineStore('projectModule', {
           workspaceId: enhancedProject?.workspace_id,
           skipStorage: false
         })
+      }
+    },
+    setProjectV2(payload: { project: ProjectV2Response }) {
+      this.project = {
+        ...(this.project ?? {}),
+        // Transofrm ProjectV2Response to EnhancedProjectDetail , we can skip files
+        id: payload.project.id,
+        name: payload.project.name,
+        namespace: payload.project.workspace.name,
+        workspace_id: payload.project.workspace.id,
+        role: payload.project.role,
+        path: [payload.project.workspace.name, payload.project.name].join('/'),
+        created: payload.project.created_at,
+        updated: payload.project.updated_at,
+        access: undefined,
+        version: payload.project.version,
+        // Leave as undefined in this time. When full implementation needed, we can use it.
+        files: undefined,
+        creator: undefined,
+        disk_usage: payload.project.size,
+        has_conflict: undefined,
+        permissions: undefined,
+        tags: undefined
       }
     },
     setProjects(payload: ProjectsPayload) {
@@ -484,6 +508,17 @@ export const useProjectStore = defineStore('projectModule', {
           payload.projectName
         )
         this.setProject({ project: projectResponse.data })
+      } catch {
+        await notificationStore.error({ text: 'Failed to load project data' })
+      }
+    },
+
+    async getProjectV2(projectId: string) {
+      const notificationStore = useNotificationStore()
+
+      try {
+        const projectResponse = await ProjectApi.getProjectV2(projectId)
+        this.setProjectV2({ project: projectResponse.data })
       } catch {
         await notificationStore.error({ text: 'Failed to load project data' })
       }

@@ -43,124 +43,91 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
           :first="(options.page - 1) * options.itemsPerPage"
           :sortField="options.sortBy[0]"
           :sortOrder="options.sortDesc[0] ? -1 : 1"
+          :rowHover="true"
+          :row-class="(data) => (data.removed_at ? 'opacity-80' : '')"
           removableSort
           reorderable-columns
           @page="onPage"
           @sort="onSort"
-          @row-click="rowClick"
           data-cy="projects-table"
-          :row-class="(data) => (data.removed_at ? 'opacity-80' : '')"
         >
           <template v-for="header in headers" :key="header.field">
             <PColumn
-              v-if="showNamespace && header.field === 'workspace'"
               :field="header.field"
               :header="header.header"
               :sortable="header.sortable"
             >
-              <template #body="slotProps">
-                {{ slotProps.data.workspace }}
-              </template>
-            </PColumn>
-
-            <PColumn
-              v-else-if="header.field === 'name'"
-              :field="header.field"
-              :header="header.header"
-              :sortable="header.sortable"
-            >
-              <template #body="slotProps">
-                <template v-if="slotProps.data.removed_at">{{
-                  slotProps.data.name
-                }}</template>
+              <template #body="{ data }">
                 <router-link
-                  v-else
-                  :to="{
-                    name: 'project',
-                    params: {
-                      namespace: slotProps.data.workspace,
-                      projectName: slotProps.data.name
-                    }
-                  }"
-                  class="font-semibold"
+                  v-if="
+                    !header.conditionalLink || !data[header.conditionalLink]
+                  "
+                  :to="projectRoute(data)"
+                  class="dt-row-link"
+                  :class="header.class"
                 >
-                  {{ slotProps.data.name }}
+                  <span
+                    v-if="header.type === 'timediff'"
+                    :title="$filters.datetime(data[header.field])"
+                    >{{ $filters.timediff(data[header.field]) }}</span
+                  >
+                  <template v-else>{{ cellContent(data, header) }}</template>
                 </router-link>
-              </template>
-            </PColumn>
-
-            <PColumn
-              v-else-if="header.field === 'updated'"
-              :field="header.field"
-              :header="header.header"
-              :sortable="header.sortable"
-            >
-              <template #body="slotProps">
-                <span :title="$filters.datetime(slotProps.data.updated)">
-                  {{ $filters.timediff(slotProps.data.updated) }}
+                <span v-else>
+                  <span
+                    v-if="header.type === 'timediff'"
+                    :title="$filters.datetime(data[header.field])"
+                    >{{ $filters.timediff(data[header.field]) }}</span
+                  >
+                  <template v-else>{{ cellContent(data, header) }}</template>
                 </span>
               </template>
             </PColumn>
-
-            <PColumn
-              v-else-if="header.field === 'disk_usage'"
-              :field="header.field"
-              :header="header.header"
-              :sortable="header.sortable"
-            >
-              <template #body="slotProps">
-                {{ $filters.filesize(slotProps.data.disk_usage, 'MB') }}
-              </template>
-            </PColumn>
-
-            <PColumn
-              v-else-if="header.field === 'removed_at'"
-              :field="header.field"
-              :header="header.header"
-              :sortable="header.sortable"
-            >
-              <template #body="slotProps">
-                <span
-                  :title="`Scheduled for removal at ${$filters.datetime(
-                    slotProps.data.removed_at
-                  )}`"
-                >
-                  {{ $filters.timediff(slotProps.data.removed_at) }}
-                </span>
-              </template>
-            </PColumn>
-
-            <PColumn v-else-if="header.field === 'buttons'">
-              <template #body="slotProps">
-                <div
-                  class="justify-center px-0"
-                  v-if="slotProps.data.removed_at"
-                >
-                  <div class="flex align-items-center gap-1">
-                    <PButton
-                      label="Restore"
-                      severity="secondary"
-                      size="small"
-                      @click="confirmRestore(slotProps.data)"
-                    />
-                    <PButton
-                      label="Delete"
-                      severity="danger"
-                      size="small"
-                      @click="confirmDelete(slotProps.data)"
-                    />
-                  </div>
-                </div>
-              </template>
-            </PColumn>
-
-            <PColumn
-              v-else
-              :field="header.field"
-              :header="header.header"
-              :sortable="header.sortable"
-            ></PColumn>
           </template>
+
+          <PColumn
+            field="removed_at"
+            header="Scheduled removal at"
+            :sortable="true"
+          >
+            <template #body="{ data }">
+              <span
+                :title="`Scheduled for removal at ${$filters.datetime(
+                  data.removed_at
+                )}`"
+              >
+                {{ $filters.timediff(data.removed_at) }}
+              </span>
+            </template>
+          </PColumn>
+
+          <PColumn field="removed_by" header="Removed by" :sortable="true">
+            <template #body="{ data }">
+              {{ data.removed_by }}
+            </template>
+          </PColumn>
+
+          <PColumn>
+            <template #body="{ data }">
+              <div class="justify-center px-0" v-if="data.removed_at">
+                <div class="flex align-items-center gap-1">
+                  <PButton
+                    label="Restore"
+                    severity="secondary"
+                    size="small"
+                    @click="confirmRestore(data)"
+                  />
+                  <PButton
+                    label="Delete"
+                    severity="danger"
+                    size="small"
+                    @click="confirmDelete(data)"
+                  />
+                </div>
+              </div>
+            </template>
+          </PColumn>
+
           <template #paginatorstart>
             <PButton
               icon="ti ti-refresh"
@@ -181,20 +148,16 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 <script lang="ts">
 import {
   ConfirmDialog,
+  TableDataHeader,
+  useDataTableSearch,
   useDialogStore,
   useNotificationStore,
   SortingOptions,
-  TableDataHeader,
   AppSection,
   AppContainer,
   ConfirmDialogProps
 } from '@mergin/lib'
-import { mapActions, mapState } from 'pinia'
-import {
-  DataTablePageEvent,
-  DataTableRowClickEvent,
-  DataTableSortEvent
-} from 'primevue/datatable'
+import { mapState, mapActions } from 'pinia'
 import { PropType, defineComponent } from 'vue'
 
 import { AdminRoutes, useAdminStore } from '@/main'
@@ -218,87 +181,95 @@ export default defineComponent({
       })
     }
   },
-  data() {
+  setup(props) {
+    const adminStore = useAdminStore()
+    const dialogStore = useDialogStore()
+    const notificationStore = useNotificationStore()
+
+    const tableSearch = useDataTableSearch({
+      defaultSortBy: props.initialOptions.sortBy[0],
+      defaultSortDesc: props.initialOptions.sortDesc[0]
+    })
+
+    tableSearch.setFetchFn((signal) => {
+      const { options, search } = tableSearch
+      adminStore.getProjects({
+        params: { ...options, like: search.value },
+        signal
+      })
+    })
+
     return {
-      options: Object.assign({}, this.initialOptions),
-      search: ''
+      ...tableSearch,
+      showDialog: dialogStore.show.bind(dialogStore),
+      error: notificationStore.error.bind(notificationStore),
+      show: notificationStore.show.bind(notificationStore)
     }
   },
   computed: {
     ...mapState(useAdminStore, ['projects']),
     headers(): TableDataHeader[] {
-      return [
-        ...(this.showNamespace
-          ? [
-              {
-                header: 'Workspace',
-                field: 'workspace',
-                sortable: true
-              }
-            ]
-          : []),
-        { header: 'Name', field: 'name', sortable: true },
-        { header: 'Last Update', field: 'updated', sortable: true },
-        { header: 'Size', field: 'disk_usage', sortable: true },
-        { header: 'Scheduled removal at', field: 'removed_at', sortable: true },
-        { header: 'Removed by', field: 'removed_by', sortable: true },
-        { header: '', field: 'buttons', sortable: false }
-      ]
+      const cols: TableDataHeader[] = []
+      if (this.showNamespace) {
+        cols.push({
+          field: 'workspace',
+          header: 'Workspace',
+          sortable: true,
+          linked: true,
+          conditionalLink: 'removed_at'
+        })
+      }
+      cols.push(
+        {
+          field: 'name',
+          header: 'Name',
+          sortable: true,
+          linked: true,
+          class: 'font-semibold',
+          conditionalLink: 'removed_at'
+        },
+        {
+          field: 'updated',
+          header: 'Last Update',
+          sortable: true,
+          linked: true,
+          type: 'timediff',
+          conditionalLink: 'removed_at'
+        },
+        {
+          field: 'disk_usage',
+          header: 'Size',
+          sortable: true,
+          linked: true,
+          type: 'filesize',
+          conditionalLink: 'removed_at'
+        }
+      )
+      return cols
     }
   },
   created() {
-    this.resetPaging()
-    this.fetchProjects()
+    this.initFromQuery()
+    this.doFetch()
   },
   methods: {
-    ...mapActions(useDialogStore, { showDialog: 'show' }),
-    ...mapActions(useNotificationStore, ['error', 'show']),
-    ...mapActions(useAdminStore, [
-      'getProjects',
-      'restoreProject',
-      'deleteProject'
-    ]),
+    ...mapActions(useAdminStore, ['restoreProject', 'deleteProject']),
 
-    paginating(options) {
-      this.options = options
-      this.fetchProjects()
+    cellContent(
+      data: Record<string, unknown>,
+      header: TableDataHeader
+    ): string {
+      const val = data[header.field]
+      if (header.type === 'timediff') return this.$filters.timediff(val)
+      if (header.type === 'filesize') return this.$filters.filesize(val, 'MB')
+      return String(val ?? '')
     },
 
-    async resetPaging() {
-      this.options.page = 1
-    },
-
-    fetchProjects() {
-      this.getProjects({ params: { ...this.options, like: this.search } })
-    },
-
-    onSearch() {
-      this.resetPaging()
-      this.fetchProjects()
-    },
-
-    onPage(event: DataTablePageEvent) {
-      this.options.page = event.page + 1
-      this.options.itemsPerPage = event.rows
-      this.fetchProjects()
-    },
-
-    onSort(event: DataTableSortEvent) {
-      this.options.sortBy[0] = event.sortField?.toString()
-      this.options.sortDesc[0] = event.sortOrder < 1
-      this.fetchProjects()
-    },
-
-    rowClick(event: DataTableRowClickEvent) {
-      if (event.data.removed_at) return
-
-      this.$router.push({
+    projectRoute(data) {
+      return {
         name: AdminRoutes.PROJECT,
-        params: {
-          namespace: event.data.workspace,
-          projectName: event.data.name
-        }
-      })
+        params: { namespace: data.workspace, projectName: data.name }
+      }
     },
 
     confirmRestore(item) {
@@ -309,7 +280,7 @@ export default defineComponent({
       const listeners = {
         confirm: async () => {
           await this.restoreProject({ projectId: item.id })
-          this.fetchProjects()
+          this.doFetch()
         }
       }
       this.showDialog({
@@ -334,17 +305,13 @@ export default defineComponent({
       const listeners = {
         confirm: async () => {
           await this.deleteProject({ projectId: item.id })
-          this.fetchProjects()
+          this.doFetch()
         }
       }
       this.showDialog({
         component: ConfirmDialog,
         params: { props, listeners, dialog: { header: 'Delete project' } }
       })
-    },
-
-    onRefresh() {
-      this.fetchProjects()
     }
   }
 })

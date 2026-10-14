@@ -242,10 +242,10 @@ export const useUserStore = defineStore('userModule', {
       try {
         await UserApi.login(payload.data)
         await instanceStore.initApp()
-      } catch (error) {
+      } catch (err) {
         await formStore.handleError({
           componentId: payload.componentId,
-          error,
+          error: err,
           generalMessage: 'Failed to login'
         })
       }

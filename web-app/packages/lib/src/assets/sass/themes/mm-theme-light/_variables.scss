@@ -39,7 +39,8 @@ $colors: (
     "sky": #A6CBF4,
     "informative": #BEDAF0,
     "dark-gray": #41464C,
-    "medium-gray": #A0A3A5
+    "medium-gray": #A0A3A5,
+    "secondary-gray": #E2E2E2
 );
 
 // Mandatory Designer Variables
@@ -119,5 +120,7 @@ $colors: (
     --earth-color: #{map-get($colors, "earth")};
     --dark-gray-color: #{map-get($colors, "dark-gray")};
     --medium-gray-color: #{map-get($colors, "medium-gray")};
+    --secondary-gray-color: #{map-get($colors, "secondary-gray")};
+    --purple-color: #{map-get($colors, "purple")};
     color-scheme: light;
 }

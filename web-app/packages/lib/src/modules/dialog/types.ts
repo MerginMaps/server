@@ -9,6 +9,10 @@ import { TipMessageProps } from '@/common'
 export interface ConfirmDialogProps {
   text: string
   severity?: 'primary' | 'danger' | 'warning'
+  /**
+   * Optional logo override. When omitted, logo follows current severity behavior.
+   */
+  logoVariant?: 'auto' | 'primary' | 'danger' | 'warning' | 'negative'
   confirmText?: string
   cancelText?: string
   description?: string

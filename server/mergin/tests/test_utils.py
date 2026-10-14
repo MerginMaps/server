@@ -24,6 +24,7 @@ from ..sync.utils import (
     check_filename,
     is_supported_extension,
     is_supported_type,
+    get_mimetype,
     is_valid_path,
     get_x_accel_uri,
     Checkpoint,
@@ -252,9 +253,9 @@ def test_has_trailing_space(path, path_platform, result):
         assert has_trailing_space(path) is result
 
 
-def test_get_x_accell_uri(client):
+def test_get_x_accell_uri(client, monkeypatch):
     """Test get_x_accell_uri"""
-    client.application.config["LOCAL_PROJECTS"] = "/data/"
+    monkeypatch.setitem(client.application.config, "LOCAL_PROJECTS", "/data/")
     # Input URL parts
     url_parts = ("/data", "archive", "project1", "file.txt")
     # Expected result
@@ -402,3 +403,47 @@ def test_mime_type_validation_skip():
 
         # Should be forbidden
         assert not is_supported_type("other.js")
+
+
+@pytest.mark.parametrize(
+    "detected,expected",
+    [
+        # libmagic < 5.46 (Ubuntu 24.04)
+        ("application/vnd.sqlite3", "application/vnd.sqlite3"),
+        # libmagic >= 5.46 (Ubuntu 26.04)
+        ("application/geopackage+sqlite3", "application/vnd.sqlite3"),
+        ("image/png", "image/png"),
+    ],
+)
+def test_get_mimetype_aliases(detected, expected):
+    """Mime type is the same regardless of libmagic version"""
+    with patch("mergin.sync.utils.magic.from_file", return_value=detected):
+        assert get_mimetype("base.gpkg") == expected
+
+
+def test_allowed_extensions_override():
+    """Extensions in UPLOAD_EXTENSIONS_WHITELIST are accepted even though they are in FORBIDDEN_EXTENSIONS."""
+    with patch(
+        "mergin.sync.utils.Configuration.UPLOAD_EXTENSIONS_WHITELIST", [".py", ".sh"]
+    ):
+        # forbidden by default, now explicitly allowed
+        assert is_supported_extension("model.py")
+        assert is_supported_extension("scripts/deploy.sh")
+        # match is case-insensitive
+        assert is_supported_extension("MODEL.PY")
+        # extensions not in the override stay blocked
+        assert not is_supported_extension("malware.exe")
+        assert not is_supported_extension("app.js")
+
+
+def test_extension_whitelist_skips_mime_check():
+    """A whitelisted extension also bypasses the MIME check via check_skip_validation."""
+    with patch("mergin.sync.utils.get_mimetype", return_value="text/x-shellscript"):
+        # blocked when the extension is not whitelisted
+        with patch("mergin.sync.utils.Configuration.UPLOAD_EXTENSIONS_WHITELIST", []):
+            assert not is_supported_type("deploy.sh")
+        # allowed once the extension is whitelisted
+        with patch(
+            "mergin.sync.utils.Configuration.UPLOAD_EXTENSIONS_WHITELIST", [".sh"]
+        ):
+            assert is_supported_type("deploy.sh")

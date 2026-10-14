@@ -3,15 +3,23 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import functools
+import logging
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Tuple
 from blinker import signal
-from flask import current_app, render_template
+from flask import current_app, render_template, Flask
 from flask_login import current_user
-from itsdangerous import URLSafeTimedSerializer
+from itsdangerous import URLSafeTimedSerializer, BadData
 from sqlalchemy import func
 
+from .bearer import encode_token
 from .commands import add_commands
 from .config import Configuration
-from .models import User
+from .listeners import register_listeners
+from .models import User, _check_dummy_password
+from ..audit import emit
+from ..audit.listeners import actor_context, request_context
+from .events import AuthEventType
 
 # signal for other versions to listen to
 user_account_closed = signal("user_account_closed")
@@ -37,6 +45,7 @@ def register(app):
     app.blueprints["/"].name = "auth"
     app.blueprints["auth"] = app.blueprints.pop("/")
     add_commands(app)
+    register_listeners()
 
 
 _permissions = {}
@@ -61,7 +70,11 @@ def auth_required(f=None, permissions=None):
 
     @functools.wraps(f)
     def wrapped_func(*args, **kwargs):
-        if not current_user or not current_user.is_authenticated:
+        if (
+            not current_user
+            or not current_user.is_authenticated
+            or not current_user.is_active
+        ):
             return "Authentication information is missing or invalid.", 401
         if permissions:
             for check_permission in permissions:
@@ -87,27 +100,60 @@ def edit_profile_enabled(f):
 
 
 def authenticate(login, password):
+    from ..app import db
+
     if "@" in login:
         query = func.lower(User.email) == func.lower(login)
     else:
         query = func.lower(User.username) == func.lower(login)
     user = User.query.filter(query).one_or_none()
-    if user and user.check_password(password):
+    if user is None:
+        _check_dummy_password(password)
+        return None
+    if user.is_locked_out():
+        logging.info(f"Rejected login attempt for locked-out user {user.id}")
+        _check_dummy_password(password)
+        return None
+    needs_commit = False
+    # reset non-null locked_until as it has already expired
+    if user.locked_until is not None:
+        user.locked_until = None
+        needs_commit = True
+
+    if user.check_password(password):
+        if user.needs_rehash():
+            user.assign_password(password)
+            needs_commit = True
+        if needs_commit:
+            db.session.commit()
         return user
+    else:
+        duration = user.record_failed_login()
+        db.session.commit()
+        if duration is not None:
+            send_account_locked_email(current_app, user, duration)
+            emit(
+                AuthEventType.USER_LOCKED,
+                **request_context(),
+                target_user_id=user.id,
+                target_email=user.email,
+                locked_until=user.locked_until.isoformat(),
+            )
+        return None
 
 
-def generate_confirmation_token(app, email, salt):
+def generate_confirmation_token(app, data, salt):
     serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
-    return serializer.dumps(email, salt=salt)
+    return serializer.dumps(data, salt=salt)
 
 
 def confirm_token(token, salt, expiration=3600):
     serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
     try:
-        email = serializer.loads(token, salt=salt, max_age=expiration)
+        data = serializer.loads(token, salt=salt, max_age=expiration)
     except:
         return
-    return email
+    return data
 
 
 def send_confirmation_email(app, user, url, template, header, **kwargs):
@@ -115,20 +161,124 @@ def send_confirmation_email(app, user, url, template, header, **kwargs):
     Send confirmation email from selected template with customizable email subject and confirmation URL.
     Optional kwargs are passed to render_template method if needed for particular template.
     """
+    token = generate_confirmation_token(
+        app, user.email, app.config["SECURITY_EMAIL_SALT"]
+    )
+    _send_token_email(app, user, url, token, template, header, **kwargs)
+
+
+def send_password_reset_email(app: Flask, user: User) -> None:
+    """Issue a new single-use password reset token (revoking any previous one) and email it."""
+    from ..app import db
+
+    expiration = app.config["PASSWORD_RESET_TOKEN_EXPIRATION"]
+    token = generate_password_reset_token(app, user)
+    db.session.commit()
+    _send_token_email(
+        app,
+        user,
+        "change-password",
+        token,
+        "email/password_reset.html",
+        "Password reset",
+        expiration=_format_duration(expiration),
+        expires_at=datetime.now(timezone.utc) + timedelta(seconds=expiration),
+    )
+
+
+def _send_token_email(app, user, url, token, template, header, **kwargs):
     from ..celery import send_email_async
 
-    salt = (
-        app.config["SECURITY_EMAIL_SALT"]
-        if url == "confirm-email"
-        else app.config["SECURITY_PASSWORD_SALT"]
-    )
-    token = generate_confirmation_token(app, user.email, salt)
     confirm_url = f"{url}/{token}"
     html = render_template(
         template, subject=header, confirm_url=confirm_url, user=user, **kwargs
     )
     email_data = {
         "subject": header,
+        "html": html,
+        "recipients": [user.email],
+        "sender": app.config["MAIL_DEFAULT_SENDER"],
+    }
+    send_email_async.delay(**email_data)
+
+
+def generate_password_reset_token(app: Flask, user: User) -> str:
+    """Sign a reset token bound to a fresh nonce, revoking previously issued ones."""
+    payload = {"email": user.email, "nonce": user.rotate_password_reset_nonce()}
+    return generate_confirmation_token(
+        app, payload, app.config["SECURITY_PASSWORD_SALT"]
+    )
+
+
+def generate_bearer_token(
+    app: Flask, user: User, expiration: int
+) -> Tuple[str, datetime]:
+    """Sign a bearer token valid for expiration seconds, bound to the current user auth version."""
+    expire = datetime.now(timezone.utc) + timedelta(seconds=expiration)
+    token_data = {
+        "user_id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "expire": str(expire),
+        "auth_version": user.auth_version,
+    }
+    token = encode_token(
+        app.config["SECRET_KEY"], app.config["SECURITY_BEARER_SALT"], token_data
+    )
+    return token, expire
+
+
+def generate_unlock_token(app: Flask, user: User) -> str:
+    """Sign a token binding the current lock episode (email + locked_until) to the user."""
+    serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
+    payload = {
+        "email": user.email,
+        "locked_until": user.locked_until.replace(microsecond=0).isoformat(),
+    }
+    return serializer.dumps(payload, salt=app.config["SECURITY_UNLOCK_SALT"])
+
+
+def confirm_unlock_token(token: str, expiration: int = 24 * 3600) -> Optional[dict]:
+    serializer = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+    try:
+        payload = serializer.loads(
+            token, salt=current_app.config["SECURITY_UNLOCK_SALT"], max_age=expiration
+        )
+    except BadData:
+        return None
+    return payload
+
+
+def _format_duration(seconds: int) -> str:
+    """Humanize a duration, e.g. 300 -> "5 minutes", 3600 -> "1 hour"."""
+    minutes, secs = divmod(int(seconds), 60)
+    hours, minutes = divmod(minutes, 60)
+    parts = []
+    if hours:
+        parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+    if minutes:
+        parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+    if not parts:
+        parts.append(f"{secs} second{'s' if secs != 1 else ''}")
+    return " ".join(parts)
+
+
+def send_account_locked_email(app: Flask, user: User, duration_seconds: int) -> None:
+    """Notify user their account was locked out and give them a link to unlock it."""
+    from ..celery import send_email_async
+
+    token = generate_unlock_token(app, user)
+    confirm_url = f"unlock-account/{token}"
+    html = render_template(
+        "email/account_locked.html",
+        subject="Account locked",
+        confirm_url=confirm_url,
+        user=user,
+        lockout_duration=_format_duration(duration_seconds),
+        locked_until=user.locked_until,
+    )
+    email_data = {
+        "subject": "Account locked",
         "html": html,
         "recipients": [user.email],
         "sender": app.config["MAIL_DEFAULT_SENDER"],

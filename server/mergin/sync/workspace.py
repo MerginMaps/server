@@ -144,6 +144,14 @@ class GlobalWorkspaceHandler(WorkspaceHandler):
             return
         return self.factory_method()
 
+    def get_by_names(self, names):
+        result = []
+        for name in set(names):
+            ws = self.get_by_name(name)
+            if ws:
+                result.append(ws)
+        return result
+
     def get_by_project(self, project):
         return self.factory_method()
 

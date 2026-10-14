@@ -123,9 +123,7 @@ def add_commands(app: Flask):
         if not project:
             click.secho("ERROR: Project does not exist", fg="red", err=True)
             sys.exit(1)
-        project.removed_at = datetime.utcnow()
-        project.removed_by = None
-        db.session.commit()
+        project.schedule_deletion()
         click.secho("Project removed", fg="green")
 
     @project.command()

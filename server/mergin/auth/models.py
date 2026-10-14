@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 import datetime
+import secrets
 from typing import List, Optional
 import bcrypt
 import re
@@ -11,10 +12,27 @@ from flask import current_app, request
 from sqlalchemy import or_, func, text
 
 from ..app import db
+from ..audit.listeners import audit_session_flags
 from ..sync.models import ProjectUser
-from ..sync.utils import get_user_agent, get_ip, get_device_id, is_reserved_word
+from ..sync.utils import is_reserved_word
+from ..utils import get_ip, get_user_agent, get_device_id
 
 MAX_USERNAME_LENGTH = 50
+
+
+def _check_dummy_password(password: str) -> None:
+    """Burn the same bcrypt cost as a real check, without an actual user."""
+    rounds = current_app.config.get("BCRYPT_LOG_ROUNDS", 12)
+    bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds))
+
+
+def _parse_lockout_policy(policy_str: str) -> list:
+    """Parse "5:300,10:3600" into [(5, 300), (10, 3600)] sorted ascending by threshold."""
+    result = []
+    for part in policy_str.split(","):
+        threshold, seconds = part.strip().split(":")
+        result.append((int(threshold), int(seconds)))
+    return sorted(result, key=lambda x: x[0])
 
 
 class User(db.Model):
@@ -33,6 +51,11 @@ class User(db.Model):
         default=datetime.datetime.utcnow,
     )
     last_signed_in = db.Column(db.DateTime(), nullable=True)
+    locked_until = db.Column(db.DateTime(), nullable=True)
+    # nonce of the only valid password reset token, cleared on any password change
+    password_reset_nonce = db.Column(db.String(64), nullable=True)
+    # bumped to invalidate all issued bearer tokens and session cookies
+    auth_version = db.Column(db.Integer, nullable=False, default=0, server_default="0")
     receive_notifications = db.Column(
         db.Boolean, default=True, nullable=False, index=True
     )
@@ -56,7 +79,8 @@ class User(db.Model):
     def check_password(self, password):
         # users created through SSO
         if self.passwd is None:
-            return
+            _check_dummy_password(password)
+            return False
         if isinstance(password, str):
             password = password.encode("utf-8")
         return bcrypt.checkpw(password, self.passwd.encode("utf-8"))
@@ -64,11 +88,75 @@ class User(db.Model):
     def assign_password(self, password):
         if isinstance(password, str):
             password = password.encode("utf-8")
+        rounds = current_app.config.get("BCRYPT_LOG_ROUNDS", 12)
         self.passwd = (
-            bcrypt.hashpw(password, bcrypt.gensalt()).decode("utf-8")
+            bcrypt.hashpw(password, bcrypt.gensalt(rounds)).decode("utf-8")
             if password
             else None
         )
+        self.password_reset_nonce = None
+
+    def needs_rehash(self):
+        """Return True if the stored hash was generated with a different cost factor than configured."""
+        if self.passwd is None:
+            return False
+        rounds = current_app.config.get("BCRYPT_LOG_ROUNDS", 12)
+        try:
+            # bcrypt hash format: $2b$<rounds>$<salt+hash>
+            hash_rounds = int(self.passwd.split("$")[2])
+            return hash_rounds < rounds
+        except (IndexError, ValueError):
+            return False
+
+    def is_locked_out(self) -> bool:
+        """Return True if the account is currently under a temporary lockout."""
+        if self.locked_until is None:
+            return False
+        return self.locked_until > datetime.datetime.utcnow()
+
+    def record_failed_login(self) -> Optional[int]:
+        """Record a failed login attempt and apply a lockout if a threshold is crossed,
+        counting only failed attempts within the trailing LOCKOUT_WINDOW and
+        since the last successful login (whichever bound is more recent).
+
+        Note: failed attempts from a user agent excluded from login_history logging
+        are not recorded at all, so they do not count toward lockout either.
+
+        Returns the lockout duration in seconds if a new lock was just applied, else None.
+        """
+        LoginHistory.add_record(self.id, request, successful=False)
+        window = current_app.config.get("LOCKOUT_WINDOW", 3600)
+        since = datetime.datetime.utcnow() - datetime.timedelta(seconds=window)
+        if self.last_signed_in and self.last_signed_in > since:
+            since = self.last_signed_in
+        recent_failures = LoginHistory.count_recent_failures(self.id, since)
+
+        policy = _parse_lockout_policy(
+            current_app.config.get("LOCKOUT_POLICY", "5:300,10:3600")
+        )
+        # only trigger on landing exactly on a tier's threshold
+        duration = None
+        for threshold, seconds in policy:
+            if recent_failures == threshold:
+                duration = seconds
+        if duration is not None:
+            self.locked_until = datetime.datetime.utcnow() + datetime.timedelta(
+                seconds=duration
+            )
+        return duration
+
+    def reset_lockout(self) -> None:
+        """Clear lockout state after a successful login."""
+        self.locked_until = None
+
+    def rotate_password_reset_nonce(self) -> str:
+        """Set a new password reset nonce, invalidating any previously issued reset token."""
+        self.password_reset_nonce = secrets.token_urlsafe(32)
+        return self.password_reset_nonce
+
+    def revoke_sessions(self) -> None:
+        """Invalidate all bearer tokens and session cookies issued so far."""
+        self.auth_version += 1
 
     @property
     def is_authenticated(self):
@@ -86,8 +174,8 @@ class User(db.Model):
         return False
 
     def get_id(self):
-        """For Flask-Login ... must return unicode user ID"""
-        return str(self.id)
+        """For Flask-Login, stored in session cookie ... user ID bound to auth version"""
+        return f"{self.id}:{self.auth_version}"
 
     @staticmethod
     def search(like: str, limit: int = 10, only_active: bool = True) -> List[User]:
@@ -165,8 +253,10 @@ class User(db.Model):
         """
         from ..sync.models import AccessRequest, RequestStatus
 
-        # remove explicit permissions
-        ProjectUser.query.filter(ProjectUser.user_id == self.id).delete()
+        db.session.info["project_member_delete_reason"] = "user_deleted"
+        # Remove explicit project permissions; PROJECT_MEMBER_DELETED events fire automatically via the after_delete listener.
+        for m in ProjectUser.query.filter(ProjectUser.user_id == self.id).all():
+            db.session.delete(m)
 
         # decline all access requests
         for req in (
@@ -180,17 +270,22 @@ class User(db.Model):
         self.active = False
         self.inactive_since = datetime.datetime.utcnow()
         db.session.commit()
+        db.session.info.pop("project_member_delete_reason", None)
 
     def anonymize(self):
         """Anonymize user object in database - remove personal information"""
         ts = round(datetime.datetime.utcnow().timestamp() * 1000)
         del_str = f"deleted_{ts}"
-        self.username = del_str
-        self.email = None
-        self.passwd = None
-        self.first_name = None
-        self.last_name = None
-        db.session.commit()
+        # Suppress user.updated — these changes are covered by the USER_DELETED event.
+        with audit_session_flags(db.session, audit_skip_user_update=True):
+            self.active = False
+            self.username = del_str
+            self.email = None
+            self.passwd = None
+            self.password_reset_nonce = None
+            self.first_name = None
+            self.last_name = None
+            db.session.commit()
 
     @classmethod
     def get_by_login(cls, login: str) -> Optional[User]:
@@ -274,28 +369,64 @@ class LoginHistory(db.Model):
     ip_address = db.Column(db.String, index=True)
     ip_geolocation_country = db.Column(db.String, index=True)
     device_id = db.Column(db.String, index=True, nullable=True)
+    successful = db.Column(db.Boolean, nullable=False, server_default="true")
 
-    def __init__(self, user_id: int, ua: str, ip: str, device_id: Optional[str] = None):
+    __table_args__ = (
+        db.Index(
+            "ix_login_history_user_id_successful_timestamp",
+            "user_id",
+            "successful",
+            "timestamp",
+        ),
+    )
+
+    def __init__(
+        self,
+        user_id: int,
+        ua: str,
+        ip: str,
+        device_id: Optional[str] = None,
+        successful: bool = True,
+    ):
         self.user_id = user_id
         self.user_agent = ua
         self.ip_address = ip
         self.device_id = device_id
+        self.successful = successful
         self.timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
 
     @staticmethod
-    def add_record(user_id: int, req: request) -> None:
+    def is_excluded_user_agent(ua: Optional[str]) -> bool:
+        """Return True if the user agent matches one of the configured exclusions
+        and should not be logged in the login history."""
+        if not ua:
+            return False
+        excluded = current_app.config.get("LOGIN_HISTORY_EXCLUDED_USER_AGENTS", [])
+        return any(pattern.lower() in ua.lower() for pattern in excluded)
+
+    @staticmethod
+    def add_record(user_id: int, req: request, successful: bool = True) -> None:
         ua = get_user_agent(req)
+        if LoginHistory.is_excluded_user_agent(ua):
+            return
         ip = get_ip(req)
         device_id = get_device_id(req)
-        # ignore login attempts coming from urllib - related to db sync tool
-        if "DB-sync" in ua:
-            return
-        lh = LoginHistory(user_id, ua, ip, device_id)
+        lh = LoginHistory(user_id, ua, ip, device_id, successful=successful)
         db.session.add(lh)
 
-        # cache user last login
-        User.query.filter_by(id=user_id).update({"last_signed_in": lh.timestamp})
+        if successful:
+            # cache user last login
+            User.query.filter_by(id=user_id).update({"last_signed_in": lh.timestamp})
         db.session.commit()
+
+    @staticmethod
+    def count_recent_failures(user_id: int, since: datetime.datetime) -> int:
+        """Count failed login attempts for a user since the given timestamp."""
+        return LoginHistory.query.filter(
+            LoginHistory.user_id == user_id,
+            LoginHistory.successful.is_(False),
+            LoginHistory.timestamp >= since,
+        ).count()
 
     @staticmethod
     def get_users_last_signed_in(user_ids: list) -> dict:
@@ -307,7 +438,10 @@ class LoginHistory(db.Model):
                 LoginHistory.user_id,
                 func.max(LoginHistory.timestamp).label("last_signed_in"),
             )
-            .filter(LoginHistory.user_id.in_(user_ids))
+            .filter(
+                LoginHistory.user_id.in_(user_ids),
+                LoginHistory.successful.is_(True),
+            )
             .group_by(LoginHistory.user_id)
             .all()
         )

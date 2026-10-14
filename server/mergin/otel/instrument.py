@@ -20,16 +20,20 @@ from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from .config import Configuration
 
 
+def create_resource():
+    return Resource.create(
+        {
+            "service.name": Configuration.OTEL_SERVICE_NAME,
+            "process.pid": os.getpid(),
+        }
+    )
+
+
 def setup_otel_provider():
     """
     Initializes the Tracer Engine. Call this Gunicorn in post_fork or in Celery worker_process_init.
     """
-    resource = Resource.create(
-        {
-            "service.name": Configuration.OTEL_SERVICE_NAME,
-            "process.pid": os.getpid(),  # useful for debugging forks
-        }
-    )
+    resource = create_resource()
 
     sampler = ParentBased(root=TraceIdRatioBased(Configuration.OTEL_TRACES_SAMPLER_ARG))
     provider = TracerProvider(resource=resource, sampler=sampler)
@@ -46,12 +50,13 @@ def setup_otel_provider():
 
 def setup_otel_metrics():
     """Initializes the Metrics Engine. Call this in post_fork."""
+    resource = create_resource()
     exporter = OTLPMetricExporter(
         endpoint=Configuration.OTEL_EXPORTER_OTLP_ENDPOINT, insecure=True
     )
     reader = PeriodicExportingMetricReader(exporter)
 
-    provider = MeterProvider(metric_readers=[reader])
+    provider = MeterProvider(resource=resource, metric_readers=[reader])
     metrics.set_meter_provider(provider)
 
 

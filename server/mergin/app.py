@@ -154,6 +154,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
     """Factory function to create Flask app instance"""
     from itsdangerous import BadTimeSignature, BadSignature
 
+    from .audit import register as register_audit
     from .auth import auth_required, decode_token, register as register_auth
     from .auth.models import User
     from .sync.app import register as register_sync
@@ -180,6 +181,9 @@ def create_app(public_keys: List[str] = None) -> Flask:
     csrf.init_app(app.app)
     login_manager.init_app(app.app)
 
+    # register audit module
+    register_audit(app.app)
+
     # register auth blueprint
     register_auth(app.app)
 
@@ -187,8 +191,13 @@ def create_app(public_keys: List[str] = None) -> Flask:
 
     # adjust login manager
     @login_manager.user_loader
-    def load_user(user_id):  # pylint: disable=W0613,W0612
-        return User.query.get(user_id)
+    def load_user(session_id):  # pylint: disable=W0613,W0612
+        user_id, *rest = session_id.split(":")
+        # legacy session cookies carry only the user id
+        auth_version = int(rest[0]) if rest else 0
+        user = User.query.get(user_id)
+        if user and user.active and user.auth_version == auth_version:
+            return user
 
     @login_manager.header_loader
     def load_user_from_header(header_val):  # pylint: disable=W0613,W0612
@@ -203,7 +212,12 @@ def create_app(public_keys: List[str] = None) -> Flask:
                 user = User.query.filter_by(
                     id=data["user_id"], username=data["username"], email=data["email"]
                 ).one_or_none()
-                if user and user.active:
+                # legacy tokens were issued without auth version
+                if (
+                    user
+                    and user.active
+                    and user.auth_version == data.get("auth_version", 0)
+                ):
                     return user
             except (BadSignature, BadTimeSignature, KeyError):
                 pass
@@ -389,12 +403,16 @@ def create_app(public_keys: List[str] = None) -> Flask:
     def log_bad_request(response):
         """Log bad requests for easier debugging"""
         if response.status_code == 400:
-            if response.json.get("detail"):
-                # default response from connexion (check against swagger.yaml)
-                logging.warning(f'HTTP 400: {response.json["detail"]}')
+            if "xml" in response.content_type:
+                pass  # QGIS proxy errors are already logged at the source
             else:
-                # either WTF form validation error or custom validation with abort(400)
-                logging.warning(f"HTTP 400: {response.data}")
+                json_body = response.get_json(silent=True)
+                if json_body and json_body.get("detail"):
+                    # default response from connexion (check against swagger.yaml)
+                    logging.warning(f'HTTP 400: {json_body["detail"]}')
+                else:
+                    # either WTF form validation error or custom validation with abort(400)
+                    logging.warning(f"HTTP 400: {response.data}")
         elif response.status_code == 409:
             # request which would result in conflict, e.g. creating the same project again
             logging.warning(f"HTTP 409: {response.data}")

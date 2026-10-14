@@ -4,6 +4,7 @@
 
 import json
 import shutil
+from typing import List
 import pysqlite3
 import uuid
 import math
@@ -14,6 +15,7 @@ from flask import url_for, current_app
 import os
 from dateutil.tz import tzlocal
 from pygeodiff import GeoDiff
+from sqlalchemy import create_engine, text
 
 from ..auth.models import User
 from ..sync.utils import generate_location, generate_checksum
@@ -30,6 +32,45 @@ from ..app import db
 from . import json_headers, DEFAULT_USER, test_project, test_project_dir, TMP_DIR
 
 CHUNK_SIZE = 1024
+
+
+def create_db() -> None:
+    """Create database for tests if it does not exist yet, e.g. a separate one for each xdist worker"""
+    url = db.engine.url
+    engine = create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
+    with engine.connect() as conn:
+        exists = conn.execute(
+            text("SELECT 1 FROM pg_database WHERE datname = :name"),
+            {"name": url.database},
+        ).scalar()
+        if not exists:
+            conn.execute(text(f'CREATE DATABASE "{url.database}"'))
+    engine.dispose()
+
+
+def clean_db() -> None:
+    """Delete all rows from db tables and restart their sequences, so tests can rely on ids.
+    Tables are processed in reversed dependency order, so referencing rows are deleted first.
+    """
+    tables = [
+        f'"{t.schema or "public"}"."{t.name}"'
+        for t in reversed(db.metadata.sorted_tables)
+    ]
+    # delete is much faster than truncate for tables with only few rows.
+    db.session.execute(text("; ".join(f"DELETE FROM {t}" for t in tables)))
+    # restart sequences of serial and identity columns
+    db.session.execute(
+        text(
+            """
+            SELECT setval(s.oid, 1, false)
+            FROM pg_class s
+            JOIN pg_depend d ON d.objid = s.oid AND d.classid = 'pg_class'::regclass AND d.deptype IN ('a', 'i')
+            WHERE s.relkind = 'S' AND d.refobjid = ANY(CAST(:tables AS regclass[]))
+            """
+        ),
+        {"tables": tables},
+    )
+    db.session.commit()
 
 
 def add_user(username="random", password="random", is_admin=False) -> User:
@@ -405,3 +446,27 @@ def logout(client):
     """Test helper to log out the client"""
     resp = client.get(url_for("/.mergin_auth_controller_logout"))
     assert resp.status_code == 200
+
+
+class ListSink:
+    """In-memory audit sink for use in automated tests.
+
+    Install via the audit_capture fixture; do not use in production code.
+    """
+
+    def __init__(self):
+        self.events: List = []
+
+    def write(self, event) -> None:
+        json.dumps(event.metadata)
+        self.events.append(event)
+
+    def of_type(self, event_type) -> List:
+        """Return all captured events matching event_type."""
+        return [e for e in self.events if e.event_type == event_type]
+
+    def one(self, event_type):
+        """Assert exactly one event of event_type was captured and return it."""
+        events = self.of_type(event_type)
+        assert len(events) == 1, f"Expected 1 {event_type} event, got {len(events)}"
+        return events[0]

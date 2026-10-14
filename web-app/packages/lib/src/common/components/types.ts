@@ -14,6 +14,10 @@ export interface TableDataHeader {
   field: string
   sortable?: boolean
   width?: number
+  linked?: boolean
+  class?: string
+  type?: 'boolean' | 'filesize' | 'timediff'
+  conditionalLink?: string
 }
 
 export type TipMessageSeverity = 'info' | 'danger'

@@ -114,7 +114,11 @@ def move_to_tmp(src, dest=None):
             else:
                 root = tempfile.gettempdir()
             temp_path = os.path.join(root, "delete-me-" + dest, os.path.basename(src))
-            os.renames(src, temp_path)
+            try:
+                os.renames(src, temp_path)
+            except OSError as rename_err:
+                logging.error(f"Failed to move {src} to tmp: {rename_err}")
+                return None
         else:
             raise
     return temp_path
@@ -403,13 +407,19 @@ class DiskStorage(ProjectStorage):
         if not (base_meta and diffs):
             return
 
+        diffs_size = sum(os.path.getsize(d.abs_path) for d in diffs)
+        logging.info(
+            f"restore_versioned_file: file={file} target_version={version} "
+            f"basefile={base_meta.abs_path} basefile_size={base_meta.size} "
+            f"diffs={len(diffs)} diffs_total_size={diffs_size}"
+        )
+
         start = time.time()
         with self.geodiff_copy(base_meta.abs_path) as restored_file:
             copy_time = time.time() - start
             logging.info(
                 f"Restore file: {base_meta.abs_path} copied to {restored_file} in {copy_time} s"
             )
-            logging.info(f"Restoring gpkg file with {len(diffs)} diffs")
             try:
                 self.flush_geodiff_logger()  # clean geodiff logger
                 changeset = os.path.join(

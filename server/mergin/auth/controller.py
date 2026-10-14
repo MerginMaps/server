@@ -3,12 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import os
-import pytz
-from datetime import datetime, timedelta
 from connexion import NoContent
 from sqlalchemy import func, desc, asc
 from sqlalchemy.sql.operators import is_
-from flask import request, current_app, jsonify, abort, render_template
+from flask import request, current_app, jsonify, abort, render_template, session
 from flask_login import login_user, logout_user, current_user
 from flask_wtf.csrf import generate_csrf
 
@@ -16,14 +14,16 @@ from .app import (
     auth_required,
     authenticate,
     send_confirmation_email,
+    send_password_reset_email,
     confirm_token,
     generate_confirmation_token,
+    confirm_unlock_token,
     user_created,
     user_account_closed,
     edit_profile_enabled,
+    generate_bearer_token,
     CANNOT_EDIT_PROFILE_MSG,
 )
-from .bearer import encode_token
 from .models import User, LoginHistory
 from .schemas import UserSchema, UserSearchSchema, UserProfileSchema, UserInfoSchema
 from .forms import (
@@ -37,11 +37,15 @@ from .forms import (
     ApiLoginForm,
 )
 from ..app import db
+from ..audit import emit
+from ..audit.listeners import actor_context, request_context
+from .events import AuthEventType
 from ..sync.models import Project
 from ..sync.utils import files_size
 
 
 EMAIL_CONFIRMATION_EXPIRATION = 12 * 3600
+ACCOUNT_UNLOCK_TOKEN_EXPIRATION = 24 * 3600
 
 
 # public endpoints
@@ -139,26 +143,33 @@ def login_public():  # noqa: E501
     if form.validate():
         user = authenticate(form.login.data, form.password.data)
         if user and user.active:
-            expire = datetime.now(pytz.utc) + timedelta(
-                seconds=current_app.config["BEARER_TOKEN_EXPIRATION"]
-            )
-            token_data = {
-                "user_id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "expire": str(expire),
-            }
-            token = encode_token(
-                current_app.config["SECRET_KEY"],
-                current_app.config["SECURITY_BEARER_SALT"],
-                token_data,
+            token, expire = generate_bearer_token(
+                current_app, user, current_app.config["BEARER_TOKEN_EXPIRATION"]
             )
 
             data = user_profile(user)
             data["session"] = {"token": token, "expire": expire}
             LoginHistory.add_record(user.id, request)
+            emit(
+                AuthEventType.USER_LOGIN_SUCCEEDED,
+                actor_id=user.id,
+                actor_email=user.email,
+                **request_context(),
+                target_user_id=user.id,
+                login_method="password",
+                token_expires_at=expire.isoformat(),
+            )
             return data
         else:
+            audit_user = user or User.get_by_login(form.login.data)
+            emit(
+                AuthEventType.USER_LOGIN_FAILED,
+                **request_context(),
+                target_user_id=audit_user.id if audit_user else None,
+                login=form.login.data,
+                reason="account_inactive" if user else "invalid_credentials",
+                login_method="password",
+            )
             abort(401, "Invalid username or password")
     abort(400, _extract_first_error(form.errors))
 
@@ -170,6 +181,15 @@ def close_user_account():
     shared projects as well clean references to created projects.
     """
     current_user.inactivate()
+    emit(
+        AuthEventType.USER_MARKED_FOR_DELETION,
+        **actor_context(),
+        target_user_id=current_user.id,
+        target_email=current_user.email,
+        scheduled_for_deletion_at=(
+            current_user.removal_at.isoformat() if current_user.removal_at else None
+        ),
+    )
     # emit signal to be caught elsewhere
     user_account_closed.send(current_user)
     return NoContent, 204
@@ -226,8 +246,25 @@ def login():  # pylint: disable=W0613,W0612
             login_user(user)
             if not os.path.isfile(current_app.config["MAINTENANCE_FILE"]):
                 LoginHistory.add_record(user.id, request)
+            emit(
+                AuthEventType.USER_LOGIN_SUCCEEDED,
+                actor_id=user.id,
+                actor_email=user.email,
+                **request_context(),
+                target_user_id=user.id,
+                login_method="password",
+            )
             return "", 200
         else:
+            audit_user = user or User.get_by_login(form.login.data)
+            emit(
+                AuthEventType.USER_LOGIN_FAILED,
+                **request_context(),
+                target_user_id=audit_user.id if audit_user else None,
+                login=form.login.data,
+                reason="account_inactive" if user else "invalid_credentials",
+                login_method="password",
+            )
             abort(401, "Invalid username or password")
     return jsonify(form.errors), 401
 
@@ -242,10 +279,36 @@ def admin_login():  # pylint: disable=W0613,W0612
     if user:
         if user.active and user.is_admin:
             login_user(user)
+            emit(
+                AuthEventType.USER_LOGIN_SUCCEEDED,
+                actor_id=user.id,
+                actor_email=user.email,
+                **request_context(),
+                target_user_id=user.id,
+                login_method="password",
+            )
+            LoginHistory.add_record(user.id, request)
             return "", 200
         else:
+            emit(
+                AuthEventType.USER_LOGIN_FAILED,
+                **request_context(),
+                target_user_id=user.id,
+                login=form.login.data,
+                reason="insufficient_permissions",
+                login_method="password",
+            )
             abort(403, "You do not have permissions")
     else:
+        audit_user = User.get_by_login(form.login.data)
+        emit(
+            AuthEventType.USER_LOGIN_FAILED,
+            **request_context(),
+            target_user_id=audit_user.id if audit_user else None,
+            login=form.login.data,
+            reason="invalid_credentials",
+            login_method="password",
+        )
         abort(401, "Invalid username or password")
 
 
@@ -264,8 +327,19 @@ def change_password():  # pylint: disable=W0613,W0612
             form.old_password.errors.append("The old password is incorrect")
             return jsonify(form.errors), 400
         current_user.assign_password(form.password.data)
+        current_user.revoke_sessions()
         db.session.add(current_user)
         db.session.commit()
+        # keep the session that made the change logged in (bearer token callers need to log in again)
+        # "_user_id" is flask-login session key, present only for cookie-based authentication
+        if "_user_id" in session:
+            login_user(current_user._get_current_object())
+        emit(
+            AuthEventType.USER_PASSWORD_CHANGED,
+            **actor_context(),
+            target_user_id=current_user.id,
+            target_email=current_user.email,
+        )
         return "", 200
     return jsonify(form.errors), 400
 
@@ -288,44 +362,91 @@ def password_reset():  # pylint: disable=W0613,W0612
     if not form.validate():
         return jsonify(form.errors), 400
 
+    # respond the same regardless of account existence/state (enumeration)
     user = User.query.filter(
         func.lower(User.email) == func.lower(form.email.data.strip())
     ).one_or_none()
-    if not user:
-        return jsonify({"email": ["Account with given email does not exist"]}), 404
-    if not user.active:
-        # user should confirm email first
-        return jsonify({"email": ["Account is not active"]}), 400
-    if not user.can_edit_profile:
-        # using SSO
-        abort(403, CANNOT_EDIT_PROFILE_MSG)
-
-    send_confirmation_email(
-        current_app,
-        user,
-        "change-password",
-        "email/password_reset.html",
-        "Password reset",
+    emit(
+        AuthEventType.USER_PASSWORD_RESET_REQUESTED,
+        **request_context(),
+        target_user_id=user.id if user else None,
+        target_email=form.email.data.strip(),
     )
+    if user and user.active and user.can_edit_profile:
+        send_password_reset_email(current_app, user)
     return "", 200
 
 
 def confirm_new_password(token):  # pylint: disable=W0613,W0612
-    email = confirm_token(token, salt=current_app.config["SECURITY_PASSWORD_SALT"])
-    if not email:
+    payload = confirm_token(
+        token,
+        salt=current_app.config["SECURITY_PASSWORD_SALT"],
+        expiration=current_app.config["PASSWORD_RESET_TOKEN_EXPIRATION"],
+    )
+    # tokens issued before nonces were introduced carried only the email
+    if not isinstance(payload, dict):
+        emit(
+            AuthEventType.USER_PASSWORD_RESET_FAILED,
+            **request_context(),
+            target_user_id=None,
+            target_email=None,
+            reason="invalid_token",
+        )
         abort(400, "Invalid token")
 
-    user = User.query.filter_by(email=email).first_or_404()
+    email = payload["email"]
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        emit(
+            AuthEventType.USER_PASSWORD_RESET_FAILED,
+            **request_context(),
+            target_user_id=None,
+            target_email=email,
+            reason="user_not_found",
+        )
+        abort(404)
+    # token was already used, superseded by a newer one or revoked by a password change
+    if not user.password_reset_nonce or user.password_reset_nonce != payload["nonce"]:
+        emit(
+            AuthEventType.USER_PASSWORD_RESET_FAILED,
+            **request_context(),
+            target_user_id=user.id,
+            target_email=user.email,
+            reason="token_revoked",
+        )
+        abort(400, "Invalid token")
     if not user.active:
+        emit(
+            AuthEventType.USER_PASSWORD_RESET_FAILED,
+            **request_context(),
+            target_user_id=user.id,
+            target_email=user.email,
+            reason="account_inactive",
+        )
         abort(400, "Account is not active")
     if not user.can_edit_profile:
+        emit(
+            AuthEventType.USER_PASSWORD_RESET_FAILED,
+            **request_context(),
+            target_user_id=user.id,
+            target_email=user.email,
+            reason="profile_edit_disabled",
+        )
         abort(403, CANNOT_EDIT_PROFILE_MSG)
 
     form = UserPasswordForm.from_json(request.json)
     if form.validate():
         user.assign_password(form.password.data)
+        user.revoke_sessions()
+        user.reset_lockout()
         db.session.add(user)
         db.session.commit()
+        emit(
+            AuthEventType.USER_PASSWORD_RESET_COMPLETED,
+            **request_context(),
+            target_user_id=user.id,
+            target_email=user.email,
+        )
         return "", 200
     return jsonify(form.errors), 400
 
@@ -350,6 +471,31 @@ def confirm_email(token):  # pylint: disable=W0613,W0612
         db.session.add(user)
         db.session.commit()
 
+    return "", 200
+
+
+def unlock_account(token: str):  # pylint: disable=W0613,W0612
+    payload = confirm_unlock_token(token, expiration=ACCOUNT_UNLOCK_TOKEN_EXPIRATION)
+    if not payload:
+        abort(400, "Invalid or expired link")
+
+    user = User.query.filter_by(email=payload["email"]).first_or_404()
+    stale = (
+        not user.is_locked_out()
+        or user.locked_until.replace(microsecond=0).isoformat()
+        != payload["locked_until"]
+    )
+    if stale:
+        abort(400, "This unlock link is no longer valid")
+
+    user.reset_lockout()
+    db.session.commit()
+    emit(
+        AuthEventType.USER_UNLOCKED,
+        **request_context(),
+        target_user_id=user.id,
+        target_email=user.email,
+    )
     return "", 200
 
 
@@ -396,6 +542,7 @@ def register_user():  # pylint: disable=W0613,W0612
     form = UserRegistrationForm()
     form.username.data = User.generate_username(form.email.data)
     if form.is_submitted() and form.validate():
+        db.session.info["audit_user_creation_source"] = "admin"
         user = User.create(form.username.data, form.email.data, form.password.data)
         user_created.send(user, source="admin")
         token = generate_confirmation_token(
@@ -441,13 +588,27 @@ def update_user(username):  # pylint: disable=W0613,W0612
         abort(400, "Unable to assign super admin role")
 
     user = User.query.filter_by(username=username).first_or_404("User not found")
+    old_active = user.active
     form.update_obj(user)
-
-    # remove inactive since flag for ban or re-activation
     user.inactive_since = None
-
     db.session.add(user)
     db.session.commit()
+
+    if old_active and not user.active:
+        emit(
+            AuthEventType.USER_DEACTIVATED,
+            **actor_context(),
+            target_user_id=user.id,
+            target_email=user.email,
+        )
+    elif not old_active and user.active:
+        emit(
+            AuthEventType.USER_RESTORED,
+            **actor_context(),
+            target_user_id=user.id,
+            target_email=user.email,
+        )
+
     return jsonify(UserSchema().dump(user))
 
 
@@ -455,8 +616,22 @@ def update_user(username):  # pylint: disable=W0613,W0612
 def delete_user(username):  # pylint: disable=W0613,W0612
     user = User.query.filter_by(username=username).first_or_404("User not found")
     user.inactivate()
+    emit(
+        AuthEventType.USER_MARKED_FOR_DELETION,
+        **actor_context(),
+        target_user_id=user.id,
+        target_email=user.email,
+        scheduled_for_deletion_at=(
+            user.removal_at.isoformat() if user.removal_at else None
+        ),
+    )
     user_account_closed.send(user)
-    # force 'delete' user
+    emit(
+        AuthEventType.USER_DELETED,
+        **actor_context(),
+        target_user_id=user.id,
+        target_email=user.email,
+    )
     user.anonymize()
     return "", 204
 
@@ -549,6 +724,7 @@ def create_user():
     if not form.validate():
         return jsonify(form.errors), 400
 
+    db.session.info["audit_user_creation_source"] = "api"
     user = User.create(
         form.username.data,
         form.email.data,

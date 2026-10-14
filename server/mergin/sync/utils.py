@@ -34,6 +34,7 @@ from flask import current_app
 from pathlib import Path
 
 from .config import Configuration
+from ..utils import format_time_delta
 
 # log base for caching strategy, diff checkpoints, etc.
 LOG_BASE = 4
@@ -103,32 +104,6 @@ def get_blacklisted_files(blacklist):
     return [p for p in blacklist if not p.endswith("/")]
 
 
-def get_user_agent(request):
-    """Return user agent from request headers
-
-    In case of browser client a parsed version from werkzeug utils is returned else raw value of header.
-    """
-    if request.user_agent.browser and request.user_agent.platform:
-        client = request.user_agent.browser.capitalize()
-        version = request.user_agent.version
-        system = request.user_agent.platform.capitalize()
-        return f"{client}/{version} ({system})"
-    else:
-        return request.user_agent.string
-
-
-def get_ip(request):
-    """Returns request's IP address based on X_FORWARDED_FOR header
-    from proxy webserver (which should always be the case)
-    """
-    forwarded_ips = request.environ.get(
-        "HTTP_X_FORWARDED_FOR", request.environ.get("REMOTE_ADDR", "untrackable")
-    )
-    # seems like we get list of IP addresses from AWS infra (beginning with external IP address of client, followed by some internal IP)
-    ip = forwarded_ips.split(",")[0]
-    return ip
-
-
 def generate_location():
     """Return random location where project is saved on disk
 
@@ -137,6 +112,16 @@ def generate_location():
         '1c/624c6af4d6d2710bbfe1c128e8ca267b'
     """
     return os.path.join(secrets.token_hex(1), secrets.token_hex(16))
+
+
+def project_name_conflict_message(project) -> str:
+    """Return error message for a new project clashing with an existing project name"""
+    if project.removed_at:
+        return (
+            f"Project with the same name is scheduled for deletion, "
+            f"you can create a project with this name in {format_time_delta(project.expiration)}"
+        )
+    return "Project with the same name already exists"
 
 
 def is_valid_uuid(uuid):
@@ -255,11 +240,6 @@ def split_project_path(project_path):
     """Extract workspace and project names out of path."""
     workspace_name, project_name = project_path.split("/")
     return workspace_name, project_name
-
-
-def get_device_id(request: Request) -> Optional[str]:
-    """Get device uuid from http header X-Device-Id"""
-    return request.headers.get("X-Device-Id")
 
 
 def files_size():
@@ -463,7 +443,10 @@ def check_skip_validation(file_path: str) -> bool:
     Some files are allowed even if they have forbidden extension or mime type.
     """
     file_name = os.path.basename(file_path)
-    return file_name in Configuration.UPLOAD_FILES_WHITELIST
+    if file_name in Configuration.UPLOAD_FILES_WHITELIST:
+        return True
+    ext = os.path.splitext(file_path)[1].lower()
+    return ext in {e.lower() for e in Configuration.UPLOAD_EXTENSIONS_WHITELIST}
 
 
 FORBIDDEN_MIME_TYPES = {
@@ -496,9 +479,17 @@ def is_supported_type(filepath) -> bool:
     return mime_type.startswith("image/") or mime_type not in FORBIDDEN_MIME_TYPES
 
 
+# libmagic >= 5.46 (e.g. Ubuntu 26.04) reports some types differently than older versions,
+# map them to the older names to keep responses stable regardless of the system libmagic
+MIME_TYPE_ALIASES = {
+    "application/geopackage+sqlite3": "application/vnd.sqlite3",
+}
+
+
 def get_mimetype(filepath: str) -> str:
     """Identifies file types by checking their headers"""
-    return magic.from_file(filepath, mime=True)
+    mime_type = magic.from_file(filepath, mime=True)
+    return MIME_TYPE_ALIASES.get(mime_type, mime_type)
 
 
 def get_x_accel_uri(*url_parts):

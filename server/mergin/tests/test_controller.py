@@ -10,10 +10,10 @@ from ..app import db
 from .utils import Response
 
 
-def test_healthcheck(client):
+def test_healthcheck(client, monkeypatch):
     # anonymous user
     client.get(url_for("/.mergin_auth_controller_logout"))
-    client.application.config["WTF_CSRF_ENABLED"] = True
+    monkeypatch.setitem(client.application.config, "WTF_CSRF_ENABLED", True)
     maint_file = current_app.config["MAINTENANCE_FILE"]
     resp = client.post("/alive")
     assert resp.status_code == 200

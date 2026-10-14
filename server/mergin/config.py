@@ -20,6 +20,10 @@ class Configuration(object):
     # expiration time in seconds
     WTF_CSRF_TIME_LIMIT = config("WTF_CSRF_TIME_LIMIT", default=3600 * 24, cast=int)
     WTF_CSRF_ENABLED = config("WTF_CSRF_ENABLED", default=True, cast=bool)
+    # how long a web session cookie is accepted, in seconds
+    PERMANENT_SESSION_LIFETIME = config(
+        "PERMANENT_SESSION_LIFETIME", default=3600 * 24 * 31, cast=int
+    )
 
     # Mergin DB related
     SQLALCHEMY_TRACK_MODIFICATIONS = config(
@@ -69,6 +73,11 @@ class Configuration(object):
         "CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS", default="{}", cast=eval
     )
     CELERY_ACKS_LATE = config("CELERY_ACKS_LATE", default=False, cast=bool)
+    # send a task-sent event when a task is published so that monitoring tools
+    # (e.g. celery-exporter) can report the queue name, including for failed tasks
+    CELERY_SEND_TASK_SENT_EVENT = config(
+        "CELERY_SEND_TASK_SENT_EVENT", default=False, cast=bool
+    )
     CELERYD_CONCURRENCY = config("CELERYD_CONCURRENCY", default=1, cast=int)
     CELERYD_PREFETCH_MULTIPLIER = config(
         "CELERYD_PREFETCH_MULTIPLIER", default=4, cast=int

@@ -1,6 +1,11 @@
 name: Code Layout
 
-on: push
+on:
+  push:
+    paths:
+      # Run just when python files changed
+      - "server/**/*.py"
+      - ".github/workflows/code_style.yml"
 
 jobs:
   code_style_python:
@@ -14,17 +19,3 @@ jobs:
           version: 25.1.0
           options: "--check --verbose --diff"
           src: "./server"
-
-  code_style_js:
-    name: JavaScript code convention check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Check JS
-        run: |
-            cd web-app
-            yarn install
-            yarn run lint:no-legacy

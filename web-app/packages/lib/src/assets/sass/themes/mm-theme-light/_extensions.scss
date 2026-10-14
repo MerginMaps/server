@@ -99,6 +99,10 @@ img {
   }
 }
 
+.p-divider.p-divider-horizontal {
+  margin: 0;
+}
+
 
 // Custom semantic  classes
 
@@ -114,8 +118,79 @@ img {
   color: map-get($colors, 'dark-gray');
 }
 
+.text-color-medium-gray {
+  color: map-get($colors, 'medium-gray');
+}
+
 .overflow-wrap-anywhere {
   overflow-wrap: anywhere;
+}
+
+// Suppress the focus halo after a mouse click on any PrimeVue button while
+// keeping the ring for keyboard navigation (accessibility).
+.p-button:focus:not(:focus-visible) {
+  box-shadow: none;
+}
+
+// Icon-only action button used in list rows (e.g. resend / trash on invitation rows)
+.p-button.icon-action-btn {
+  color: map-get($colors, 'forest');
+
+  &:not(:disabled):hover {
+    background: map-get($colors, 'light-green');
+    color: map-get($colors, 'forest');
+  }
+
+  &.icon-action-btn--danger {
+    color: map-get($colors, 'grape');
+
+    &:not(:disabled):hover {
+      background: map-get($colors, 'negative-light');
+      color: map-get($colors, 'grape');
+    }
+  }
+}
+
+.p-button.p-button-outlined {
+  &.p-button-warning {
+    border: 2px solid map-get($colors, 'earth');
+    color: map-get($colors, 'earth');
+
+    &:hover {
+      background-color: map-get($colors, 'warning');
+      border: 2px solid map-get($colors, 'warning');
+    }
+  }
+
+  &.p-button-danger {
+    border: 2px solid map-get($colors, 'grape');
+    color: map-get($colors, 'grape');
+
+    &:hover {
+      background-color: map-get($colors, 'negative');
+      border: 2px solid map-get($colors, 'negative');
+    }
+  }
+
+  &.p-button-primary {
+    border: 2px solid $primaryDarkColor;
+    color: $primaryDarkColor;
+
+    &:hover {
+      background-color: $primaryColor;
+      border: 2px solid $primaryColor;
+    }
+  }
+}
+
+.p-checkbox:not(.p-checkbox-disabled) {
+  .p-checkbox-box {
+    &.p-highlight:hover {
+      .p-checkbox-icon {
+        color: $primaryColor
+      }
+    }
+  }
 }
 
 // Color of error messages in inputs ...
@@ -126,10 +201,35 @@ img {
 
 // Font size in avatar
 .p-avatar:not(.p-avatar-lg):not(.p-avatar-xl) {
-  font-size: 0.857rem;
+  font-size: 0.75rem;
+}
+
+.p-avatar-text {
+  color: map-get($map: $colors, $key: deep-ocean)
 }
 
 .tooltip {
   text-decoration-line: underline;
   text-decoration-style: dotted;
+}
+
+td:has(.dt-row-link) {
+  padding: 0;
+}
+
+.dt-row-link {
+  display: block;
+  padding: $tableBodyCellPadding;
+}
+
+// Multiselect customization of highlighting and focusing
+
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item.p-highlight.p-focus {
+  background-color: transparent;
+  color: var(--text-color);
+}
+
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item.p-highlight {
+  background-color: transparent;
+  color: var(--text-color);
 }

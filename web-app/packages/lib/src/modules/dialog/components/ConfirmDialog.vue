@@ -6,20 +6,12 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 <template>
   <div class="flex flex-column align-items-center pb-4 text-center gap-2">
-    <img
-      v-if="severity === 'danger'"
-      src="@/assets/trash.svg"
-      alt="Cover for confirm dialog"
-    />
-    <img
-      v-else-if="severity === 'warning'"
-      src="@/assets/warning-dialog.svg"
-      alt="Cover for confirm dialog"
-    />
-    <img v-else src="@/assets/neutral.svg" alt="Cover for confirm dialog" />
+    <img :src="logoSrc" alt="Cover for confirm dialog" />
     <span class="text-color-forest title-t1">{{ text }}</span>
     <span class="paragraph-p5 opacity-80">{{ description }}</span>
-    <span v-if="hint" class="title-t2 my-2">{{ hint }}</span>
+    <span v-if="hint" class="title-t2 my-2" style="white-space: pre-wrap">{{
+      hint
+    }}</span>
     <div class="flex flex-column gap-3 w-full">
       <span
         v-if="confirmField"
@@ -49,18 +41,20 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
       class="w-full flex flex-column lg:flex-row justify-content-between align-items-center mt-4"
     >
       <PButton
-        severity="secondary"
+        :severity="severity"
+        outlined
         @click="close"
         class="flex w-12 mb-2 lg:mb-0 lg:mr-2 lg:w-6 justify-content-center"
         data-cy="clone-dialog-close-btn"
-        >{{ cancelText }}</PButton
-      >
+        :label="cancelText"
+      />
 
       <PButton
         :disabled="!isConfirmed"
         @click="confirm"
         :severity="severity"
         class="flex w-12 lg:w-6 justify-content-center"
+        data-cy="confirm-yes"
       >
         {{ confirmText }}
       </PButton>
@@ -69,17 +63,22 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 </template>
 
 <script setup lang="ts">
-import { ref, computed, defineEmits, withDefaults } from 'vue'
+import { ref, computed } from 'vue'
 
 import { ConfirmDialogProps } from '../types'
 
+import negativeIcon from '@/assets/negative.svg'
+import neutralIcon from '@/assets/neutral.svg'
+import trashIcon from '@/assets/trash.svg'
+import warningIcon from '@/assets/warning-dialog.svg'
 import TipMessage from '@/common/components/TipMessage.vue'
 import { useDialogStore } from '@/modules/dialog/store'
 
 const props = withDefaults(defineProps<ConfirmDialogProps>(), {
   confirmText: 'Ok',
   cancelText: 'Cancel',
-  severity: 'primary'
+  severity: 'primary',
+  logoVariant: 'auto'
 })
 
 const confirmValue = ref('')
@@ -89,6 +88,31 @@ const isConfirmed = computed(() => {
   return props.confirmField
     ? props.confirmField.expected === confirmValue.value
     : true
+})
+
+const logoSrc = computed(() => {
+  const variant =
+    props.logoVariant === 'auto'
+      ? props.severity === 'danger'
+        ? 'danger'
+        : props.severity === 'warning'
+        ? 'warning'
+        : 'primary'
+      : props.logoVariant
+
+  if (variant === 'danger') {
+    return trashIcon
+  }
+
+  if (variant === 'warning') {
+    return warningIcon
+  }
+
+  if (variant === 'negative') {
+    return negativeIcon
+  }
+
+  return neutralIcon
 })
 
 const { close } = useDialogStore()

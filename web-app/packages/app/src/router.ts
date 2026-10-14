@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
 import {
+  AccountUnlockView,
   ChangePasswordView,
   FileBrowserView,
   FileVersionDetailView,
@@ -78,6 +79,13 @@ export const createRouter = (pinia: Pinia) => {
         path: '/change-password/:token',
         name: UserRouteName.ChangePassword,
         component: ChangePasswordView,
+        props: true,
+        meta: { public: true }
+      },
+      {
+        path: '/unlock-account/:token',
+        name: UserRouteName.UnlockAccount,
+        component: AccountUnlockView,
         props: true,
         meta: { public: true }
       },

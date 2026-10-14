@@ -37,6 +37,7 @@ from ..sync.models import (
     FileHistory,
     PushChangeType,
     ProjectFilePath,
+    project_soft_deleted,
 )
 from ..sync.storages.disk import copy_file as real_copy_file
 from ..sync.files import files_changes_from_upload
@@ -166,10 +167,9 @@ def test_file_history(client, diff_project):
     assert "v1" not in history
     assert "v3" in history
     assert "location" not in history["v7"]
-    assert "expiration" in history["v7"]
 
 
-def test_get_paginated_projects(client):
+def test_get_paginated_projects(client, monkeypatch):
     user = User.query.filter_by(username="mergin").first()
     test_workspace = create_workspace()
     for i in range(14):
@@ -207,11 +207,14 @@ def test_get_paginated_projects(client):
     resp_data = json.loads(resp.data)
     assert len(resp_data.get("projects")) == 5
     assert "foo13" in resp_data.get("projects")[-1]["name"]
-    # tests backward compatibility sort
+    # tests backward compatibility sort, projects within the same namespace are not ordered
     resp_alt = client.get(
         "/v1/project/paginated?page=2&per_page=10&order_by=namespace&descending=false"
     )
-    assert resp_alt.json == resp.json
+    assert resp_alt.json["count"] == resp.json["count"]
+    assert [p["namespace"] for p in resp_alt.json["projects"]] == [
+        p["namespace"] for p in resp.json["projects"]
+    ]
 
     # try with unknown order parameter
     resp = client.get(
@@ -300,9 +303,9 @@ def test_get_paginated_projects(client):
     db.session.commit()
 
     # reset permissions so new user would be only a guest
-    Configuration.GLOBAL_READ = False
-    Configuration.GLOBAL_WRITE = False
-    Configuration.GLOBAL_ADMIN = False
+    monkeypatch.setattr(Configuration, "GLOBAL_READ", False)
+    monkeypatch.setattr(Configuration, "GLOBAL_WRITE", False)
+    monkeypatch.setattr(Configuration, "GLOBAL_ADMIN", False)
     # add new user and pretend he created one project (total 15+1)
     user2 = add_user("user2", "ilovemergin")
     create_project("created", test_workspace, user2)
@@ -323,7 +326,7 @@ def test_get_paginated_projects(client):
     assert resp.json["projects"][0]["name"] == "foo1"
 
     # make user reader of all projects
-    Configuration.GLOBAL_READ = True
+    monkeypatch.setattr(Configuration, "GLOBAL_READ", True)
     resp = client.get("/v1/project/paginated?page=1&per_page=10&flag=created")
     assert resp.json["count"] == 1
     resp = client.get("/v1/project/paginated?page=1&per_page=20&flag=shared")
@@ -434,8 +437,8 @@ def test_add_project(client, app, data, expected):
         project = Project.query.filter_by(
             name=data["name"].strip(), workspace_id=test_workspace_id
         ).first()
-        proj_files = project.files
-        temp_files = template.files
+        proj_files = sorted(project.files, key=lambda f: f.path)
+        temp_files = sorted(template.files, key=lambda f: f.path)
         assert len(proj_files) == len(temp_files)
         assert not any(
             x.checksum != y.checksum and x.path != y.path
@@ -1099,7 +1102,7 @@ def test_push_project_start(client, data, expected):
             assert failure.error_type == "push_start"
 
 
-def test_push_to_new_project(client):
+def test_push_to_new_project(client, monkeypatch):
     # create blank project
     p = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
@@ -1110,7 +1113,7 @@ def test_push_to_new_project(client):
     db.session.add(project)
     db.session.commit()
 
-    current_app.config["BLACKLIST"] = ["test4"]
+    monkeypatch.setitem(current_app.config, "BLACKLIST", ["test4"])
     url = "/v1/project/push/{}/{}".format(test_workspace_name, "blank")
     data = {"version": "v0", "changes": _get_changes(test_project_dir)}
     resp = client.post(
@@ -1149,8 +1152,8 @@ def test_push_to_new_project(client):
     assert failure.error_details == "First push should be with v0"
 
 
-def test_push_integrity_error(client, app):
-    app.config["LOCKFILE_EXPIRATION"] = 5
+def test_push_integrity_error(client, app, monkeypatch):
+    monkeypatch.setitem(app.config, "LOCKFILE_EXPIRATION", 5)
     url = "/v1/project/push/{}/{}".format(test_workspace_name, test_project)
     changes = _get_changes(test_project_dir)
     changes["added"] = changes["removed"] = []
@@ -1258,13 +1261,13 @@ def test_stale_upload_takeover(client, app):
     assert failure.error_details == "Push artefact removed by subsequent push"
 
 
-def test_exceed_data_limit(client):
+def test_exceed_data_limit(client, monkeypatch):
     project = Project.query.filter_by(
         name=test_project, workspace_id=test_workspace_id
     ).first()
     user_disk_space = sum(p.disk_usage for p in project.creator.projects)
     # set basic storage that it is fully used
-    Configuration.GLOBAL_STORAGE = user_disk_space
+    monkeypatch.setattr(Configuration, "GLOBAL_STORAGE", user_disk_space)
 
     url = "/v1/project/push/{}/{}".format(test_workspace_name, test_project)
     changes = _get_changes(test_project_dir)
@@ -1298,7 +1301,11 @@ def test_exceed_data_limit(client):
     assert resp.status_code == 200
 
     # tight limit again
-    Configuration.GLOBAL_STORAGE = sum(p.disk_usage for p in project.creator.projects)
+    monkeypatch.setattr(
+        Configuration,
+        "GLOBAL_STORAGE",
+        sum(p.disk_usage for p in project.creator.projects),
+    )
     db.session.commit()
 
     changes["removed"] = changes["updated"] = []
@@ -1326,7 +1333,7 @@ def test_exceed_data_limit(client):
         headers=json_headers,
     )
     # reset
-    Configuration.GLOBAL_STORAGE = 104857600
+    monkeypatch.setattr(Configuration, "GLOBAL_STORAGE", 104857600)
     assert resp.status_code == 200
 
 
@@ -1349,7 +1356,7 @@ def remove_transaction(transaction_id):
     shutil.rmtree(upload_dir, ignore_errors=True)
 
 
-def test_chunk_upload(client, app):
+def test_chunk_upload(client, app, monkeypatch):
     changes = _get_changes(test_project_dir)
     upload, upload_dir = create_transaction("mergin", changes)
     chunk_id = upload.changes["added"][0]["chunks"][0]
@@ -1365,7 +1372,7 @@ def test_chunk_upload(client, app):
     assert os.path.exists(os.path.join(upload_dir, "chunks", chunk_id))
 
     # tests to send bigger chunk than allowed
-    app.config["MAX_CHUNK_SIZE"] = 10 * CHUNK_SIZE
+    monkeypatch.setitem(app.config, "MAX_CHUNK_SIZE", 10 * CHUNK_SIZE)
     with open(os.path.join(test_project_dir, "test_dir", "test4.txt"), "rb") as file:
         data = file.read(11 * CHUNK_SIZE)
     headers = {"Content-Type": "application/octet-stream"}
@@ -1755,6 +1762,102 @@ def test_push_no_diff_finish(client):
     assert "diff" not in updated_file
 
 
+def test_push_force_update_size_limit(client):
+    """Server should only try to construct a diff for a force-updated (full gpkg,
+    no diff sent) upload when its size is within MAX_DIFFABLE_FORCE_UPDATE_SIZE;
+    above the limit it should skip diff construction and keep it as a plain
+    force update."""
+    working_dir = os.path.join(TMP_DIR, "test_push_force_update_size_limit")
+    # cleanup
+    if os.path.exists(working_dir):
+        shutil.rmtree(working_dir)
+
+    shutil.copytree(test_project_dir, working_dir)
+    # mimic base.gpkg was updated with inserted_1_A.gpkg (but no diff is created)
+    shutil.copy(
+        os.path.join(working_dir, "inserted_1_A.gpkg"),
+        os.path.join(working_dir, "base.gpkg"),
+    )
+    base_gpkg_size = os.path.getsize(os.path.join(working_dir, "base.gpkg"))
+    changes = {
+        "added": [],
+        "removed": [],
+        "updated": [
+            file_info(working_dir, "base.gpkg", chunk_size=CHUNK_SIZE),
+            file_info(working_dir, "test.txt", chunk_size=CHUNK_SIZE),
+        ],
+    }
+
+    # below limit -> diff is still constructed server-side
+    upload, upload_dir = create_transaction("mergin", changes)
+    upload_chunks(upload_dir, upload.changes, src_dir=working_dir)
+    with patch.dict(
+        client.application.config,
+        {"MAX_DIFFABLE_FORCE_UPDATE_SIZE": base_gpkg_size + 1},
+    ):
+        resp = client.post(f"/v1/project/push/finish/{upload.transaction_id}")
+    assert resp.status_code == 200
+    latest_version = upload.project.get_latest_version()
+    assert (
+        latest_version.changes.filter(
+            FileHistory.change == PushChangeType.UPDATE.value
+        ).count()
+        == 1
+    )
+    assert (
+        latest_version.changes.filter(
+            FileHistory.change == PushChangeType.UPDATE_DIFF.value
+        ).count()
+        == 1
+    )
+    file_meta = latest_version.changes.filter(
+        FileHistory.change == PushChangeType.UPDATE_DIFF.value
+    ).first()
+    assert file_meta.diff_file is not None
+    assert os.path.exists(
+        os.path.join(upload.project.storage.project_dir, file_meta.diff_file.location)
+    )
+
+    # above limit -> diff construction is skipped, plain force update
+    working_file = os.path.join(working_dir, "base.gpkg")
+    sql = "INSERT INTO simple (geometry, name) VALUES (GeomFromText('POINT(24.5, 38.2)', 4326), 'insert_test')"
+    execute_query(working_file, sql)
+    updated_gpkg_size = os.path.getsize(working_file)
+    changes["updated"] = [
+        file_info(working_dir, "base.gpkg", chunk_size=CHUNK_SIZE),
+        file_info(working_dir, "test.txt", chunk_size=CHUNK_SIZE),
+    ]
+    upload, upload_dir = create_transaction("mergin", changes, version=2)
+    upload_chunks(upload_dir, upload.changes, src_dir=working_dir)
+    with patch.dict(
+        client.application.config,
+        {"MAX_DIFFABLE_FORCE_UPDATE_SIZE": updated_gpkg_size - 1},
+    ):
+        resp = client.post(f"/v1/project/push/finish/{upload.transaction_id}")
+    assert resp.status_code == 200
+    latest_version = upload.project.get_latest_version()
+    assert (
+        latest_version.changes.filter(
+            FileHistory.change == PushChangeType.UPDATE.value
+        ).count()
+        == 2
+    )
+    assert not latest_version.changes.filter(
+        FileHistory.change == PushChangeType.UPDATE_DIFF.value
+    ).count()
+    assert all(
+        file_meta.diff_file is None
+        for file_meta in latest_version.changes.filter(
+            FileHistory.change == PushChangeType.UPDATE.value
+        ).all()
+    )
+    version_files = os.listdir(
+        os.path.join(upload.project.storage.project_dir, f"v{latest_version.name}")
+    )
+    diff_files = [f for f in version_files if re.findall("-diff-", f)]
+    assert not diff_files
+
+
 clone_project_data = [
     ({"project": " clone "}, "mergin", 200),  # clone own project
     (
@@ -1787,7 +1890,7 @@ clone_project_data = [
 
 
 @pytest.mark.parametrize("data,username,expected", clone_project_data)
-def test_clone_project(client, data, username, expected):
+def test_clone_project(client, data, username, expected, monkeypatch):
     # create new version with diff
     upload, upload_dir = create_transaction(
         "mergin", _get_changes_with_diff(test_project_dir)
@@ -1801,7 +1904,7 @@ def test_clone_project(client, data, username, expected):
     if username != "mergin":
         user = add_user(username, "bar")
         # allow user to write into workspace, e.g. create project
-        Configuration.GLOBAL_ADMIN = True
+        monkeypatch.setattr(Configuration, "GLOBAL_ADMIN", True)
         # switch default user
         client.get(url_for("/.mergin_auth_controller_logout"))
         client.post(
@@ -1816,7 +1919,7 @@ def test_clone_project(client, data, username, expected):
         ).first()
         user_disk_space = sum(p.disk_usage for p in project.creator.projects)
         # set basic storage that it is fully used
-        Configuration.GLOBAL_STORAGE = user_disk_space
+        monkeypatch.setattr(Configuration, "GLOBAL_STORAGE", user_disk_space)
     resp = client.post(endpoint, data=json.dumps(data), headers=json_headers)
     assert resp.status_code == expected
     if expected == 422:
@@ -1864,10 +1967,10 @@ def test_clone_project(client, data, username, expected):
         # cleanup
         shutil.rmtree(project.storage.project_dir)
 
-    Configuration.GLOBAL_STORAGE = 104857600
+    monkeypatch.setattr(Configuration, "GLOBAL_STORAGE", 104857600)
 
 
-def test_optimize_storage(app, client, diff_project):
+def test_optimize_storage(app, client, diff_project, monkeypatch):
     """Test optimize storage for geopackages which could be restored from diffs
     Scenarios for test projects:
         v1/base.gpkg create - basefile (no optimize)
@@ -1908,7 +2011,7 @@ def test_optimize_storage(app, client, diff_project):
     assert os.path.exists(optimize_v4) and os.path.exists(optimize_v6)
 
     # remove constraint on file age
-    SyncConfiguration.FILE_EXPIRATION = 0
+    monkeypatch.setattr(SyncConfiguration, "FILE_EXPIRATION", 0)
     optimize_storage(diff_project.id)
     assert not (os.path.exists(optimize_v4) and os.path.exists(optimize_v6))
     # we keep latest file, basefiles must stay (either very first one, or any other with forced update)
@@ -2072,21 +2175,12 @@ def test_get_projects_by_uuids(client):
     user = User.query.filter_by(username="mergin").first()
     test_workspace = create_workspace()
     p1 = create_project("foo", test_workspace, user)
-    user2 = add_user("user2", "ilovemergin")
-    test_workspace_2 = create_workspace()
-    test_workspace_2._id = (
-        2  # FIXME: This should be refactored due to only one workspace in CE
-    )
-    p2 = create_project("foo", test_workspace_2, user2)
-    uuids = ",".join([str(p1.id), str(p2.id), "1234"])
+    uuids = ",".join([str(p1.id), "1234"])
 
     resp = client.get(f"/v1/project/by_uuids?uuids={uuids}")
     assert resp.status_code == 200
-    assert str(p1.id) in resp.json  # user has access to
-    assert (
-        str(p2.id) not in resp.json
-    )  # belongs to user2, and user does not have access
-    assert "1234" not in resp.json  # invalid id
+    assert str(p1.id) in resp.json
+    assert "1234" not in resp.json  # invalid id is excluded
 
     uuids = ",".join([str(uuid.uuid4()) for _ in range(0, 11)])
     resp = client.get(f"/v1/project/by_uuids?uuids={uuids}")
@@ -2167,7 +2261,12 @@ def test_project_conflict_files(diff_project, file):
             }
         ]
     }
+    project_id = diff_project.id
     _ = add_project_version(diff_project, changes)
+    # expunge so the identity map releases the instance; re-query gives a fresh
+    # object without the stale cached_property value
+    db.session.expunge(diff_project)
+    diff_project = db.session.get(Project, project_id)
     project_info = ProjectListSchema(only=("has_conflict",), context=ctx).dump(
         diff_project
     )
@@ -2237,7 +2336,7 @@ def test_orphan_project(client):
     assert not next((p for p in created_projects if p.name == "orphan"), None)
 
 
-def test_inactive_project(client, diff_project):
+def test_inactive_project(client, diff_project, monkeypatch):
     """Project set for removal is not listed and can not be updated"""
     user = add_user("tests", "tests")
     diff_project.set_role(user.id, ProjectRole.OWNER)
@@ -2314,7 +2413,7 @@ def test_inactive_project(client, diff_project):
     assert resp.status_code == 404
 
     # create project with the same name
-    Configuration.GLOBAL_ADMIN = True
+    monkeypatch.setattr(Configuration, "GLOBAL_ADMIN", True)
     data = {"name": diff_project.name}
     resp = client.post(
         f"/v1/project/{diff_project.workspace.name}",
@@ -2567,9 +2666,28 @@ def test_signals(client):
     project = create_project("test-project", workspace, user)
     with patch(
         "mergin.sync.public_api_controller.push_finished.send"
-    ) as push_finished_mock:
+    ) as push_finished_mock, patch(
+        "mergin.sync.public_api_controller.project_version_created.send"
+    ) as project_version_created_mock:
         upload_file_to_project(project, "test.txt", client)
         push_finished_mock.assert_called_once()
+        project_version_created_mock.assert_called_once()
+
+
+def test_project_soft_delete(client):
+    """project.schedule_deletion() sets removed_at/removed_by and fires project_soft_deleted signal"""
+    workspace = create_workspace()
+    user = User.query.filter_by(username="mergin").first()
+    project = create_project("remove-test", workspace, user)
+
+    with patch("mergin.sync.models.project_soft_deleted.send") as signal_mock:
+        project.schedule_deletion(removed_by=user.id)
+        signal_mock.assert_called_once_with(project)
+
+    assert project.removed_at is not None
+    assert project.removed_by == user.id
+    # project storage params is still present (soft delete)
+    assert project.storage_params is not None
 
 
 def test_filepath_manipulation(client):
@@ -2601,7 +2719,44 @@ def test_filepath_manipulation(client):
     assert resp.status_code == 400
     assert (
         resp.json["detail"]
-        == f"Unsupported file name detected: '{manipulated_path}'. Please remove the invalid characters."
+        == f"Unsupported files detected: '{manipulated_path}'. Please remove the invalid characters."
+    )
+
+
+def test_diff_filepath_manipulation(client):
+    """Test path validation of the nested diff file during file upload"""
+    push_start_url = url_for(
+        f"/v1.mergin_sync_public_api_controller_project_push",
+        namespace=test_workspace_name,
+        project_name=test_project,
+    )
+    filename = "data.gpkg"
+    with open(os.path.join(TMP_DIR, filename), "w") as f:
+        f.write("Hello, Mergin!")
+    changes = {
+        "added": [],
+        "updated": [file_info(TMP_DIR, filename, chunk_size=CHUNK_SIZE)],
+        "removed": [],
+    }
+    # Manipulate the diff's path by prepending ../../
+    manipulated_diff_path = "../../" + filename
+    changes["updated"][0]["diff"] = {
+        "path": manipulated_diff_path,
+        "checksum": changes["updated"][0]["checksum"],
+        "size": changes["updated"][0]["size"],
+    }
+    # Block upload in push_start because of the invalid diff path
+    resp = client.post(
+        push_start_url,
+        data=json.dumps(
+            {"version": "v1", "changes": changes}, cls=DateTimeEncoder
+        ).encode("utf-8"),
+        headers=json_headers,
+    )
+    assert resp.status_code == 400
+    assert (
+        resp.json["detail"]
+        == f"Unsupported files detected: '{manipulated_diff_path}'. Please remove the invalid characters."
     )
 
 

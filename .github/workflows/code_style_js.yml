@@ -1,0 +1,23 @@
+name: Code Layout JS
+
+on:
+  push:
+    paths:
+      # Run just when the web app changed
+      - "web-app/**"
+      - ".github/workflows/code_style_js.yml"
+
+jobs:
+  code_style_js:
+    name: JavaScript code convention check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JS
+        run: |
+            cd web-app
+            yarn install
+            yarn run lint:no-legacy

@@ -2,10 +2,13 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
+import errno
+import logging
 import os
 import tempfile
 import shutil
 import pytest
+from unittest.mock import patch
 from ..sync.storages.disk import copy_file, copy_dir, move_to_tmp
 from ..sync.utils import generate_checksum
 from . import test_project_dir
@@ -85,3 +88,22 @@ def test_failures():
             os.path.join(test_project_dir, "not_found"),
             os.path.join(tempfile.gettempdir(), "new_dir"),
         )
+
+
+def test_move_to_tmp_full_disk_on_fallback(app, tmp_path, caplog):
+    """Fallback rename on cross-device error logs error and returns None when disk is full."""
+    cross_device_err = OSError(errno.EXDEV, "Invalid cross-device link")
+    no_space_err = OSError(errno.ENOSPC, "No space left on device")
+
+    src = tmp_path / "test_file.gpkg"
+    src.touch()
+
+    with caplog.at_level(logging.ERROR), patch(
+        "mergin.sync.storages.disk.os.renames",
+        side_effect=[cross_device_err, no_space_err],
+    ):
+        result = move_to_tmp(str(src))
+
+    assert result is None
+    assert "Failed to move" in caplog.text
+    assert str(src) in caplog.text

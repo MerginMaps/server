@@ -11,12 +11,14 @@ from typing import List, Optional
 from zipfile import ZIP_DEFLATED, ZipFile
 from flask import current_app
 
+from .events import SyncEventType
 from .models import Project, ProjectVersion, FileHistory, PushIdempotencyKey
 from .storages.disk import move_to_tmp
 from .config import Configuration
 from .utils import get_chunk_location, remove_outdated_files
 from ..celery import celery
 from ..app import db
+from ..audit import emit
 
 
 @celery.task
@@ -121,6 +123,12 @@ def create_project_version_zip(version_id: int):
     if not project_version:
         return
 
+    total_files = len(project_version.files)
+    logging.info(
+        f"create_project_version_zip: project_id={project_version.project_id} version={project_version.name} "
+        f"files={total_files} project_size={project_version.project_size}"
+    )
+
     zip_path = project_version.zip_path + ".partial"
     if os.path.exists(zip_path):
         mtime = datetime.fromtimestamp(os.path.getmtime(zip_path), tz=timezone.utc)
@@ -151,6 +159,9 @@ def create_project_version_zip(version_id: int):
                 )
         # move zip file to final location
         os.rename(zip_path, project_version.zip_path)
+        logging.info(
+            f"create_project_version_zip: finished project_id={project_version.project_id} version={project_version.name}"
+        )
     finally:
         # remove partial zip file if exists
         if os.path.exists(zip_path):
