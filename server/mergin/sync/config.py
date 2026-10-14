@@ -81,7 +81,9 @@ class Configuration(object):
         "EXCLUDED_CLONE_FILENAMES", default="qgis_cfg.xml", cast=Csv()
     )
     # files that should be ignored during extension and MIME type checks
-    UPLOAD_FILES_WHITELIST = config("UPLOAD_FILES_WHITELIST", default="", cast=Csv())
+    UPLOAD_FILES_WHITELIST = config(
+        "UPLOAD_FILES_WHITELIST", default="map-script.js", cast=Csv()
+    )
     # extra extensions to permit beyond the default block-list
     UPLOAD_EXTENSIONS_WHITELIST = config(
         "UPLOAD_EXTENSIONS_WHITELIST", default="", cast=Csv()
