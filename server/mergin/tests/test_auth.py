@@ -709,6 +709,8 @@ def test_reset_password_token_single_use(send_email_mock, app, client):
     assert send_email_mock.call_count == 1
     email_html = send_email_mock.call_args.args[1]["html"]
     assert old_token not in email_html
+    assert "This link will expire in 15 minutes (at " in email_html
+    assert "disable notifications" not in email_html
     assert _confirm_new_password(client, old_token).status_code == 400
     new_token = email_html.split("change-password/")[1].split('"')[0]
     assert _confirm_new_password(client, new_token, "latest#1").status_code == 200
