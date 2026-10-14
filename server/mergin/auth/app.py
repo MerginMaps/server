@@ -171,6 +171,7 @@ def send_password_reset_email(app: Flask, user: User) -> None:
     """Issue a new single-use password reset token (revoking any previous one) and email it."""
     from ..app import db
 
+    expiration = app.config["PASSWORD_RESET_TOKEN_EXPIRATION"]
     token = generate_password_reset_token(app, user)
     db.session.commit()
     _send_token_email(
@@ -180,6 +181,8 @@ def send_password_reset_email(app: Flask, user: User) -> None:
         token,
         "email/password_reset.html",
         "Password reset",
+        expiration=_format_duration(expiration),
+        expires_at=datetime.now(timezone.utc) + timedelta(seconds=expiration),
     )
 
 
@@ -246,8 +249,8 @@ def confirm_unlock_token(token: str, expiration: int = 24 * 3600) -> Optional[di
     return payload
 
 
-def _format_lockout_duration(seconds: int) -> str:
-    """Humanize a lockout duration, e.g. 300 -> "5 minutes", 3600 -> "1 hour"."""
+def _format_duration(seconds: int) -> str:
+    """Humanize a duration, e.g. 300 -> "5 minutes", 3600 -> "1 hour"."""
     minutes, secs = divmod(int(seconds), 60)
     hours, minutes = divmod(minutes, 60)
     parts = []
@@ -271,7 +274,7 @@ def send_account_locked_email(app: Flask, user: User, duration_seconds: int) -> 
         subject="Account locked",
         confirm_url=confirm_url,
         user=user,
-        lockout_duration=_format_lockout_duration(duration_seconds),
+        lockout_duration=_format_duration(duration_seconds),
         locked_until=user.locked_until,
     )
     email_data = {
