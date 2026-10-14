@@ -5,7 +5,7 @@ networks:
 
 services:
   server:
-    image: lutraconsulting/merginmaps-backend-ee:2025.7.3
+    image: lutraconsulting/merginmaps-backend-ee:2026.10.0
     container_name: merginmaps-server
     restart: always
     user: 901:999
@@ -25,7 +25,7 @@ services:
     networks:
       - mergin
   web:
-    image: lutraconsulting/merginmaps-frontend-ee:2025.7.3
+    image: lutraconsulting/merginmaps-frontend-ee:2026.10.0
     container_name: merginmaps-web
     restart: always
     depends_on:
@@ -55,7 +55,7 @@ services:
       - server
 
   celery-beat:
-    image: lutraconsulting/merginmaps-backend-ee:2025.7.3
+    image: lutraconsulting/merginmaps-backend-ee:2026.10.0
     container_name: merginmaps-celery-beat
     restart: always
     user: 901:999
@@ -74,7 +74,7 @@ services:
       - mergin
 
   celery-worker:
-    image: lutraconsulting/merginmaps-backend-ee:2025.7.3
+    image: lutraconsulting/merginmaps-backend-ee:2026.10.0
     container_name: merginmaps-celery-worker
     restart: always
     user: 901:999
@@ -98,7 +98,7 @@ services:
     networks:
       - mergin
   db:
-    image: postgres:14
+    image: postgres:17
     container_name: merginmaps-db
     restart: always
     volumes:
