@@ -157,6 +157,8 @@ To launch the unit tests run:
 $ docker run -d --rm --name testing_pg -p 5435:5432 -e POSTGRES_PASSWORD=postgres postgres:14
 $ cd server
 $ pipenv install --dev --deploy --verbose
+# OpenTelemetry is required also for tests (custom spans are part of the app code)
+$ pipenv install --deploy --verbose --categories telemetry
 # tests use .test.env only, do not load dev settings (e.g. exported PIPENV_DOTENV_LOCATION)
 $ PIPENV_DONT_LOAD_ENV=1 pipenv run pytest -v --cov=mergin mergin/tests
 ```

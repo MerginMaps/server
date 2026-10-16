@@ -17,6 +17,7 @@ from result import Err, Ok, Result
 
 from .storage import ProjectStorage, FileNotFound, InitializationError
 from ...app import db
+from ...otel.tracing import traced, set_span_attributes, mark_span_failed
 from ..utils import (
     generate_checksum,
     is_versioned_file,
@@ -160,7 +161,10 @@ class DiskStorage(ProjectStorage):
         file_path = file.replace(self.project_dir, "").lstrip(os.path.sep)
         file_copy = os.path.join(self.geodiff_working_dir, file_path)
         try:
-            copy_file(file, file_copy)
+            with traced(
+                "storage.geodiff_copy", {"mergin.file.size": os.path.getsize(file)}
+            ):
+                copy_file(file, file_copy)
             yield file_copy
         except OSError as e:
             logging.warning(f"Copy to geodiff dir failed: {str(e)}")
@@ -253,6 +257,7 @@ class DiskStorage(ProjectStorage):
 
         return _generator()
 
+    @traced("geodiff.apply_diff")
     def apply_diff(
         self, current_file: ProjectFile, diff_file: str, patched_file: str
     ) -> Result:
@@ -263,6 +268,15 @@ class DiskStorage(ProjectStorage):
 
         v_name = ProjectVersion.to_v_name(self.project.next_version())
         basefile = os.path.join(self.project_dir, current_file.location)
+        set_span_attributes(
+            {
+                "mergin.project.id": str(self.project.id),
+                "mergin.file.path": current_file.path,
+                "mergin.file.size": current_file.size,
+                "mergin.diff.size": os.path.getsize(diff_file),
+                "mergin.version": v_name,
+            }
+        )
         # create local copy of basefile which will be updated in next version and changeset needed
         # TODO this can potentially fail for large files
         logging.info(f"Apply changes: copying {basefile} to {patched_file}")
@@ -278,9 +292,9 @@ class DiskStorage(ProjectStorage):
                 logging.info(
                     f"Geodiff: apply changeset {diff_file} of size {os.path.getsize(diff_file)} with changes to {patched_file}"
                 )
-                start = time.time()
-                self.geodiff.apply_changeset(patchedfile_tmp, changeset_tmp)
-                geodiff_apply_time = time.time() - start
+                with traced("geodiff.apply_changeset") as apply_step:
+                    self.geodiff.apply_changeset(patchedfile_tmp, changeset_tmp)
+                geodiff_apply_time = apply_step.duration
                 # track performance of geodiff action
                 base_version = current_file.location.split("/")[0]
                 gh = GeodiffActionHistory(
@@ -297,15 +311,15 @@ class DiskStorage(ProjectStorage):
                 logging.info(f"Changeset applied in {geodiff_apply_time} s")
                 # move constructed file where is belongs
                 logging.info(f"Apply changes: moving patchfile {patchedfile_tmp}")
-                start = time.time()
-                copy_file(patchedfile_tmp, patched_file)
-                gh.copy_time = copy_time + (time.time() - start)
+                with traced("storage.copy_file") as copy_step:
+                    copy_file(patchedfile_tmp, patched_file)
+                gh.copy_time = copy_time + copy_step.duration
 
                 # TODO this can potentially fail for large files
                 logging.info(f"Apply changes: calculating checksum of {patched_file}")
-                start = time.time()
-                checksum = generate_checksum(patchedfile_tmp)
-                checksumming_time = time.time() - start
+                with traced("storage.checksum") as checksum_step:
+                    checksum = generate_checksum(patchedfile_tmp)
+                checksumming_time = checksum_step.duration
                 gh.checksum_time = checksumming_time
                 logging.info(f"Checksum calculated in {checksumming_time} s")
                 db.session.add(gh)
@@ -316,9 +330,11 @@ class DiskStorage(ProjectStorage):
                     )
                 )
             except (GeoDiffLibError, GeoDiffLibConflictError):
+                mark_span_failed(self.gediff_log.getvalue())
                 move_to_tmp(diff_file)
                 return Err(self.gediff_log.getvalue())
 
+    @traced("geodiff.construct_diff")
     def construct_diff(
         self,
         current_file: ProjectFile,
@@ -330,6 +346,14 @@ class DiskStorage(ProjectStorage):
         """
         basefile = os.path.join(self.project_dir, current_file.location)
         diff_name = os.path.basename(diff_file)
+        set_span_attributes(
+            {
+                "mergin.project.id": str(self.project.id),
+                "mergin.file.path": current_file.path,
+                "mergin.file.size": current_file.size,
+                "mergin.upload.size": os.path.getsize(uploaded_file),
+            }
+        )
         with self.geodiff_copy(basefile) as basefile_tmp, self.geodiff_copy(
             uploaded_file
         ) as uploaded_file_tmp:
@@ -343,9 +367,10 @@ class DiskStorage(ProjectStorage):
                 logging.info(
                     f"Geodiff: create changeset {diff_file} from {uploaded_file}"
                 )
-                self.geodiff.create_changeset(
-                    basefile_tmp, uploaded_file_tmp, changeset_tmp
-                )
+                with traced("geodiff.create_changeset"):
+                    self.geodiff.create_changeset(
+                        basefile_tmp, uploaded_file_tmp, changeset_tmp
+                    )
                 copy_file(changeset_tmp, diff_file)
                 return Ok(
                     (
@@ -354,6 +379,7 @@ class DiskStorage(ProjectStorage):
                     )
                 )
             except (GeoDiffLibError, GeoDiffLibConflictError) as e:
+                mark_span_failed(self.gediff_log.getvalue())
                 # diff is not possible to create - file will be overwritten
                 move_to_tmp(diff_file)
                 return Err(self.gediff_log.getvalue())
@@ -414,62 +440,78 @@ class DiskStorage(ProjectStorage):
             f"diffs={len(diffs)} diffs_total_size={diffs_size}"
         )
 
-        start = time.time()
-        with self.geodiff_copy(base_meta.abs_path) as restored_file:
-            copy_time = time.time() - start
-            logging.info(
-                f"Restore file: {base_meta.abs_path} copied to {restored_file} in {copy_time} s"
-            )
-            try:
-                self.flush_geodiff_logger()  # clean geodiff logger
-                changeset = os.path.join(
-                    self.geodiff_working_dir,
-                    os.path.basename(base_meta.abs_path) + "-diff",
-                )
-                if len(diffs) > 1:
-                    # concatenate multiple diffs into single one
-                    partials = [d.abs_path for d in diffs]
-                    self.geodiff.concat_changes(partials, changeset)
-                else:
-                    copy_file(diffs[0].abs_path, changeset)
-
-                logging.info(
-                    f"Geodiff: apply changeset {changeset} of size {os.path.getsize(changeset)}"
-                )
-
-                start = time.time()
-                self.geodiff.apply_changeset(restored_file, changeset)
-                # track geodiff event for performance analysis
-                gh = GeodiffActionHistory(
-                    self.project.id,
-                    ProjectVersion.to_v_name(base_meta.version.name),
-                    base_meta.path,
-                    base_meta.size,
-                    ProjectVersion.to_v_name(project_version.name),
-                    "restore_file",
-                    changeset,
-                )
-                apply_time = time.time() - start
-                gh.geodiff_time = apply_time
-                logging.info(f"Changeset applied in {apply_time} s")
-            except (GeoDiffLibError, GeoDiffLibConflictError):
-                project_workspace = self.project.workspace.name
-                logging.exception(
-                    f"Failed to restore file: {self.gediff_log.getvalue()} from project {project_workspace}/{self.project.name}"
-                )
-                return
-            finally:
-                move_to_tmp(changeset)
-            # move final restored file to place where it is expected (only after it is successfully created)
-            logging.info(
-                f"Copying restored file to expected location {file_found.location}"
-            )
+        with traced(
+            "storage.restore_versioned_file",
+            {
+                "mergin.project.id": str(self.project.id),
+                "mergin.file.path": file,
+                "mergin.file.size": base_meta.size,
+                "mergin.diff.count": len(diffs),
+                "mergin.diff.size": diffs_size,
+                "mergin.version": ProjectVersion.to_v_name(version),
+            },
+        ):
             start = time.time()
-            copy_file(
-                restored_file, os.path.join(self.project_dir, file_found.location)
-            )
-            logging.info(f"File copied in {time.time() - start} s")
-            copy_time += time.time() - start
-            gh.copy_time = copy_time
-            db.session.add(gh)
-            db.session.commit()
+            with self.geodiff_copy(base_meta.abs_path) as restored_file:
+                copy_time = time.time() - start
+                logging.info(
+                    f"Restore file: {base_meta.abs_path} copied to {restored_file} in {copy_time} s"
+                )
+                try:
+                    self.flush_geodiff_logger()  # clean geodiff logger
+                    changeset = os.path.join(
+                        self.geodiff_working_dir,
+                        os.path.basename(base_meta.abs_path) + "-diff",
+                    )
+                    if len(diffs) > 1:
+                        # concatenate multiple diffs into single one
+                        partials = [d.abs_path for d in diffs]
+                        with traced(
+                            "geodiff.concat_changes", {"mergin.diff.count": len(diffs)}
+                        ):
+                            self.geodiff.concat_changes(partials, changeset)
+                    else:
+                        copy_file(diffs[0].abs_path, changeset)
+
+                    logging.info(
+                        f"Geodiff: apply changeset {changeset} of size {os.path.getsize(changeset)}"
+                    )
+
+                    with traced("geodiff.apply_changeset") as apply_step:
+                        self.geodiff.apply_changeset(restored_file, changeset)
+                    # track geodiff event for performance analysis
+                    gh = GeodiffActionHistory(
+                        self.project.id,
+                        ProjectVersion.to_v_name(base_meta.version.name),
+                        base_meta.path,
+                        base_meta.size,
+                        ProjectVersion.to_v_name(project_version.name),
+                        "restore_file",
+                        changeset,
+                    )
+                    apply_time = apply_step.duration
+                    gh.geodiff_time = apply_time
+                    logging.info(f"Changeset applied in {apply_time} s")
+                except (GeoDiffLibError, GeoDiffLibConflictError):
+                    mark_span_failed(self.gediff_log.getvalue())
+                    project_workspace = self.project.workspace.name
+                    logging.exception(
+                        f"Failed to restore file: {self.gediff_log.getvalue()} from project {project_workspace}/{self.project.name}"
+                    )
+                    return
+                finally:
+                    move_to_tmp(changeset)
+                # move final restored file to place where it is expected (only after it is successfully created)
+                logging.info(
+                    f"Copying restored file to expected location {file_found.location}"
+                )
+                with traced("storage.copy_file") as copy_step:
+                    copy_file(
+                        restored_file,
+                        os.path.join(self.project_dir, file_found.location),
+                    )
+                logging.info(f"File copied in {copy_step.duration} s")
+                copy_time += copy_step.duration
+                gh.copy_time = copy_time
+                db.session.add(gh)
+                db.session.commit()

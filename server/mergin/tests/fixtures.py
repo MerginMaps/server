@@ -12,6 +12,9 @@ from flask import current_app
 from sqlalchemy import desc
 from pygeodiff import GeoDiff
 import pytest
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from ..app import db, create_app
 from ..sync.models import Project, ProjectVersion
@@ -125,6 +128,19 @@ def audit_capture(app):
     app.extensions["audit"]["sink"] = sink
     yield sink
     app.extensions["audit"]["sink"] = old
+
+
+@pytest.fixture(scope="function")
+def otel_spans(monkeypatch):
+    """Capture custom spans (created by mergin.otel.tracing helpers) in memory for the duration of the test.
+    Global tracer provider can be set only once per process, hence the module tracer is patched instead.
+    """
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    monkeypatch.setattr("mergin.otel.tracing.tracer", provider.get_tracer("mergin"))
+    yield exporter
+    provider.shutdown()
 
 
 @pytest.fixture(scope="function")

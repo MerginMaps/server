@@ -13,6 +13,7 @@ datasources:
     jsonData:
       derivedFields:
         - datasourceUid: Tempo
-          matcherRegex: '\[(?:ACCESS|INFO|ERROR)\]\s\[(\w{32})\]' # Finds the trace_id in the log JSON/metadata
+          # Finds the trace_id in mergin server logs ("[INFO] [<trace_id>]") or qgis nginx access logs ("trace_id=<trace_id>")
+          matcherRegex: '(?:\[(?:ACCESS|INFO|ERROR)\]\s\[|trace_id=)(\w{32})'
           name: TraceID
           url: '$${__value.raw}' # The raw ID value used to query Tempo

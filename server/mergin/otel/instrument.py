@@ -10,7 +10,13 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.sdk.trace.sampling import TraceIdRatioBased, ParentBased
+from opentelemetry.sdk.trace.sampling import (
+    Decision,
+    ParentBased,
+    Sampler,
+    SamplingResult,
+    TraceIdRatioBased,
+)
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
@@ -18,6 +24,7 @@ from opentelemetry.instrumentation.logging import LoggingInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
 from .config import Configuration
+from .tracing import is_untraced_celery_task_span
 
 
 def create_resource():
@@ -29,13 +36,43 @@ def create_resource():
     )
 
 
+class UntracedCeleryTasksSampler(Sampler):
+    """Drop spans of celery tasks with untraced=True option, otherwise delegate decision to wrapped sampler.
+    Child spans (e.g. SQL queries) are dropped as well as parent based sampler follows the parent decision.
+    """
+
+    def __init__(self, delegate: Sampler):
+        self._delegate = delegate
+
+    def should_sample(
+        self,
+        parent_context,
+        trace_id,
+        name,
+        kind=None,
+        attributes=None,
+        links=None,
+        trace_state=None,
+    ) -> SamplingResult:
+        if is_untraced_celery_task_span(name):
+            return SamplingResult(Decision.DROP)
+        return self._delegate.should_sample(
+            parent_context, trace_id, name, kind, attributes, links, trace_state
+        )
+
+    def get_description(self) -> str:
+        return f"UntracedCeleryTasksSampler{{{self._delegate.get_description()}}}"
+
+
 def setup_otel_provider():
     """
     Initializes the Tracer Engine. Call this Gunicorn in post_fork or in Celery worker_process_init.
     """
     resource = create_resource()
 
-    sampler = ParentBased(root=TraceIdRatioBased(Configuration.OTEL_TRACES_SAMPLER_ARG))
+    sampler = UntracedCeleryTasksSampler(
+        ParentBased(root=TraceIdRatioBased(Configuration.OTEL_TRACES_SAMPLER_ARG))
+    )
     provider = TracerProvider(resource=resource, sampler=sampler)
 
     # each worker needs its own background thread (BatchSpanProcessor)
