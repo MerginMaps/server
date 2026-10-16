@@ -16,12 +16,7 @@
     },
     {
         "library": "@babel/runtime",
-        "version": "7.17.9",
-        "ecosystem": "npm"
-    },
-    {
-        "library": "@babel/runtime",
-        "version": "7.21.0",
+        "version": "7.29.7",
         "ecosystem": "npm"
     },
     {
@@ -66,7 +61,7 @@
     },
     {
         "library": "@types/cookie",
-        "version": "0.3.3",
+        "version": "0.6.0",
         "ecosystem": "npm"
     },
     {
@@ -131,7 +126,7 @@
     },
     {
         "library": "axios",
-        "version": "0.30.2",
+        "version": "0.34.0",
         "ecosystem": "npm"
     },
     {
@@ -176,7 +171,7 @@
     },
     {
         "library": "cookie",
-        "version": "0.4.2",
+        "version": "0.7.2",
         "ecosystem": "npm"
     },
     {
@@ -206,7 +201,7 @@
     },
     {
         "library": "dompurify",
-        "version": "3.4.2",
+        "version": "3.4.16",
         "ecosystem": "npm"
     },
     {
@@ -261,12 +256,12 @@
     },
     {
         "library": "follow-redirects",
-        "version": "1.15.11",
+        "version": "1.16.0",
         "ecosystem": "npm"
     },
     {
         "library": "form-data",
-        "version": "4.0.5",
+        "version": "4.0.6",
         "ecosystem": "npm"
     },
     {
@@ -315,6 +310,11 @@
         "ecosystem": "npm"
     },
     {
+        "library": "hasown",
+        "version": "2.0.4",
+        "ecosystem": "npm"
+    },
+    {
         "library": "is-retry-allowed",
         "version": "2.2.0",
         "ecosystem": "npm"
@@ -331,7 +331,7 @@
     },
     {
         "library": "lodash",
-        "version": "4.17.21",
+        "version": "4.18.1",
         "ecosystem": "npm"
     },
     {
@@ -366,7 +366,7 @@
     },
     {
         "library": "nanoid",
-        "version": "3.3.7",
+        "version": "3.3.19",
         "ecosystem": "npm"
     },
     {
@@ -406,7 +406,7 @@
     },
     {
         "library": "postcss",
-        "version": "8.4.47",
+        "version": "8.5.28",
         "ecosystem": "npm"
     },
     {
@@ -421,7 +421,7 @@
     },
     {
         "library": "protocol-buffers-schema",
-        "version": "3.6.0",
+        "version": "3.6.1",
         "ecosystem": "npm"
     },
     {
@@ -442,16 +442,6 @@
     {
         "library": "rbush",
         "version": "4.0.1",
-        "ecosystem": "npm"
-    },
-    {
-        "library": "regenerator-runtime",
-        "version": "0.13.11",
-        "ecosystem": "npm"
-    },
-    {
-        "library": "regenerator-runtime",
-        "version": "0.13.9",
         "ecosystem": "npm"
     },
     {
@@ -481,7 +471,7 @@
     },
     {
         "library": "universal-cookie",
-        "version": "4.0.4",
+        "version": "7.2.2",
         "ecosystem": "npm"
     },
     {
@@ -521,12 +511,12 @@
     },
     {
         "library": "aiohappyeyeballs",
-        "version": "2.6.1",
+        "version": "2.7.1",
         "ecosystem": "pypi"
     },
     {
         "library": "aiohttp",
-        "version": "3.13.5",
+        "version": "3.14.3",
         "ecosystem": "pypi"
     },
     {
@@ -541,17 +531,17 @@
     },
     {
         "library": "alembic",
-        "version": "1.18.4",
+        "version": "1.20.0",
         "ecosystem": "pypi"
     },
     {
         "library": "amqp",
-        "version": "5.3.1",
+        "version": "5.4.0",
         "ecosystem": "pypi"
     },
     {
         "library": "annotated-types",
-        "version": "0.7.0",
+        "version": "0.8.0",
         "ecosystem": "pypi"
     },
     {
@@ -566,7 +556,7 @@
     },
     {
         "library": "billiard",
-        "version": "4.2.4",
+        "version": "4.3.0",
         "ecosystem": "pypi"
     },
     {
@@ -581,7 +571,7 @@
     },
     {
         "library": "cachelib",
-        "version": "0.13.0",
+        "version": "0.17.0",
         "ecosystem": "pypi"
     },
     {
@@ -591,7 +581,7 @@
     },
     {
         "library": "certifi",
-        "version": "2026.2.25",
+        "version": "2026.7.22",
         "ecosystem": "pypi"
     },
     {
@@ -601,12 +591,12 @@
     },
     {
         "library": "charset-normalizer",
-        "version": "3.4.6",
+        "version": "3.5.2",
         "ecosystem": "pypi"
     },
     {
         "library": "click",
-        "version": "8.2.0",
+        "version": "8.3.3",
         "ecosystem": "pypi"
     },
     {
@@ -621,7 +611,7 @@
     },
     {
         "library": "click-repl",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "ecosystem": "pypi"
     },
     {
@@ -656,12 +646,12 @@
     },
     {
         "library": "faker",
-        "version": "40.12.0",
+        "version": "40.40.0",
         "ecosystem": "pypi"
     },
     {
         "library": "flask",
-        "version": "3.1.2",
+        "version": "3.1.3",
         "ecosystem": "pypi"
     },
     {
@@ -706,22 +696,22 @@
     },
     {
         "library": "gevent",
-        "version": "25.9.1",
+        "version": "26.9.0",
         "ecosystem": "pypi"
     },
     {
         "library": "googleapis-common-protos",
-        "version": "1.73.1",
+        "version": "1.75.5",
         "ecosystem": "pypi"
     },
     {
         "library": "greenlet",
-        "version": "3.3.2",
+        "version": "3.5.6",
         "ecosystem": "pypi"
     },
     {
         "library": "grpcio",
-        "version": "1.80.0",
+        "version": "1.84.0",
         "ecosystem": "pypi"
     },
     {
@@ -731,7 +721,7 @@
     },
     {
         "library": "idna",
-        "version": "3.11",
+        "version": "3.20",
         "ecosystem": "pypi"
     },
     {
@@ -776,7 +766,7 @@
     },
     {
         "library": "mako",
-        "version": "1.3.10",
+        "version": "1.4.3",
         "ecosystem": "pypi"
     },
     {
@@ -786,7 +776,7 @@
     },
     {
         "library": "marshmallow",
-        "version": "3.26.1",
+        "version": "3.26.2",
         "ecosystem": "pypi"
     },
     {
@@ -796,12 +786,12 @@
     },
     {
         "library": "multidict",
-        "version": "6.7.1",
+        "version": "6.9.1",
         "ecosystem": "pypi"
     },
     {
         "library": "numpy",
-        "version": "2.4.4",
+        "version": "2.5.3",
         "ecosystem": "pypi"
     },
     {
@@ -886,7 +876,7 @@
     },
     {
         "library": "packaging",
-        "version": "26.0",
+        "version": "26.3",
         "ecosystem": "pypi"
     },
     {
@@ -896,12 +886,12 @@
     },
     {
         "library": "prompt-toolkit",
-        "version": "3.0.52",
+        "version": "3.0.53",
         "ecosystem": "pypi"
     },
     {
         "library": "propcache",
-        "version": "0.4.1",
+        "version": "0.5.4",
         "ecosystem": "pypi"
     },
     {
@@ -946,7 +936,7 @@
     },
     {
         "library": "python-dotenv",
-        "version": "0.20.0",
+        "version": "1.2.2",
         "ecosystem": "pypi"
     },
     {
@@ -956,7 +946,7 @@
     },
     {
         "library": "python-multipart",
-        "version": "0.0.22",
+        "version": "0.0.32",
         "ecosystem": "pypi"
     },
     {
@@ -981,7 +971,7 @@
     },
     {
         "library": "requests",
-        "version": "2.33.1",
+        "version": "2.34.2",
         "ecosystem": "pypi"
     },
     {
@@ -991,7 +981,7 @@
     },
     {
         "library": "rpds-py",
-        "version": "0.30.0",
+        "version": "2026.6.3",
         "ecosystem": "pypi"
     },
     {
@@ -1006,7 +996,7 @@
     },
     {
         "library": "setuptools",
-        "version": "82.0.1",
+        "version": "84.0.0",
         "ecosystem": "pypi"
     },
     {
@@ -1046,12 +1036,12 @@
     },
     {
         "library": "tzdata",
-        "version": "2025.3",
+        "version": "2026.4",
         "ecosystem": "pypi"
     },
     {
         "library": "urllib3",
-        "version": "2.2.2",
+        "version": "2.7.0",
         "ecosystem": "pypi"
     },
     {
@@ -1061,17 +1051,17 @@
     },
     {
         "library": "wcwidth",
-        "version": "0.6.0",
+        "version": "0.9.1",
         "ecosystem": "pypi"
     },
     {
         "library": "werkzeug",
-        "version": "3.1.8",
+        "version": "3.1.9",
         "ecosystem": "pypi"
     },
     {
         "library": "wheel",
-        "version": "0.46.3",
+        "version": "0.48.0",
         "ecosystem": "pypi"
     },
     {
@@ -1091,22 +1081,22 @@
     },
     {
         "library": "yarl",
-        "version": "1.23.0",
+        "version": "1.25.1",
         "ecosystem": "pypi"
     },
     {
         "library": "zipp",
-        "version": "3.23.0",
+        "version": "4.1.0",
         "ecosystem": "pypi"
     },
     {
         "library": "zope.event",
-        "version": "6.1",
+        "version": "6.2",
         "ecosystem": "pypi"
     },
     {
         "library": "zope.interface",
-        "version": "8.2",
+        "version": "8.6",
         "ecosystem": "pypi"
     }
 ]
