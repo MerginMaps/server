@@ -19,6 +19,7 @@ from opentelemetry.sdk.trace.sampling import (
 )
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+from opentelemetry.instrumentation.celery import CeleryInstrumentor
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.logging import LoggingInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
@@ -128,6 +129,9 @@ def instrument_flask_app(app):
     FlaskInstrumentor().instrument_app(
         app, excluded_urls=Configuration.OTEL_PYTHON_FLASK_EXCLUDED_URLS
     )
+    # trace celery tasks sent from requests (apply_async/<task> span) and propagate trace context
+    # in task headers, so the task in worker is linked to the request trace
+    CeleryInstrumentor().instrument()
 
 
 def instrument_sqlalchemy(db):
