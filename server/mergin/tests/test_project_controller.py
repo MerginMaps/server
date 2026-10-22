@@ -1478,6 +1478,42 @@ def test_push_finish(client):
     assert SyncFailuresHistory.query.count() == 1
 
 
+@pytest.mark.parametrize("partial", [False, True])
+def test_push_finish_cancelled(client, partial):
+    """Test that push cancelled during push finish does not create version without files"""
+    changes = _get_changes(test_project_dir)
+    upload, upload_dir = create_transaction("mergin", changes)
+    project = upload.project
+    # mimic chunks were uploaded
+    os.makedirs(os.path.join(upload_dir, "chunks"))
+    for f in upload.changes["added"] + upload.changes["updated"]:
+        with open(os.path.join(test_project_dir, f["path"]), "rb") as in_file:
+            for chunk in f["chunks"]:
+                with open(os.path.join(upload_dir, "chunks", chunk), "wb") as out_file:
+                    out_file.write(in_file.read(CHUNK_SIZE))
+
+    process_chunks = Upload.process_chunks
+
+    def process_chunks_and_cancel(self, *args, **kwargs):
+        result = process_chunks(self, *args, **kwargs)
+        if partial:
+            # cancel arrived while processing files, remaining files were written to recreated upload dir
+            os.remove(os.path.join(self.upload_dir, "files", result[0][0].location))
+        else:
+            # mimic push/cancel called in parallel
+            client.post(f"/v1/project/push/cancel/{self.transaction_id}")
+        return result
+
+    with patch.object(Upload, "process_chunks", process_chunks_and_cancel):
+        resp = client.post(
+            f"/v1/project/push/finish/{upload.transaction_id}", headers=json_headers
+        )
+    assert resp.status_code == 422
+    assert "upload was probably cancelled" in resp.json["detail"]
+    assert project.latest_version == 1
+    assert not os.path.exists(os.path.join(project.storage.project_dir, "v2"))
+
+
 def test_push_close(client):
     changes = _get_changes(test_project_dir)
     upload, upload_dir = create_transaction("mergin", changes)
