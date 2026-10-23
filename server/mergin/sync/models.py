@@ -46,6 +46,7 @@ from .storages.disk import copy_file, move_to_tmp
 from ..app import db
 from ..audit import emit
 from ..audit.listeners import actor_context
+from ..otel.tracing import traced, set_span_attributes, mark_span_failed
 from .events import SyncEventType
 from .storages import DiskStorage
 from .utils import (
@@ -1038,6 +1039,7 @@ class FileDiff(db.Model):
 
         return query.count() > 0
 
+    @traced("diff.construct_checkpoint")
     def construct_checkpoint(self) -> bool:
         """Create a diff file checkpoint (aka. merged diff).
         Find all smaller diffs which are needed to create the final diff file and merge them.
@@ -1050,6 +1052,13 @@ class FileDiff(db.Model):
         """
         logging.debug(
             f"Construct checkpoint for file {self.path} v{self.version} of rank {self.rank}"
+        )
+        set_span_attributes(
+            {
+                "mergin.file.path_id": self.file_path_id,
+                "mergin.version": self.version,
+                "mergin.diff.rank": self.rank,
+            }
         )
 
         if os.path.exists(self.abs_path):
@@ -1173,8 +1182,12 @@ class FileDiff(db.Model):
                 # geodiff.concat_changes is not able to concat one diff
                 copy_file(diffs_paths[0], self.abs_path)
             else:
-                project.storage.geodiff.concat_changes(diffs_paths, self.abs_path)
+                with traced(
+                    "geodiff.concat_changes", {"mergin.diff.count": len(diffs_paths)}
+                ):
+                    project.storage.geodiff.concat_changes(diffs_paths, self.abs_path)
         except (GeoDiffLibError, GeoDiffLibConflictError):
+            mark_span_failed(f"Failed to merge diffs for file {self.file_path_id}")
             logging.error(
                 f"Geodiff: Failed to merge diffs for file {self.file_path_id}."
             )
@@ -2082,6 +2095,7 @@ class Upload(db.Model):
         except Exception:
             logging.exception(f"Failed to clear upload.")
 
+    @traced("upload.process_chunks")
     def process_chunks(
         self, use_shared_chunk_dir: bool
     ) -> Tuple[List[ProjectFileChange], Dict]:
@@ -2096,6 +2110,13 @@ class Upload(db.Model):
         file_changes = files_changes_from_upload(self.changes, v_next_version)
         to_remove = [i.path for i in file_changes if i.change == PushChangeType.DELETE]
         current_files = [f for f in self.project.files if f.path not in to_remove]
+        set_span_attributes(
+            {
+                "mergin.project.id": str(self.project.id),
+                "mergin.version": v_next_version,
+                "mergin.files.count": len(chunks_map),
+            }
+        )
 
         with self.heartbeat(5):
             for f in file_changes:
@@ -2109,33 +2130,41 @@ class Upload(db.Model):
                 )
                 temporary_location = os.path.join(self.upload_dir, "files", f_location)
                 os.makedirs(os.path.dirname(temporary_location), exist_ok=True)
-                with open(temporary_location, "wb") as dest:
-                    try:
-                        for chunk_id in chunks_map.get(f.path, []):
-                            # based on API version location for uploaded chunks differs
-                            if use_shared_chunk_dir:
-                                chunk_file = get_chunk_location(chunk_id)
-                            else:
-                                chunk_file = os.path.join(
-                                    self.upload_dir, "chunks", chunk_id
-                                )
+                with traced(
+                    "upload.merge_chunks",
+                    {
+                        "mergin.file.path": f.path,
+                        "mergin.chunks.count": len(chunks_map.get(f.path, [])),
+                    },
+                ):
+                    with open(temporary_location, "wb") as dest:
+                        try:
+                            for chunk_id in chunks_map.get(f.path, []):
+                                # based on API version location for uploaded chunks differs
+                                if use_shared_chunk_dir:
+                                    chunk_file = get_chunk_location(chunk_id)
+                                else:
+                                    chunk_file = os.path.join(
+                                        self.upload_dir, "chunks", chunk_id
+                                    )
 
-                            if not os.path.exists(chunk_file):
-                                errors[f.path] = FileSyncErrorType.CORRUPTED.value
-                                continue
+                                if not os.path.exists(chunk_file):
+                                    errors[f.path] = FileSyncErrorType.CORRUPTED.value
+                                    continue
 
-                            with open(chunk_file, "rb") as src:
-                                data = src.read(8192)
-                                while data:
-                                    dest.write(data)
+                                with open(chunk_file, "rb") as src:
                                     data = src.read(8192)
+                                    while data:
+                                        dest.write(data)
+                                        data = src.read(8192)
 
-                    except IOError:
-                        logging.exception(
-                            f"Failed to process chunk: {chunk_id} in project {project_path}"
-                        )
-                        errors[f.path] = FileSyncErrorType.CORRUPTED.value
-                        continue
+                        except IOError:
+                            mark_span_failed(f"Failed to process chunk: {chunk_id}")
+                            logging.exception(
+                                f"Failed to process chunk: {chunk_id} in project {project_path}"
+                            )
+                            errors[f.path] = FileSyncErrorType.CORRUPTED.value
+                            continue
 
                 if (
                     not f.change == PushChangeType.UPDATE_DIFF
@@ -2146,9 +2175,12 @@ class Upload(db.Model):
                     continue
 
                 # check if .gpkg file is valid
-                if is_versioned_file(temporary_location) and not f.is_valid_gpkg():
-                    errors[f.path] = FileSyncErrorType.CORRUPTED.value
-                    continue
+                if is_versioned_file(temporary_location):
+                    with traced("upload.validate_gpkg", {"mergin.file.path": f.path}):
+                        is_valid = f.is_valid_gpkg()
+                    if not is_valid:
+                        errors[f.path] = FileSyncErrorType.CORRUPTED.value
+                        continue
 
                 expected_size = (
                     f.diff.size if f.change == PushChangeType.UPDATE_DIFF else f.size

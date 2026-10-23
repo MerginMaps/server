@@ -150,9 +150,10 @@ if AppConfiguration.OTEL_ENABLED:
             parent_context = propagate.extract(headers)
 
             # start the span (linked to the parent from Flask)
+            # name follows opentelemetry-instrumentation-celery convention (run/<task>), see CELERY_SPAN_PREFIXES
             tracer = trace.get_tracer(__name__)
             span = tracer.start_span(
-                name=f"celery.{sender.name}",
+                name=f"run/{sender.name}",
                 context=parent_context,
                 kind=trace.SpanKind.CONSUMER,
             )

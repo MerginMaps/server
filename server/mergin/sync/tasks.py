@@ -19,6 +19,7 @@ from .utils import get_chunk_location, remove_outdated_files
 from ..celery import celery
 from ..app import db
 from ..audit import emit
+from ..otel.tracing import traced
 
 
 @celery.task
@@ -144,7 +145,15 @@ def create_project_version_zip(version_id: int):
 
     os.makedirs(os.path.dirname(zip_path), exist_ok=True)
     try:
-        with ZipFile(
+        with traced(
+            "zip.create_archive",
+            {
+                "mergin.project.id": str(project_version.project_id),
+                "mergin.version": project_version.name,
+                "mergin.files.count": total_files,
+                "mergin.project.size": project_version.project_size,
+            },
+        ), ZipFile(
             zip_path,
             "w",
             compression=ZIP_DEFLATED,
