@@ -1173,6 +1173,19 @@ def push_finish(transaction_id):
             if os.path.exists(files_dir):
                 os.renames(files_dir, version_dir)
 
+            # upload could have been cancelled meanwhile (upload dir removed), never commit version without its files
+            for f in file_changes:
+                if f.change == PushChangeType.DELETE:
+                    continue
+                locations = [f.location] + ([f.diff.location] if f.diff else [])
+                for location in locations:
+                    if not os.path.exists(
+                        os.path.join(project.storage.project_dir, location)
+                    ):
+                        raise FileNotFoundError(
+                            f"File {f.path} is missing, upload was probably cancelled"
+                        )
+
             db.session.commit()
 
             logging.info(
