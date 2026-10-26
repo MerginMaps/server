@@ -23,7 +23,7 @@ from pygeodiff import GeoDiff
 from flask import url_for, current_app
 import tempfile
 
-from sqlalchemy import desc
+from sqlalchemy import desc, text
 from ..app import db
 from ..sync.models import (
     FileDiff,
@@ -39,7 +39,7 @@ from ..sync.models import (
     ProjectFilePath,
     project_soft_deleted,
 )
-from ..sync.storages.disk import copy_file as real_copy_file
+from ..sync.storages.disk import copy_file as real_copy_file, move_to_tmp
 from ..sync.files import files_changes_from_upload
 from ..sync.schemas import ProjectListSchema
 from ..sync.utils import Checkpoint, generate_checksum, is_versioned_file
@@ -1479,11 +1479,12 @@ def test_push_finish(client):
 
 
 @pytest.mark.parametrize("partial", [False, True])
-def test_push_finish_cancelled(client, partial):
+def test_push_finish_cancelled(client, partial, caplog):
     """Test that push cancelled during push finish does not create version without files"""
     changes = _get_changes(test_project_dir)
     upload, upload_dir = create_transaction("mergin", changes)
     project = upload.project
+    transaction_id = upload.transaction_id
     # mimic chunks were uploaded
     os.makedirs(os.path.join(upload_dir, "chunks"))
     for f in upload.changes["added"] + upload.changes["updated"]:
@@ -1500,18 +1501,23 @@ def test_push_finish_cancelled(client, partial):
             # cancel arrived while processing files, remaining files were written to recreated upload dir
             os.remove(os.path.join(self.upload_dir, "files", result[0][0].location))
         else:
-            # mimic push/cancel called in parallel
-            client.post(f"/v1/project/push/cancel/{self.transaction_id}")
+            # mimic push/cancel called in parallel by another worker (with its own db connection)
+            move_to_tmp(self.upload_dir)
+            with db.engine.begin() as conn:
+                conn.execute(text("DELETE FROM upload WHERE id = :id"), {"id": self.id})
         return result
 
     with patch.object(Upload, "process_chunks", process_chunks_and_cancel):
         resp = client.post(
-            f"/v1/project/push/finish/{upload.transaction_id}", headers=json_headers
+            f"/v1/project/push/finish/{transaction_id}", headers=json_headers
         )
     assert resp.status_code == 422
     assert "upload was probably cancelled" in resp.json["detail"]
     assert project.latest_version == 1
     assert not os.path.exists(os.path.join(project.storage.project_dir, "v2"))
+    # upload already removed by cancel is not reported as failure
+    assert "Failed to clear upload" not in caplog.text
+    assert not Upload.query.filter_by(transaction_id=transaction_id).count()
 
 
 def test_push_close(client):

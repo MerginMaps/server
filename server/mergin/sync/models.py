@@ -20,8 +20,9 @@ from blinker import signal
 from flask_login import current_user
 from pygeodiff import GeoDiff
 from functools import cached_property
-from sqlalchemy import text, null, desc, nullslast, tuple_
+from sqlalchemy import text, null, desc, nullslast, tuple_, inspect
 from sqlalchemy.orm import contains_eager, joinedload, load_only
+from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, UUID, JSONB, ENUM, insert
 from sqlalchemy.types import String
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -2092,6 +2093,9 @@ class Upload(db.Model):
             move_to_tmp(self.upload_dir, str(self.transaction_id))
             db.session.delete(self)
             db.session.commit()
+        except ObjectDeletedError:
+            # upload was already cleared by concurrent request (e.g. push cancel)
+            logging.info(f"Upload {inspect(self).identity[0]} was already cleared.")
         except Exception:
             logging.exception(f"Failed to clear upload.")
 
