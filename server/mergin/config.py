@@ -116,10 +116,11 @@ class Configuration(object):
     VERSION = config("VERSION", default=get_version())
     SERVER_TYPE = config("SERVER_TYPE", default="ce")
 
-    # whether to run flask app with gevent worker type in gunicorn
-    # using gevent type of worker impose some requirements on code, e.g. to be greenlet safe, custom timeouts
+    # whether app runs under gevent (it does not select worker type), enables monkey-patching, green psycopg
+    # and request timeout middleware; for gunicorn it is set automatically from worker class (see on_starting hook
+    # in gunicorn config.py)
     GEVENT_WORKER = config("GEVENT_WORKER", default=False, cast=bool)
-    GEVENT_REQUEST_TIMEOUT = config("GEVENT_REQUEST_TIMEOUT", default=30, cast=int)
+    GEVENT_REQUEST_TIMEOUT = config("GEVENT_REQUEST_TIMEOUT", default=50, cast=int)
     DIAGNOSTIC_LOGS_URL = config(
         "DIAGNOSTIC_LOGS_URL",
         default="",
