@@ -49,6 +49,7 @@ jobs:
       - name: Install deps
         run: |
           cd server
+          sudo apt-get update
           sudo apt-get -y install libsqlite3-mod-spatialite
           pip install pipenv==2026.8.0
           pipenv install --dev --deploy --verbose --python 3.12
