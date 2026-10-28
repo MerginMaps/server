@@ -67,7 +67,7 @@ class UntracedCeleryTasksSampler(Sampler):
 
 def setup_otel_provider():
     """
-    Initializes the Tracer Engine. Call this Gunicorn in post_fork or in Celery worker_process_init.
+    Initializes the Tracer Engine. Call this in Gunicorn post_worker_init or in Celery worker_process_init.
     """
     resource = create_resource()
 
@@ -87,7 +87,7 @@ def setup_otel_provider():
 
 
 def setup_otel_metrics():
-    """Initializes the Metrics Engine. Call this in post_fork."""
+    """Initializes the Metrics Engine. Call this in Gunicorn post_worker_init."""
     resource = create_resource()
     exporter = OTLPMetricExporter(
         endpoint=Configuration.OTEL_EXPORTER_OTLP_ENDPOINT, insecure=True
@@ -109,7 +109,7 @@ def setup_otel_logging():
 
 
 def instrument_flask_app(app):
-    """Initializes the Flask app with OTel hooks. Call this in post_fork."""
+    """Initializes the Flask app with OTel hooks. Call this in Gunicorn post_worker_init."""
     setup_otel_provider()
     setup_otel_metrics()
     # setup_otel_logging()

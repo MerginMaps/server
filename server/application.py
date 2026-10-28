@@ -8,6 +8,7 @@
 # Please monkey-patch earlier. See https://github.com/gevent/gevent/issues/1016.
 # Modules that had direct imports (NOT patched): ['urllib3.util, 'urllib3.util.ssl']"
 # which comes from using requests (its deps) lib in webhooks
+# For gunicorn, GEVENT_WORKER is derived from worker class (see on_starting hook in config.py).
 
 from mergin.config import Configuration as MainConfig
 
