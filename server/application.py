@@ -8,6 +8,8 @@
 # Please monkey-patch earlier. See https://github.com/gevent/gevent/issues/1016.
 # Modules that had direct imports (NOT patched): ['urllib3.util, 'urllib3.util.ssl']"
 # which comes from using requests (its deps) lib in webhooks
+# Gunicorn gevent worker also patches on its own before loading the app, as long as the app is not loaded
+# in post_fork hook (see config.py).
 
 from mergin.config import Configuration as MainConfig
 
