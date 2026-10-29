@@ -106,14 +106,37 @@ class OneLineExceptionFormatter(logging.Formatter):
         return msg
 
 
-def post_fork(server, worker):
+def on_starting(server):
+    """
+    Set GEVENT_WORKER (read by workers forked later) from the actual worker class, including command-line overrides,
+    so that the app gets gevent specific setup (early monkey-patching, green psycopg, request timeout) without
+    having to configure it.
+    """
+    import os
+    from decouple import strtobool
+    from gunicorn.workers.ggevent import GeventWorker
+
+    gevent_worker = issubclass(server.worker_class, GeventWorker)
+    configured = os.environ.get("GEVENT_WORKER")
+    if configured is not None and bool(strtobool(configured)) != gevent_worker:
+        server.log.warning(
+            "Ignoring GEVENT_WORKER=%s, it is derived from worker class %s",
+            configured,
+            server.cfg.worker_class_str,
+        )
+    os.environ["GEVENT_WORKER"] = str(gevent_worker)
+
+
+def post_worker_init(worker):
+    """
+    Runs in the worker after gevent monkey-patching and app loading.
+    Do not load the app in post_fork, it would import ssl (via requests/urllib3) before it is patched
+    and outgoing HTTPS requests would fail with RecursionError.
+    """
     from mergin.config import Configuration
     from mergin.otel.instrument import instrument_flask_app
-
-    server.log.info("Worker spawned (pid: %s)", worker.pid)
-    flask_app = worker.app.wsgi()
 
     # We initialize the OTel SDK here, inside the child process.
     # This ensures each worker gets its own fresh background exporter thread.
     if Configuration.OTEL_ENABLED:
-        instrument_flask_app(flask_app)
+        instrument_flask_app(worker.wsgi)

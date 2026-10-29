@@ -72,6 +72,6 @@ docker compose -f docker-compose.maps.yml up -d
 
 ## Running telemetry stack
 
-Running telemetry is optional and it is disabled by default. Mergimaps supports OpenTelemetry standard. Check [Readme](deployment/common/README.md) for example of how to run telemetry stack locally.
+Running telemetry is optional and it is disabled by default. Mergimaps supports OpenTelemetry standard. Check [README](/deployment/common/README.md) for example of how to run telemetry stack locally.
 
 To enable telemetry in Mergin Maps, please set `OTEL_ENABLED=1` in `.prod.env`. In case of custom telemetry deployment also check [.otel.env](deployment/common/telemetry/.otel.env) file for more details on how to send data to your telemetry stack.
