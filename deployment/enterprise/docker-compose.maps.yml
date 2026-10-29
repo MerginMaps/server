@@ -6,7 +6,7 @@ networks:
 services:
   qgis:
     container_name: mergin-qgis
-    image: lutraconsulting/qgis-server:2025.1.0
+    image: lutraconsulting/qgis-server:2026.4.0
     user: 1000:999
     networks:
       - mergin-net
@@ -16,11 +16,13 @@ services:
       - QGIS_SERVER_WMS_MAX_HEIGHT=1536
       - QGIS_SERVER_WMS_MAX_WIDTH=1536
       - QGIS_SERVER_LOG_LEVEL=2
+      - QGIS_SERVER_SERVICE_URL=http://localhost:5555
+      - QGIS_SERVER_API_WFS3_ROOT_PATH=/wfs3
     volumes:
       - ./map_data:/overviews
   qgis_nginx:
     container_name: mergin-qgis-nginx
-    image: nginxinc/nginx-unprivileged:1.27
+    image: nginxinc/nginx-unprivileged:1.30
     user: 101:999
     networks:
       - mergin-net
@@ -30,7 +32,7 @@ services:
       - ./qgis_nginx.conf:/etc/nginx/conf.d/default.conf
   qgis_extractor:
     container_name: mergin-qgis-extractor
-    image: lutraconsulting/qgis-extractor:2025.3.1
+    image: lutraconsulting/qgis-extractor:2026.4.1
     user: 901:999
     networks:
       - mergin-net
