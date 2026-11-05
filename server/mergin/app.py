@@ -155,7 +155,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
     from itsdangerous import BadTimeSignature, BadSignature
 
     from .audit import register as register_audit
-    from .auth import auth_required, decode_token, register as register_auth
+    from .auth import auth_required, decode_token, load_user, register as register_auth
     from .auth.models import User
     from .sync.app import register as register_sync
     from .sync.project_handler import ProjectHandler
@@ -190,14 +190,7 @@ def create_app(public_keys: List[str] = None) -> Flask:
     server_commands(app.app)
 
     # adjust login manager
-    @login_manager.user_loader
-    def load_user(session_id):  # pylint: disable=W0613,W0612
-        user_id, *rest = session_id.split(":")
-        # legacy session cookies carry only the user id
-        auth_version = int(rest[0]) if rest else 0
-        user = User.query.get(user_id)
-        if user and user.active and user.auth_version == auth_version:
-            return user
+    login_manager.user_loader(load_user)
 
     @login_manager.header_loader
     def load_user_from_header(header_val):  # pylint: disable=W0613,W0612
