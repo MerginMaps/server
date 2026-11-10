@@ -113,7 +113,7 @@ class Configuration(object):
         "ENABLE_SUPERADMIN_ASSIGNMENT", default=True, cast=bool
     )
     # backend version
-    VERSION = config("VERSION", default=get_version())
+    VERSION = config("VERSION", default="") or get_version()
     SERVER_TYPE = config("SERVER_TYPE", default="ce")
 
     # whether app runs under gevent (it does not select worker type), enables monkey-patching, green psycopg
