@@ -998,6 +998,66 @@ push_data = [
         422,
         UploadError.code,
     ),
+    # missing checksum of removed existing file
+    (
+        {
+            "version": "v1",
+            "changes": {
+                "added": [],
+                "updated": [],
+                "removed": [{"path": "test.txt", "size": 1234}],
+            },
+        },
+        422,
+        UploadError.code,
+    ),
+    # missing checksum of added file
+    (
+        {
+            "version": "v1",
+            "changes": {
+                "added": [{"path": "new.txt", "size": 1234, "chunks": []}],
+                "updated": [],
+                "removed": [],
+            },
+        },
+        422,
+        UploadError.code,
+    ),
+    # missing checksum of updated file
+    (
+        {
+            "version": "v1",
+            "changes": {
+                "added": [],
+                "updated": [{"path": "test.txt", "size": 1234, "chunks": []}],
+                "removed": [],
+            },
+        },
+        422,
+        UploadError.code,
+    ),
+    # missing checksum of updated file's diff
+    (
+        {
+            "version": "v1",
+            "changes": {
+                "added": [],
+                "updated": [
+                    {
+                        "path": "base.gpkg",
+                        "size": 1234,
+                        "checksum": "9adb76bf81a34880209040ffe5ee262a090b62ab",
+                        "chunks": [],
+                        "diff": {"path": "base-diff", "size": 12},
+                    }
+                ],
+                "removed": [],
+            },
+        },
+        422,
+        UploadError.code,
+    ),
     # missing version (required parameter)
     ({"changes": _get_changes_without_added(test_project_dir)}, 400, None),
     # incorrect changes format

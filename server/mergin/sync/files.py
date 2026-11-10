@@ -222,6 +222,15 @@ class ChangesSchema(ma.Schema):
         if len(set(changes_files)) != len(changes_files):
             raise ValidationError("Not unique changes")
 
+        # checksum is optional in the schema, but it is required to create a version
+        for file in data["added"] + data["updated"] + data["removed"]:
+            if not file.get("checksum"):
+                raise ValidationError(f"Missing checksum of file '{file['path']}'")
+
+            diff = file.get("diff")
+            if diff and not diff.get("checksum"):
+                raise ValidationError(f"Missing checksum of diff '{diff.get('path')}'")
+
         # check if all files are valid
         unsupported_files = []
         for file in data["added"] + data["updated"]:
