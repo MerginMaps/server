@@ -120,5 +120,6 @@ class UserInfoSchema(ma.SQLAlchemyAutoSchema):
             "inactive_since",
             "is_admin",
             "passwd",
+            "password_reset_nonce",
         )
         load_instance = True
