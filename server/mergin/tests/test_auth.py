@@ -1321,6 +1321,7 @@ def test_user_info(client):
     assert len(resp.json["invitations"]) == 0
     # make sure there is no private information
     assert "passwd" not in resp.json
+    assert "password_reset_nonce" not in resp.json
 
 
 # login tests: success, success with email login, invalid password, missing password, not admin user
@@ -1372,6 +1373,8 @@ def test_add_user(send_email_mock, client):
     assert response.json["username"] == "test_user"
     assert response.json["email"] == "test@test.com"
     assert response.json["receive_notifications"] is False
+    assert "passwd" not in response.json
+    assert "password_reset_nonce" not in response.json
     assert not send_email_mock.called
 
     # drop required attribute
