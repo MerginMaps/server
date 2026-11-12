@@ -12,7 +12,7 @@ import os
 import psycopg2
 from connexion import NoContent, request
 from datetime import datetime, timedelta, timezone
-from flask import abort, jsonify, current_app
+from flask import abort, g, jsonify, current_app
 from flask_login import current_user
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -59,7 +59,7 @@ from .permissions import (
     require_project_by_uuid,
     projects_query,
 )
-from .public_api_controller import catch_sync_failure
+from .public_api_controller import catch_sync_failure, idempotent_push
 from .schemas import (
     ProjectMemberSchema,
     UploadChunkSchema,
@@ -263,6 +263,7 @@ def get_project(id, files_at_version=None):
 
 
 @auth_required
+@idempotent_push
 @catch_sync_failure
 def create_project_version(id):
     """Create a new project version from pushed data"""
@@ -333,8 +334,9 @@ def create_project_version(id):
     if pv and pv.name != version:
         return ProjectVersionExists(version, pv.name).response(409)
 
-    # we have done all checks but this request is just a dry-run
+    # dry-run: skip idempotency entirely so a check_only response is never cached
     if request.json.get("check_only", False):
+        g.skip_idempotency = True
         return NoContent, 204
 
     try:
@@ -356,6 +358,7 @@ def create_project_version(id):
     # files consistency or geodiff related issues, project push would never succeed, whole upload is aborted
     if errors:
         upload.clear()
+        g.cacheable_sync_error = True
         return DataSyncError(failed_files=errors).response(422)
 
     if os.path.exists(version_dir):
