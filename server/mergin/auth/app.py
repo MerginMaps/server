@@ -99,6 +99,16 @@ def edit_profile_enabled(f):
     return wrapped_func
 
 
+def load_user(session_id):
+    """Flask-Login user loader for session cookies"""
+    user_id, *rest = session_id.split(":")
+    # legacy session cookies carry only the user id
+    auth_version = int(rest[0]) if rest else 0
+    user = User.query.get(user_id)
+    if user and user.active and user.auth_version == auth_version:
+        return user
+
+
 def authenticate(login, password):
     from ..app import db
 
