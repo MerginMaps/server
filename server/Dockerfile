@@ -1,4 +1,4 @@
-FROM ubuntu:noble-20251013
+FROM ubuntu:noble-20261110
 MAINTAINER Martin Varga "martin.varga@lutraconsulting.co.uk"
 
 # this is to do choice of timezone upfront, because when "tzdata" package gets installed,
@@ -13,13 +13,13 @@ ARG VERSION
 ENV VERSION=${VERSION}
 
 RUN apt-get update -y && \
+    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends\
-    musl-dev \
     python3 \
     python3-pip \
     python3-setuptools \
     iputils-ping \
-    gcc build-essential binutils cmake extra-cmake-modules libsqlite3-mod-spatialite libmagic1 && \
+    libsqlite3-mod-spatialite libmagic1 && \
     rm -rf /var/lib/apt/lists/*
 
 # create mergin user to run container with
@@ -33,7 +33,7 @@ WORKDIR /app
 
 # keep installing to system packages
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
-RUN pip install pipenv==2026.8.0
+RUN pip install pipenv==2026.11.0
 # for locale check this http://click.pocoo.org/5/python3/
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
