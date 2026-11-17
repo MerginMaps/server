@@ -44,7 +44,7 @@ services:
       - merginmaps
   celery-beat:
     image: lutraconsulting/merginmaps-backend:2026.11.0
-    container_name: celery-beat
+    container_name: merginmaps-celery-beat
     restart: always
     env_file:
       - .prod.env
@@ -62,7 +62,7 @@ services:
       - merginmaps
   celery-worker:
     image: lutraconsulting/merginmaps-backend:2026.11.0
-    container_name: celery-worker
+    container_name: merginmaps-celery-worker
     restart: always
     user: 901:999
     env_file:
