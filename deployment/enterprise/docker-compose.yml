@@ -111,7 +111,7 @@ services:
     networks:
       - mergin
   redis:
-    image: redis
+    image: redis:8
     container_name: merginmaps-redis
     restart: always
     networks:
