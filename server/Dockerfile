@@ -13,7 +13,6 @@ ARG VERSION
 ENV VERSION=${VERSION}
 
 RUN apt-get update -y && \
-    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends\
     python3 \
     python3-pip \
