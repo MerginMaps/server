@@ -96,7 +96,7 @@ services:
     networks:
       - merginmaps
   proxy:
-    image: nginxinc/nginx-unprivileged:1.30
+    image: nginx/nginx-unprivileged:1.30
     container_name: merginmaps-proxy
     restart: always
     # run nginx as built-in user but with group mergin-family for files permissions
