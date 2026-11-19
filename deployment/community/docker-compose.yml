@@ -5,7 +5,7 @@ networks:
 
 services:
   db:
-    image: postgres:14
+    image: postgres:17
     container_name: merginmaps-db
     restart: always
     networks:
@@ -17,13 +17,13 @@ services:
     volumes:
       - ./mergin_db:/var/lib/postgresql/data
   redis:
-    image: redis:6.2.17
+    image: redis:8
     container_name: merginmaps-redis
     restart: always
     networks:
       - merginmaps
   server:
-    image: lutraconsulting/merginmaps-backend:2025.7.3
+    image: lutraconsulting/merginmaps-backend:2026.11.1
     container_name: merginmaps-server
     restart: always
     user: 901:999
@@ -43,8 +43,8 @@ services:
     networks:
       - merginmaps
   celery-beat:
-    image: lutraconsulting/merginmaps-backend:2025.7.3
-    container_name: celery-beat
+    image: lutraconsulting/merginmaps-backend:2026.11.1
+    container_name: merginmaps-celery-beat
     restart: always
     env_file:
       - .prod.env
@@ -61,8 +61,8 @@ services:
     networks:
       - merginmaps
   celery-worker:
-    image: lutraconsulting/merginmaps-backend:2025.7.3
-    container_name: celery-worker
+    image: lutraconsulting/merginmaps-backend:2026.11.1
+    container_name: merginmaps-celery-worker
     restart: always
     user: 901:999
     env_file:
@@ -85,7 +85,7 @@ services:
     networks:
       - merginmaps
   web:
-    image: lutraconsulting/merginmaps-frontend:2025.7.3
+    image: lutraconsulting/merginmaps-frontend:2026.11.1
     container_name: merginmaps-web
     restart: always
     depends_on:
@@ -96,7 +96,7 @@ services:
     networks:
       - merginmaps
   proxy:
-    image: nginxinc/nginx-unprivileged:1.27
+    image: nginx/nginx-unprivileged:1.30
     container_name: merginmaps-proxy
     restart: always
     # run nginx as built-in user but with group mergin-family for files permissions
