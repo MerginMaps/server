@@ -90,6 +90,10 @@ class Configuration(object):
     )
     # max batch size for fetch projects in batch endpoint
     MAX_BATCH_SIZE = config("MAX_BATCH_SIZE", default=100, cast=int)
+    # seconds before a push idempotency key expires (default 30 days)
+    PUSH_IDEMPOTENCY_KEY_EXPIRATION = config(
+        "PUSH_IDEMPOTENCY_KEY_EXPIRATION", default=30 * 24 * 3600, cast=int
+    )
     # max size (in bytes) of an uploaded full .gpkg file for which server will try to construct a diff
     MAX_DIFFABLE_FORCE_UPDATE_SIZE = config(
         "MAX_DIFFABLE_FORCE_UPDATE_SIZE", default=512 * 1024 * 1024, cast=int
