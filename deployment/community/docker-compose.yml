@@ -17,7 +17,7 @@ services:
     volumes:
       - ./mergin_db:/var/lib/postgresql/data
   redis:
-    image: redis:8
+    image: redis:8.10.3
     container_name: merginmaps-redis
     restart: always
     networks:
