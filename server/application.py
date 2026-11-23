@@ -51,6 +51,7 @@ application = create_app(
         "ENABLE_SUPERADMIN_ASSIGNMENT",
         "DIAGNOSTIC_LOGS_URL",
         "V2_PUSH_ENABLED",
+        "V2_PULL_ENABLED",
     ]
 )
 register_stats(application)
