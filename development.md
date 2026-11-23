@@ -39,7 +39,7 @@ pyenv local 3.12
 Pipenv then creates its own virtualenv on top of that interpreter.
 
 ```shell
-$ pip install pipenv==2026.8.0
+$ pip install pipenv==2026.11.0
 $ cd server
 # dev settings, secrets and salts have no defaults
 # not named .env on purpose: pipenv and flask would load it automatically, also into tests

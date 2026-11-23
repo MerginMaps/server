@@ -22,7 +22,7 @@ services:
       - ./map_data:/overviews
   qgis_nginx:
     container_name: mergin-qgis-nginx
-    image: nginxinc/nginx-unprivileged:1.30
+    image: nginx/nginx-unprivileged:1.30.7
     user: 101:999
     networks:
       - mergin-net
