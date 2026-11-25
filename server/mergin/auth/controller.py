@@ -730,6 +730,10 @@ def create_user():
     if not form.validate():
         return jsonify(form.errors), 400
 
+    error = current_app.ws_handler.check_limits()
+    if error:
+        return error.response(422)
+
     db.session.info["audit_user_creation_source"] = "api"
     user = User.create(
         form.username.data,

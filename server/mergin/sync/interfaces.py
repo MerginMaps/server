@@ -185,6 +185,13 @@ class WorkspaceHandler(ABC):
         """
         pass
 
+    @staticmethod
+    def check_limits():
+        """
+        Return error if workspace limits do not allow the current request
+        """
+        pass
+
 
 class AbstractProjectHandler(ABC):
     @abstractmethod
