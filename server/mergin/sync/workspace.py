@@ -128,6 +128,9 @@ class GlobalWorkspace(AbstractWorkspace):
     def can_add_users(self, user: User) -> bool:
         return user.is_admin
 
+    def has_pending_invitation(self, email: str) -> bool:
+        return False
+
 
 class GlobalWorkspaceHandler(WorkspaceHandler):
     """Implements handler for GlobalWorkspace objects"""

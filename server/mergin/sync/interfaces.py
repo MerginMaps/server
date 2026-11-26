@@ -85,6 +85,10 @@ class AbstractWorkspace:
         """Check if user can add another user to workspace"""
         pass
 
+    def has_pending_invitation(self, email):
+        """Check if email has a pending invitation to workspace"""
+        pass
+
 
 class WorkspaceHandler(ABC):
     """

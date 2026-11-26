@@ -730,6 +730,9 @@ def create_user():
     if not form.validate():
         return jsonify(form.errors), 400
 
+    if workspace.has_pending_invitation(form.email.data):
+        abort(409, "This email already has a pending invitation")
+
     error = current_app.ws_handler.check_limits()
     if error:
         return error.response(422)

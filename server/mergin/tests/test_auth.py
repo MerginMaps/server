@@ -1424,7 +1424,7 @@ def test_add_user(send_email_mock, client):
 
 
 def test_add_user_limits(client):
-    """Test workspace limits are checked after authentication, permissions and input validation"""
+    """Test pending invitation and workspace limits are checked after authentication, permissions and input validation"""
     user = add_user("user", "user")
     data = {
         "email": "test@test.com",
@@ -1443,6 +1443,12 @@ def test_add_user_limits(client):
         assert resp.status_code == 400
         resp = client.post("/v2/users", json={**data, "email": user.email})
         assert resp.status_code == 400
+        with patch(
+            "mergin.sync.workspace.GlobalWorkspace.has_pending_invitation",
+            return_value=True,
+        ):
+            resp = client.post("/v2/users", json=data)
+            assert resp.status_code == 409
         resp = client.post("/v2/users", json=data)
         assert resp.status_code == 422
         assert resp.json["code"] == "BaseError"
