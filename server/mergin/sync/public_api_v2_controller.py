@@ -330,8 +330,14 @@ def create_project_version(id):
         return StorageLimitHit(current_usage, project.workspace.storage).response(422)
 
     pv = project.get_latest_version()
-    if pv and pv.name != version:
+    if pv and version < pv.name:
+        # client is behind, newer version(s) already exist on server
         return ProjectVersionExists(version, pv.name).response(409)
+    if pv and version > pv.name:
+        # client claims to be ahead of server, such version does not exist
+        return UploadError(
+            error=f"Project version v{version} does not exist on server"
+        ).response(422)
 
     # we have done all checks but this request is just a dry-run
     if request.json.get("check_only", False):
