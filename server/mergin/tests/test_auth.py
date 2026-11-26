@@ -1357,6 +1357,28 @@ def test_update_project_v2(client):
     assert resp.status_code == 204
 
 
+def test_add_user_owner_role(client):
+    """Test only workspace owner can create a user with the owner role"""
+    add_user("user", "user")
+    data = {
+        "email": "test@test.com",
+        "password": "#pwd1234",
+        "role": "owner",
+        "workspace_id": test_workspace_id,
+    }
+    login(client, "user", "user")
+    with patch(
+        "mergin.sync.workspace.GlobalWorkspace.can_add_users", return_value=True
+    ):
+        assert client.post("/v2/users", json=data).status_code == 403
+        resp = client.post("/v2/users", json={**data, "role": "admin"})
+        assert resp.status_code == 201
+
+    login_as_admin(client)
+    resp = client.post("/v2/users", json={**data, "email": "test2@test.com"})
+    assert resp.status_code == 201
+
+
 @patch("mergin.celery.send_email_async.apply_async")
 def test_add_user(send_email_mock, client):
     """Test adding new user via public endpoint"""
