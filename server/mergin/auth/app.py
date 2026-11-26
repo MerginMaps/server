@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 from blinker import signal
-from flask import current_app, render_template, Flask
+from flask import current_app, render_template, Flask, g
 from flask_login import current_user
 from itsdangerous import URLSafeTimedSerializer, BadData
 from sqlalchemy import func
@@ -75,6 +75,9 @@ def auth_required(f=None, permissions=None):
             or not current_user.is_authenticated
             or not current_user.is_active
         ):
+            token_error = g.get("bearer_token_error")
+            if token_error:
+                return token_error.response(401)
             return "Authentication information is missing or invalid.", 401
         if permissions:
             for check_permission in permissions:

@@ -2,10 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import os
 from functools import wraps
 from typing import Optional
-from flask import abort, current_app
+from flask import abort, current_app, g
 from flask_login import current_user
 from sqlalchemy import or_
 
@@ -205,6 +204,10 @@ def require_project(ws, project_name, permission) -> Project:
         .first_or_404()
     )
     if not permission.check(project, current_user):
+        token_error = g.get("bearer_token_error")
+        if token_error:
+            response, _ = token_error.response(401)
+            abort(response)
         abort(403, "You do not have permissions for this project")
     return project
 
@@ -243,6 +246,10 @@ def require_project_by_uuid(
     if not is_active_workspace(workspace):
         abort(404, "Workspace doesn't exist")
     if not permission.check(project, current_user):
+        token_error = g.get("bearer_token_error")
+        if token_error:
+            response, _ = token_error.response(401)
+            abort(response)
         abort(403, "You do not have permissions for this project")
 
     return project
