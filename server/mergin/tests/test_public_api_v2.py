@@ -941,6 +941,12 @@ push_data = [
         409,
         ProjectVersionExists.code,
     ),
+    # client version ahead of server, such version does not exist
+    (
+        {"version": "v100", "changes": _get_changes_without_added(test_project_dir)},
+        422,
+        UploadError.code,
+    ),
     # no changes requested
     (
         {"version": "v1", "changes": {"added": [], "removed": [], "updated": []}},
