@@ -5,10 +5,11 @@
 import os
 from functools import wraps
 from typing import Optional
-from flask import abort, current_app
+from flask import abort, current_app, g, request
 from flask_login import current_user
 from sqlalchemy import or_
 
+from .interfaces import WorkspaceRole
 from .utils import is_valid_uuid
 from ..app import db
 from ..auth.models import User
@@ -190,6 +191,24 @@ def is_active_workspace(workspace):
     """
     is_admin = not current_user.is_anonymous and current_user.is_admin
     return workspace.is_active or is_admin
+
+
+def can_add_users(f):
+    """Decorator to return 403 unless current user can add users with the requested role to the workspace in request body, passed on in g.workspace"""
+
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        workspace = current_app.ws_handler.get(request.json.get("workspace_id"))
+        if not (workspace and workspace.can_add_users(current_user)):
+            abort(403)
+        if request.json["role"] == WorkspaceRole.OWNER.value and not (
+            workspace.user_has_permissions(current_user, "owner")
+        ):
+            abort(403)
+        g.workspace = workspace
+        return f(*args, **kwargs)
+
+    return wrapper
 
 
 def require_project(ws, project_name, permission) -> Project:

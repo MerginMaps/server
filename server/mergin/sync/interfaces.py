@@ -85,6 +85,10 @@ class AbstractWorkspace:
         """Check if user can add another user to workspace"""
         pass
 
+    def has_pending_invitation(self, email):
+        """Check if email has a pending invitation to workspace"""
+        pass
+
 
 class WorkspaceHandler(ABC):
     """
@@ -182,6 +186,13 @@ class WorkspaceHandler(ABC):
     def server_editors_count():
         """
         Return number of workspace editors in current server instance
+        """
+        pass
+
+    @staticmethod
+    def check_limits():
+        """
+        Return error if workspace limits do not allow the current request
         """
         pass
 

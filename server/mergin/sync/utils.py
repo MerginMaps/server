@@ -9,6 +9,7 @@ import os
 import hashlib
 import re
 import secrets
+from functools import wraps
 from binaryornot.check import is_binary
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -122,6 +123,19 @@ def project_name_conflict_message(project) -> str:
             f"you can create a project with this name in {format_time_delta(project.expiration)}"
         )
     return "Project with the same name already exists"
+
+
+def check_limits(f):
+    """Decorator to reject the request if workspace limits do not allow it, use it under auth_required"""
+
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        error = current_app.ws_handler.check_limits()
+        if error:
+            return error.response(422)
+        return f(*args, **kwargs)
+
+    return wrapper
 
 
 def is_valid_uuid(uuid):
