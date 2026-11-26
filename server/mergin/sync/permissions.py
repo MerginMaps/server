@@ -208,6 +208,8 @@ def require_project(ws, project_name, permission) -> Project:
         if token_error:
             response, _ = token_error.response(401)
             abort(response)
+        if current_user.is_anonymous:
+            abort(401, "Authentication information is missing or invalid.")
         abort(403, "You do not have permissions for this project")
     return project
 
@@ -223,7 +225,7 @@ def require_project_by_uuid(
         permission (ProjectPermissions): The permission level required to access the project.
         scheduled (bool, optional): If ``True``, bypasses the check for projects marked for deletion.
         expose (bool, optional): Controls security disclosure behavior on permission failure.
-            - If `True`: Returns 403 Forbidden (reveals project exists but access is denied).
+            - If `True`: Returns 403 Forbidden, or 401 to anonymous user (reveals project exists but access is denied).
             - If `False`: Returns 404 Not Found (hides project existence for security).
             Standard is that reading results in 404, while writing results in 403
     """
@@ -250,6 +252,8 @@ def require_project_by_uuid(
         if token_error:
             response, _ = token_error.response(401)
             abort(response)
+        if current_user.is_anonymous:
+            abort(401, "Authentication information is missing or invalid.")
         abort(403, "You do not have permissions for this project")
 
     return project

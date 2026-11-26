@@ -1720,7 +1720,7 @@ def _bearer_request(client, method, url, token=None, **kwargs):
 
 
 def test_rejected_bearer_token_on_project_endpoints(app):
-    """Project endpoints return 401 with a reason for a rejected bearer token, 403 for a missing role"""
+    """Project endpoints return 401 without credentials or with a reason for a rejected bearer token, 403 for a missing role"""
     user = add_user("tokenuser", "password")
     workspace = create_workspace()
     admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
@@ -1746,8 +1746,9 @@ def test_rejected_bearer_token_on_project_endpoints(app):
     # authenticated reader cannot push
     resp = _bearer_request(api_client, "POST", push_url, token, json=push_data)
     assert resp.status_code == 403
-    # no credentials at all keep the previous response
-    assert _bearer_request(api_client, "GET", info_url).status_code == 403
+    for method, url, kwargs in endpoints:
+        resp = _bearer_request(api_client, method, url, **kwargs)
+        assert resp.status_code == 401, url
 
     expired_token = encode_token(
         app.config["SECRET_KEY"],
@@ -1778,3 +1779,4 @@ def test_rejected_bearer_token_on_project_endpoints(app):
     project.public = True
     db.session.commit()
     assert _bearer_request(api_client, "GET", info_url, token).status_code == 200
+    assert _bearer_request(api_client, "GET", info_url).status_code == 200
