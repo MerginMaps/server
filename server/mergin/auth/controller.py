@@ -6,7 +6,7 @@ import os
 from connexion import NoContent
 from sqlalchemy import func, desc, asc
 from sqlalchemy.sql.operators import is_
-from flask import request, current_app, jsonify, abort, render_template, session
+from flask import request, current_app, jsonify, abort, render_template, session, g
 from flask_login import login_user, logout_user, current_user
 from flask_wtf.csrf import generate_csrf
 
@@ -40,9 +40,9 @@ from ..app import db
 from ..audit import emit
 from ..audit.listeners import actor_context, request_context
 from .events import AuthEventType
-from ..sync.interfaces import WorkspaceRole
 from ..sync.models import Project
-from ..sync.utils import files_size
+from ..sync.permissions import can_add_users
+from ..sync.utils import check_limits, files_size
 
 
 EMAIL_CONFIRMATION_EXPIRATION = 12 * 3600
@@ -708,17 +708,10 @@ def get_user_info():
 
 
 @auth_required
+@can_add_users
+@check_limits
 def create_user():
     """Create new user"""
-    workspace = current_app.ws_handler.get(request.json.get("workspace_id"))
-    if not (workspace and workspace.can_add_users(current_user)):
-        abort(403)
-
-    if request.json["role"] == WorkspaceRole.OWNER.value and not (
-        workspace.user_has_permissions(current_user, "owner")
-    ):
-        abort(403)
-
     username = request.json.get(
         "username", User.generate_username(request.json["email"])
     )
@@ -730,12 +723,8 @@ def create_user():
     if not form.validate():
         return jsonify(form.errors), 400
 
-    if workspace.has_pending_invitation(form.email.data):
+    if g.workspace.has_pending_invitation(form.email.data):
         abort(409, "This email already has a pending invitation")
-
-    error = current_app.ws_handler.check_limits()
-    if error:
-        return error.response(422)
 
     db.session.info["audit_user_creation_source"] = "api"
     user = User.create(

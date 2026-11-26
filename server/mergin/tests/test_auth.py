@@ -1424,7 +1424,7 @@ def test_add_user(send_email_mock, client):
 
 
 def test_add_user_limits(client):
-    """Test pending invitation and workspace limits are checked after authentication, permissions and input validation"""
+    """Test workspace limits are checked after authentication, permissions and request validation, before the form and pending invitation checks"""
     user = add_user("user", "user")
     data = {
         "email": "test@test.com",
@@ -1438,20 +1438,24 @@ def test_add_user_limits(client):
         assert client.post("/v2/users", json=data).status_code == 401
         login(client, "user", "user")
         assert client.post("/v2/users", json=data).status_code == 403
+        with patch(
+            "mergin.sync.workspace.GlobalWorkspace.can_add_users", return_value=True
+        ):
+            resp = client.post("/v2/users", json={**data, "role": "owner"})
+            assert resp.status_code == 403
         login_as_admin(client)
         resp = client.post("/v2/users", json={**data, "role": "superuser"})
         assert resp.status_code == 400
         resp = client.post("/v2/users", json={**data, "email": user.email})
-        assert resp.status_code == 400
-        with patch(
-            "mergin.sync.workspace.GlobalWorkspace.has_pending_invitation",
-            return_value=True,
-        ):
-            resp = client.post("/v2/users", json=data)
-            assert resp.status_code == 409
+        assert resp.status_code == 422
         resp = client.post("/v2/users", json=data)
         assert resp.status_code == 422
         assert resp.json["code"] == "BaseError"
+    with patch(
+        "mergin.sync.workspace.GlobalWorkspace.has_pending_invitation",
+        return_value=True,
+    ):
+        assert client.post("/v2/users", json=data).status_code == 409
     assert not User.query.filter_by(email="test@test.com").count()
 
 
