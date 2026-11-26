@@ -40,6 +40,7 @@ from ..app import db
 from ..audit import emit
 from ..audit.listeners import actor_context, request_context
 from .events import AuthEventType
+from ..sync.interfaces import WorkspaceRole
 from ..sync.models import Project
 from ..sync.utils import files_size
 
@@ -711,6 +712,11 @@ def create_user():
     """Create new user"""
     workspace = current_app.ws_handler.get(request.json.get("workspace_id"))
     if not (workspace and workspace.can_add_users(current_user)):
+        abort(403)
+
+    if request.json["role"] == WorkspaceRole.OWNER.value and not (
+        workspace.user_has_permissions(current_user, "owner")
+    ):
         abort(403)
 
     username = request.json.get(
