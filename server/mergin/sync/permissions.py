@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-MerginMaps-Commercial
 
-import os
 from functools import wraps
 from typing import Optional
 from flask import abort, current_app
@@ -205,6 +204,8 @@ def require_project(ws, project_name, permission) -> Project:
         .first_or_404()
     )
     if not permission.check(project, current_user):
+        if current_user.is_anonymous:
+            abort(401)
         abort(403, "You do not have permissions for this project")
     return project
 
@@ -220,7 +221,7 @@ def require_project_by_uuid(
         permission (ProjectPermissions): The permission level required to access the project.
         scheduled (bool, optional): If ``True``, bypasses the check for projects marked for deletion.
         expose (bool, optional): Controls security disclosure behavior on permission failure.
-            - If `True`: Returns 403 Forbidden (reveals project exists but access is denied).
+            - If `True`: Returns 403 Forbidden, or 401 to anonymous user (reveals project exists but access is denied).
             - If `False`: Returns 404 Not Found (hides project existence for security).
             Standard is that reading results in 404, while writing results in 403
     """
@@ -243,6 +244,8 @@ def require_project_by_uuid(
     if not is_active_workspace(workspace):
         abort(404, "Workspace doesn't exist")
     if not permission.check(project, current_user):
+        if current_user.is_anonymous:
+            abort(401)
         abort(403, "You do not have permissions for this project")
 
     return project

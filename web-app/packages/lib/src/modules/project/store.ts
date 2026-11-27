@@ -543,7 +543,7 @@ export const useProjectStore = defineStore('projectModule', {
     async fetchProjectDetail(payload) {
       const notificationStore = useNotificationStore()
 
-      const { callbackStatus, namespace, projectName, isLoggedUser } = payload
+      const { callbackStatus, namespace, projectName } = payload
       try {
         const projectResponse = await ProjectApi.getProject(
           payload.namespace,
@@ -557,17 +557,18 @@ export const useProjectStore = defineStore('projectModule', {
           })
           return
         }
-        callbackStatus(e.response.status)
+        const { status } = e.response
+        callbackStatus(status)
 
-        if (e.response.status !== 404 && e.response.status !== 403) {
+        if (![401, 403, 404].includes(status)) {
           notificationStore.error({
             text: 'Failed to load project data'
           })
-        } else if (e.response.status === 403 && !isLoggedUser) {
+        } else if (status === 401) {
           await getActivePinia().router.push(
             `/login?redirect=/projects/${namespace}/${projectName}`
           )
-        } else if (e.response.status === 403) {
+        } else if (status === 403) {
           ProjectApi.fetchAccessRequests({
             page: 1,
             per_page: 1,
