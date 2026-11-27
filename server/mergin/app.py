@@ -21,7 +21,6 @@ from flask import (
     abort,
     current_app,
     Flask,
-    g,
     Request,
     Response,
 )
@@ -153,11 +152,10 @@ def create_simple_app() -> Flask:
 
 def create_app(public_keys: List[str] = None) -> Flask:
     """Factory function to create Flask app instance"""
-    from itsdangerous import BadTimeSignature, BadSignature, SignatureExpired
+    from itsdangerous import BadTimeSignature, BadSignature
 
     from .audit import register as register_audit
     from .auth import auth_required, decode_token, register as register_auth
-    from .auth.errors import TokenExpired, TokenInvalid, TokenRevoked
     from .auth.models import User
     from .sync.app import register as register_sync
     from .sync.project_handler import ProjectHandler
@@ -221,11 +219,8 @@ def create_app(public_keys: List[str] = None) -> Flask:
                     and user.auth_version == data.get("auth_version", 0)
                 ):
                     return user
-                g.bearer_token_error = TokenRevoked()
-            except SignatureExpired:
-                g.bearer_token_error = TokenExpired()
             except (BadSignature, BadTimeSignature, KeyError):
-                g.bearer_token_error = TokenInvalid()
+                pass
 
     @app.app.before_request
     def check_maintenance():

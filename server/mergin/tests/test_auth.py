@@ -1719,8 +1719,8 @@ def _bearer_request(client, method, url, token=None, **kwargs):
         return client.open(url, method=method, headers=headers, **kwargs)
 
 
-def test_rejected_bearer_token_on_project_endpoints(app):
-    """Project endpoints return 401 without credentials or with a reason for a rejected bearer token, 403 for a missing role"""
+def test_project_endpoints_without_valid_credentials(app):
+    """Project endpoints return 401 without valid credentials, 403 for a missing role"""
     user = add_user("tokenuser", "password")
     workspace = create_workspace()
     admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
@@ -1746,9 +1746,6 @@ def test_rejected_bearer_token_on_project_endpoints(app):
     # authenticated reader cannot push
     resp = _bearer_request(api_client, "POST", push_url, token, json=push_data)
     assert resp.status_code == 403
-    for method, url, kwargs in endpoints:
-        resp = _bearer_request(api_client, method, url, **kwargs)
-        assert resp.status_code == 401, url
 
     expired_token = encode_token(
         app.config["SECRET_KEY"],
@@ -1761,21 +1758,20 @@ def test_rejected_bearer_token_on_project_endpoints(app):
             "auth_version": user.auth_version,
         },
     )
-    rejected = [(expired_token, "TokenExpired"), (token + "x", "TokenInvalid")]
-    for rejected_token, code in rejected:
+    # no token, expired token, invalid token
+    for rejected_token in (None, expired_token, token + "x"):
         for method, url, kwargs in endpoints:
             resp = _bearer_request(api_client, method, url, rejected_token, **kwargs)
             assert resp.status_code == 401, url
-            assert resp.json["code"] == code
 
+    # token revoked by password change
     user.revoke_sessions()
     db.session.commit()
     for method, url, kwargs in endpoints:
         resp = _bearer_request(api_client, method, url, token, **kwargs)
         assert resp.status_code == 401, url
-        assert resp.json["code"] == "TokenRevoked"
 
-    # public project is still readable, the rejected token is ignored
+    # public project is still readable without valid credentials
     project.public = True
     db.session.commit()
     assert _bearer_request(api_client, "GET", info_url, token).status_code == 200
