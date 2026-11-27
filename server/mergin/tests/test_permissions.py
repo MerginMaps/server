@@ -174,3 +174,21 @@ def test_check_project_permissions(client):
         client.get("/")
         assert check_project_permissions(priv_proj, ProjectPermissions.Read) == 404
         assert check_project_permissions(pub_proj, ProjectPermissions.Read) is None
+
+
+def test_require_project_unauthorized(client):
+    """Anonymous user gets 401, logged-in user without access gets 403"""
+    admin = User.query.filter_by(username=DEFAULT_USER[0]).first()
+    workspace = create_workspace()
+    project = create_project("private", workspace, admin)
+    urls = [
+        f"/v1/project/{workspace.name}/{project.name}",  # require_project
+        f"/v1/project/by_uuid/{project.id}",  # require_project_by_uuid
+    ]
+    user = add_user("no_access", "password")
+    login(client, user.username, "password")
+    for url in urls:
+        assert client.get(url).status_code == 403
+    logout(client)
+    for url in urls:
+        assert client.get(url).status_code == 401

@@ -300,8 +300,7 @@ export default defineComponent({
       this.fetchProjectDetail({
         callbackStatus: this.setFetchProjectResponseStatus,
         projectName: this.projectName,
-        namespace: this.namespace,
-        isLoggedUser: !!this.loggedUser
+        namespace: this.namespace
       })
     },
     cloneDialog() {
